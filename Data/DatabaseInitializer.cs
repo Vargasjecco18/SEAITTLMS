@@ -51,8 +51,10 @@ public sealed class DatabaseInitializer(
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
         {
             logger.LogWarning(
-                "There is no administrator account yet, so nobody can sign in. Set Seed:Admin:Email and " +
-                "Seed:Admin:Password (use 'dotnet user-secrets set') and restart the app to create one.");
+                "There is no administrator account yet, so nobody can sign in. Set its password with " +
+                "'dotnet user-secrets set \"Seed:Admin:Password\" \"<a long password>\"' and restart the app. " +
+                "Its email is Seed:Admin:Email (now: '{Email}').",
+                email);
             return;
         }
 
