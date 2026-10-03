@@ -3,3 +3,6 @@ obj/
 .vs/
 *.user
 *.suo
+
+# Private settings (passwords) for this computer
+appsettings.Local.json

@@ -30,8 +30,9 @@ public sealed class DatabaseInitializer(
         catch (Exception ex)
         {
             logger.LogError(ex,
-                "Database setup failed. Check ConnectionStrings:Default, and that the tables exist " +
-                "(run 'dotnet ef database update', or set Database:MigrateOnStartup to true).");
+                "Database setup failed. Check ConnectionStrings:Default (host, user and password), and that the tables " +
+                "exist (run 'dotnet ef database update', or set Database:MigrateOnStartup to true). If tables were " +
+                "dropped or changed by hand, rebuild the database: README.md, \"Start over\".");
             throw;
         }
     }
@@ -51,9 +52,9 @@ public sealed class DatabaseInitializer(
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
         {
             logger.LogWarning(
-                "There is no administrator account yet, so nobody can sign in. Set its password with " +
-                "'dotnet user-secrets set \"Seed:Admin:Password\" \"<a long password>\"' and restart the app. " +
-                "Its email is Seed:Admin:Email (now: '{Email}').",
+                "There is no administrator account yet, so nobody can sign in. Put Seed:Admin:Password (a long " +
+                "password) in appsettings.Local.json, or set it with 'dotnet user-secrets', and restart the app. " +
+                "Its email is Seed:Admin:Email (now: '{Email}'). See README.md, \"First-time setup\".",
                 email);
             return;
         }

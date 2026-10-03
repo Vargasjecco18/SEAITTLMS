@@ -20,6 +20,7 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .AddJsonFile($"appsettings.{environment}.json", optional: true)
             .AddUserSecrets<AppDbContextFactory>(optional: true)
             .AddEnvironmentVariables()
+            .AddJsonFile("appsettings.Local.json", optional: true)
             .Build();
 
         var connectionString = configuration.GetConnectionString("Default")

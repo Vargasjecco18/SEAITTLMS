@@ -19,35 +19,44 @@ Lessons, assignments and quizzes are next. The database design is in [docs/datab
 
 ## First-time setup
 
-Run these in the repository folder. Replace `YOUR_MYSQL_PASSWORD` and the admin password with your own.
+1. **Create your private settings file.** In the project folder, copy `appsettings.Local.example.json` to
+   `appsettings.Local.json` (in VS Code: right-click the file, *Copy*, *Paste*, then rename the copy). Open it and
+   replace the two placeholders:
+   - `YOUR_MYSQL_PASSWORD` with your MySQL password,
+   - `choose-a-long-password` with the password you want for the first administrator.
 
-```bash
-# 1. Tell the app how to reach MySQL (stored outside the repo, never committed)
-dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3306;Database=seaittlms;User=root;Password=YOUR_MYSQL_PASSWORD;"
+   Git ignores `appsettings.Local.json`, so your passwords never go to GitHub. **Never write passwords in
+   `appsettings.json`**: that file is committed and published.
+2. **Run the app** in the project folder. In Development the tables are created automatically on startup:
 
-# 2. The password of the first administrator account
-dotnet user-secrets set "Seed:Admin:Password" "choose-a-long-password"
+   ```bash
+   dotnet watch
+   ```
+3. Open http://localhost:5000 and sign in as **admin@legazpi.seaitt.edu.ph** with the administrator password from step 1.
 
-# 3. Run. In Development the tables are created automatically on startup.
-dotnet watch
-```
+If your MySQL uses another host, port or user, change the connection string in the same file. If the app says
+**Can't connect to MySQL**, check the password in it, that MySQL is running, and that the `seaittlms` schema exists.
 
-Open http://localhost:5000 and sign in as **admin@legazpi.seaitt.edu.ph** with the password from step 2.
-
-`dotnet user-secrets` works because the project has a `UserSecretsId`. If your MySQL server uses another host,
-port or user, change the connection string in step 1.
+Other ways to give the app its passwords (the private file wins over all of them): `dotnet user-secrets set
+"ConnectionStrings:Default" "..."` and `dotnet user-secrets set "Seed:Admin:Password" "..."`, or the environment
+variables `ConnectionStrings__Default` and `Seed__Admin__Password`.
 
 ### The first administrator (seed account)
 
 The first time the app starts on a database that has no administrator, it creates one: **System Administrator**,
-email `admin@legazpi.seaitt.edu.ph` (the `Seed:Admin:Email` setting in `appsettings.json`), with the password you set
-in step 2. To use other details, set any of these before that first start:
+email `admin@legazpi.seaitt.edu.ph` (the `Seed:Admin:Email` setting in `appsettings.json`), with the password you put
+in your private settings file. To use other details, add them to the `Admin` part of that file before the first start:
 
-```bash
-dotnet user-secrets set "Seed:Admin:Email" "principal@legazpi.seaitt.edu.ph"
-dotnet user-secrets set "Seed:Admin:FirstName" "Your"
-dotnet user-secrets set "Seed:Admin:LastName" "Name"
-dotnet user-secrets set "Seed:Admin:PhoneNumber" "09171234567"
+```json
+"Seed": {
+  "Admin": {
+    "Email": "principal@legazpi.seaitt.edu.ph",
+    "FirstName": "Your",
+    "LastName": "Name",
+    "PhoneNumber": "09171234567",
+    "Password": "choose-a-long-password"
+  }
+}
 ```
 
 The seed only runs when there is no administrator yet, so changing these settings later does not touch an account
@@ -62,7 +71,7 @@ UPDATE seaittlms.users SET email = 'admin@legazpi.seaitt.edu.ph' WHERE email = '
 
 Pick one way. They all create the same tables.
 
-1. **Automatically** (default in Development): just run `dotnet watch`, as in step 3 above.
+1. **Automatically** (default in Development): just run `dotnet watch`, as in step 2 above.
 2. **In MySQL Workbench**: open [database/seaittlms_schema.sql](database/seaittlms_schema.sql) with
    *File > Open SQL Script...* and click the lightning bolt. Run it once, on an empty `seaittlms` schema. The app
    starts normally afterwards because the script also records the migrations. To see the tables as a diagram, use
@@ -81,14 +90,37 @@ your data**, either start the app in Development (`dotnet watch`, it upgrades by
 `SELECT * FROM __EFMigrationsHistory;` and then run the files in [database/upgrades](database/upgrades) that are newer
 than the last row, oldest first.
 
+### Something broke? Start over
+
+Use this when the database is broken, for example you dropped or changed tables by hand and MySQL Workbench shows
+*Error loading schema content ... Error Code: 1356 ... View 'seaittlms.v_...' references invalid table(s) or column(s)*.
+(The `v_...` views read `users` and the role tables, so they break when those are missing or changed.)
+
+**This erases all the data in `seaittlms`.** There is no undo.
+
+1. In Workbench open [database/seaittlms_reset_and_rebuild.sql](database/seaittlms_reset_and_rebuild.sql)
+   (*File > Open SQL Script...*) and click the lightning bolt. It deletes the `seaittlms` schema and builds everything
+   again, including the five roles and the four tracks.
+2. Run `dotnet watch`. The app creates the administrator again (`admin@legazpi.seaitt.edu.ph`, with the password from
+   your `appsettings.Local.json`). Any other users you had are gone, and there is no screen for adding users yet.
+
+Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five views),
+and use step 1 above when you are ready to rebuild:
+
+```sql
+DROP VIEW IF EXISTS seaittlms.v_administrators, seaittlms.v_guidance_counselors, seaittlms.v_registrars,
+                    seaittlms.v_teachers, seaittlms.v_students;
+```
+
 The SQL files are generated from the migrations, don't edit them by hand. After a schema change, regenerate them with
 `bash database/export-schema.sh` (on Windows, in Git Bash).
 
 ### Production
 
 Set `ConnectionStrings__Default` and `Seed__Admin__Password` as environment variables (and `Seed__Admin__Email` if
-you want a different one) and run `dotnet ef database update` (or `Database__MigrateOnStartup=true` for the first start). The sign-in cookie is
-https-only outside Development. Persist the ASP.NET Core Data Protection keys if you run in a container.
+you want a different one) and run `dotnet ef database update` (or `Database__MigrateOnStartup=true` for the first
+start). Don't copy `appsettings.Local.json` to a server. The sign-in cookie is https-only outside Development.
+Persist the ASP.NET Core Data Protection keys if you run in a container.
 
 ## Project layout
 
@@ -99,7 +131,8 @@ Data/                      AppDbContext, entities, EF configurations, migrations
 Components/Account/        Login and access-denied pages
 Components/Layout/         Page layouts
 Components/Pages/          Home page and error page
-database/                  seaittlms_schema.sql and upgrades/ (run them in MySQL Workbench) and the script that generates them
+appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
+database/                  The SQL files for MySQL Workbench (new schema, upgrades/, reset and rebuild) and the script that generates them
 docs/database.md           Tables, relationships and the rules the database enforces
 ```
 

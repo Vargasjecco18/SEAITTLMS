@@ -9,12 +9,38 @@ using SEAITT_LMS.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database (MySQL). The password does not belong in appsettings.json, see README.md ("dotnet user-secrets").
+// Private settings for this computer, ignored by git: copy appsettings.Local.example.json to appsettings.Local.json and
+// put your passwords in it. If the file exists it wins over every other setting. It doesn't exist on a server.
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false);
+
+// Database (MySQL). The password does not belong in appsettings.json, see README.md ("First-time setup").
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("ConnectionStrings:Default is not set. See README.md.");
 
+// Ask MySQL which version it is. This is also the first time the app connects, so a wrong password, a stopped MySQL
+// or a missing schema shows up here: say so in plain words instead of a crash dump.
+ServerVersion serverVersion;
+try
+{
+    serverVersion = ServerVersion.AutoDetect(connectionString);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine();
+    Console.Error.WriteLine("Can't connect to MySQL.");
+    Console.Error.WriteLine($"  Reason: {ex.GetBaseException().Message}");
+    Console.Error.WriteLine("  Check that:");
+    Console.Error.WriteLine("   - MySQL is running,");
+    Console.Error.WriteLine("   - the schema 'seaittlms' exists (create it in MySQL Workbench),");
+    Console.Error.WriteLine("   - the user and password in ConnectionStrings:Default are right. Keep your password in");
+    Console.Error.WriteLine("     appsettings.Local.json (copy appsettings.Local.example.json), see README.md, \"First-time setup\".");
+    Console.Error.WriteLine();
+    Environment.Exit(1);
+    return;
+}
+
 builder.Services.AddDbContextFactory<AppDbContext>(options => options
-    .UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+    .UseMySql(connectionString, serverVersion)
     .UseSnakeCaseNamingConvention());
 
 // Our own login: PBKDF2 password hashing + the built-in cookie authentication. No Identity package.

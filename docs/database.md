@@ -13,6 +13,7 @@ Lessons, assignments and quizzes come later and will hang off `class_offerings`
 |---|---|
 | [`database/seaittlms_schema.sql`](../database/seaittlms_schema.sql) | You have a **new, empty** `seaittlms` schema. It creates every table and view. |
 | [`database/upgrades/*.sql`](../database/upgrades) | You already created the tables with an older version and want the newest changes **without losing data**. One file per change, run them oldest first. |
+| [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. |
 
 In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. To know which upgrades you
 need, run `SELECT * FROM __EFMigrationsHistory;` and compare the last row with the file names in `upgrades`.
@@ -103,6 +104,10 @@ Open them in Workbench under *Views* or with `SELECT * FROM v_teachers;`.
 - Views can't be edited. To change a person, edit `users` (name, phone, active) or their enrollment.
 - If two terms are flagged current by mistake the views use the newest one. MySQL cuts a list at 1024 characters,
   which is far more than a normal teacher load.
+- **Views depend on the tables they read.** If one of those tables is dropped, or a column the view uses is removed or
+  renamed, MySQL marks the view broken and Workbench shows *Error loading schema content ... Error Code: 1356 ... View
+  '...' references invalid table(s) or column(s)*. Deleting rows does not break a view. To recover, see
+  [Something broke? Start over](../README.md#something-broke-start-over) in the README.
 
 ## What is a class offering?
 

@@ -5,9 +5,11 @@
 #   bash database/export-schema.sh
 #
 # It writes:
-#   database/seaittlms_schema.sql        everything, for a NEW empty seaittlms schema
-#   database/upgrades/<migration>.sql    one file per migration after the first, for a database
-#                                        that already has the migration before it
+#   database/seaittlms_schema.sql            everything, for a NEW empty seaittlms schema
+#   database/seaittlms_reset_and_rebuild.sql the same, but it first ERASES the seaittlms schema
+#                                            (for starting over when the database got broken)
+#   database/upgrades/<migration>.sql        one file per migration after the first, for a
+#                                            database that already has the migration before it
 #
 # Needs the dotnet-ef tool (dotnet tool install --global dotnet-ef --version 9.0.20) and a
 # reachable MySQL server: the tool asks the server which version it is, using the same
@@ -58,6 +60,37 @@ USE `seaittlms`;
 HEADER
 }
 
+reset_header() {
+  cat <<'HEADER'
+-- =============================================================================
+-- SEAITT e-LMS - RESET AND REBUILD the seaittlms database (MySQL Workbench friendly)
+--
+--   !!!  WARNING: THIS ERASES EVERYTHING IN THE seaittlms SCHEMA  !!!
+--   Every table, view and row (users, students, teachers, ...) is deleted and the
+--   database is built again from scratch. There is NO undo.
+--
+-- Use it only to start over, for example when tables were dropped or changed by hand and
+-- Workbench shows "Error loading schema content ... Error Code: 1356".
+-- To keep your data, use database/seaittlms_schema.sql (new schema) or database/upgrades/
+-- (older schema) instead.
+--
+-- Afterwards the database is empty, except the five roles and the four tracks.
+-- Start the app to create the first administrator (README.md, "First-time setup").
+--
+-- HOW TO RUN IT IN MYSQL WORKBENCH
+--   File > Open SQL Script...  pick this file, then click the lightning bolt (Execute).
+--
+-- This file is GENERATED from the Entity Framework migrations in Data/Migrations.
+-- Do not edit it by hand. To regenerate it: bash database/export-schema.sh
+-- =============================================================================
+
+DROP DATABASE IF EXISTS `seaittlms`;
+CREATE DATABASE `seaittlms` CHARACTER SET utf8mb4;
+USE `seaittlms`;
+
+HEADER
+}
+
 upgrade_header() {
   cat <<'HEADER' | sed -e "s/@PREV@/$1/g" -e "s/@CUR@/$2/g"
 -- =============================================================================
@@ -100,6 +133,10 @@ done
 dotnet ef migrations script --output "$tmp"
 { full_header; clean "$tmp"; } > database/seaittlms_schema.sql
 echo "Wrote database/seaittlms_schema.sql"
+
+# 1b. The same script behind a DROP/CREATE DATABASE, to start over from nothing.
+{ reset_header; clean "$tmp"; } > database/seaittlms_reset_and_rebuild.sql
+echo "Wrote database/seaittlms_reset_and_rebuild.sql"
 
 # 2. One upgrade script per migration after the first.
 mkdir -p database/upgrades
