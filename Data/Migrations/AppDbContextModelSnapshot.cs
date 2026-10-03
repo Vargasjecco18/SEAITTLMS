@@ -446,10 +446,9 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(150)")
                         .HasColumnName("name");
 
-                    b.Property<string>("Track")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("track");
+                    b.Property<int>("TrackId")
+                        .HasColumnType("int")
+                        .HasColumnName("track_id");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -461,6 +460,9 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_strands_code");
+
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_strands_track_id");
 
                     b.ToTable("strands", (string)null);
                 });
@@ -665,6 +667,91 @@ namespace SEAITT_LMS.Data.Migrations
                             t.HasCheckConstraint("ck_terms_dates", "end_date >= start_date");
 
                             t.HasCheckConstraint("ck_terms_term_number", "term_number >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Track", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tracks");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tracks_code");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tracks_name");
+
+                    b.ToTable("tracks", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "ACAD",
+                            CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Academic",
+                            UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "TVL",
+                            CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Technical-Vocational-Livelihood",
+                            UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "SPORTS",
+                            CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Sports",
+                            UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "ARTS",
+                            CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Arts and Design",
+                            UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -909,6 +996,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("SchoolYear");
 
                     b.Navigation("Strand");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Strand", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_strands_tracks_track_id");
+
+                    b.Navigation("Track");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Student", b =>

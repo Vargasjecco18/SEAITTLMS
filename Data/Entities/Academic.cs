@@ -29,14 +29,27 @@ public class Term : AuditableEntity
     public bool IsCurrent { get; set; }
 }
 
+/// <summary>
+/// A senior high school track: Academic, Technical-Vocational-Livelihood (TVL), Sports, or Arts and Design.
+/// Every strand belongs to exactly one track.
+/// </summary>
+public class Track : AuditableEntity
+{
+    public string Code { get; set; } = "";
+    public string Name { get; set; } = "";
+
+    /// <summary>Turn this off for a track the school does not offer, instead of deleting it.</summary>
+    public bool IsActive { get; set; } = true;
+}
+
 /// <summary>A senior high school strand such as STEM, ABM, HUMSS, GAS or a TVL specialization.</summary>
 public class Strand : AuditableEntity
 {
     public string Code { get; set; } = "";
     public string Name { get; set; } = "";
 
-    /// <summary>Academic, TVL, Sports, Arts and Design, ...</summary>
-    public string? Track { get; set; }
+    public int TrackId { get; set; }
+    public Track Track { get; set; } = null!;
 
     public bool IsActive { get; set; } = true;
 }

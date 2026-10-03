@@ -65,7 +65,7 @@ Pick one way. They all create the same tables.
 1. **Automatically** (default in Development): just run `dotnet watch`, as in step 3 above.
 2. **In MySQL Workbench**: open [database/seaittlms_schema.sql](database/seaittlms_schema.sql) with
    *File > Open SQL Script...* and click the lightning bolt. Run it once, on an empty `seaittlms` schema. The app
-   starts normally afterwards because the script also records the migration. To see the tables as a diagram, use
+   starts normally afterwards because the script also records the migrations. To see the tables as a diagram, use
    *Database > Reverse Engineer...* and pick `seaittlms`.
 3. **With the EF command line**:
 
@@ -74,7 +74,14 @@ Pick one way. They all create the same tables.
    dotnet ef database update
    ```
 
-The SQL file is generated from the migrations, don't edit it by hand. After a schema change, regenerate it with
+### Already created the tables? Upgrade instead of starting over
+
+Don't run `seaittlms_schema.sql` a second time (the tables already exist). To get the newest changes **and keep
+your data**, either start the app in Development (`dotnet watch`, it upgrades by itself), or in Workbench run
+`SELECT * FROM __EFMigrationsHistory;` and then run the files in [database/upgrades](database/upgrades) that are newer
+than the last row, oldest first.
+
+The SQL files are generated from the migrations, don't edit them by hand. After a schema change, regenerate them with
 `bash database/export-schema.sh` (on Windows, in Git Bash).
 
 ### Production
@@ -92,7 +99,7 @@ Data/                      AppDbContext, entities, EF configurations, migrations
 Components/Account/        Login and access-denied pages
 Components/Layout/         Page layouts
 Components/Pages/          Home page and error page
-database/                  seaittlms_schema.sql (run it in MySQL Workbench) and the script that generates it
+database/                  seaittlms_schema.sql and upgrades/ (run them in MySQL Workbench) and the script that generates them
 docs/database.md           Tables, relationships and the rules the database enforces
 ```
 

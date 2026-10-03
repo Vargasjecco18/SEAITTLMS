@@ -38,6 +38,38 @@ internal sealed class TermConfiguration : IEntityTypeConfiguration<Term>
     }
 }
 
+internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
+{
+    // HasData can't use the "now" that SaveChanges stamps, so the seed rows carry a fixed date.
+    private static readonly DateTime SeedDate = new(2026, 10, 3, 0, 0, 0, DateTimeKind.Utc);
+
+    public void Configure(EntityTypeBuilder<Track> b)
+    {
+        b.Property(t => t.Code).HasMaxLength(20).IsRequired();
+        b.HasIndex(t => t.Code).IsUnique();
+        b.Property(t => t.Name).HasMaxLength(100).IsRequired();
+        b.HasIndex(t => t.Name).IsUnique();
+
+        // The four tracks of the DepEd senior high school curriculum. Switch off (is_active = 0) the ones SEAITT
+        // doesn't offer, rather than deleting them.
+        b.HasData(
+            Seed(1, "ACAD", "Academic"),
+            Seed(2, "TVL", "Technical-Vocational-Livelihood"),
+            Seed(3, "SPORTS", "Sports"),
+            Seed(4, "ARTS", "Arts and Design"));
+    }
+
+    private static Track Seed(int id, string code, string name) => new()
+    {
+        Id = id,
+        Code = code,
+        Name = name,
+        IsActive = true,
+        CreatedAtUtc = SeedDate,
+        UpdatedAtUtc = SeedDate,
+    };
+}
+
 internal sealed class StrandConfiguration : IEntityTypeConfiguration<Strand>
 {
     public void Configure(EntityTypeBuilder<Strand> b)
@@ -45,7 +77,8 @@ internal sealed class StrandConfiguration : IEntityTypeConfiguration<Strand>
         b.Property(s => s.Code).HasMaxLength(20).IsRequired();
         b.HasIndex(s => s.Code).IsUnique();
         b.Property(s => s.Name).HasMaxLength(150).IsRequired();
-        b.Property(s => s.Track).HasMaxLength(50);
+
+        b.HasOne(s => s.Track).WithMany().HasForeignKey(s => s.TrackId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 

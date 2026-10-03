@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
     // Classes and enrollment
     public DbSet<SchoolYear> SchoolYears => Set<SchoolYear>();
     public DbSet<Term> Terms => Set<Term>();
+    public DbSet<Track> Tracks => Set<Track>();
     public DbSet<Strand> Strands => Set<Strand>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Section> Sections => Set<Section>();
