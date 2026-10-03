@@ -1,0 +1,25 @@
+@using System.Security.Claims
+@inherits LayoutComponentBase
+
+<header class="topbar">
+    <a class="brand" href="/">SEAITT <span>e-LMS</span></a>
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="topbar-user">
+                <div class="who">
+                    <span class="who-name">@context.User.Identity?.Name</span>
+                    <span class="who-role">@AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role))</span>
+                </div>
+                <form method="post" action="/account/logout">
+                    <AntiforgeryToken />
+                    <button type="submit" class="btn btn-ghost">Sign out</button>
+                </form>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+</header>
+
+<main class="page">
+    @Body
+</main>

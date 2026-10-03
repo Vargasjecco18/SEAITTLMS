@@ -6,6 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>SEAITT-LMS</AssemblyName>
     <RootNamespace>SEAITT_LMS</RootNamespace>
+    <UserSecretsId>seaitt-lms-7f3c1a52-4b0e-4c55-9d1e-2a6f8b9c0d41</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.20" />
+    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.20">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
 </Project>

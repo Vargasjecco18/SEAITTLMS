@@ -1,0 +1,101 @@
+@page "/login"
+@layout AuthLayout
+@attribute [AllowAnonymous]
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.Extensions.Options
+@using SEAITT_LMS.Auth
+@inject AuthService Auth
+@inject IOptions<AuthOptions> AuthSettings
+@inject TimeProvider Clock
+@inject NavigationManager Navigation
+
+<PageTitle>Sign in · SEAITT e-LMS</PageTitle>
+
+<div class="auth-brand">SEAITT <span>e-LMS</span></div>
+<h1>Sign in</h1>
+<p class="muted">Use the email and password your school gave you.</p>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-error" role="alert">@errorMessage</div>
+}
+
+<EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
+    <DataAnnotationsValidator />
+
+    <div class="field">
+        <label for="email">Email</label>
+        <InputText id="email" type="email" @bind-Value="Input.Email" autocomplete="username" autofocus />
+        <ValidationMessage For="() => Input.Email" class="field-error" />
+    </div>
+
+    <div class="field">
+        <label for="password">Password</label>
+        <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+        <ValidationMessage For="() => Input.Password" class="field-error" />
+    </div>
+
+    <label class="check">
+        <InputCheckbox @bind-Value="Input.RememberMe" />
+        <span>Keep me signed in on this device</span>
+    </label>
+
+    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+</EditForm>
+
+@code {
+    private string? errorMessage;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromForm] private LoginInput Input { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(LocalUrl.Sanitize(ReturnUrl), forceLoad: true);
+        }
+    }
+
+    private async Task SignInAsync()
+    {
+        var result = await Auth.LoginAsync(Input.Email, Input.Password, HttpContext.RequestAborted);
+
+        if (!result.Succeeded)
+        {
+            // The same message for every kind of failure, so it doesn't reveal which emails have accounts.
+            var settings = AuthSettings.Value;
+            errorMessage = $"Incorrect email or password. After {settings.MaxFailedAttempts} wrong attempts " +
+                           $"the account is locked for {settings.LockoutMinutes} minutes.";
+            Input.Password = "";
+            return;
+        }
+
+        var properties = new AuthenticationProperties { IsPersistent = Input.RememberMe };
+        if (Input.RememberMe)
+        {
+            properties.ExpiresUtc = Clock.GetUtcNow().AddDays(AuthSettings.Value.RememberMeDays);
+        }
+
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.Principal!, properties);
+
+        Navigation.NavigateTo(LocalUrl.Sanitize(ReturnUrl), forceLoad: true);
+    }
+
+    private sealed class LoginInput
+    {
+        [Required(ErrorMessage = "Enter your email.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Enter your password.")]
+        public string Password { get; set; } = "";
+
+        public bool RememberMe { get; set; }
+    }
+}

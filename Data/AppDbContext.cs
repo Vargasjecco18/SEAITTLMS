@@ -1,0 +1,90 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using SEAITT_LMS.Data.Entities;
+
+namespace SEAITT_LMS.Data;
+
+public class AppDbContext : DbContext
+{
+    private readonly TimeProvider _clock;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, TimeProvider? clock = null) : base(options)
+    {
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    // Users and roles
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Student> Students => Set<Student>();
+    public DbSet<Teacher> Teachers => Set<Teacher>();
+    public DbSet<Registrar> Registrars => Set<Registrar>();
+    public DbSet<GuidanceCounselor> GuidanceCounselors => Set<GuidanceCounselor>();
+    public DbSet<Administrator> Administrators => Set<Administrator>();
+
+    // Classes and enrollment
+    public DbSet<SchoolYear> SchoolYears => Set<SchoolYear>();
+    public DbSet<Term> Terms => Set<Term>();
+    public DbSet<Strand> Strands => Set<Strand>();
+    public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Section> Sections => Set<Section>();
+    public DbSet<ClassOffering> ClassOfferings => Set<ClassOffering>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        // The four staff profile tables share one configuration.
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Teacher>());
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Registrar>());
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<GuidanceCounselor>());
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Administrator>());
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // MySQL returns DateTime with Kind=Unspecified. Everything we store is UTC, so say so on the way out.
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampAuditColumns();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampAuditColumns();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void StampAuditColumns()
+    {
+        var now = _clock.GetUtcNow().UtcDateTime;
+
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.CreatedAtUtc = now;
+                entry.Entity.UpdatedAtUtc = now;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAtUtc = now;
+                entry.Property(e => e.CreatedAtUtc).IsModified = false;
+            }
+        }
+    }
+
+    private sealed class UtcDateTimeConverter()
+        : ValueConverter<DateTime, DateTime>(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+    private sealed class NullableUtcDateTimeConverter()
+        : ValueConverter<DateTime?, DateTime?>(
+            v => v,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+}

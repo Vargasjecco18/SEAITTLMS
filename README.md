@@ -1,18 +1,78 @@
 # SEAITT-LMS
 
-Blazor Web App (Interactive Server) on .NET 9, set up without a `dotnet new` template.
+The e-LMS for SEAITT (Senior High School, Legazpi). Blazor Web App on .NET 9 with a MySQL database,
+set up without a `dotnet new` template and with its own login (no ASP.NET Core Identity package).
+
+What exists so far:
+
+- **Custom login**: email + password, PBKDF2 password hashing, cookie sign-in, account lockout, "keep me signed in".
+- **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor, each with its own profile table.
+- **Classes and enrollment** by school year and **term**: strands, subjects, sections, class offerings, enrollments.
+
+Lessons, assignments and quizzes are next. The database design is in [docs/database.md](docs/database.md).
 
 ## Requirements
+
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- MySQL 8 with an empty schema named `seaittlms`, and a MySQL user that can create tables in it
 - VS Code with the C# Dev Kit extension (recommended in `.vscode/extensions.json`)
 
-## Run
+## First-time setup
+
+Run these in the repository folder. Replace `YOUR_MYSQL_PASSWORD` and the admin details with your own.
+
 ```bash
-dotnet run     # http://localhost:5000
-dotnet watch   # with hot reload
+# 1. Tell the app how to reach MySQL (stored outside the repo, never committed)
+dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3306;Database=seaittlms;User=root;Password=YOUR_MYSQL_PASSWORD;"
+
+# 2. The first administrator account (only used when no admin exists yet)
+dotnet user-secrets set "Seed:Admin:Email" "admin@seaitt.edu.ph"
+dotnet user-secrets set "Seed:Admin:Password" "choose-a-long-password"
+dotnet user-secrets set "Seed:Admin:FirstName" "Your"
+dotnet user-secrets set "Seed:Admin:LastName" "Name"
+dotnet user-secrets set "Seed:Admin:PhoneNumber" "09171234567"   # optional
+
+# 3. Run. In Development the tables are created automatically on startup.
+dotnet watch
 ```
 
-In VS Code, press F5 to debug (uses `.vscode/launch.json`, or C# Dev Kit's own launch profile).
+Open http://localhost:5000 and sign in with the admin email and password.
 
-## Naming
-The project and assembly are `SEAITT-LMS`. Hyphens are not valid in C# namespaces, so the root namespace is `SEAITT_LMS`.
+`dotnet user-secrets` works because the project has a `UserSecretsId`. If your MySQL server uses another host,
+port or user, change the connection string in step 1.
+
+### Creating the tables yourself instead
+
+```bash
+dotnet tool install --global dotnet-ef --version 9.0.20
+dotnet ef database update
+```
+
+### Production
+
+Set `ConnectionStrings__Default`, `Seed__Admin__Email` and `Seed__Admin__Password` as environment variables and
+run `dotnet ef database update` (or `Database__MigrateOnStartup=true` for the first start). The sign-in cookie is
+https-only outside Development. Persist the ASP.NET Core Data Protection keys if you run in a container.
+
+## Project layout
+
+```
+Program.cs                 Wiring: database, login cookie, pages
+Auth/                      Custom login: PasswordHasher, AuthService, cookie checks, UserAccountService
+Data/                      AppDbContext, entities, EF configurations, migrations, startup initializer
+Components/Account/        Login and access-denied pages
+Components/Layout/         Page layouts
+Components/Pages/          Home page and error page
+docs/database.md           Tables, relationships and the rules the database enforces
+```
+
+## How the login works
+
+1. `/login` is a normal form. `AuthService` looks the user up by email, checks the password hash and the lockout,
+   and the page writes the sign-in cookie.
+2. Every page needs a signed-in user unless it has `@attribute [AllowAnonymous]`. Restrict a page to roles with
+   `@attribute [Authorize(Roles = AppRoles.Admin)]`.
+3. Wrong passwords are counted. After 5 in a row the account is locked for 15 minutes (`Auth` section in `appsettings.json`).
+4. A signed-in user is re-checked against the database every few minutes, so deactivating an account (or changing
+   its `security_stamp`) signs it out.
+5. Two-factor sign-in is not built yet. `users.phone_number` is stored (as +639...) for when it is.
