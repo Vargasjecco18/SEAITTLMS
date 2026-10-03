@@ -36,11 +36,16 @@ public class AppDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-        // The four staff profile tables share one configuration.
-        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Teacher>());
-        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Registrar>());
-        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<GuidanceCounselor>());
-        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Administrator>());
+        // The four staff tables share one configuration...
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Teacher>(u => u.Teacher));
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Registrar>(u => u.Registrar));
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<GuidanceCounselor>(u => u.GuidanceCounselor));
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Administrator>(u => u.Administrator));
+
+        // ...and three of them also have a contact number and a status.
+        modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Registrar>("registrars"));
+        modelBuilder.ApplyConfiguration(new StaffContactConfiguration<GuidanceCounselor>("guidance_counselors"));
+        modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Administrator>("administrators"));
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

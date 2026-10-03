@@ -1,0 +1,36 @@
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.button:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.primary {
+    background: var(--btn-bg);
+    color: var(--on-brand);
+}
+
+.primary:hover {
+    background: var(--btn-bg-hover);
+}
+
+.secondary {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+}
+
+.secondary:hover {
+    background: var(--surface-2);
+}

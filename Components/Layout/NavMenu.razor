@@ -1,0 +1,17 @@
+<nav class="nav" aria-label="Main menu">
+    <p class="heading">Menu</p>
+
+    <NavLink class="link" href="" Match="NavLinkMatch.All">
+        <Icon Name="house" />
+        <span>Home</span>
+    </NavLink>
+
+    <AuthorizeView Roles="@AppRoles.Admin">
+        <p class="heading">Administration</p>
+
+        <NavLink class="link" href="admin">
+            <Icon Name="layout-dashboard" />
+            <span>Admin</span>
+        </NavLink>
+    </AuthorizeView>
+</nav>

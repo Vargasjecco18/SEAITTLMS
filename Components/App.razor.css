@@ -1,0 +1,125 @@
+/*
+  The look of the whole app: colors, sizes and the page background.
+
+  Every other .razor.css file (one per component, next to it) reads these variables with var(--name), so changing a
+  color here changes it everywhere. Dark mode only has to change the variables, nothing else.
+*/
+html {
+    color-scheme: light dark;
+    -webkit-text-size-adjust: 100%;
+
+    /* Surfaces and text */
+    --bg: #f5f7fb;
+    --surface: #ffffff;
+    --surface-2: #f1f4f9;
+    --border: #e2e8f0;
+    --text: #162033;
+    --text-muted: #5b6b82;
+
+    /* Brand blue */
+    --brand: #2563eb;
+    --brand-strong: #1d4ed8;
+    --brand-soft: #e8f0fe;
+    --brand-ring: rgba(37, 99, 235, 0.28);
+    --brand-gradient: linear-gradient(135deg, #2563eb, #4f46e5);
+    --btn-bg: #2563eb;
+    --btn-bg-hover: #1d4ed8;
+    --on-brand: #ffffff;
+
+    /* Meaning: success, info, warning, danger (text color and soft background) */
+    --success: #166534;
+    --success-soft: #dcfce7;
+    --info: #1d4ed8;
+    --info-soft: #dbeafe;
+    --warning: #92400e;
+    --warning-soft: #fef3c7;
+    --danger: #b91c1c;
+    --danger-soft: #fee2e2;
+
+    /* Icon colors for the stat cards (icon color and soft background) */
+    --blue: #1d4ed8;
+    --blue-soft: #e0eaff;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --violet: #6d28d9;
+    --violet-soft: #ede9fe;
+    --rose: #be123c;
+    --rose-soft: #ffe4e6;
+    --slate: #475569;
+    --slate-soft: #e2e8f0;
+
+    /* Shape and size */
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.1);
+    --header-h: 64px;
+    --sidebar-w: 264px;
+}
+
+@media (prefers-color-scheme: dark) {
+    html {
+        --bg: #0b1220;
+        --surface: #121b2d;
+        --surface-2: #19243b;
+        --border: #25324d;
+        --text: #e8edf6;
+        --text-muted: #9aa9c2;
+
+        --brand: #6b9bff;
+        --brand-strong: #9bbaff;
+        --brand-soft: rgba(107, 155, 255, 0.16);
+        --brand-ring: rgba(107, 155, 255, 0.35);
+        --brand-gradient: linear-gradient(135deg, #3b6fe0, #5b54e8);
+        --btn-bg: #3b6fe0;
+        --btn-bg-hover: #2f60cf;
+
+        --success: #86efac;
+        --success-soft: rgba(34, 197, 94, 0.16);
+        --info: #93c5fd;
+        --info-soft: rgba(59, 130, 246, 0.2);
+        --warning: #fcd34d;
+        --warning-soft: rgba(245, 158, 11, 0.16);
+        --danger: #fca5a5;
+        --danger-soft: rgba(239, 68, 68, 0.18);
+
+        --blue: #9bbaff;
+        --blue-soft: rgba(107, 155, 255, 0.16);
+        --green: #86efac;
+        --green-soft: rgba(34, 197, 94, 0.16);
+        --amber: #fcd34d;
+        --amber-soft: rgba(245, 158, 11, 0.16);
+        --violet: #c4b5fd;
+        --violet-soft: rgba(139, 92, 246, 0.2);
+        --rose: #fda4af;
+        --rose-soft: rgba(244, 63, 94, 0.16);
+        --slate: #cbd5e1;
+        --slate-soft: rgba(148, 163, 184, 0.16);
+
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/*
+  Padding and borders count inside an element's width instead of being added to it, for every element in the app.
+  (A component's own .razor.css only reaches that component's elements, ::deep makes this rule reach all of them.)
+*/
+html ::deep *,
+html ::deep *::before,
+html ::deep *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}

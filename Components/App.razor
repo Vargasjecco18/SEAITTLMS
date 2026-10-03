@@ -4,15 +4,18 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <link rel="icon" type="image/svg+xml" href="@Assets["favicon.svg"]" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
+    @* Each component's own .razor.css is bundled into this one file by Blazor. The colors live in App.razor.css. *@
+    <link rel="stylesheet" href="@Assets["SEAITT-LMS.styles.css"]" />
     <HeadOutlet />
 </head>
 
 <body>
     <Routes />
     <script src="_framework/blazor.web.js"></script>
+    <script src="@Assets["app.js"]"></script>
 </body>
 
 </html>

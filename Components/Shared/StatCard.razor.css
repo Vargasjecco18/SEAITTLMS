@@ -1,0 +1,72 @@
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.stat-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.stat-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.stat-label {
+    margin-top: 0.15rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.stat-hint {
+    margin-top: 0.1rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 559px) {
+    .stat {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+.blue   { --accent: var(--blue);   --accent-soft: var(--blue-soft); }
+.green  { --accent: var(--green);  --accent-soft: var(--green-soft); }
+.amber  { --accent: var(--amber);  --accent-soft: var(--amber-soft); }
+.violet { --accent: var(--violet); --accent-soft: var(--violet-soft); }
+.rose   { --accent: var(--rose);   --accent-soft: var(--rose-soft); }
+.slate  { --accent: var(--slate);  --accent-soft: var(--slate-soft); }

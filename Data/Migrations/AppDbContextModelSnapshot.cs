@@ -40,6 +40,39 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(30)")
                         .HasColumnName("employee_number");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at_utc");
@@ -59,7 +92,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_administrators_user_id");
 
-                    b.ToTable("administrators", (string)null);
+                    b.ToTable("administrators", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_administrators_status", "status IN ('Active', 'Inactive')");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.ClassOffering", b =>
@@ -201,6 +237,39 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(30)")
                         .HasColumnName("employee_number");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at_utc");
@@ -220,7 +289,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_guidance_counselors_user_id");
 
-                    b.ToTable("guidance_counselors", (string)null);
+                    b.ToTable("guidance_counselors", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_guidance_counselors_status", "status IN ('Active', 'Inactive')");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Registrar", b =>
@@ -241,6 +313,39 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(30)")
                         .HasColumnName("employee_number");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at_utc");
@@ -260,7 +365,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_registrars_user_id");
 
-                    b.ToTable("registrars", (string)null);
+                    b.ToTable("registrars", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_registrars_status", "status IN ('Active', 'Inactive')");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Role", b =>
@@ -401,6 +509,9 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasAlternateKey("Id", "SchoolYearId")
                         .HasName("ak_sections_id_school_year_id");
 
+                    b.HasAlternateKey("Id", "StrandId", "GradeLevel")
+                        .HasName("ak_sections_id_strand_id_grade_level");
+
                     b.HasIndex("AdviserTeacherId")
                         .HasDatabaseName("ix_sections_adviser_teacher_id");
 
@@ -457,6 +568,9 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_strands");
 
+                    b.HasAlternateKey("Id", "TrackId")
+                        .HasName("ak_strands_id_track_id");
+
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_strands_code");
@@ -484,6 +598,22 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<byte?>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
                     b.Property<string>("Lrn")
                         .IsRequired()
                         .HasMaxLength(12)
@@ -491,10 +621,36 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("lrn")
                         .IsFixedLength();
 
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<int?>("SectionId")
+                        .HasColumnType("int")
+                        .HasColumnName("section_id");
+
                     b.Property<string>("Sex")
                         .HasMaxLength(10)
                         .HasColumnType("varchar(10)")
                         .HasColumnName("sex");
+
+                    b.Property<int?>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("int")
+                        .HasColumnName("subject_id");
+
+                    b.Property<int?>("TrackId")
+                        .HasColumnType("int")
+                        .HasColumnName("track_id");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -511,13 +667,31 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_students_lrn");
 
+                    b.HasIndex("SubjectId")
+                        .HasDatabaseName("ix_students_subject_id");
+
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_students_track_id");
+
                     b.HasIndex("UserId")
                         .IsUnique()
                         .HasDatabaseName("ix_students_user_id");
 
+                    b.HasIndex("StrandId", "TrackId")
+                        .HasDatabaseName("ix_students_strand_id_track_id");
+
+                    b.HasIndex("SectionId", "StrandId", "GradeLevel")
+                        .HasDatabaseName("ix_students_section_id_strand_id_grade_level");
+
                     b.ToTable("students", null, t =>
                         {
+                            t.HasCheckConstraint("ck_students_grade_level", "grade_level IS NULL OR grade_level IN (11, 12)");
+
                             t.HasCheckConstraint("ck_students_lrn", "lrn REGEXP '^[0-9]{12}$'");
+
+                            t.HasCheckConstraint("ck_students_section_needs_strand_and_grade", "section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_students_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
                         });
                 });
 
@@ -587,6 +761,48 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(30)")
                         .HasColumnName("employee_number");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<byte?>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<int?>("SectionId")
+                        .HasColumnType("int")
+                        .HasColumnName("section_id");
+
+                    b.Property<int?>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
+                    b.Property<int?>("SubjectId")
+                        .HasColumnType("int")
+                        .HasColumnName("subject_id");
+
+                    b.Property<int?>("TrackId")
+                        .HasColumnType("int")
+                        .HasColumnName("track_id");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at_utc");
@@ -602,11 +818,30 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_teachers_employee_number");
 
+                    b.HasIndex("SubjectId")
+                        .HasDatabaseName("ix_teachers_subject_id");
+
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_teachers_track_id");
+
                     b.HasIndex("UserId")
                         .IsUnique()
                         .HasDatabaseName("ix_teachers_user_id");
 
-                    b.ToTable("teachers", (string)null);
+                    b.HasIndex("StrandId", "TrackId")
+                        .HasDatabaseName("ix_teachers_strand_id_track_id");
+
+                    b.HasIndex("SectionId", "StrandId", "GradeLevel")
+                        .HasDatabaseName("ix_teachers_section_id_strand_id_grade_level");
+
+                    b.ToTable("teachers", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_teachers_grade_level", "grade_level IS NULL OR grade_level IN (11, 12)");
+
+                            t.HasCheckConstraint("ck_teachers_section_needs_strand_and_grade", "section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_teachers_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Term", b =>
@@ -778,12 +1013,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("failed_login_count");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("first_name");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_active");
@@ -792,25 +1021,9 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("last_login_at_utc");
 
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("last_name");
-
                     b.Property<DateTime?>("LockoutEndUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("lockout_end_utc");
-
-                    b.Property<string>("MiddleName")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("middle_name");
-
-                    b.Property<string>("NameExtension")
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
-                        .HasColumnName("name_extension");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -856,7 +1069,7 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
-                        .WithOne()
+                        .WithOne("Administrator")
                         .HasForeignKey("SEAITT_LMS.Data.Entities.Administrator", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -948,7 +1161,7 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.GuidanceCounselor", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
-                        .WithOne()
+                        .WithOne("GuidanceCounselor")
                         .HasForeignKey("SEAITT_LMS.Data.Entities.GuidanceCounselor", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -960,7 +1173,7 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Registrar", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
-                        .WithOne()
+                        .WithOne("Registrar")
                         .HasForeignKey("SEAITT_LMS.Data.Entities.Registrar", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
@@ -1012,24 +1225,76 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Student", b =>
                 {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_students_subjects_subject_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Track", null)
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_students_tracks_track_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
-                        .WithOne()
+                        .WithOne("Student")
                         .HasForeignKey("SEAITT_LMS.Data.Entities.Student", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_students_users_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", null)
+                        .WithMany()
+                        .HasForeignKey("StrandId", "TrackId")
+                        .HasPrincipalKey("Id", "TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_students_strands_strand_id_track_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Section", null)
+                        .WithMany()
+                        .HasForeignKey("SectionId", "StrandId", "GradeLevel")
+                        .HasPrincipalKey("Id", "StrandId", "GradeLevel")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_students_sections_section_id_strand_id_grade_level");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Teacher", b =>
                 {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", null)
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_teachers_subjects_subject_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Track", null)
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_teachers_tracks_track_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
-                        .WithOne()
+                        .WithOne("Teacher")
                         .HasForeignKey("SEAITT_LMS.Data.Entities.Teacher", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_teachers_users_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", null)
+                        .WithMany()
+                        .HasForeignKey("StrandId", "TrackId")
+                        .HasPrincipalKey("Id", "TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_teachers_strands_strand_id_track_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Section", null)
+                        .WithMany()
+                        .HasForeignKey("SectionId", "StrandId", "GradeLevel")
+                        .HasPrincipalKey("Id", "StrandId", "GradeLevel")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_teachers_sections_section_id_strand_id_grade_level");
 
                     b.Navigation("User");
                 });
@@ -1061,6 +1326,19 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.SchoolYear", b =>
                 {
                     b.Navigation("Terms");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.User", b =>
+                {
+                    b.Navigation("Administrator");
+
+                    b.Navigation("GuidanceCounselor");
+
+                    b.Navigation("Registrar");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Teacher");
                 });
 #pragma warning restore 612, 618
         }

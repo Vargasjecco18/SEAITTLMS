@@ -1,0 +1,34 @@
+.auth-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem 1rem;
+    background: radial-gradient(900px 420px at 50% -80px, var(--brand-soft), transparent 70%);
+}
+
+.auth-card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow-lg);
+}
+
+.auth-footer {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 1.5rem 1.25rem;
+    }
+}

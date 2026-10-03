@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SEAITT_LMS.Data.Entities;
@@ -29,13 +30,9 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
         b.Property(u => u.PhoneNumber).HasMaxLength(20);
 
-        b.Property(u => u.FirstName).HasMaxLength(100).IsRequired();
-        b.Property(u => u.MiddleName).HasMaxLength(100);
-        b.Property(u => u.LastName).HasMaxLength(100).IsRequired();
-        b.Property(u => u.NameExtension).HasMaxLength(10);
-
         b.Property(u => u.SecurityStamp).HasMaxLength(64).IsRequired();
-        b.Ignore(u => u.FullName);
+        b.Ignore(u => u.Profile);
+        b.Ignore(u => u.DisplayName);
 
         b.HasOne(u => u.Role)
             .WithMany()
@@ -46,15 +43,30 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     }
 }
 
+/// <summary>The columns every role table has: who the person is.</summary>
+internal static class PersonColumns
+{
+    public static void Configure<T>(EntityTypeBuilder<T> b) where T : PersonProfile
+    {
+        b.HasIndex(p => p.UserId).IsUnique();
+
+        b.Property(p => p.FirstName).HasMaxLength(100).IsRequired();
+        b.Property(p => p.MiddleName).HasMaxLength(100);
+        b.Property(p => p.LastName).HasMaxLength(100).IsRequired();
+        b.Property(p => p.NameExtension).HasMaxLength(10);
+        b.Ignore(p => p.FullName);
+    }
+}
+
 internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
 {
     public void Configure(EntityTypeBuilder<Student> b)
     {
         b.HasOne(s => s.User)
-            .WithOne()
+            .WithOne(u => u.Student)
             .HasForeignKey<Student>(s => s.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        b.HasIndex(s => s.UserId).IsUnique();
+        PersonColumns.Configure(b);
 
         b.Property(s => s.Lrn).HasMaxLength(12).IsFixedLength().IsRequired();
         b.HasIndex(s => s.Lrn).IsUnique();
@@ -62,21 +74,77 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         b.Property(s => s.Sex).HasConversion<string>().HasMaxLength(10);
 
         b.ToTable(t => t.HasCheckConstraint("ck_students_lrn", "lrn REGEXP '^[0-9]{12}$'"));
+
+        PlacementConfiguration.Configure(b, "students");
     }
 }
 
-/// <summary>Teachers, registrars, guidance counselors and administrators all look the same for now.</summary>
-internal sealed class StaffProfileConfiguration<T> : IEntityTypeConfiguration<T> where T : StaffProfile
+internal sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
+{
+    public void Configure(EntityTypeBuilder<Teacher> b) => PlacementConfiguration.Configure(b, "teachers");
+}
+
+/// <summary>
+/// Grade level, track, strand, subject and section on students and teachers. All optional, but whatever is filled in
+/// must agree: composite foreign keys tie (strand, track) to strands and (section, strand, grade level) to sections,
+/// and the checks below say that a strand needs its track and a section needs its strand and grade level.
+/// </summary>
+internal static class PlacementConfiguration
+{
+    public static void Configure<T>(EntityTypeBuilder<T> b, string table) where T : class, IHasPlacement
+    {
+        b.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<Track>().WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne<Strand>()
+            .WithMany()
+            .HasForeignKey(x => new { x.StrandId, x.TrackId })
+            .HasPrincipalKey(s => new { s.Id, s.TrackId })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne<Section>()
+            .WithMany()
+            .HasForeignKey(x => new { x.SectionId, x.StrandId, x.GradeLevel })
+            .HasPrincipalKey(s => new { s.Id, s.StrandId, s.GradeLevel })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint($"ck_{table}_grade_level", "grade_level IS NULL OR grade_level IN (11, 12)");
+            t.HasCheckConstraint($"ck_{table}_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
+            t.HasCheckConstraint(
+                $"ck_{table}_section_needs_strand_and_grade",
+                "section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL)");
+        });
+    }
+}
+
+/// <summary>Teachers, registrars, guidance counselors and administrators: user link, name and employee number.</summary>
+internal sealed class StaffProfileConfiguration<T>(Expression<Func<User, T?>> userNavigation) : IEntityTypeConfiguration<T>
+    where T : StaffProfile
 {
     public void Configure(EntityTypeBuilder<T> b)
     {
         b.HasOne(p => p.User)
-            .WithOne()
+            .WithOne(userNavigation)
             .HasForeignKey<T>(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        b.HasIndex(p => p.UserId).IsUnique();
+        PersonColumns.Configure(b);
 
         b.Property(p => p.EmployeeNumber).HasMaxLength(30);
         b.HasIndex(p => p.EmployeeNumber).IsUnique();
+    }
+}
+
+/// <summary>Registrars, guidance counselors and administrators: contact number and status.</summary>
+internal sealed class StaffContactConfiguration<T>(string table) : IEntityTypeConfiguration<T>
+    where T : StaffContactProfile
+{
+    public void Configure(EntityTypeBuilder<T> b)
+    {
+        b.Property(p => p.PhoneNumber).HasMaxLength(20);
+        b.Property(p => p.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
+
+        b.ToTable(t => t.HasCheckConstraint($"ck_{table}_status", "status IN ('Active', 'Inactive')"));
     }
 }

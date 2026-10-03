@@ -1,0 +1,55 @@
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+
+.title-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 12px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+h1:focus {
+    outline: none;
+}
+
+p {
+    margin: 0.35rem 0 0;
+    color: var(--text-muted);
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+@media (max-width: 520px) {
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    .title-icon {
+        width: 36px;
+        height: 36px;
+    }
+}

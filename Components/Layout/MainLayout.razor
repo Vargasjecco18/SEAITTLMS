@@ -1,25 +1,30 @@
-@using System.Security.Claims
 @inherits LayoutComponentBase
 
-<header class="topbar">
-    <a class="brand" href="/">SEAITT <span>e-LMS</span></a>
+<div class="shell">
+    @* On small screens the menu opens with this checkbox (the menu button is its label), so it also works before any
+       script has loaded. *@
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Show or hide the menu" />
 
-    <AuthorizeView>
-        <Authorized>
-            <div class="topbar-user">
-                <div class="who">
-                    <span class="who-name">@context.User.Identity?.Name</span>
-                    <span class="who-role">@AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role))</span>
-                </div>
-                <form method="post" action="/account/logout">
-                    <AntiforgeryToken />
-                    <button type="submit" class="btn btn-ghost">Sign out</button>
-                </form>
-            </div>
-        </Authorized>
-    </AuthorizeView>
-</header>
+    <header class="header">
+        <label for="nav-toggle" class="menu-button" title="Menu">
+            <span class="when-closed"><Icon Name="menu" Size="22" /></span>
+            <span class="when-open"><Icon Name="x" Size="22" /></span>
+        </label>
 
-<main class="page">
-    @Body
-</main>
+        <Brand />
+
+        <div class="grow"></div>
+
+        <UserMenu />
+    </header>
+
+    <label for="nav-toggle" class="backdrop" aria-hidden="true"></label>
+
+    <aside class="sidebar">
+        <NavMenu />
+    </aside>
+
+    <main class="content">
+        @Body
+    </main>
+</div>

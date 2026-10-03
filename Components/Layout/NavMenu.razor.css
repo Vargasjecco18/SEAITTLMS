@@ -1,0 +1,46 @@
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.heading {
+    margin: 1rem 0.75rem 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.heading:first-child {
+    margin-top: 0.25rem;
+}
+
+/* NavLink is a framework component, so its link is reached with ::deep. It adds the class "active" for the open page. */
+.nav ::deep .link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.nav ::deep .link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.nav ::deep .link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.nav ::deep .link.active {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}

@@ -1,0 +1,7 @@
+<span class="badge @Tone.ToString().ToLowerInvariant()">@ChildContent</span>
+
+@code {
+    [Parameter] public Tone Tone { get; set; } = Tone.Neutral;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

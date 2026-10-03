@@ -141,32 +141,39 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             Email = email!,
             PasswordHash = hasher.Hash(request.Password),
             PhoneNumber = phone,
-            FirstName = firstName!,
-            MiddleName = middleName,
-            LastName = lastName!,
-            NameExtension = nameExtension,
             RoleId = roleId,
             IsActive = true,
             SecurityStamp = Guid.NewGuid().ToString("N"),
         };
         db.Users.Add(user);
 
+        // The person's name goes into the profile table of their role. Staff contact numbers start as the sign-in number.
+        T Person<T>(T profile) where T : PersonProfile
+        {
+            profile.User = user;
+            profile.FirstName = firstName!;
+            profile.MiddleName = middleName;
+            profile.LastName = lastName!;
+            profile.NameExtension = nameExtension;
+            return profile;
+        }
+
         switch (request.Role)
         {
             case AppRoles.Student:
-                db.Students.Add(new Student { User = user, Lrn = lrn!, BirthDate = request.BirthDate, Sex = request.Sex });
+                db.Students.Add(Person(new Student { Lrn = lrn!, BirthDate = request.BirthDate, Sex = request.Sex }));
                 break;
             case AppRoles.Teacher:
-                db.Teachers.Add(new Teacher { User = user, EmployeeNumber = employeeNumber });
+                db.Teachers.Add(Person(new Teacher { EmployeeNumber = employeeNumber }));
                 break;
             case AppRoles.Registrar:
-                db.Registrars.Add(new Registrar { User = user, EmployeeNumber = employeeNumber });
+                db.Registrars.Add(Person(new Registrar { EmployeeNumber = employeeNumber, PhoneNumber = phone }));
                 break;
             case AppRoles.GuidanceCounselor:
-                db.GuidanceCounselors.Add(new GuidanceCounselor { User = user, EmployeeNumber = employeeNumber });
+                db.GuidanceCounselors.Add(Person(new GuidanceCounselor { EmployeeNumber = employeeNumber, PhoneNumber = phone }));
                 break;
             case AppRoles.Admin:
-                db.Administrators.Add(new Administrator { User = user, EmployeeNumber = employeeNumber });
+                db.Administrators.Add(Person(new Administrator { EmployeeNumber = employeeNumber, PhoneNumber = phone }));
                 break;
         }
 

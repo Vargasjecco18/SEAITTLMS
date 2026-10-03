@@ -1,0 +1,186 @@
+@page "/"
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject TimeProvider Clock
+
+<PageTitle>Home · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {account?.FirstName ?? name}!")"
+            Subtitle="@PhilippineTime.FormatLongDate(now)"
+            IconName="house" />
+
+<div class="layout">
+    <div class="column">
+        <Card Title="Current term" IconName="calendar-days" Class="card-term">
+            @if (term is null)
+            {
+                <EmptyState IconName="calendar-range" Title="No current term yet">
+                    <p>An administrator sets the term the school is running. It will show up here.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <p class="term-name">@term.TermName</p>
+                <p class="term-year">School year @term.SchoolYearName</p>
+                <p class="term-dates">@PhilippineTime.FormatDate(term.StartDate) – @PhilippineTime.FormatDate(term.EndDate)</p>
+
+                <div class="progress" role="progressbar" aria-label="Term progress" aria-valuemin="0" aria-valuemax="100"
+                     aria-valuenow="@TermPercent">
+                    <div class="progress-bar" style="width: @(TermPercent)%"></div>
+                </div>
+                <p class="term-progress">@TermProgressText</p>
+            }
+        </Card>
+
+        <AuthorizeView Roles="@AppRoles.Admin">
+            <Card Title="Administration" IconName="shield-check" Class="card-admin">
+                <p class="card-text">See the accounts and the school setup at a glance.</p>
+                <ButtonLink Href="admin" IconName="layout-dashboard">Open the admin dashboard</ButtonLink>
+            </Card>
+        </AuthorizeView>
+
+        <Card Title="Coming soon" IconName="sparkles" Class="card-soon">
+            <ul class="soon">
+                <li>
+                    <span class="soon-icon"><Icon Name="book-open" Size="18" /></span>
+                    <div class="soon-text">
+                        <strong>Lessons</strong>
+                        <span>Teachers share lessons with each class.</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="soon-icon"><Icon Name="clipboard-list" Size="18" /></span>
+                    <div class="soon-text">
+                        <strong>Assignments</strong>
+                        <span>Hand in work and see the grade.</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="soon-icon"><Icon Name="list-checks" Size="18" /></span>
+                    <div class="soon-text">
+                        <strong>Quizzes</strong>
+                        <span>Answer quizzes online.</span>
+                    </div>
+                </li>
+            </ul>
+        </Card>
+    </div>
+
+    <div class="column">
+        <Card Title="Your account" IconName="id-card" Class="card-account">
+            <div class="profile">
+                <Avatar Name="@(account?.FullName ?? name)" Size="56" />
+                <div class="profile-text">
+                    <strong class="profile-name">@(account?.FullName ?? name)</strong>
+                    <span class="profile-email">@(account?.Email ?? email)</span>
+                    <Badge Tone="Tone.Info">@(account?.Role ?? role)</Badge>
+                </div>
+            </div>
+
+            @if (account is { Rows.Count: > 0 })
+            {
+                <dl class="rows">
+                    @foreach (var row in account.Rows)
+                    {
+                        <div class="row">
+                            <dt>@row.Label</dt>
+                            <dd>
+                                @if (row.Value is null)
+                                {
+                                    <span class="unset">Not set yet</span>
+                                }
+                                else if (row.IsStatus)
+                                {
+                                    <Badge Tone="@(row.Value == "Active" ? Tone.Success : Tone.Neutral)">@row.Value</Badge>
+                                }
+                                else
+                                {
+                                    @row.Value
+                                }
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            }
+        </Card>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private DateTimeOffset now;
+    private string name = "";
+    private string email = "";
+    private string role = "";
+    private AccountDetails? account;
+    private CurrentTerm? term;
+
+    protected override async Task OnInitializedAsync()
+    {
+        now = PhilippineTime.Now(Clock);
+
+        // What the sign-in cookie says is the fallback, in case the account can't be read from the database.
+        var user = (await AuthState).User;
+        name = user.Identity?.Name ?? "";
+        email = user.FindFirstValue(ClaimTypes.Email) ?? "";
+        role = AppRoles.DisplayName(user.FindFirstValue(ClaimTypes.Role));
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        if (int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            account = await AccountDetails.LoadAsync(db, userId);
+        }
+
+        term = await CurrentTerm.LoadAsync(db);
+    }
+
+    private DateOnly Today => DateOnly.FromDateTime(now.DateTime);
+
+    private int TermPercent
+    {
+        get
+        {
+            if (term is null)
+            {
+                return 0;
+            }
+
+            var length = term.EndDate.DayNumber - term.StartDate.DayNumber + 1;
+            var done = Today.DayNumber - term.StartDate.DayNumber + 1;
+            return Math.Clamp(done * 100 / Math.Max(length, 1), 0, 100);
+        }
+    }
+
+    private string TermProgressText
+    {
+        get
+        {
+            if (term is null)
+            {
+                return "";
+            }
+
+            var length = term.EndDate.DayNumber - term.StartDate.DayNumber + 1;
+            var day = Today.DayNumber - term.StartDate.DayNumber + 1;
+
+            if (day < 1)
+            {
+                var days = 1 - day;
+                return days == 1 ? "Starts tomorrow" : $"Starts in {days} days";
+            }
+
+            if (day > length)
+            {
+                var days = day - length;
+                return days == 1 ? "Ended yesterday" : $"Ended {days} days ago";
+            }
+
+            return $"Day {day} of {length}";
+        }
+    }
+}

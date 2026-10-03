@@ -79,6 +79,9 @@ internal sealed class StrandConfiguration : IEntityTypeConfiguration<Strand>
         b.Property(s => s.Name).HasMaxLength(150).IsRequired();
 
         b.HasOne(s => s.Track).WithMany().HasForeignKey(s => s.TrackId).OnDelete(DeleteBehavior.Restrict);
+
+        // Lets students and teachers prove that the track they list is the track of the strand they list.
+        b.HasAlternateKey(s => new { s.Id, s.TrackId });
     }
 }
 
@@ -106,6 +109,9 @@ internal sealed class SectionConfiguration : IEntityTypeConfiguration<Section>
 
         // Lets class offerings and enrollments prove they use a section of the same school year as their term.
         b.HasAlternateKey(s => new { s.Id, s.SchoolYearId });
+
+        // Lets students and teachers prove that the strand and grade level they list are the section's own.
+        b.HasAlternateKey(s => new { s.Id, s.StrandId, s.GradeLevel });
 
         b.ToTable(t => t.HasCheckConstraint("ck_sections_grade_level", "grade_level IN (11, 12)"));
     }

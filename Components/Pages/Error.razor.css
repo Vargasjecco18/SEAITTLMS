@@ -1,0 +1,45 @@
+.error-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.error-icon {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+h1:focus {
+    outline: none;
+}
+
+p {
+    margin: 0 0 1.25rem;
+    color: var(--text-muted);
+}
+
+.request-id {
+    font-size: 0.85rem;
+}
+
+code {
+    padding: 0.1rem 0.35rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 0.85em;
+    word-break: break-all;
+}

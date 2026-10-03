@@ -1,0 +1,37 @@
+<span class="avatar" style="--avatar-size: @(Size)px" aria-hidden="true">@Initials</span>
+
+@code {
+    private static readonly HashSet<string> Suffixes = new(StringComparer.OrdinalIgnoreCase) { "jr", "sr", "ii", "iii", "iv", "v" };
+
+    /// <summary>A person's full name (or email). The avatar shows their initials.</summary>
+    [Parameter] public string? Name { get; set; }
+
+    [Parameter] public int Size { get; set; } = 36;
+
+    // First letter of the first name and of the last name. "Juan Santos Dela Cruz Jr." gives JC: the Jr. is skipped.
+    private string Initials
+    {
+        get
+        {
+            var text = (Name ?? "").Trim();
+            var at = text.IndexOf('@');
+            if (at > 0)
+            {
+                text = text[..at]; // an email: use the part before the @
+            }
+
+            var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+            while (words.Count > 1 && Suffixes.Contains(words[^1].TrimEnd('.')))
+            {
+                words.RemoveAt(words.Count - 1);
+            }
+
+            return words.Count switch
+            {
+                0 => "?",
+                1 => char.ToUpperInvariant(words[0][0]).ToString(),
+                _ => $"{char.ToUpperInvariant(words[0][0])}{char.ToUpperInvariant(words[^1][0])}",
+            };
+        }
+    }
+}

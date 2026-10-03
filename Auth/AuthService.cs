@@ -48,9 +48,15 @@ public sealed class AuthService(
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
+        // The name lives in the profile table of the user's role, so load those too (only one of them has a row).
         var user = await db.Users
             .AsNoTracking()
             .Include(u => u.Role)
+            .Include(u => u.Administrator)
+            .Include(u => u.GuidanceCounselor)
+            .Include(u => u.Registrar)
+            .Include(u => u.Teacher)
+            .Include(u => u.Student)
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, ct);
 
         if (user is null)
@@ -98,7 +104,7 @@ public sealed class AuthService(
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString(CultureInfo.InvariantCulture)),
-            new(ClaimTypes.Name, user.FullName),
+            new(ClaimTypes.Name, user.DisplayName),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.Role.Name),
             new(AppClaimTypes.SecurityStamp, user.SecurityStamp),

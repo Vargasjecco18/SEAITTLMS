@@ -1,0 +1,177 @@
+/*
+  On a phone the cards are one column, in this order: term, account, administration, coming soon.
+  On a bigger screen they are two columns: term, administration and coming soon on the left, the account on the right.
+*/
+.layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.column {
+    display: contents;
+}
+
+/* The cards are components, so their classes are reached with ::deep. */
+.layout ::deep .card-term { order: 1; }
+.layout ::deep .card-account { order: 2; }
+.layout ::deep .card-admin { order: 3; }
+.layout ::deep .card-soon { order: 4; }
+
+@media (min-width: 800px) and (max-width: 959px), (min-width: 1100px) {
+    .layout {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        min-width: 0;
+    }
+}
+
+/* Current term */
+.term-name {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.term-year {
+    margin: 0.1rem 0 0;
+    color: var(--text-muted);
+}
+
+.term-dates {
+    margin: 0.9rem 0 0.6rem;
+    font-size: 0.92rem;
+}
+
+.progress {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--brand-gradient);
+}
+
+.term-progress {
+    margin: 0.5rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* Your account */
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.profile-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.profile-email {
+    margin-bottom: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.rows {
+    display: grid;
+    margin: 1.25rem 0 0;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border);
+}
+
+dt {
+    color: var(--text-muted);
+}
+
+dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.unset {
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 400;
+}
+
+/* Administration */
+.card-text {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+/* Coming soon */
+.soon {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.soon li {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.soon-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.soon-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+}
+
+.soon-text strong {
+    font-weight: 650;
+}
+
+.soon-text span {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

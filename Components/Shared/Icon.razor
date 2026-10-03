@@ -1,0 +1,17 @@
+<svg class="icon @Class" width="@Size" height="@Size" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    @((MarkupString)Shapes)
+</svg>
+
+@code {
+    /// <summary>The icon's name in <see cref="IconSet"/>, for example "house".</summary>
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+
+    /// <summary>Width and height in pixels.</summary>
+    [Parameter] public int Size { get; set; } = 20;
+
+    [Parameter] public string? Class { get; set; }
+
+    // The shapes come from our own IconSet (trusted, fixed text), never from user input.
+    private string Shapes => IconSet.Shapes.TryGetValue(Name, out var shapes) ? shapes : "";
+}

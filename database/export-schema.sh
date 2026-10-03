@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
-# Regenerates the SQL scripts for MySQL Workbench from the Entity Framework migrations.
+# Regenerates the SQL script for MySQL Workbench from the Entity Framework migrations.
 # Run it again after every new migration:
 #
-#   bash database/export-schema.sh
+#   bash database/export-schema.sh         writes database/seaittlms_reset_and_rebuild.sql
+#   bash database/export-schema.sh --all   also writes the two kinds of files below
 #
 # It writes:
-#   database/seaittlms_schema.sql            everything, for a NEW empty seaittlms schema
-#   database/seaittlms_reset_and_rebuild.sql the same, but it first ERASES the seaittlms schema
+#   database/seaittlms_reset_and_rebuild.sql the whole schema, but it first ERASES the seaittlms schema
 #                                            (for starting over when the database got broken)
+# and with --all:
+#   database/seaittlms_schema.sql            everything, for a NEW empty seaittlms schema
 #   database/upgrades/<migration>.sql        one file per migration after the first, for a
 #                                            database that already has the migration before it
+# (The repository keeps only the reset script. The app itself creates and upgrades the database when it starts.)
 #
 # Needs the dotnet-ef tool (dotnet tool install --global dotnet-ef --version 9.0.20) and a
 # reachable MySQL server: the tool asks the server which version it is, using the same
 # connection string as the app (appsettings, user-secrets or ConnectionStrings__Default).
 # On Windows run it in Git Bash.
 set -euo pipefail
+
+all=false
+case "${1:-}" in
+  "") ;;
+  --all) all=true ;;
+  *) echo "Usage: bash database/export-schema.sh [--all]" >&2; exit 1 ;;
+esac
 
 cd "$(dirname "$0")/.."
 tmp="$(mktemp)"
@@ -43,7 +53,8 @@ full_header() {
 -- Run it ONCE on an EMPTY seaittlms schema. If you already started the app in
 -- Development, or you ran an older version of this file, the tables already exist:
 -- do NOT run this file again (you would get "Table ... already exists").
--- Use the matching file in database/upgrades/ instead, see README.md.
+-- Let the app upgrade the database instead (dotnet watch), or use the matching file in
+-- database/upgrades/ (bash database/export-schema.sh --all).
 --
 -- It also records the migrations in __EFMigrationsHistory, so the app starts normally
 -- afterwards and does not try to create the tables a second time.
@@ -71,8 +82,8 @@ reset_header() {
 --
 -- Use it only to start over, for example when tables were dropped or changed by hand and
 -- Workbench shows "Error loading schema content ... Error Code: 1356".
--- To keep your data, use database/seaittlms_schema.sql (new schema) or database/upgrades/
--- (older schema) instead.
+-- To keep your data, do NOT run this file. Start the app instead (dotnet watch): it upgrades
+-- the database and keeps everything.
 --
 -- Afterwards the database is empty, except the five roles and the four tracks.
 -- Start the app to create the first administrator (README.md, "First-time setup").
@@ -122,6 +133,15 @@ USE `seaittlms`;
 HEADER
 }
 
+# The script for the whole schema, behind a DROP/CREATE DATABASE: start over from nothing.
+dotnet ef migrations script --output "$tmp"
+{ reset_header; clean "$tmp"; } > database/seaittlms_reset_and_rebuild.sql
+echo "Wrote database/seaittlms_reset_and_rebuild.sql"
+
+if ! $all; then
+  exit 0
+fi
+
 # Migration ids in order. Their file names start with a timestamp, so alphabetical is chronological.
 ids=()
 for f in Data/Migrations/[0-9]*.cs; do
@@ -129,16 +149,11 @@ for f in Data/Migrations/[0-9]*.cs; do
   ids+=("$(basename "$f" .cs)")
 done
 
-# 1. The full script for a new database.
-dotnet ef migrations script --output "$tmp"
+# The same script for a NEW empty database.
 { full_header; clean "$tmp"; } > database/seaittlms_schema.sql
 echo "Wrote database/seaittlms_schema.sql"
 
-# 1b. The same script behind a DROP/CREATE DATABASE, to start over from nothing.
-{ reset_header; clean "$tmp"; } > database/seaittlms_reset_and_rebuild.sql
-echo "Wrote database/seaittlms_reset_and_rebuild.sql"
-
-# 2. One upgrade script per migration after the first.
+# One upgrade script per migration after the first.
 mkdir -p database/upgrades
 rm -f database/upgrades/*.sql
 for ((i = 1; i < ${#ids[@]}; i++)); do

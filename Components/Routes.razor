@@ -4,8 +4,7 @@
             <NotAuthorized>
                 @if (context.User.Identity?.IsAuthenticated == true)
                 {
-                    <h1>Access denied</h1>
-                    <p>Your account doesn't have permission to open this page.</p>
+                    <AccessDeniedPanel />
                 }
                 else
                 {
@@ -17,8 +16,12 @@
     </Found>
     <NotFound>
         <LayoutView Layout="typeof(MainLayout)">
-            <h1>Page not found</h1>
-            <p>The page you are looking for doesn't exist.</p>
+            <Card>
+                <EmptyState IconName="search-x" Title="Page not found" IsPage="true">
+                    <p>The page you are looking for doesn't exist.</p>
+                    <ButtonLink Href="/" IconName="house">Back to home</ButtonLink>
+                </EmptyState>
+            </Card>
         </LayoutView>
     </NotFound>
 </Router>

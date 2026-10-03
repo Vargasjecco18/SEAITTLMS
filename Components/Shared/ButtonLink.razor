@@ -1,0 +1,18 @@
+<a class="button @Variant.ToString().ToLowerInvariant()" href="@Href">
+    @if (!string.IsNullOrEmpty(IconName))
+    {
+        <Icon Name="@IconName" Size="18" />
+    }
+    <span>@ChildContent</span>
+</a>
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = "";
+
+    /// <summary>The icon in front of the text (a name from <see cref="IconSet"/>).</summary>
+    [Parameter] public string? IconName { get; set; }
+
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

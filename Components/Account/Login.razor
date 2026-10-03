@@ -13,13 +13,15 @@
 
 <PageTitle>Sign in · SEAITT e-LMS</PageTitle>
 
-<div class="auth-brand">SEAITT <span>e-LMS</span></div>
-<h1>Sign in</h1>
-<p class="muted">Use the email and password your school gave you.</p>
+<h1>Welcome back</h1>
+<p class="subtitle">Sign in with the email and password your school gave you.</p>
 
 @if (!string.IsNullOrEmpty(errorMessage))
 {
-    <div class="alert alert-error" role="alert">@errorMessage</div>
+    <div class="alert" role="alert">
+        <Icon Name="circle-alert" Size="18" />
+        <span>@errorMessage</span>
+    </div>
 }
 
 <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
@@ -27,13 +29,19 @@
 
     <div class="field">
         <label for="email">Email</label>
-        <InputText id="email" type="email" @bind-Value="Input.Email" autocomplete="username" autofocus />
+        <div class="input-wrap">
+            <Icon Name="mail" Size="18" Class="input-icon" />
+            <InputText id="email" type="email" @bind-Value="Input.Email" autocomplete="username" autofocus />
+        </div>
         <ValidationMessage For="() => Input.Email" class="field-error" />
     </div>
 
     <div class="field">
         <label for="password">Password</label>
-        <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+        <div class="input-wrap">
+            <Icon Name="lock" Size="18" Class="input-icon" />
+            <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
+        </div>
         <ValidationMessage For="() => Input.Password" class="field-error" />
     </div>
 
@@ -42,7 +50,10 @@
         <span>Keep me signed in on this device</span>
     </label>
 
-    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+    <button type="submit" class="submit">
+        <Icon Name="log-in" Size="18" />
+        <span>Sign in</span>
+    </button>
 </EditForm>
 
 @code {

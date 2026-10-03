@@ -4,13 +4,16 @@
 
 <PageTitle>Error · SEAITT e-LMS</PageTitle>
 
-<h1>Something went wrong</h1>
-<p>An error occurred while processing your request. Please try again.</p>
-@if (!string.IsNullOrEmpty(requestId))
-{
-    <p class="muted">Request ID: <code>@requestId</code></p>
-}
-<p><a href="/">Back to the dashboard</a></p>
+<div class="error-box">
+    <span class="error-icon"><Icon Name="triangle-alert" Size="28" /></span>
+    <h1>Something went wrong</h1>
+    <p>An error occurred while processing your request. Please try again.</p>
+    @if (!string.IsNullOrEmpty(requestId))
+    {
+        <p class="request-id">Request ID: <code>@requestId</code></p>
+    }
+    <ButtonLink Href="/" IconName="house">Back to home</ButtonLink>
+</div>
 
 @code {
     [CascadingParameter] private HttpContext? HttpContext { get; set; }

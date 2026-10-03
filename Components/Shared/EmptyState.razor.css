@@ -1,0 +1,56 @@
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.empty-icon {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+}
+
+.neutral { --chip-bg: var(--surface-2); --chip-text: var(--text-muted); }
+.success { --chip-bg: var(--success-soft); --chip-text: var(--success); }
+.info    { --chip-bg: var(--info-soft);    --chip-text: var(--info); }
+.warning { --chip-bg: var(--warning-soft); --chip-text: var(--warning); }
+.danger  { --chip-bg: var(--danger-soft);  --chip-text: var(--danger); }
+
+h1,
+h3 {
+    margin: 0 0 0.4rem;
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+
+h1:focus {
+    outline: none;
+}
+
+h3 {
+    font-size: 1.05rem;
+}
+
+.empty-body {
+    max-width: 44ch;
+    color: var(--text-muted);
+}
+
+/* The text and buttons are written by the page that uses this component, so they need ::deep to be reached. */
+.empty-body ::deep p {
+    margin: 0 0 1rem;
+}
+
+.empty-body ::deep p:last-child {
+    margin-bottom: 0;
+}

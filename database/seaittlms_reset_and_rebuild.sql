@@ -7,8 +7,8 @@
 --
 -- Use it only to start over, for example when tables were dropped or changed by hand and
 -- Workbench shows "Error loading schema content ... Error Code: 1356".
--- To keep your data, use database/seaittlms_schema.sql (new schema) or database/upgrades/
--- (older schema) instead.
+-- To keep your data, do NOT run this file. Start the app instead (dotnet watch): it upgrades
+-- the database and keeps everything.
 --
 -- Afterwards the database is empty, except the five roles and the four tracks.
 -- Start the app to create the first administrator (README.md, "First-time setup").
@@ -411,6 +411,219 @@ LEFT JOIN `tracks` tr ON tr.`id` = st.`track_id`;
 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261003130910_AddTracksAndRoleViews', '9.0.20');
+
+DROP VIEW IF EXISTS `v_students`;
+
+DROP VIEW IF EXISTS `v_teachers`;
+
+DROP VIEW IF EXISTS `v_registrars`;
+
+DROP VIEW IF EXISTS `v_guidance_counselors`;
+
+DROP VIEW IF EXISTS `v_administrators`;
+
+ALTER TABLE `administrators`
+    ADD COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `employee_number`,
+    ADD COLUMN `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `first_name`,
+    ADD COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `middle_name`,
+    ADD COLUMN `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL AFTER `last_name`,
+    ADD COLUMN `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL AFTER `name_extension`,
+    ADD COLUMN `status` varchar(20) CHARACTER SET utf8mb4 NULL AFTER `phone_number`;
+
+ALTER TABLE `guidance_counselors`
+    ADD COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `employee_number`,
+    ADD COLUMN `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `first_name`,
+    ADD COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `middle_name`,
+    ADD COLUMN `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL AFTER `last_name`,
+    ADD COLUMN `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL AFTER `name_extension`,
+    ADD COLUMN `status` varchar(20) CHARACTER SET utf8mb4 NULL AFTER `phone_number`;
+
+ALTER TABLE `registrars`
+    ADD COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `employee_number`,
+    ADD COLUMN `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `first_name`,
+    ADD COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `middle_name`,
+    ADD COLUMN `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL AFTER `last_name`,
+    ADD COLUMN `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL AFTER `name_extension`,
+    ADD COLUMN `status` varchar(20) CHARACTER SET utf8mb4 NULL AFTER `phone_number`;
+
+ALTER TABLE `teachers`
+    ADD COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `employee_number`,
+    ADD COLUMN `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `first_name`,
+    ADD COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `middle_name`,
+    ADD COLUMN `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL AFTER `last_name`;
+
+ALTER TABLE `students`
+    ADD COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `lrn`,
+    ADD COLUMN `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `first_name`,
+    ADD COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NULL AFTER `middle_name`,
+    ADD COLUMN `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL AFTER `last_name`;
+
+UPDATE `administrators` p
+JOIN `users` u ON u.`id` = p.`user_id`
+SET p.`first_name` = u.`first_name`,
+    p.`middle_name` = u.`middle_name`,
+    p.`last_name` = u.`last_name`,
+    p.`name_extension` = u.`name_extension`,
+    p.`phone_number` = u.`phone_number`,
+    p.`status` = CASE WHEN u.`is_active` = 1 THEN 'Active' ELSE 'Inactive' END
+WHERE p.`id` > 0;
+
+UPDATE `guidance_counselors` p
+JOIN `users` u ON u.`id` = p.`user_id`
+SET p.`first_name` = u.`first_name`,
+    p.`middle_name` = u.`middle_name`,
+    p.`last_name` = u.`last_name`,
+    p.`name_extension` = u.`name_extension`,
+    p.`phone_number` = u.`phone_number`,
+    p.`status` = CASE WHEN u.`is_active` = 1 THEN 'Active' ELSE 'Inactive' END
+WHERE p.`id` > 0;
+
+UPDATE `registrars` p
+JOIN `users` u ON u.`id` = p.`user_id`
+SET p.`first_name` = u.`first_name`,
+    p.`middle_name` = u.`middle_name`,
+    p.`last_name` = u.`last_name`,
+    p.`name_extension` = u.`name_extension`,
+    p.`phone_number` = u.`phone_number`,
+    p.`status` = CASE WHEN u.`is_active` = 1 THEN 'Active' ELSE 'Inactive' END
+WHERE p.`id` > 0;
+
+UPDATE `teachers` p
+JOIN `users` u ON u.`id` = p.`user_id`
+SET p.`first_name` = u.`first_name`,
+    p.`middle_name` = u.`middle_name`,
+    p.`last_name` = u.`last_name`,
+    p.`name_extension` = u.`name_extension`
+WHERE p.`id` > 0;
+
+UPDATE `students` p
+JOIN `users` u ON u.`id` = p.`user_id`
+SET p.`first_name` = u.`first_name`,
+    p.`middle_name` = u.`middle_name`,
+    p.`last_name` = u.`last_name`,
+    p.`name_extension` = u.`name_extension`
+WHERE p.`id` > 0;
+
+ALTER TABLE `administrators`
+    MODIFY COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `guidance_counselors`
+    MODIFY COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `registrars`
+    MODIFY COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `teachers`
+    MODIFY COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `students`
+    MODIFY COLUMN `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    MODIFY COLUMN `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `administrators`
+    MODIFY COLUMN `created_at_utc` datetime(6) NOT NULL AFTER `status`,
+    MODIFY COLUMN `updated_at_utc` datetime(6) NOT NULL AFTER `created_at_utc`;
+
+ALTER TABLE `guidance_counselors`
+    MODIFY COLUMN `created_at_utc` datetime(6) NOT NULL AFTER `status`,
+    MODIFY COLUMN `updated_at_utc` datetime(6) NOT NULL AFTER `created_at_utc`;
+
+ALTER TABLE `registrars`
+    MODIFY COLUMN `created_at_utc` datetime(6) NOT NULL AFTER `status`,
+    MODIFY COLUMN `updated_at_utc` datetime(6) NOT NULL AFTER `created_at_utc`;
+
+ALTER TABLE `teachers`
+    MODIFY COLUMN `created_at_utc` datetime(6) NOT NULL AFTER `name_extension`,
+    MODIFY COLUMN `updated_at_utc` datetime(6) NOT NULL AFTER `created_at_utc`;
+
+ALTER TABLE `users` DROP COLUMN `first_name`;
+
+ALTER TABLE `users` DROP COLUMN `middle_name`;
+
+ALTER TABLE `users` DROP COLUMN `last_name`;
+
+ALTER TABLE `users` DROP COLUMN `name_extension`;
+
+ALTER TABLE `administrators` ADD CONSTRAINT `ck_administrators_status` CHECK (status IN ('Active', 'Inactive'));
+
+ALTER TABLE `guidance_counselors` ADD CONSTRAINT `ck_guidance_counselors_status` CHECK (status IN ('Active', 'Inactive'));
+
+ALTER TABLE `registrars` ADD CONSTRAINT `ck_registrars_status` CHECK (status IN ('Active', 'Inactive'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261003142005_MovePersonDetailsToRoleTables', '9.0.20');
+
+ALTER TABLE `teachers`
+    ADD COLUMN `grade_level` tinyint unsigned NULL AFTER `name_extension`,
+    ADD COLUMN `track_id` int NULL AFTER `grade_level`,
+    ADD COLUMN `strand_id` int NULL AFTER `track_id`,
+    ADD COLUMN `subject_id` int NULL AFTER `strand_id`,
+    ADD COLUMN `section_id` int NULL AFTER `subject_id`;
+
+ALTER TABLE `students`
+    ADD COLUMN `grade_level` tinyint unsigned NULL AFTER `sex`,
+    ADD COLUMN `track_id` int NULL AFTER `grade_level`,
+    ADD COLUMN `strand_id` int NULL AFTER `track_id`,
+    ADD COLUMN `subject_id` int NULL AFTER `strand_id`,
+    ADD COLUMN `section_id` int NULL AFTER `subject_id`;
+
+ALTER TABLE `strands` ADD CONSTRAINT `ak_strands_id_track_id` UNIQUE (`id`, `track_id`);
+
+ALTER TABLE `sections` ADD CONSTRAINT `ak_sections_id_strand_id_grade_level` UNIQUE (`id`, `strand_id`, `grade_level`);
+
+CREATE INDEX `ix_teachers_section_id_strand_id_grade_level` ON `teachers` (`section_id`, `strand_id`, `grade_level`);
+
+CREATE INDEX `ix_teachers_strand_id_track_id` ON `teachers` (`strand_id`, `track_id`);
+
+CREATE INDEX `ix_teachers_subject_id` ON `teachers` (`subject_id`);
+
+CREATE INDEX `ix_teachers_track_id` ON `teachers` (`track_id`);
+
+ALTER TABLE `teachers` ADD CONSTRAINT `ck_teachers_grade_level` CHECK (grade_level IS NULL OR grade_level IN (11, 12));
+
+ALTER TABLE `teachers` ADD CONSTRAINT `ck_teachers_section_needs_strand_and_grade` CHECK (section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL));
+
+ALTER TABLE `teachers` ADD CONSTRAINT `ck_teachers_strand_needs_track` CHECK (strand_id IS NULL OR track_id IS NOT NULL);
+
+CREATE INDEX `ix_students_section_id_strand_id_grade_level` ON `students` (`section_id`, `strand_id`, `grade_level`);
+
+CREATE INDEX `ix_students_strand_id_track_id` ON `students` (`strand_id`, `track_id`);
+
+CREATE INDEX `ix_students_subject_id` ON `students` (`subject_id`);
+
+CREATE INDEX `ix_students_track_id` ON `students` (`track_id`);
+
+ALTER TABLE `students` ADD CONSTRAINT `ck_students_grade_level` CHECK (grade_level IS NULL OR grade_level IN (11, 12));
+
+ALTER TABLE `students` ADD CONSTRAINT `ck_students_section_needs_strand_and_grade` CHECK (section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL));
+
+ALTER TABLE `students` ADD CONSTRAINT `ck_students_strand_needs_track` CHECK (strand_id IS NULL OR track_id IS NOT NULL);
+
+ALTER TABLE `students` ADD CONSTRAINT `fk_students_sections_section_id_strand_id_grade_level` FOREIGN KEY (`section_id`, `strand_id`, `grade_level`) REFERENCES `sections` (`id`, `strand_id`, `grade_level`) ON DELETE RESTRICT;
+
+ALTER TABLE `students` ADD CONSTRAINT `fk_students_strands_strand_id_track_id` FOREIGN KEY (`strand_id`, `track_id`) REFERENCES `strands` (`id`, `track_id`) ON DELETE RESTRICT;
+
+ALTER TABLE `students` ADD CONSTRAINT `fk_students_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `students` ADD CONSTRAINT `fk_students_tracks_track_id` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `teachers` ADD CONSTRAINT `fk_teachers_sections_section_id_strand_id_grade_level` FOREIGN KEY (`section_id`, `strand_id`, `grade_level`) REFERENCES `sections` (`id`, `strand_id`, `grade_level`) ON DELETE RESTRICT;
+
+ALTER TABLE `teachers` ADD CONSTRAINT `fk_teachers_strands_strand_id_track_id` FOREIGN KEY (`strand_id`, `track_id`) REFERENCES `strands` (`id`, `track_id`) ON DELETE RESTRICT;
+
+ALTER TABLE `teachers` ADD CONSTRAINT `fk_teachers_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `teachers` ADD CONSTRAINT `fk_teachers_tracks_track_id` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE RESTRICT;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261003142335_AddPlacementToStudentsAndTeachers', '9.0.20');
 
 COMMIT;
 

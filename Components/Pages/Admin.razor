@@ -1,0 +1,144 @@
+@page "/admin"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject TimeProvider Clock
+
+<PageTitle>Admin · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Admin dashboard" Subtitle="The accounts and the school setup at a glance." IconName="layout-dashboard" />
+
+@if (overview is not null)
+{
+    <section aria-labelledby="accounts-title">
+        <h2 id="accounts-title" class="section-title">Accounts</h2>
+
+        <div class="stats">
+            <StatCard Label="All accounts" Value="@overview.TotalAccounts" IconName="users" Accent="AccentColor.Slate"
+                      Hint="@InactiveHint(overview.InactiveAccounts)" />
+
+            @foreach (var role in overview.Roles)
+            {
+                var (label, icon, color) = RoleLook(role.Role);
+                <StatCard Label="@label" Value="@role.Total" IconName="@icon" Accent="@color"
+                          Hint="@InactiveHint(role.Inactive)" />
+            }
+        </div>
+    </section>
+
+    <div class="stack">
+        <Card Title="School setup" IconName="school">
+            <ul class="setup">
+                @foreach (var item in SetupItems(overview.Setup))
+                {
+                    <li>
+                        <span class="setup-icon"><Icon Name="@item.Icon" Size="18" /></span>
+                        <span class="setup-text">
+                            <strong class="setup-count">@item.Count.ToString("N0")</strong>
+                            <span class="setup-label">@item.Label</span>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <p class="note">Screens for adding and editing these are coming soon.</p>
+        </Card>
+
+        <Card Title="Latest accounts" IconName="users">
+            @if (overview.LatestAccounts.Count == 0)
+            {
+                <EmptyState IconName="users" Title="No accounts yet" />
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="last-sign-in">Last sign-in</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var account in overview.LatestAccounts)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="person">
+                                            <Avatar Name="@account.Name" Size="34" />
+                                            <div class="person-text">
+                                                <span class="person-name">@account.Name</span>
+                                                <span class="person-email" title="@account.Email">@account.Email</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><Badge Tone="Tone.Info">@account.Role</Badge></td>
+                                    <td>
+                                        @if (!account.IsActive)
+                                        {
+                                            <Badge Tone="Tone.Neutral">Inactive</Badge>
+                                        }
+                                        else if (account.IsLocked)
+                                        {
+                                            <Badge Tone="Tone.Danger">Locked</Badge>
+                                        }
+                                        else
+                                        {
+                                            <Badge Tone="Tone.Success">Active</Badge>
+                                        }
+                                    </td>
+                                    <td class="last-sign-in">
+                                        @if (account.LastLoginAtUtc is { } signedIn)
+                                        {
+                                            @PhilippineTime.FormatDateTime(signedIn)
+                                        }
+                                        else
+                                        {
+                                            <span class="never">Never</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    </div>
+}
+
+@code {
+    private AdminOverview? overview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        overview = await AdminOverview.LoadAsync(db, Clock.GetUtcNow().UtcDateTime);
+    }
+
+    private static string? InactiveHint(int inactive) => inactive > 0 ? $"{inactive} inactive" : null;
+
+    private static (string Label, string Icon, AccentColor Color) RoleLook(string role) => role switch
+    {
+        AppRoles.Admin => ("Administrators", "shield-check", AccentColor.Violet),
+        AppRoles.Teacher => ("Teachers", "presentation", AccentColor.Blue),
+        AppRoles.Student => ("Students", "graduation-cap", AccentColor.Green),
+        AppRoles.Registrar => ("Registrars", "clipboard-check", AccentColor.Amber),
+        _ => ("Guidance counselors", "heart-handshake", AccentColor.Rose),
+    };
+
+    private static (string Label, string Icon, int Count)[] SetupItems(SetupTotals setup) =>
+    [
+        ("School years", "calendar-range", setup.SchoolYears),
+        ("Terms", "calendar-days", setup.Terms),
+        ("Tracks", "layers", setup.Tracks),
+        ("Strands", "layout-grid", setup.Strands),
+        ("Subjects", "book-open", setup.Subjects),
+        ("Sections", "users", setup.Sections),
+        ("Class offerings", "library", setup.ClassOfferings),
+        ("Enrollments", "user-check", setup.Enrollments),
+    ];
+}

@@ -1,0 +1,18 @@
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+}
+
+.neutral { --chip-bg: var(--surface-2); --chip-text: var(--text-muted); box-shadow: inset 0 0 0 1px var(--border); }
+.success { --chip-bg: var(--success-soft); --chip-text: var(--success); }
+.info    { --chip-bg: var(--info-soft);    --chip-text: var(--info); }
+.warning { --chip-bg: var(--warning-soft); --chip-text: var(--warning); }
+.danger  { --chip-bg: var(--danger-soft);  --chip-text: var(--danger); }
