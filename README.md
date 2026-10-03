@@ -19,39 +19,68 @@ Lessons, assignments and quizzes are next. The database design is in [docs/datab
 
 ## First-time setup
 
-Run these in the repository folder. Replace `YOUR_MYSQL_PASSWORD` and the admin details with your own.
+Run these in the repository folder. Replace `YOUR_MYSQL_PASSWORD` and the admin password with your own.
 
 ```bash
 # 1. Tell the app how to reach MySQL (stored outside the repo, never committed)
 dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3306;Database=seaittlms;User=root;Password=YOUR_MYSQL_PASSWORD;"
 
-# 2. The first administrator account (only used when no admin exists yet)
-dotnet user-secrets set "Seed:Admin:Email" "admin@seaitt.edu.ph"
+# 2. The password of the first administrator account
 dotnet user-secrets set "Seed:Admin:Password" "choose-a-long-password"
-dotnet user-secrets set "Seed:Admin:FirstName" "Your"
-dotnet user-secrets set "Seed:Admin:LastName" "Name"
-dotnet user-secrets set "Seed:Admin:PhoneNumber" "09171234567"   # optional
 
 # 3. Run. In Development the tables are created automatically on startup.
 dotnet watch
 ```
 
-Open http://localhost:5000 and sign in with the admin email and password.
+Open http://localhost:5000 and sign in as **admin@legazpi.seaitt.edu.ph** with the password from step 2.
 
 `dotnet user-secrets` works because the project has a `UserSecretsId`. If your MySQL server uses another host,
 port or user, change the connection string in step 1.
 
-### Creating the tables yourself instead
+### The first administrator (seed account)
+
+The first time the app starts on a database that has no administrator, it creates one: **System Administrator**,
+email `admin@legazpi.seaitt.edu.ph` (the `Seed:Admin:Email` setting in `appsettings.json`), with the password you set
+in step 2. To use other details, set any of these before that first start:
 
 ```bash
-dotnet tool install --global dotnet-ef --version 9.0.20
-dotnet ef database update
+dotnet user-secrets set "Seed:Admin:Email" "principal@legazpi.seaitt.edu.ph"
+dotnet user-secrets set "Seed:Admin:FirstName" "Your"
+dotnet user-secrets set "Seed:Admin:LastName" "Name"
+dotnet user-secrets set "Seed:Admin:PhoneNumber" "09171234567"
 ```
+
+The seed only runs when there is no administrator yet, so changing these settings later does not touch an account
+that already exists. To change the email of an existing administrator, run this in MySQL Workbench (emails are
+stored in lower case):
+
+```sql
+UPDATE seaittlms.users SET email = 'admin@legazpi.seaitt.edu.ph' WHERE email = 'admin@seaitt.edu.ph';
+```
+
+### Creating the tables
+
+Pick one way. They all create the same tables.
+
+1. **Automatically** (default in Development): just run `dotnet watch`, as in step 3 above.
+2. **In MySQL Workbench**: open [database/seaittlms_schema.sql](database/seaittlms_schema.sql) with
+   *File > Open SQL Script...* and click the lightning bolt. Run it once, on an empty `seaittlms` schema. The app
+   starts normally afterwards because the script also records the migration. To see the tables as a diagram, use
+   *Database > Reverse Engineer...* and pick `seaittlms`.
+3. **With the EF command line**:
+
+   ```bash
+   dotnet tool install --global dotnet-ef --version 9.0.20
+   dotnet ef database update
+   ```
+
+The SQL file is generated from the migrations, don't edit it by hand. After a schema change, regenerate it with
+`bash database/export-schema.sh` (on Windows, in Git Bash).
 
 ### Production
 
-Set `ConnectionStrings__Default`, `Seed__Admin__Email` and `Seed__Admin__Password` as environment variables and
-run `dotnet ef database update` (or `Database__MigrateOnStartup=true` for the first start). The sign-in cookie is
+Set `ConnectionStrings__Default` and `Seed__Admin__Password` as environment variables (and `Seed__Admin__Email` if
+you want a different one) and run `dotnet ef database update` (or `Database__MigrateOnStartup=true` for the first start). The sign-in cookie is
 https-only outside Development. Persist the ASP.NET Core Data Protection keys if you run in a container.
 
 ## Project layout
@@ -63,6 +92,7 @@ Data/                      AppDbContext, entities, EF configurations, migrations
 Components/Account/        Login and access-denied pages
 Components/Layout/         Page layouts
 Components/Pages/          Home page and error page
+database/                  seaittlms_schema.sql (run it in MySQL Workbench) and the script that generates it
 docs/database.md           Tables, relationships and the rules the database enforces
 ```
 

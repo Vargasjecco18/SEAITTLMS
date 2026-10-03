@@ -6,6 +6,16 @@ model lives in `Data/Entities` and `Data/Configurations`. Table and column names
 This first version covers **users and roles** and **classes and enrollment** for Senior High School.
 Lessons, assignments and quizzes come later and will hang off `class_offerings`.
 
+## SQL script for MySQL Workbench
+
+[`database/seaittlms_schema.sql`](../database/seaittlms_schema.sql) creates every table below. In Workbench:
+*File > Open SQL Script...*, pick the file, click the lightning bolt. Run it once on an empty `seaittlms` schema.
+For a diagram of the real database use *Database > Reverse Engineer...* and pick `seaittlms`.
+
+The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
+creates. It also records the migration in `__EFMigrationsHistory`, which is why the app doesn't try to create the
+tables again.
+
 ## Tables
 
 ```mermaid
@@ -83,6 +93,8 @@ Edit the entities or configurations, then from the repository folder:
 ```bash
 dotnet ef migrations add WhatYouChanged -o Data/Migrations
 dotnet ef database update        # or just run the app in Development, it migrates on startup
+bash database/export-schema.sh   # regenerates database/seaittlms_schema.sql
 ```
 
-Commit the generated files in `Data/Migrations` together with the model change.
+Commit the generated files in `Data/Migrations` and the regenerated `database/seaittlms_schema.sql` together with
+the model change. Never edit a migration that has already been pushed, add a new one instead.

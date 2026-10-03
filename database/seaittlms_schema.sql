@@ -1,0 +1,287 @@
+-- =============================================================================
+-- SEAITT e-LMS - database schema for MySQL 8 (MySQL Workbench friendly)
+--
+-- This file is GENERATED from the Entity Framework migrations in Data/Migrations.
+-- Do not edit it by hand. To regenerate it: bash database/export-schema.sh
+--
+-- HOW TO RUN IT IN MYSQL WORKBENCH
+--   1. Connect to your MySQL server.
+--   2. File > Open SQL Script...  and pick this file.
+--   3. Click the lightning bolt (Execute). You don't need to select anything first.
+--   4. In the SCHEMAS panel: right-click > Refresh All, then open seaittlms > Tables.
+--
+-- Run it ONCE on an empty seaittlms schema. If you already started the app in
+-- Development, the tables were created for you and you do NOT need this file.
+--
+-- It also records the migration in __EFMigrationsHistory, so the app starts normally
+-- afterwards and does not try to create the tables a second time.
+-- It does not create any user account: the app creates the first administrator when
+-- it starts (see README.md, "First-time setup").
+--
+-- Harmless messages you may see in the Output panel: "database exists" (the schema was
+-- already there) and "Integer display width is deprecated" (MySQL's note about tinyint(1)).
+-- =============================================================================
+
+CREATE DATABASE IF NOT EXISTS `seaittlms` CHARACTER SET utf8mb4;
+USE `seaittlms`;
+
+CREATE TABLE IF NOT EXISTS `__EFMigrationsHistory` (
+    `migration_id` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
+    `product_version` varchar(32) CHARACTER SET utf8mb4 NOT NULL,
+    CONSTRAINT `pk___ef_migrations_history` PRIMARY KEY (`migration_id`)
+) CHARACTER SET=utf8mb4;
+
+START TRANSACTION;
+ALTER DATABASE CHARACTER SET utf8mb4;
+
+CREATE TABLE `roles` (
+    `id` int NOT NULL,
+    `name` varchar(30) CHARACTER SET utf8mb4 NOT NULL,
+    CONSTRAINT `pk_roles` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `school_years` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `start_date` date NOT NULL,
+    `end_date` date NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_school_years` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_school_years_dates` CHECK (end_date > start_date)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `strands` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `code` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `name` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
+    `track` varchar(50) CHARACTER SET utf8mb4 NULL,
+    `is_active` tinyint(1) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_strands` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `subjects` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `code` varchar(30) CHARACTER SET utf8mb4 NOT NULL,
+    `name` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
+    `description` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `is_active` tinyint(1) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_subjects` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `users` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `email` varchar(254) CHARACTER SET utf8mb4 NOT NULL,
+    `password_hash` varchar(255) CHARACTER SET utf8mb4 NOT NULL,
+    `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `role_id` int NOT NULL,
+    `is_active` tinyint(1) NOT NULL,
+    `security_stamp` varchar(64) CHARACTER SET utf8mb4 NOT NULL,
+    `failed_login_count` int NOT NULL,
+    `lockout_end_utc` datetime(6) NULL,
+    `last_login_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_users` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_users_failed_login_count` CHECK (failed_login_count >= 0),
+    CONSTRAINT `fk_users_roles_role_id` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `terms` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `school_year_id` int NOT NULL,
+    `term_number` tinyint unsigned NOT NULL,
+    `name` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `start_date` date NOT NULL,
+    `end_date` date NOT NULL,
+    `is_current` tinyint(1) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_terms` PRIMARY KEY (`id`),
+    CONSTRAINT `ak_terms_id_school_year_id` UNIQUE (`id`, `school_year_id`),
+    CONSTRAINT `ck_terms_dates` CHECK (end_date >= start_date),
+    CONSTRAINT `ck_terms_term_number` CHECK (term_number >= 1),
+    CONSTRAINT `fk_terms_school_years_school_year_id` FOREIGN KEY (`school_year_id`) REFERENCES `school_years` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `administrators` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `pk_administrators` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_administrators_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `guidance_counselors` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `pk_guidance_counselors` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_guidance_counselors_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `registrars` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `pk_registrars` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_registrars_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `students` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NOT NULL,
+    `lrn` char(12) CHARACTER SET utf8mb4 NOT NULL,
+    `birth_date` date NULL,
+    `sex` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_students` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_students_lrn` CHECK (lrn REGEXP '^[0-9]{12}$'),
+    CONSTRAINT `fk_students_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `teachers` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `pk_teachers` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_teachers_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `sections` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `school_year_id` int NOT NULL,
+    `strand_id` int NOT NULL,
+    `grade_level` tinyint unsigned NOT NULL,
+    `name` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `adviser_teacher_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_sections` PRIMARY KEY (`id`),
+    CONSTRAINT `ak_sections_id_school_year_id` UNIQUE (`id`, `school_year_id`),
+    CONSTRAINT `ck_sections_grade_level` CHECK (grade_level IN (11, 12)),
+    CONSTRAINT `fk_sections_school_years_school_year_id` FOREIGN KEY (`school_year_id`) REFERENCES `school_years` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sections_strands_strand_id` FOREIGN KEY (`strand_id`) REFERENCES `strands` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_sections_teachers_adviser_teacher_id` FOREIGN KEY (`adviser_teacher_id`) REFERENCES `teachers` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `class_offerings` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `school_year_id` int NOT NULL,
+    `term_id` int NOT NULL,
+    `section_id` int NOT NULL,
+    `subject_id` int NOT NULL,
+    `teacher_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_class_offerings` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_class_offerings_sections_section_id_school_year_id` FOREIGN KEY (`section_id`, `school_year_id`) REFERENCES `sections` (`id`, `school_year_id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_class_offerings_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_class_offerings_teachers_teacher_id` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_class_offerings_terms_term_id_school_year_id` FOREIGN KEY (`term_id`, `school_year_id`) REFERENCES `terms` (`id`, `school_year_id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `enrollments` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `school_year_id` int NOT NULL,
+    `term_id` int NOT NULL,
+    `section_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `enrolled_by_user_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_enrollments` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_enrollments_sections_section_id_school_year_id` FOREIGN KEY (`section_id`, `school_year_id`) REFERENCES `sections` (`id`, `school_year_id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_enrollments_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_enrollments_terms_term_id_school_year_id` FOREIGN KEY (`term_id`, `school_year_id`) REFERENCES `terms` (`id`, `school_year_id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_enrollments_users_enrolled_by_user_id` FOREIGN KEY (`enrolled_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `roles` (`id`, `name`)
+VALUES (1, 'Admin'),
+(2, 'Teacher'),
+(3, 'Student'),
+(4, 'Registrar'),
+(5, 'GuidanceCounselor');
+
+CREATE UNIQUE INDEX `ix_administrators_employee_number` ON `administrators` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_administrators_user_id` ON `administrators` (`user_id`);
+
+CREATE INDEX `ix_class_offerings_section_id_school_year_id` ON `class_offerings` (`section_id`, `school_year_id`);
+
+CREATE INDEX `ix_class_offerings_subject_id` ON `class_offerings` (`subject_id`);
+
+CREATE INDEX `ix_class_offerings_teacher_id` ON `class_offerings` (`teacher_id`);
+
+CREATE INDEX `ix_class_offerings_term_id_school_year_id` ON `class_offerings` (`term_id`, `school_year_id`);
+
+CREATE UNIQUE INDEX `ix_class_offerings_term_id_section_id_subject_id` ON `class_offerings` (`term_id`, `section_id`, `subject_id`);
+
+CREATE INDEX `ix_enrollments_enrolled_by_user_id` ON `enrollments` (`enrolled_by_user_id`);
+
+CREATE INDEX `ix_enrollments_section_id_school_year_id` ON `enrollments` (`section_id`, `school_year_id`);
+
+CREATE UNIQUE INDEX `ix_enrollments_student_id_term_id` ON `enrollments` (`student_id`, `term_id`);
+
+CREATE INDEX `ix_enrollments_term_id_school_year_id` ON `enrollments` (`term_id`, `school_year_id`);
+
+CREATE UNIQUE INDEX `ix_guidance_counselors_employee_number` ON `guidance_counselors` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_guidance_counselors_user_id` ON `guidance_counselors` (`user_id`);
+
+CREATE UNIQUE INDEX `ix_registrars_employee_number` ON `registrars` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_registrars_user_id` ON `registrars` (`user_id`);
+
+CREATE UNIQUE INDEX `ix_roles_name` ON `roles` (`name`);
+
+CREATE UNIQUE INDEX `ix_school_years_name` ON `school_years` (`name`);
+
+CREATE INDEX `ix_sections_adviser_teacher_id` ON `sections` (`adviser_teacher_id`);
+
+CREATE UNIQUE INDEX `ix_sections_school_year_id_strand_id_grade_level_name` ON `sections` (`school_year_id`, `strand_id`, `grade_level`, `name`);
+
+CREATE INDEX `ix_sections_strand_id` ON `sections` (`strand_id`);
+
+CREATE UNIQUE INDEX `ix_strands_code` ON `strands` (`code`);
+
+CREATE UNIQUE INDEX `ix_students_lrn` ON `students` (`lrn`);
+
+CREATE UNIQUE INDEX `ix_students_user_id` ON `students` (`user_id`);
+
+CREATE UNIQUE INDEX `ix_subjects_code` ON `subjects` (`code`);
+
+CREATE UNIQUE INDEX `ix_teachers_employee_number` ON `teachers` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_teachers_user_id` ON `teachers` (`user_id`);
+
+CREATE UNIQUE INDEX `ix_terms_school_year_id_term_number` ON `terms` (`school_year_id`, `term_number`);
+
+CREATE UNIQUE INDEX `ix_users_email` ON `users` (`email`);
+
+CREATE INDEX `ix_users_role_id` ON `users` (`role_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261003115912_InitialCreate', '9.0.20');
+
+COMMIT;
+
