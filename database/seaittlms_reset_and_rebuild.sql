@@ -306,11 +306,12 @@ ALTER TABLE `strands` ADD `track_id` int NULL;
 
 UPDATE `strands` s
 JOIN `tracks` t ON LOWER(TRIM(s.`track`)) IN (LOWER(t.`code`), LOWER(t.`name`))
-SET s.`track_id` = t.`id`;
+SET s.`track_id` = t.`id`
+WHERE s.`id` > 0;
 
 UPDATE `strands`
 SET `track_id` = (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD')
-WHERE `track_id` IS NULL;
+WHERE `id` > 0 AND `track_id` IS NULL;
 
 ALTER TABLE `strands` MODIFY COLUMN `track_id` int NOT NULL;
 

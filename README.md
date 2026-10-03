@@ -26,7 +26,8 @@ Lessons, assignments and quizzes are next. The database design is in [docs/datab
    - `choose-a-long-password` with the password you want for the first administrator.
 
    Git ignores `appsettings.Local.json`, so your passwords never go to GitHub. **Never write passwords in
-   `appsettings.json`**: that file is committed and published.
+   `appsettings.json` or in `appsettings.Local.example.json`**: those files are committed and published (the example is
+   only a template, the app does not read it). If a password ever ended up in a committed file, change that password.
 2. **Run the app** in the project folder. In Development the tables are created automatically on startup:
 
    ```bash
@@ -92,28 +93,39 @@ than the last row, oldest first.
 
 ### Something broke? Start over
 
-Use this when the database is broken, for example you dropped or changed tables by hand and MySQL Workbench shows
-*Error loading schema content ... Error Code: 1356 ... View 'seaittlms.v_...' references invalid table(s) or column(s)*.
-(The `v_...` views read `users` and the role tables, so they break when those are missing or changed.)
+Use this when the database is broken, for example you dropped or changed tables by hand, an SQL script stopped halfway
+("Table ... already exists" when the app starts), or MySQL Workbench shows *Error loading schema content ... Error Code:
+1356 ... View 'seaittlms.v_...' references invalid table(s) or column(s)*. (The `v_...` views read `users` and the role
+tables, so they break when those are missing or changed.)
 
-**This erases all the data in `seaittlms`.** There is no undo.
+**Both ways erase all the data in `seaittlms`.** There is no undo.
 
-1. In Workbench open [database/seaittlms_reset_and_rebuild.sql](database/seaittlms_reset_and_rebuild.sql)
-   (*File > Open SQL Script...*) and click the lightning bolt. It deletes the `seaittlms` schema and builds everything
-   again, including the five roles and the four tracks.
-2. Run `dotnet watch`. The app creates the administrator again (`admin@legazpi.seaitt.edu.ph`, with the password from
-   your `appsettings.Local.json`). Any other users you had are gone, and there is no screen for adding users yet.
+**Quickest, needs only the app:**
 
-Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five views),
-and use step 1 above when you are ready to rebuild:
+1. In MySQL Workbench run `DROP DATABASE IF EXISTS seaittlms;`
+2. Run `dotnet watch`. The app creates the database and every table again, and the administrator
+   (`admin@legazpi.seaitt.edu.ph`, with the password from your `appsettings.Local.json`).
+
+**Without running the app:** in Workbench open
+[database/seaittlms_reset_and_rebuild.sql](database/seaittlms_reset_and_rebuild.sql) (*File > Open SQL Script...*) and
+click the lightning bolt. It deletes the `seaittlms` schema and builds everything again, including the five roles and the
+four tracks. Then run `dotnet watch` to create the administrator.
+
+Any other users you had are gone, and there is no screen for adding users yet.
+
+Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five views):
 
 ```sql
 DROP VIEW IF EXISTS seaittlms.v_administrators, seaittlms.v_guidance_counselors, seaittlms.v_registrars,
                     seaittlms.v_teachers, seaittlms.v_students;
 ```
 
+If Workbench stops an SQL file with *Error Code: 1175 ... safe update mode*, your copy of the file is old: pull the
+latest version (current files work with Workbench's default settings).
+
 The SQL files are generated from the migrations, don't edit them by hand. After a schema change, regenerate them with
-`bash database/export-schema.sh` (on Windows, in Git Bash).
+`bash database/export-schema.sh` (on Windows, in Git Bash; it needs the `dotnet-ef` tool and a running MySQL). The same
+command creates `database/seaittlms_schema.sql` and `database/upgrades/` again if they are missing from your copy.
 
 ### Production
 

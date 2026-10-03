@@ -29,10 +29,16 @@ public sealed class DatabaseInitializer(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex,
-                "Database setup failed. Check ConnectionStrings:Default (host, user and password), and that the tables " +
-                "exist (run 'dotnet ef database update', or set Database:MigrateOnStartup to true). If tables were " +
-                "dropped or changed by hand, rebuild the database: README.md, \"Start over\".");
+            // One short message with the reason and the quickest fix. The full stack trace is only written at Debug level.
+            logger.LogError(
+                "Database setup failed: {Reason}\n" +
+                "  This usually means one of these:\n" +
+                "   - the host, user or password in ConnectionStrings:Default is wrong, or MySQL is not running;\n" +
+                "   - tables were dropped or changed by hand, or an SQL script stopped halfway.\n" +
+                "  If you have no data to keep, the quickest fix is to run  DROP DATABASE IF EXISTS seaittlms;  in\n" +
+                "  MySQL Workbench and start the app again: it builds everything. More: README.md, \"Something broke? Start over\".",
+                ex.GetBaseException().Message);
+            logger.LogDebug(ex, "Database setup failed (details)");
             throw;
         }
     }

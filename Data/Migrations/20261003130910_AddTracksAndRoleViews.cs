@@ -20,6 +20,10 @@ namespace SEAITT_LMS.Data.Migrations
     ///
     /// Every raw SQL statement below ends with a semicolon on purpose: EF copies raw SQL into the generated .sql
     /// scripts as it is, so without the semicolon two statements run together and the script fails in Workbench.
+    ///
+    /// Every UPDATE has a WHERE on the primary key (id > 0) on purpose: MySQL Workbench runs with "Safe Updates" on by
+    /// default, which refuses an UPDATE or DELETE without a WHERE on a key column (Error 1175) and would stop the script
+    /// halfway, leaving a half-upgraded database. The WHERE does not change which rows are updated.
     /// </summary>
     public partial class AddTracksAndRoleViews : Migration
     {
@@ -81,14 +85,15 @@ namespace SEAITT_LMS.Data.Migrations
             migrationBuilder.Sql("""
                 UPDATE `strands` s
                 JOIN `tracks` t ON LOWER(TRIM(s.`track`)) IN (LOWER(t.`code`), LOWER(t.`name`))
-                SET s.`track_id` = t.`id`;
+                SET s.`track_id` = t.`id`
+                WHERE s.`id` > 0;
                 """);
 
             // A strand whose old text was empty or not recognised goes under Academic. Fix it in the table if that is wrong.
             migrationBuilder.Sql("""
                 UPDATE `strands`
                 SET `track_id` = (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD')
-                WHERE `track_id` IS NULL;
+                WHERE `id` > 0 AND `track_id` IS NULL;
                 """);
 
             migrationBuilder.AlterColumn<int>(
@@ -146,7 +151,8 @@ namespace SEAITT_LMS.Data.Migrations
             migrationBuilder.Sql("""
                 UPDATE `strands` s
                 JOIN `tracks` t ON t.`id` = s.`track_id`
-                SET s.`track` = t.`name`;
+                SET s.`track` = t.`name`
+                WHERE s.`id` > 0;
                 """);
 
             migrationBuilder.DropForeignKey(
