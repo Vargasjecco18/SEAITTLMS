@@ -15,6 +15,9 @@ Lessons, assignments and quizzes come later and will hang off `class_offerings`
 | [`database/upgrades/*.sql`](../database/upgrades) | You already created the tables with an older version and want the newest changes **without losing data**. One file per change, run them oldest first. |
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. |
 
+All of them are generated, so if one is missing from your copy of `database/` (for example it was deleted), run
+`bash database/export-schema.sh` to create it again.
+
 In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. To know which upgrades you
 need, run `SELECT * FROM __EFMigrationsHistory;` and compare the last row with the file names in `upgrades`.
 For a diagram of the real database use *Database > Reverse Engineer...* and pick `seaittlms`.
@@ -172,3 +175,7 @@ Two things to remember:
   `AddTracksAndRoleViews`).
 - **Raw SQL in a migration** (`migrationBuilder.Sql(...)`) must end with a `;`. EF copies it into the `.sql` scripts as
   it is, and without the `;` two statements run together and the script fails in Workbench.
+- **Every `UPDATE` or `DELETE` in raw SQL needs a `WHERE` on a key column** (for example `WHERE id > 0`). MySQL Workbench
+  has "Safe Updates" on by default and refuses anything else with Error 1175, which stops the script halfway and
+  leaves a half-upgraded database. The command-line client does not do this, so test the generated scripts with
+  `mysql --init-command="SET SQL_SAFE_UPDATES=1" < file.sql`.

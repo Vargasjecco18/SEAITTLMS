@@ -119,7 +119,16 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
 
 await using (var scope = app.Services.CreateAsyncScope())
 {
-    await scope.ServiceProvider.GetRequiredService<DatabaseInitializer>().InitializeAsync();
+    var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
+    try
+    {
+        await initializer.InitializeAsync();
+    }
+    catch
+    {
+        // The initializer has already logged what went wrong and what to do. Stop here, without a second crash dump.
+        Environment.Exit(1);
+    }
 }
 
 app.Run();
