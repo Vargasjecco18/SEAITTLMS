@@ -7,3 +7,33 @@
 .muted {
     color: var(--text-muted);
 }
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.chip {
+    padding: 0.4rem 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.chip:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.chip.on {
+    border-color: var(--btn-bg);
+    background: var(--btn-bg);
+    color: var(--on-brand);
+}

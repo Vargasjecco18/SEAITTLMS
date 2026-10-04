@@ -148,7 +148,7 @@ Persist the ASP.NET Core Data Protection keys if you run in a container.
 
 | What | How it works |
 |---|---|
-| **Search** (middle) | Type and press Enter: the search page lists the pages you can open and, depending on your role, the people you work with. An administrator finds every account, a registrar finds students. |
+| **Search** (middle) | Type and press Enter: the search page lists the pages you can open and, depending on your role, the people you work with. An administrator finds every account, a registrar finds students, a teacher finds the students of their subjects (the hit opens the gradebook of that subject) and the guidance counselor finds students (the hit opens the referrals page for that student). |
 | **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor and the registrar; a teacher also to students and the other staff. **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time**: the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
 | **Notifications** (bell) | What the system wants you to know (a new message, and later new modules, grades and deadlines). The number is how many are new. Click one to open the page it is about. |
 | **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser. |
@@ -179,7 +179,8 @@ password. Then sign in as that registrar to enroll students.
 **The administrator** gives each teacher their subjects: **Users Management > Teachers > Subjects**, choose the section and
 the subject (only the subjects of that section's strand are listed). A subject of a section has one teacher.
 
-**Teacher > Subjects** shows one colored card per subject. **Open** shows its modules. A new module is a **draft**: students
+**Teacher > Subjects** shows one colored card per subject (a teacher with more than one section also gets a chip per section to show one
+section at a time). **Open** shows its modules. A new module is a **draft**: students
 cannot see it. **Post now** shows it to the students (they get a notification), **Schedule** picks the day and time it
 appears by itself, **Hide** takes it back. At the bottom of a module are its **Activities**, **Quizzes** and **Task
 performances**; each has a due date (and can have its own time to appear). Open an item to see who handed in, read the

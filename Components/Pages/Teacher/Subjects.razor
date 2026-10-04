@@ -24,8 +24,19 @@ else if (cards.Count == 0)
 }
 else
 {
+    @if (sections.Count > 1)
+    {
+        <nav class="chips" aria-label="Show the subjects of">
+            <a class="chip @(Section is null ? "on" : "")" href="teacher/subjects">All</a>
+            @foreach (var label in sections)
+            {
+                <a class="chip @(string.Equals(Section, label, StringComparison.Ordinal) ? "on" : "")" href="teacher/subjects?section=@Uri.EscapeDataString(label)">@label</a>
+            }
+        </nav>
+    }
+
     <div class="grid">
-        @foreach (var card in cards)
+        @foreach (var card in shown)
         {
             <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@(card.Schedule is null ? null : card.Schedule + " schedule")" Href="@($"teacher/subjects/{card.AssignmentId}")">
                 <Badge Tone="@(card.ModulesTotal == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesPosted of @card.ModulesTotal @(card.ModulesTotal == 1 ? "module" : "modules") posted</Badge>
@@ -40,11 +51,17 @@ else
 </PageWithAside>
 
 @code {
-    private IReadOnlyList<TeacherSubjectCard>? cards;
+    [SupplyParameterFromQuery(Name = "section")] private string? Section { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    private IReadOnlyList<TeacherSubjectCard>? cards;
+    private List<string> sections = [];
+    private List<TeacherSubjectCard> shown = [];
+
+    protected override async Task OnParametersSetAsync()
     {
         var teacherId = await Me.GetTeacherIdAsync();
         cards = teacherId is { } id ? await Teaching.GetTeacherCardsAsync(id) : [];
+        sections = cards.Select(c => c.SectionLabel).Distinct().ToList();
+        shown = cards.Where(c => Section is null || c.SectionLabel == Section).ToList();
     }
 }

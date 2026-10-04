@@ -164,6 +164,8 @@
 @code {
     [SupplyParameterFromQuery(Name = "status")] private string? StatusQuery { get; set; }
 
+    [SupplyParameterFromQuery(Name = "q")] private string? SearchQuery { get; set; }
+
     private int userId;
     private string status = "";
     private string reason = "";
@@ -185,6 +187,7 @@
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
         status = ReferralStatus.All.Contains(StatusQuery ?? "") ? StatusQuery! : "";
+        searchText = appliedSearch = SearchQuery?.Trim() ?? "";
         await Desk.EvaluateAsync();
         await LoadAsync();
     }

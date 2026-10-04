@@ -59,6 +59,22 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
             {
                 groups.Add(new SearchGroup("Subjects", subjects));
             }
+
+            var students = await FindTeacherStudentsAsync(db, user.UserId, tokens, ct);
+            if (students.Count > 0)
+            {
+                groups.Add(new SearchGroup("My students", students));
+            }
+        }
+        else if (user.Role == AppRoles.GuidanceCounselor)
+        {
+            var students = await ByName(db.Students.AsNoTracking().Where(s => s.Status == StudentStatus.Active), tokens).OrderBy(x => x.LastName).ThenBy(x => x.FirstName).Take(PerGroup * 2)
+                .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.Lrn }).ToListAsync(ct);
+            if (students.Count > 0)
+            {
+                groups.Add(new SearchGroup("Students", students.Select(s => new SearchHit(
+                    UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"LRN {s.Lrn} · see their referrals", $"guidance/referrals?q={Uri.EscapeDataString(s.Lrn)}", "graduation-cap")).ToList()));
+            }
         }
         else if (user.Role == AppRoles.Student)
         {
@@ -91,6 +107,26 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .Select(a => new { a.Id, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
             .ToListAsync(ct);
         return rows.Select(r => new SearchHit(r.Subject, TeachingService.SectionLabel(r.GradeLevel, r.Strand, r.Section), $"teacher/subjects/{r.Id}", "book-open")).ToList();
+    }
+
+    /// <summary>A teacher finds the students of their subjects by name or LRN; each hit opens the gradebook of the subject.</summary>
+    private static async Task<List<SearchHit>> FindTeacherStudentsAsync(AppDbContext db, int userId, string[] tokens, CancellationToken ct)
+    {
+        var pairs = await db.TeachingAssignments.AsNoTracking().Where(a => a.Teacher.UserId == userId)
+            .Select(a => new { a.Id, a.SectionId, a.SubjectId, Subject = a.Subject.Name }).ToListAsync(ct);
+        var hits = new List<SearchHit>();
+        foreach (var a in pairs)
+        {
+            var ids = Roster.StudentIds(db, a.SectionId, a.SubjectId);
+            var query = db.Students.AsNoTracking().Where(s => ids.Contains(s.Id));
+            foreach (var s in await ByName(query, tokens).OrderBy(x => x.LastName).ThenBy(x => x.FirstName).Take(PerGroup)
+                         .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.Lrn }).ToListAsync(ct))
+            {
+                hits.Add(new SearchHit(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"{a.Subject} · LRN {s.Lrn}", $"teacher/gradebook?subject={a.Id}", "graduation-cap"));
+            }
+        }
+
+        return hits.Take(PerGroup * 2).ToList();
     }
 
     /// <summary>A student finds their subjects, and the modules and work that are posted in them, by title.</summary>
