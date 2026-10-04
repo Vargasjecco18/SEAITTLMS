@@ -52,7 +52,25 @@
                     </td>
                     @if (ShowSubjects)
                     {
-                        <td class="col-subjects" title="@row.Subjects">@(row.Subjects ?? "None")</td>
+                        <td class="col-subjects">
+                            @if (SubjectNames(row) is { Count: > 0 } names)
+                            {
+                                @* Click the number to see the subjects (a plain HTML details box, it needs no script). *@
+                                <details class="subjects">
+                                    <summary>@(names.Count == 1 ? "1 subject" : $"{names.Count} subjects")</summary>
+                                    <ul>
+                                        @foreach (var name in names)
+                                        {
+                                            <li>@name</li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                            else
+                            {
+                                <span class="sub">None</span>
+                            }
+                        </td>
                     }
                     <td class="col-date">
                         <span>@PhilippineTime.FormatDate(row.EnrolledAtUtc)</span>
@@ -69,4 +87,8 @@
 
     /// <summary>The list of subjects makes the table wide, so the dashboard leaves it out.</summary>
     [Parameter] public bool ShowSubjects { get; set; }
+
+    /// <summary>The subject names of one enrollment (they are saved as one text, separated by commas).</summary>
+    private static List<string> SubjectNames(EnrollmentRow row) =>
+        (row.Subjects ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 }

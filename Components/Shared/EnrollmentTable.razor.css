@@ -69,25 +69,62 @@
     white-space: nowrap;
 }
 
-/* The subjects take the room that is left (max-width 0 lets the cell shrink) and end in "..." when they don't fit. */
+/* The subjects are a small "2 subjects" that opens the list in the cell. */
 .col-subjects {
-    width: 26%;
-    max-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 8.5rem;
+    vertical-align: top;
+}
+
+.subjects summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--brand-strong);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
     white-space: nowrap;
-    color: var(--text-muted);
+}
+
+.subjects summary::-webkit-details-marker {
+    display: none;
+}
+
+.subjects summary::after {
+    content: "";
+    width: 0.4rem;
+    height: 0.4rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 0.15s;
+}
+
+.subjects[open] summary::after {
+    transform: rotate(-135deg);
+}
+
+.subjects summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.subjects ul {
+    margin: 0.4rem 0 0;
+    padding: 0.5rem 0.75rem 0.5rem 1.4rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.subjects li + li {
+    margin-top: 0.2rem;
 }
 
 .col-date {
     white-space: nowrap;
-}
-
-/* The menu takes the left side from 960px, so the subjects only get a column when the page is really wide. */
-@media (max-width: 1179px) {
-    .table .col-subjects {
-        display: none;
-    }
 }
 
 /* Between the menu appearing and the page becoming wide, the date is the first to go. */
@@ -138,7 +175,6 @@
         margin-left: calc(34px + 0.75rem);
     }
 
-    .table .col-subjects,
     .table .col-date {
         display: none;
     }

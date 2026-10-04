@@ -141,7 +141,7 @@ WHERE st.id > 0;
 | `school_years` | `2026-2027`, with start and end dates. |
 | `terms` | Terms inside a school year (`term_number` 1, 2, ...). SEAITT uses terms, not semesters. `is_current` marks the running term. |
 | `tracks` | The senior high school tracks SEAITT offers: **ACAD** (Academic) and **TECH-PRO** (Technical-Professional) (`code`, `name`, `is_active`). |
-| `strands` | BUSSENT, EDUC, ENG, MED (ACAD) and CD1, HT1, HT2, USP (TECH-PRO) (`code`, `name`). Each strand belongs to one track (`track_id`). |
+| `strands` | BUSSENT, EDUC, ENG, MED, USP (ACAD) and CD1, HT1, HT2 (TECH-PRO) (`code`, `name`). Each strand belongs to one track (`track_id`). |
 | `schedules` | When classes meet: **AM** (morning), **MID** (midday), **PM** (afternoon). |
 | `strand_schedules` | Which schedules each strand runs in (BUSSENT: AM and PM, HT2: PM only, ...). |
 | `subjects` | The subject catalog (`code`, `name`). |
@@ -175,10 +175,10 @@ running it on a database that already has some of it changes nothing that exists
 | EDUC | ACAD | AM, PM | FILIPINO 1, CREATIVE COMPOSITION 1 |
 | ENG | ACAD | AM, PM | FINITE MATH 1, EMPOWERMENT TECHNOLOGY |
 | MED | ACAD | AM, PM | BIOLOGY 1, EMPOWERMENT TECHNOLOGY |
+| USP | ACAD | AM | SOCIAL SCIENCES, BIOLOGY 1 |
 | CD1 (CSS-VGD) | TECH-PRO | AM, PM | COMPUTER SYSTEM SERVICING 1 |
 | HT1 (KO-FBS) | TECH-PRO | AM, MID, PM | KITCHEN OPERATION 1 |
 | HT2 (FBS-KO) | TECH-PRO | PM | FOOD AND BEVERAGE OPERATIONS 1 |
-| USP | TECH-PRO | AM | SOCIAL SCIENCES, BIOLOGY 1 |
 
 The **2nd term** has the same six subjects for every strand: EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON,
 GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE and PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO.
@@ -192,6 +192,7 @@ Things that were decided for you, change them in the tables if they are not righ
 - An older version of the database had four tracks (ACAD, TVL, SPORTS, ARTS). On upgrade, **TVL became TECH-PRO**
   (kept, with its strands and students), and SPORTS and ARTS were removed if nothing used them (switched off, not
   deleted, if something did).
+- USP was first put under TECH-PRO. The migration `MoveUspToAcad` moves it (with the students, teachers and enrollments that list it) to ACAD.
 - Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
 
 ## Rules the database enforces

@@ -42,7 +42,7 @@ public class Track : AuditableEntity
     public bool IsActive { get; set; } = true;
 }
 
-/// <summary>A senior high school strand: BUSSENT, EDUC, ENG or MED (ACAD), CD1, HT1, HT2 or USP (TECH-PRO).</summary>
+/// <summary>A senior high school strand: BUSSENT, EDUC, ENG, MED or USP (ACAD), CD1, HT1 or HT2 (TECH-PRO).</summary>
 public class Strand : AuditableEntity
 {
     public string Code { get; set; } = "";

@@ -16,7 +16,14 @@
     @* Students get their account when the registrar enrolls them, so only the other roles can be added here. *@
     @if (tab.Role != AppRoles.Student)
     {
-        <Button IconName="user-plus" OnClick="OpenAdd">Add @tab.Singular</Button>
+        @if (AppRoles.OnlyOneAllowed(tab.Role) && counts.GetValueOrDefault(tab.Role) >= 1)
+        {
+            <span class="one-only"><Icon Name="info" Size="16" /> There is already a @tab.Singular. The school can have only one.</span>
+        }
+        else
+        {
+            <Button IconName="user-plus" OnClick="OpenAdd">Add @tab.Singular</Button>
+        }
     }
 </PageHeader>
 

@@ -101,6 +101,37 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             }
         }
 
+        // One administrator, one registrar and one guidance counselor. The check and the creation happen one at a time, so two
+        // administrators pressing Add together can't both get through.
+        var gate = AppRoles.OnlyOneAllowed(account.Role) ? RoleGates.GetOrAdd(account.Role, _ => new SemaphoreSlim(1, 1)) : null;
+        if (gate is not null)
+        {
+            await gate.WaitAsync(ct);
+        }
+
+        try
+        {
+            if (gate is not null)
+            {
+                await using var db = await dbFactory.CreateDbContextAsync(ct);
+                if (await db.Users.AnyAsync(u => u.RoleId == AppRoles.Ids[account.Role], ct))
+                {
+                    return ServiceResult.Fail($"There is already a {AppRoles.DisplayName(account.Role).ToLowerInvariant()}. The school can have only one.");
+                }
+            }
+
+            return await CreateStaffAsync(account, ct);
+        }
+        finally
+        {
+            gate?.Release();
+        }
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> RoleGates = new();
+
+    private async Task<ServiceResult> CreateStaffAsync(NewAccount account, CancellationToken ct)
+    {
         var result = await accounts.CreateAsync(account, ct);
         return result.Succeeded
             ? ServiceResult.Ok($"Added {FullName(account.FirstName.Trim(), NullIfBlank(account.MiddleName), account.LastName.Trim(), NullIfBlank(account.NameExtension))}.")

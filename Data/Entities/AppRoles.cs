@@ -29,4 +29,7 @@ public static class AppRoles
 
     /// <summary>The name to show on screen ("Guidance Counselor" instead of "GuidanceCounselor").</summary>
     public static string DisplayName(string? role) => role == GuidanceCounselor ? "Guidance Counselor" : role ?? "";
+
+    /// <summary>The school has exactly one administrator, one registrar and one guidance counselor, so no more can be added.</summary>
+    public static bool OnlyOneAllowed(string? role) => role is Admin or Registrar or GuidanceCounselor;
 }

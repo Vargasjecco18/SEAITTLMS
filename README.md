@@ -167,7 +167,7 @@ Menu: **Registrar > Enrollments** (`/registrar/enrollments`). Fill in:
 | First name, middle name, last name | The student's name. The middle name is optional. |
 | Term | The term to enroll in. The current term is chosen for you. |
 | Grade level | 11 or 12. |
-| Track, strand | ACAD (BUSSENT, EDUC, ENG, MED) or TECH-PRO (CD1, HT1, HT2, USP). Pick the track first, it filters the strands. |
+| Track, strand | ACAD (BUSSENT, EDUC, ENG, MED, USP) or TECH-PRO (CD1, HT1, HT2). Pick the track first, it filters the strands. |
 | Schedule | AM, MID or PM. Only the schedules the strand runs in are listed (for example HT2 only has PM). When there is only one, it is chosen for you. |
 | Section | Pick a section that already exists for that strand and schedule, or type a new one, for example `A`. The section is made if it is new. |
 | Enrolled subjects | The subjects of that strand for that grade level and term are ticked for you. Untick what the student does not take. At least one is needed. |
