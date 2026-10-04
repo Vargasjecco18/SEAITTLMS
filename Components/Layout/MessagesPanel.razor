@@ -1,0 +1,234 @@
+@implements IDisposable
+@inject MessageService Messages
+
+@* The inside of the Messages box: the conversations at the left, the open conversation at the right. On a phone one of the
+   two shows at a time. *@
+<div class="messages @(selected is not null ? "has-thread" : "")">
+    <section class="list" aria-label="Conversations">
+        <div class="list-head">
+            <div class="search">
+                <Icon Name="search" Size="16" Class="search-icon" />
+                <input type="search" placeholder="Find a person" aria-label="Find a person" autocomplete="off" @bind="search" @bind:event="oninput" @bind:after="SearchAsync" />
+            </div>
+        </div>
+
+        <div class="list-body">
+            @if (!string.IsNullOrWhiteSpace(search))
+            {
+                <p class="list-title">People</p>
+                @if (contacts.Count == 0)
+                {
+                    <p class="empty">Nobody found.</p>
+                }
+
+                @foreach (var contact in contacts)
+                {
+                    <button type="button" class="person @(selected?.UserId == contact.UserId ? "active" : "")" @onclick="() => SelectAsync(contact)">
+                        <Avatar Name="@contact.Name" Size="38" />
+                        <span class="person-text">
+                            <span class="person-name">@contact.Name</span>
+                            <span class="person-sub">@contact.Detail</span>
+                        </span>
+                    </button>
+                }
+            }
+            else
+            {
+                @if (conversations.Count == 0)
+                {
+                    <div class="empty big">
+                        <Icon Name="message-square" Size="28" />
+                        <p>No conversations yet.</p>
+                        <p class="hint">Type a name above to write to somebody.</p>
+                    </div>
+                }
+
+                @foreach (var conversation in conversations)
+                {
+                    <button type="button" class="person @(selected?.UserId == conversation.With.UserId ? "active" : "") @(conversation.Unread > 0 ? "unread" : "")"
+                            @onclick="() => SelectAsync(conversation.With)">
+                        <Avatar Name="@conversation.With.Name" Size="38" />
+                        <span class="person-text">
+                            <span class="person-name">@conversation.With.Name</span>
+                            <span class="person-sub">@(conversation.LastFromMe ? "You: " : "")@conversation.LastBody</span>
+                        </span>
+                        @if (conversation.Unread > 0)
+                        {
+                            <span class="count">@conversation.Unread</span>
+                        }
+                    </button>
+                }
+            }
+        </div>
+    </section>
+
+    <section class="thread" aria-label="Conversation">
+        @if (selected is null)
+        {
+            <div class="empty big">
+                <Icon Name="message-circle" Size="32" />
+                <p>Pick a conversation or search for a person.</p>
+            </div>
+        }
+        else
+        {
+            <header class="thread-head">
+                <button type="button" class="back" aria-label="Back to the conversations" @onclick="Back"><Icon Name="chevron-left" Size="20" /></button>
+                <Avatar Name="@selected.Name" Size="38" />
+                <div class="thread-who">
+                    <strong>@selected.Name</strong>
+                    <span>@selected.Detail</span>
+                </div>
+            </header>
+
+            <div class="bubbles" @ref="bubblesElement">
+                @if (thread.Count == 0)
+                {
+                    <p class="empty">No messages yet. Say hello.</p>
+                }
+
+                @foreach (var message in thread)
+                {
+                    <div class="bubble @(message.Mine ? "mine" : "theirs")">
+                        <p>@message.Body</p>
+                        <span class="time">@PhilippineTime.FormatDate(message.SentAtUtc) · @PhilippineTime.FormatTime(message.SentAtUtc)</span>
+                    </div>
+                }
+            </div>
+
+            @if (closed)
+            {
+                <div class="closed" role="status">
+                    <Icon Name="moon" Size="18" />
+                    <span>@MessagingHours.ClosedText</span>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <p class="error" role="alert">@error</p>
+            }
+
+            <form class="composer" @onsubmit="SendAsync">
+                <input type="text" placeholder="@(closed ? "Messages are closed until 7:00 AM" : "Write a message")" aria-label="Message" maxlength="@MessageService.MaxLength"
+                       autocomplete="off" disabled="@closed" @bind="draft" @bind:event="oninput" />
+                <button type="submit" class="send" aria-label="Send" disabled="@(closed || sending || string.IsNullOrWhiteSpace(draft))"><Icon Name="send" Size="18" /></button>
+            </form>
+        }
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public int UserId { get; set; }
+
+    /// <summary>Called when something was read or sent, so the numbers in the header can be updated.</summary>
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private IReadOnlyList<Conversation> conversations = [];
+    private IReadOnlyList<Contact> contacts = [];
+    private IReadOnlyList<ChatMessage> thread = [];
+    private Contact? selected;
+    private string search = "";
+    private string draft = "";
+    private string? error;
+    private bool closed;
+    private bool sending;
+    private bool scrollDown;
+    private ElementReference bubblesElement;
+    private Timer? timer;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        closed = Messages.IsClosed;
+        conversations = await Messages.GetConversationsAsync(UserId);
+
+        // While the box is open it looks for new messages every few seconds.
+        timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(8));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (scrollDown)
+        {
+            scrollDown = false;
+            try
+            {
+                await JS.InvokeVoidAsync("seaitt.scrollToEnd", bubblesElement);
+            }
+            catch (JSException)
+            {
+            }
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            closed = Messages.IsClosed;
+            conversations = await Messages.GetConversationsAsync(UserId);
+            if (selected is not null)
+            {
+                var latest = await Messages.GetThreadAsync(UserId, selected.UserId);
+                scrollDown = latest.Count != thread.Count;
+                thread = latest;
+            }
+
+            StateHasChanged();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private async Task SearchAsync() =>
+        contacts = string.IsNullOrWhiteSpace(search) ? [] : await Messages.GetContactsAsync(UserId, search);
+
+    private async Task SelectAsync(Contact contact)
+    {
+        selected = contact;
+        error = null;
+        draft = "";
+        thread = await Messages.GetThreadAsync(UserId, contact.UserId);
+        conversations = await Messages.GetConversationsAsync(UserId);
+        scrollDown = true;
+        await OnChanged.InvokeAsync();
+    }
+
+    private void Back() => selected = null;
+
+    private async Task SendAsync()
+    {
+        if (selected is null || sending)
+        {
+            return;
+        }
+
+        sending = true;
+        error = null;
+        try
+        {
+            var result = await Messages.SendAsync(UserId, selected.UserId, draft);
+            closed = Messages.IsClosed;
+            if (result.Succeeded)
+            {
+                draft = "";
+                thread = await Messages.GetThreadAsync(UserId, selected.UserId);
+                conversations = await Messages.GetConversationsAsync(UserId);
+                scrollDown = true;
+            }
+            else
+            {
+                error = result.Error;
+            }
+        }
+        finally
+        {
+            sending = false;
+        }
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

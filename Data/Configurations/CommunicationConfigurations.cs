@@ -1,0 +1,35 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SEAITT_LMS.Data.Entities;
+
+namespace SEAITT_LMS.Data;
+
+internal sealed class MessageConfiguration : IEntityTypeConfiguration<Message>
+{
+    public void Configure(EntityTypeBuilder<Message> b)
+    {
+        b.Property(m => m.Body).HasMaxLength(2000).IsRequired();
+
+        // A deleted account takes its messages with it.
+        b.HasOne(m => m.Sender).WithMany().HasForeignKey(m => m.SenderUserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(m => m.Recipient).WithMany().HasForeignKey(m => m.RecipientUserId).OnDelete(DeleteBehavior.Cascade);
+
+        // The unread count and a conversation are the two things that are asked all the time.
+        b.HasIndex(m => new { m.RecipientUserId, m.ReadAtUtc });
+        b.HasIndex(m => new { m.SenderUserId, m.RecipientUserId, m.CreatedAtUtc });
+    }
+}
+
+internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notification>
+{
+    public void Configure(EntityTypeBuilder<Notification> b)
+    {
+        b.Property(n => n.Kind).HasMaxLength(30).IsRequired();
+        b.Property(n => n.Title).HasMaxLength(200).IsRequired();
+        b.Property(n => n.Body).HasMaxLength(500);
+        b.Property(n => n.Link).HasMaxLength(300);
+
+        b.HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAtUtc });
+    }
+}

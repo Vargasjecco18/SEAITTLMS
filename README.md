@@ -19,7 +19,9 @@ What exists so far:
 - **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
   strands and the subjects of grade 11.
-- **A header and a menu** with icons, light and dark mode (it follows your computer), and a phone-friendly layout.
+- **A header** with a search bar in the middle and, at the right, **messages**, **notifications** and **settings**
+  (light / night / auto look, animations on or off). The signed-in person's name and role are at the bottom of the menu.
+  Everything is phone-friendly.
 
 Lessons, assignments and quizzes are next. The database design is in [docs/database.md](docs/database.md).
 
@@ -141,6 +143,19 @@ Set `ConnectionStrings__Default` and `Seed__Admin__Password` as environment vari
 you want a different one) and run `dotnet ef database update` (or `Database__MigrateOnStartup=true` for the first
 start). Don't copy `appsettings.Local.json` to a server. The sign-in cookie is https-only outside Development.
 Persist the ASP.NET Core Data Protection keys if you run in a container.
+
+## The header
+
+| What | How it works |
+|---|---|
+| **Search** (middle) | Type and press Enter: the search page lists the pages you can open and, depending on your role, the people you work with. An administrator finds every account, a registrar finds students. |
+| **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor and the registrar; a teacher also to students and the other staff. **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time**: the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
+| **Notifications** (bell) | What the system wants you to know (a new message, and later new modules, grades and deadlines). The number is how many are new. Click one to open the page it is about. |
+| **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser. |
+| **Name and role** (bottom of the menu) | Who is signed in. Click the name to open My account, the arrow button signs you out. |
+
+The code: `Components/Layout/HeaderTools.razor` (the three buttons), `MessagesPanel.razor` (the Messages box),
+`Services/MessageService.cs` (the rules and the 7 PM to 7 AM closing time), `Services/NotificationService.cs`.
 
 ## Who sees what
 
@@ -272,17 +287,17 @@ Good to know:
 ```
 Program.cs                 Wiring: database, login cookie, pages
 Auth/                      Custom login: PasswordHasher, AuthService, cookie checks, UserAccountService, RoleHome
-Services/                  What the registrar and the administrator do: EnrollmentService, UserManagementService, StudentCredentials
+Services/                  What the people do: EnrollmentService, UserManagementService, MessageService, NotificationService, SearchService, ...
 Data/                      AppDbContext, entities, EF configurations, migrations, startup initializer
 Data/Queries/              What the pages read from the database
 Components/App.razor.css   The theme: colors, sizes, dark mode
-Components/Layout/         Header, menu, account menu, sign-in layout, public layout
+Components/Layout/         Header (with the messages, notifications and settings), menu, user card, sign-in layout, public layout
 Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
 Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
   Admin/                     Dashboard, UsersManagement
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
-  Account/                   MyAccount
+  Account/                   MyAccount, Search
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero-1.jpg, hero-2.jpg, hero-3.jpg)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it

@@ -6,7 +6,7 @@
        Clicking next to it does not close it, so a half-filled form is not lost by accident. The key handler sits on the
        whole overlay (which can take the focus too), so Escape still works after a click next to the box. *@
     <div class="backdrop" tabindex="-1" @onkeydown="OnKeyDown">
-        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
+        <div class="dialog @(Large ? "large" : "")" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
             <header class="dialog-head">
                 <h2 id="@titleId">@Title</h2>
                 <button type="button" class="close" aria-label="Close" title="Close" @onclick="Close"><Icon Name="x" Size="20" /></button>
@@ -26,6 +26,9 @@
     [Parameter] public bool Open { get; set; }
 
     [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    /// <summary>A wider box, for content like a conversation.</summary>
+    [Parameter] public bool Large { get; set; }
 
     /// <summary>Called when the X or Escape asks to close it. The page then sets Open to false.</summary>
     [Parameter] public EventCallback OnClose { get; set; }

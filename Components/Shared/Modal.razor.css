@@ -1,4 +1,5 @@
 .backdrop {
+    animation: fade-in var(--dur) var(--ease);
     position: fixed;
     inset: 0;
     z-index: 100;
@@ -12,11 +13,16 @@
 
 .dialog {
     width: min(620px, 100%);
+    animation: pop-in var(--dur) var(--ease);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow-lg);
     outline: none;
+}
+
+.dialog.large {
+    width: min(880px, 100%);
 }
 
 .dialog-head {

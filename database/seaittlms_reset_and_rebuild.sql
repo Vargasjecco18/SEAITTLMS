@@ -742,5 +742,56 @@ DROP TABLE `class_offerings`;
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004141346_RemoveClassOfferings', '9.0.20');
 
+SET FOREIGN_KEY_CHECKS = 0;
+
+UPDATE `students` SET `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) WHERE `id` > 0 AND `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'TECH-PRO') AS `x`) AND (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) IS NOT NULL AND `strand_id` = (SELECT `id` FROM (SELECT `id` FROM `strands` WHERE `code` = 'USP') AS `x`);
+
+UPDATE `teachers` SET `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) WHERE `id` > 0 AND `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'TECH-PRO') AS `x`) AND (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) IS NOT NULL AND `strand_id` = (SELECT `id` FROM (SELECT `id` FROM `strands` WHERE `code` = 'USP') AS `x`);
+
+UPDATE `enrollments` SET `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) WHERE `id` > 0 AND `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'TECH-PRO') AS `x`) AND (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) IS NOT NULL AND `strand_id` = (SELECT `id` FROM (SELECT `id` FROM `strands` WHERE `code` = 'USP') AS `x`);
+
+UPDATE `strands` SET `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) WHERE `id` > 0 AND `track_id` = (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'TECH-PRO') AS `x`) AND (SELECT `id` FROM (SELECT `id` FROM `tracks` WHERE `code` = 'ACAD') AS `x`) IS NOT NULL AND `code` = 'USP';
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004170025_MoveUspToAcad', '9.0.20');
+
+CREATE TABLE `messages` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `sender_user_id` int NOT NULL,
+    `recipient_user_id` int NOT NULL,
+    `body` varchar(2000) CHARACTER SET utf8mb4 NOT NULL,
+    `read_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_messages` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_messages_users_recipient_user_id` FOREIGN KEY (`recipient_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_messages_users_sender_user_id` FOREIGN KEY (`sender_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `notifications` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NOT NULL,
+    `kind` varchar(30) CHARACTER SET utf8mb4 NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `body` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `link` varchar(300) CHARACTER SET utf8mb4 NULL,
+    `is_read` tinyint(1) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_notifications` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_notifications_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_messages_recipient_user_id_read_at_utc` ON `messages` (`recipient_user_id`, `read_at_utc`);
+
+CREATE INDEX `ix_messages_sender_user_id_recipient_user_id_created_at_utc` ON `messages` (`sender_user_id`, `recipient_user_id`, `created_at_utc`);
+
+CREATE INDEX `ix_notifications_user_id_is_read_created_at_utc` ON `notifications` (`user_id`, `is_read`, `created_at_utc`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004171144_AddMessagesAndNotifications', '9.0.20');
+
 COMMIT;
 

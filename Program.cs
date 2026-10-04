@@ -55,6 +55,10 @@ builder.Services.AddScoped<UserAccountService>();
 builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(EnrollmentOptions.SectionName));
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<CurrentUser>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<MessageService>();
+builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
 builder.Services

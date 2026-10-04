@@ -55,6 +55,10 @@ erDiagram
     enrollments ||--o{ enrollment_subjects : ""
     subjects ||--o{ enrollment_subjects : ""
 
+    users ||--o{ messages : "sender"
+    users ||--o{ messages : "recipient"
+    users ||--o{ notifications : ""
+
     tracks |o--o{ students : "summary"
     strands |o--o{ students : "summary"
     subjects |o--o{ students : "summary"
@@ -156,6 +160,16 @@ separated by commas, for reading the table; the program uses `enrollment_subject
 enrolled, so a later change (a new name, a promotion) does not rewrite what was true at the time. The Users page does keep
 a student's *name and LRN* in step in their enrollments when an administrator corrects them. `enrolled_by_user_id` is the
 registrar who did it.
+
+### Messages and notifications
+
+| Table | What it holds |
+|---|---|
+| `messages` | A message from one account to another: `sender_user_id`, `recipient_user_id`, `body` (up to 2000 characters), `created_at_utc` (when it was sent) and `read_at_utc` (empty while unread). |
+| `notifications` | Something the system tells a person under the bell: `user_id`, `kind` (message, module, grade, ...), `title`, `body`, `link` (the page it is about), `is_read`. |
+
+Both are deleted with the account they belong to. Messages can only be sent between 7:00 AM and 7:00 PM Philippine time
+and only to the roles the sender is allowed to write to (`MessageService`): the database does not check either.
 
 ## The school data that comes with the database
 

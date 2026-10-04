@@ -399,6 +399,9 @@
 
     [Parameter] public string? RoleKey { get; set; }
 
+    /// <summary>Words to search for, from the address (?q=...).</summary>
+    [SupplyParameterFromQuery(Name = "q")] private string? InitialSearch { get; set; }
+
     private Tab tab = Tabs[0];
     private string? loadedKey;
     private int currentUserId;
@@ -437,11 +440,13 @@
             return;
         }
 
-        if (found.Key != loadedKey)
+        // The tab and the words in the address (?q=...) decide what is shown; the search page links here with a name.
+        var loading = $"{found.Key}|{InitialSearch}";
+        if (loading != loadedKey)
         {
             tab = found;
-            loadedKey = found.Key;
-            searchText = appliedSearch = "";
+            loadedKey = loading;
+            searchText = appliedSearch = InitialSearch?.Trim() ?? "";
             pageNumber = 1;
             message = null;
             list = null;

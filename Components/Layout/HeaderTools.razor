@@ -1,0 +1,211 @@
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CurrentUser Me
+@inject MessageService Messages
+@inject NotificationService Notifications
+@inject NavigationManager Navigation
+
+@* The three buttons at the right of the header: messages, notifications and settings. It is a live component, so the
+   numbers on the buttons keep up with what happens while a page is open. *@
+@if (user is not null)
+{
+    <div class="tools">
+        <button type="button" class="tool" aria-label="@MessagesLabel" title="Messages" @onclick="OpenMessages">
+            <Icon Name="message-square" Size="20" />
+            @if (unreadMessages > 0)
+            {
+                <span class="badge" aria-hidden="true">@Count(unreadMessages)</span>
+            }
+        </button>
+
+        <details class="pop" id="notifications-menu" @ontoggle="OnNotificationsToggle">
+            <summary class="tool" aria-label="@NotificationsLabel" title="Notifications">
+                <Icon Name="bell" Size="20" />
+                @if (unreadNotifications > 0)
+                {
+                    <span class="badge" aria-hidden="true">@Count(unreadNotifications)</span>
+                }
+            </summary>
+
+            <div class="panel notifications">
+                <div class="panel-head">
+                    <strong>Notifications</strong>
+                    @if (unreadNotifications > 0)
+                    {
+                        <button type="button" class="link-button" @onclick="MarkAllReadAsync">Mark all as read</button>
+                    }
+                </div>
+
+                @if (notificationList is not { Items.Count: > 0 })
+                {
+                    <p class="empty"><Icon Name="bell" Size="22" /><span>Nothing new. You will see here what happens in your subjects.</span></p>
+                }
+                else
+                {
+                    <ul class="notification-list">
+                        @foreach (var item in notificationList.Items)
+                        {
+                            <li class="@(item.IsRead ? "" : "unread")">
+                                <a href="@(item.Link ?? "#")" @onclick="() => OpenNotificationAsync(item)">
+                                    <span class="kind"><Icon Name="@KindIcon(item.Kind)" Size="18" /></span>
+                                    <span class="text">
+                                        <span class="title">@item.Title</span>
+                                        @if (!string.IsNullOrEmpty(item.Body))
+                                        {
+                                            <span class="body">@item.Body</span>
+                                        }
+                                        <span class="when">@PhilippineTime.FormatDate(item.CreatedAtUtc) · @PhilippineTime.FormatTime(item.CreatedAtUtc)</span>
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </details>
+
+        <details class="pop">
+            <summary class="tool" aria-label="Settings" title="Settings">
+                <Icon Name="settings" Size="20" />
+            </summary>
+
+            <div class="panel settings">
+                <p class="group-title">Appearance</p>
+                <div class="choices" role="group" aria-label="Appearance">
+                    <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
+                    <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Night</span></button>
+                    <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
+                </div>
+                <p class="hint">Auto follows the setting of your computer.</p>
+
+                <button type="button" class="switch" data-motion-toggle>
+                    <span class="switch-text">
+                        <strong>Animations</strong>
+                        <small>Small movements when pages and menus open</small>
+                    </span>
+                    <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                </button>
+
+                <a class="settings-link" href="@AccountHref"><Icon Name="id-card" Size="18" /><span>My account</span></a>
+            </div>
+        </details>
+    </div>
+
+    <Modal Open="messagesOpen" Title="Messages" Large="true" OnClose="CloseMessages">
+        @if (messagesOpen)
+        {
+            <MessagesPanel UserId="user.UserId" OnChanged="RefreshCountsAsync" />
+        }
+    </Modal>
+}
+
+@code {
+    private CurrentUserInfo? user;
+    private int unreadMessages;
+    private int unreadNotifications;
+    private NotificationList? notificationList;
+    private bool messagesOpen;
+    private Timer? timer;
+
+    private string MessagesLabel => unreadMessages > 0 ? $"Messages, {unreadMessages} unread" : "Messages";
+
+    private string NotificationsLabel => unreadNotifications > 0 ? $"Notifications, {unreadNotifications} new" : "Notifications";
+
+    /// <summary>Each role has its own first page; "My account" is the same for everybody.</summary>
+    private static string AccountHref => "account";
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await Me.GetAsync();
+        if (user is null)
+        {
+            return;
+        }
+
+        await RefreshCountsAsync();
+        await LoadNotificationsAsync();
+
+        // The numbers are looked at again every half minute while the page is open.
+        timer = new Timer(_ => _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await RefreshCountsAsync();
+                if (notificationList is not null)
+                {
+                    await LoadNotificationsAsync();
+                }
+
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task RefreshCountsAsync()
+    {
+        if (user is null)
+        {
+            return;
+        }
+
+        unreadMessages = await Messages.UnreadCountAsync(user.UserId);
+        unreadNotifications = await Notifications.UnreadCountAsync(user.UserId);
+    }
+
+    private async Task LoadNotificationsAsync()
+    {
+        if (user is not null)
+        {
+            notificationList = await Notifications.GetAsync(user.UserId);
+            unreadNotifications = notificationList.Unread;
+        }
+    }
+
+    private async Task OnNotificationsToggle() => await LoadNotificationsAsync();
+
+    private async Task OpenNotificationAsync(NotificationItem item)
+    {
+        if (user is not null && !item.IsRead)
+        {
+            await Notifications.MarkReadAsync(user.UserId, item.Id);
+            await LoadNotificationsAsync();
+        }
+    }
+
+    private async Task MarkAllReadAsync()
+    {
+        if (user is not null)
+        {
+            await Notifications.MarkAllReadAsync(user.UserId);
+            await LoadNotificationsAsync();
+        }
+    }
+
+    private void OpenMessages() => messagesOpen = true;
+
+    private async Task CloseMessages()
+    {
+        messagesOpen = false;
+        await RefreshCountsAsync();
+    }
+
+    private static string Count(int n) => n > 9 ? "9+" : n.ToString();
+
+    private static string KindIcon(string kind) => kind switch
+    {
+        "message" => "message-square",
+        "module" => "book-open",
+        "activity" or "quiz" or "task" => "clipboard-list",
+        "grade" => "award",
+        "due" => "alarm-clock",
+        "referral" => "flag",
+        "attendance" => "calendar-check",
+        "achievement" => "trophy",
+        _ => "bell",
+    };
+
+    public void Dispose() => timer?.Dispose();
+}

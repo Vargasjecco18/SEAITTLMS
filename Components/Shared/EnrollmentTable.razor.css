@@ -127,10 +127,14 @@
     white-space: nowrap;
 }
 
-/* Between the menu appearing and the page becoming wide, the date is the first to go. */
-@media (min-width: 960px) and (max-width: 1023px) {
+/* Below 1180px (the menu takes the left side from 960px) the date is the first to go, and the name gets a little less room. */
+@media (max-width: 1179px) {
     .table .col-date {
         display: none;
+    }
+
+    .person {
+        min-width: 170px;
     }
 }
 

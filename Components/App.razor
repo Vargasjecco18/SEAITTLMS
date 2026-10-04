@@ -7,6 +7,19 @@
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <link rel="icon" type="image/png" href="@Assets["favicon.png"]" />
+    @* The look the person chose in the settings menu (light, dark or automatic) is applied before the page is drawn, so the
+       page does not flash white first. wwwroot/app.js saves the choice. *@
+    <script>
+        (function () {
+            try {
+                var root = document.documentElement;
+                var theme = localStorage.getItem('seaitt-theme');
+                if (theme === 'light' || theme === 'dark') { root.setAttribute('data-theme', theme); }
+                root.setAttribute('data-theme-pref', theme === 'light' || theme === 'dark' ? theme : 'auto');
+                if (localStorage.getItem('seaitt-motion') === 'off') { root.setAttribute('data-motion', 'off'); }
+            } catch (e) { }
+        })();
+    </script>
     @* Each component's own .razor.css is bundled into this one file by Blazor. The colors live in App.razor.css. *@
     <link rel="stylesheet" href="@Assets["SEAITT-LMS.styles.css"]" />
     <HeadOutlet />

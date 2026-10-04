@@ -61,8 +61,59 @@ html {
     --sidebar-w: 264px;
 }
 
+/* Dark colors. They apply when dark is chosen in the settings menu (the page then has data-theme="dark"), and when
+   nothing is chosen ("auto") and the computer is set to dark. data-theme="light" keeps the light colors. */
+html[data-theme="dark"] {
+    --bg: #0b1220;
+    --surface: #121b2d;
+    --surface-2: #19243b;
+    --border: #25324d;
+    --text: #e8edf6;
+    --text-muted: #9aa9c2;
+
+    --brand: #6b9bff;
+    --brand-strong: #9bbaff;
+    --brand-soft: rgba(107, 155, 255, 0.16);
+    --brand-ring: rgba(107, 155, 255, 0.35);
+    --brand-gradient: linear-gradient(135deg, #3b6fe0, #5b54e8);
+    --btn-bg: #3b6fe0;
+    --btn-bg-hover: #2f60cf;
+
+    --success: #86efac;
+    --success-soft: rgba(34, 197, 94, 0.16);
+    --info: #93c5fd;
+    --info-soft: rgba(59, 130, 246, 0.2);
+    --warning: #fcd34d;
+    --warning-soft: rgba(245, 158, 11, 0.16);
+    --danger: #fca5a5;
+    --danger-soft: rgba(239, 68, 68, 0.18);
+    --danger-solid: #c62828;
+    --danger-solid-hover: #b71c1c;
+
+    --blue: #9bbaff;
+    --blue-soft: rgba(107, 155, 255, 0.16);
+    --green: #86efac;
+    --green-soft: rgba(34, 197, 94, 0.16);
+    --amber: #fcd34d;
+    --amber-soft: rgba(245, 158, 11, 0.16);
+    --violet: #c4b5fd;
+    --violet-soft: rgba(139, 92, 246, 0.2);
+    --rose: #fda4af;
+    --rose-soft: rgba(244, 63, 94, 0.16);
+    --slate: #cbd5e1;
+    --slate-soft: rgba(148, 163, 184, 0.16);
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+}
+
+html[data-theme="light"] {
+    color-scheme: light;
+}
+
 @media (prefers-color-scheme: dark) {
-    html {
+    html:not([data-theme]) {
         --bg: #0b1220;
         --surface: #121b2d;
         --surface-2: #19243b;
@@ -137,4 +188,53 @@ body {
     font-size: 16px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- a little motion ---------- */
+html {
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --dur: 0.25s;
+}
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
+}
+
+/* Animations off: from the settings menu, or when the computer asks for less motion. */
+html[data-motion="off"] ::deep *,
+html[data-motion="off"] ::deep *::before,
+html[data-motion="off"] ::deep *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html ::deep *,
+    html ::deep *::before,
+    html ::deep *::after {
+        animation-duration: 0.001ms !important;
+        animation-delay: 0s !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }

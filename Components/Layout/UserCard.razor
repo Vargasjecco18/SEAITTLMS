@@ -1,0 +1,27 @@
+@using System.Security.Claims
+
+@* Who is signed in, at the bottom of the menu, with the button to sign out. *@
+<AuthorizeView>
+    <Authorized>
+        @{
+            var name = context.User.Identity?.Name ?? "";
+            var role = AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role));
+        }
+        <div class="card">
+            <a class="who" href="account" title="My account">
+                <Avatar Name="@name" Size="40" />
+                <span class="text">
+                    <span class="name">@name</span>
+                    <span class="role">@role</span>
+                </span>
+            </a>
+
+            <form method="post" action="/account/logout">
+                <AntiforgeryToken />
+                <button type="submit" class="sign-out" aria-label="Sign out" title="Sign out">
+                    <Icon Name="log-out" Size="18" />
+                </button>
+            </form>
+        </div>
+    </Authorized>
+</AuthorizeView>
