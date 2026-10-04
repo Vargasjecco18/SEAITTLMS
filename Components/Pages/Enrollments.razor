@@ -1,0 +1,152 @@
+@page "/registrar/enrollments"
+@attribute [Authorize(Roles = AppRoles.RegistrarAccess)]
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@using SEAITT_LMS.Services
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject EnrollmentService Enrollment
+@inject NavigationManager Navigation
+
+<PageTitle>Enrollments · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Enrollments"
+            Subtitle="@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")"
+            IconName="clipboard-list">
+    <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll a student</ButtonLink>
+</PageHeader>
+
+@if (lookups is not null && result is not null)
+{
+    <div class="stack">
+        <Card>
+            @* A plain form that opens this same page with the choices in the address. No script needed. *@
+            <form method="get" action="registrar/enrollments" class="filters">
+                <Field For="q" Label="Search" Class="grow">
+                    <input id="q" name="q" type="search" placeholder="Name or LRN" value="@Q" autocomplete="off" />
+                </Field>
+                <Field For="term" Label="Term">
+                    <select id="term" name="term">
+                        <option value="">All terms</option>
+                        @foreach (var term in lookups.Terms)
+                        {
+                            <option value="@term.Id" selected="@(Term == term.Id)">@term.SchoolYear · @term.Name</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="strand" Label="Strand">
+                    <select id="strand" name="strand">
+                        <option value="">All strands</option>
+                        @foreach (var strand in lookups.Strands)
+                        {
+                            <option value="@strand.Id" selected="@(Strand == strand.Id)">@strand.Code</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="schedule" Label="Schedule">
+                    <select id="schedule" name="schedule">
+                        <option value="">All</option>
+                        @foreach (var schedule in lookups.Schedules)
+                        {
+                            <option value="@schedule.Id" selected="@(Schedule == schedule.Id)">@schedule.Code</option>
+                        }
+                    </select>
+                </Field>
+                <div class="filter-actions">
+                    <Button Type="submit" IconName="search">Search</Button>
+                    @if (HasFilter)
+                    {
+                        <ButtonLink Href="registrar/enrollments" Variant="ButtonVariant.Ghost">Clear</ButtonLink>
+                    }
+                </div>
+            </form>
+        </Card>
+
+        <Card>
+            @if (result.Items.Count == 0)
+            {
+                <EmptyState IconName="search-x" Title="@(HasFilter ? "No enrollments match" : "No enrollments yet")">
+                    @if (HasFilter)
+                    {
+                        <p>Try another name, LRN or filter.</p>
+                        <ButtonLink Href="registrar/enrollments" Variant="ButtonVariant.Secondary">Show everything</ButtonLink>
+                    }
+                    else
+                    {
+                        <p>Enrolled students will show up here.</p>
+                        <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll the first student</ButtonLink>
+                    }
+                </EmptyState>
+            }
+            else
+            {
+                <div class="table-in-card">
+                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" />
+                </div>
+
+                @if (result.PageCount > 1)
+                {
+                    <nav class="pager" aria-label="Pages">
+                        @if (result.Page > 1)
+                        {
+                            <a class="pager-link" href="@PageUrl(result.Page - 1)"><Icon Name="chevron-left" Size="16" /> Previous</a>
+                        }
+                        else
+                        {
+                            <span class="pager-link off"><Icon Name="chevron-left" Size="16" /> Previous</span>
+                        }
+                        <span class="pager-count">Page @result.Page of @result.PageCount</span>
+                        @if (result.Page < result.PageCount)
+                        {
+                            <a class="pager-link" href="@PageUrl(result.Page + 1)">Next <Icon Name="chevron-right" Size="16" /></a>
+                        }
+                        else
+                        {
+                            <span class="pager-link off">Next <Icon Name="chevron-right" Size="16" /></span>
+                        }
+                    </nav>
+                }
+            }
+        </Card>
+    </div>
+}
+
+@code {
+    private const int PageSize = 20;
+
+    [SupplyParameterFromQuery(Name = "q")] private string? Q { get; set; }
+
+    // Read as text so an address typed by hand (?term=abc) just means "no filter" instead of an error page.
+    [SupplyParameterFromQuery(Name = "term")] private string? TermText { get; set; }
+
+    [SupplyParameterFromQuery(Name = "strand")] private string? StrandText { get; set; }
+
+    [SupplyParameterFromQuery(Name = "schedule")] private string? ScheduleText { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")] private string? PageText { get; set; }
+
+    private int? Term => ParseNumber(TermText);
+
+    private int? Strand => ParseNumber(StrandText);
+
+    private int? Schedule => ParseNumber(ScheduleText);
+
+    private static int? ParseNumber(string? text) => int.TryParse(text, out var number) && number > 0 ? number : null;
+
+    private EnrollmentLookups? lookups;
+    private EnrollmentPage? result;
+
+    private bool HasFilter => !string.IsNullOrWhiteSpace(Q) || Term is not null || Strand is not null || Schedule is not null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lookups = await Enrollment.GetLookupsAsync();
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule), ParseNumber(PageText) ?? 1, PageSize);
+    }
+
+    /// <summary>This page's address with another page number (the search and filters stay).</summary>
+    private string PageUrl(int page) =>
+        Navigation.GetUriWithQueryParameters(new Dictionary<string, object?> { ["page"] = page });
+}

@@ -10,7 +10,9 @@
 -- To keep your data, do NOT run this file. Start the app instead (dotnet watch): it upgrades
 -- the database and keeps everything.
 --
--- Afterwards the database is empty, except the five roles and the four tracks.
+-- Afterwards the database is empty, except the five roles and the school setup (school year
+-- 2026-2027 with its two terms, the ACAD and TECH-PRO tracks and their strands, the schedules
+-- AM, MID and PM, the subjects and the grade 11 curriculum).
 -- Start the app to create the first administrator (README.md, "First-time setup").
 --
 -- HOW TO RUN IT IN MYSQL WORKBENCH
@@ -624,6 +626,116 @@ ALTER TABLE `teachers` ADD CONSTRAINT `fk_teachers_tracks_track_id` FOREIGN KEY 
 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261003142335_AddPlacementToStudentsAndTeachers', '9.0.20');
+
+UPDATE `tracks` SET `code` = 'TECH-PRO', `name` = 'Technical-Professional' WHERE `id` = 2 AND `code` = 'TVL' AND NOT EXISTS (SELECT 1 FROM (SELECT `id` FROM `tracks` WHERE `code` = 'TECH-PRO' OR `name` = 'Technical-Professional') AS `taken`);
+
+DELETE FROM `tracks` WHERE `id` IN (3, 4) AND `code` IN ('SPORTS', 'ARTS') AND NOT EXISTS (SELECT 1 FROM `strands` WHERE `strands`.`track_id` = `tracks`.`id`) AND NOT EXISTS (SELECT 1 FROM `students` WHERE `students`.`track_id` = `tracks`.`id`) AND NOT EXISTS (SELECT 1 FROM `teachers` WHERE `teachers`.`track_id` = `tracks`.`id`);
+
+UPDATE `tracks` SET `is_active` = 0 WHERE `id` IN (3, 4) AND `code` IN ('SPORTS', 'ARTS');
+
+ALTER TABLE `sections` ADD COLUMN `schedule_id` int NULL AFTER `grade_level`;
+
+ALTER TABLE `enrollments` ADD COLUMN `lrn` char(12) NULL AFTER `student_id`, ADD COLUMN `first_name` varchar(100) NULL AFTER `lrn`, ADD COLUMN `middle_name` varchar(100) NULL AFTER `first_name`, ADD COLUMN `last_name` varchar(100) NULL AFTER `middle_name`, ADD COLUMN `grade_level` tinyint unsigned NULL AFTER `last_name`, ADD COLUMN `track_id` int NULL AFTER `grade_level`, ADD COLUMN `strand_id` int NULL AFTER `track_id`, ADD COLUMN `subjects` varchar(1000) NULL AFTER `strand_id`;
+
+CREATE TABLE `enrollment_subjects` (
+    `enrollment_id` int NOT NULL,
+    `subject_id` int NOT NULL,
+    CONSTRAINT `pk_enrollment_subjects` PRIMARY KEY (`enrollment_id`, `subject_id`),
+    CONSTRAINT `fk_enrollment_subjects_enrollments_enrollment_id` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_enrollment_subjects_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `schedules` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `code` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `name` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_schedules` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `strand_subjects` (
+    `strand_id` int NOT NULL,
+    `grade_level` tinyint unsigned NOT NULL,
+    `term_number` tinyint unsigned NOT NULL,
+    `subject_id` int NOT NULL,
+    CONSTRAINT `pk_strand_subjects` PRIMARY KEY (`strand_id`, `grade_level`, `term_number`, `subject_id`),
+    CONSTRAINT `ck_strand_subjects_grade_level` CHECK (grade_level IN (11, 12)),
+    CONSTRAINT `ck_strand_subjects_term_number` CHECK (term_number >= 1),
+    CONSTRAINT `fk_strand_subjects_strands_strand_id` FOREIGN KEY (`strand_id`) REFERENCES `strands` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_strand_subjects_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `strand_schedules` (
+    `strand_id` int NOT NULL,
+    `schedule_id` int NOT NULL,
+    CONSTRAINT `pk_strand_schedules` PRIMARY KEY (`strand_id`, `schedule_id`),
+    CONSTRAINT `fk_strand_schedules_schedules_schedule_id` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_strand_schedules_strands_strand_id` FOREIGN KEY (`strand_id`) REFERENCES `strands` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `school_years` (`name`, `start_date`, `end_date`, `created_at_utc`, `updated_at_utc`) SELECT '2026-2027', '2026-06-08', '2027-03-31', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `school_years` WHERE `name` = '2026-2027');
+
+INSERT INTO `terms` (`school_year_id`, `term_number`, `name`, `start_date`, `end_date`, `is_current`, `created_at_utc`, `updated_at_utc`) SELECT sy.`id`, d.`term_number`, d.`name`, d.`start_date`, d.`end_date`, IF(d.`term_number` = 1 AND NOT EXISTS (SELECT 1 FROM `terms` c WHERE c.`is_current` = 1), 1, 0), UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM `school_years` sy JOIN (SELECT '1' AS `term_number`, '1st Term' AS `name`, '2026-06-08' AS `start_date`, '2026-10-30' AS `end_date` UNION ALL SELECT '2', '2nd Term', '2026-11-02', '2027-03-31') d WHERE sy.`name` = '2026-2027' AND NOT EXISTS (SELECT 1 FROM `terms` t WHERE t.`school_year_id` = sy.`id` AND t.`term_number` = d.`term_number`);
+
+INSERT INTO `schedules` (`code`, `name`, `created_at_utc`, `updated_at_utc`) SELECT d.`code`, d.`name`, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM (SELECT 'AM' AS `code`, 'Morning' AS `name` UNION ALL SELECT 'MID', 'Midday' UNION ALL SELECT 'PM', 'Afternoon') d WHERE NOT EXISTS (SELECT 1 FROM `schedules` s WHERE s.`code` = d.`code` OR s.`name` = d.`name`);
+
+INSERT INTO `strands` (`code`, `name`, `track_id`, `is_active`, `created_at_utc`, `updated_at_utc`) SELECT d.`code`, d.`name`, t.`id`, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM (SELECT 'BUSSENT' AS `code`, 'BUSSENT' AS `name`, 'ACAD' AS `track_code` UNION ALL SELECT 'EDUC', 'EDUC', 'ACAD' UNION ALL SELECT 'ENG', 'ENG', 'ACAD' UNION ALL SELECT 'MED', 'MED', 'ACAD' UNION ALL SELECT 'CD1', 'CSS-VGD', 'TECH-PRO' UNION ALL SELECT 'HT1', 'KO-FBS', 'TECH-PRO' UNION ALL SELECT 'HT2', 'FBS-KO', 'TECH-PRO' UNION ALL SELECT 'USP', 'USP', 'TECH-PRO') d JOIN `tracks` t ON t.`code` = d.`track_code` WHERE NOT EXISTS (SELECT 1 FROM `strands` s WHERE s.`code` = d.`code`);
+
+INSERT INTO `strand_schedules` (`strand_id`, `schedule_id`) SELECT st.`id`, sc.`id` FROM (SELECT 'BUSSENT' AS `strand_code`, 'AM' AS `schedule_code` UNION ALL SELECT 'BUSSENT', 'PM' UNION ALL SELECT 'EDUC', 'AM' UNION ALL SELECT 'EDUC', 'PM' UNION ALL SELECT 'ENG', 'AM' UNION ALL SELECT 'ENG', 'PM' UNION ALL SELECT 'MED', 'AM' UNION ALL SELECT 'MED', 'PM' UNION ALL SELECT 'CD1', 'AM' UNION ALL SELECT 'CD1', 'PM' UNION ALL SELECT 'HT1', 'AM' UNION ALL SELECT 'HT1', 'MID' UNION ALL SELECT 'HT1', 'PM' UNION ALL SELECT 'HT2', 'PM' UNION ALL SELECT 'USP', 'AM') d JOIN `strands` st ON st.`code` = d.`strand_code` JOIN `schedules` sc ON sc.`code` = d.`schedule_code` WHERE NOT EXISTS (SELECT 1 FROM `strand_schedules` x WHERE x.`strand_id` = st.`id` AND x.`schedule_id` = sc.`id`);
+
+INSERT INTO `subjects` (`code`, `name`, `is_active`, `created_at_utc`, `updated_at_utc`) SELECT d.`code`, d.`name`, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM (SELECT 'BUSACCT' AS `code`, 'BUSINESS ACCOUNTING' AS `name` UNION ALL SELECT 'ADVMATH1', 'ADVANCE MATHEMATICS 1' UNION ALL SELECT 'FIL1', 'FILIPINO 1' UNION ALL SELECT 'CREACOMP1', 'CREATIVE COMPOSITION 1' UNION ALL SELECT 'FINMATH1', 'FINITE MATH 1' UNION ALL SELECT 'EMPOWERTECH', 'EMPOWERMENT TECHNOLOGY' UNION ALL SELECT 'BIO1', 'BIOLOGY 1' UNION ALL SELECT 'SOCSCI', 'SOCIAL SCIENCES' UNION ALL SELECT 'CSS1', 'COMPUTER SYSTEM SERVICING 1' UNION ALL SELECT 'KITCHENOPS1', 'KITCHEN OPERATION 1' UNION ALL SELECT 'FBSOPS1', 'FOOD AND BEVERAGE OPERATIONS 1' UNION ALL SELECT 'EFFCOMM', 'EFFECTIVE COMMUNICATION' UNION ALL SELECT 'MABKOM', 'MABISANG KOMUNIKASYON' UNION ALL SELECT 'GENMATH', 'GENERAL MATHEMATICS' UNION ALL SELECT 'LIFECAREER', 'LIFE AND CAREER SKILLS' UNION ALL SELECT 'GENSCI', 'GENERAL SCIENCE' UNION ALL SELECT 'KASAYSAYAN', 'PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO') d WHERE NOT EXISTS (SELECT 1 FROM `subjects` s WHERE s.`code` = d.`code`);
+
+INSERT INTO `strand_subjects` (`strand_id`, `grade_level`, `term_number`, `subject_id`) SELECT st.`id`, 11, d.`term_number`, sub.`id` FROM (SELECT 'BUSSENT' AS `strand_code`, '1' AS `term_number`, 'BUSACCT' AS `subject_code` UNION ALL SELECT 'BUSSENT', '1', 'ADVMATH1' UNION ALL SELECT 'EDUC', '1', 'FIL1' UNION ALL SELECT 'EDUC', '1', 'CREACOMP1' UNION ALL SELECT 'ENG', '1', 'FINMATH1' UNION ALL SELECT 'ENG', '1', 'EMPOWERTECH' UNION ALL SELECT 'MED', '1', 'BIO1' UNION ALL SELECT 'MED', '1', 'EMPOWERTECH' UNION ALL SELECT 'USP', '1', 'SOCSCI' UNION ALL SELECT 'USP', '1', 'BIO1' UNION ALL SELECT 'CD1', '1', 'CSS1' UNION ALL SELECT 'HT1', '1', 'KITCHENOPS1' UNION ALL SELECT 'HT2', '1', 'FBSOPS1' UNION ALL SELECT 'BUSSENT', '2', 'EFFCOMM' UNION ALL SELECT 'BUSSENT', '2', 'MABKOM' UNION ALL SELECT 'BUSSENT', '2', 'GENMATH' UNION ALL SELECT 'BUSSENT', '2', 'LIFECAREER' UNION ALL SELECT 'BUSSENT', '2', 'GENSCI' UNION ALL SELECT 'BUSSENT', '2', 'KASAYSAYAN' UNION ALL SELECT 'EDUC', '2', 'EFFCOMM' UNION ALL SELECT 'EDUC', '2', 'MABKOM' UNION ALL SELECT 'EDUC', '2', 'GENMATH' UNION ALL SELECT 'EDUC', '2', 'LIFECAREER' UNION ALL SELECT 'EDUC', '2', 'GENSCI' UNION ALL SELECT 'EDUC', '2', 'KASAYSAYAN' UNION ALL SELECT 'ENG', '2', 'EFFCOMM' UNION ALL SELECT 'ENG', '2', 'MABKOM' UNION ALL SELECT 'ENG', '2', 'GENMATH' UNION ALL SELECT 'ENG', '2', 'LIFECAREER' UNION ALL SELECT 'ENG', '2', 'GENSCI' UNION ALL SELECT 'ENG', '2', 'KASAYSAYAN' UNION ALL SELECT 'MED', '2', 'EFFCOMM' UNION ALL SELECT 'MED', '2', 'MABKOM' UNION ALL SELECT 'MED', '2', 'GENMATH' UNION ALL SELECT 'MED', '2', 'LIFECAREER' UNION ALL SELECT 'MED', '2', 'GENSCI' UNION ALL SELECT 'MED', '2', 'KASAYSAYAN' UNION ALL SELECT 'CD1', '2', 'EFFCOMM' UNION ALL SELECT 'CD1', '2', 'MABKOM' UNION ALL SELECT 'CD1', '2', 'GENMATH' UNION ALL SELECT 'CD1', '2', 'LIFECAREER' UNION ALL SELECT 'CD1', '2', 'GENSCI' UNION ALL SELECT 'CD1', '2', 'KASAYSAYAN' UNION ALL SELECT 'HT1', '2', 'EFFCOMM' UNION ALL SELECT 'HT1', '2', 'MABKOM' UNION ALL SELECT 'HT1', '2', 'GENMATH' UNION ALL SELECT 'HT1', '2', 'LIFECAREER' UNION ALL SELECT 'HT1', '2', 'GENSCI' UNION ALL SELECT 'HT1', '2', 'KASAYSAYAN' UNION ALL SELECT 'HT2', '2', 'EFFCOMM' UNION ALL SELECT 'HT2', '2', 'MABKOM' UNION ALL SELECT 'HT2', '2', 'GENMATH' UNION ALL SELECT 'HT2', '2', 'LIFECAREER' UNION ALL SELECT 'HT2', '2', 'GENSCI' UNION ALL SELECT 'HT2', '2', 'KASAYSAYAN' UNION ALL SELECT 'USP', '2', 'EFFCOMM' UNION ALL SELECT 'USP', '2', 'MABKOM' UNION ALL SELECT 'USP', '2', 'GENMATH' UNION ALL SELECT 'USP', '2', 'LIFECAREER' UNION ALL SELECT 'USP', '2', 'GENSCI' UNION ALL SELECT 'USP', '2', 'KASAYSAYAN') d JOIN `strands` st ON st.`code` = d.`strand_code` JOIN `subjects` sub ON sub.`code` = d.`subject_code` WHERE NOT EXISTS (SELECT 1 FROM `strand_subjects` x WHERE x.`strand_id` = st.`id` AND x.`grade_level` = 11 AND x.`term_number` = d.`term_number` AND x.`subject_id` = sub.`id`);
+
+UPDATE `enrollments` e JOIN `students` s ON s.`id` = e.`student_id` JOIN `sections` sec ON sec.`id` = e.`section_id` JOIN `strands` st ON st.`id` = sec.`strand_id` SET e.`lrn` = s.`lrn`, e.`first_name` = s.`first_name`, e.`middle_name` = s.`middle_name`, e.`last_name` = s.`last_name`, e.`grade_level` = sec.`grade_level`, e.`strand_id` = sec.`strand_id`, e.`track_id` = st.`track_id` WHERE e.`id` > 0;
+
+ALTER TABLE `enrollments` MODIFY COLUMN `lrn` char(12) NOT NULL, MODIFY COLUMN `first_name` varchar(100) NOT NULL, MODIFY COLUMN `last_name` varchar(100) NOT NULL, MODIFY COLUMN `grade_level` tinyint unsigned NOT NULL, MODIFY COLUMN `track_id` int NOT NULL, MODIFY COLUMN `strand_id` int NOT NULL;
+
+INSERT INTO `enrollment_subjects` (`enrollment_id`, `subject_id`) SELECT DISTINCT e.`id`, co.`subject_id` FROM `enrollments` e JOIN `class_offerings` co ON co.`term_id` = e.`term_id` AND co.`section_id` = e.`section_id` WHERE e.`status` = 'Enrolled';
+
+UPDATE `enrollments` e SET e.`subjects` = (SELECT LEFT(GROUP_CONCAT(sub.`name` ORDER BY sub.`name` SEPARATOR ', '), 1000) FROM `enrollment_subjects` es JOIN `subjects` sub ON sub.`id` = es.`subject_id` WHERE es.`enrollment_id` = e.`id`) WHERE e.`id` > 0;
+
+CREATE INDEX `ix_sections_schedule_id` ON `sections` (`schedule_id`);
+
+CREATE UNIQUE INDEX `ix_sections_school_year_id_strand_id_grade_level_schedule_id_na` ON `sections` (`school_year_id`, `strand_id`, `grade_level`, `schedule_id`, `name`);
+
+CREATE INDEX `ix_sections_strand_id_schedule_id` ON `sections` (`strand_id`, `schedule_id`);
+
+ALTER TABLE `sections` DROP INDEX `ix_sections_school_year_id_strand_id_grade_level_name`;
+
+ALTER TABLE `sections` DROP INDEX `ix_sections_strand_id`;
+
+CREATE INDEX `ix_enrollments_section_id_strand_id_grade_level` ON `enrollments` (`section_id`, `strand_id`, `grade_level`);
+
+CREATE INDEX `ix_enrollments_strand_id_track_id` ON `enrollments` (`strand_id`, `track_id`);
+
+CREATE INDEX `ix_enrollments_track_id` ON `enrollments` (`track_id`);
+
+ALTER TABLE `enrollments` ADD CONSTRAINT `ck_enrollments_grade_level` CHECK (grade_level IN (11, 12));
+
+CREATE INDEX `ix_enrollment_subjects_subject_id` ON `enrollment_subjects` (`subject_id`);
+
+CREATE UNIQUE INDEX `ix_schedules_code` ON `schedules` (`code`);
+
+CREATE UNIQUE INDEX `ix_schedules_name` ON `schedules` (`name`);
+
+CREATE INDEX `ix_strand_schedules_schedule_id` ON `strand_schedules` (`schedule_id`);
+
+CREATE INDEX `ix_strand_subjects_subject_id` ON `strand_subjects` (`subject_id`);
+
+ALTER TABLE `enrollments` ADD CONSTRAINT `fk_enrollments_sections_section_id_strand_id_grade_level` FOREIGN KEY (`section_id`, `strand_id`, `grade_level`) REFERENCES `sections` (`id`, `strand_id`, `grade_level`) ON DELETE RESTRICT;
+
+ALTER TABLE `enrollments` ADD CONSTRAINT `fk_enrollments_strands_strand_id_track_id` FOREIGN KEY (`strand_id`, `track_id`) REFERENCES `strands` (`id`, `track_id`) ON DELETE RESTRICT;
+
+ALTER TABLE `enrollments` ADD CONSTRAINT `fk_enrollments_tracks_track_id` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `sections` ADD CONSTRAINT `fk_sections_schedules_schedule_id` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `sections` ADD CONSTRAINT `fk_sections_strand_schedules_strand_id_schedule_id` FOREIGN KEY (`strand_id`, `schedule_id`) REFERENCES `strand_schedules` (`strand_id`, `schedule_id`) ON DELETE RESTRICT;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004120510_AddSchedulesCurriculumAndEnrollmentDetails', '9.0.20');
 
 COMMIT;
 

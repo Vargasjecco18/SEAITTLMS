@@ -159,3 +159,41 @@
         transition: none;
     }
 }
+
+/* Blazor turns this on (display: block) when a live page fails. */
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 200;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--danger);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-weight: 600;
+    text-align: center;
+}
+
+#blazor-error-ui a {
+    color: inherit;
+}
+
+/* Printing a page prints only its content. */
+@media print {
+    .header,
+    .sidebar,
+    .backdrop {
+        display: none;
+    }
+
+    .shell {
+        display: block;
+    }
+
+    .content {
+        max-width: none;
+        padding: 0;
+    }
+}

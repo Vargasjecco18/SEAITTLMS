@@ -1,0 +1,40 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<button type="@Type" class="button @Variant.ToString().ToLowerInvariant() @(Small ? "small" : "")" disabled="@Disabled"
+        title="@Title" aria-label="@(IconOnly ? Title : null)" @onclick="OnClick" @attributes="Attributes">
+    @if (!string.IsNullOrEmpty(IconName))
+    {
+        <Icon Name="@IconName" Size="@(Small ? 16 : 18)" />
+    }
+    @if (ChildContent is not null)
+    {
+        <span>@ChildContent</span>
+    }
+</button>
+
+@code {
+    /// <summary>"button" (the default), or "submit" to send the form it is in.</summary>
+    [Parameter] public string Type { get; set; } = "button";
+
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+
+    /// <summary>The icon in front of the text (a name from <see cref="IconSet"/>).</summary>
+    [Parameter] public string? IconName { get; set; }
+
+    [Parameter] public bool Small { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Shown when the mouse rests on the button. Also its name for screen readers when it has no text.</summary>
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>A button with only an icon.</summary>
+    [Parameter] public bool IconOnly { get; set; }
+
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Anything else written on the tag, like form="..." or data-...</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? Attributes { get; set; }
+}

@@ -35,6 +35,8 @@ html {
     --warning-soft: #fef3c7;
     --danger: #b91c1c;
     --danger-soft: #fee2e2;
+    --danger-solid: #b91c1c;
+    --danger-solid-hover: #991b1b;
 
     /* Icon colors for the stat cards (icon color and soft background) */
     --blue: #1d4ed8;
@@ -84,6 +86,8 @@ html {
         --warning-soft: rgba(245, 158, 11, 0.16);
         --danger: #fca5a5;
         --danger-soft: rgba(239, 68, 68, 0.18);
+        --danger-solid: #c62828;
+        --danger-solid-hover: #b71c1c;
 
         --blue: #9bbaff;
         --blue-soft: rgba(107, 155, 255, 0.16);
@@ -111,6 +115,17 @@ html ::deep *,
 html ::deep *::before,
 html ::deep *::after {
     box-sizing: border-box;
+}
+
+/* A link to #courses scrolls there smoothly (unless the computer is set to reduce motion), below the bar at the top. */
+html {
+    scroll-padding-top: 4.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
 }
 
 body {

@@ -8,7 +8,9 @@
 
 <PageTitle>Admin · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Admin dashboard" Subtitle="The accounts and the school setup at a glance." IconName="layout-dashboard" />
+<PageHeader Title="Admin dashboard" Subtitle="The accounts and the school setup at a glance." IconName="layout-dashboard">
+    <ButtonLink Href="admin/users" IconName="users">Manage users</ButtonLink>
+</PageHeader>
 
 @if (overview is not null)
 {
@@ -21,9 +23,9 @@
 
             @foreach (var role in overview.Roles)
             {
-                var (label, icon, color) = RoleLook(role.Role);
+                var (label, icon, color, key) = RoleLook(role.Role);
                 <StatCard Label="@label" Value="@role.Total" IconName="@icon" Accent="@color"
-                          Hint="@InactiveHint(role.Inactive)" />
+                          Hint="@InactiveHint(role.Inactive)" Href="@($"admin/users/{key}")" />
             }
         </div>
     </section>
@@ -121,13 +123,13 @@
 
     private static string? InactiveHint(int inactive) => inactive > 0 ? $"{inactive} inactive" : null;
 
-    private static (string Label, string Icon, AccentColor Color) RoleLook(string role) => role switch
+    private static (string Label, string Icon, AccentColor Color, string Key) RoleLook(string role) => role switch
     {
-        AppRoles.Admin => ("Administrators", "shield-check", AccentColor.Violet),
-        AppRoles.Teacher => ("Teachers", "presentation", AccentColor.Blue),
-        AppRoles.Student => ("Students", "graduation-cap", AccentColor.Green),
-        AppRoles.Registrar => ("Registrars", "clipboard-check", AccentColor.Amber),
-        _ => ("Guidance counselors", "heart-handshake", AccentColor.Rose),
+        AppRoles.Admin => ("Administrators", "shield-check", AccentColor.Violet, "administrators"),
+        AppRoles.Teacher => ("Teachers", "presentation", AccentColor.Blue, "teachers"),
+        AppRoles.Student => ("Students", "graduation-cap", AccentColor.Green, "students"),
+        AppRoles.Registrar => ("Registrars", "clipboard-check", AccentColor.Amber, "registrars"),
+        _ => ("Guidance counselors", "heart-handshake", AccentColor.Rose, "guidance"),
     };
 
     private static (string Label, string Icon, int Count)[] SetupItems(SetupTotals setup) =>

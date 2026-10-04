@@ -1,0 +1,72 @@
+.field {
+    min-width: 0;
+    margin: 0 0 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.required {
+    margin-left: 0.15rem;
+    color: var(--danger);
+}
+
+/* The box itself is written by the page that uses this component, so it needs ::deep to be reached. */
+.field ::deep input:not([type="checkbox"]):not([type="radio"]),
+.field ::deep select,
+.field ::deep textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field ::deep input:not([type="checkbox"]):not([type="radio"]),
+.field ::deep select {
+    height: 2.6rem;
+}
+
+.field ::deep input:focus,
+.field ::deep select:focus,
+.field ::deep textarea:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.field ::deep input:disabled,
+.field ::deep select:disabled,
+.field ::deep textarea:disabled,
+.field ::deep input[readonly] {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.field ::deep input:user-invalid,
+.field ::deep select:user-invalid {
+    border-color: var(--danger);
+}
+
+/* The red message ValidationMessage writes under a box. */
+.field ::deep .validation-message {
+    margin-top: 0.3rem;
+    color: var(--danger);
+    font-size: 0.82rem;
+}
+
+.hint {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}

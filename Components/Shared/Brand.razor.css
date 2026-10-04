@@ -68,6 +68,18 @@
     font-size: 1.4rem;
 }
 
+.light {
+    color: #ffffff;
+}
+
+.light .accent {
+    color: #93c5fd;
+}
+
+.light .tagline {
+    color: rgba(255, 255, 255, 0.78);
+}
+
 /* In the narrow header the tagline would crowd the menu buttons. */
 @media (max-width: 520px) {
     .brand:not(.large) .tagline {

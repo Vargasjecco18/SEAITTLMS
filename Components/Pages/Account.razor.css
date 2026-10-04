@@ -1,6 +1,6 @@
 /*
-  On a phone the cards are one column, in this order: term, account, administration, coming soon.
-  On a bigger screen they are two columns: term, administration and coming soon on the left, the account on the right.
+  On a phone the cards are one column, in this order: term, account, coming soon.
+  On a bigger screen they are two columns: term and coming soon on the left, the account on the right.
 */
 .layout {
     display: flex;
@@ -15,8 +15,7 @@
 /* The cards are components, so their classes are reached with ::deep. */
 .layout ::deep .card-term { order: 1; }
 .layout ::deep .card-account { order: 2; }
-.layout ::deep .card-admin { order: 3; }
-.layout ::deep .card-soon { order: 4; }
+.layout ::deep .card-soon { order: 3; }
 
 @media (min-width: 800px) and (max-width: 959px), (min-width: 1100px) {
     .layout {
@@ -127,12 +126,6 @@ dd {
     color: var(--text-muted);
     font-style: italic;
     font-weight: 400;
-}
-
-/* Administration */
-.card-text {
-    margin: 0 0 1rem;
-    color: var(--text-muted);
 }
 
 /* Coming soon */

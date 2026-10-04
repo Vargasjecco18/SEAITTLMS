@@ -1,17 +1,39 @@
 <nav class="nav" aria-label="Main menu">
-    <p class="heading">Menu</p>
-
-    <NavLink class="link" href="" Match="NavLinkMatch.All">
-        <Icon Name="house" />
-        <span>Home</span>
-    </NavLink>
-
     <AuthorizeView Roles="@AppRoles.Admin">
         <p class="heading">Administration</p>
 
-        <NavLink class="link" href="admin">
+        <NavLink class="link" href="admin" Match="NavLinkMatch.All">
             <Icon Name="layout-dashboard" />
-            <span>Admin</span>
+            <span>Dashboard</span>
+        </NavLink>
+        <NavLink class="link" href="admin/users">
+            <Icon Name="users" />
+            <span>Users</span>
         </NavLink>
     </AuthorizeView>
+
+    @* The registrar's pages. Administrators can open them too. *@
+    <AuthorizeView Roles="@AppRoles.RegistrarAccess">
+        <p class="heading">Registrar</p>
+
+        <NavLink class="link" href="registrar" Match="NavLinkMatch.All">
+            <Icon Name="layout-dashboard" />
+            <span>Dashboard</span>
+        </NavLink>
+        <NavLink class="link" href="registrar/enroll">
+            <Icon Name="user-plus" />
+            <span>Enroll a student</span>
+        </NavLink>
+        <NavLink class="link" href="registrar/enrollments">
+            <Icon Name="clipboard-list" />
+            <span>Enrollments</span>
+        </NavLink>
+    </AuthorizeView>
+
+    <p class="heading">Account</p>
+
+    <NavLink class="link" href="account">
+        <Icon Name="id-card" />
+        <span>My account</span>
+    </NavLink>
 </nav>

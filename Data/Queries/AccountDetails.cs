@@ -34,12 +34,15 @@ public sealed record AccountDetails(string FullName, string FirstName, string Em
         {
             case Student student:
                 rows.Add(new("LRN", student.Lrn));
-                await AddPlacementAsync(rows, db, student, ct);
+                await AddPlacementAsync(rows, db, student, includeSubject: false, ct);
+
+                // A student takes several subjects, so they come from the enrollment of the running term.
+                rows.Add(new("Subjects", await CurrentSubjectsAsync(db, student.Id, ct)));
                 break;
 
             case Teacher teacher:
                 rows.Add(new("Employee number", teacher.EmployeeNumber));
-                await AddPlacementAsync(rows, db, teacher, ct);
+                await AddPlacementAsync(rows, db, teacher, includeSubject: true, ct);
                 break;
 
             case StaffContactProfile staff:
@@ -54,7 +57,21 @@ public sealed record AccountDetails(string FullName, string FirstName, string Em
         return new AccountDetails(user.DisplayName, firstName, user.Email, AppRoles.DisplayName(user.Role.Name), rows);
     }
 
-    private static async Task AddPlacementAsync(List<DetailRow> rows, AppDbContext db, IHasPlacement person, CancellationToken ct)
+    /// <summary>The subjects a student is enrolled in for the current term, or null when there are none.</summary>
+    private static async Task<string?> CurrentSubjectsAsync(AppDbContext db, int studentId, CancellationToken ct)
+    {
+        var names = await db.EnrollmentSubjects.AsNoTracking()
+            .Where(x => x.Enrollment.StudentId == studentId
+                        && x.Enrollment.Status == EnrollmentStatus.Enrolled
+                        && x.Enrollment.Term.IsCurrent)
+            .Select(x => x.Subject.Name)
+            .OrderBy(name => name)
+            .ToListAsync(ct);
+
+        return names.Count == 0 ? null : string.Join(", ", names);
+    }
+
+    private static async Task AddPlacementAsync(List<DetailRow> rows, AppDbContext db, IHasPlacement person, bool includeSubject, CancellationToken ct)
     {
         var trackId = person.TrackId;
         var strandId = person.StrandId;
@@ -71,11 +88,13 @@ public sealed record AccountDetails(string FullName, string FirstName, string Em
         if (strandId is not null)
         {
             var found = await db.Strands.AsNoTracking().Where(s => s.Id == strandId).Select(s => new { s.Name, s.Code }).FirstOrDefaultAsync(ct);
-            strand = found is null ? null : $"{found.Name} ({found.Code})";
+            strand = found is null ? null
+                : string.Equals(found.Name, found.Code, StringComparison.OrdinalIgnoreCase) ? found.Code
+                : $"{found.Name} ({found.Code})";
         }
 
         string? subject = null;
-        if (subjectId is not null)
+        if (includeSubject && subjectId is not null)
         {
             subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct);
         }
@@ -92,7 +111,11 @@ public sealed record AccountDetails(string FullName, string FirstName, string Em
         rows.Add(new("Grade level", person.GradeLevel is { } grade ? $"Grade {grade}" : null));
         rows.Add(new("Track", track));
         rows.Add(new("Strand", strand));
-        rows.Add(new("Subject", subject));
+        if (includeSubject)
+        {
+            rows.Add(new("Subject", subject));
+        }
+
         rows.Add(new("Section", section));
     }
 }

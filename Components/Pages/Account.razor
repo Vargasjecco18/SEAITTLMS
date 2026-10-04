@@ -1,4 +1,4 @@
-@page "/"
+@page "/account"
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
 @using SEAITT_LMS.Data
@@ -6,11 +6,11 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject TimeProvider Clock
 
-<PageTitle>Home · SEAITT e-LMS</PageTitle>
+<PageTitle>My account · SEAITT e-LMS</PageTitle>
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {account?.FirstName ?? name}!")"
             Subtitle="@PhilippineTime.FormatLongDate(now)"
-            IconName="house" />
+            IconName="id-card" />
 
 <div class="layout">
     <div class="column">
@@ -34,13 +34,6 @@
                 <p class="term-progress">@TermProgressText</p>
             }
         </Card>
-
-        <AuthorizeView Roles="@AppRoles.Admin">
-            <Card Title="Administration" IconName="shield-check" Class="card-admin">
-                <p class="card-text">See the accounts and the school setup at a glance.</p>
-                <ButtonLink Href="admin" IconName="layout-dashboard">Open the admin dashboard</ButtonLink>
-            </Card>
-        </AuthorizeView>
 
         <Card Title="Coming soon" IconName="sparkles" Class="card-soon">
             <ul class="soon">

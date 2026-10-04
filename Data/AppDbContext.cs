@@ -28,9 +28,13 @@ public class AppDbContext : DbContext
     public DbSet<Track> Tracks => Set<Track>();
     public DbSet<Strand> Strands => Set<Strand>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Schedule> Schedules => Set<Schedule>();
+    public DbSet<StrandSchedule> StrandSchedules => Set<StrandSchedule>();
+    public DbSet<StrandSubject> StrandSubjects => Set<StrandSubject>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<ClassOffering> ClassOfferings => Set<ClassOffering>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<EnrollmentSubject> EnrollmentSubjects => Set<EnrollmentSubject>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

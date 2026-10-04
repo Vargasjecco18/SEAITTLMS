@@ -3,7 +3,9 @@
 MySQL schema `seaittlms`. The tables are created by the EF Core migrations in `Data/Migrations`, the
 model lives in `Data/Entities` and `Data/Configurations`. Table and column names are snake_case.
 
-This first version covers **users and roles** and **classes and enrollment** for Senior High School.
+This version covers **users and roles** and **classes and enrollment** for Senior High School, and it comes with
+SEAITT's school data (school year, terms, tracks, strands, schedules, subjects, see
+[The school data that comes with the database](#the-school-data-that-comes-with-the-database)).
 Lessons, assignments and quizzes come later and will hang off `class_offerings`
 (see [What is a class offering?](#what-is-a-class-offering)).
 
@@ -38,6 +40,11 @@ erDiagram
     school_years ||--o{ sections : ""
     tracks ||--o{ strands : "track_id"
     strands ||--o{ sections : ""
+    schedules |o--o{ sections : "meets"
+    strands ||--o{ strand_schedules : "runs in"
+    schedules ||--o{ strand_schedules : ""
+    strands ||--o{ strand_subjects : "curriculum"
+    subjects ||--o{ strand_subjects : ""
     teachers |o--o{ sections : "adviser"
 
     terms ||--o{ class_offerings : ""
@@ -49,6 +56,10 @@ erDiagram
     sections ||--o{ enrollments : ""
     students ||--o{ enrollments : ""
     users |o--o{ enrollments : "enrolled_by"
+    tracks ||--o{ enrollments : ""
+    strands ||--o{ enrollments : ""
+    enrollments ||--o{ enrollment_subjects : ""
+    subjects ||--o{ enrollment_subjects : ""
 
     tracks |o--o{ students : "summary"
     strands |o--o{ students : "summary"
@@ -70,7 +81,7 @@ erDiagram
 
 Each person has **one** `users` row and **one** row in the table that matches their role (`user_id` is unique in every
 one of those tables). Accounts are created through `UserAccountService`, which inserts both rows in one transaction so
-they always match.
+they always match. The Users page (`UserManagementService`) and the enrollment form (`EnrollmentService`) both go through it.
 
 The five role tables have these columns, in this order:
 
@@ -85,8 +96,8 @@ The five role tables have these columns, in this order:
 - `phone_number` here is the person's **contact** number. It is separate from `users.phone_number`, which is the number
   for two-factor sign-in later.
 - `status` is **Active** or **Inactive** (the working status of the staff member). It is separate from
-  `users.is_active`, which is the switch that decides who can sign in. When you set a person to Inactive, also set
-  `users.is_active = 0` so they can no longer sign in. The app does not keep the two in sync yet.
+  `users.is_active`, which is the switch that decides who can sign in. The Users page keeps the two in step: switching
+  an account off or on there changes both.
 - Registrars got the same columns as administrators and guidance counselors so the three staff roles look alike.
 
 ### Grade level, track, strand, subject and section on students and teachers
@@ -96,7 +107,8 @@ section and main subject, or what a teacher mainly handles. All are optional (em
 
 They are only a summary. The full records are:
 
-- for a **student**, `enrollments` (the section they are in, term by term) and the section's `class_offerings`,
+- for a **student**, `enrollments` (the section they are in, term by term, with the subjects they take in
+  `enrollment_subjects`),
 - for a **teacher**, `class_offerings` (every subject they teach to every section). A teacher usually teaches several
   subjects and sections, so the single `subject_id` and `section_id` on `teachers` can only be the main one.
 
@@ -106,12 +118,14 @@ The database makes sure the summary agrees with itself:
 - A strand needs its track, and the strand must belong to that track (`(strand_id, track_id)` is a foreign key to
   `strands (id, track_id)`).
 - A section needs its strand and grade level, and all three must match the section (`(section_id, strand_id, grade_level)`
-  is a foreign key to `sections (id, strand_id, grade_level)`). So a student can't be in `11-STEM-A` with the ABM strand.
+  is a foreign key to `sections (id, strand_id, grade_level)`). So a student can't be in `11-BUSSENT-A` with the EDUC strand.
 - Nothing is cascaded: a track, strand, subject or section can't be deleted while a person's summary points at it.
 
-The summary is **not updated automatically** when a student is promoted or moved. Whatever screen changes an
-enrollment should also update these columns. To fill them in for students who are already enrolled in the current term,
-run this once in MySQL Workbench (it leaves everybody else alone):
+**Enrolling a student** (the registrar page) sets the student's grade level, track, strand and section for you.
+`subject_id` stays empty for students on purpose: a student takes several subjects, and they are listed in
+`enrollment_subjects`. The summary is **not updated** when a student is moved or promoted by hand in the database.
+To fill the summary in for students who were enrolled before this existed, run this once in MySQL Workbench (it leaves
+everybody else alone):
 
 ```sql
 UPDATE students st
@@ -130,61 +144,123 @@ WHERE st.id > 0;
 
 | Table | What it holds |
 |---|---|
-| `school_years` | `2025-2026`, with start and end dates. |
+| `school_years` | `2026-2027`, with start and end dates. |
 | `terms` | Terms inside a school year (`term_number` 1, 2, ...). SEAITT uses terms, not semesters. `is_current` marks the running term. |
-| `tracks` | The four senior high school tracks: Academic, Technical-Vocational-Livelihood (TVL), Sports, Arts and Design (`code`, `name`, `is_active`). Switch off the ones SEAITT doesn't offer. |
-| `strands` | STEM, ABM, HUMSS, GAS, ICT ... (`code`, `name`). Each strand belongs to one track (`track_id`). |
+| `tracks` | The senior high school tracks SEAITT offers: **ACAD** (Academic) and **TECH-PRO** (Technical-Professional) (`code`, `name`, `is_active`). |
+| `strands` | BUSSENT, EDUC, ENG, MED (ACAD) and CD1, HT1, HT2, USP (TECH-PRO) (`code`, `name`). Each strand belongs to one track (`track_id`). |
+| `schedules` | When classes meet: **AM** (morning), **MID** (midday), **PM** (afternoon). |
+| `strand_schedules` | Which schedules each strand runs in (BUSSENT: AM and PM, HT2: PM only, ...). |
 | `subjects` | The subject catalog (`code`, `name`). |
-| `sections` | A section such as 11-STEM-A in one school year, grade level 11 or 12, optional adviser (teacher). |
+| `strand_subjects` | **The curriculum**: the subjects a strand takes in a grade level and term (`strand_id`, `grade_level`, `term_number`, `subject_id`). The same every school year. |
+| `sections` | A section such as 11-BUSSENT-A in one school year: grade level 11 or 12, its schedule (`schedule_id`), optional adviser (teacher). |
 | `class_offerings` | A subject taught to a section during a term by a teacher. This is "the class" (explained below). |
-| `enrollments` | A student placed in a section for a term. `status`: Enrolled, Dropped, Completed. |
+| `enrollments` | A student placed in a section for a term, with a copy of who they were then (see below). `status`: Enrolled, Dropped, Completed. |
+| `enrollment_subjects` | The subjects a student takes in an enrollment (`enrollment_id`, `subject_id`). |
+
+An **enrollment** row reads on its own. Besides the links to the student, the term and the section, it holds
+`lrn`, `first_name`, `middle_name`, `last_name`, `grade_level`, `track_id`, `strand_id` and `subjects` (the subject names
+separated by commas, for reading the table; the program uses `enrollment_subjects`). They are copied when the student is
+enrolled, so a later change (a new name, a promotion) does not rewrite what was true at the time. The Users page does keep
+a student's *name and LRN* in step in their enrollments when an administrator corrects them. `enrolled_by_user_id` is the
+registrar who did it.
+
+## The school data that comes with the database
+
+The migration `AddSchedulesCurriculumAndEnrollmentDetails` puts this in the tables. It only adds what is missing, so
+running it on a database that already has some of it changes nothing that exists.
+
+| Table | Rows |
+|---|---|
+| `school_years` | 2026-2027 (2026-06-08 to 2027-03-31) |
+| `terms` | 1st Term (2026-06-08 to 2026-10-30), 2nd Term (2026-11-02 to 2027-03-31). The 1st Term is marked current, unless another term already was. |
+| `tracks` | ACAD (Academic), TECH-PRO (Technical-Professional) |
+| `schedules` | AM (Morning), MID (Midday), PM (Afternoon) |
+
+| Strand | Track | Schedules | 1st term subjects (grade 11) |
+|---|---|---|---|
+| BUSSENT | ACAD | AM, PM | BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1 |
+| EDUC | ACAD | AM, PM | FILIPINO 1, CREATIVE COMPOSITION 1 |
+| ENG | ACAD | AM, PM | FINITE MATH 1, EMPOWERMENT TECHNOLOGY |
+| MED | ACAD | AM, PM | BIOLOGY 1, EMPOWERMENT TECHNOLOGY |
+| CD1 (CSS-VGD) | TECH-PRO | AM, PM | COMPUTER SYSTEM SERVICING 1 |
+| HT1 (KO-FBS) | TECH-PRO | AM, MID, PM | KITCHEN OPERATION 1 |
+| HT2 (FBS-KO) | TECH-PRO | PM | FOOD AND BEVERAGE OPERATIONS 1 |
+| USP | TECH-PRO | AM | SOCIAL SCIENCES, BIOLOGY 1 |
+
+The **2nd term** has the same six subjects for every strand: EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON,
+GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE and PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO.
+
+Things that were decided for you, change them in the tables if they are not right:
+
+- **The dates** of the school year and the terms are a guess (`school_years`, `terms`).
+- **Subject codes** (`BUSACCT`, `ADVMATH1`, `EMPOWERTECH`, ...) were invented, only the names are SEAITT's.
+- **Grade 12 has no curriculum yet**, so enrolling into grade 12 works but with no subjects to pick.
+- The text in brackets for CD1, HT1 and HT2 is saved as the strand's `name`. For the other strands `name` is the same as `code`.
+- An older version of the database had four tracks (ACAD, TVL, SPORTS, ARTS). On upgrade, **TVL became TECH-PRO**
+  (kept, with its strands and students), and SPORTS and ARTS were removed if nothing used them (switched off, not
+  deleted, if something did).
+- Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
 
 ## What is a class offering?
 
 A class offering is **one class**: *this subject, taught to this section, in this term, by this teacher*.
-For example, 1st Term of 2025-2026:
+For example, 1st Term of 2026-2027:
 
 | Section | Subject | Teacher |
 |---|---|---|
-| 11-STEM-A | General Mathematics | Ms. Reyes |
-| 11-STEM-A | Oral Communication | Mr. Santos |
-| 11-STEM-B | General Mathematics | Ms. Reyes |
+| 11-BUSSENT-A | BUSINESS ACCOUNTING | Ms. Reyes |
+| 11-BUSSENT-A | ADVANCE MATHEMATICS 1 | Mr. Santos |
+| 11-BUSSENT-B | BUSINESS ACCOUNTING | Ms. Reyes |
 
 Each row of `class_offerings` is one of these classes. **It is needed, keep it.** It is the complete list that the
 summary columns on `students` and `teachers` can only hint at:
 
 - **One teacher teaches many classes and one section has many subjects.** Ms. Reyes has two rows above. A single
   `subject_id` or `section_id` column on `teachers` or `students` can only hold one of them.
-- **A student does not pick subjects.** Enrolling a student in a section (`enrollments`) gives them every class of that
-  section, so their subject list is always right and can't contradict their section.
-- **Lessons, assignments and quizzes belong to one class.** "Quiz 1" is posted to *11-STEM-A General Mathematics*:
+- **A student's subjects are recorded when they are enrolled** (`enrollment_subjects`, picked from the strand's
+  curriculum). The classes that teach those subjects are the section's `class_offerings`, so what a student sees later is
+  always the classes of their section for the subjects they take.
+- **Lessons, assignments and quizzes belong to one class.** "Quiz 1" is posted to *11-BUSSENT-A BUSINESS ACCOUNTING*:
   only that section sees it and only Ms. Reyes owns it. These tables will each carry a `class_offering_id`. Without
   `class_offerings` they would have to repeat term, section, subject and teacher everywhere.
 
-The table stays empty until the registrar or an administrator sets up the classes of a term.
+The table stays empty until the registrar or an administrator sets up the classes of a term (there is no screen for that yet).
 
 ## Rules the database enforces
 
-- Email, LRN, employee number, track code and name, strand code, subject code and school year name are unique.
+- Email, LRN, employee number, track code and name, strand code, subject code, schedule code and name, and school year name are unique.
 - Every strand belongs to **exactly one track**. A track can't be deleted while strands use it.
 - An LRN is exactly 12 digits (`ck_students_lrn`), a grade level is 11 or 12, a school year ends after it starts.
 - `status` of an administrator, guidance counselor or registrar is `Active` or `Inactive`.
 - The grade level, track, strand and section on a student or teacher must agree with each other (see above).
 - A student has at most **one enrollment per term** (`unique (student_id, term_id)`).
-- A subject appears at most once per section and term (`unique (term_id, section_id, subject_id)`).
+- An enrollment's strand must belong to its track, and its section must be a section of that strand and grade level
+  (composite foreign keys, like the summary on students).
+- A section's schedule must be one the strand runs in (`(strand_id, schedule_id)` is a foreign key to
+  `strand_schedules`). A section name is unique per school year, strand, grade level and schedule: **A in the AM and A in
+  the PM are different sections.**
+- A subject appears at most once per section and term (`unique (term_id, section_id, subject_id)`), and at most once
+  per strand, grade level and term in the curriculum.
 - An enrollment or class offering can only combine a **term and a section of the same school year**. Both
   tables carry a `school_year_id` that is part of two composite foreign keys, to `terms (id, school_year_id)`
   and to `sections (id, school_year_id)`. When you insert one, `school_year_id` must be the school year of
   both its term and its section.
-- Nothing cascades except profile rows when their user is deleted. Terms, sections, students, teachers and so
-  on can't be deleted while other rows use them. Deactivate users (`is_active = 0`) instead of deleting them.
+- Deleting an enrollment deletes its `enrollment_subjects`. Otherwise nothing cascades except profile rows when their user
+  is deleted. Terms, sections, students, teachers and so on can't be deleted while other rows use them. The Users page
+  deletes a student's enrollments first, on purpose, when an administrator confirms; to keep history, switch the account
+  off (`is_active = 0`) instead of deleting it.
 
 ## Rules the application enforces
 
 - Only one term should have `is_current = 1` (MySQL has no partial unique index for this).
 - A profile row must match the user's role. Use `UserAccountService.CreateAsync` to create accounts.
-- The summary columns on students and teachers, and `status` next to `users.is_active`, are kept in step by the
-  screens that change them (those screens don't exist yet).
+- The subjects picked for an enrollment must belong to the strand's curriculum for that grade level and term, and at least
+  one must be picked when the curriculum has any (`EnrollmentService`).
+- Only an active Registrar or Administrator can enroll students, and only an Administrator can edit, add or delete accounts.
+  Nobody can delete or switch off their own account.
+- A student's email and password are made from the last name and the LRN (`StudentCredentials`, see the README).
+- The summary columns on students and teachers are kept in step by the screens that change them: enrolling a student sets
+  the student's, the Users page keeps `status` next to `users.is_active`. A teacher's summary has no screen yet.
 
 ## Changing the schema
 
@@ -202,15 +278,21 @@ change. Never edit a migration that has already been pushed, add a new one inste
 Things to remember:
 
 - **A migration that moves data** (for example `MovePersonDetailsToRoleTables`, which moved the names from `users`
-  into the role tables) must copy the data before it drops the old columns. EF's scaffolded `DropColumn` would
-  throw the data away, so write that part by hand and test it both ways (`Up` and `Down`) on a database that has rows.
+  into the role tables, or `AddSchedulesCurriculumAndEnrollmentDetails`, which filled the new `enrollments` columns from
+  the students and sections) must copy the data before it drops or tightens the old columns. EF's scaffolded
+  `DropColumn` would throw the data away, so write that part by hand and test it both ways (`Up` and `Down`) on a
+  database that has rows.
 - **Column order.** EF adds a new column at the end of the table. To put it somewhere nicer, write the migration's
   `ALTER TABLE ... ADD COLUMN ... AFTER other_column` by hand (see `AddPlacementToStudentsAndTeachers`).
+- **Indexes.** MySQL refuses to drop an index that a foreign key still needs (error 1553). In a migration, create the new
+  indexes first and drop the old ones after (EF scaffolds them the other way round).
+- **Seed data in a migration** must be safe to run twice and must not overwrite what people changed: write it as
+  `INSERT ... SELECT ... WHERE NOT EXISTS (...)`, like `SeedSchoolData` does.
 - **Views.** Version 1 had `v_...` views. MySQL does not update a view when its tables change, and a broken view makes
   Workbench show *Error loading schema content ... Error Code: 1356*. There are no views now, so if you add one, a
   migration that renames or drops a column it uses must drop and re-create that view.
-- **Raw SQL in a migration** (`migrationBuilder.Sql(...)`) must end with a `;`. EF copies it into the `.sql` scripts as
-  it is, and without the `;` two statements run together and the script fails in Workbench.
+- **Raw SQL in a migration** (`migrationBuilder.Sql(...)`) must end with a `;`. EF copies it into the `.sql` scripts as it
+  is, and without the `;` two statements run together and the script fails in Workbench.
 - **Every `UPDATE` or `DELETE` in raw SQL needs a `WHERE` on a key column** (for example `WHERE id > 0`). MySQL Workbench
   has "Safe Updates" on by default and refuses anything else with Error 1175, which stops the script halfway and
   leaves a half-upgraded database. The command-line client does not do this, so test the generated scripts with

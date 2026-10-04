@@ -20,6 +20,12 @@ public static class PhilippineTime
     public static string FormatDateTime(DateTime utc) =>
         FromUtc(utc).ToString("MMM d, yyyy, h:mm tt", CultureInfo.InvariantCulture);
 
+    /// <summary>"Oct 3, 2026" for a UTC moment, shown in Philippine time.</summary>
+    public static string FormatDate(DateTime utc) => FromUtc(utc).ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
+
+    /// <summary>"9:41 PM" for a UTC moment, shown in Philippine time.</summary>
+    public static string FormatTime(DateTime utc) => FromUtc(utc).ToString("h:mm tt", CultureInfo.InvariantCulture);
+
     /// <summary>"Oct 3, 2026"</summary>
     public static string FormatDate(DateOnly date) => date.ToString("MMM d, yyyy", CultureInfo.InvariantCulture);
 

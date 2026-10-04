@@ -12,6 +12,9 @@ public static class AppRoles
     public const string Registrar = "Registrar";
     public const string GuidanceCounselor = "GuidanceCounselor";
 
+    /// <summary>For [Authorize(Roles = ...)]: the pages the registrar works in, which administrators may open too.</summary>
+    public const string RegistrarAccess = Registrar + "," + Admin;
+
     public const int AdminId = 1;
     public const int TeacherId = 2;
     public const int StudentId = 3;

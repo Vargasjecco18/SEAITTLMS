@@ -9,6 +9,23 @@
     box-shadow: var(--shadow);
 }
 
+/* A card that is a link */
+.link {
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.link:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lg);
+}
+
+.link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
 .stat-icon {
     display: grid;
     place-items: center;

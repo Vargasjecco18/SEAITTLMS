@@ -5,12 +5,18 @@ set up without a `dotnet new` template and with its own login (no ASP.NET Core I
 
 What exists so far:
 
+- **A public home page** at `/` for visitors: the school, its courses (read from the database) and a **Log in** button.
 - **Custom login**: email + password, PBKDF2 password hashing, cookie sign-in, account lockout, "keep me signed in".
+  After signing in, everybody lands on the page of their role.
 - **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor, each with its own table
   holding the person's name and details.
-- **Classes and enrollment** by school year and **term**: tracks, strands, subjects, sections, class offerings, enrollments.
-- **Pages**: a **Home** page for everybody (greeting, the current term, your account details) and an **Admin** page
-  for administrators (accounts per role, the school setup at a glance, the latest accounts).
+- **Registrar pages**: a dashboard, a form to **enroll a student** (the student's email and password are made
+  automatically) and a searchable list of all enrollments.
+- **Administrator pages**: a dashboard and **user management**: one list per role, with search, **edit**, **delete**
+  and add (for staff).
+- **Classes and enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects,
+  sections, class offerings, enrollments. The database comes with the school year 2026-2027, its two terms, the
+  ACAD and TECH-PRO tracks, their strands and the subjects of grade 11.
 - **A header and a menu** with icons, light and dark mode (it follows your computer), and a phone-friendly layout.
 
 Lessons, assignments and quizzes are next. The database design is in [docs/database.md](docs/database.md).
@@ -37,7 +43,8 @@ Lessons, assignments and quizzes are next. The database design is in [docs/datab
    ```bash
    dotnet watch
    ```
-3. Open http://localhost:5000 and sign in as **admin@legazpi.seaitt.edu.ph** with the administrator password from step 1.
+3. Open http://localhost:5000. You see the public home page. Click **Log in** and sign in as
+   **admin@legazpi.seaitt.edu.ph** with the administrator password from step 1. You land on the Administrator page.
 
 If your MySQL uses another host, port or user, change the connection string in the same file. If the app says
 **Can't connect to MySQL**, check the password in it, that MySQL is running, and that the `seaittlms` schema exists.
@@ -66,7 +73,8 @@ in your private settings file. To use other details, add them to the `Admin` par
 
 The seed only runs when there is no administrator yet, so changing these settings later does not touch an account
 that already exists. The name and phone number are saved in the `administrators` table. To change the email of an
-existing administrator, run this in MySQL Workbench (emails are stored in lower case):
+existing administrator, use **Users > Administrators > Edit** in the app, or run this in MySQL Workbench (emails are
+stored in lower case):
 
 ```sql
 UPDATE seaittlms.users SET email = 'admin@legazpi.seaitt.edu.ph' WHERE email = 'admin@seaitt.edu.ph';
@@ -105,10 +113,11 @@ version has no views.)
 
 **Without running the app:** in Workbench open
 [database/seaittlms_reset_and_rebuild.sql](database/seaittlms_reset_and_rebuild.sql) (*File > Open SQL Script...*) and
-click the lightning bolt. It deletes the `seaittlms` schema and builds everything again, including the five roles and the
-four tracks. Then run `dotnet watch` to create the administrator.
+click the lightning bolt. It deletes the `seaittlms` schema and builds everything again, including the five roles and
+the school setup (school year, terms, tracks, strands, schedules, subjects). Then run `dotnet watch` to create the
+administrator.
 
-Any other users you had are gone, and there is no screen for adding users yet.
+Any other users you had are gone. Add the staff again in **Users**, and the students by enrolling them.
 
 Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five old views,
 and does nothing if you don't have them):
@@ -131,6 +140,94 @@ you want a different one) and run `dotnet ef database update` (or `Database__Mig
 start). Don't copy `appsettings.Local.json` to a server. The sign-in cookie is https-only outside Development.
 Persist the ASP.NET Core Data Protection keys if you run in a container.
 
+## Who sees what
+
+After signing in (and whenever a signed-in person opens `/`), the app sends everybody to the page of their role
+(`Auth/RoleHome.cs`). A page that a role may not open shows *Access denied*. The menu only lists what the role can open.
+
+| Role | Lands on | Can open |
+|---|---|---|
+| Admin | `/admin` | the Administrator pages (dashboard, **Users**), the Registrar pages, My account |
+| Registrar | `/registrar` | the Registrar pages (dashboard, **Enroll a student**, **Enrollments**), My account |
+| Teacher, Student, Guidance counselor | `/account` | My account (their own pages come with lessons and grades) |
+
+An administrator can use the registrar pages too, so there is always somebody who can enroll students.
+
+## Enrolling a student (registrar)
+
+Menu: **Registrar > Enroll a student** (`/registrar/enroll`). Fill in:
+
+| Box | What to put |
+|---|---|
+| LRN | The 12 digits of the Learner Reference Number. |
+| First name, middle name, last name | The student's name. The middle name is optional. |
+| Term | The term to enroll in. The current term is chosen for you. |
+| Grade level | 11 or 12. |
+| Track, strand | ACAD (BUSSENT, EDUC, ENG, MED) or TECH-PRO (CD1, HT1, HT2, USP). Pick the track first, it filters the strands. |
+| Schedule | AM, MID or PM. Only the schedules the strand runs in are listed (for example HT2 only has PM). When there is only one, it is chosen for you. |
+| Section | Pick a section that already exists for that strand and schedule, or type a new one, for example `A`. The section is made if it is new. |
+| Enrolled subjects | The subjects of that strand for that grade level and term are ticked for you. Untick what the student does not take. At least one is needed. |
+
+Press **Enroll student**. The page then shows what was saved and, for a new student, the **sign-in details to hand over**
+(with *Copy the login* and *Print*).
+
+### The automatic email and password
+
+A student who is not in the system yet gets an account made from the last name and the **last 6 digits of the LRN**:
+
+| | Rule | Example (LRN 111111111111, "Jecco seth C. Vargas") |
+|---|---|---|
+| Email | `lastname` + `.` + last 6 digits + `@legazpi.seaitt.edu.ph` | `vargas.111111@legazpi.seaitt.edu.ph` |
+| Password | `lastname` + last 6 digits | `vargas111111` |
+
+The last name is written in lower case without accents, spaces or punctuation (`Dela Cruz` becomes `delacruz`). The part
+after the `@` is the `Enrollment:EmailDomain` setting in `appsettings.json`. If that email is already taken, or the
+password would be shorter than 8 characters, more digits of the LRN are used, so every student gets a different email.
+The code is `Services/StudentCredentials.cs`.
+
+**Please know:** anybody who knows a student's last name and LRN can work out the password. There is **no page yet where a
+student changes the password**. Until there is, an administrator can set a new one in **Users > Students > Edit**.
+
+### A student who is already in the system
+
+Typing the LRN of a student that has an account shows their name (locked) and adds a **new enrollment**, for example
+for the 2nd term. The account and the password do not change. Enrolling the same student twice in one term is refused.
+
+### The list of enrollments
+
+**Registrar > Enrollments** (`/registrar/enrollments`) lists every enrollment, newest first, 20 per page. Search by name
+or LRN and filter by term, strand and schedule. The dashboard (`/registrar`) shows how many students are enrolled this
+term, today, by strand and by schedule.
+
+## Managing users (administrator)
+
+**Administrator > Users** (`/admin/users`). There is one tab per role (Students, Teachers, Registrars, Guidance,
+Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email).
+
+- **Edit** changes the name, email, LRN (students) or employee number (staff), phone number and the **new password**
+  (leave it empty to keep the old one). The **Account is active** switch decides whether the person can sign in.
+  Changing the email or the password, or switching an account off, signs that person out.
+  Changing a student's name or LRN also updates it in their enrollments.
+- **Add** (teachers, registrars, guidance counselors, administrators) makes an account with the password you type.
+  Students are not added here: they are added by enrolling them.
+- **Delete** asks first and says what else goes: a deleted student loses their enrollments, a deleted teacher's
+  sections and classes lose their teacher, and the enrollments a registrar made stay. Deleting **cannot be undone**,
+  switching the account off is the gentler choice.
+- You cannot delete or switch off **your own** account.
+
+## The public home page
+
+`/` is the page visitors see (`Components/Pages/Index.razor` and `Index.razor.css`). A signed-in person who opens it is
+sent to their own page instead. To change it:
+
+- The words (welcome text, mission, vision, about) are written directly in `Index.razor`.
+- The **Get in Touch** boxes come from the `Contacts` list at the bottom of the same file. **The email there,
+  `your-email@example.com`, is a placeholder: replace it.**
+- The **courses** are read from the database (`Data/Queries/PublicCourses.cs`): each strand with its schedules and its
+  subjects per term. To change them, change the tables `strands`, `subjects` and `strand_subjects` (see
+  [docs/database.md](docs/database.md)).
+- The big picture at the top is made of colors (no image file): four slides that change by themselves, and the dots pick one.
+
 ## Pages and styling
 
 Every page and component has **its own stylesheet next to it**, named after it: `Login.razor` is styled by
@@ -141,9 +238,9 @@ affecting each other. There is no big shared stylesheet.
 | Files | What they style |
 |---|---|
 | `Components/App.razor.css` | The colors, sizes and dark mode, written once as variables (`--brand`, `--surface`, `--text`, ...), and the page background and font. Change a color here and it changes everywhere. |
-| `Components/Layout/` | The header (`MainLayout`), the menu on the left (`NavMenu`), the account menu (`UserMenu`) and the sign-in layout (`AuthLayout`). |
-| `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `ButtonLink`, `Brand` and `Icon`. |
-| `Components/Pages/`, `Components/Account/` | One page each: `Home`, `Admin`, `Login`, `Error`. |
+| `Components/Layout/` | The header (`MainLayout`), the menu on the left (`NavMenu`), the account menu (`UserMenu`), the sign-in layout (`AuthLayout`) and the bare layout of the public home page (`BlankLayout`). |
+| `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `Button`, `ButtonLink`, `Field`, `Modal`, `EnrollmentTable`, `Brand` and `Icon`. |
+| `Components/Pages/`, `Components/Account/` | One page each: `Index` (public home), `Account`, `Admin`, `Users`, `Registrar`, `Enroll`, `Enrollments`, `Login`, `NotFound`, `Error`. |
 
 Good to know:
 
@@ -155,22 +252,27 @@ Good to know:
 - **A new page**: add `Components/Pages/Something.razor` starting with `@page "/something"` (and
   `@attribute [Authorize(Roles = AppRoles.Admin)]` if only administrators may open it), give it a
   `Something.razor.css`, then add a link in `Components/Layout/NavMenu.razor`.
-- The data a page shows is read by small query classes in `Data/Queries/`, so the page itself stays mostly markup.
-- `wwwroot/app.js` only closes the menus when you click elsewhere or press Escape. The pages work without it.
+- The data a page shows is read by small query classes in `Data/Queries/`, and what a page *does* (enrolling, editing,
+  deleting) is done by the classes in `Services/`, so the page itself stays mostly markup.
+- The enrollment form and the Users page are **interactive** pages (`@rendermode InteractiveServer`): they react while
+  you type, over a live connection to the server. The other pages are plain pages.
+- `wwwroot/app.js` closes the menus when you click elsewhere or press Escape, and copies/prints the login on the enrollment
+  receipt. The pages work without it, apart from those two buttons.
 - Times are stored in UTC and shown in Philippine time (UTC+8), see `Components/Shared/PhilippineTime.cs`.
 
 ## Project layout
 
 ```
 Program.cs                 Wiring: database, login cookie, pages
-Auth/                      Custom login: PasswordHasher, AuthService, cookie checks, UserAccountService
+Auth/                      Custom login: PasswordHasher, AuthService, cookie checks, UserAccountService, RoleHome
+Services/                  What the registrar and the administrator do: EnrollmentService, UserManagementService, StudentCredentials
 Data/                      AppDbContext, entities, EF configurations, migrations, startup initializer
-Data/Queries/              What the Home and Admin pages read from the database
+Data/Queries/              What the pages read from the database
 Components/App.razor.css   The theme: colors, sizes, dark mode
 Components/Account/        Login and access-denied pages
-Components/Layout/         Header, menu, account menu, sign-in layout
-Components/Shared/         Card, StatCard, Badge, Avatar, Icon, ... (each with its own .razor.css)
-Components/Pages/          Home, Admin and the error page
+Components/Layout/         Header, menu, account menu, sign-in layout, public layout
+Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
+Components/Pages/          Public home, Account, Admin, Users, Registrar, Enroll, Enrollments, error pages
 wwwroot/                   favicon.svg, app.js
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it
@@ -182,10 +284,11 @@ THIRD-PARTY-NOTICES.md     Licence of the icons
 
 1. `/login` is a normal form. `AuthService` looks the user up by email, checks the password hash and the lockout,
    and the page writes the sign-in cookie.
-2. Every page needs a signed-in user unless it has `@attribute [AllowAnonymous]`. Restrict a page to roles with
-   `@attribute [Authorize(Roles = AppRoles.Admin)]`. A signed-in user who opens a page they may not see gets an
+2. Every page needs a signed-in user unless it has `@attribute [AllowAnonymous]` (the public home page, the login page and
+   the error pages have it). Restrict a page to roles with `@attribute [Authorize(Roles = AppRoles.Admin)]`
+   (`AppRoles.RegistrarAccess` means Registrar and Admin). A signed-in user who opens a page they may not see gets an
    *Access denied* page.
 3. Wrong passwords are counted. After 5 in a row the account is locked for 15 minutes (`Auth` section in `appsettings.json`).
 4. A signed-in user is re-checked against the database every few minutes, so deactivating an account (or changing
-   its `security_stamp`) signs it out.
+   its `security_stamp`, which editing the email or password in **Users** does) signs it out.
 5. Two-factor sign-in is not built yet. `users.phone_number` is stored (as +639...) for when it is.

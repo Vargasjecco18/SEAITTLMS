@@ -1,0 +1,493 @@
+@page "/registrar/enroll"
+@attribute [Authorize(Roles = AppRoles.RegistrarAccess)]
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using SEAITT_LMS.Services
+@inject EnrollmentService Enrollment
+@inject AuthenticationStateProvider AuthProvider
+@inject IJSRuntime JS
+
+<PageTitle>Enroll a student · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Enroll a student"
+            Subtitle="Fill in the form. The student's email and password are made for you."
+            IconName="user-plus" />
+
+@if (lookups is null)
+{
+    <p class="loading">Loading…</p>
+}
+else if (lookups.Terms.Count == 0 || lookups.Tracks.Count == 0 || lookups.Strands.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="triangle-alert" Title="The school setup is not ready" Tone="Tone.Warning">
+            <p>There must be a term, a track and a strand before students can be enrolled.</p>
+        </EmptyState>
+    </Card>
+}
+else if (receipt is not null)
+{
+    @* ===== Done: what was enrolled, and the login to hand over ===== *@
+    <Card Class="receipt">
+        <div class="receipt-head">
+            <span class="receipt-icon"><Icon Name="circle-check" Size="30" /></span>
+            <div>
+                <h2>@receipt.FullName is enrolled</h2>
+                <p>@receipt.Term of @receipt.SchoolYear · Grade @receipt.GradeLevel</p>
+            </div>
+        </div>
+
+        <dl class="details">
+            <div><dt>LRN</dt><dd>@receipt.Lrn</dd></div>
+            <div><dt>Track</dt><dd>@receipt.Track</dd></div>
+            <div><dt>Strand</dt><dd>@receipt.Strand</dd></div>
+            <div><dt>Schedule</dt><dd>@receipt.Schedule</dd></div>
+            <div><dt>Section</dt><dd>@receipt.Section</dd></div>
+            <div class="wide">
+                <dt>Subjects</dt>
+                <dd>
+                    @if (receipt.Subjects.Count == 0)
+                    {
+                        <span class="muted">None</span>
+                    }
+                    else
+                    {
+                        <ul class="subject-chips">
+                            @foreach (var subject in receipt.Subjects)
+                            {
+                                <li>@subject</li>
+                            }
+                        </ul>
+                    }
+                </dd>
+            </div>
+        </dl>
+
+        <div class="login-box">
+            @if (receipt.NewAccount)
+            {
+                <h3><Icon Name="key-round" Size="18" /> Sign-in details for the student</h3>
+                <dl>
+                    <div><dt>Email</dt><dd class="mono" id="login-email">@receipt.Email</dd></div>
+                    <div><dt>Password</dt><dd class="mono" id="login-password">@receipt.Password</dd></div>
+                </dl>
+                <p class="hint">Give these to the student. Anyone who knows the last name and the LRN can work out the password, so tell the student to keep it private.</p>
+            }
+            else
+            {
+                <h3><Icon Name="info" Size="18" /> The student already has an account</h3>
+                <p class="hint">Nothing changed there. They sign in with <span class="mono">@receipt.Email</span> and the password they already have.</p>
+            }
+        </div>
+
+        <div class="actions no-print">
+            <Button Variant="ButtonVariant.Primary" IconName="user-plus" OnClick="EnrollAnother">Enroll another student</Button>
+            @if (receipt.NewAccount)
+            {
+                <Button Variant="ButtonVariant.Secondary" IconName="@(copied ? "circle-check" : "file-text")" OnClick="CopyLoginAsync">@(copied ? "Copied" : "Copy the login")</Button>
+            }
+            <Button Variant="ButtonVariant.Secondary" IconName="list" OnClick="PrintAsync">Print</Button>
+            <ButtonLink Href="registrar" Variant="ButtonVariant.Ghost">Back to the dashboard</ButtonLink>
+        </div>
+    </Card>
+}
+else
+{
+    <EditForm Model="form" OnSubmit="SubmitAsync" class="enroll-form">
+
+        @if (errors.Count > 0)
+        {
+            <div class="alert" role="alert">
+                <Icon Name="circle-alert" Size="18" />
+                <div>
+                    <strong>@(errors.Count == 1 ? "There is a problem:" : "There are problems:")</strong>
+                    <ul>
+                        @foreach (var error in errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+
+        <div class="grid">
+            <Card Title="Student" IconName="graduation-cap">
+                <Field For="lrn" Label="LRN" Required="true" Hint="The 12 digits of the Learner Reference Number.">
+                    <input id="lrn" type="text" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" autocomplete="off" required
+                           title="12 digits" @bind="form.Lrn" @bind:event="oninput" @bind:after="OnLrnChangedAsync" />
+                </Field>
+
+                @if (existing is not null)
+                {
+                    <div class="notice" role="status">
+                        <Icon Name="info" Size="18" />
+                        <div>
+                            <strong>@existing.FullName already has an account.</strong>
+                            <span>This adds a new enrollment. The name and the sign-in details stay as they are.</span>
+                            @if (existing.EnrolledTermIds.Contains(form.TermId))
+                            {
+                                <span class="warn">This student is already enrolled for the selected term.</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <Field For="first-name" Label="First name" Required="true">
+                    <input id="first-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)"
+                           @bind="FirstNameValue" />
+                </Field>
+                <Field For="middle-name" Label="Middle name">
+                    <input id="middle-name" type="text" maxlength="100" autocomplete="off" readonly="@(existing is not null)"
+                           @bind="MiddleNameValue" />
+                </Field>
+                <Field For="last-name" Label="Last name" Required="true">
+                    <input id="last-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)"
+                           @bind="LastNameValue" @bind:event="oninput" />
+                </Field>
+            </Card>
+
+            <Card Title="Enrollment" IconName="clipboard-list">
+                <Field For="term" Label="Term" Required="true">
+                    <select id="term" required @bind="form.TermId" @bind:after="OnPlacementChangedAsync">
+                        @foreach (var term in lookups.Terms)
+                        {
+                            <option value="@term.Id">@term.SchoolYear · @term.Name@(term.IsCurrent ? " (current)" : "")</option>
+                        }
+                    </select>
+                </Field>
+
+                <div class="two">
+                    <Field For="grade" Label="Grade level" Required="true">
+                        <select id="grade" required @bind="form.GradeLevel" @bind:after="OnPlacementChangedAsync">
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                    </Field>
+                    <Field For="track" Label="Track" Required="true">
+                        <select id="track" required @bind="form.TrackId" @bind:after="OnTrackChangedAsync">
+                            <option value="0">Choose a track</option>
+                            @foreach (var track in lookups.Tracks)
+                            {
+                                <option value="@track.Id">@track.Code</option>
+                            }
+                        </select>
+                    </Field>
+                </div>
+
+                <Field For="strand" Label="Strand" Required="true">
+                    <select id="strand" required disabled="@(form.TrackId == 0)" @bind="form.StrandId" @bind:after="OnStrandChangedAsync">
+                        <option value="0">@(form.TrackId == 0 ? "Choose a track first" : "Choose a strand")</option>
+                        @foreach (var strand in StrandsOfTrack)
+                        {
+                            <option value="@strand.Id">@strand.Code@(string.Equals(strand.Name, strand.Code, StringComparison.OrdinalIgnoreCase) ? "" : $" ({strand.Name})")</option>
+                        }
+                    </select>
+                </Field>
+
+                <div class="two">
+                    <Field For="schedule" Label="Schedule" Required="true">
+                        <select id="schedule" required disabled="@(form.StrandId == 0)" @bind="form.ScheduleId" @bind:after="OnScheduleChangedAsync">
+                            <option value="0">@(form.StrandId == 0 ? "Strand first" : "Choose")</option>
+                            @foreach (var schedule in SchedulesOfStrand)
+                            {
+                                <option value="@schedule.Id">@schedule.Code · @schedule.Name</option>
+                            }
+                        </select>
+                    </Field>
+                    <Field For="section" Label="Section" Required="true" Hint="Pick one that exists or type a new one, for example A.">
+                        <input id="section" type="text" maxlength="50" autocomplete="off" required list="section-names"
+                               @bind="form.SectionName" @bind:event="oninput" />
+                        <datalist id="section-names">
+                            @foreach (var name in sectionNames)
+                            {
+                                <option value="@name"></option>
+                            }
+                        </datalist>
+                    </Field>
+                </div>
+            </Card>
+        </div>
+
+        <div class="grid">
+            <Card Title="Enrolled subjects" IconName="book-open">
+                @if (form.StrandId == 0)
+                {
+                    <p class="muted">Choose a strand to see its subjects for this term.</p>
+                }
+                else if (subjects.Count == 0)
+                {
+                    <p class="muted">No subjects are set for this strand, grade level and term yet. The student is enrolled without subjects.</p>
+                }
+                else
+                {
+                    <div class="subject-tools">
+                        <span class="muted">@selectedSubjects.Count of @subjects.Count selected</span>
+                        <span>
+                            <button type="button" class="link-button" @onclick="SelectAllSubjects">Select all</button>
+                            <button type="button" class="link-button" @onclick="ClearSubjects">Clear</button>
+                        </span>
+                    </div>
+                    <ul class="subject-list">
+                        @foreach (var subject in subjects)
+                        {
+                            <li>
+                                <label class="check">
+                                    <input type="checkbox" checked="@selectedSubjects.Contains(subject.Id)"
+                                           @onchange="e => ToggleSubject(subject.Id, e.Value is true)" />
+                                    <span>@subject.Name</span>
+                                </label>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+
+            <Card Title="Sign-in details" IconName="key-round">
+                @if (existing is not null)
+                {
+                    <p>This student already has an account: <span class="mono">@existing.Email</span>.</p>
+                    <p class="muted">Their password does not change.</p>
+                }
+                else if (Preview is { } preview)
+                {
+                    <dl class="preview">
+                        <div><dt>Email</dt><dd class="mono" id="preview-email">@preview.Email</dd></div>
+                        <div><dt>Password</dt><dd class="mono" id="preview-password">@preview.Password</dd></div>
+                    </dl>
+                    <p class="hint">Made from the last name and the last 6 digits of the LRN. They are created when you press Enroll student.</p>
+                }
+                else
+                {
+                    <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
+                }
+            </Card>
+        </div>
+
+        <div class="submit-row">
+            <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>
+            <ButtonLink Href="registrar" Variant="ButtonVariant.Ghost">Cancel</ButtonLink>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private sealed class Form
+    {
+        public string Lrn { get; set; } = "";
+        public string FirstName { get; set; } = "";
+        public string MiddleName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public byte GradeLevel { get; set; } = 11;
+        public int TermId { get; set; }
+        public int TrackId { get; set; }
+        public int StrandId { get; set; }
+        public int ScheduleId { get; set; }
+        public string SectionName { get; set; } = "";
+    }
+
+    private readonly Form form = new();
+    private EnrollmentLookups? lookups;
+    private ExistingStudent? existing;
+    private IReadOnlyList<SubjectOption> subjects = [];
+    private readonly HashSet<int> selectedSubjects = [];
+    private IReadOnlyList<string> sectionNames = [];
+    private List<string> errors = [];
+    private EnrollmentReceipt? receipt;
+    private bool busy;
+    private bool copied;
+    private int reloadVersion;
+
+    // The name boxes show the student's own name (read-only) when the LRN belongs to a student who already has an account.
+    // They use @bind, which keeps what is typed while the page is being refreshed, even when typing fast.
+    private string FirstNameValue
+    {
+        get => existing?.FirstName ?? form.FirstName;
+        set => form.FirstName = value;
+    }
+
+    private string MiddleNameValue
+    {
+        get => existing?.MiddleName ?? form.MiddleName;
+        set => form.MiddleName = value;
+    }
+
+    private string LastNameValue
+    {
+        get => existing?.LastName ?? form.LastName;
+        set => form.LastName = value;
+    }
+
+    private IEnumerable<StrandOption> StrandsOfTrack => lookups!.Strands.Where(s => s.TrackId == form.TrackId);
+
+    private IEnumerable<ScheduleOption> SchedulesOfStrand
+    {
+        get
+        {
+            var strand = lookups!.Strands.FirstOrDefault(s => s.Id == form.StrandId);
+            return strand is null ? [] : lookups.Schedules.Where(s => strand.ScheduleIds.Contains(s.Id));
+        }
+    }
+
+    /// <summary>The login the student will get, once the LRN and the last name are typed. Not for students who already have one.</summary>
+    private StudentLogin? Preview =>
+        existing is null && form.Lrn.Length == 12 && form.Lrn.All(char.IsAsciiDigit) && !string.IsNullOrWhiteSpace(form.LastName)
+            ? Enrollment.PreviewLogin(form.LastName, form.Lrn)
+            : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lookups = await Enrollment.GetLookupsAsync();
+        form.TermId = (lookups.Terms.FirstOrDefault(t => t.IsCurrent) ?? lookups.Terms.FirstOrDefault())?.Id ?? 0;
+    }
+
+    private async Task OnLrnChangedAsync()
+    {
+        var lrn = form.Lrn;
+        var found = await Enrollment.FindStudentAsync(lrn);
+
+        // An answer for an LRN that was changed again while it was being looked up is not the answer any more.
+        if (lrn == form.Lrn)
+        {
+            existing = found;
+        }
+    }
+
+    private async Task OnTrackChangedAsync()
+    {
+        form.StrandId = 0;
+        form.ScheduleId = 0;
+        await ReloadChoicesAsync();
+    }
+
+    private async Task OnStrandChangedAsync()
+    {
+        // A strand with a single schedule needs no choosing.
+        var schedules = SchedulesOfStrand.ToList();
+        form.ScheduleId = schedules.Count == 1 ? schedules[0].Id : 0;
+        await ReloadChoicesAsync();
+    }
+
+    private async Task OnScheduleChangedAsync() => await ReloadChoicesAsync();
+
+    private async Task OnPlacementChangedAsync() => await ReloadChoicesAsync();
+
+    /// <summary>The subjects and the existing sections depend on the term, grade level, strand and schedule.</summary>
+    private async Task ReloadChoicesAsync()
+    {
+        var version = ++reloadVersion;
+
+        if (form.StrandId == 0 || form.TermId == 0)
+        {
+            subjects = [];
+            selectedSubjects.Clear();
+            sectionNames = [];
+            return;
+        }
+
+        var curriculum = await Enrollment.GetCurriculumAsync(form.StrandId, form.GradeLevel, form.TermId);
+        var sections = form.ScheduleId == 0
+            ? []
+            : await Enrollment.GetSectionNamesAsync(form.TermId, form.StrandId, form.GradeLevel, form.ScheduleId);
+
+        // The choices changed again while this was loading: the newer load shows its own result.
+        if (version != reloadVersion)
+        {
+            return;
+        }
+
+        subjects = curriculum;
+        selectedSubjects.Clear();
+        foreach (var subject in subjects)
+        {
+            selectedSubjects.Add(subject.Id);
+        }
+
+        sectionNames = sections;
+    }
+
+    private void ToggleSubject(int id, bool on)
+    {
+        if (on)
+        {
+            selectedSubjects.Add(id);
+        }
+        else
+        {
+            selectedSubjects.Remove(id);
+        }
+    }
+
+    private void SelectAllSubjects()
+    {
+        foreach (var subject in subjects)
+        {
+            selectedSubjects.Add(subject.Id);
+        }
+    }
+
+    private void ClearSubjects() => selectedSubjects.Clear();
+
+    private async Task SubmitAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        errors = [];
+
+        try
+        {
+            var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+            _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
+
+            var request = new EnrollmentRequest(
+                form.Lrn,
+                existing?.FirstName ?? form.FirstName,
+                existing?.MiddleName ?? form.MiddleName,
+                existing?.LastName ?? form.LastName,
+                form.GradeLevel, form.TermId, form.TrackId, form.StrandId, form.ScheduleId,
+                selectedSubjects.ToList(),
+                form.SectionName);
+
+            var result = await Enrollment.EnrollAsync(request, userId);
+            if (result.Succeeded)
+            {
+                receipt = result.Receipt;
+                copied = false;
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    /// <summary>Back to an empty student, keeping the choices that usually stay the same for the next one.</summary>
+    private void EnrollAnother()
+    {
+        receipt = null;
+        existing = null;
+        errors = [];
+        form.Lrn = "";
+        form.FirstName = "";
+        form.MiddleName = "";
+        form.LastName = "";
+    }
+
+    private async Task CopyLoginAsync()
+    {
+        if (receipt is { NewAccount: true })
+        {
+            copied = await JS.InvokeAsync<bool>("seaitt.copyText", $"Email: {receipt.Email}\nPassword: {receipt.Password}");
+        }
+    }
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("seaitt.print");
+}

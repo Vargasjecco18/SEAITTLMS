@@ -1,0 +1,32 @@
+<div class="field @Class">
+    <label for="@For">
+        @Label
+        @if (Required)
+        {
+            <span class="required" aria-hidden="true">*</span>
+        }
+    </label>
+    @ChildContent
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <small class="hint">@Hint</small>
+    }
+</div>
+
+@code {
+    /// <summary>The id of the input, select or textarea inside, so the label belongs to it.</summary>
+    [Parameter, EditorRequired] public string For { get; set; } = "";
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+
+    /// <summary>A small line of help under the box.</summary>
+    [Parameter] public string? Hint { get; set; }
+
+    /// <summary>Shows a star after the label. (Put the required attribute on the input itself.)</summary>
+    [Parameter] public bool Required { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>The input, select or textarea.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

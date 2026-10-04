@@ -1,0 +1,108 @@
+@page "/registrar"
+@attribute [Authorize(Roles = AppRoles.RegistrarAccess)]
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject TimeProvider Clock
+
+<PageTitle>Registrar · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Registrar dashboard"
+            Subtitle="@(overview?.TermLabel is { } label ? $"Enrollment for the {label}" : "No term is marked as the current term yet.")"
+            IconName="clipboard-check">
+    <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll a student</ButtonLink>
+</PageHeader>
+
+@if (overview is not null)
+{
+    <section aria-labelledby="numbers-title">
+        <h2 id="numbers-title" class="section-title">At a glance</h2>
+
+        <div class="stats">
+            <StatCard Label="Enrolled this term" Value="@overview.EnrolledThisTerm" IconName="clipboard-check" Accent="AccentColor.Blue" />
+            <StatCard Label="Enrolled today" Value="@overview.EnrolledToday" IconName="user-plus" Accent="AccentColor.Green" />
+            <StatCard Label="Students in the system" Value="@overview.StudentsTotal" IconName="graduation-cap" Accent="AccentColor.Violet" />
+            <StatCard Label="Sections this school year" Value="@overview.SectionsThisYear" IconName="users" Accent="AccentColor.Amber" />
+        </div>
+    </section>
+
+    <div class="columns">
+        <Card Title="By strand" IconName="layers">
+            @if (overview.ByStrand.Count == 0)
+            {
+                <EmptyState IconName="layers" Title="No strands yet" />
+            }
+            else
+            {
+                <ul class="bars">
+                    @foreach (var strand in overview.ByStrand)
+                    {
+                        <li>
+                            <div class="bar-label">
+                                <span class="bar-name">@strand.Code <span class="bar-sub">@strand.Track</span></span>
+                                <strong>@strand.Count</strong>
+                            </div>
+                            <div class="bar-track"><div class="bar-fill" style="width: @(Percent(strand.Count, maxStrand))%"></div></div>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="By schedule" IconName="clock">
+            <ul class="bars">
+                @foreach (var schedule in overview.BySchedule)
+                {
+                    <li>
+                        <div class="bar-label">
+                            <span class="bar-name">@schedule.Code <span class="bar-sub">@schedule.Name</span></span>
+                            <strong>@schedule.Count</strong>
+                        </div>
+                        <div class="bar-track"><div class="bar-fill alt" style="width: @(Percent(schedule.Count, maxSchedule))%"></div></div>
+                    </li>
+                }
+            </ul>
+            @if (overview.EnrolledThisTerm == 0)
+            {
+                <p class="note">Nobody is enrolled for this term yet.</p>
+            }
+        </Card>
+    </div>
+
+    <Card Title="Latest enrollments" IconName="list">
+        @if (overview.Recent.Count == 0)
+        {
+            <EmptyState IconName="clipboard-list" Title="No enrollments yet">
+                <p>Enrolled students will show up here.</p>
+                <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll the first student</ButtonLink>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="table-in-card">
+                <EnrollmentTable Rows="overview.Recent" />
+            </div>
+            <p class="see-all"><a href="registrar/enrollments">See all enrollments <Icon Name="arrow-right" Size="16" /></a></p>
+        }
+    </Card>
+}
+
+@code {
+    private RegistrarOverview? overview;
+    private int maxStrand;
+    private int maxSchedule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Today starts at midnight in the Philippines (UTC+8).
+        var startOfToday = new DateTimeOffset(PhilippineTime.Now(Clock).Date, TimeSpan.FromHours(8)).UtcDateTime;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        overview = await RegistrarOverview.LoadAsync(db, startOfToday);
+        maxStrand = overview.ByStrand.Select(s => s.Count).DefaultIfEmpty(0).Max();
+        maxSchedule = overview.BySchedule.Select(s => s.Count).DefaultIfEmpty(0).Max();
+    }
+
+    private static int Percent(int value, int max) => max == 0 ? 0 : Math.Max(value == 0 ? 0 : 3, value * 100 / max);
+}

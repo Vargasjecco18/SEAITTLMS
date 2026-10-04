@@ -1,0 +1,621 @@
+@page "/admin/users"
+@page "/admin/users/{RoleKey}"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using SEAITT_LMS.Auth
+@using SEAITT_LMS.Services
+@inject UserManagementService Management
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Navigation
+
+<PageTitle>@tab.Title · Users · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Users" Subtitle="Every role has its own list. Edit or delete an account here." IconName="users">
+    @if (tab.Role == AppRoles.Student)
+    {
+        <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll a student</ButtonLink>
+    }
+    else
+    {
+        <Button IconName="user-plus" OnClick="OpenAdd">Add @tab.Singular</Button>
+    }
+</PageHeader>
+
+<nav class="tabs" aria-label="User roles">
+    @foreach (var t in Tabs)
+    {
+        <NavLink class="tab" href="@($"admin/users/{t.Key}")">
+            <Icon Name="@t.Icon" Size="18" />
+            <span>@t.Label</span>
+            <span class="count">@counts.GetValueOrDefault(t.Role)</span>
+        </NavLink>
+    }
+</nav>
+
+@if (message is not null)
+{
+    <div class="banner" role="status">
+        <Icon Name="circle-check" Size="18" />
+        <span>@message</span>
+        <button type="button" class="dismiss" aria-label="Dismiss" @onclick="() => message = null"><Icon Name="x" Size="16" /></button>
+    </div>
+}
+
+<Card>
+    <form class="toolbar" role="search" @onsubmit="SearchAsync">
+        <div class="search-box">
+            <Icon Name="search" Size="18" Class="search-icon" />
+            <input type="search" aria-label="Search @tab.Title.ToLowerInvariant()" placeholder="@SearchHint" autocomplete="off" @bind="searchText" />
+        </div>
+        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
+        @if (!string.IsNullOrEmpty(appliedSearch))
+        {
+            <Button Variant="ButtonVariant.Ghost" OnClick="ClearSearchAsync">Clear</Button>
+        }
+        <span class="result-count">@(list is null ? "" : list.Total == 1 ? "1 account" : $"{list.Total:N0} accounts")</span>
+    </form>
+
+    @if (list is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (list.Items.Count == 0)
+    {
+        <EmptyState IconName="@(string.IsNullOrEmpty(appliedSearch) ? tab.Icon : "search-x")"
+                    Title="@(string.IsNullOrEmpty(appliedSearch) ? $"No {tab.Title.ToLowerInvariant()} yet" : "No account matches")">
+            @if (!string.IsNullOrEmpty(appliedSearch))
+            {
+                <p>Try another name, email or number.</p>
+            }
+            else if (tab.Role == AppRoles.Student)
+            {
+                <p>Students are added by enrolling them.</p>
+            }
+        </EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        @if (tab.Role == AppRoles.Student)
+                        {
+                            <th scope="col">LRN</th>
+                            <th scope="col" class="col-more">Section</th>
+                        }
+                        else
+                        {
+                            <th scope="col">Employee no.</th>
+                            @if (tab.Role != AppRoles.Teacher)
+                            {
+                                <th scope="col" class="col-more">Phone</th>
+                            }
+                        }
+                        <th scope="col">Status</th>
+                        <th scope="col" class="col-wide">Last sign-in</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in list.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="person">
+                                    <Avatar Name="@user.FullName" Size="34" />
+                                    <div class="person-text">
+                                        <span class="person-name">@user.FullName@if (user.UserId == currentUserId) { <span class="you">You</span> }</span>
+                                        <span class="sub" title="@user.Email">@user.Email</span>
+                                    </div>
+                                </div>
+                            </td>
+                            @if (tab.Role == AppRoles.Student)
+                            {
+                                <td class="mono">@user.Lrn</td>
+                                <td class="col-more">@(user.Placement ?? "Not set yet")</td>
+                            }
+                            else
+                            {
+                                <td>@(user.EmployeeNumber ?? "—")</td>
+                                @if (tab.Role != AppRoles.Teacher)
+                                {
+                                    <td class="col-more">@(user.PhoneNumber ?? "—")</td>
+                                }
+                            }
+                            <td><Badge Tone="@(user.IsActive ? Tone.Success : Tone.Neutral)">@(user.IsActive ? "Active" : "Inactive")</Badge></td>
+                            <td class="col-wide">
+                                @if (user.LastLoginAtUtc is { } signedIn)
+                                {
+                                    @PhilippineTime.FormatDateTime(signedIn)
+                                }
+                                else
+                                {
+                                    <span class="muted">Never</span>
+                                }
+                            </td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {user.FullName}")"
+                                            OnClick="() => OpenEditAsync(user)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true"
+                                            Title="@(user.UserId == currentUserId ? "You can't delete your own account" : $"Delete {user.FullName}")"
+                                            Disabled="@(user.UserId == currentUserId)" OnClick="() => OpenDeleteAsync(user)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (list.PageCount > 1)
+        {
+            <nav class="pager" aria-label="Pages">
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(list.Page <= 1)" OnClick="PreviousPageAsync">Previous</Button>
+                <span class="muted">Page @list.Page of @list.PageCount</span>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-right" Disabled="@(list.Page >= list.PageCount)" OnClick="NextPageAsync">Next</Button>
+            </nav>
+        }
+    }
+</Card>
+
+@* ===== Edit ===== *@
+<Modal Open="edit is not null" Title="@($"Edit {EditTitle}")" OnClose="CloseEdit">
+    @if (edit is not null)
+    {
+        <EditForm Model="edit" OnValidSubmit="SaveEditAsync">
+            <DataAnnotationsValidator />
+
+            @if (formErrors.Count > 0)
+            {
+                <div class="alert" role="alert">
+                    <Icon Name="circle-alert" Size="18" />
+                    <ul>
+                        @foreach (var error in formErrors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="two">
+                <Field For="e-first" Label="First name" Required="true">
+                    <InputText id="e-first" @bind-Value="edit.FirstName" autocomplete="off" />
+                    <ValidationMessage For="() => edit.FirstName" />
+                </Field>
+                <Field For="e-middle" Label="Middle name">
+                    <InputText id="e-middle" @bind-Value="edit.MiddleName" autocomplete="off" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="e-last" Label="Last name" Required="true">
+                    <InputText id="e-last" @bind-Value="edit.LastName" autocomplete="off" />
+                    <ValidationMessage For="() => edit.LastName" />
+                </Field>
+                <Field For="e-ext" Label="Name extension" Hint="Jr., III, ...">
+                    <InputText id="e-ext" @bind-Value="edit.NameExtension" autocomplete="off" />
+                    <ValidationMessage For="() => edit.NameExtension" />
+                </Field>
+            </div>
+
+            <Field For="e-email" Label="Email" Required="true" Hint="This is what they sign in with.">
+                <InputText id="e-email" type="email" @bind-Value="edit.Email" autocomplete="off" />
+                <ValidationMessage For="() => edit.Email" />
+            </Field>
+
+            <div class="two">
+                @if (edit.Role == AppRoles.Student)
+                {
+                    <Field For="e-lrn" Label="LRN" Required="true" Hint="12 digits.">
+                        <InputText id="e-lrn" @bind-Value="edit.Lrn" inputmode="numeric" maxlength="12" autocomplete="off" />
+                    </Field>
+                }
+                else
+                {
+                    <Field For="e-emp" Label="Employee number">
+                        <InputText id="e-emp" @bind-Value="edit.EmployeeNumber" autocomplete="off" />
+                        <ValidationMessage For="() => edit.EmployeeNumber" />
+                    </Field>
+                }
+                <Field For="e-phone" Label="Phone number" Hint="Like 09171234567">
+                    <InputText id="e-phone" @bind-Value="edit.PhoneNumber" inputmode="tel" autocomplete="off" />
+                </Field>
+            </div>
+
+            <Field For="e-password" Label="New password" Hint="Leave empty to keep the current password. A new one signs the account out everywhere.">
+                <InputText id="e-password" type="password" @bind-Value="edit.NewPassword" autocomplete="new-password" />
+            </Field>
+
+            <label class="switch">
+                <InputCheckbox id="e-active" @bind-Value="edit.IsActive" disabled="@(edit.UserId == currentUserId)" />
+                <span>
+                    <strong>Account is active</strong>
+                    <small>@(edit.UserId == currentUserId ? "You can't deactivate your own account." : "An inactive account can't sign in.")</small>
+                </span>
+            </label>
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseEdit">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save changes")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Add (teachers, registrars, guidance counselors, administrators) ===== *@
+<Modal Open="add is not null" Title="@($"Add {tab.Singular}")" OnClose="CloseAdd">
+    @if (add is not null)
+    {
+        <EditForm Model="add" OnValidSubmit="SaveAddAsync">
+            <DataAnnotationsValidator />
+
+            @if (formErrors.Count > 0)
+            {
+                <div class="alert" role="alert">
+                    <Icon Name="circle-alert" Size="18" />
+                    <ul>
+                        @foreach (var error in formErrors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="two">
+                <Field For="a-first" Label="First name" Required="true">
+                    <InputText id="a-first" @bind-Value="add.FirstName" autocomplete="off" />
+                    <ValidationMessage For="() => add.FirstName" />
+                </Field>
+                <Field For="a-middle" Label="Middle name">
+                    <InputText id="a-middle" @bind-Value="add.MiddleName" autocomplete="off" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="a-last" Label="Last name" Required="true">
+                    <InputText id="a-last" @bind-Value="add.LastName" autocomplete="off" />
+                    <ValidationMessage For="() => add.LastName" />
+                </Field>
+                <Field For="a-ext" Label="Name extension" Hint="Jr., III, ...">
+                    <InputText id="a-ext" @bind-Value="add.NameExtension" autocomplete="off" />
+                </Field>
+            </div>
+            <Field For="a-email" Label="Email" Required="true" Hint="This is what they sign in with.">
+                <InputText id="a-email" type="email" @bind-Value="add.Email" autocomplete="off" />
+                <ValidationMessage For="() => add.Email" />
+            </Field>
+            <div class="two">
+                <Field For="a-emp" Label="Employee number">
+                    <InputText id="a-emp" @bind-Value="add.EmployeeNumber" autocomplete="off" />
+                </Field>
+                <Field For="a-phone" Label="Phone number" Hint="Like 09171234567">
+                    <InputText id="a-phone" @bind-Value="add.PhoneNumber" inputmode="tel" autocomplete="off" />
+                </Field>
+            </div>
+            <Field For="a-password" Label="First password" Required="true" Hint="At least 8 characters. Tell it to the person; they can ask an administrator to change it later.">
+                <InputText id="a-password" type="password" @bind-Value="add.Password" autocomplete="new-password" />
+                <ValidationMessage For="() => add.Password" />
+            </Field>
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAdd">Cancel</Button>
+                <Button Type="submit" IconName="user-plus" Disabled="busy">@(busy ? "Adding…" : $"Add {tab.Singular}")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Delete ===== *@
+<Modal Open="deleteTarget is not null" Title="Delete this account?" OnClose="CloseDelete">
+    @if (deleteTarget is not null)
+    {
+        <p class="delete-text">
+            You are about to delete <strong>@deleteTarget.FullName</strong> (@deleteTarget.Email).
+            <strong>This can't be undone.</strong>
+        </p>
+
+        @if (impact is { Effects.Count: > 0 })
+        {
+            <ul class="effects">
+                @foreach (var effect in impact.Effects)
+                {
+                    <li>@effect</li>
+                }
+            </ul>
+        }
+
+        @if (formErrors.Count > 0)
+        {
+            <div class="alert" role="alert">
+                <Icon Name="circle-alert" Size="18" />
+                <ul>
+                    @foreach (var error in formErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep the account</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="ConfirmDeleteAsync">@(busy ? "Deleting…" : "Delete the account")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private const int PageSize = 15;
+
+    /// <summary>Label is what the tab says (short, so all five fit), Title is the plural name used in the texts.</summary>
+    private sealed record Tab(string Key, string Role, string Title, string Singular, string Icon, string? ShortLabel = null)
+    {
+        public string Label => ShortLabel ?? Title;
+    }
+
+    private static readonly Tab[] Tabs =
+    [
+        new("students", AppRoles.Student, "Students", "student", "graduation-cap"),
+        new("teachers", AppRoles.Teacher, "Teachers", "teacher", "presentation"),
+        new("registrars", AppRoles.Registrar, "Registrars", "registrar", "clipboard-check"),
+        new("guidance", AppRoles.GuidanceCounselor, "Guidance counselors", "guidance counselor", "heart-handshake", "Guidance"),
+        new("administrators", AppRoles.Admin, "Administrators", "administrator", "shield-check"),
+    ];
+
+    private sealed class NewStaff
+    {
+        [Required(ErrorMessage = "Enter the first name."), StringLength(100)]
+        public string FirstName { get; set; } = "";
+
+        [StringLength(100)]
+        public string? MiddleName { get; set; }
+
+        [Required(ErrorMessage = "Enter the last name."), StringLength(100)]
+        public string LastName { get; set; } = "";
+
+        [StringLength(10, ErrorMessage = "At most 10 characters.")]
+        public string? NameExtension { get; set; }
+
+        [Required(ErrorMessage = "Enter the email."), StringLength(254)]
+        public string Email { get; set; } = "";
+
+        public string? PhoneNumber { get; set; }
+
+        [StringLength(30, ErrorMessage = "At most 30 characters.")]
+        public string? EmployeeNumber { get; set; }
+
+        [Required(ErrorMessage = "Enter the first password."), StringLength(128)]
+        public string Password { get; set; } = "";
+    }
+
+    [Parameter] public string? RoleKey { get; set; }
+
+    private Tab tab = Tabs[0];
+    private string? loadedKey;
+    private int currentUserId;
+    private string searchText = "";
+    private string appliedSearch = "";
+    private int pageNumber = 1;
+    private UserPage? list;
+    private IReadOnlyDictionary<string, int> counts = new Dictionary<string, int>();
+
+    private string? message;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    private UserEdit? edit;
+    private NewStaff? add;
+    private UserListItem? deleteTarget;
+    private DeleteImpact? impact;
+
+    private string SearchHint => tab.Role == AppRoles.Student ? "Search by name, LRN or email" : "Search by name, employee number or email";
+
+    private string EditTitle => edit is null ? "" : string.Join(' ', new[] { edit.FirstName, edit.LastName }.Where(p => !string.IsNullOrWhiteSpace(p)));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+        _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out currentUserId);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // /admin/users alone, or an address that is not one of the tabs, opens the first tab.
+        var found = Tabs.FirstOrDefault(t => string.Equals(t.Key, RoleKey, StringComparison.OrdinalIgnoreCase));
+        if (found is null)
+        {
+            Navigation.NavigateTo($"admin/users/{Tabs[0].Key}", replace: true);
+            return;
+        }
+
+        if (found.Key != loadedKey)
+        {
+            tab = found;
+            loadedKey = found.Key;
+            searchText = appliedSearch = "";
+            pageNumber = 1;
+            message = null;
+            list = null;
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize);
+
+        // The last account of the last page was deleted: show the new last page.
+        if (list.Items.Count == 0 && pageNumber > 1)
+        {
+            pageNumber = list.PageCount;
+            list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize);
+        }
+
+        counts = await Management.CountByRoleAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        appliedSearch = searchText.Trim();
+        pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        searchText = appliedSearch = "";
+        pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        pageNumber = Math.Max(1, pageNumber - 1);
+        await LoadAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        pageNumber++;
+        await LoadAsync();
+    }
+
+    // ---------- edit
+    private async Task OpenEditAsync(UserListItem user)
+    {
+        formErrors = [];
+        edit = await Management.GetForEditAsync(user.UserId);
+        if (edit is null)
+        {
+            message = "This account no longer exists.";
+            await LoadAsync();
+        }
+    }
+
+    private void CloseEdit()
+    {
+        edit = null;
+        formErrors = [];
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (edit is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Management.UpdateAsync(edit, currentUserId);
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                CloseEdit();
+                await LoadAsync();
+            }
+            else
+            {
+                formErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------- add
+    private void OpenAdd()
+    {
+        formErrors = [];
+        add = new NewStaff();
+    }
+
+    private void CloseAdd()
+    {
+        add = null;
+        formErrors = [];
+    }
+
+    private async Task SaveAddAsync()
+    {
+        if (add is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var account = new NewAccount(
+                tab.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
+                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber);
+
+            var result = await Management.AddStaffAsync(account, currentUserId);
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                CloseAdd();
+                await LoadAsync();
+            }
+            else
+            {
+                formErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------- delete
+    private async Task OpenDeleteAsync(UserListItem user)
+    {
+        formErrors = [];
+        deleteTarget = user;
+        impact = await Management.GetDeleteImpactAsync(user.UserId);
+    }
+
+    private void CloseDelete()
+    {
+        deleteTarget = null;
+        impact = null;
+        formErrors = [];
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (deleteTarget is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Management.DeleteAsync(deleteTarget.UserId, currentUserId);
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                CloseDelete();
+                await LoadAsync();
+            }
+            else
+            {
+                formErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

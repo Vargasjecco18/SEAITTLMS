@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using SEAITT_LMS.Auth;
 using SEAITT_LMS.Components;
 using SEAITT_LMS.Data;
+using SEAITT_LMS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +52,9 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PasswordHasher>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
+builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(EnrollmentOptions.SectionName));
+builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
 builder.Services
@@ -91,6 +95,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
     app.UseHttpsRedirection();
 }
+
+// An address nothing answers to shows the "Page not found" page (still with the 404 status).
+app.UseStatusCodePagesWithReExecute("/not-found");
 
 app.UseAuthentication();
 app.UseAuthorization();

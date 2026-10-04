@@ -1,14 +1,11 @@
-<article class="stat @Accent.ToString().ToLowerInvariant()">
-    <span class="stat-icon"><Icon Name="@IconName" Size="22" /></span>
-    <div class="stat-text">
-        <span class="stat-value">@Value.ToString("N0")</span>
-        <span class="stat-label">@Label</span>
-        @if (!string.IsNullOrEmpty(Hint))
-        {
-            <span class="stat-hint">@Hint</span>
-        }
-    </div>
-</article>
+@if (Href is null)
+{
+    <article class="stat @Accent.ToString().ToLowerInvariant()">@Content</article>
+}
+else
+{
+    <a class="stat link @Accent.ToString().ToLowerInvariant()" href="@Href">@Content</a>
+}
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = "";
@@ -21,4 +18,19 @@
 
     /// <summary>A small extra line under the label, for example "2 inactive".</summary>
     [Parameter] public string? Hint { get; set; }
+
+    /// <summary>Makes the whole card a link to this address.</summary>
+    [Parameter] public string? Href { get; set; }
+
+    private RenderFragment Content => @<text>
+        <span class="stat-icon"><Icon Name="@IconName" Size="22" /></span>
+        <div class="stat-text">
+            <span class="stat-value">@Value.ToString("N0")</span>
+            <span class="stat-label">@Label</span>
+            @if (!string.IsNullOrEmpty(Hint))
+            {
+                <span class="stat-hint">@Hint</span>
+            }
+        </div>
+    </text>;
 }

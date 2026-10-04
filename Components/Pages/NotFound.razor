@@ -1,0 +1,13 @@
+@page "/not-found"
+@attribute [AllowAnonymous]
+@layout AuthLayout
+
+@* Shown for an address that no page answers to (for example an old bookmark). Program.cs sends the 404 here. *@
+<PageTitle>Page not found · SEAITT e-LMS</PageTitle>
+
+<div class="box">
+    <span class="icon"><Icon Name="search-x" Size="28" /></span>
+    <h1>Page not found</h1>
+    <p>The page you are looking for doesn't exist or has moved.</p>
+    <ButtonLink Href="/" IconName="house">Back to home</ButtonLink>
+</div>

@@ -174,6 +174,34 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("enrolled_by_user_id");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<byte>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("Lrn")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("char(12)")
+                        .HasColumnName("lrn")
+                        .IsFixedLength();
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
                     b.Property<int>("SchoolYearId")
                         .HasColumnType("int")
                         .HasColumnName("school_year_id");
@@ -188,13 +216,26 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(20)")
                         .HasColumnName("status");
 
+                    b.Property<int>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
                     b.Property<int>("StudentId")
                         .HasColumnType("int")
                         .HasColumnName("student_id");
 
+                    b.Property<string>("Subjects")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("subjects");
+
                     b.Property<int>("TermId")
                         .HasColumnType("int")
                         .HasColumnName("term_id");
+
+                    b.Property<int>("TrackId")
+                        .HasColumnType("int")
+                        .HasColumnName("track_id");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -206,8 +247,14 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("EnrolledByUserId")
                         .HasDatabaseName("ix_enrollments_enrolled_by_user_id");
 
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_enrollments_track_id");
+
                     b.HasIndex("SectionId", "SchoolYearId")
                         .HasDatabaseName("ix_enrollments_section_id_school_year_id");
+
+                    b.HasIndex("StrandId", "TrackId")
+                        .HasDatabaseName("ix_enrollments_strand_id_track_id");
 
                     b.HasIndex("StudentId", "TermId")
                         .IsUnique()
@@ -216,7 +263,32 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("TermId", "SchoolYearId")
                         .HasDatabaseName("ix_enrollments_term_id_school_year_id");
 
-                    b.ToTable("enrollments", (string)null);
+                    b.HasIndex("SectionId", "StrandId", "GradeLevel")
+                        .HasDatabaseName("ix_enrollments_section_id_strand_id_grade_level");
+
+                    b.ToTable("enrollments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_enrollments_grade_level", "grade_level IN (11, 12)");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.EnrollmentSubject", b =>
+                {
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("enrollment_id");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int")
+                        .HasColumnName("subject_id");
+
+                    b.HasKey("EnrollmentId", "SubjectId")
+                        .HasName("pk_enrollment_subjects");
+
+                    b.HasIndex("SubjectId")
+                        .HasDatabaseName("ix_enrollment_subjects_subject_id");
+
+                    b.ToTable("enrollment_subjects", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.GuidanceCounselor", b =>
@@ -420,6 +492,49 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Schedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_schedules");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_schedules_code");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_schedules_name");
+
+                    b.ToTable("schedules", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.SchoolYear", b =>
                 {
                     b.Property<int>("Id")
@@ -491,6 +606,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(50)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("ScheduleId")
+                        .HasColumnType("int")
+                        .HasColumnName("schedule_id");
+
                     b.Property<int>("SchoolYearId")
                         .HasColumnType("int")
                         .HasColumnName("school_year_id");
@@ -515,12 +634,15 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("AdviserTeacherId")
                         .HasDatabaseName("ix_sections_adviser_teacher_id");
 
-                    b.HasIndex("StrandId")
-                        .HasDatabaseName("ix_sections_strand_id");
+                    b.HasIndex("ScheduleId")
+                        .HasDatabaseName("ix_sections_schedule_id");
 
-                    b.HasIndex("SchoolYearId", "StrandId", "GradeLevel", "Name")
+                    b.HasIndex("StrandId", "ScheduleId")
+                        .HasDatabaseName("ix_sections_strand_id_schedule_id");
+
+                    b.HasIndex("SchoolYearId", "StrandId", "GradeLevel", "ScheduleId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("ix_sections_school_year_id_strand_id_grade_level_name");
+                        .HasDatabaseName("ix_sections_school_year_id_strand_id_grade_level_schedule_id_na");
 
                     b.ToTable("sections", null, t =>
                         {
@@ -579,6 +701,57 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasDatabaseName("ix_strands_track_id");
 
                     b.ToTable("strands", (string)null);
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StrandSchedule", b =>
+                {
+                    b.Property<int>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
+                    b.Property<int>("ScheduleId")
+                        .HasColumnType("int")
+                        .HasColumnName("schedule_id");
+
+                    b.HasKey("StrandId", "ScheduleId")
+                        .HasName("pk_strand_schedules");
+
+                    b.HasIndex("ScheduleId")
+                        .HasDatabaseName("ix_strand_schedules_schedule_id");
+
+                    b.ToTable("strand_schedules", (string)null);
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StrandSubject", b =>
+                {
+                    b.Property<int>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
+                    b.Property<byte>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<byte>("TermNumber")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("term_number");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int")
+                        .HasColumnName("subject_id");
+
+                    b.HasKey("StrandId", "GradeLevel", "TermNumber", "SubjectId")
+                        .HasName("pk_strand_subjects");
+
+                    b.HasIndex("SubjectId")
+                        .HasDatabaseName("ix_strand_subjects_subject_id");
+
+                    b.ToTable("strand_subjects", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_strand_subjects_grade_level", "grade_level IN (11, 12)");
+
+                            t.HasCheckConstraint("ck_strand_subjects_term_number", "term_number >= 1");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Student", b =>
@@ -964,28 +1137,10 @@ namespace SEAITT_LMS.Data.Migrations
                         new
                         {
                             Id = 2,
-                            Code = "TVL",
+                            Code = "TECH-PRO",
                             CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Technical-Vocational-Livelihood",
-                            UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Code = "SPORTS",
-                            CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Sports",
-                            UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Code = "ARTS",
-                            CreatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Arts and Design",
+                            Name = "Technical-Professional",
                             UpdatedAtUtc = new DateTime(2026, 10, 3, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
@@ -1133,6 +1288,13 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_enrollments_students_student_id");
 
+                    b.HasOne("SEAITT_LMS.Data.Entities.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_enrollments_tracks_track_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.Section", "Section")
                         .WithMany()
                         .HasForeignKey("SectionId", "SchoolYearId")
@@ -1140,6 +1302,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_enrollments_sections_section_id_school_year_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", "Strand")
+                        .WithMany()
+                        .HasForeignKey("StrandId", "TrackId")
+                        .HasPrincipalKey("Id", "TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_enrollments_strands_strand_id_track_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Term", "Term")
                         .WithMany()
@@ -1149,13 +1319,46 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_enrollments_terms_term_id_school_year_id");
 
+                    b.HasOne("SEAITT_LMS.Data.Entities.Section", null)
+                        .WithMany()
+                        .HasForeignKey("SectionId", "StrandId", "GradeLevel")
+                        .HasPrincipalKey("Id", "StrandId", "GradeLevel")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_enrollments_sections_section_id_strand_id_grade_level");
+
                     b.Navigation("EnrolledBy");
 
                     b.Navigation("Section");
 
+                    b.Navigation("Strand");
+
                     b.Navigation("Student");
 
                     b.Navigation("Term");
+
+                    b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.EnrollmentSubject", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Enrollment", "Enrollment")
+                        .WithMany("EnrolledSubjects")
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_enrollment_subjects_enrollments_enrollment_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_enrollment_subjects_subjects_subject_id");
+
+                    b.Navigation("Enrollment");
+
+                    b.Navigation("Subject");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.GuidanceCounselor", b =>
@@ -1190,6 +1393,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_sections_teachers_adviser_teacher_id");
 
+                    b.HasOne("SEAITT_LMS.Data.Entities.Schedule", "Schedule")
+                        .WithMany()
+                        .HasForeignKey("ScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sections_schedules_schedule_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.SchoolYear", "SchoolYear")
                         .WithMany()
                         .HasForeignKey("SchoolYearId")
@@ -1204,7 +1413,15 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_sections_strands_strand_id");
 
+                    b.HasOne("SEAITT_LMS.Data.Entities.StrandSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("StrandId", "ScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_sections_strand_schedules_strand_id_schedule_id");
+
                     b.Navigation("Adviser");
+
+                    b.Navigation("Schedule");
 
                     b.Navigation("SchoolYear");
 
@@ -1221,6 +1438,48 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_strands_tracks_track_id");
 
                     b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StrandSchedule", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Schedule", "Schedule")
+                        .WithMany()
+                        .HasForeignKey("ScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_strand_schedules_schedules_schedule_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", "Strand")
+                        .WithMany()
+                        .HasForeignKey("StrandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_strand_schedules_strands_strand_id");
+
+                    b.Navigation("Schedule");
+
+                    b.Navigation("Strand");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StrandSubject", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", "Strand")
+                        .WithMany()
+                        .HasForeignKey("StrandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_strand_subjects_strands_strand_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_strand_subjects_subjects_subject_id");
+
+                    b.Navigation("Strand");
+
+                    b.Navigation("Subject");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Student", b =>
@@ -1321,6 +1580,11 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_users_roles_role_id");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
+                {
+                    b.Navigation("EnrolledSubjects");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.SchoolYear", b =>

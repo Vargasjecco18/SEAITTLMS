@@ -50,13 +50,10 @@ internal sealed class TrackConfiguration : IEntityTypeConfiguration<Track>
         b.Property(t => t.Name).HasMaxLength(100).IsRequired();
         b.HasIndex(t => t.Name).IsUnique();
 
-        // The four tracks of the DepEd senior high school curriculum. Switch off (is_active = 0) the ones SEAITT
-        // doesn't offer, rather than deleting them.
+        // The two tracks SEAITT offers. (An earlier version also had TVL, SPORTS and ARTS: TVL became TECH-PRO.)
         b.HasData(
             Seed(1, "ACAD", "Academic"),
-            Seed(2, "TVL", "Technical-Vocational-Livelihood"),
-            Seed(3, "SPORTS", "Sports"),
-            Seed(4, "ARTS", "Arts and Design"));
+            Seed(2, "TECH-PRO", "Technical-Professional"));
     }
 
     private static Track Seed(int id, string code, string name) => new()
@@ -96,6 +93,43 @@ internal sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
     }
 }
 
+internal sealed class ScheduleConfiguration : IEntityTypeConfiguration<Schedule>
+{
+    public void Configure(EntityTypeBuilder<Schedule> b)
+    {
+        b.Property(s => s.Code).HasMaxLength(10).IsRequired();
+        b.HasIndex(s => s.Code).IsUnique();
+        b.Property(s => s.Name).HasMaxLength(50).IsRequired();
+        b.HasIndex(s => s.Name).IsUnique();
+    }
+}
+
+internal sealed class StrandScheduleConfiguration : IEntityTypeConfiguration<StrandSchedule>
+{
+    public void Configure(EntityTypeBuilder<StrandSchedule> b)
+    {
+        b.HasKey(x => new { x.StrandId, x.ScheduleId });
+        b.HasOne(x => x.Strand).WithMany().HasForeignKey(x => x.StrandId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Schedule).WithMany().HasForeignKey(x => x.ScheduleId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class StrandSubjectConfiguration : IEntityTypeConfiguration<StrandSubject>
+{
+    public void Configure(EntityTypeBuilder<StrandSubject> b)
+    {
+        b.HasKey(x => new { x.StrandId, x.GradeLevel, x.TermNumber, x.SubjectId });
+        b.HasOne(x => x.Strand).WithMany().HasForeignKey(x => x.StrandId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint("ck_strand_subjects_grade_level", "grade_level IN (11, 12)");
+            t.HasCheckConstraint("ck_strand_subjects_term_number", "term_number >= 1");
+        });
+    }
+}
+
 internal sealed class SectionConfiguration : IEntityTypeConfiguration<Section>
 {
     public void Configure(EntityTypeBuilder<Section> b)
@@ -104,8 +138,17 @@ internal sealed class SectionConfiguration : IEntityTypeConfiguration<Section>
         b.HasOne(s => s.Strand).WithMany().HasForeignKey(s => s.StrandId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(s => s.Adviser).WithMany().HasForeignKey(s => s.AdviserTeacherId).OnDelete(DeleteBehavior.Restrict);
 
+        b.HasOne(s => s.Schedule).WithMany().HasForeignKey(s => s.ScheduleId).OnDelete(DeleteBehavior.Restrict);
+
+        // The schedule must be one the strand runs in (a section of HT2 can't be AM when HT2 is only PM).
+        b.HasOne<StrandSchedule>()
+            .WithMany()
+            .HasForeignKey(s => new { s.StrandId, s.ScheduleId })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Section A in the AM and section A in the PM are different sections.
         b.Property(s => s.Name).HasMaxLength(50).IsRequired();
-        b.HasIndex(s => new { s.SchoolYearId, s.StrandId, s.GradeLevel, s.Name }).IsUnique();
+        b.HasIndex(s => new { s.SchoolYearId, s.StrandId, s.GradeLevel, s.ScheduleId, s.Name }).IsUnique();
 
         // Lets class offerings and enrollments prove they use a section of the same school year as their term.
         b.HasAlternateKey(s => new { s.Id, s.SchoolYearId });
@@ -163,7 +206,43 @@ internal sealed class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollm
 
         b.Property(e => e.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
 
+        // The student as they were when enrolled: who, and where.
+        b.Property(e => e.Lrn).HasMaxLength(12).IsFixedLength().IsRequired();
+        b.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
+        b.Property(e => e.MiddleName).HasMaxLength(100);
+        b.Property(e => e.LastName).HasMaxLength(100).IsRequired();
+        b.Property(e => e.Subjects).HasMaxLength(1000);
+
+        b.HasOne(e => e.Track).WithMany().HasForeignKey(e => e.TrackId).OnDelete(DeleteBehavior.Restrict);
+
+        // The strand must belong to the track, and the section must be the section of that strand and grade level.
+        b.HasOne(e => e.Strand)
+            .WithMany()
+            .HasForeignKey(e => new { e.StrandId, e.TrackId })
+            .HasPrincipalKey(s => new { s.Id, s.TrackId })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne<Section>()
+            .WithMany()
+            .HasForeignKey(e => new { e.SectionId, e.StrandId, e.GradeLevel })
+            .HasPrincipalKey(s => new { s.Id, s.StrandId, s.GradeLevel })
+            .OnDelete(DeleteBehavior.Restrict);
+
         // A student is in exactly one section per term.
         b.HasIndex(e => new { e.StudentId, e.TermId }).IsUnique();
+
+        b.ToTable(t => t.HasCheckConstraint("ck_enrollments_grade_level", "grade_level IN (11, 12)"));
+    }
+}
+
+internal sealed class EnrollmentSubjectConfiguration : IEntityTypeConfiguration<EnrollmentSubject>
+{
+    public void Configure(EntityTypeBuilder<EnrollmentSubject> b)
+    {
+        b.HasKey(x => new { x.EnrollmentId, x.SubjectId });
+
+        // Removing an enrollment removes its subject rows with it.
+        b.HasOne(x => x.Enrollment).WithMany(e => e.EnrolledSubjects).HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
     }
 }

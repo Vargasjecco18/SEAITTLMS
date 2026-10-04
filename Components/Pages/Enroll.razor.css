@@ -1,0 +1,278 @@
+.loading,
+.muted {
+    color: var(--text-muted);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 1000px) {
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+.two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1rem;
+}
+
+@media (max-width: 520px) {
+    .two {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---------- messages ---------- */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0 0 1.25rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 0.92rem;
+}
+
+.alert ul {
+    margin: 0.25rem 0 0;
+    padding-left: 1.1rem;
+}
+
+.alert ::deep .icon {
+    margin-top: 0.15rem;
+}
+
+.notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--info-soft);
+    color: var(--info);
+    font-size: 0.9rem;
+}
+
+.notice div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.notice ::deep .icon {
+    margin-top: 0.15rem;
+}
+
+.warn {
+    color: var(--danger);
+    font-weight: 650;
+}
+
+.hint {
+    margin: 0.6rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* ---------- subjects ---------- */
+.subject-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.7rem;
+    font-size: 0.88rem;
+}
+
+.link-button {
+    padding: 0.1rem 0.3rem;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
+
+.subject-list {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.check:hover {
+    background: var(--surface-2);
+}
+
+.check input {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    accent-color: var(--btn-bg);
+}
+
+/* ---------- the login ---------- */
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+dl {
+    margin: 0;
+}
+
+dt {
+    margin-bottom: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+dd {
+    margin: 0;
+}
+
+.preview > div,
+.login-box dl > div {
+    margin-bottom: 0.8rem;
+}
+
+.preview dd,
+.login-box dd.mono {
+    padding: 0.55rem 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.submit-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* ---------- done ---------- */
+.receipt-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.receipt-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.receipt-head h2 {
+    margin: 0 0 0.15rem;
+    font-size: 1.35rem;
+}
+
+.receipt-head p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.details .wide {
+    grid-column: 1 / -1;
+}
+
+.details dd {
+    font-weight: 650;
+}
+
+.subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.subject-chips li {
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.login-box {
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.login-box h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.8rem;
+    font-size: 1rem;
+}
+
+.login-box .hint {
+    margin-top: 0;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}

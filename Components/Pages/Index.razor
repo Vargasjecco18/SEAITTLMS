@@ -1,0 +1,217 @@
+@page "/"
+@layout BlankLayout
+@attribute [AllowAnonymous]
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Auth
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@inject NavigationManager Navigation
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>SEAITT LMS · Senior High School, Legazpi</PageTitle>
+
+<div class="guest-home">
+
+    <nav class="guest-nav" aria-label="Main">
+        <div class="guest-nav-inner">
+            <Brand Light="true" />
+            <ul class="guest-nav-links">
+                <li><a href="#courses">Courses</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <a class="nav-login" href="/login"><Icon Name="log-in" Size="18" /><span>Log in</span></a>
+        </div>
+    </nav>
+
+    @* ===== The big picture at the top. The slides change by themselves (CSS only); the dots pick one. ===== *@
+    <section class="hero" id="top">
+        <input class="slide-radio" type="radio" name="slide" id="slide-1" aria-label="Show slide 1" />
+        <input class="slide-radio" type="radio" name="slide" id="slide-2" aria-label="Show slide 2" />
+        <input class="slide-radio" type="radio" name="slide" id="slide-3" aria-label="Show slide 3" />
+        <input class="slide-radio" type="radio" name="slide" id="slide-4" aria-label="Show slide 4" />
+
+        <div class="slides" aria-hidden="true">
+            <div class="slide slide-1"></div>
+            <div class="slide slide-2"></div>
+            <div class="slide slide-3"></div>
+            <div class="slide slide-4"></div>
+        </div>
+        <div class="hero-scrim" aria-hidden="true"></div>
+
+        <div class="hero-content">
+            <span class="hero-eyebrow">Modern Learning Management System</span>
+            <h1>Welcome to <span>SEAITT LMS</span></h1>
+            <p class="hero-subtitle">South East Asia Institute of Trade and Technology</p>
+            <p class="hero-description">
+                SEAITT Legazpi is a school community dedicated to developing future innovators and technology-driven
+                professionals through quality education, practical learning, and modern technology.
+            </p>
+            <div class="hero-actions">
+                <a class="button primary" href="/login"><Icon Name="log-in" Size="18" /><span>Log in</span></a>
+                <a class="button ghost" href="#courses"><span>View the courses</span><Icon Name="arrow-right" Size="18" /></a>
+            </div>
+        </div>
+
+        <div class="hero-dots">
+            <label class="hero-dot" for="slide-1" title="Slide 1"></label>
+            <label class="hero-dot" for="slide-2" title="Slide 2"></label>
+            <label class="hero-dot" for="slide-3" title="Slide 3"></label>
+            <label class="hero-dot" for="slide-4" title="Slide 4"></label>
+        </div>
+    </section>
+
+    @* ===== Mission and vision ===== *@
+    <section class="section" id="mission" aria-labelledby="mission-title">
+        <div class="container">
+            <h2 id="mission-title">Why <span>SEAITT LMS</span></h2>
+            <div class="cards two">
+                <article class="info-card">
+                    <span class="info-icon"><Icon Name="sparkles" Size="22" /></span>
+                    <h3>Mission</h3>
+                    <p>To produce competent, community-oriented, and globally competitive individuals through holistic education.</p>
+                </article>
+                <article class="info-card">
+                    <span class="info-icon"><Icon Name="graduation-cap" Size="22" /></span>
+                    <h3>Vision</h3>
+                    <p>A premier institution that provides quality education and produces globally empowered individuals.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    @* ===== The courses, read from the database ===== *@
+    <section class="section alt" id="courses" aria-labelledby="courses-title">
+        <div class="container">
+            <h2 id="courses-title">Our <span>Courses</span></h2>
+
+            @if (courses.Count == 0)
+            {
+                <p class="muted">The courses will be listed here soon.</p>
+            }
+
+            @foreach (var grade in courses)
+            {
+                <h3 class="grade-heading">Grade @grade.GradeLevel</h3>
+                @foreach (var term in grade.Terms)
+                {
+                    <h4 class="term-heading">@term.Name</h4>
+                    <div class="cards">
+                        @foreach (var strand in term.Strands)
+                        {
+                            <article class="course-card">
+                                <header class="course-head">
+                                    <h5>
+                                        <span class="strand-code">@strand.Code</span>
+                                        @if (!string.Equals(strand.Name, strand.Code, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="strand-name">(@strand.Name)</span>
+                                        }
+                                    </h5>
+                                    <div class="course-tags">
+                                        <span class="track-pill">@strand.Track</span>
+                                        @foreach (var schedule in strand.Schedules)
+                                        {
+                                            <span class="schedule-pill">@schedule</span>
+                                        }
+                                    </div>
+                                </header>
+                                <ul class="subject-list">
+                                    @foreach (var subject in strand.Subjects)
+                                    {
+                                        <li>
+                                            <a href="/login"><span>@subject.Name</span><Icon Name="chevron-right" Size="16" /></a>
+                                        </li>
+                                    }
+                                </ul>
+                            </article>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </section>
+
+    @* ===== About ===== *@
+    <section class="section" id="about" aria-labelledby="about-title">
+        <div class="container about">
+            <div class="about-text">
+                <h2 id="about-title">About <span>SEAITT LMS</span></h2>
+                <p>
+                    South East Asia Institute of Trade and Technology (SEAITT) is a private educational institution that
+                    offers Senior High School tracks and strands with a special focus on foreign languages through
+                    additional classes. The school also provides free uniforms and does not charge top-up fees.
+                </p>
+            </div>
+            @* To show the school's own logo here, put the picture in wwwroot/images and use an img tag instead of this mark. *@
+            <div class="about-mark" aria-hidden="true"><Icon Name="school" Size="96" /></div>
+        </div>
+    </section>
+
+    @* ===== Contact. Edit the details in the Contacts list at the bottom of this file. ===== *@
+    <section class="section alt" id="contact" aria-labelledby="contact-title">
+        <div class="container">
+            <h2 id="contact-title">Get in <span>Touch</span></h2>
+            <div class="contact-grid">
+                @foreach (var contact in Contacts)
+                {
+                    <div class="contact-item">
+                        <span class="contact-icon">
+                            @if (contact.IconName is not null)
+                            {
+                                <Icon Name="@contact.IconName" Size="24" />
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V8c0-.9.25-1.5 1.53-1.5H17V3.7C16.7 3.66 15.7 3.57 14.5 3.57c-2.5 0-4.2 1.53-4.2 4.3v2.02H8v3.1h2.3V21h3.2z"></path></svg>
+                            }
+                        </span>
+                        <span class="contact-label">@contact.Label</span>
+                        <a class="contact-value" href="@contact.Href" target="@(contact.External ? "_blank" : null)" rel="@(contact.External ? "noopener noreferrer" : null)">@contact.Text</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <footer class="guest-footer">
+        <div class="container footer-inner">
+            <span>© @DateTime.UtcNow.Year SEAITT LMS · Legazpi City</span>
+            <a href="#top">Back to top</a>
+        </div>
+    </footer>
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    private IReadOnlyList<CourseGrade> courses = [];
+
+    private sealed record ContactItem(string Label, string? IconName, string Text, string Href, bool External = false);
+
+    // The school's contact details. Change them here. (The email is still the example one.)
+    private static readonly ContactItem[] Contacts =
+    [
+        new("Email", "mail", "your-email@example.com", "mailto:your-email@example.com"),
+        new("Phone", "phone", "(0917) 625-9024", "tel:+639176259024"),
+        new("Facebook", null, "Visit Facebook Page", "https://www.facebook.com/profile.php?id=100077518443336", External: true),
+        new("Address", "map-pin", "View on Google Maps",
+            "https://www.google.com/maps?sca_esv=898ae7bf75c2ddfa&aep=10&cs=0&kgmid=/g/11h07pvd6v&shem=dlvs1,epsd1,ltae,rimspwouoe&shndl=30&kgs=551297d268a51e23&um=1&ie=UTF-8&fb=1&gl=ph&sa=X&geocode=KddrDVTnA6EzMWyEmLbrwjY6&daddr=Former+Innodata+building,+Gernarine+Building,+Cabangan+West,+Benjamin+Imperial+St,+Legazpi+City,+4500+Albay",
+            External: true),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Somebody who is signed in doesn't need this page: send them to their own.
+        var user = (await AuthState).User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(RoleHome.For(user.FindFirstValue(ClaimTypes.Role)), replace: true);
+            return;
+        }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        courses = await PublicCourses.LoadAsync(db);
+    }
+}

@@ -25,4 +25,6 @@ public enum ButtonVariant
 {
     Primary,
     Secondary,
+    Danger,
+    Ghost,
 }

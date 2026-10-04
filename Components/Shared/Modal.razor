@@ -1,0 +1,55 @@
+@using Microsoft.AspNetCore.Components.Web
+
+@if (Open)
+{
+    @* A box over the page. It closes with the X, with the Cancel button of the form in it, or with Escape.
+       Clicking next to it does not close it, so a half-filled form is not lost by accident. The key handler sits on the
+       whole overlay (which can take the focus too), so Escape still works after a click next to the box. *@
+    <div class="backdrop" tabindex="-1" @onkeydown="OnKeyDown">
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
+            <header class="dialog-head">
+                <h2 id="@titleId">@Title</h2>
+                <button type="button" class="close" aria-label="Close" title="Close" @onclick="Close"><Icon Name="x" Size="20" /></button>
+            </header>
+            <div class="dialog-body">
+                @ChildContent
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly string titleId = "modal-title-" + Guid.NewGuid().ToString("N")[..8];
+    private ElementReference dialog;
+    private bool wasOpen;
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    /// <summary>Called when the X or Escape asks to close it. The page then sets Open to false.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // When it opens, put the keyboard in it.
+        if (Open && !wasOpen)
+        {
+            await dialog.FocusAsync();
+        }
+
+        wasOpen = Open;
+    }
+
+    private async Task Close() => await OnClose.InvokeAsync();
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Close();
+        }
+    }
+}
