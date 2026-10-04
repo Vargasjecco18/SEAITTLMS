@@ -5,18 +5,20 @@ set up without a `dotnet new` template and with its own login (no ASP.NET Core I
 
 What exists so far:
 
-- **A public home page** at `/` for visitors: the school, its courses (read from the database) and a **Log in** button.
-- **Custom login**: email + password, PBKDF2 password hashing, cookie sign-in, account lockout, "keep me signed in".
-  After signing in, everybody lands on the page of their role.
+- **A public home page** at `/` for visitors: photos of the school, its courses (read from the database) and a
+  **Log in** button.
+- **Custom login** with the school's picture next to the form: email + password, PBKDF2 password hashing, cookie
+  sign-in, account lockout, "keep me signed in". After signing in, everybody lands on the page of their role.
 - **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor, each with its own table
   holding the person's name and details.
-- **Registrar pages**: a dashboard, a form to **enroll a student** (the student's email and password are made
-  automatically) and a searchable list of all enrollments.
-- **Administrator pages**: a dashboard and **user management**: one list per role, with search, **edit**, **delete**
-  and add (for staff).
-- **Classes and enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects,
-  sections, class offerings, enrollments. The database comes with the school year 2026-2027, its two terms, the
-  ACAD and TECH-PRO tracks, their strands and the subjects of grade 11.
+- **Registrar pages** (for the registrar only): *Dashboard*, *Enrollments* (the form that enrolls a student; the
+  student's email and password are made automatically) and *Student's Accounts* (a searchable list).
+- **Administrator pages** (for the administrator only): *Dashboard* and *Users Management*: one list per role, with
+  search, **edit**, **delete** and add (for staff).
+- **My account** for everybody.
+- **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
+  enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
+  strands and the subjects of grade 11.
 - **A header and a menu** with icons, light and dark mode (it follows your computer), and a phone-friendly layout.
 
 Lessons, assignments and quizzes are next. The database design is in [docs/database.md](docs/database.md).
@@ -73,7 +75,7 @@ in your private settings file. To use other details, add them to the `Admin` par
 
 The seed only runs when there is no administrator yet, so changing these settings later does not touch an account
 that already exists. The name and phone number are saved in the `administrators` table. To change the email of an
-existing administrator, use **Users > Administrators > Edit** in the app, or run this in MySQL Workbench (emails are
+existing administrator, use **Users Management > Administrators > Edit** in the app, or run this in MySQL Workbench (emails are
 stored in lower case):
 
 ```sql
@@ -117,7 +119,7 @@ click the lightning bolt. It deletes the `seaittlms` schema and builds everythin
 the school setup (school year, terms, tracks, strands, schedules, subjects). Then run `dotnet watch` to create the
 administrator.
 
-Any other users you had are gone. Add the staff again in **Users**, and the students by enrolling them.
+Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
 Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five old views,
 and does nothing if you don't have them):
@@ -147,15 +149,17 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | the Administrator pages (dashboard, **Users**), the Registrar pages, My account |
-| Registrar | `/registrar` | the Registrar pages (dashboard, **Enroll a student**, **Enrollments**), My account |
+| Admin | `/admin` | Dashboard, **Users Management**, My account |
+| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, My account |
 | Teacher, Student, Guidance counselor | `/account` | My account (their own pages come with lessons and grades) |
 
-An administrator can use the registrar pages too, so there is always somebody who can enroll students.
+The registrar pages belong to the registrar: **an administrator cannot open them**. To get a registrar, sign in as the
+administrator, open **Users Management > Registrars**, press **Add registrar** and give the person an email and a first
+password. Then sign in as that registrar to enroll students.
 
 ## Enrolling a student (registrar)
 
-Menu: **Registrar > Enroll a student** (`/registrar/enroll`). Fill in:
+Menu: **Registrar > Enrollments** (`/registrar/enrollments`). Fill in:
 
 | Box | What to put |
 |---|---|
@@ -186,22 +190,22 @@ password would be shorter than 8 characters, more digits of the LRN are used, so
 The code is `Services/StudentCredentials.cs`.
 
 **Please know:** anybody who knows a student's last name and LRN can work out the password. There is **no page yet where a
-student changes the password**. Until there is, an administrator can set a new one in **Users > Students > Edit**.
+student changes the password**. Until there is, an administrator can set a new one in **Users Management > Students > Edit**.
 
 ### A student who is already in the system
 
 Typing the LRN of a student that has an account shows their name (locked) and adds a **new enrollment**, for example
 for the 2nd term. The account and the password do not change. Enrolling the same student twice in one term is refused.
 
-### The list of enrollments
+### Student's Accounts
 
-**Registrar > Enrollments** (`/registrar/enrollments`) lists every enrollment, newest first, 20 per page. Search by name
+**Registrar > Student's Accounts** (`/registrar/student-accounts`) lists every enrolled student, newest first, 20 per page. Search by name
 or LRN and filter by term, strand and schedule. The dashboard (`/registrar`) shows how many students are enrolled this
 term, today, by strand and by schedule.
 
 ## Managing users (administrator)
 
-**Administrator > Users** (`/admin/users`). There is one tab per role (Students, Teachers, Registrars, Guidance,
+**Administrator > Users Management** (`/admin/users`). There is one tab per role (Students, Teachers, Registrars, Guidance,
 Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email).
 
 - **Edit** changes the name, email, LRN (students) or employee number (staff), phone number and the **new password**
@@ -209,15 +213,15 @@ Administrators), each with its number of accounts, and a search box (name, LRN o
   Changing the email or the password, or switching an account off, signs that person out.
   Changing a student's name or LRN also updates it in their enrollments.
 - **Add** (teachers, registrars, guidance counselors, administrators) makes an account with the password you type.
-  Students are not added here: they are added by enrolling them.
+  Students are not added here: they get their account when the registrar enrolls them.
 - **Delete** asks first and says what else goes: a deleted student loses their enrollments, a deleted teacher's
-  sections and classes lose their teacher, and the enrollments a registrar made stay. Deleting **cannot be undone**,
+  sections lose their adviser, and the enrollments a registrar made stay. Deleting **cannot be undone**,
   switching the account off is the gentler choice.
 - You cannot delete or switch off **your own** account.
 
 ## The public home page
 
-`/` is the page visitors see (`Components/Pages/Index.razor` and `Index.razor.css`). A signed-in person who opens it is
+`/` is the page visitors see (`Components/Pages/Public/Index.razor` and `Index.razor.css`). A signed-in person who opens it is
 sent to their own page instead. To change it:
 
 - The words (welcome text, mission, vision, about) are written directly in `Index.razor`.
@@ -226,7 +230,10 @@ sent to their own page instead. To change it:
 - The **courses** are read from the database (`Data/Queries/PublicCourses.cs`): each strand with its schedules and its
   subjects per term. To change them, change the tables `strands`, `subjects` and `strand_subjects` (see
   [docs/database.md](docs/database.md)).
-- The big picture at the top is made of colors (no image file): four slides that change by themselves, and the dots pick one.
+- The big picture at the top is three photos that change by themselves (the dots pick one). They are the files
+  `wwwroot/images/hero-1.jpg`, `hero-2.jpg` and `hero-3.jpg`: replace a file to change a photo.
+- The school's logo is `wwwroot/images/logo.png` (it is the icon in the header, on the sign-in page and on the home page)
+  and `wwwroot/favicon.png` is the little icon in the browser tab. The picture next to the sign-in form is `hero-1.jpg`.
 
 ## Pages and styling
 
@@ -240,7 +247,7 @@ affecting each other. There is no big shared stylesheet.
 | `Components/App.razor.css` | The colors, sizes and dark mode, written once as variables (`--brand`, `--surface`, `--text`, ...), and the page background and font. Change a color here and it changes everywhere. |
 | `Components/Layout/` | The header (`MainLayout`), the menu on the left (`NavMenu`), the account menu (`UserMenu`), the sign-in layout (`AuthLayout`) and the bare layout of the public home page (`BlankLayout`). |
 | `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `Button`, `ButtonLink`, `Field`, `Modal`, `EnrollmentTable`, `Brand` and `Icon`. |
-| `Components/Pages/`, `Components/Account/` | One page each: `Index` (public home), `Account`, `Admin`, `Users`, `Registrar`, `Enroll`, `Enrollments`, `Login`, `NotFound`, `Error`. |
+| `Components/Pages/` | The pages, one folder for each part of the system, one page and one stylesheet each (see below). |
 
 Good to know:
 
@@ -249,12 +256,12 @@ Good to know:
 - **Icons** are from [Lucide](https://lucide.dev). Use them with `<Icon Name="house" />`. The available ones are listed in
   `Components/Shared/IconSet.cs`; to add one, open its `.svg` file from Lucide, copy what is inside the `<svg>` tag onto
   one line and add it there. The licence is in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
-- **A new page**: add `Components/Pages/Something.razor` starting with `@page "/something"` (and
-  `@attribute [Authorize(Roles = AppRoles.Admin)]` if only administrators may open it), give it a
+- **A new page**: add `Components/Pages/Admin/Something.razor` (in the folder of the role it is for) starting with
+  `@page "/admin/something"` and `@attribute [Authorize(Roles = AppRoles.Admin)]`, give it a
   `Something.razor.css`, then add a link in `Components/Layout/NavMenu.razor`.
 - The data a page shows is read by small query classes in `Data/Queries/`, and what a page *does* (enrolling, editing,
   deleting) is done by the classes in `Services/`, so the page itself stays mostly markup.
-- The enrollment form and the Users page are **interactive** pages (`@rendermode InteractiveServer`): they react while
+- The Enrollments form and the Users Management page are **interactive** pages (`@rendermode InteractiveServer`): they react while
   you type, over a live connection to the server. The other pages are plain pages.
 - `wwwroot/app.js` closes the menus when you click elsewhere or press Escape, and copies/prints the login on the enrollment
   receipt. The pages work without it, apart from those two buttons.
@@ -269,15 +276,18 @@ Services/                  What the registrar and the administrator do: Enrollme
 Data/                      AppDbContext, entities, EF configurations, migrations, startup initializer
 Data/Queries/              What the pages read from the database
 Components/App.razor.css   The theme: colors, sizes, dark mode
-Components/Account/        Login and access-denied pages
 Components/Layout/         Header, menu, account menu, sign-in layout, public layout
 Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
-Components/Pages/          Public home, Account, Admin, Users, Registrar, Enroll, Enrollments, error pages
-wwwroot/                   favicon.svg, app.js
+Components/Pages/          The pages, in one folder per part of the system:
+  Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
+  Admin/                     Dashboard, UsersManagement
+  Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
+  Account/                   MyAccount
+wwwroot/                   favicon.png, app.js and images/ (logo.png, hero-1.jpg, hero-2.jpg, hero-3.jpg)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it
 docs/database.md           Tables, relationships and the rules the database enforces
-THIRD-PARTY-NOTICES.md     Licence of the icons
+THIRD-PARTY-NOTICES.md     Licence of the icons (the logo and the photos are the school's own)
 ```
 
 ## How the login works
@@ -286,9 +296,9 @@ THIRD-PARTY-NOTICES.md     Licence of the icons
    and the page writes the sign-in cookie.
 2. Every page needs a signed-in user unless it has `@attribute [AllowAnonymous]` (the public home page, the login page and
    the error pages have it). Restrict a page to roles with `@attribute [Authorize(Roles = AppRoles.Admin)]`
-   (`AppRoles.RegistrarAccess` means Registrar and Admin). A signed-in user who opens a page they may not see gets an
-   *Access denied* page.
+   (an administrator and a registrar each have their own pages: neither can open the other's). A signed-in user who opens a
+   page they may not see gets an *Access denied* page.
 3. Wrong passwords are counted. After 5 in a row the account is locked for 15 minutes (`Auth` section in `appsettings.json`).
 4. A signed-in user is re-checked against the database every few minutes, so deactivating an account (or changing
-   its `security_stamp`, which editing the email or password in **Users** does) signs it out.
+   its `security_stamp`, which editing the email or password in **Users Management** does) signs it out.
 5. Two-factor sign-in is not built yet. `users.phone_number` is stored (as +639...) for when it is.

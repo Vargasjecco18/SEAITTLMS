@@ -236,9 +236,9 @@ public sealed partial class EnrollmentService(
         var actor = await db.Users.AsNoTracking().Where(u => u.Id == actingUserId)
             .Select(u => new { u.IsActive, u.RoleId })
             .FirstOrDefaultAsync(ct);
-        if (actor is null || !actor.IsActive || (actor.RoleId != AppRoles.RegistrarId && actor.RoleId != AppRoles.AdminId))
+        if (actor is null || !actor.IsActive || actor.RoleId != AppRoles.RegistrarId)
         {
-            return EnrollmentResult.Fail("You don't have permission to enroll students.");
+            return EnrollmentResult.Fail("You don't have permission to enroll students: only a registrar can.");
         }
 
         var term = await db.Terms.AsNoTracking().Include(t => t.SchoolYear).FirstOrDefaultAsync(t => t.Id == request.TermId, ct);

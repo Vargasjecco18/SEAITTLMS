@@ -25,18 +25,16 @@
         </div>
     </nav>
 
-    @* ===== The big picture at the top. The slides change by themselves (CSS only); the dots pick one. ===== *@
+    @* ===== The big picture at the top. The three photos (wwwroot/images/hero-1.jpg ... hero-3.jpg) change by themselves (CSS only); the dots pick one. ===== *@
     <section class="hero" id="top">
         <input class="slide-radio" type="radio" name="slide" id="slide-1" aria-label="Show slide 1" />
         <input class="slide-radio" type="radio" name="slide" id="slide-2" aria-label="Show slide 2" />
         <input class="slide-radio" type="radio" name="slide" id="slide-3" aria-label="Show slide 3" />
-        <input class="slide-radio" type="radio" name="slide" id="slide-4" aria-label="Show slide 4" />
 
         <div class="slides" aria-hidden="true">
             <div class="slide slide-1"></div>
             <div class="slide slide-2"></div>
             <div class="slide slide-3"></div>
-            <div class="slide slide-4"></div>
         </div>
         <div class="hero-scrim" aria-hidden="true"></div>
 
@@ -58,7 +56,6 @@
             <label class="hero-dot" for="slide-1" title="Slide 1"></label>
             <label class="hero-dot" for="slide-2" title="Slide 2"></label>
             <label class="hero-dot" for="slide-3" title="Slide 3"></label>
-            <label class="hero-dot" for="slide-4" title="Slide 4"></label>
         </div>
     </section>
 
@@ -144,8 +141,7 @@
                     additional classes. The school also provides free uniforms and does not charge top-up fees.
                 </p>
             </div>
-            @* To show the school's own logo here, put the picture in wwwroot/images and use an img tag instead of this mark. *@
-            <div class="about-mark" aria-hidden="true"><Icon Name="school" Size="96" /></div>
+            <img class="about-logo" src="@Assets["images/logo.png"]" alt="South East-Asia Institute of Trade and Technology logo" width="200" height="200" />
         </div>
     </section>
 

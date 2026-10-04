@@ -98,65 +98,6 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ClassOffering", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<int>("SchoolYearId")
-                        .HasColumnType("int")
-                        .HasColumnName("school_year_id");
-
-                    b.Property<int>("SectionId")
-                        .HasColumnType("int")
-                        .HasColumnName("section_id");
-
-                    b.Property<int>("SubjectId")
-                        .HasColumnType("int")
-                        .HasColumnName("subject_id");
-
-                    b.Property<int?>("TeacherId")
-                        .HasColumnType("int")
-                        .HasColumnName("teacher_id");
-
-                    b.Property<int>("TermId")
-                        .HasColumnType("int")
-                        .HasColumnName("term_id");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("updated_at_utc");
-
-                    b.HasKey("Id")
-                        .HasName("pk_class_offerings");
-
-                    b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_class_offerings_subject_id");
-
-                    b.HasIndex("TeacherId")
-                        .HasDatabaseName("ix_class_offerings_teacher_id");
-
-                    b.HasIndex("SectionId", "SchoolYearId")
-                        .HasDatabaseName("ix_class_offerings_section_id_school_year_id");
-
-                    b.HasIndex("TermId", "SchoolYearId")
-                        .HasDatabaseName("ix_class_offerings_term_id_school_year_id");
-
-                    b.HasIndex("TermId", "SectionId", "SubjectId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_class_offerings_term_id_section_id_subject_id");
-
-                    b.ToTable("class_offerings", (string)null);
-                });
-
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
                 {
                     b.Property<int>("Id")
@@ -1231,46 +1172,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_administrators_users_user_id");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ClassOffering", b =>
-                {
-                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_class_offerings_subjects_subject_id");
-
-                    b.HasOne("SEAITT_LMS.Data.Entities.Teacher", "Teacher")
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_class_offerings_teachers_teacher_id");
-
-                    b.HasOne("SEAITT_LMS.Data.Entities.Section", "Section")
-                        .WithMany()
-                        .HasForeignKey("SectionId", "SchoolYearId")
-                        .HasPrincipalKey("Id", "SchoolYearId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_class_offerings_sections_section_id_school_year_id");
-
-                    b.HasOne("SEAITT_LMS.Data.Entities.Term", "Term")
-                        .WithMany()
-                        .HasForeignKey("TermId", "SchoolYearId")
-                        .HasPrincipalKey("Id", "SchoolYearId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_class_offerings_terms_term_id_school_year_id");
-
-                    b.Navigation("Section");
-
-                    b.Navigation("Subject");
-
-                    b.Navigation("Teacher");
-
-                    b.Navigation("Term");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

@@ -1,5 +1,5 @@
 @page "/login"
-@layout AuthLayout
+@layout BlankLayout
 @attribute [AllowAnonymous]
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
@@ -13,48 +13,54 @@
 
 <PageTitle>Sign in · SEAITT e-LMS</PageTitle>
 
-<h1>Welcome back</h1>
-<p class="subtitle">Sign in with the email and password your school gave you.</p>
+<div class="login">
+    <section class="panel">
+        <a class="logo-link" href="/" aria-label="SEAITT eLMS, home page">
+            <img class="logo" src="@Assets["images/logo.png"]" alt="" width="72" height="72" />
+        </a>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert" role="alert">
-        <Icon Name="circle-alert" Size="18" />
-        <span>@errorMessage</span>
+        <h1>SEAITT eLMS</h1>
+        <p class="subtitle">Sign in to access your courses</p>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert" role="alert">
+                <Icon Name="circle-alert" Size="18" />
+                <span>@errorMessage</span>
+            </div>
+        }
+
+        <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
+            <DataAnnotationsValidator />
+
+            <div class="field">
+                <label for="email">Email</label>
+                <InputText id="email" type="email" @bind-Value="Input.Email" placeholder="Enter your email" autocomplete="username" autofocus />
+                <ValidationMessage For="() => Input.Email" class="field-error" />
+            </div>
+
+            <div class="field">
+                <label for="password">Password</label>
+                <InputText id="password" type="password" @bind-Value="Input.Password" placeholder="Enter your password" autocomplete="current-password" />
+                <ValidationMessage For="() => Input.Password" class="field-error" />
+            </div>
+
+            <label class="check">
+                <InputCheckbox @bind-Value="Input.RememberMe" />
+                <span>Keep me signed in on this device</span>
+            </label>
+
+            <button type="submit" class="submit">Sign In</button>
+        </EditForm>
+
+        <a class="back" href="/">Back to the home page</a>
+    </section>
+
+    @* The school on the right. The picture is wwwroot/images/hero-1.jpg. *@
+    <div class="photo">
+        <img src="@Assets["images/hero-1.jpg"]" alt="The South East-Asia Institute of Trade and Technology building" />
     </div>
-}
-
-<EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
-    <DataAnnotationsValidator />
-
-    <div class="field">
-        <label for="email">Email</label>
-        <div class="input-wrap">
-            <Icon Name="mail" Size="18" Class="input-icon" />
-            <InputText id="email" type="email" @bind-Value="Input.Email" autocomplete="username" autofocus />
-        </div>
-        <ValidationMessage For="() => Input.Email" class="field-error" />
-    </div>
-
-    <div class="field">
-        <label for="password">Password</label>
-        <div class="input-wrap">
-            <Icon Name="lock" Size="18" Class="input-icon" />
-            <InputText id="password" type="password" @bind-Value="Input.Password" autocomplete="current-password" />
-        </div>
-        <ValidationMessage For="() => Input.Password" class="field-error" />
-    </div>
-
-    <label class="check">
-        <InputCheckbox @bind-Value="Input.RememberMe" />
-        <span>Keep me signed in on this device</span>
-    </label>
-
-    <button type="submit" class="submit">
-        <Icon Name="log-in" Size="18" />
-        <span>Sign in</span>
-    </button>
-</EditForm>
+</div>
 
 @code {
     private string? errorMessage;

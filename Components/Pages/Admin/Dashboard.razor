@@ -9,7 +9,7 @@
 <PageTitle>Admin · SEAITT e-LMS</PageTitle>
 
 <PageHeader Title="Admin dashboard" Subtitle="The accounts and the school setup at a glance." IconName="layout-dashboard">
-    <ButtonLink Href="admin/users" IconName="users">Manage users</ButtonLink>
+    <ButtonLink Href="admin/users" IconName="users">Users Management</ButtonLink>
 </PageHeader>
 
 @if (overview is not null)
@@ -140,7 +140,6 @@
         ("Strands", "layout-grid", setup.Strands),
         ("Subjects", "book-open", setup.Subjects),
         ("Sections", "users", setup.Sections),
-        ("Class offerings", "library", setup.ClassOfferings),
         ("Enrollments", "user-check", setup.Enrollments),
     ];
 }

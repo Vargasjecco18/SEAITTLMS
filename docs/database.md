@@ -3,11 +3,10 @@
 MySQL schema `seaittlms`. The tables are created by the EF Core migrations in `Data/Migrations`, the
 model lives in `Data/Entities` and `Data/Configurations`. Table and column names are snake_case.
 
-This version covers **users and roles** and **classes and enrollment** for Senior High School, and it comes with
+This version covers **users and roles** and **enrollment** for Senior High School, and it comes with
 SEAITT's school data (school year, terms, tracks, strands, schedules, subjects, see
 [The school data that comes with the database](#the-school-data-that-comes-with-the-database)).
-Lessons, assignments and quizzes come later and will hang off `class_offerings`
-(see [What is a class offering?](#what-is-a-class-offering)).
+Lessons, assignments and quizzes come later.
 
 ## The database creates itself
 
@@ -46,11 +45,6 @@ erDiagram
     strands ||--o{ strand_subjects : "curriculum"
     subjects ||--o{ strand_subjects : ""
     teachers |o--o{ sections : "adviser"
-
-    terms ||--o{ class_offerings : ""
-    sections ||--o{ class_offerings : ""
-    subjects ||--o{ class_offerings : ""
-    teachers |o--o{ class_offerings : "teaches"
 
     terms ||--o{ enrollments : ""
     sections ||--o{ enrollments : ""
@@ -109,7 +103,7 @@ They are only a summary. The full records are:
 
 - for a **student**, `enrollments` (the section they are in, term by term, with the subjects they take in
   `enrollment_subjects`),
-- for a **teacher**, `class_offerings` (every subject they teach to every section). A teacher usually teaches several
+- for a **teacher**, nothing else yet (there is no table for who teaches what). A teacher usually teaches several
   subjects and sections, so the single `subject_id` and `section_id` on `teachers` can only be the main one.
 
 The database makes sure the summary agrees with itself:
@@ -140,7 +134,7 @@ SET st.grade_level = s.grade_level,
 WHERE st.id > 0;
 ```
 
-### Classes and enrollment
+### School setup and enrollment
 
 | Table | What it holds |
 |---|---|
@@ -153,7 +147,6 @@ WHERE st.id > 0;
 | `subjects` | The subject catalog (`code`, `name`). |
 | `strand_subjects` | **The curriculum**: the subjects a strand takes in a grade level and term (`strand_id`, `grade_level`, `term_number`, `subject_id`). The same every school year. |
 | `sections` | A section such as 11-BUSSENT-A in one school year: grade level 11 or 12, its schedule (`schedule_id`), optional adviser (teacher). |
-| `class_offerings` | A subject taught to a section during a term by a teacher. This is "the class" (explained below). |
 | `enrollments` | A student placed in a section for a term, with a copy of who they were then (see below). `status`: Enrolled, Dropped, Completed. |
 | `enrollment_subjects` | The subjects a student takes in an enrollment (`enrollment_id`, `subject_id`). |
 
@@ -201,31 +194,6 @@ Things that were decided for you, change them in the tables if they are not righ
   deleted, if something did).
 - Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
 
-## What is a class offering?
-
-A class offering is **one class**: *this subject, taught to this section, in this term, by this teacher*.
-For example, 1st Term of 2026-2027:
-
-| Section | Subject | Teacher |
-|---|---|---|
-| 11-BUSSENT-A | BUSINESS ACCOUNTING | Ms. Reyes |
-| 11-BUSSENT-A | ADVANCE MATHEMATICS 1 | Mr. Santos |
-| 11-BUSSENT-B | BUSINESS ACCOUNTING | Ms. Reyes |
-
-Each row of `class_offerings` is one of these classes. **It is needed, keep it.** It is the complete list that the
-summary columns on `students` and `teachers` can only hint at:
-
-- **One teacher teaches many classes and one section has many subjects.** Ms. Reyes has two rows above. A single
-  `subject_id` or `section_id` column on `teachers` or `students` can only hold one of them.
-- **A student's subjects are recorded when they are enrolled** (`enrollment_subjects`, picked from the strand's
-  curriculum). The classes that teach those subjects are the section's `class_offerings`, so what a student sees later is
-  always the classes of their section for the subjects they take.
-- **Lessons, assignments and quizzes belong to one class.** "Quiz 1" is posted to *11-BUSSENT-A BUSINESS ACCOUNTING*:
-  only that section sees it and only Ms. Reyes owns it. These tables will each carry a `class_offering_id`. Without
-  `class_offerings` they would have to repeat term, section, subject and teacher everywhere.
-
-The table stays empty until the registrar or an administrator sets up the classes of a term (there is no screen for that yet).
-
 ## Rules the database enforces
 
 - Email, LRN, employee number, track code and name, strand code, subject code, schedule code and name, and school year name are unique.
@@ -239,12 +207,10 @@ The table stays empty until the registrar or an administrator sets up the classe
 - A section's schedule must be one the strand runs in (`(strand_id, schedule_id)` is a foreign key to
   `strand_schedules`). A section name is unique per school year, strand, grade level and schedule: **A in the AM and A in
   the PM are different sections.**
-- A subject appears at most once per section and term (`unique (term_id, section_id, subject_id)`), and at most once
-  per strand, grade level and term in the curriculum.
-- An enrollment or class offering can only combine a **term and a section of the same school year**. Both
-  tables carry a `school_year_id` that is part of two composite foreign keys, to `terms (id, school_year_id)`
-  and to `sections (id, school_year_id)`. When you insert one, `school_year_id` must be the school year of
-  both its term and its section.
+- A subject appears at most once per strand, grade level and term in the curriculum, and at most once per enrollment.
+- An enrollment can only combine a **term and a section of the same school year**. It carries a `school_year_id` that is
+  part of two composite foreign keys, to `terms (id, school_year_id)` and to `sections (id, school_year_id)`. When you
+  insert one, `school_year_id` must be the school year of both its term and its section.
 - Deleting an enrollment deletes its `enrollment_subjects`. Otherwise nothing cascades except profile rows when their user
   is deleted. Terms, sections, students, teachers and so on can't be deleted while other rows use them. The Users page
   deletes a student's enrollments first, on purpose, when an administrator confirms; to keep history, switch the account
@@ -256,7 +222,7 @@ The table stays empty until the registrar or an administrator sets up the classe
 - A profile row must match the user's role. Use `UserAccountService.CreateAsync` to create accounts.
 - The subjects picked for an enrollment must belong to the strand's curriculum for that grade level and term, and at least
   one must be picked when the curriculum has any (`EnrollmentService`).
-- Only an active Registrar or Administrator can enroll students, and only an Administrator can edit, add or delete accounts.
+- Only an active Registrar can enroll students, and only an Administrator can edit, add or delete accounts.
   Nobody can delete or switch off their own account.
 - A student's email and password are made from the last name and the LRN (`StudentCredentials`, see the README).
 - The summary columns on students and teachers are kept in step by the screens that change them: enrolling a student sets

@@ -41,8 +41,8 @@ public abstract class PersonProfile : AuditableEntity
 
 /// <summary>
 /// Where a student is, or what a teacher mainly handles: grade level, track, strand, subject and section.
-/// Every value is optional. Together they are a quick summary kept on the person's row: the full records are
-/// enrollments (a student, term by term) and class_offerings (every subject a teacher teaches to every section).
+/// Every value is optional. Together they are a quick summary kept on the person's row: for a student the full
+/// record is their enrollments (term by term).
 /// The database makes sure the values agree with each other: a section's strand and grade level must be the section's
 /// own, and a strand's track must be the strand's own.
 /// </summary>

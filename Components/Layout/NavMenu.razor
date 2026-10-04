@@ -1,4 +1,5 @@
 <nav class="nav" aria-label="Main menu">
+    @* Each role sees only its own pages. *@
     <AuthorizeView Roles="@AppRoles.Admin">
         <p class="heading">Administration</p>
 
@@ -8,25 +9,24 @@
         </NavLink>
         <NavLink class="link" href="admin/users">
             <Icon Name="users" />
-            <span>Users</span>
+            <span>Users Management</span>
         </NavLink>
     </AuthorizeView>
 
-    @* The registrar's pages. Administrators can open them too. *@
-    <AuthorizeView Roles="@AppRoles.RegistrarAccess">
+    <AuthorizeView Roles="@AppRoles.Registrar">
         <p class="heading">Registrar</p>
 
         <NavLink class="link" href="registrar" Match="NavLinkMatch.All">
             <Icon Name="layout-dashboard" />
             <span>Dashboard</span>
         </NavLink>
-        <NavLink class="link" href="registrar/enroll">
-            <Icon Name="user-plus" />
-            <span>Enroll a student</span>
-        </NavLink>
         <NavLink class="link" href="registrar/enrollments">
             <Icon Name="clipboard-list" />
             <span>Enrollments</span>
+        </NavLink>
+        <NavLink class="link" href="registrar/student-accounts">
+            <Icon Name="graduation-cap" />
+            <span>Student's Accounts</span>
         </NavLink>
     </AuthorizeView>
 
