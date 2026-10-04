@@ -27,7 +27,7 @@ internal sealed class TermConfiguration : IEntityTypeConfiguration<Term>
         b.Property(t => t.Name).HasMaxLength(50).IsRequired();
         b.HasIndex(t => new { t.SchoolYearId, t.TermNumber }).IsUnique();
 
-        // Lets class offerings and enrollments prove they use a term of the same school year as their section.
+        // Lets enrollments prove they use a term of the same school year as their section.
         b.HasAlternateKey(t => new { t.Id, t.SchoolYearId });
 
         b.ToTable(t =>
@@ -150,38 +150,13 @@ internal sealed class SectionConfiguration : IEntityTypeConfiguration<Section>
         b.Property(s => s.Name).HasMaxLength(50).IsRequired();
         b.HasIndex(s => new { s.SchoolYearId, s.StrandId, s.GradeLevel, s.ScheduleId, s.Name }).IsUnique();
 
-        // Lets class offerings and enrollments prove they use a section of the same school year as their term.
+        // Lets enrollments prove they use a section of the same school year as their term.
         b.HasAlternateKey(s => new { s.Id, s.SchoolYearId });
 
         // Lets students and teachers prove that the strand and grade level they list are the section's own.
         b.HasAlternateKey(s => new { s.Id, s.StrandId, s.GradeLevel });
 
         b.ToTable(t => t.HasCheckConstraint("ck_sections_grade_level", "grade_level IN (11, 12)"));
-    }
-}
-
-internal sealed class ClassOfferingConfiguration : IEntityTypeConfiguration<ClassOffering>
-{
-    public void Configure(EntityTypeBuilder<ClassOffering> b)
-    {
-        // (term, school_year) and (section, school_year) share school_year_id, so the term and the
-        // section can only be combined when they belong to the same school year.
-        b.HasOne(c => c.Term)
-            .WithMany()
-            .HasForeignKey(c => new { c.TermId, c.SchoolYearId })
-            .HasPrincipalKey(t => new { t.Id, t.SchoolYearId })
-            .OnDelete(DeleteBehavior.Restrict);
-
-        b.HasOne(c => c.Section)
-            .WithMany()
-            .HasForeignKey(c => new { c.SectionId, c.SchoolYearId })
-            .HasPrincipalKey(s => new { s.Id, s.SchoolYearId })
-            .OnDelete(DeleteBehavior.Restrict);
-
-        b.HasOne(c => c.Subject).WithMany().HasForeignKey(c => c.SubjectId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne(c => c.Teacher).WithMany().HasForeignKey(c => c.TeacherId).OnDelete(DeleteBehavior.Restrict);
-
-        b.HasIndex(c => new { c.TermId, c.SectionId, c.SubjectId }).IsUnique();
     }
 }
 

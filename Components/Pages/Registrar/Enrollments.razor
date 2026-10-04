@@ -1,5 +1,5 @@
-@page "/registrar/enroll"
-@attribute [Authorize(Roles = AppRoles.RegistrarAccess)]
+@page "/registrar/enrollments"
+@attribute [Authorize(Roles = AppRoles.Registrar)]
 @rendermode InteractiveServer
 @using System.Security.Claims
 @using SEAITT_LMS.Services
@@ -7,10 +7,10 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JS
 
-<PageTitle>Enroll a student · SEAITT e-LMS</PageTitle>
+<PageTitle>Enrollments · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Enroll a student"
-            Subtitle="Fill in the form. The student's email and password are made for you."
+<PageHeader Title="Enrollments"
+            Subtitle="Fill in the form to enroll a student. The student's email and password are made for you."
             IconName="user-plus" />
 
 @if (lookups is null)

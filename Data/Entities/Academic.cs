@@ -124,28 +124,6 @@ public class Section : AuditableEntity
     public Teacher? Adviser { get; set; }
 }
 
-/// <summary>
-/// A subject taught to one section during one term by one teacher. This is "the class" that
-/// lessons, assignments and quizzes will hang off later.
-/// </summary>
-public class ClassOffering : AuditableEntity
-{
-    /// <summary>Must equal the school year of both the term and the section, the database enforces it.</summary>
-    public int SchoolYearId { get; set; }
-
-    public int TermId { get; set; }
-    public Term Term { get; set; } = null!;
-
-    public int SectionId { get; set; }
-    public Section Section { get; set; } = null!;
-
-    public int SubjectId { get; set; }
-    public Subject Subject { get; set; } = null!;
-
-    public int? TeacherId { get; set; }
-    public Teacher? Teacher { get; set; }
-}
-
 public enum EnrollmentStatus
 {
     Enrolled,

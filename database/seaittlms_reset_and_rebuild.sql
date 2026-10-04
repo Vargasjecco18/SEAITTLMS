@@ -737,5 +737,10 @@ ALTER TABLE `sections` ADD CONSTRAINT `fk_sections_strand_schedules_strand_id_sc
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004120510_AddSchedulesCurriculumAndEnrollmentDetails', '9.0.20');
 
+DROP TABLE `class_offerings`;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004141346_RemoveClassOfferings', '9.0.20');
+
 COMMIT;
 

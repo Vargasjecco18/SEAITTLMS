@@ -102,49 +102,38 @@
     position: absolute;
     inset: 0;
     opacity: 0;
-    animation: slideshow 24s infinite;
+    animation: slideshow 18s infinite;
 }
 
-/* Until real photos are added, each slide is a colored picture. A photo goes in with
-   background-image: url("/images/hero/slide-1.jpg"); on the line of its slide. */
+/* The three photos of the school. They are in wwwroot/images (hero-1.jpg, hero-2.jpg, hero-3.jpg): replace the files
+   to change them. Each slide is shown for 6 of the 18 seconds. */
+.slide {
+    background-color: #12306e;
+    background-position: center;
+    background-size: cover;
+}
+
 .slide-1 {
     animation-delay: 0s;
-    background:
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.16) 1px, transparent 0) 0 0 / 30px 30px,
-        radial-gradient(900px 500px at 85% 15%, rgba(96, 165, 250, 0.55), transparent 60%),
-        linear-gradient(135deg, #0b1f4d, #1e3a8a 55%, #312e81);
+    background-image: url("/images/hero-1.jpg");
 }
 
 .slide-2 {
     animation-delay: 6s;
-    background:
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.14) 1px, transparent 0) 0 0 / 30px 30px,
-        radial-gradient(900px 500px at 15% 20%, rgba(244, 114, 182, 0.5), transparent 60%),
-        linear-gradient(135deg, #3b0d6b, #6d28d9 55%, #9d174d);
+    background-image: url("/images/hero-2.jpg");
 }
 
 .slide-3 {
     animation-delay: 12s;
-    background:
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.14) 1px, transparent 0) 0 0 / 30px 30px,
-        radial-gradient(900px 500px at 80% 80%, rgba(251, 191, 36, 0.5), transparent 60%),
-        linear-gradient(135deg, #7c2d12, #c2410c 55%, #9f1239);
+    background-image: url("/images/hero-3.jpg");
 }
 
-.slide-4 {
-    animation-delay: 18s;
-    background:
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.14) 1px, transparent 0) 0 0 / 30px 30px,
-        radial-gradient(900px 500px at 20% 85%, rgba(52, 211, 153, 0.5), transparent 60%),
-        linear-gradient(135deg, #064e3b, #0f766e 55%, #1e40af);
-}
-
-/* Each slide is shown for 6 of the 24 seconds, with a second of fading at each end. */
+/* A second of fading at each end of its 6 seconds. */
 @keyframes slideshow {
     0% { opacity: 0; }
-    4% { opacity: 1; }
-    25% { opacity: 1; }
-    29% { opacity: 0; }
+    5.5% { opacity: 1; }
+    33.3% { opacity: 1; }
+    38.8% { opacity: 0; }
     100% { opacity: 0; }
 }
 
@@ -156,13 +145,15 @@
 
 .hero:has(#slide-1:checked) .slide-1,
 .hero:has(#slide-2:checked) .slide-2,
-.hero:has(#slide-3:checked) .slide-3,
-.hero:has(#slide-4:checked) .slide-4 {
+.hero:has(#slide-3:checked) .slide-3 {
     opacity: 1;
 }
 
 .hero-scrim {
-    background: linear-gradient(180deg, rgba(6, 12, 28, 0.35), rgba(6, 12, 28, 0.2) 40%, rgba(6, 12, 28, 0.7));
+    /* Darker on the left, where the words are, so they can be read on any photo. */
+    background:
+        linear-gradient(90deg, rgba(6, 12, 28, 0.78), rgba(6, 12, 28, 0.5) 55%, rgba(6, 12, 28, 0.25)),
+        linear-gradient(180deg, rgba(6, 12, 28, 0.2), rgba(6, 12, 28, 0) 40%, rgba(6, 12, 28, 0.55));
 }
 
 /* The radio buttons are only there to remember which dot was picked. */
@@ -276,18 +267,17 @@ h1:focus {
     background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: width 0.3s, background-color 0.3s;
-    animation: dot 24s infinite;
+    animation: dot 18s infinite;
 }
 
 .hero-dot:nth-child(2) { animation-delay: 6s; }
 .hero-dot:nth-child(3) { animation-delay: 12s; }
-.hero-dot:nth-child(4) { animation-delay: 18s; }
 
 /* The dot of the slide that is showing is long and white. */
 @keyframes dot {
     0% { width: 26px; background: #ffffff; }
-    25% { width: 26px; background: #ffffff; }
-    26% { width: 10px; background: rgba(255, 255, 255, 0.4); }
+    33.3% { width: 26px; background: #ffffff; }
+    34.3% { width: 10px; background: rgba(255, 255, 255, 0.4); }
     100% { width: 10px; background: rgba(255, 255, 255, 0.4); }
 }
 
@@ -299,8 +289,7 @@ h1:focus {
 
 .hero:has(#slide-1:checked) .hero-dot:nth-child(1),
 .hero:has(#slide-2:checked) .hero-dot:nth-child(2),
-.hero:has(#slide-3:checked) .hero-dot:nth-child(3),
-.hero:has(#slide-4:checked) .hero-dot:nth-child(4) {
+.hero:has(#slide-3:checked) .hero-dot:nth-child(3) {
     width: 26px;
     background: #ffffff;
 }
@@ -501,16 +490,12 @@ h5 {
     font-size: 1.05rem;
 }
 
-.about-mark {
-    display: grid;
-    place-items: center;
+.about-logo {
+    display: block;
     width: 200px;
     height: 200px;
     margin: 0 auto;
-    border-radius: 36px;
-    background: var(--brand-gradient);
-    color: var(--on-brand);
-    box-shadow: var(--shadow-lg);
+    object-fit: contain;
 }
 
 @media (min-width: 800px) {

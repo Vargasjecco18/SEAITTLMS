@@ -2,7 +2,7 @@
 
 ## Lucide icons
 
-The icons in `Components/Shared/IconSet.cs`, and the logo in `wwwroot/favicon.svg`, are from [Lucide](https://lucide.dev) (lucide-static 1.51.0).
+The icons in `Components/Shared/IconSet.cs` are from [Lucide](https://lucide.dev) (lucide-static 1.51.0).
 Lucide's license, including the parts derived from Feather, is reproduced here as it requires:
 
 ```text

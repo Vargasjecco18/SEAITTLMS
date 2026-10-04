@@ -1,5 +1,5 @@
-@page "/registrar/enrollments"
-@attribute [Authorize(Roles = AppRoles.RegistrarAccess)]
+@page "/registrar/student-accounts"
+@attribute [Authorize(Roles = AppRoles.Registrar)]
 @using Microsoft.EntityFrameworkCore
 @using SEAITT_LMS.Data
 @using SEAITT_LMS.Data.Queries
@@ -8,20 +8,18 @@
 @inject EnrollmentService Enrollment
 @inject NavigationManager Navigation
 
-<PageTitle>Enrollments · SEAITT e-LMS</PageTitle>
+<PageTitle>Student's Accounts · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Enrollments"
+<PageHeader Title="Student's Accounts"
             Subtitle="@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")"
-            IconName="clipboard-list">
-    <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll a student</ButtonLink>
-</PageHeader>
+            IconName="graduation-cap" />
 
 @if (lookups is not null && result is not null)
 {
     <div class="stack">
         <Card>
             @* A plain form that opens this same page with the choices in the address. No script needed. *@
-            <form method="get" action="registrar/enrollments" class="filters">
+            <form method="get" action="registrar/student-accounts" class="filters">
                 <Field For="q" Label="Search" Class="grow">
                     <input id="q" name="q" type="search" placeholder="Name or LRN" value="@Q" autocomplete="off" />
                 </Field>
@@ -56,7 +54,7 @@
                     <Button Type="submit" IconName="search">Search</Button>
                     @if (HasFilter)
                     {
-                        <ButtonLink Href="registrar/enrollments" Variant="ButtonVariant.Ghost">Clear</ButtonLink>
+                        <ButtonLink Href="registrar/student-accounts" Variant="ButtonVariant.Ghost">Clear</ButtonLink>
                     }
                 </div>
             </form>
@@ -69,12 +67,12 @@
                     @if (HasFilter)
                     {
                         <p>Try another name, LRN or filter.</p>
-                        <ButtonLink Href="registrar/enrollments" Variant="ButtonVariant.Secondary">Show everything</ButtonLink>
+                        <ButtonLink Href="registrar/student-accounts" Variant="ButtonVariant.Secondary">Show everything</ButtonLink>
                     }
                     else
                     {
                         <p>Enrolled students will show up here.</p>
-                        <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll the first student</ButtonLink>
+                        <ButtonLink Href="registrar/enrollments" IconName="user-plus">Enroll the first student</ButtonLink>
                     }
                 </EmptyState>
             }

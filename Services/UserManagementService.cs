@@ -455,15 +455,9 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             case Teacher t:
             {
                 var sections = await db.Sections.CountAsync(s => s.AdviserTeacherId == t.Id, ct);
-                var classes = await db.ClassOfferings.CountAsync(c => c.TeacherId == t.Id, ct);
                 if (sections > 0)
                 {
                     effects.Add($"{sections} section(s) lose their adviser.");
-                }
-
-                if (classes > 0)
-                {
-                    effects.Add($"{classes} class(es) lose their teacher.");
                 }
 
                 break;
@@ -516,8 +510,6 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             case Teacher t:
                 await db.Sections.Where(x => x.AdviserTeacherId == t.Id)
                     .ExecuteUpdateAsync(set => set.SetProperty(x => x.AdviserTeacherId, (int?)null), ct);
-                await db.ClassOfferings.Where(c => c.TeacherId == t.Id)
-                    .ExecuteUpdateAsync(set => set.SetProperty(c => c.TeacherId, (int?)null), ct);
                 break;
         }
 

@@ -10,14 +10,11 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 
-<PageTitle>@tab.Title · Users · SEAITT e-LMS</PageTitle>
+<PageTitle>@tab.Title · Users Management · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Users" Subtitle="Every role has its own list. Edit or delete an account here." IconName="users">
-    @if (tab.Role == AppRoles.Student)
-    {
-        <ButtonLink Href="registrar/enroll" IconName="user-plus">Enroll a student</ButtonLink>
-    }
-    else
+<PageHeader Title="Users Management" Subtitle="Every role has its own list. Edit or delete an account here." IconName="users">
+    @* Students get their account when the registrar enrolls them, so only the other roles can be added here. *@
+    @if (tab.Role != AppRoles.Student)
     {
         <Button IconName="user-plus" OnClick="OpenAdd">Add @tab.Singular</Button>
     }
@@ -71,7 +68,7 @@
             }
             else if (tab.Role == AppRoles.Student)
             {
-                <p>Students are added by enrolling them.</p>
+                <p>Students get their account when the registrar enrolls them.</p>
             }
         </EmptyState>
     }
