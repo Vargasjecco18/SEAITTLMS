@@ -245,10 +245,12 @@ sent to their own page instead. To change it:
 - The **courses** are read from the database (`Data/Queries/PublicCourses.cs`): each strand with its schedules and its
   subjects per term. To change them, change the tables `strands`, `subjects` and `strand_subjects` (see
   [docs/database.md](docs/database.md)).
-- The big picture at the top is three photos that change by themselves (the dots pick one). They are the files
-  `wwwroot/images/hero-1.jpg`, `hero-2.jpg` and `hero-3.jpg`: replace a file to change a photo.
+- The big picture at the top is four photos that change by themselves (the dots pick one). They are the files
+  `wwwroot/images/hero/hero-1.jpg` ... `hero-4.jpg`: replace a file to change a photo (keep them under about 400 KB so the
+  page opens fast).
 - The school's logo is `wwwroot/images/logo.png` (it is the icon in the header, on the sign-in page and on the home page)
-  and `wwwroot/favicon.png` is the little icon in the browser tab. The picture next to the sign-in form is `hero-1.jpg`.
+  and `wwwroot/favicon.png` is the little icon in the browser tab. The picture next to the sign-in form is
+  `wwwroot/images/hero/login-photo.jpg`.
 
 ## Pages and styling
 
@@ -298,7 +300,7 @@ Components/Pages/          The pages, in one folder per part of the system:
   Admin/                     Dashboard, UsersManagement
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
   Account/                   MyAccount, Search
-wwwroot/                   favicon.png, app.js and images/ (logo.png, hero-1.jpg, hero-2.jpg, hero-3.jpg)
+wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it
 docs/database.md           Tables, relationships and the rules the database enforces

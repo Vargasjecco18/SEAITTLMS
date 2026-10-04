@@ -11,7 +11,7 @@
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
-<PageTitle>Sign in · SEAITT e-LMS</PageTitle>
+<PageTitle>Log-in · SEAITT e-LMS</PageTitle>
 
 <div class="login">
     <section class="panel">
@@ -20,7 +20,7 @@
         </a>
 
         <h1>SEAITT eLMS</h1>
-        <p class="subtitle">Sign in to access your courses</p>
+        <p class="subtitle">Log-in to access your courses</p>
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -50,15 +50,15 @@
                 <span>Keep me signed in on this device</span>
             </label>
 
-            <button type="submit" class="submit">Sign In</button>
+            <button type="submit" class="submit">Login In</button>
         </EditForm>
 
         <a class="back" href="/">Back to the home page</a>
     </section>
 
-    @* The school on the right. The picture is wwwroot/images/hero-1.jpg. *@
+    @* The school on the right. The picture is wwwroot/images/hero/login-photo.jpg. *@
     <div class="photo">
-        <img src="@Assets["images/hero-1.jpg"]" alt="The South East-Asia Institute of Trade and Technology building" />
+        <img src="@Assets["images/hero/login-photo.jpg"]" alt="The South East-Asia Institute of Trade and Technology building" />
     </div>
 </div>
 
