@@ -1,0 +1,113 @@
+@page "/guidance"
+@attribute [Authorize(Roles = AppRoles.GuidanceCounselor)]
+@inject ReferralService Referrals
+@inject TimeProvider Clock
+
+<PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
+
+@{
+    var now = PhilippineTime.Now(Clock);
+}
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, counselor")" Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. Students are referred to you by themselves when their grades or attendance need help.")" IconName="layout-dashboard" />
+
+@if (overview is null)
+{
+    <p class="muted">Loading…</p>
+}
+else
+{
+    <div class="stats">
+        <StatCard Label="New referrals" Value="@overview.Open" IconName="flag" Accent="@(overview.Open > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Waiting for you" Href="guidance/referrals?status=Open" />
+        <StatCard Label="In progress" Value="@overview.InProgress" IconName="heart-handshake" Accent="AccentColor.Blue" Hint="You are helping" Href="guidance/referrals?status=InProgress" />
+        <StatCard Label="Failing" Value="@overview.Failing" IconName="triangle-alert" Accent="@(overview.Failing > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Students below {GradeRules.PassingPercent:0}")" Href="guidance/students" />
+        <StatCard Label="At risk" Value="@overview.AtRisk" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing or missing work" Href="guidance/students?kind=AtRisk" />
+        <StatCard Label="Not attending" Value="@overview.LowAttendance" IconName="user-x" Accent="AccentColor.Violet" Hint="@($"Attendance under {AttendanceService.LowAttendancePercent:0}%")" Href="guidance/students?kind=LowAttendance" />
+        <StatCard Label="Resolved this month" Value="@overview.ResolvedThisMonth" IconName="circle-check" Accent="AccentColor.Green" Hint="Referrals closed" Href="guidance/referrals?status=Resolved" />
+    </div>
+
+    <div class="cards">
+        <Card Title="New referrals" IconName="flag">
+            @if (overview.Newest.Count == 0)
+            {
+                <EmptyState IconName="circle-check" Title="No new referrals">
+                    <p>When a student's grade falls below 70, gets close to it, or the student keeps missing class, a referral appears here by itself.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="rows">
+                    @foreach (var r in overview.Newest)
+                    {
+                        <li>
+                            <a href="guidance/referrals?status=Open">
+                                <span class="row-icon @r.Reason.ToLowerInvariant()"><Icon Name="@ReasonIcon(r.Reason)" Size="18" /></span>
+                                <span class="row-text">
+                                    <span class="row-title">@r.StudentName</span>
+                                    <span class="row-sub">@r.Detail@(r.Placement is null ? "" : " · " + r.Placement)</span>
+                                </span>
+                                <Badge Tone="@ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <p class="more"><a href="guidance/referrals">All referrals <Icon Name="arrow-right" Size="14" /></a></p>
+            }
+        </Card>
+
+        <Card Title="@($"Students below {GradeRules.PassingPercent:0}")" IconName="triangle-alert">
+            @if (failing.Count == 0)
+            {
+                <EmptyState IconName="award" Title="Nobody is failing">
+                    <p>Students with a grade under @GradeRules.PassingPercent.ToString("0") in a subject are listed here.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="rows">
+                    @foreach (var s in failing.Take(6))
+                    {
+                        <li>
+                            <a href="guidance/students">
+                                <span class="row-icon failinggrades"><Icon Name="trending-down" Size="18" /></span>
+                                <span class="row-text">
+                                    <span class="row-title">@s.StudentName</span>
+                                    <span class="row-sub">@s.SubjectName · @s.TeacherName@(s.Placement is null ? "" : " · " + s.Placement)</span>
+                                </span>
+                                <Badge Tone="Tone.Danger">@(s.Metric is { } m ? $"{m:0.#}%" : "")</Badge>
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <p class="more"><a href="guidance/students">See all students at risk <Icon Name="arrow-right" Size="14" /></a></p>
+            }
+        </Card>
+    </div>
+}
+
+@code {
+    private GuidanceOverview? overview;
+    private IReadOnlyList<AtRiskRow> failing = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Look at every student first, so what is shown is up to date.
+        await Referrals.EvaluateAsync();
+        overview = await Referrals.GetOverviewAsync();
+        failing = await Referrals.GetAtRiskAsync(ReferralReasons.FailingGrades);
+    }
+
+    internal static string ReasonIcon(string reason) => reason switch
+    {
+        ReferralReasons.FailingGrades => "trending-down",
+        ReferralReasons.AtRisk => "shield-alert",
+        _ => "user-x",
+    };
+
+    internal static Tone ReasonTone(string reason) => reason switch
+    {
+        ReferralReasons.FailingGrades => Tone.Danger,
+        ReferralReasons.AtRisk => Tone.Warning,
+        _ => Tone.Info,
+    };
+}

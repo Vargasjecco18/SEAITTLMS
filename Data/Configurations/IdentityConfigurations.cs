@@ -73,7 +73,15 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
 
         b.Property(s => s.Sex).HasConversion<string>().HasMaxLength(10);
 
-        b.ToTable(t => t.HasCheckConstraint("ck_students_lrn", "lrn REGEXP '^[0-9]{12}$'"));
+        b.Property(s => s.Status).HasMaxLength(10).HasDefaultValue(StudentStatus.Active).IsRequired();
+        b.Property(s => s.StatusNote).HasMaxLength(300);
+        b.HasIndex(s => s.Status);
+
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint("ck_students_lrn", "lrn REGEXP '^[0-9]{12}$'");
+            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated', 'Withdrawn')");
+        });
 
         PlacementConfiguration.Configure(b, "students");
     }

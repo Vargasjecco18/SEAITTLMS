@@ -1,0 +1,128 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 1rem;
+    align-items: end;
+}
+
+@media (min-width: 820px) {
+    .filters {
+        grid-template-columns: minmax(9rem, 1fr) minmax(10rem, 1fr) minmax(0, 2fr) auto;
+    }
+}
+
+.filter-actions {
+    margin-bottom: 1rem;
+}
+
+.table-wrap {
+    position: relative;
+    margin: 0 -1.25rem;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+}
+
+.table thead th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.name {
+    display: block;
+    font-weight: 650;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.detail {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+}
+
+.col-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+    .col-more {
+        display: none;
+    }
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+}
+
+.two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1rem;
+}
+
+@media (max-width: 560px) {
+    .two {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}

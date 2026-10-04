@@ -722,6 +722,102 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Referral", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssignmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("assignment_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("detail");
+
+                    b.Property<int?>("HandledByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("handled_by_user_id");
+
+                    b.Property<string>("Intervention")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("intervention");
+
+                    b.Property<decimal?>("Metric")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)")
+                        .HasColumnName("metric");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)")
+                        .HasColumnName("outcome");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_referrals");
+
+                    b.HasIndex("AssignmentId")
+                        .HasDatabaseName("ix_referrals_assignment_id");
+
+                    b.HasIndex("HandledByUserId")
+                        .HasDatabaseName("ix_referrals_handled_by_user_id");
+
+                    b.HasIndex("Status", "Reason")
+                        .HasDatabaseName("ix_referrals_status_reason");
+
+                    b.HasIndex("StudentId", "Status")
+                        .HasDatabaseName("ix_referrals_student_id_status");
+
+                    b.ToTable("referrals", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_referrals_outcome", "outcome IS NULL OR outcome IN ('Improved', 'NoChange')");
+
+                            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance')");
+
+                            t.HasCheckConstraint("ck_referrals_status", "status IN ('Open', 'InProgress', 'Resolved')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Registrar", b =>
                 {
                     b.Property<int>("Id")
@@ -1168,6 +1264,23 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(10)")
                         .HasColumnName("sex");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("Active")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("StatusChangedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("status_changed_at_utc");
+
+                    b.Property<string>("StatusNote")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("status_note");
+
                     b.Property<int?>("StrandId")
                         .HasColumnType("int")
                         .HasColumnName("strand_id");
@@ -1195,6 +1308,9 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_students_lrn");
 
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_students_status");
+
                     b.HasIndex("SubjectId")
                         .HasDatabaseName("ix_students_subject_id");
 
@@ -1218,6 +1334,8 @@ namespace SEAITT_LMS.Data.Migrations
                             t.HasCheckConstraint("ck_students_lrn", "lrn REGEXP '^[0-9]{12}$'");
 
                             t.HasCheckConstraint("ck_students_section_needs_strand_and_grade", "section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated', 'Withdrawn')");
 
                             t.HasCheckConstraint("ck_students_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
                         });
@@ -1774,6 +1892,70 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.WithdrawalRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("decided_at_utc");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("decision_note");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_withdrawal_requests");
+
+                    b.HasIndex("DecidedByUserId")
+                        .HasDatabaseName("ix_withdrawal_requests_decided_by_user_id");
+
+                    b.HasIndex("StudentId")
+                        .HasDatabaseName("ix_withdrawal_requests_student_id");
+
+                    b.HasIndex("Status", "StudentId")
+                        .HasDatabaseName("ix_withdrawal_requests_status_student_id");
+
+                    b.ToTable("withdrawal_requests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_withdrawal_requests_status", "status IN ('Pending', 'Approved', 'Declined', 'Cancelled')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
@@ -1995,6 +2177,34 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_quiz_questions_module_items_item_id");
 
                     b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Referral", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.TeachingAssignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_referrals_teaching_assignments_assignment_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "HandledBy")
+                        .WithMany()
+                        .HasForeignKey("HandledByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_referrals_users_handled_by_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_referrals_students_student_id");
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("HandledBy");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Registrar", b =>
@@ -2267,6 +2477,26 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_users_roles_role_id");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.WithdrawalRequest", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "DecidedBy")
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_withdrawal_requests_users_decided_by_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_withdrawal_requests_students_student_id");
+
+                    b.Navigation("DecidedBy");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

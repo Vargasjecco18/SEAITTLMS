@@ -67,6 +67,11 @@ erDiagram
     students ||--o{ module_views : ""
 
     users ||--o{ todo_items : "to-do list"
+    students ||--o{ referrals : ""
+    teaching_assignments |o--o{ referrals : "subject"
+    students ||--o{ withdrawal_requests : ""
+    users |o--o{ referrals : "handled by"
+    users |o--o{ withdrawal_requests : "decided by"
     teaching_assignments ||--o{ attendance_records : ""
     students ||--o{ attendance_records : ""
 
@@ -187,11 +192,17 @@ registrar who did it.
 | `submissions` | One piece of work per student and item (`unique (item_id, student_id)`): `status` (`InProgress`, `Submitted`, `Graded`), `answer_text`, `link_url`, `score`, `feedback`, `is_late`. For quizzes also the answers and the order of the questions (`answers_json`), and the anti-cheating watch: `violation_count`, `violation_log`, `is_flagged`, `auto_submit_reason` (`time` or `violations`). |
 | `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
 | `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
+| `referrals` | A student sent to the guidance counselor: `student_id`, `assignment_id` (the subject; dropped if the subject is removed), `reason` (`FailingGrades`, `AtRisk` or `LowAttendance`), `detail` (what was found, in words), `metric` (the grade or attendance in percent), `status` (`Open`, `InProgress`, `Resolved`), `intervention` (the help given), `notes`, `outcome` (`Improved` or `NoChange`, set when resolved), `resolved_at_utc`, `handled_by_user_id`. Made by the system, worked by the counselor. Deleted with the student. |
+| `withdrawal_requests` | A student asking to leave school: `student_id`, `reason`, `status` (`Pending`, `Approved`, `Declined`, `Cancelled`), `decided_at_utc`, `decided_by_user_id`, `decision_note`. |
 | `todo_items` | A person's own to-do list (students and teachers): `user_id`, `title`, `due_on` (a date, or empty), `is_done`, `done_at_utc`. Deleted with the account. |
 
 Deleting a teacher deletes their assignments, and with them the modules, items and handed-in work. Deleting a student
 deletes their work and module views (their enrollments are deleted first, see below). A section or a subject can't be
 deleted while an assignment uses it.
+
+A student's own row (`students`) also has `status` (`Active`, `Graduated` or `Withdrawn`), `status_changed_at_utc` and `status_note`. A
+graduated or withdrawn student is **archived**: the records stay, the account is switched off (`users.is_active = 0`), the enrollments are closed
+(`Completed` for a graduate, `Dropped` for a withdrawal) and open referrals are resolved.
 
 ### Messages and notifications
 
@@ -268,6 +279,12 @@ Things that were decided for you, change them in the tables if they are not righ
 
 ## Rules the application enforces
 
+- Referrals are made by the system (`ReferralService`, once a minute and when the counselor opens a page): a grade below 70 in a subject
+  is *failing*, a grade from 70 up to 75 or three or more missed works is *at risk*, and an attendance rate under 80% over at least 5 marked
+  days is *not attending class*. One referral per student, subject and problem; the same problem is not sent again for 14 days after it was
+  resolved. Only the guidance counselor works on referrals. Resolving one needs an outcome.
+- Only an administrator archives graduates (`StudentLifecycleService`); a student asks to withdraw and only the registrar answers (or withdraws a
+  student directly). A student who is archived can't be enrolled again until an administrator restores the account.
 - Only the teacher of a subject marks its attendance, only for students on its roster, and not for a day that has not come
   (`AttendanceService`). The attendance rate is the days present or late divided by the days marked; under 80% is "low".
   The gradebook (`GradebookService`) changes scores through `WorkService.GradeAsync` and checks every box before saving any.

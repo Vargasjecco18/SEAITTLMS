@@ -965,5 +965,72 @@ CREATE INDEX `ix_attendance_records_student_id_attended_on` ON `attendance_recor
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004192015_AddAttendanceRecords', '9.0.20');
 
+ALTER TABLE `students` ADD `status` varchar(10) CHARACTER SET utf8mb4 NOT NULL DEFAULT 'Active';
+
+ALTER TABLE `students` ADD `status_changed_at_utc` datetime(6) NULL;
+
+ALTER TABLE `students` ADD `status_note` varchar(300) CHARACTER SET utf8mb4 NULL;
+
+CREATE TABLE `referrals` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `student_id` int NOT NULL,
+    `assignment_id` int NULL,
+    `reason` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `detail` varchar(300) CHARACTER SET utf8mb4 NOT NULL,
+    `metric` decimal(6,2) NULL,
+    `status` varchar(12) CHARACTER SET utf8mb4 NOT NULL,
+    `intervention` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `notes` varchar(1000) CHARACTER SET utf8mb4 NULL,
+    `outcome` varchar(12) CHARACTER SET utf8mb4 NULL,
+    `resolved_at_utc` datetime(6) NULL,
+    `handled_by_user_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_referrals` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_referrals_outcome` CHECK (outcome IS NULL OR outcome IN ('Improved', 'NoChange')),
+    CONSTRAINT `ck_referrals_reason` CHECK (reason IN ('FailingGrades', 'AtRisk', 'LowAttendance')),
+    CONSTRAINT `ck_referrals_status` CHECK (status IN ('Open', 'InProgress', 'Resolved')),
+    CONSTRAINT `fk_referrals_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_referrals_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_referrals_users_handled_by_user_id` FOREIGN KEY (`handled_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `withdrawal_requests` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `student_id` int NOT NULL,
+    `reason` varchar(500) CHARACTER SET utf8mb4 NOT NULL,
+    `status` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `decided_at_utc` datetime(6) NULL,
+    `decided_by_user_id` int NULL,
+    `decision_note` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_withdrawal_requests` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_withdrawal_requests_status` CHECK (status IN ('Pending', 'Approved', 'Declined', 'Cancelled')),
+    CONSTRAINT `fk_withdrawal_requests_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_withdrawal_requests_users_decided_by_user_id` FOREIGN KEY (`decided_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_students_status` ON `students` (`status`);
+
+ALTER TABLE `students` ADD CONSTRAINT `ck_students_status` CHECK (status IN ('Active', 'Graduated', 'Withdrawn'));
+
+CREATE INDEX `ix_referrals_assignment_id` ON `referrals` (`assignment_id`);
+
+CREATE INDEX `ix_referrals_handled_by_user_id` ON `referrals` (`handled_by_user_id`);
+
+CREATE INDEX `ix_referrals_status_reason` ON `referrals` (`status`, `reason`);
+
+CREATE INDEX `ix_referrals_student_id_status` ON `referrals` (`student_id`, `status`);
+
+CREATE INDEX `ix_withdrawal_requests_decided_by_user_id` ON `withdrawal_requests` (`decided_by_user_id`);
+
+CREATE INDEX `ix_withdrawal_requests_status_student_id` ON `withdrawal_requests` (`status`, `student_id`);
+
+CREATE INDEX `ix_withdrawal_requests_student_id` ON `withdrawal_requests` (`student_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004194551_AddReferralsStudentStatusAndWithdrawals', '9.0.20');
+
 COMMIT;
 

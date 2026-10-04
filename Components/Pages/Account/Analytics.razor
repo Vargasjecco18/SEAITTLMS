@@ -1,0 +1,262 @@
+@page "/analytics"
+@attribute [Authorize(Roles = AppRoles.Admin + "," + AppRoles.GuidanceCounselor + "," + AppRoles.Teacher)]
+@using System.Globalization
+@inject CurrentUser Me
+@inject AnalyticsService Reports
+
+<PageTitle>Analytics · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Student analytics" Subtitle="@(report is null ? "" : $"How students are doing in {report.ScopeText}. Everything is worked out from the scores and the attendance that are recorded.")" IconName="chart-column" />
+
+@if (report is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (report.Students == 0)
+{
+    <Card>
+        <EmptyState IconName="chart-column" Title="Nothing to show yet">
+            <p>@(report.SchoolWide ? "Numbers appear once students are enrolled and teachers give scores." : "Numbers appear once you have a subject with students and scores.")</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="stats">
+        <StatCard Label="Students" Value="@report.Students" IconName="users" Accent="AccentColor.Blue" Hint="@report.ScopeText" />
+        <StatCard Label="Average grade" Text="@(report.AverageGrade is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="AccentColor.Violet" Hint="@(report.AverageGrade is { } a2 ? GradeRules.Descriptor(a2) : "No grades yet")" />
+        <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
+        <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a subject")" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students" : null)" />
+        <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing work" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students?kind=AtRisk" : null)" />
+        <StatCard Label="Open referrals" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your subjects")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
+    </div>
+
+    <div class="grid two">
+        <Card Title="@report.BandsTitle" IconName="chart-bar">
+            @if (report.Bands.Count == 0 || report.Bands.All(b => b.Bands.Total == 0))
+            {
+                <p class="muted">No grades yet.</p>
+            }
+            else
+            {
+                <ul class="legend" aria-label="Legend">
+                    @foreach (var band in Bands)
+                    {
+                        <li><span class="swatch @band.Key"></span> @band.Label</li>
+                    }
+                </ul>
+                <div class="stacks">
+                    @foreach (var g in report.Bands)
+                    {
+                        var total = Math.Max(1, g.Bands.Total);
+                        <div class="stack-row">
+                            <span class="stack-label" title="@g.Label">@g.Label</span>
+                            <div class="stack" role="img" aria-label="@($"{g.Label}: {g.Bands.Outstanding} outstanding, {g.Bands.VerySatisfactory} very satisfactory, {g.Bands.Satisfactory} satisfactory, {g.Bands.Fair} fair, {g.Bands.Failing} failing")">
+                                @foreach (var band in Bands)
+                                {
+                                    var n = band.Count(g.Bands);
+                                    @if (n > 0)
+                                    {
+                                        <span class="seg @band.Key" style="flex: @n 0 0" title="@band.Label: @n">@n</span>
+                                    }
+                                }
+                            </div>
+                            <span class="stack-total">@g.Bands.Total</span>
+                        </div>
+                    }
+                </div>
+            }
+        </Card>
+
+        <Card Title="Monthly trends" IconName="trending-up">
+            @{
+                const double W = 300, H = 140;
+                var months = report.Months;
+                double X(int i) => months.Count <= 1 ? W / 2 : i * W / (months.Count - 1);
+                double Y(decimal v) => H - (double)Math.Clamp(v, 0, 100) / 100 * H;
+            }
+            @if (months.All(m => m.Grade is null && m.Attendance is null))
+            {
+                <p class="muted">Months fill in as scores are given and attendance is marked.</p>
+            }
+            else
+            {
+                <ul class="legend">
+                    <li><span class="swatch grade"></span> Average grade</li>
+                    <li><span class="swatch attendance"></span> Attendance</li>
+                </ul>
+                <svg class="chart" viewBox="-28 -8 @((W + 40).ToString(CultureInfo.InvariantCulture)) @((H + 34).ToString(CultureInfo.InvariantCulture))" role="img" aria-label="Average grade and attendance by month">
+                    @foreach (var line in new[] { 0, 25, 50, 75, 100 })
+                    {
+                        <line x1="0" x2="@W.ToString(CultureInfo.InvariantCulture)" y1="@Y(line).ToString("0.#", CultureInfo.InvariantCulture)" y2="@Y(line).ToString("0.#", CultureInfo.InvariantCulture)" class="gridline" />
+                        @SvgText(-6, Y(line) + 3, "axis end", line.ToString(CultureInfo.InvariantCulture))
+                    }
+                    <line x1="0" x2="@W.ToString(CultureInfo.InvariantCulture)" y1="@Y(GradeRules.PassingPercent).ToString("0.#", CultureInfo.InvariantCulture)" y2="@Y(GradeRules.PassingPercent).ToString("0.#", CultureInfo.InvariantCulture)" class="passing" />
+                    @for (var i = 0; i < months.Count; i++)
+                    {
+                        @SvgText(X(i), H + 18, "axis mid", months[i].Label)
+                    }
+
+                    @foreach (var series in new[] { (Name: "grade", Values: months.Select(m => m.Grade).ToList()), (Name: "attendance", Values: months.Select(m => m.Attendance).ToList()) })
+                    {
+                        var path = "";
+                        var open = false;
+                        for (var i = 0; i < series.Values.Count; i++)
+                        {
+                            if (series.Values[i] is { } v)
+                            {
+                                path += (open ? " L " : " M ") + X(i).ToString("0.#", CultureInfo.InvariantCulture) + " " + Y(v).ToString("0.#", CultureInfo.InvariantCulture);
+                                open = true;
+                            }
+                            else
+                            {
+                                open = false;
+                            }
+                        }
+
+                        <path d="@path" class="line @series.Name" />
+                        @for (var i = 0; i < series.Values.Count; i++)
+                        {
+                            if (series.Values[i] is { } v)
+                            {
+                                <circle cx="@X(i).ToString("0.#", CultureInfo.InvariantCulture)" cy="@Y(v).ToString("0.#", CultureInfo.InvariantCulture)" r="3.5" class="dot @series.Name"><title>@months[i].Label: @v.ToString("0.#")%</title></circle>
+                            }
+                        }
+                    }
+                </svg>
+                <p class="note">The dashed line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
+            }
+        </Card>
+    </div>
+
+    <div class="grid two">
+        <Card Title="@report.ConcernTitle" IconName="flag">
+            @{
+                var maxConcern = Math.Max(1, report.Concerns.Max(c => c.Count));
+            }
+            @if (report.Concerns.All(c => c.Count == 0))
+            {
+                <p class="muted">None.</p>
+            }
+            else
+            {
+                <ul class="bars">
+                    @foreach (var c in report.Concerns)
+                    {
+                        <li>
+                            <span class="bar-name">@ReferralReasons.Display(c.Reason)</span>
+                            <span class="track"><i class="concern @c.Reason.ToLowerInvariant()" style="width: @(c.Count * 100 / maxConcern)%"></i></span>
+                            <span class="bar-value">@c.Count</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        @if (report.SchoolWide)
+        {
+            <Card Title="Intervention effectiveness" IconName="heart-handshake">
+                @if (report.Resolved == 0)
+                {
+                    <p class="muted">When the guidance counselor resolves a referral and says how it ended, the results show here.</p>
+                }
+                else
+                {
+                    var success = report.Improved * 100 / report.Resolved;
+                    <div class="success">
+                        <span class="success-number">@success%</span>
+                        <span class="success-text">of @report.Resolved resolved @(report.Resolved == 1 ? "referral" : "referrals") improved</span>
+                    </div>
+                    <ul class="bars">
+                        @foreach (var i in report.Interventions)
+                        {
+                            <li>
+                                <span class="bar-name">@i.Intervention</span>
+                                <span class="track"><i class="concern improved" style="width: @(i.Total == 0 ? 0 : i.Improved * 100 / i.Total)%"></i></span>
+                                <span class="bar-value">@i.Improved / @i.Total</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+        }
+    </div>
+
+    <Card Title="@report.PerformanceTitle" IconName="layers">
+        @if (report.Performance.Count == 0)
+        {
+            <p class="muted">Nothing to show yet.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">@(report.SchoolWide ? "Strand" : "Subject")</th>
+                            <th scope="col" class="num">Students</th>
+                            <th scope="col">Average grade</th>
+                            <th scope="col" class="num">Attendance</th>
+                            <th scope="col" class="num">Failing</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in report.Performance)
+                        {
+                            <tr>
+                                <td>@p.Label</td>
+                                <td class="num">@p.Students</td>
+                                <td>
+                                    <div class="cell-bar">
+                                        <span class="track"><i class="@Band(p.Average)" style="width: @Width(p.Average)%"></i></span>
+                                        <span>@(p.Average is { } a ? $"{a:0.#}%" : "—")</span>
+                                    </div>
+                                </td>
+                                <td class="num">@(p.Attendance is { } at ? $"{at:0.#}%" : "—")</td>
+                                <td class="num">@if (p.Failing > 0) { <Badge Tone="Tone.Danger">@p.Failing</Badge> } else { <span class="muted">0</span> }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+}
+
+@code {
+    private sealed record BandInfo(string Key, string Label, Func<BandCounts, int> Count);
+
+    private static readonly BandInfo[] Bands =
+    [
+        new("outstanding", "Outstanding (90+)", b => b.Outstanding),
+        new("verysat", "Very satisfactory (85–89)", b => b.VerySatisfactory),
+        new("sat", "Satisfactory (80–84)", b => b.Satisfactory),
+        new("fair", "Fairly satisfactory (70–79)", b => b.Fair),
+        new("failing", "Below 70", b => b.Failing),
+    ];
+
+    private AnalyticsReport? report;
+
+    /// <summary>A label inside the chart. Razor treats a text tag as its own, so an SVG one is written out (the texts are numbers and month names).</summary>
+    private static MarkupString SvgText(double x, double y, string cssClass, string text) =>
+        new($"<text x=\"{x.ToString("0.#", CultureInfo.InvariantCulture)}\" y=\"{y.ToString("0.#", CultureInfo.InvariantCulture)}\" class=\"{cssClass}\">{System.Net.WebUtility.HtmlEncode(text)}</text>");
+
+    private string Role { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Me.GetAsync();
+        Role = user?.Role ?? "";
+        report = user is null ? null : await Reports.GetAsync(user);
+    }
+
+    private static string Band(decimal? percent) => percent switch
+    {
+        null => "none",
+        < GradeRules.PassingPercent => "bad",
+        < GradeRules.AtRiskUntil => "warn",
+        _ => "good",
+    };
+
+    private static string Width(decimal? percent) => Math.Clamp(percent ?? 0, 0, 100).ToString("0.#", CultureInfo.InvariantCulture);
+}

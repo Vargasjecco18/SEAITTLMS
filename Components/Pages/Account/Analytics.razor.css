@@ -1,0 +1,295 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 900px) {
+    .stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1700px) {
+    .stats {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+.grid {
+    display: grid;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 1000px) {
+    .grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1rem;
+    margin: 0 0 0.9rem;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    list-style: none;
+}
+
+.legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+.outstanding { background: #15803d; }
+.verysat { background: #22c55e; }
+.sat { background: #3b82f6; }
+.fair { background: #f59e0b; }
+.failing { background: #dc2626; }
+.grade { background: var(--brand); }
+.attendance { background: var(--green); }
+
+.stacks {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.stack-row {
+    display: grid;
+    grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) 2rem;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.stack-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.stack {
+    display: flex;
+    height: 28px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--border);
+}
+
+.seg {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    transition: flex 0.5s ease;
+}
+
+.stack-total {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* ---------- the line chart ---------- */
+.chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.gridline {
+    stroke: var(--border);
+    stroke-width: 1;
+}
+
+.passing {
+    stroke: var(--danger-solid);
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+    opacity: 0.7;
+}
+
+/* The labels are written out as raw markup, so they don't carry this component's scope: ::deep reaches them. */
+.chart ::deep .axis {
+    fill: var(--text-muted);
+    font-size: 9px;
+}
+
+.chart ::deep .axis.end { text-anchor: end; }
+.chart ::deep .axis.mid { text-anchor: middle; }
+
+.line {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.line.grade { stroke: var(--brand); }
+.line.attendance { stroke: var(--green); }
+
+.dot {
+    stroke: var(--surface);
+    stroke-width: 1.5;
+}
+
+.dot.grade { fill: var(--brand); }
+.dot.attendance { fill: var(--green); }
+
+.note {
+    margin: 0.7rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* ---------- horizontal bars ---------- */
+.bars {
+    display: grid;
+    gap: 0.8rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.bars li {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 3.2rem;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bar-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.bar-value {
+    font-weight: 700;
+    text-align: right;
+}
+
+.track {
+    display: block;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.track i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand);
+    transition: width 0.6s ease;
+}
+
+.track i.good { background: var(--green); }
+.track i.warn { background: var(--amber); }
+.track i.bad { background: var(--danger-solid); }
+.track i.none { background: var(--border); }
+.track i.failinggrades { background: #dc2626; }
+.track i.atrisk { background: #f59e0b; }
+.track i.lowattendance { background: #6366f1; }
+.track i.improved { background: var(--green); }
+
+.success {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.success-number {
+    font-size: 2.2rem;
+    font-weight: 750;
+    line-height: 1;
+}
+
+.success-text {
+    color: var(--text-muted);
+}
+
+.table-wrap {
+    position: relative;
+    margin: -1.25rem;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+
+.table thead th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.num {
+    text-align: right !important;
+}
+
+.cell-bar {
+    display: grid;
+    grid-template-columns: minmax(5rem, 1fr) 3.5rem;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 10rem;
+}
+
+@media (max-width: 640px) {
+    .bars li {
+        grid-template-columns: minmax(0, 1fr) 3rem;
+    }
+
+    .bars .track {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .stack-row {
+        grid-template-columns: minmax(0, 1fr) 2rem;
+    }
+
+    .stack {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+}

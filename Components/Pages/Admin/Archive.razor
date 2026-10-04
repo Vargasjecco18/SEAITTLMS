@@ -1,0 +1,224 @@
+@page "/admin/archive"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject StudentLifecycleService Lifecycle
+
+<PageTitle>Archive · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Archive" Subtitle="Students who graduate (or left school) are archived. Their records stay, their sign-in is switched off." IconName="archive" />
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+<div class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab @(tab == "graduating" ? "on" : "")" aria-selected="@(tab == "graduating" ? "true" : "false")" @onclick='() => tab = "graduating"'>
+        <Icon Name="graduation-cap" Size="16" /> Ready to graduate <span class="count">@candidates.Count</span>
+    </button>
+    <button type="button" role="tab" class="tab @(tab == "archived" ? "on" : "")" aria-selected="@(tab == "archived" ? "true" : "false")" @onclick='() => tab = "archived"'>
+        <Icon Name="archive" Size="16" /> Archived <span class="count">@archived.Count</span>
+    </button>
+</div>
+
+@if (tab == "graduating")
+{
+    <Card>
+        @if (candidates.Count == 0)
+        {
+            <EmptyState IconName="graduation-cap" Title="Nobody to graduate">
+                <p>Grade 12 students who are still at school appear here. When the school year ends, tick the ones who graduate and archive them.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="bar">
+                <label class="all"><input type="checkbox" checked="@(picked.Count == candidates.Count)" @onchange="e => PickAll(e.Value is true)" /> Select all (@candidates.Count)</label>
+                <Field For="a-note" Label="Note" Class="note">
+                    <input id="a-note" type="text" class="input" maxlength="300" placeholder="Class of 2027" @bind="note" />
+                </Field>
+                <Button IconName="archive" Disabled="@(picked.Count == 0)" OnClick="AskArchive">Archive selected (@picked.Count)</Button>
+            </div>
+
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr><th scope="col" class="check"><span class="sr-only">Pick</span></th><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Section</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in candidates)
+                        {
+                            var candidate = c;
+                            <tr class="@(picked.Contains(candidate.StudentId) ? "picked" : "")">
+                                <td class="check"><input type="checkbox" aria-label="@($"Pick {candidate.Name}")" checked="@picked.Contains(candidate.StudentId)" @onchange="e => Pick(candidate.StudentId, e.Value is true)" /></td>
+                                <td>@candidate.Name</td>
+                                <td class="mono">@candidate.Lrn</td>
+                                <td>@(candidate.Placement ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+}
+else
+{
+    <Card>
+        <form class="search" role="search" @onsubmit="SearchAsync">
+            <input type="search" class="input" aria-label="Search the archive" placeholder="Name or LRN" autocomplete="off" @bind="searchText" />
+            <Button Type="submit" Variant="ButtonVariant.Secondary" IconName="search">Search</Button>
+        </form>
+
+        @if (archived.Count == 0)
+        {
+            <EmptyState IconName="archive" Title="The archive is empty">
+                <p>Graduates and students who left school show up here.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Status</th><th scope="col" class="col-more">Note</th><th scope="col" class="col-more">Date</th><th scope="col" class="col-actions"><span class="sr-only">Restore</span></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in archived)
+                        {
+                            var student = a;
+                            <tr>
+                                <td>@student.Name<span class="sub">@student.Placement</span></td>
+                                <td class="mono">@student.Lrn</td>
+                                <td><Badge Tone="@(student.Status == StudentStatus.Graduated ? Tone.Success : Tone.Warning)">@student.Status</Badge></td>
+                                <td class="col-more">@student.Note</td>
+                                <td class="col-more">@(student.ChangedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
+                                <td class="col-actions"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="undo-2" OnClick="() => restoreTarget = student">Restore</Button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+}
+
+<Modal Open="confirmArchive" Title="Archive these students?" OnClose="CloseArchive">
+    <p class="dialog-text">
+        <strong>@picked.Count @(picked.Count == 1 ? "student" : "students")</strong> will be archived as graduated: their enrollments are marked completed and their
+        <strong>sign-in is switched off</strong>. Their grades and records stay. You can restore a student later.
+    </p>
+    <div class="modal-actions">
+        <Button Variant="ButtonVariant.Ghost" OnClick="CloseArchive">Cancel</Button>
+        <Button IconName="archive" Disabled="busy" OnClick="ArchiveAsync">@(busy ? "Archiving…" : "Archive")</Button>
+    </div>
+</Modal>
+
+<Modal Open="restoreTarget is not null" Title="Restore this student?" OnClose="() => restoreTarget = null">
+    @if (restoreTarget is not null)
+    {
+        <p class="dialog-text"><strong>@restoreTarget.Name</strong> will be able to sign in again. The registrar has to enroll the student again to put them in a class.</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="() => restoreTarget = null">Cancel</Button>
+            <Button IconName="undo-2" Disabled="busy" OnClick="RestoreAsync">@(busy ? "Restoring…" : "Restore")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int userId;
+    private string tab = "graduating";
+    private IReadOnlyList<GraduateCandidate> candidates = [];
+    private IReadOnlyList<ArchivedStudent> archived = [];
+    private readonly HashSet<int> picked = [];
+    private string note = "";
+    private string searchText = "";
+    private bool confirmArchive;
+    private ArchivedStudent? restoreTarget;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        await LoadAsync();
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task LoadAsync()
+    {
+        candidates = await Lifecycle.GetGraduatingAsync();
+        archived = await Lifecycle.ListArchivedAsync(searchText);
+        picked.IntersectWith(candidates.Select(c => c.StudentId));
+    }
+
+    private void Pick(int id, bool on)
+    {
+        if (on) { picked.Add(id); } else { picked.Remove(id); }
+    }
+
+    private void PickAll(bool on)
+    {
+        picked.Clear();
+        if (on)
+        {
+            picked.UnionWith(candidates.Select(c => c.StudentId));
+        }
+    }
+
+    private async Task SearchAsync() => archived = await Lifecycle.ListArchivedAsync(searchText);
+
+    private void AskArchive() => confirmArchive = picked.Count > 0;
+
+    private void CloseArchive() => confirmArchive = false;
+
+    private async Task ArchiveAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Lifecycle.ArchiveAsync([.. picked], note, userId);
+            confirmArchive = false;
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            if (result.Succeeded)
+            {
+                picked.Clear();
+                note = "";
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task RestoreAsync()
+    {
+        if (restoreTarget is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Lifecycle.RestoreAsync(restoreTarget.StudentId, userId);
+            restoreTarget = null;
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

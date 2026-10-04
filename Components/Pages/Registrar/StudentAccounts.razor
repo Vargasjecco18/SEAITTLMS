@@ -6,13 +6,16 @@
 @using SEAITT_LMS.Services
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject EnrollmentService Enrollment
+@inject StudentLifecycleService Lifecycle
 @inject NavigationManager Navigation
 
 <PageTitle>Student's Accounts · SEAITT e-LMS</PageTitle>
 
 <PageHeader Title="Student's Accounts"
             Subtitle="@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")"
-            IconName="graduation-cap" />
+            IconName="graduation-cap">
+    <ButtonLink Href="registrar/withdrawals" Variant="ButtonVariant.Secondary" IconName="user-x">Withdrawals@(pendingWithdrawals > 0 ? $" ({pendingWithdrawals})" : "")</ButtonLink>
+</PageHeader>
 
 @if (lookups is not null && result is not null)
 {
@@ -133,12 +136,14 @@
 
     private EnrollmentLookups? lookups;
     private EnrollmentPage? result;
+    private int pendingWithdrawals;
 
     private bool HasFilter => !string.IsNullOrWhiteSpace(Q) || Term is not null || Strand is not null || Schedule is not null;
 
     protected override async Task OnInitializedAsync()
     {
         lookups = await Enrollment.GetLookupsAsync();
+        pendingWithdrawals = await Lifecycle.CountPendingAsync();
 
         await using var db = await DbFactory.CreateDbContextAsync();
         result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule), ParseNumber(PageText) ?? 1, PageSize);

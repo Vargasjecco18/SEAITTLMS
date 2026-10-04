@@ -1,0 +1,272 @@
+@page "/guidance/referrals"
+@attribute [Authorize(Roles = AppRoles.GuidanceCounselor)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ReferralService Desk
+
+<PageTitle>Referrals · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Referrals" Subtitle="Students the system sent to you. Open one to say what you did and how it ended." IconName="flag" />
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+<Card>
+    <form class="filters" @onsubmit="SearchAsync">
+        <Field For="r-status" Label="Status">
+            <select id="r-status" value="@status" @onchange="StatusChanged">
+                <option value="">All</option>
+                @foreach (var s in ReferralStatus.All)
+                {
+                    <option value="@s" selected="@(status == s)">@ReferralStatus.Display(s)</option>
+                }
+            </select>
+        </Field>
+        <Field For="r-reason" Label="Problem">
+            <select id="r-reason" value="@reason" @onchange="ReasonChanged">
+                <option value="">All</option>
+                @foreach (var r in ReferralReasons.All)
+                {
+                    <option value="@r" selected="@(reason == r)">@ReferralReasons.Display(r)</option>
+                }
+            </select>
+        </Field>
+        <Field For="r-search" Label="Search" Class="grow">
+            <input id="r-search" type="search" placeholder="Name, LRN or subject" autocomplete="off" @bind="searchText" />
+        </Field>
+        <div class="filter-actions">
+            <Button Type="submit" IconName="search">Search</Button>
+        </div>
+    </form>
+
+    @if (result is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (result.Items.Count == 0)
+    {
+        <EmptyState IconName="circle-check" Title="No referrals here">
+            <p>Referrals appear by themselves when a student's grade or attendance needs help.</p>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Student</th>
+                        <th scope="col">Problem</th>
+                        <th scope="col" class="col-more">Subject and teacher</th>
+                        <th scope="col" class="col-more">Since</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in result.Items)
+                    {
+                        <tr>
+                            <td>
+                                <span class="name">@r.StudentName</span>
+                                <span class="sub">@r.Lrn@(r.Placement is null ? "" : " · " + r.Placement)</span>
+                            </td>
+                            <td>
+                                <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
+                                <span class="detail">@r.Detail</span>
+                            </td>
+                            <td class="col-more">
+                                @(r.SubjectName ?? "—")
+                                <span class="sub">@r.TeacherName</span>
+                            </td>
+                            <td class="col-more">@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
+                            <td>
+                                <Badge Tone="@(r.Status == ReferralStatus.Open ? Tone.Danger : r.Status == ReferralStatus.InProgress ? Tone.Info : Tone.Success)">@ReferralStatus.Display(r.Status)</Badge>
+                                @if (r.Outcome is { } outcome)
+                                {
+                                    <span class="sub">@ReferralOutcomes.Display(outcome)</span>
+                                }
+                            </td>
+                            <td class="col-actions">
+                                <Button Small="true" Variant="@(r.Status == ReferralStatus.Resolved ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="pencil" OnClick="() => OpenAsync(r)">@(r.Status == ReferralStatus.Resolved ? "View" : "Work on it")</Button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (result.PageCount > 1)
+        {
+            <nav class="pager" aria-label="Pages">
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(result.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
+                <span class="muted">Page @result.Page of @result.PageCount · @result.Total referrals</span>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="NextAsync">Next</Button>
+            </nav>
+        }
+    }
+</Card>
+
+<Modal Open="current is not null" Title="@(current?.StudentName ?? "")" OnClose="Close" Large="true">
+    @if (current is not null)
+    {
+        <div class="facts">
+            <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(current.Reason)">@ReferralReasons.Display(current.Reason)</Badge>
+            <span>@current.Detail</span>
+        </div>
+        <p class="sub">@current.Lrn@(current.Placement is null ? "" : " · " + current.Placement)@(current.TeacherName is null ? "" : " · teacher " + current.TeacherName) · referred @PhilippineTime.FormatDate(current.CreatedAtUtc)</p>
+
+        <FormErrors Errors="formErrors" />
+
+        <div class="two">
+            <Field For="w-status" Label="Status">
+                <select id="w-status" value="@editStatus" @onchange="e => editStatus = e.Value?.ToString() ?? ReferralStatus.Open">
+                    @foreach (var s in ReferralStatus.All)
+                    {
+                        <option value="@s" selected="@(editStatus == s)">@ReferralStatus.Display(s)</option>
+                    }
+                </select>
+            </Field>
+            <Field For="w-help" Label="Help given">
+                <select id="w-help" value="@editIntervention" @onchange="e => editIntervention = e.Value?.ToString() ?? string.Empty">
+                    <option value="">Not decided yet</option>
+                    @foreach (var i in InterventionTypes.All)
+                    {
+                        <option value="@i" selected="@(editIntervention == i)">@i</option>
+                    }
+                </select>
+            </Field>
+        </div>
+
+        @if (editStatus == ReferralStatus.Resolved)
+        {
+            <Field For="w-outcome" Label="How did it end?" Required="true" Hint="This shows in the analytics, so you can see which help works.">
+                <select id="w-outcome" value="@editOutcome" @onchange="e => editOutcome = e.Value?.ToString() ?? string.Empty">
+                    <option value="">Choose</option>
+                    @foreach (var o in ReferralOutcomes.All)
+                    {
+                        <option value="@o" selected="@(editOutcome == o)">@(o == ReferralOutcomes.Improved ? "Improved" : "No change")</option>
+                    }
+                </select>
+            </Field>
+        }
+
+        <Field For="w-notes" Label="Notes" Hint="Only you can read these.">
+            <textarea id="w-notes" rows="4" maxlength="1000" value="@editNotes" @onchange="e => editNotes = e.Value?.ToString() ?? string.Empty"></textarea>
+        </Field>
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="Close">Cancel</Button>
+            <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [SupplyParameterFromQuery(Name = "status")] private string? StatusQuery { get; set; }
+
+    private int userId;
+    private string status = "";
+    private string reason = "";
+    private string searchText = "";
+    private string appliedSearch = "";
+    private int pageNumber = 1;
+    private ReferralPage? result;
+    private ReferralRow? current;
+    private string editStatus = ReferralStatus.Open;
+    private string editIntervention = "";
+    private string editNotes = "";
+    private string editOutcome = "";
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        status = ReferralStatus.All.Contains(StatusQuery ?? "") ? StatusQuery! : "";
+        await Desk.EvaluateAsync();
+        await LoadAsync();
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task LoadAsync() => result = await Desk.ListAsync(status == "" ? null : status, reason == "" ? null : reason, appliedSearch, pageNumber);
+
+    private async Task StatusChanged(ChangeEventArgs e)
+    {
+        status = e.Value?.ToString() ?? "";
+        pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task ReasonChanged(ChangeEventArgs e)
+    {
+        reason = e.Value?.ToString() ?? "";
+        pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        appliedSearch = searchText.Trim();
+        pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task PreviousAsync()
+    {
+        pageNumber--;
+        await LoadAsync();
+    }
+
+    private async Task NextAsync()
+    {
+        pageNumber++;
+        await LoadAsync();
+    }
+
+    private async Task OpenAsync(ReferralRow row)
+    {
+        formErrors = [];
+        current = await Desk.GetAsync(row.Id);
+        if (current is not null)
+        {
+            editStatus = current.Status;
+            editIntervention = current.Intervention ?? "";
+            editNotes = current.Notes ?? "";
+            editOutcome = current.Outcome ?? "";
+        }
+    }
+
+    private void Close() => current = null;
+
+    private async Task SaveAsync()
+    {
+        if (current is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var saved = await Desk.UpdateAsync(current.Id, editStatus, editIntervention, editNotes, editStatus == ReferralStatus.Resolved ? editOutcome : null, userId);
+            if (!saved.Succeeded)
+            {
+                formErrors = [.. saved.Errors];
+                return;
+            }
+
+            var name = current.StudentName;
+            current = null;
+            messageIsError = false;
+            message = $"{name}: {saved.Message}";
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

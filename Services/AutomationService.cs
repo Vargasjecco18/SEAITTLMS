@@ -135,6 +135,7 @@ public sealed class AutomationWorker(IServiceScopeFactory scopes, TimeProvider c
                 await AutomationService.NotifyNewContentAsync(dbFactory, notifications, now, stoppingToken);
                 await AutomationService.SendDueRemindersAsync(dbFactory, notifications, now, stoppingToken);
                 await QuizService.FinalizeExpiredAsync(dbFactory, now, stoppingToken);
+                await scope.ServiceProvider.GetRequiredService<ReferralService>().EvaluateAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

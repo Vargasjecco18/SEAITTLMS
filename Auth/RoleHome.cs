@@ -9,8 +9,9 @@ public static class RoleHome
     public const string Registrar = "/registrar";
     public const string Teacher = "/teacher";
     public const string Student = "/student";
+    public const string Guidance = "/guidance";
 
-    /// <summary>Guidance counselors have no page of their own yet, so they land on their account page.</summary>
+    /// <summary>Anybody else (a role without a page of its own) lands on their account page.</summary>
     public const string Account = "/account";
 
     public static string For(string? role) => role switch
@@ -19,6 +20,7 @@ public static class RoleHome
         AppRoles.Registrar => Registrar,
         AppRoles.Teacher => Teacher,
         AppRoles.Student => Student,
+        AppRoles.GuidanceCounselor => Guidance,
         _ => Account,
     };
 }

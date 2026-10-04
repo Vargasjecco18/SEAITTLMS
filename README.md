@@ -164,11 +164,11 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | Dashboard, **Users Management**, My account |
-| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, My account |
-| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Attendance**, **Gradebook**, **Calendar**, My account |
-| Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, My account |
-| Guidance counselor | `/account` | My account (their pages come next) |
+| Admin | `/admin` | Dashboard, **Users Management**, **Archive**, **Analytics**, My account |
+| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, **Withdrawals**, My account |
+| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Attendance**, **Gradebook**, **Analytics**, **Calendar**, My account |
+| Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, **Withdrawal**, My account |
+| Guidance counselor | `/guidance` | **Dashboard**, **Referrals**, **Students at risk**, **Analytics**, My account |
 
 The registrar pages belong to the registrar: **an administrator cannot open them**. To get a registrar, sign in as the
 administrator, open **Users Management > Registrars**, press **Add registrar** and give the person an email and a first
@@ -236,6 +236,45 @@ performance of a posted module is a column (with its highest score), and the las
 red, work waiting for a score says *To check* (click it to open the work). **Edit grades** turns a row into boxes; **Save**
 changes the scores (all of them are checked first, a wrong one saves nothing) and tells the student. Feedback the teacher wrote
 is kept.
+
+## Guidance counselor: referrals
+
+Nobody has to send a student to the guidance counselor: **the system refers them by itself**. It looks at every student (every minute, and when
+the counselor opens a page):
+
+| Problem | When |
+|---|---|
+| **Failing grades** | the grade in a subject is **below 70** |
+| **At risk** | the grade is from 70 up to 75, or **three or more works are missing** (due, posted, not handed in) |
+| **Not attending class** | attendance is **under 80%** over at least 5 marked days |
+
+Each problem becomes one referral for that student and subject (it is not repeated, and not sent again for 14 days after it was resolved) and the
+counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists them with filters
+(status, problem, name): press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
+called the parents, tutoring ...), notes only the counselor reads and, when resolving, how it ended (*Improved* or *No change*). A student is told
+when the counselor starts. **Students at risk** has a tab for *Failing*, *At risk* and *Not attending*, with the grade or attendance, the subject
+and the teacher.
+
+## Analytics
+
+**Analytics** (`/analytics`) is for the administrator and the guidance counselor (the whole school) and for a teacher (only their subjects). It shows
+the number of students, the average grade, the attendance rate, how many students are failing or at risk, the grades by band for each grade level
+(each subject for a teacher), the monthly trend of grades and attendance (a line chart), the **primary concern categories** (referrals by problem),
+the **intervention effectiveness** (how many resolved referrals improved, by the help given) and the performance by strand. Everything is worked
+out from the scores and the attendance that are recorded.
+
+## Graduation and withdrawal
+
+**Administrator > Archive**: the grade 12 students who are still at school are listed. Tick the ones who graduate (or **Select all**), add a note
+("Class of 2027") and **Archive selected**: they are marked *Graduated*, their enrollments are completed and their **sign-in is switched off**; their
+records stay. The *Archived* tab lists graduates and withdrawn students and can **Restore** one (the account works again; the registrar enrolls
+the student again for a class).
+
+**Student > Withdrawal**: a student who has to stop school can send the registrar a request with the reason (they have to tick that they understand
+their account is switched off if it is approved), and can cancel it while it waits. **Registrar > Withdrawals** (also a button on Student's
+Accounts, with the number waiting) shows the requests: **Approve withdrawal** archives the student as *Withdrawn* (enrollment dropped, sign-in off, the
+counselor is told); **Decline** needs a reason, which the student sees. The registrar can also withdraw a student directly by LRN. A student in the
+archive can't be enrolled until an administrator restores the account.
 
 ## Enrolling a student (registrar)
 
@@ -362,11 +401,12 @@ Components/Layout/         Header (with the messages, notifications and settings
 Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
 Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
-  Admin/                     Dashboard, UsersManagement
-  Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
+  Admin/                     Dashboard, UsersManagement, Archive
+  Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list), Withdrawals
   Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook
-  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades
-  Account/                   MyAccount, Search, Calendar (students and teachers)
+  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades, Withdrawal
+  Guidance/                  Dashboard, Referrals, StudentsAtRisk
+  Account/                   MyAccount, Search, Calendar (students and teachers), Analytics (admin, guidance, teachers)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it

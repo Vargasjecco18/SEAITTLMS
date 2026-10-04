@@ -1,0 +1,143 @@
+@page "/student/withdrawal"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject StudentLifecycleService Lifecycle
+
+<PageTitle>Withdrawal · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Withdrawal" Subtitle="If you have to stop school before finishing, you can ask the registrar here." IconName="user-x" />
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else
+{
+    var pending = requests.FirstOrDefault(r => r.Status == WithdrawalStatus.Pending);
+    <div class="layout">
+        <div class="main">
+            @if (pending is not null)
+            {
+                <Card Title="Your request" IconName="hourglass">
+                    <p><Badge Tone="Tone.Warning">Waiting for the registrar</Badge> <span class="muted">sent @PhilippineTime.FormatDateTime(pending.RequestedAtUtc)</span></p>
+                    <blockquote>@pending.Reason</blockquote>
+                    <p class="muted">The registrar will answer your request. You can still use the system until then. You can cancel the request if you changed your mind.</p>
+                    <Button Variant="ButtonVariant.Secondary" IconName="undo-2" Disabled="busy" OnClick="() => CancelAsync(pending)">Cancel my request</Button>
+                </Card>
+            }
+            else
+            {
+                <Card Title="Ask to withdraw" IconName="user-x">
+                    <p class="lead">Please talk with your teachers and the guidance counselor first, they may be able to help. If you still have to leave, tell the registrar why.</p>
+                    <FormErrors Errors="formErrors" />
+                    <Field For="w-reason" Label="Why do you want to withdraw?" Required="true" Hint="At least 10 characters. The registrar and the guidance counselor will read this.">
+                        <textarea id="w-reason" rows="5" maxlength="500" value="@reason" @onchange="e => reason = e.Value?.ToString() ?? string.Empty"></textarea>
+                    </Field>
+                    <label class="confirm">
+                        <input type="checkbox" checked="@understood" @onchange="e => understood = e.Value is true" />
+                        <span>I understand that if the registrar approves, my account is switched off and I am no longer enrolled.</span>
+                    </label>
+                    <div class="actions">
+                        <Button Variant="ButtonVariant.Danger" IconName="send" Disabled="@(busy || !understood)" OnClick="SendAsync">@(busy ? "Sending…" : "Send request")</Button>
+                    </div>
+                </Card>
+            }
+        </div>
+
+        <aside class="side">
+            <Card Title="Your requests" IconName="clock">
+                @if (requests.Count == 0)
+                {
+                    <p class="muted">You have not asked yet.</p>
+                }
+                else
+                {
+                    <ul class="history">
+                        @foreach (var r in requests)
+                        {
+                            <li>
+                                <div><Badge Tone="@StatusTone(r.Status)">@r.Status</Badge> <span class="muted">@PhilippineTime.FormatDate(r.RequestedAtUtc)</span></div>
+                                @if (!string.IsNullOrWhiteSpace(r.DecisionNote))
+                                {
+                                    <p class="note">Registrar: @r.DecisionNote</p>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+        </aside>
+    </div>
+}
+
+@code {
+    private int studentId;
+    private bool loaded;
+    private IReadOnlyList<WithdrawalRow> requests = [];
+    private string reason = "";
+    private bool understood;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        studentId = await Me.GetStudentIdAsync() ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task LoadAsync() => requests = studentId == 0 ? [] : await Lifecycle.GetStudentRequestsAsync(studentId);
+
+    private static Tone StatusTone(string status) => status switch
+    {
+        WithdrawalStatus.Approved => Tone.Success,
+        WithdrawalStatus.Declined => Tone.Danger,
+        WithdrawalStatus.Pending => Tone.Warning,
+        _ => Tone.Neutral,
+    };
+
+    private async Task SendAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Lifecycle.RequestWithdrawalAsync(studentId, reason);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            formErrors = [];
+            reason = "";
+            understood = false;
+            messageIsError = false;
+            message = result.Message;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task CancelAsync(WithdrawalRow request)
+    {
+        var result = await Lifecycle.CancelRequestAsync(studentId, request.Id);
+        messageIsError = !result.Succeeded;
+        message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+        await LoadAsync();
+    }
+}

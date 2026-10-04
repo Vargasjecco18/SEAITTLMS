@@ -1,0 +1,119 @@
+.layout {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (min-width: 1000px) {
+    .layout {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+}
+
+.lead {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+.requests {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.request {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.request.pending { border-left-color: var(--amber); }
+.request.approved { border-left-color: var(--green); }
+.request.declined { border-left-color: var(--border); }
+
+.request-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.name {
+    display: block;
+    font-weight: 700;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+}
+
+blockquote {
+    margin: 0.7rem 0;
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.request-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.find {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+}
+
+.find ::deep .grow {
+    flex: 1;
+}
+
+.find-button {
+    margin-bottom: 1rem;
+}
+
+.error {
+    margin: 0 0 1rem;
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.found {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-bottom: 1rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+}
+
+.actions,
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+.dialog-text {
+    margin: 0 0 1.1rem;
+}

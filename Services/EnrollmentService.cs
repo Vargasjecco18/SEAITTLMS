@@ -304,6 +304,11 @@ public sealed partial class EnrollmentService(
 
             if (student is not null)
             {
+                if (student.Status != StudentStatus.Active)
+                {
+                    return EnrollmentResult.Fail($"{student.FullName} is in the archive ({student.Status.ToLowerInvariant()}). Ask an administrator to restore the student first.");
+                }
+
                 if (await db.Enrollments.AnyAsync(e => e.StudentId == student.Id && e.TermId == term!.Id, ct))
                 {
                     return EnrollmentResult.Fail($"{student.FullName} is already enrolled for the {term!.Name} of {term.SchoolYear.Name}.");

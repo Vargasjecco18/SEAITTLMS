@@ -74,6 +74,14 @@ public class Student : PersonProfile, IHasPlacement
     public int? StrandId { get; set; }
     public int? SubjectId { get; set; }
     public int? SectionId { get; set; }
+
+    /// <summary>One of <see cref="StudentStatus"/>. A graduated or withdrawn student is archived.</summary>
+    public string Status { get; set; } = StudentStatus.Active;
+
+    public DateTime? StatusChangedAtUtc { get; set; }
+
+    /// <summary>Why: "Graduated with the class of 2027", the reason of a withdrawal ...</summary>
+    public string? StatusNote { get; set; }
 }
 
 /// <summary>Shared shape of the staff tables (teachers, registrars, guidance counselors, administrators).</summary>

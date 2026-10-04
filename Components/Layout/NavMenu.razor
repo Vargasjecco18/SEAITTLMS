@@ -11,6 +11,14 @@
             <Icon Name="users" />
             <span>Users Management</span>
         </NavLink>
+        <NavLink class="link" href="admin/archive">
+            <Icon Name="archive" />
+            <span>Archive</span>
+        </NavLink>
+        <NavLink class="link" href="analytics">
+            <Icon Name="chart-column" />
+            <span>Analytics</span>
+        </NavLink>
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Registrar">
@@ -27,6 +35,10 @@
         <NavLink class="link" href="registrar/student-accounts">
             <Icon Name="graduation-cap" />
             <span>Student's Accounts</span>
+        </NavLink>
+        <NavLink class="link" href="registrar/withdrawals">
+            <Icon Name="user-x" />
+            <span>Withdrawals</span>
         </NavLink>
     </AuthorizeView>
 
@@ -48,6 +60,10 @@
         <NavLink class="link" href="teacher/gradebook">
             <Icon Name="clipboard-list" />
             <span>Gradebook</span>
+        </NavLink>
+        <NavLink class="link" href="analytics">
+            <Icon Name="chart-column" />
+            <span>Analytics</span>
         </NavLink>
         <NavLink class="link" href="calendar">
             <Icon Name="calendar-days" />
@@ -76,10 +92,38 @@
         </NavLink>
     </AuthorizeView>
 
+    <AuthorizeView Roles="@AppRoles.GuidanceCounselor">
+        <p class="heading">Guidance</p>
+
+        <NavLink class="link" href="guidance" Match="NavLinkMatch.All">
+            <Icon Name="layout-dashboard" />
+            <span>Dashboard</span>
+        </NavLink>
+        <NavLink class="link" href="guidance/referrals">
+            <Icon Name="flag" />
+            <span>Referrals</span>
+        </NavLink>
+        <NavLink class="link" href="guidance/students">
+            <Icon Name="triangle-alert" />
+            <span>Students at risk</span>
+        </NavLink>
+        <NavLink class="link" href="analytics">
+            <Icon Name="chart-column" />
+            <span>Analytics</span>
+        </NavLink>
+    </AuthorizeView>
+
     <p class="heading">Account</p>
 
     <NavLink class="link" href="account">
         <Icon Name="id-card" />
         <span>My account</span>
     </NavLink>
+
+    <AuthorizeView Roles="@AppRoles.Student">
+        <NavLink class="link" href="student/withdrawal">
+            <Icon Name="user-x" />
+            <span>Withdrawal</span>
+        </NavLink>
+    </AuthorizeView>
 </nav>
