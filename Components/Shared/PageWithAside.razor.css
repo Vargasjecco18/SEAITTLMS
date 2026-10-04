@@ -1,0 +1,22 @@
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.split-main {
+    min-width: 0;
+}
+
+.split-aside {
+    display: grid;
+    gap: 1.25rem;
+    min-width: 0;
+}
+
+@media (min-width: 1180px) {
+    .split {
+        grid-template-columns: minmax(0, 1fr) 21rem;
+    }
+}

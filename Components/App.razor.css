@@ -238,3 +238,28 @@ html[data-motion="off"] ::deep *::after {
         scroll-behavior: auto !important;
     }
 }
+
+/* A plain box that is not inside a Field (the to-do list, filters ...): the same look as the boxes of a Field. */
+html ::deep .input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+html ::deep .input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+html ::deep .input:disabled {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}

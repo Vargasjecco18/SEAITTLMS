@@ -925,5 +925,23 @@ CREATE INDEX `ix_teaching_assignments_teacher_id` ON `teaching_assignments` (`te
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004174532_AddSubjectsModulesAndSubmissions', '9.0.20');
 
+CREATE TABLE `todo_items` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `due_on` date NULL,
+    `is_done` tinyint(1) NOT NULL,
+    `done_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_todo_items` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_todo_items_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_todo_items_user_id_is_done_due_on` ON `todo_items` (`user_id`, `is_done`, `due_on`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004184220_AddTodoItems', '9.0.20');
+
 COMMIT;
 

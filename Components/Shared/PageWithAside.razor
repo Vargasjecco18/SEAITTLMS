@@ -1,0 +1,14 @@
+@* A page with a column of widgets at its right (a small calendar, the to-do list, ...) so the screen has no empty space.
+   On a narrow screen the widgets go under the page. Show = which widgets, like "calendar,todo,upnext". *@
+<div class="split">
+    <div class="split-main">@ChildContent</div>
+    <aside class="split-aside" aria-label="Calendar and to-do">
+        <AsideWidgets Show="@Show" />
+    </aside>
+</div>
+
+@code {
+    [Parameter] public string Show { get; set; } = "calendar,todo,upnext";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

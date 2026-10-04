@@ -1,0 +1,134 @@
+@* The widgets of the right column. It is its own live island, so its calendar and to-do list work on pages that are otherwise plain. *@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject CalendarService Events
+@inject DashboardService Dashboards
+@inject AchievementService Achievements
+@inject TimeProvider Clock
+
+@if (role is not null)
+{
+    <div class="widgets">
+        @foreach (var widget in order)
+        {
+            @switch (widget)
+            {
+                case "calendar":
+                    <MiniCalendar />
+                    break;
+                case "todo":
+                    <TodoWidget />
+                    break;
+                case "upnext":
+                    <Card Title="Up next" IconName="alarm-clock">
+                        @if (upNext.Count == 0)
+                        {
+                            <p class="quiet">Nothing is due in the next two weeks.</p>
+                        }
+                        else
+                        {
+                            <ul class="next">
+                                @foreach (var e in upNext)
+                                {
+                                    <li>
+                                        <span class="kind @e.Kind.ToLowerInvariant()"><Icon Name="@CalendarKinds.Icon(e.Kind)" Size="16" /></span>
+                                        <span class="next-text">
+                                            @if (e.Href is not null)
+                                            {
+                                                <a href="@e.Href">@e.Title</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="next-title">@e.Title</span>
+                                            }
+                                            <small>@e.Subtitle</small>
+                                        </span>
+                                        <span class="when @(e.Overdue ? "late" : "")">@WhenText(e)</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </Card>
+                    break;
+                case "achievements":
+                    <AchievementsWidget Items="achievements" />
+                    break;
+                case "tocheck":
+                    <Card Title="Needs your attention" IconName="clipboard-list">
+                        @if (toCheck is null || (toCheck.ToCheck == 0 && toCheck.FlaggedCount == 0 && toCheck.DraftCount == 0))
+                        {
+                            <p class="quiet">All caught up. Nothing waits for you.</p>
+                        }
+                        else
+                        {
+                            <ul class="attention">
+                                @if (toCheck.ToCheck > 0)
+                                {
+                                    <li><Badge Tone="Tone.Warning">@toCheck.ToCheck</Badge> @(toCheck.ToCheck == 1 ? "piece of work" : "pieces of work") to check @if (toCheck.Unchecked.Count > 0) { <a href="teacher/items/@toCheck.Unchecked[0].ItemId">Start with @toCheck.Unchecked[0].Title</a> }</li>
+                                }
+
+                                @if (toCheck.FlaggedCount > 0)
+                                {
+                                    <li><Badge Tone="Tone.Danger">@toCheck.FlaggedCount</Badge> flagged quiz @(toCheck.FlaggedCount == 1 ? "attempt" : "attempts") @if (toCheck.Flagged.Count > 0) { <a href="teacher/items/@toCheck.Flagged[0].ItemId">Look at it</a> }</li>
+                                }
+
+                                @if (toCheck.DraftCount > 0)
+                                {
+                                    <li><Badge Tone="Tone.Info">@toCheck.DraftCount</Badge> @(toCheck.DraftCount == 1 ? "module is" : "modules are") not posted yet @if (toCheck.Drafts.Count > 0) { <a href="teacher/subjects/@toCheck.Drafts[0].AssignmentId">Open</a> }</li>
+                                }
+                            </ul>
+                        }
+                    </Card>
+                    break;
+            }
+        }
+    </div>
+}
+
+@code {
+    /// <summary>Which widgets, in this order: calendar, todo, upnext, achievements, tocheck.</summary>
+    [Parameter] public string Show { get; set; } = "calendar,todo,upnext";
+
+    private string? role;
+    private string[] order = [];
+    private List<CalendarEvent> upNext = [];
+    private IReadOnlyList<Achievement> achievements = [];
+    private TeacherDashboard? toCheck;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Me.GetAsync();
+        role = user?.Role;
+        if (user is null || (role != AppRoles.Student && role != AppRoles.Teacher))
+        {
+            role = null;
+            return;
+        }
+
+        order = Show.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(w => w switch { "achievements" => role == AppRoles.Student, "tocheck" => role == AppRoles.Teacher, _ => true })
+            .ToArray();
+
+        if (order.Contains("upnext"))
+        {
+            var today = PhilippineTime.Today(Clock);
+            var now = Clock.GetUtcNow().UtcDateTime;
+            upNext = (await Events.GetEventsAsync(user, today, today.AddDays(13)))
+                .Where(e => !e.Done && e.Kind != CalendarKinds.Module && (e.AtUtc is null || e.AtUtc >= now || e.Overdue))
+                .Take(5).ToList();
+        }
+
+        if (order.Contains("achievements") && await Me.GetStudentIdAsync() is { } studentId)
+        {
+            achievements = await Achievements.GetAsync(studentId);
+        }
+
+        if (order.Contains("tocheck") && await Me.GetTeacherIdAsync() is { } teacherId)
+        {
+            toCheck = await Dashboards.GetTeacherAsync(teacherId);
+        }
+    }
+
+    private string WhenText(CalendarEvent e) =>
+        e.AtUtc is { } at ? PhilippineTime.DueText(at, PhilippineTime.Now(Clock)).Replace("due ", "") : PhilippineTime.FormatDate(e.Day);
+}

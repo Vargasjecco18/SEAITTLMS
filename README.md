@@ -166,8 +166,8 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 |---|---|---|
 | Admin | `/admin` | Dashboard, **Users Management**, My account |
 | Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, My account |
-| Teacher | `/teacher/subjects` | **Subjects** (modules, activities, quizzes, task performances, grading), My account |
-| Student | `/student/subjects` | **Subjects** (modules, work, quizzes), My account |
+| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Calendar**, My account |
+| Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, My account |
 | Guidance counselor | `/account` | My account (their pages come next) |
 
 The registrar pages belong to the registrar: **an administrator cannot open them**. To get a registrar, sign in as the
@@ -198,6 +198,30 @@ module's text. A module that was never opened is marked **New**.
 The code: `Services/TeachingService.cs`, `ModuleService.cs`, `WorkService.cs`, `QuizService.cs`, `AutomationService.cs`
 (the background job), the pages in `Components/Pages/Teacher/` and `Components/Pages/Student/`, and the anti-cheating watch in
 `wwwroot/app.js` (`seaitt.startQuizGuard`).
+
+## Dashboards, calendar and the widgets at the right
+
+**Student > Dashboard** (`/student`) shows what to do first: the work still to do with its due dates (overdue ones in red), the
+modules not opened yet, the grade of every subject, the latest scores and the **achievements** (perfect score, high grades,
+quiz ace, always on time, curious mind: earned ones are colored, the others show how far you are).
+
+**Teacher > Dashboard** (`/teacher`) shows the **unchecked activities** (work handed in that still needs a score), the
+deadlines of the next two weeks with who handed in, the modules students can't see yet (drafts and scheduled ones) and the
+quiz attempts the anti-cheating watch flagged.
+
+The column at the right of the dashboards, the subject pages and the grades page (`Components/Shared/AsideWidgets.razor`) holds a
+small **calendar** (a dot on every day with something, click a day to see it), the **to-do list** (add, check off, delete; each
+person has their own) and an **Up next** list, so the screen has no empty space. On a phone the widgets go under the page.
+
+**Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next. It shows the
+deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), and the
+to-do entries that have a date. Done work is struck through, overdue work is red. Click a day number to open its week.
+
+**Student > Grades** (`/student/grades`) is the grade and progress page: the average of every subject (points earned divided by
+points possible of the graded work), the passing mark of 70 drawn on the bars, the latest scores, and the graded works of
+each subject. A grade under 70 is shown in red with a warning; a quiz whose result the teacher hides is not counted yet.
+
+The code: `Services/DashboardService.cs`, `CalendarService.cs`, `TodoService.cs`, `GradeService.cs`, `AchievementService.cs`.
 
 ## Enrolling a student (registrar)
 
@@ -326,9 +350,9 @@ Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
   Admin/                     Dashboard, UsersManagement
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
-  Teacher/                   Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder
-  Student/                   Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake
-  Account/                   MyAccount, Search
+  Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder
+  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades
+  Account/                   MyAccount, Search, Calendar (students and teachers)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it

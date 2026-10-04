@@ -1,0 +1,122 @@
+@* A small month calendar with a dot on every day that has something (a deadline, a module, a to-do). Click a day to see what is on it. *@
+@inject CurrentUser Me
+@inject CalendarService Events
+@inject TimeProvider Clock
+
+<Card Title="Calendar" IconName="calendar-days">
+    <div class="mini">
+        <div class="mini-head">
+            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="chevron-left" Title="Previous month" OnClick="PreviousAsync" />
+            <strong class="mini-title" aria-live="polite">@month.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</strong>
+            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="chevron-right" Title="Next month" OnClick="NextAsync" />
+        </div>
+
+        <div class="grid" role="grid" aria-label="@month.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)">
+            @foreach (var name in DayNames)
+            {
+                <span class="dow" role="columnheader">@name</span>
+            }
+
+            @foreach (var day in Days)
+            {
+                var kinds = EventsOn(day).Select(e => e.Overdue ? "late" : e.Kind.ToLowerInvariant()).Distinct().Take(3).ToList();
+                <button type="button" role="gridcell" class="day @(day.Month != month.Month ? "other" : "") @(day == today ? "today" : "") @(day == selected ? "picked" : "")"
+                        aria-label="@Describe(day)" aria-pressed="@(day == selected ? "true" : "false")" @onclick="() => Pick(day)">
+                    <span class="num">@day.Day</span>
+                    <span class="dots">
+                        @foreach (var kind in kinds)
+                        {
+                            <i class="dot @kind"></i>
+                        }
+                    </span>
+                </button>
+            }
+        </div>
+
+        <div class="picked-list">
+            <p class="picked-date">@PhilippineTime.FormatLongDate(new DateTimeOffset(selected.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(8)))</p>
+            @{
+                var onDay = EventsOn(selected).ToList();
+            }
+            @if (onDay.Count == 0)
+            {
+                <p class="nothing">Nothing planned.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var e in onDay)
+                    {
+                        <li class="@(e.Done ? "done" : "") @(e.Overdue ? "late" : "")">
+                            <span class="kind-dot @e.Kind.ToLowerInvariant()"></span>
+                            @if (e.Href is not null)
+                            {
+                                <a href="@e.Href">@e.Title</a>
+                            }
+                            else
+                            {
+                                <span>@e.Title</span>
+                            }
+
+                            @if (e.AtUtc is { } at)
+                            {
+                                <small>@PhilippineTime.FormatTime(at)</small>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+
+            <a class="full" href="calendar?date=@selected.ToString("yyyy-MM-dd")">Open the full calendar <Icon Name="arrow-right" Size="14" /></a>
+        </div>
+    </div>
+</Card>
+
+@code {
+    private static readonly string[] DayNames = ["S", "M", "T", "W", "T", "F", "S"];
+
+    private DateOnly today;
+    private DateOnly month;
+    private DateOnly selected;
+    private IReadOnlyList<CalendarEvent> events = [];
+    private DateOnly gridStart;
+
+    private IEnumerable<DateOnly> Days => Enumerable.Range(0, 42).Select(n => gridStart.AddDays(n));
+
+    protected override async Task OnInitializedAsync()
+    {
+        today = PhilippineTime.Today(Clock);
+        selected = today;
+        month = new DateOnly(today.Year, today.Month, 1);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        gridStart = month.AddDays(-(int)month.DayOfWeek);
+        var user = await Me.GetAsync();
+        events = user is null ? [] : await Events.GetEventsAsync(user, gridStart, gridStart.AddDays(41));
+    }
+
+    private IEnumerable<CalendarEvent> EventsOn(DateOnly day) => events.Where(e => e.Day == day);
+
+    private string Describe(DateOnly day)
+    {
+        var count = EventsOn(day).Count();
+        return day.ToString("MMMM d", System.Globalization.CultureInfo.InvariantCulture) + (count == 0 ? "" : $", {count} {(count == 1 ? "event" : "events")}");
+    }
+
+    private void Pick(DateOnly day) => selected = day;
+
+    private async Task PreviousAsync()
+    {
+        month = month.AddMonths(-1);
+        await LoadAsync();
+    }
+
+    private async Task NextAsync()
+    {
+        month = month.AddMonths(1);
+        await LoadAsync();
+    }
+}

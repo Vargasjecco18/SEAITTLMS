@@ -66,6 +66,8 @@ erDiagram
     modules ||--o{ module_views : "opened by"
     students ||--o{ module_views : ""
 
+    users ||--o{ todo_items : "to-do list"
+
     users ||--o{ messages : "sender"
     users ||--o{ messages : "recipient"
     users ||--o{ notifications : ""
@@ -182,6 +184,7 @@ registrar who did it.
 | `quiz_questions` | The questions of a quiz: `kind` (`MultipleChoice`, `TrueFalse`, `ShortAnswer`), `text`, `options_text` (one choice per line), `correct_answer` (for a short answer several accepted answers separated by `\|`) and `points`. |
 | `submissions` | One piece of work per student and item (`unique (item_id, student_id)`): `status` (`InProgress`, `Submitted`, `Graded`), `answer_text`, `link_url`, `score`, `feedback`, `is_late`. For quizzes also the answers and the order of the questions (`answers_json`), and the anti-cheating watch: `violation_count`, `violation_log`, `is_flagged`, `auto_submit_reason` (`time` or `violations`). |
 | `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
+| `todo_items` | A person's own to-do list (students and teachers): `user_id`, `title`, `due_on` (a date, or empty), `is_done`, `done_at_utc`. Deleted with the account. |
 
 Deleting a teacher deletes their assignments, and with them the modules, items and handed-in work. Deleting a student
 deletes their work and module views (their enrollments are deleted first, see below). A section or a subject can't be
@@ -269,6 +272,9 @@ Things that were decided for you, change them in the tables if they are not righ
   Questions can't be changed once a student has started the quiz. The background job (`AutomationWorker`, once a minute)
   tells students when a module or an item appears (once each), reminds them 24 hours before a deadline, and hands in
   quizzes whose time ran out.
+- Grades are not stored: a subject's grade is the points earned divided by the points possible of the graded work
+  (`GradeService`), 70 is the passing mark (`GradeRules.PassingPercent`). Achievements are worked out the same way
+  (`AchievementService`). The calendar is built from due dates, posting times and to-do dates (`CalendarService`).
 - Only one term should have `is_current = 1` (MySQL has no partial unique index for this).
 - A profile row must match the user's role. Use `UserAccountService.CreateAsync` to create accounts.
 - The subjects picked for an enrollment must belong to the strand's curriculum for that grade level and term, and at least

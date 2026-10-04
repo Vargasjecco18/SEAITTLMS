@@ -33,18 +33,38 @@
     <AuthorizeView Roles="@AppRoles.Teacher">
         <p class="heading">Teaching</p>
 
+        <NavLink class="link" href="teacher" Match="NavLinkMatch.All">
+            <Icon Name="layout-dashboard" />
+            <span>Dashboard</span>
+        </NavLink>
         <NavLink class="link" href="teacher/subjects">
             <Icon Name="book-open" />
             <span>Subjects</span>
+        </NavLink>
+        <NavLink class="link" href="calendar">
+            <Icon Name="calendar-days" />
+            <span>Calendar</span>
         </NavLink>
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Student">
         <p class="heading">Learning</p>
 
+        <NavLink class="link" href="student" Match="NavLinkMatch.All">
+            <Icon Name="layout-dashboard" />
+            <span>Dashboard</span>
+        </NavLink>
         <NavLink class="link" href="student/subjects">
             <Icon Name="book-open" />
             <span>Subjects</span>
+        </NavLink>
+        <NavLink class="link" href="student/grades">
+            <Icon Name="trending-up" />
+            <span>Grades</span>
+        </NavLink>
+        <NavLink class="link" href="calendar">
+            <Icon Name="calendar-days" />
+            <span>Calendar</span>
         </NavLink>
     </AuthorizeView>
 

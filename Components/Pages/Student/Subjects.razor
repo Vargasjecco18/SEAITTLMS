@@ -8,6 +8,8 @@
 
 <PageHeader Title="Subjects" Subtitle="Every subject you are enrolled in. Open one to read its modules and do its work." IconName="book-open" />
 
+<PageWithAside Show="calendar,todo,upnext">
+
 @if (cards is null)
 {
     <p class="muted">Loading…</p>
@@ -136,6 +138,7 @@ else
         </div>
     }
 }
+</PageWithAside>
 
 @code {
     [SupplyParameterFromQuery(Name = "term")] private string? Term { get; set; }

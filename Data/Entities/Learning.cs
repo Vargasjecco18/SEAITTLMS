@@ -210,3 +210,18 @@ public class ModuleView
 
     public DateTime FirstOpenedAtUtc { get; set; }
 }
+
+/// <summary>A person's own to-do list entry (students and teachers). Shown on the dashboard, in the side widgets and on the calendar.</summary>
+public class TodoItem : AuditableEntity
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+
+    public string Title { get; set; } = "";
+
+    /// <summary>The day it should be done by, or empty.</summary>
+    public DateOnly? DueOn { get; set; }
+
+    public bool IsDone { get; set; }
+    public DateTime? DoneAtUtc { get; set; }
+}

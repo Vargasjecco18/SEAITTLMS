@@ -1,0 +1,34 @@
+@* The badges a student earns for their grades, handing in on time, perfect scores and so on. Badges not earned yet show how far along the student is. *@
+<Card Title="Achievements" IconName="trophy">
+    @if (Items.Count == 0)
+    {
+        <p class="quiet">Your achievements show up here as you do your work.</p>
+    }
+    else
+    {
+        var earned = Items.Count(a => a.Earned);
+        <p class="summary"><strong>@earned</strong> of @Items.Count earned</p>
+        <ul class="badges">
+            @foreach (var a in Items)
+            {
+                <li class="badge-tile @(a.Earned ? "earned" : "locked") @a.Color.ToString().ToLowerInvariant()" title="@a.Description">
+                    <span class="medal"><Icon Name="@a.Icon" Size="22" /></span>
+                    <span class="badge-title">@a.Title</span>
+                    @if (a.Earned)
+                    {
+                        <span class="badge-state"><Icon Name="circle-check" Size="13" /> @(a.Detail ?? "Earned")</span>
+                    }
+                    else
+                    {
+                        <span class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="@a.Target" aria-valuenow="@a.Progress" aria-label="@($"{a.Title}: {a.Progress} of {a.Target}")"><i style="width: @(a.Target == 0 ? 0 : a.Progress * 100 / a.Target)%"></i></span>
+                        <span class="badge-state muted">@(a.Detail ?? $"{a.Progress} / {a.Target}")</span>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</Card>
+
+@code {
+    [Parameter] public IReadOnlyList<Achievement> Items { get; set; } = [];
+}

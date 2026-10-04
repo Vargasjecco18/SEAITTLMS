@@ -1,0 +1,124 @@
+@* The person's own to-do list: add things, check them off, delete them. *@
+@inject CurrentUser Me
+@inject TodoService Todos
+@inject TimeProvider Clock
+
+<Card Title="To-do list" IconName="list-checks">
+    <form class="add" @onsubmit="AddAsync">
+        <label class="sr-only" for="todo-title">What do you have to do?</label>
+        <input id="todo-title" type="text" class="input add-title" placeholder="Add something to do" maxlength="200" autocomplete="off" @bind="title" @bind:event="oninput" />
+        <label class="sr-only" for="todo-due">Due date</label>
+        <input id="todo-due" type="date" class="input add-date" value="@dueText" @onchange="SetDue" />
+        <Button Type="submit" Small="true" IconName="plus" Title="Add" Disabled="@(string.IsNullOrWhiteSpace(title))">Add</Button>
+    </form>
+
+    @if (error is not null)
+    {
+        <p class="error" role="alert">@error</p>
+    }
+
+    @if (list is null)
+    {
+        <p class="quiet">Loading…</p>
+    }
+    else
+    {
+        @if (list.Open.Count == 0)
+        {
+            <p class="quiet">Nothing to do. Add something above.</p>
+        }
+        else
+        {
+            <ul class="items">
+                @foreach (var item in list.Open)
+                {
+                    var entry = item;
+                    <li class="@(entry.IsOverdue ? "late" : "")">
+                        <label class="check">
+                            <input type="checkbox" checked="@false" @onchange="() => SetDoneAsync(entry, true)" aria-label="@($"Done: {entry.Title}")" />
+                            <span class="text">@entry.Title</span>
+                        </label>
+                        <button type="button" class="remove" title="Delete" aria-label="@($"Delete: {entry.Title}")" @onclick="() => DeleteAsync(entry)"><Icon Name="x" Size="14" /></button>
+                        @if (entry.DueOn is { } due)
+                        {
+                            <span class="due">@(entry.IsOverdue ? "Overdue · " : "")@PhilippineTime.FormatDate(due)</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (list.Done.Count > 0)
+        {
+            <details class="done">
+                <summary>Done (@list.Done.Count)</summary>
+                <ul class="items">
+                    @foreach (var item in list.Done)
+                    {
+                        var entry = item;
+                        <li class="finished">
+                            <label class="check">
+                                <input type="checkbox" checked="@true" @onchange="() => SetDoneAsync(entry, false)" aria-label="@($"Not done: {entry.Title}")" />
+                                <span class="text">@entry.Title</span>
+                            </label>
+                            <button type="button" class="remove" title="Delete" aria-label="@($"Delete: {entry.Title}")" @onclick="() => DeleteAsync(entry)"><Icon Name="x" Size="14" /></button>
+                        </li>
+                    }
+                </ul>
+                <button type="button" class="clear" @onclick="ClearDoneAsync">Clear the done ones</button>
+            </details>
+        }
+    }
+</Card>
+
+@code {
+    private int userId;
+    private TodoList? list;
+    private string title = "";
+    private string dueText = "";
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => list = userId == 0 ? new TodoList([], []) : await Todos.GetAsync(userId);
+
+    private void SetDue(ChangeEventArgs e) => dueText = e.Value?.ToString() ?? "";
+
+    private async Task AddAsync()
+    {
+        DateOnly? due = DateOnly.TryParseExact(dueText, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
+        var result = await Todos.AddAsync(userId, title, due);
+        if (!result.Succeeded)
+        {
+            error = string.Join(" ", result.Errors);
+            return;
+        }
+
+        error = null;
+        title = "";
+        dueText = "";
+        await LoadAsync();
+    }
+
+    private async Task SetDoneAsync(TodoEntry entry, bool done)
+    {
+        await Todos.SetDoneAsync(userId, entry.Id, done);
+        await LoadAsync();
+    }
+
+    private async Task DeleteAsync(TodoEntry entry)
+    {
+        await Todos.DeleteAsync(userId, entry.Id);
+        await LoadAsync();
+    }
+
+    private async Task ClearDoneAsync()
+    {
+        await Todos.ClearDoneAsync(userId);
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,89 @@
+.widgets {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.quiet {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.next,
+.attention {
+    display: grid;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.next li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.kind {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.kind.quiz { background: var(--violet-soft); color: var(--violet); }
+.kind.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.kind.module { background: var(--green-soft); color: var(--green); }
+.kind.todo { background: var(--slate-soft); color: var(--slate); }
+
+.next-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.next-text a,
+.next-title {
+    color: var(--text);
+    font-weight: 650;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.next-text a:hover {
+    color: var(--brand-strong);
+    text-decoration: underline;
+}
+
+.next-text small {
+    color: var(--text-muted);
+}
+
+.when {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.when.late {
+    color: var(--danger);
+}
+
+.attention li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+}
+
+.attention a {
+    color: var(--brand-strong);
+    font-weight: 600;
+}

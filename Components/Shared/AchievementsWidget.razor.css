@@ -1,0 +1,109 @@
+.quiet {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.summary {
+    margin: 0 0 0.8rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.summary strong {
+    color: var(--text);
+}
+
+.badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.badge-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.8rem 0.5rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    text-align: center;
+}
+
+.medal {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--slate-soft);
+    color: var(--slate);
+    filter: grayscale(1);
+    opacity: 0.8;
+}
+
+.earned {
+    animation: pop 0.45s ease-out both;
+}
+
+.earned .medal {
+    filter: none;
+    opacity: 1;
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.blue { --accent: var(--blue); --accent-soft: var(--blue-soft); }
+.green { --accent: var(--green); --accent-soft: var(--green-soft); }
+.amber { --accent: var(--amber); --accent-soft: var(--amber-soft); }
+.violet { --accent: var(--violet); --accent-soft: var(--violet-soft); }
+.rose { --accent: var(--rose); --accent-soft: var(--rose-soft); }
+.slate { --accent: var(--slate); --accent-soft: var(--slate-soft); }
+
+.badge-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.badge-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--success);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-state.muted {
+    color: var(--text-muted);
+}
+
+.progress {
+    display: block;
+    width: 80%;
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.progress i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand);
+    transition: width 0.4s ease;
+}
+
+@keyframes pop {
+    0% { transform: scale(0.92); opacity: 0; }
+    70% { transform: scale(1.03); }
+    100% { transform: none; opacity: 1; }
+}

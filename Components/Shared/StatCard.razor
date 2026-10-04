@@ -12,6 +12,9 @@ else
 
     [Parameter] public int Value { get; set; }
 
+    /// <summary>Shown instead of <see cref="Value"/> when the number is not a whole number ("92.5%") or there is none yet ("—").</summary>
+    [Parameter] public string? Text { get; set; }
+
     [Parameter, EditorRequired] public string IconName { get; set; } = "";
 
     [Parameter] public AccentColor Accent { get; set; } = AccentColor.Blue;
@@ -25,7 +28,7 @@ else
     private RenderFragment Content => @<text>
         <span class="stat-icon"><Icon Name="@IconName" Size="22" /></span>
         <div class="stat-text">
-            <span class="stat-value">@Value.ToString("N0")</span>
+            <span class="stat-value">@(Text ?? Value.ToString("N0"))</span>
             <span class="stat-label">@Label</span>
             @if (!string.IsNullOrEmpty(Hint))
             {

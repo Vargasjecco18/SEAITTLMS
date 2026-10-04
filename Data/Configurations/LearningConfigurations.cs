@@ -111,3 +111,15 @@ internal sealed class ModuleViewConfiguration : IEntityTypeConfiguration<ModuleV
         b.HasOne(v => v.Student).WithMany().HasForeignKey(v => v.StudentId).OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+internal sealed class TodoItemConfiguration : IEntityTypeConfiguration<TodoItem>
+{
+    public void Configure(EntityTypeBuilder<TodoItem> b)
+    {
+        b.Property(t => t.Title).HasMaxLength(200).IsRequired();
+
+        // A person's list goes with their account.
+        b.HasOne(t => t.User).WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(t => new { t.UserId, t.IsDone, t.DueOn });
+    }
+}

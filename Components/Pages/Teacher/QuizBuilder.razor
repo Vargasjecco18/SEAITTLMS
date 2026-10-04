@@ -68,14 +68,14 @@ else
             <li class="question">
                 <header class="question-head">
                     <span class="number">@(index + 1)</span>
-                    <InputSelect id="@($"q{index}-kind")" class="kind" Value="q.Kind" ValueChanged="(string kind) => ChangeKind(q, kind)" ValueExpression="() => q.Kind" disabled="@locked" aria-label="@($"Kind of question {index + 1}")">
+                    <InputSelect id="@($"q{index}-kind")" class="input kind" Value="q.Kind" ValueChanged="(string kind) => ChangeKind(q, kind)" ValueExpression="() => q.Kind" disabled="@locked" aria-label="@($"Kind of question {index + 1}")">
                         <option value="@QuestionKinds.MultipleChoice">Multiple choice</option>
                         <option value="@QuestionKinds.TrueFalse">True or false</option>
                         <option value="@QuestionKinds.ShortAnswer">Short answer</option>
                     </InputSelect>
                     <label class="points">
                         <span>Points</span>
-                        <InputNumber id="@($"q{index}-points")" @bind-Value="q.Points" disabled="@locked" />
+                        <InputNumber id="@($"q{index}-points")" class="input" @bind-Value="q.Points" disabled="@locked" />
                     </label>
                     @if (!locked)
                     {

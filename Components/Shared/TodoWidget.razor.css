@@ -1,0 +1,146 @@
+.add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+}
+
+.add-title {
+    grid-column: 1 / -1;
+}
+
+.add-date {
+    min-width: 0;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+.error {
+    margin: 0 0 0.7rem;
+    color: var(--danger);
+    font-size: 0.88rem;
+}
+
+.quiet {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.items {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.items li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0 0.5rem;
+    padding: 0.35rem 0.4rem;
+    border-radius: 8px;
+    transition: background-color 0.12s;
+}
+
+.items li:hover {
+    background: var(--surface-2);
+}
+
+.check {
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
+    gap: 0.6rem;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.check input {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0.2rem 0 0;
+    accent-color: var(--btn-bg);
+}
+
+.text {
+    overflow-wrap: anywhere;
+}
+
+.due {
+    grid-column: 1;
+    padding-left: 1.65rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+li.late .due {
+    color: var(--danger);
+}
+
+li.finished .text {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.remove {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    opacity: 0;
+    cursor: pointer;
+}
+
+li:hover .remove,
+.remove:focus-visible {
+    opacity: 1;
+}
+
+.remove:hover {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.done {
+    margin-top: 0.8rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border);
+}
+
+.done summary {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.done .items {
+    margin-top: 0.4rem;
+}
+
+.clear {
+    margin-top: 0.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}

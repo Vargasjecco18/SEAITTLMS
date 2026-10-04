@@ -8,6 +8,8 @@
 
 <PageHeader Title="Subjects" Subtitle="The subjects you teach. Open one to see its modules, activities, quizzes and task performances." IconName="book-open" />
 
+<PageWithAside Show="calendar,todo,tocheck">
+
 @if (cards is null)
 {
     <p class="muted">Loading…</p>
@@ -16,7 +18,7 @@ else if (cards.Count == 0)
 {
     <Card>
         <EmptyState IconName="book-open" Title="No subjects yet">
-            <p>The administrator gives each teacher their subjects (Users Management, Teachers, Teaching). They will show up here.</p>
+            <p>The administrator gives each teacher their subjects (Users Management, Teachers, Subjects). They will show up here.</p>
         </EmptyState>
     </Card>
 }
@@ -35,6 +37,7 @@ else
         }
     </div>
 }
+</PageWithAside>
 
 @code {
     private IReadOnlyList<TeacherSubjectCard>? cards;

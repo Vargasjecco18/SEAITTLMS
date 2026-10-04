@@ -26,6 +26,7 @@ else
         <ButtonLink Href="student/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All subjects</ButtonLink>
     </PageHeader>
 
+    <PageWithAside Show="calendar,todo,upnext">
     @if (subject.Modules.Count == 0)
     {
         <Card>
@@ -59,6 +60,7 @@ else
             }
         </div>
     }
+    </PageWithAside>
 }
 
 @code {

@@ -63,6 +63,11 @@ builder.Services.AddScoped<TeachingService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<WorkService>();
 builder.Services.AddScoped<QuizService>();
+builder.Services.AddScoped<TodoService>();
+builder.Services.AddScoped<GradeService>();
+builder.Services.AddScoped<AchievementService>();
+builder.Services.AddScoped<CalendarService>();
+builder.Services.AddScoped<DashboardService>();
 builder.Services.AddHostedService<AutomationWorker>();
 builder.Services.AddScoped<DatabaseInitializer>();
 

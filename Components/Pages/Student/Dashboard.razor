@@ -1,0 +1,170 @@
+@page "/student"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@inject CurrentUser Me
+@inject DashboardService Dashboards
+@inject AchievementService Achievements
+@inject TimeProvider Clock
+
+<PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
+
+@{
+    var now = PhilippineTime.Now(Clock);
+}
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {data?.FirstName ?? "student"}")" Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. Here is what is going on in your subjects.")" IconName="layout-dashboard" />
+
+@if (data is null)
+{
+    <Card>
+        <EmptyState IconName="graduation-cap" Title="No student record found">
+            <p>Your account is not linked to a student record. Please ask the registrar.</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageWithAside Show="calendar,todo,upnext">
+        <div class="stats">
+            <StatCard Label="Work to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
+            <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />
+            <StatCard Label="New modules" Value="@data.UnopenedModules" IconName="layers" Accent="AccentColor.Amber" Hint="Not opened yet" />
+            <StatCard Label="Average grade" Text="@(data.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(data.Failing > 0 ? AccentColor.Rose : AccentColor.Violet)"
+                      Hint="@(data.Failing > 0 ? $"{data.Failing} subject{(data.Failing == 1 ? "" : "s")} below 70" : data.Overall is null ? "No grades yet" : "Keep it up")" Href="student/grades" />
+        </div>
+
+        <div class="cards">
+            <div class="wide">
+            <Card Title="Assignments and due dates" IconName="clipboard-list">
+                @if (data.Work.Count == 0)
+                {
+                    <EmptyState IconName="circle-check" Title="You are all caught up">
+                        <p>No work is waiting for you.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <ul class="work">
+                        @foreach (var w in data.Work)
+                        {
+                            <li>
+                                <a class="work-link" href="student/items/@w.ItemId">
+                                    <span class="work-icon"><Icon Name="@SubjectStyle.KindIcon(w.Kind)" Size="18" /></span>
+                                    <span class="work-text">
+                                        <span class="work-title">@w.Title</span>
+                                        <span class="work-sub">@w.SubjectName · @ItemKinds.Display(w.Kind)</span>
+                                    </span>
+                                    <span class="work-end">
+                                        @if (w.DueAtUtc is { } due)
+                                        {
+                                            <Badge Tone="@(w.IsOverdue ? Tone.Danger : due < now.UtcDateTime.AddDays(2) ? Tone.Warning : Tone.Neutral)">@PhilippineTime.DueText(due, now)</Badge>
+                                        }
+                                        else
+                                        {
+                                            <Badge>No due date</Badge>
+                                        }
+
+                                        @if (w.InProgress)
+                                        {
+                                            <Badge Tone="Tone.Info">In progress</Badge>
+                                        }
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+            </div>
+
+            <Card Title="Modules not opened yet" IconName="layers">
+                @if (data.Unopened.Count == 0)
+                {
+                    <EmptyState IconName="book-open" Title="Nothing new">
+                        <p>You have opened every module your teachers posted.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <ul class="modules">
+                        @foreach (var m in data.Unopened)
+                        {
+                            <li>
+                                <a href="student/modules/@m.ModuleId">
+                                    <span class="module-title">@m.Title</span>
+                                    <span class="module-sub">@m.SubjectName · posted @PhilippineTime.FormatDate(m.PostedAtUtc)</span>
+                                </a>
+                                <Badge Tone="Tone.Warning">New</Badge>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+
+            <Card Title="Your subjects" IconName="book-open">
+                @if (data.Subjects.Count == 0)
+                {
+                    <EmptyState IconName="book-open" Title="No subjects yet" />
+                }
+                else
+                {
+                    <ul class="subjects">
+                        @foreach (var s in data.Subjects)
+                        {
+                            <li>
+                                <a class="subject-name" href="student/subjects/@s.AssignmentId">@s.SubjectName</a>
+                                <span class="subject-sub">@s.TeacherName@(s.OpenItems > 0 ? $" · {s.OpenItems} to do" : "")</span>
+                                <div class="bar" role="progressbar" aria-label="@($"{s.SubjectName} grade")" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(s.Percent ?? 0))">
+                                    <i class="@(s.Percent is null ? "" : s.Percent < GradeRules.PassingPercent ? "bad" : s.Percent < GradeRules.AtRiskUntil ? "warn" : "good")" style="width: @((s.Percent ?? 0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i>
+                                </div>
+                                <span class="subject-grade">@(s.Percent is { } p ? $"{p:0.#}%" : "No grade yet")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+
+            <Card Title="Recent grades" IconName="award">
+                @if (data.Recent.Count == 0)
+                {
+                    <EmptyState IconName="award" Title="No grades yet">
+                        <p>Scores your teachers give appear here.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <ul class="grades">
+                        @foreach (var g in data.Recent)
+                        {
+                            var percent = g.Max <= 0 ? 0 : g.Score / g.Max * 100;
+                            <li>
+                                <a href="student/items/@g.ItemId"><span class="grade-title">@g.Title</span><span class="grade-sub">@g.SubjectName</span></a>
+                                <Badge Tone="@GradeRules.ToneOf(percent)">@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</Badge>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <p class="more"><a href="student/grades">Open Grades and progress <Icon Name="arrow-right" Size="14" /></a></p>
+            </Card>
+
+            <div class="wide">
+                <AchievementsWidget Items="achievements" />
+            </div>
+        </div>
+    </PageWithAside>
+}
+
+@code {
+    private StudentDashboard? data;
+    private IReadOnlyList<Achievement> achievements = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var studentId = await Me.GetStudentIdAsync();
+        data = studentId is { } id ? await Dashboards.GetStudentAsync(id) : null;
+        if (studentId is { } sid)
+        {
+            achievements = await Achievements.GetAsync(sid);
+        }
+    }
+}

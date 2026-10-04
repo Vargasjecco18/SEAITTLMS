@@ -1,0 +1,163 @@
+@page "/calendar"
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@using System.Globalization
+@inject CurrentUser Me
+@inject CalendarService Events
+@inject TimeProvider Clock
+
+<PageTitle>Calendar · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Calendar" Subtitle="@Subtitle" IconName="calendar-days">
+    <nav class="controls" aria-label="Calendar controls">
+        <ButtonLink Href="@Url(view, Step(-1))" Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left">Previous</ButtonLink>
+        <ButtonLink Href="@Url(view, today)" Variant="ButtonVariant.Secondary" Small="true">Today</ButtonLink>
+        <ButtonLink Href="@Url(view, Step(1))" Variant="ButtonVariant.Secondary" Small="true">Next</ButtonLink>
+        <span class="switch" role="group" aria-label="View">
+            <a class="switch-link @(view == "month" ? "on" : "")" href="@Url("month", anchor)" aria-current="@(view == "month" ? "page" : null)">Month</a>
+            <a class="switch-link @(view == "week" ? "on" : "")" href="@Url("week", anchor)" aria-current="@(view == "week" ? "page" : null)">Week</a>
+        </span>
+    </nav>
+</PageHeader>
+
+<PageWithAside Show="todo,upnext">
+    <ul class="legend" aria-label="Legend">
+        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Todo })
+        {
+            <li><span class="swatch @kind.ToLowerInvariant()"></span> @CalendarKinds.Label(kind)</li>
+        }
+        <li><span class="swatch late"></span> Overdue</li>
+    </ul>
+
+    @if (view == "month")
+    {
+        <div class="month" role="grid" aria-label="@anchor.ToString("MMMM yyyy", CultureInfo.InvariantCulture)">
+            @foreach (var name in DayNames)
+            {
+                <div class="dow" role="columnheader">@name</div>
+            }
+
+            @foreach (var day in Days)
+            {
+                var onDay = EventsOn(day);
+                <div class="cell @(day.Month != anchor.Month ? "other" : "") @(day == today ? "today" : "")" role="gridcell">
+                    <a class="num" href="@Url("week", day)" aria-label="@day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)">@day.Day</a>
+                    <ul class="chips">
+                        @foreach (var e in onDay.Take(3))
+                        {
+                            <li>@Chip(e)</li>
+                        }
+
+                        @if (onDay.Count > 3)
+                        {
+                            <li><a class="more" href="@Url("week", day)">+@(onDay.Count - 3) more</a></li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="week">
+            @foreach (var day in Days)
+            {
+                var onDay = EventsOn(day);
+                <section class="column @(day == today ? "today" : "")" aria-label="@day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)">
+                    <header>
+                        <span class="wd">@day.ToString("ddd", CultureInfo.InvariantCulture)</span>
+                        <span class="wn">@day.Day</span>
+                    </header>
+                    @if (onDay.Count == 0)
+                    {
+                        <p class="empty">Nothing planned</p>
+                    }
+                    else
+                    {
+                        <ul class="events">
+                            @foreach (var e in onDay)
+                            {
+                                <li class="event @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")">
+                                    <span class="event-icon"><Icon Name="@CalendarKinds.Icon(e.Kind)" Size="16" /></span>
+                                    <span class="event-text">
+                                        @if (e.Href is not null)
+                                        {
+                                            <a href="@e.Href">@e.Title</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="event-title">@e.Title</span>
+                                        }
+
+                                        <small>@(e.Subtitle)@(e.Done ? " · done" : "")@(e.Overdue ? " · overdue" : "")</small>
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            }
+        </div>
+    }
+</PageWithAside>
+
+@code {
+    private static readonly string[] DayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
+
+    [SupplyParameterFromQuery(Name = "date")] private string? DateText { get; set; }
+
+    private DateOnly today;
+    private DateOnly anchor;
+    private string view = "month";
+    private DateOnly rangeStart;
+    private int rangeDays;
+    private IReadOnlyList<CalendarEvent> events = [];
+
+    private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
+
+    private string Subtitle => view == "month"
+        ? anchor.ToString("MMMM yyyy", CultureInfo.InvariantCulture)
+        : $"{rangeStart.ToString("MMM d", CultureInfo.InvariantCulture)} – {rangeStart.AddDays(6).ToString("MMM d, yyyy", CultureInfo.InvariantCulture)}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        today = PhilippineTime.Today(Clock);
+        view = ViewText == "week" ? "week" : "month";
+        anchor = DateOnly.TryParseExact(DateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed) && parsed.Year is > 2000 and < 2100 ? parsed : today;
+
+        if (view == "month")
+        {
+            var first = new DateOnly(anchor.Year, anchor.Month, 1);
+            rangeStart = first.AddDays(-(int)first.DayOfWeek);
+            var weeks = (int)Math.Ceiling(((int)first.DayOfWeek + DateTime.DaysInMonth(anchor.Year, anchor.Month)) / 7.0);
+            rangeDays = weeks * 7;
+        }
+        else
+        {
+            rangeStart = anchor.AddDays(-(int)anchor.DayOfWeek);
+            rangeDays = 7;
+        }
+
+        var user = await Me.GetAsync();
+        events = user is null ? [] : await Events.GetEventsAsync(user, rangeStart, rangeStart.AddDays(rangeDays - 1));
+    }
+
+    private List<CalendarEvent> EventsOn(DateOnly day) => events.Where(e => e.Day == day).ToList();
+
+    /// <summary>The day to open for the Previous and Next buttons: a month or a week away.</summary>
+    private DateOnly Step(int direction) => view == "month" ? new DateOnly(anchor.Year, anchor.Month, 1).AddMonths(direction) : anchor.AddDays(7 * direction);
+
+    private static string Url(string view, DateOnly date) => $"calendar?view={view}&date={date:yyyy-MM-dd}";
+
+    private RenderFragment Chip(CalendarEvent e) => @<text>
+        @if (e.Href is not null)
+        {
+            <a class="chip @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")" href="@e.Href" title="@e.Title · @e.Subtitle">@e.Title</a>
+        }
+        else
+        {
+            <span class="chip @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")" title="@e.Title">@e.Title</span>
+        }
+    </text>;
+}

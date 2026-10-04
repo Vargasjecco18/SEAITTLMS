@@ -265,6 +265,11 @@ internal static class Roster
         db.Enrollments.Where(e => e.SectionId == sectionId && e.Status == EnrollmentStatus.Enrolled
                                   && e.EnrolledSubjects.Any(x => x.SubjectId == subjectId));
 
+    /// <summary>The teaching assignments of the subjects a student takes now: the student is enrolled in the section with the subject.</summary>
+    public static IQueryable<TeachingAssignment> AssignmentsOf(AppDbContext db, int studentId) =>
+        db.TeachingAssignments.Where(a => db.EnrollmentSubjects.Any(x => x.Enrollment.StudentId == studentId && x.Enrollment.Status == EnrollmentStatus.Enrolled
+                                                                         && x.Enrollment.SectionId == a.SectionId && x.SubjectId == a.SubjectId));
+
     public static IQueryable<int> StudentIds(AppDbContext db, int sectionId, int subjectId) =>
         Enrollments(db, sectionId, subjectId).Select(e => e.StudentId).Distinct();
 }

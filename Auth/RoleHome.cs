@@ -7,8 +7,8 @@ public static class RoleHome
 {
     public const string Admin = "/admin";
     public const string Registrar = "/registrar";
-    public const string Teacher = "/teacher/subjects";
-    public const string Student = "/student/subjects";
+    public const string Teacher = "/teacher";
+    public const string Student = "/student";
 
     /// <summary>Guidance counselors have no page of their own yet, so they land on their account page.</summary>
     public const string Account = "/account";

@@ -30,12 +30,17 @@ public static class PageDirectory
         ],
         AppRoles.Teacher =>
         [
+            new("Dashboard", "Work to check, deadlines and drafts", "teacher", "layout-dashboard"),
             new("Subjects", "The subjects you teach, with their modules and work", "teacher/subjects", "book-open"),
+            new("Calendar", "Deadlines, postings and your to-do list, by month or week", "calendar", "calendar-days"),
             MyAccount,
         ],
         AppRoles.Student =>
         [
+            new("Dashboard", "Assignments, due dates, new modules and achievements", "student", "layout-dashboard"),
             new("Subjects", "Your subjects, modules, activities and quizzes", "student/subjects", "book-open"),
+            new("Grades and progress", "Your grade in every subject and how it is going", "student/grades", "trending-up"),
+            new("Calendar", "Deadlines and your to-do list, by month or week", "calendar", "calendar-days"),
             MyAccount,
         ],
         _ => [MyAccount],
