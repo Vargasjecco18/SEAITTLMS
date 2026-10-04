@@ -59,6 +59,11 @@ builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<TeachingService>();
+builder.Services.AddScoped<ModuleService>();
+builder.Services.AddScoped<WorkService>();
+builder.Services.AddScoped<QuizService>();
+builder.Services.AddHostedService<AutomationWorker>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
 builder.Services

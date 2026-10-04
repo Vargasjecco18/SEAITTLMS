@@ -35,6 +35,14 @@ public class AppDbContext : DbContext
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<EnrollmentSubject> EnrollmentSubjects => Set<EnrollmentSubject>();
 
+    // Subjects, modules, activities and grades
+    public DbSet<TeachingAssignment> TeachingAssignments => Set<TeachingAssignment>();
+    public DbSet<LearningModule> Modules => Set<LearningModule>();
+    public DbSet<ModuleItem> ModuleItems => Set<ModuleItem>();
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
+
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Notification> Notifications => Set<Notification>();

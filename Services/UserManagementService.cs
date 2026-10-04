@@ -66,9 +66,9 @@ public sealed class UserEdit
     public string? NewPassword { get; set; }
 }
 
-public sealed record ServiceResult(bool Succeeded, IReadOnlyList<string> Errors, string? Message = null)
+public sealed record ServiceResult(bool Succeeded, IReadOnlyList<string> Errors, string? Message = null, int? Id = null)
 {
-    public static ServiceResult Ok(string? message = null) => new(true, [], message);
+    public static ServiceResult Ok(string? message = null, int? id = null) => new(true, [], message, id);
 
     public static ServiceResult Fail(params IReadOnlyList<string> errors) => new(false, errors);
 }

@@ -1,0 +1,212 @@
+namespace SEAITT_LMS.Data.Entities;
+
+/// <summary>
+/// A teacher teaches a subject to a section: "Ms. Reyes teaches BUSINESS ACCOUNTING to 11-BUSSENT-A". This is the
+/// "subject" a teacher opens and the one the students of that section see. The administrator sets it up (Users Management,
+/// Teaching). Modules, attendance and grades all hang off it.
+/// </summary>
+public class TeachingAssignment : AuditableEntity
+{
+    public int TeacherId { get; set; }
+    public Teacher Teacher { get; set; } = null!;
+
+    public int SectionId { get; set; }
+    public Section Section { get; set; } = null!;
+
+    public int SubjectId { get; set; }
+    public Subject Subject { get; set; } = null!;
+
+    public List<LearningModule> Modules { get; set; } = [];
+}
+
+/// <summary>
+/// A part of a subject: a lesson with text and, below it, the activities, quizzes and task performances that go with it.
+/// A new module is a draft that students cannot see. The teacher posts it now or sets a time for it to appear.
+/// </summary>
+public class LearningModule : AuditableEntity
+{
+    public int AssignmentId { get; set; }
+    public TeachingAssignment Assignment { get; set; } = null!;
+
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+
+    /// <summary>The lesson itself, as plain text (line breaks are kept).</summary>
+    public string? Body { get; set; }
+
+    /// <summary>A link to a file or a video the lesson uses.</summary>
+    public string? LinkUrl { get; set; }
+
+    /// <summary>The order in the subject, 1, 2, 3 ...</summary>
+    public int Position { get; set; }
+
+    /// <summary>
+    /// When students can see it. Empty is a draft (hidden). A time in the past is posted, a time in the future is
+    /// scheduled: it appears by itself at that time.
+    /// </summary>
+    public DateTime? VisibleFromUtc { get; set; }
+
+    /// <summary>When the students were told it is there (set by the background worker), so they are told once.</summary>
+    public DateTime? NotifiedAtUtc { get; set; }
+
+    public List<ModuleItem> Items { get; set; } = [];
+}
+
+public static class ItemKinds
+{
+    public const string Activity = "Activity";
+    public const string Quiz = "Quiz";
+    public const string TaskPerformance = "TaskPerformance";
+
+    public static readonly string[] All = [Activity, Quiz, TaskPerformance];
+
+    public static string Display(string kind) => kind switch
+    {
+        Quiz => "Quiz",
+        TaskPerformance => "Task performance",
+        _ => "Activity",
+    };
+
+    public static string Plural(string kind) => kind switch
+    {
+        Quiz => "Quizzes",
+        TaskPerformance => "Task performances",
+        _ => "Activities",
+    };
+}
+
+/// <summary>Something a student does for a module: an activity, a quiz or a task performance. Has a due date and a maximum score.</summary>
+public class ModuleItem : AuditableEntity
+{
+    public int ModuleId { get; set; }
+    public LearningModule Module { get; set; } = null!;
+
+    /// <summary>One of <see cref="ItemKinds"/>.</summary>
+    public string Kind { get; set; } = ItemKinds.Activity;
+
+    public string Title { get; set; } = "";
+    public string? Instructions { get; set; }
+
+    public decimal MaxScore { get; set; } = 100;
+
+    /// <summary>The deadline, or empty for none.</summary>
+    public DateTime? DueAtUtc { get; set; }
+
+    /// <summary>Empty: it appears when its module does. A time: it appears then (but never before its module).</summary>
+    public DateTime? VisibleFromUtc { get; set; }
+
+    public DateTime? NotifiedAtUtc { get; set; }
+    public DateTime? DueReminderSentAtUtc { get; set; }
+
+    public int Position { get; set; }
+
+    // ---- quizzes only
+    /// <summary>Minutes a student has once they start. Empty: no limit.</summary>
+    public int? TimeLimitMinutes { get; set; }
+
+    public bool ShuffleQuestions { get; set; } = true;
+    public bool ShuffleOptions { get; set; } = true;
+
+    /// <summary>Watch for leaving the quiz page, copying and pasting. After <see cref="MaxViolations"/> the quiz is handed in.</summary>
+    public bool AntiCheat { get; set; } = true;
+
+    public int MaxViolations { get; set; } = 3;
+
+    /// <summary>Show the student their score as soon as they hand the quiz in.</summary>
+    public bool ShowResult { get; set; } = true;
+
+    public List<QuizQuestion> Questions { get; set; } = [];
+    public List<Submission> Submissions { get; set; } = [];
+}
+
+public static class QuestionKinds
+{
+    public const string MultipleChoice = "MultipleChoice";
+    public const string TrueFalse = "TrueFalse";
+    public const string ShortAnswer = "ShortAnswer";
+}
+
+public class QuizQuestion : AuditableEntity
+{
+    public int ItemId { get; set; }
+    public ModuleItem Item { get; set; } = null!;
+
+    public int Position { get; set; }
+    public string Text { get; set; } = "";
+
+    /// <summary>One of <see cref="QuestionKinds"/>.</summary>
+    public string Kind { get; set; } = QuestionKinds.MultipleChoice;
+
+    /// <summary>The choices of a multiple choice question, one per line.</summary>
+    public string? OptionsText { get; set; }
+
+    /// <summary>
+    /// The right answer: the text of the right choice, "True" or "False", or for a short answer the accepted answers
+    /// separated by "|".
+    /// </summary>
+    public string CorrectAnswer { get; set; } = "";
+
+    public decimal Points { get; set; } = 1;
+}
+
+public static class SubmissionStatus
+{
+    public const string InProgress = "InProgress";
+    public const string Submitted = "Submitted";
+    public const string Graded = "Graded";
+}
+
+/// <summary>A student's work for one item, or their attempt at a quiz. One per student and item.</summary>
+public class Submission : AuditableEntity
+{
+    public int ItemId { get; set; }
+    public ModuleItem Item { get; set; } = null!;
+
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    /// <summary>One of <see cref="SubmissionStatus"/>.</summary>
+    public string Status { get; set; } = SubmissionStatus.InProgress;
+
+    /// <summary>When a quiz was started.</summary>
+    public DateTime? StartedAtUtc { get; set; }
+
+    public DateTime? SubmittedAtUtc { get; set; }
+
+    /// <summary>Handed in after the due date.</summary>
+    public bool IsLate { get; set; }
+
+    public string? AnswerText { get; set; }
+    public string? LinkUrl { get; set; }
+
+    /// <summary>A quiz: the answers given so far, and the order the questions were shown in, as JSON.</summary>
+    public string? AnswersJson { get; set; }
+
+    public decimal? Score { get; set; }
+    public string? Feedback { get; set; }
+    public DateTime? GradedAtUtc { get; set; }
+
+    // ---- quizzes with the anti-cheating watch
+    public int ViolationCount { get; set; }
+
+    /// <summary>What was noticed (leaving the page, copying, ...), one line each with the time.</summary>
+    public string? ViolationLog { get; set; }
+
+    /// <summary>The teacher should look at this attempt.</summary>
+    public bool IsFlagged { get; set; }
+
+    /// <summary>Why a quiz was handed in by the system: "time" or "violations".</summary>
+    public string? AutoSubmitReason { get; set; }
+}
+
+/// <summary>That a student has opened a module (so the dashboard can list the ones they have not opened yet).</summary>
+public class ModuleView
+{
+    public int ModuleId { get; set; }
+    public LearningModule Module { get; set; } = null!;
+
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    public DateTime FirstOpenedAtUtc { get; set; }
+}
