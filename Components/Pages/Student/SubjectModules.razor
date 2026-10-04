@@ -1,0 +1,76 @@
+@page "/student/subjects/{AssignmentId:int}"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject TimeProvider Clock
+
+<PageTitle>@(subject?.SubjectName ?? "Subject") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subject is null)
+{
+    <Card>
+        <EmptyState IconName="book-open" Title="Subject not found" IsPage="true">
+            <p>This is not one of your subjects.</p>
+            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@subject.SubjectName" Subtitle="@($"{subject.SectionLabel} · {subject.TeacherName}")" IconName="book-open">
+        <ButtonLink Href="student/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All subjects</ButtonLink>
+    </PageHeader>
+
+    @if (subject.Modules.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="layers" Title="No modules yet">
+                <p>Your teacher has not posted any module for this subject. You will be told when one appears.</p>
+            </EmptyState>
+        </Card>
+    }
+    else
+    {
+        var now = PhilippineTime.Now(Clock);
+        <div class="modules">
+            @for (var n = 0; n < subject.Modules.Count; n++)
+            {
+                var module = subject.Modules[n];
+                <section class="module" aria-label="Module @(n + 1)">
+                    <header class="module-head">
+                        <span class="module-number">@(n + 1)</span>
+                        <div class="module-text">
+                            <h2>@module.Title @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</h2>
+                            @if (!string.IsNullOrWhiteSpace(module.Description))
+                            {
+                                <p>@module.Description</p>
+                            }
+                        </div>
+                        <ButtonLink Href="@($"student/modules/{module.Id}")" Variant="@(module.Opened ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="book-open">@(module.Opened ? "Read again" : "Read lesson")</ButtonLink>
+                    </header>
+
+                    <ModuleTabs Module="module" Now="now" />
+                </section>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int AssignmentId { get; set; }
+
+    private bool loaded;
+    private StudentSubject? subject;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var studentId = await Me.GetStudentIdAsync();
+        subject = studentId is { } id ? await Modules.GetStudentSubjectAsync(id, AssignmentId) : null;
+        loaded = true;
+    }
+}

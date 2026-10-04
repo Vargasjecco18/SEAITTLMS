@@ -55,6 +55,17 @@ erDiagram
     enrollments ||--o{ enrollment_subjects : ""
     subjects ||--o{ enrollment_subjects : ""
 
+    teachers ||--o{ teaching_assignments : "teaches"
+    sections ||--o{ teaching_assignments : ""
+    subjects ||--o{ teaching_assignments : ""
+    teaching_assignments ||--o{ modules : ""
+    modules ||--o{ module_items : "activity, quiz or task"
+    module_items ||--o{ quiz_questions : ""
+    module_items ||--o{ submissions : ""
+    students ||--o{ submissions : ""
+    modules ||--o{ module_views : "opened by"
+    students ||--o{ module_views : ""
+
     users ||--o{ messages : "sender"
     users ||--o{ messages : "recipient"
     users ||--o{ notifications : ""
@@ -161,6 +172,21 @@ enrolled, so a later change (a new name, a promotion) does not rewrite what was 
 a student's *name and LRN* in step in their enrollments when an administrator corrects them. `enrolled_by_user_id` is the
 registrar who did it.
 
+### Subjects, modules and work
+
+| Table | What it holds |
+|---|---|
+| `teaching_assignments` | A teacher teaches a subject to a section ("Ms. Reyes teaches BUSINESS ACCOUNTING to 11-BUSSENT-A"). Set by the administrator (Users Management, Teachers, **Subjects**). **A subject of a section has one teacher** (`unique (section_id, subject_id)`). The students who take it are the ones enrolled in that section with that subject (`enrollment_subjects`). |
+| `modules` | A lesson of an assignment: `title`, `description`, `body` (the text), `link_url`, `position`. `visible_from_utc` decides who can see it: **empty = draft** (hidden), **a past time = posted**, **a future time = scheduled** (it appears by itself). `notified_at_utc` is set when the students were told. |
+| `module_items` | What a student does in a module: `kind` is `Activity`, `Quiz` or `TaskPerformance`, with `max_score`, `due_at_utc`, an optional `visible_from_utc` of its own (empty = with its module) and, for quizzes, `time_limit_minutes`, `shuffle_questions`, `shuffle_options`, **`anti_cheat`**, `max_violations` and `show_result`. |
+| `quiz_questions` | The questions of a quiz: `kind` (`MultipleChoice`, `TrueFalse`, `ShortAnswer`), `text`, `options_text` (one choice per line), `correct_answer` (for a short answer several accepted answers separated by `\|`) and `points`. |
+| `submissions` | One piece of work per student and item (`unique (item_id, student_id)`): `status` (`InProgress`, `Submitted`, `Graded`), `answer_text`, `link_url`, `score`, `feedback`, `is_late`. For quizzes also the answers and the order of the questions (`answers_json`), and the anti-cheating watch: `violation_count`, `violation_log`, `is_flagged`, `auto_submit_reason` (`time` or `violations`). |
+| `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
+
+Deleting a teacher deletes their assignments, and with them the modules, items and handed-in work. Deleting a student
+deletes their work and module views (their enrollments are deleted first, see below). A section or a subject can't be
+deleted while an assignment uses it.
+
 ### Messages and notifications
 
 | Table | What it holds |
@@ -226,6 +252,9 @@ Things that were decided for you, change them in the tables if they are not righ
 - An enrollment can only combine a **term and a section of the same school year**. It carries a `school_year_id` that is
   part of two composite foreign keys, to `terms (id, school_year_id)` and to `sections (id, school_year_id)`. When you
   insert one, `school_year_id` must be the school year of both its term and its section.
+- A subject of a section has **one teacher** (`unique (section_id, subject_id)` on `teaching_assignments`), a student has one
+  piece of work per item (`unique (item_id, student_id)`), `module_items.kind`, `quiz_questions.kind` and
+  `submissions.status` are one of their fixed words, `max_score` is above 0 and `score` is 0 or more.
 - Deleting an enrollment deletes its `enrollment_subjects`. Otherwise nothing cascades except profile rows when their user
   is deleted. Terms, sections, students, teachers and so on can't be deleted while other rows use them. The Users page
   deletes a student's enrollments first, on purpose, when an administrator confirms; to keep history, switch the account
@@ -233,6 +262,13 @@ Things that were decided for you, change them in the tables if they are not righ
 
 ## Rules the application enforces
 
+- A teacher can only be given a subject that the section's strand has at the section's grade level, and the student must be
+  on the roster (enrolled in the section with the subject) to read a module or hand in work (`TeachingService`,
+  `ModuleService`, `WorkService`). Only the teacher of the subject can change its modules, items and scores.
+- A quiz is graded when it is handed in; its time limit (and due date) is checked on the server, not only on the screen.
+  Questions can't be changed once a student has started the quiz. The background job (`AutomationWorker`, once a minute)
+  tells students when a module or an item appears (once each), reminds them 24 hours before a deadline, and hands in
+  quizzes whose time ran out.
 - Only one term should have `is_current = 1` (MySQL has no partial unique index for this).
 - A profile row must match the user's role. Use `UserAccountService.CreateAsync` to create accounts.
 - The subjects picked for an enrollment must belong to the strand's curriculum for that grade level and term, and at least

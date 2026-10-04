@@ -1,0 +1,299 @@
+@page "/student/quiz/{ItemId:int}"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@* No pre-drawn page: the quiz (and its clock) starts only when the student really has it on the screen. *@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@implements IAsyncDisposable
+@inject CurrentUser Me
+@inject QuizService Quiz
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+<PageTitle>@(attempt?.Title ?? "Quiz") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Opening the quiz…</p>
+}
+else if (attempt is null)
+{
+    <Card>
+        <EmptyState IconName="file-question" Title="@(startError ?? "This quiz can't be opened")" IsPage="true">
+            <ButtonLink Href="@($"student/items/{ItemId}")" Variant="ButtonVariant.Secondary">Back</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="bar" role="status">
+        <div class="bar-title">
+            <Icon Name="file-question" Size="20" />
+            <div>
+                <strong>@attempt.Title</strong>
+                <span>@attempt.SubjectName</span>
+            </div>
+        </div>
+        <div class="bar-stats">
+            <span class="stat" title="Answered"><Icon Name="circle-check" Size="16" /> @AnsweredCount / @attempt.Questions.Count</span>
+            @if (attempt.AntiCheat)
+            {
+                <span class="stat @(violations > 0 ? "bad" : "")" title="Warnings"><Icon Name="shield-alert" Size="16" /> @violations / @attempt.MaxViolations</span>
+            }
+
+            @if (attempt.EndsAtUtc is not null)
+            {
+                <span class="stat clock @(RemainingSeconds <= 60 ? "bad" : "")" title="Time left" aria-label="Time left"><Icon Name="timer" Size="16" /> <span id="quiz-clock">@ClockText</span></span>
+            }
+        </div>
+    </div>
+
+    @if (warning is not null)
+    {
+        <div class="warning" role="alert"><Icon Name="triangle-alert" Size="18" /> <span>@warning</span></div>
+    }
+
+    <ol class="questions @(attempt.AntiCheat ? "guarded" : "")">
+        @foreach (var q in attempt.Questions)
+        {
+            var question = q;
+            <li class="question" id="question-@question.Id">
+                <div class="q-head">
+                    <span class="number">@question.Number</span>
+                    <span class="q-text">@question.Text</span>
+                    <span class="points">@question.Points.ToString("0.##") @(question.Points == 1 ? "pt" : "pts")</span>
+                </div>
+
+                @if (question.Kind == QuestionKinds.ShortAnswer)
+                {
+                    <input type="text" class="short" maxlength="500" autocomplete="off" spellcheck="false" aria-label="Your answer to question @question.Number"
+                           value="@AnswerOf(question)" @onchange="e => AnswerAsync(question, e.Value?.ToString())" />
+                }
+                else
+                {
+                    <div class="options" role="radiogroup" aria-label="Choices of question @question.Number">
+                        @foreach (var option in question.Options)
+                        {
+                            var choice = option;
+                            <label class="option @(AnswerOf(question) == choice ? "picked" : "")">
+                                <input type="radio" name="q-@question.Id" value="@choice" checked="@(AnswerOf(question) == choice)" @onchange="() => AnswerAsync(question, choice)" />
+                                <span>@choice</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </li>
+        }
+    </ol>
+
+    <div class="finish">
+        <Button IconName="send" Disabled="busy" OnClick="AskSubmit">Hand in the quiz</Button>
+    </div>
+}
+
+<Modal Open="confirmSubmit" Title="Hand in the quiz?" OnClose="CloseSubmit">
+    @if (attempt is not null)
+    {
+        @if (AnsweredCount < attempt.Questions.Count)
+        {
+            <p>You have not answered <strong>@(attempt.Questions.Count - AnsweredCount) @(attempt.Questions.Count - AnsweredCount == 1 ? "question" : "questions")</strong>. Unanswered questions get no points.</p>
+        }
+        else
+        {
+            <p>You answered every question.</p>
+        }
+
+        <p>After you hand it in you can't change your answers.</p>
+        <div class="finish end">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSubmit">Keep working</Button>
+            <Button IconName="send" Disabled="busy" OnClick="SubmitAsync">@(busy ? "Handing in…" : "Hand in")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter] public int ItemId { get; set; }
+
+    private bool loaded;
+    private int studentId;
+    private QuizAttempt? attempt;
+    private string? startError;
+    private readonly Dictionary<int, string> answers = [];
+    private int violations;
+    private string? warning;
+    private bool busy;
+    private bool confirmSubmit;
+    private bool finished;
+    private bool guardStarted;
+    private Timer? timer;
+    private DotNetObjectReference<QuizTake>? self;
+    private int remainingSeconds;
+
+    private int RemainingSeconds => remainingSeconds;
+
+    private string ClockText => TimeSpan.FromSeconds(Math.Max(0, remainingSeconds)).ToString(remainingSeconds >= 3600 ? @"h\:mm\:ss" : @"mm\:ss");
+
+    private int AnsweredCount => attempt is null ? 0 : attempt.Questions.Count(q => !string.IsNullOrWhiteSpace(AnswerOf(q)));
+
+    private string? AnswerOf(AttemptQuestion q) => answers.GetValueOrDefault(q.Id);
+
+    protected override async Task OnInitializedAsync()
+    {
+        studentId = await Me.GetStudentIdAsync() ?? 0;
+        if (studentId != 0)
+        {
+            var start = await Quiz.StartAsync(studentId, ItemId);
+            attempt = start.Attempt;
+            startError = start.Error;
+        }
+
+        if (attempt is not null)
+        {
+            foreach (var q in attempt.Questions.Where(q => q.Answer is not null))
+            {
+                answers[q.Id] = q.Answer!;
+            }
+
+            violations = attempt.ViolationCount;
+            UpdateClock();
+            timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, 1000, 1000);
+        }
+
+        loaded = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (attempt is { AntiCheat: true } && !guardStarted && !finished)
+        {
+            guardStarted = true;
+            self = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("seaitt.startQuizGuard", self);
+        }
+    }
+
+    private void UpdateClock()
+    {
+        if (attempt?.EndsAtUtc is { } ends)
+        {
+            remainingSeconds = (int)Math.Ceiling((ends - Clock.GetUtcNow().UtcDateTime).TotalSeconds);
+        }
+    }
+
+    private async Task TickAsync()
+    {
+        if (finished || attempt?.EndsAtUtc is null)
+        {
+            return;
+        }
+
+        UpdateClock();
+        if (remainingSeconds <= 0)
+        {
+            await FinishAsync();
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task AnswerAsync(AttemptQuestion q, string? value)
+    {
+        if (finished)
+        {
+            return;
+        }
+
+        answers[q.Id] = value ?? "";
+        var saved = await Quiz.SaveAnswerAsync(studentId, ItemId, q.Id, value);
+        if (saved.Ended)
+        {
+            await LeaveAsync();
+        }
+    }
+
+    /// <summary>Called by the page script when the student leaves the tab, copies or pastes.</summary>
+    [JSInvokable]
+    public async Task OnSuspicious(string what)
+    {
+        if (finished)
+        {
+            return;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            var result = await Quiz.ReportViolationAsync(studentId, ItemId, what);
+            violations = result.Count;
+            if (result.Ended)
+            {
+                await LeaveAsync();
+                return;
+            }
+
+            warning = $"Warning {result.Count} of {result.Max}: {what}. After {result.Max} warnings the quiz is handed in.";
+            StateHasChanged();
+        });
+    }
+
+    private void AskSubmit() => confirmSubmit = true;
+
+    private void CloseSubmit() => confirmSubmit = false;
+
+    private async Task SubmitAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        confirmSubmit = false;
+        await FinishAsync();
+        busy = false;
+    }
+
+    /// <summary>Hands in what is on the screen and goes to the result page.</summary>
+    private async Task FinishAsync()
+    {
+        if (finished)
+        {
+            return;
+        }
+
+        await Quiz.SubmitAsync(studentId, ItemId, answers.ToDictionary(a => a.Key, a => (string?)a.Value));
+        await LeaveAsync();
+    }
+
+    private async Task LeaveAsync()
+    {
+        finished = true;
+        timer?.Dispose();
+        await StopGuardAsync();
+        Navigation.NavigateTo($"student/items/{ItemId}");
+    }
+
+    private async Task StopGuardAsync()
+    {
+        if (!guardStarted)
+        {
+            return;
+        }
+
+        guardStarted = false;
+        try
+        {
+            await JS.InvokeVoidAsync("seaitt.stopQuizGuard");
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or TaskCanceledException)
+        {
+            // The connection is already gone: nothing to stop.
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        timer?.Dispose();
+        await StopGuardAsync();
+        self?.Dispose();
+    }
+}

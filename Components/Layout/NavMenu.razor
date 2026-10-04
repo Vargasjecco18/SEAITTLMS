@@ -30,6 +30,24 @@
         </NavLink>
     </AuthorizeView>
 
+    <AuthorizeView Roles="@AppRoles.Teacher">
+        <p class="heading">Teaching</p>
+
+        <NavLink class="link" href="teacher/subjects">
+            <Icon Name="book-open" />
+            <span>Subjects</span>
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="@AppRoles.Student">
+        <p class="heading">Learning</p>
+
+        <NavLink class="link" href="student/subjects">
+            <Icon Name="book-open" />
+            <span>Subjects</span>
+        </NavLink>
+    </AuthorizeView>
+
     <p class="heading">Account</p>
 
     <NavLink class="link" href="account">

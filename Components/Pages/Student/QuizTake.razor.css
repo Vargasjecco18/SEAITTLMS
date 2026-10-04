@@ -1,0 +1,203 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.bar {
+    position: sticky;
+    top: calc(var(--header-h) + 0.5rem);
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    margin-bottom: 1rem;
+    padding: 0.7rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+}
+
+.bar-title {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.bar-title div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.bar-title span {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.bar-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat.bad {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft);
+    color: var(--warning);
+    font-weight: 600;
+    animation: shake 0.4s ease-out;
+}
+
+.questions {
+    display: grid;
+    gap: 1rem;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    list-style: none;
+}
+
+/* While the anti-cheating watch is on, the text of the questions can't be selected. */
+.questions.guarded {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.questions.guarded .short {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.question {
+    padding: 1rem 1.25rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.q-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.number {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.q-text {
+    flex: 1;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.points {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.options {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.option:hover {
+    border-color: var(--brand);
+}
+
+.option.picked {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.option input {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    accent-color: var(--btn-bg);
+}
+
+.option span {
+    overflow-wrap: anywhere;
+}
+
+.short {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+.short:focus {
+    border-color: var(--brand);
+    outline: 2px solid var(--brand-ring);
+}
+
+.finish {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.finish.end {
+    justify-content: flex-end;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+    100% { transform: none; }
+}

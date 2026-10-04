@@ -1,0 +1,282 @@
+@page "/teacher/items/{ItemId:int}"
+@attribute [Authorize(Roles = AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject WorkService Work
+
+<PageTitle>@(data?.Title ?? "Work") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (data is null)
+{
+    <Card>
+        <EmptyState IconName="file-text" Title="Not found" IsPage="true">
+            <p>This is not one of your activities, or it was deleted.</p>
+            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    var handedIn = data.Rows.Count(r => r.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded);
+    var toCheck = data.Rows.Count(r => r.Status == SubmissionStatus.Submitted);
+    var scored = data.Rows.Where(r => r.Score is not null).ToList();
+    var flagged = data.Rows.Count(r => r.IsFlagged);
+
+    <PageHeader Title="@data.Title" Subtitle="@($"{ItemKinds.Display(data.Kind)} · {data.SubjectName} · {data.SectionLabel} · {data.ModuleTitle}")" IconName="@SubjectStyle.KindIcon(data.Kind)">
+        <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the subject</ButtonLink>
+        @if (data.Kind == ItemKinds.Quiz)
+        {
+            <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">Questions</ButtonLink>
+        }
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <div class="summary">
+        <div class="tile"><span class="tile-value">@handedIn / @data.Rows.Count</span><span class="tile-label">handed in</span></div>
+        <div class="tile"><span class="tile-value">@toCheck</span><span class="tile-label">to check</span></div>
+        <div class="tile"><span class="tile-value">@(scored.Count == 0 ? "—" : SubjectStyle.Percent(scored.Average(r => r.Score!.Value), data.MaxScore))</span><span class="tile-label">class average</span></div>
+        <div class="tile @(flagged > 0 ? "alert" : "")"><span class="tile-value">@flagged</span><span class="tile-label">flagged</span></div>
+        <div class="tile wide">
+            <span class="tile-label">Highest score</span>
+            <span class="tile-value small">@data.MaxScore.ToString("0.##")</span>
+            @if (data.DueAtUtc is { } due)
+            {
+                <span class="tile-label">Due @PhilippineTime.FormatDateTime(due)</span>
+            }
+        </div>
+    </div>
+
+    <Card>
+        @if (data.Rows.Count == 0)
+        {
+            <EmptyState IconName="users" Title="No students in this subject yet">
+                <p>Students appear here once the registrar has enrolled them in this section with this subject.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="col-more">Handed in</th>
+                            <th scope="col">Score</th>
+                            @if (data.AntiCheat)
+                            {
+                                <th scope="col" class="col-more">Warnings</th>
+                            }
+                            <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in data.Rows)
+                        {
+                            var (text, tone) = TeacherStatus(row);
+                            <tr class="@(row.IsFlagged ? "flagged" : "")">
+                                <td>
+                                    <div class="person">
+                                        <Avatar Name="@row.StudentName" Size="32" />
+                                        <div><span class="person-name">@row.StudentName</span><span class="sub">@row.Lrn</span></div>
+                                    </div>
+                                </td>
+                                <td><Badge Tone="@tone">@text</Badge>@if (row.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
+                                <td class="col-more">@(row.SubmittedAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "—")</td>
+                                <td>@(row.Score is { } score ? $"{score:0.##} / {data.MaxScore:0.##}" : "—")</td>
+                                @if (data.AntiCheat)
+                                {
+                                    <td class="col-more">
+                                        @if (row.IsFlagged)
+                                        {
+                                            <Badge Tone="Tone.Danger"><Icon Name="flag" Size="12" /> @row.ViolationCount</Badge>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">0</span>
+                                        }
+                                    </td>
+                                }
+                                <td class="col-actions">
+                                    <Button Small="true" Variant="@(row.Status == SubmissionStatus.Submitted ? ButtonVariant.Primary : ButtonVariant.Secondary)" IconName="@(row.Status == SubmissionStatus.Submitted ? "pencil" : "eye")"
+                                            OnClick="() => OpenAsync(row)">@(row.Status == SubmissionStatus.Submitted ? "Grade" : data.Kind == ItemKinds.Quiz || row.Status == SubmissionStatus.Graded ? "Open" : "Give score")</Button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+}
+
+@* ===== One student's work ===== *@
+<Modal Open="detail is not null" Title="@(detail?.StudentName ?? "")" OnClose="CloseDetail" Large="true">
+    @if (detail is not null && data is not null)
+    {
+        <div class="detail-head">
+            <Badge Tone="@(detail.Status == SubmissionStatus.Graded ? Tone.Success : detail.Status == SubmissionStatus.Submitted ? Tone.Info : Tone.Neutral)">@StatusText(detail.Status)</Badge>
+            @if (detail.IsLate) { <Badge Tone="Tone.Warning">Handed in late</Badge> }
+            @if (detail.SubmittedAtUtc is { } at) { <span class="muted">@PhilippineTime.FormatDateTime(at)</span> }
+        </div>
+
+        @if (detail.IsFlagged || detail.AutoSubmitReason is not null)
+        {
+            <div class="watch">
+                <strong><Icon Name="shield-alert" Size="16" /> Anti-cheating watch</strong>
+                <p>
+                    @detail.ViolationCount @(detail.ViolationCount == 1 ? "warning" : "warnings").
+                    @if (detail.AutoSubmitReason == "violations") { <span>The quiz was handed in by the system after too many warnings.</span> }
+                    else if (detail.AutoSubmitReason == "time") { <span>The quiz was handed in by the system when the time was over.</span> }
+                </p>
+                @if (!string.IsNullOrWhiteSpace(detail.ViolationLog))
+                {
+                    <pre class="log">@detail.ViolationLog</pre>
+                }
+            </div>
+        }
+
+        @if (data.Kind == ItemKinds.Quiz)
+        {
+            @if (detail.Answers.Count == 0)
+            {
+                <p class="muted">The student has not handed in this quiz.</p>
+            }
+            else
+            {
+                <ol class="answers">
+                    @foreach (var answer in detail.Answers)
+                    {
+                        <li class="@(answer.IsCorrect ? "right" : "wrong")">
+                            <div class="q">@answer.Question <span class="pts">@answer.Earned.ToString("0.##") / @answer.Points.ToString("0.##")</span></div>
+                            <div class="a"><span>Answer:</span> @(answer.Given ?? "— no answer —")</div>
+                            @if (!answer.IsCorrect)
+                            {
+                                <div class="a ok"><span>Right answer:</span> @answer.Correct</div>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+        }
+        else
+        {
+            @if (string.IsNullOrWhiteSpace(detail.AnswerText) && string.IsNullOrWhiteSpace(detail.LinkUrl))
+            {
+                <p class="muted">Nothing was handed in. You can still give a score (for example for something done in class).</p>
+            }
+            else
+            {
+                @if (!string.IsNullOrWhiteSpace(detail.AnswerText))
+                {
+                    <div class="work">@detail.AnswerText</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(detail.LinkUrl))
+                {
+                    <p><Icon Name="link" Size="16" /> <a href="@detail.LinkUrl" target="_blank" rel="noopener noreferrer">@detail.LinkUrl</a></p>
+                }
+            }
+        }
+
+        <FormErrors Errors="formErrors" />
+        <div class="grade-box">
+            <Field For="g-score" Label="@($"Score (highest {data.MaxScore:0.##})")" Required="true">
+                <InputNumber id="g-score" @bind-Value="scoreInput" />
+            </Field>
+            <Field For="g-fb" Label="Feedback" Class="grow">
+                <InputTextArea id="g-fb" @bind-Value="feedbackInput" rows="3" />
+            </Field>
+        </div>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDetail">Cancel</Button>
+            <Button IconName="circle-check" Disabled="busy" OnClick="SaveGradeAsync">@(busy ? "Saving…" : "Save score")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter] public int ItemId { get; set; }
+
+    private int teacherId;
+    private bool loaded;
+    private ItemSubmissionList? data;
+    private SubmissionDetail? detail;
+    private decimal? scoreInput;
+    private string? feedbackInput;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync() => data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
+
+    private void ClearMessage() => message = null;
+
+    private static string StatusText(string status) => status switch
+    {
+        SubmissionStatus.Graded => "Graded",
+        SubmissionStatus.Submitted => "Handed in",
+        SubmissionStatus.InProgress => "In progress",
+        _ => "Nothing handed in",
+    };
+
+    private static (string Text, Tone Tone) TeacherStatus(SubmissionRow row) => row.Status switch
+    {
+        SubmissionStatus.Graded => ("Graded", Tone.Success),
+        SubmissionStatus.Submitted => ("To check", Tone.Warning),
+        SubmissionStatus.InProgress => ("In progress", Tone.Info),
+        _ => ("Not handed in", Tone.Neutral),
+    };
+
+    private async Task OpenAsync(SubmissionRow row)
+    {
+        formErrors = [];
+        detail = await Work.GetSubmissionAsync(teacherId, ItemId, row.StudentId);
+        scoreInput = detail?.Score;
+        feedbackInput = detail?.Feedback;
+    }
+
+    private void CloseDetail() => detail = null;
+
+    private async Task SaveGradeAsync()
+    {
+        if (detail is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Work.GradeAsync(teacherId, ItemId, detail.StudentId, scoreInput, feedbackInput);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            var name = detail.StudentName;
+            detail = null;
+            messageIsError = false;
+            message = $"{name}: {result.Message}";
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

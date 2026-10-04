@@ -1,0 +1,47 @@
+@page "/teacher/subjects"
+@attribute [Authorize(Roles = AppRoles.Teacher)]
+@using SEAITT_LMS.Services
+@inject CurrentUser Me
+@inject TeachingService Teaching
+
+<PageTitle>Subjects · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Subjects" Subtitle="The subjects you teach. Open one to see its modules, activities, quizzes and task performances." IconName="book-open" />
+
+@if (cards is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (cards.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="book-open" Title="No subjects yet">
+            <p>The administrator gives each teacher their subjects (Users Management, Teachers, Teaching). They will show up here.</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="grid">
+        @foreach (var card in cards)
+        {
+            <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@(card.Schedule is null ? null : card.Schedule + " schedule")" Href="@($"teacher/subjects/{card.AssignmentId}")">
+                <Badge Tone="@(card.ModulesTotal == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesPosted of @card.ModulesTotal @(card.ModulesTotal == 1 ? "module" : "modules") posted</Badge>
+                @if (card.ToGrade > 0)
+                {
+                    <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
+                }
+            </SubjectCard>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<TeacherSubjectCard>? cards;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var teacherId = await Me.GetTeacherIdAsync();
+        cards = teacherId is { } id ? await Teaching.GetTeacherCardsAsync(id) : [];
+    }
+}

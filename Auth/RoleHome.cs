@@ -7,14 +7,18 @@ public static class RoleHome
 {
     public const string Admin = "/admin";
     public const string Registrar = "/registrar";
+    public const string Teacher = "/teacher/subjects";
+    public const string Student = "/student/subjects";
 
-    /// <summary>Teachers, students and guidance counselors have no dashboard yet, so they land on their account page.</summary>
+    /// <summary>Guidance counselors have no page of their own yet, so they land on their account page.</summary>
     public const string Account = "/account";
 
     public static string For(string? role) => role switch
     {
         AppRoles.Admin => Admin,
         AppRoles.Registrar => Registrar,
+        AppRoles.Teacher => Teacher,
+        AppRoles.Student => Student,
         _ => Account,
     };
 }

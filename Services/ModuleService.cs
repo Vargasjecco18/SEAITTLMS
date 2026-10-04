@@ -76,7 +76,8 @@ public sealed record StudentItem(
     int Id, string Kind, string Title, decimal MaxScore, DateTime? DueAtUtc, string Status, decimal? Score, bool IsLate, bool IsOverdue, int ModuleId, string ModuleTitle);
 
 public sealed record StudentModule(
-    int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items);
+    int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
+    int AssignmentId = 0, string SubjectName = "");
 
 public sealed record StudentSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string TeacherName, IReadOnlyList<StudentModule> Modules);
@@ -495,7 +496,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var now = Now;
 
         var m = await db.Modules.AsNoTracking().Where(x => x.Id == moduleId && x.VisibleFromUtc != null && x.VisibleFromUtc <= now)
-            .Select(x => new { Module = x, x.Assignment.SectionId, x.Assignment.SubjectId })
+            .Select(x => new { Module = x, x.Assignment.SectionId, x.Assignment.SubjectId, SubjectName = x.Assignment.Subject.Name })
             .FirstOrDefaultAsync(ct);
         if (m is null || !await OnRosterAsync(db, studentId, m.SectionId, m.SubjectId, ct))
         {
@@ -516,7 +517,8 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         }
 
         var items = await LoadStudentItemsAsync(db, studentId, [moduleId], now, ct);
-        return new StudentModule(m.Module.Id, m.Module.Title, m.Module.Description, m.Module.Body, m.Module.LinkUrl, m.Module.Position, m.Module.VisibleFromUtc!.Value, true, items);
+        return new StudentModule(m.Module.Id, m.Module.Title, m.Module.Description, m.Module.Body, m.Module.LinkUrl, m.Module.Position, m.Module.VisibleFromUtc!.Value, true, items,
+            m.Module.AssignmentId, m.SubjectName);
     }
 
     private static async Task<List<StudentItem>> LoadStudentItemsAsync(AppDbContext db, int studentId, IReadOnlyCollection<int> moduleIds, DateTime now, CancellationToken ct)

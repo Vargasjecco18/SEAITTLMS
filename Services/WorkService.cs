@@ -22,7 +22,7 @@ public sealed record StudentItemView(
 
 public sealed record SubmissionRow(int StudentId, string StudentName, string? Lrn, string Status, DateTime? SubmittedAtUtc, bool IsLate, decimal? Score, int ViolationCount, bool IsFlagged);
 
-public sealed record ItemSubmissions(
+public sealed record ItemSubmissionList(
     int ItemId, string Kind, string Title, decimal MaxScore, DateTime? DueAtUtc, int ModuleId, string ModuleTitle,
     int AssignmentId, string SubjectName, string SectionLabel, bool AntiCheat, int Questions, IReadOnlyList<SubmissionRow> Rows);
 
@@ -180,7 +180,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
     // ======================================================================= the teacher
 
-    public async Task<ItemSubmissions?> GetItemSubmissionsAsync(int teacherId, int itemId, CancellationToken ct = default)
+    public async Task<ItemSubmissionList?> GetItemSubmissionsAsync(int teacherId, int itemId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var context = await ItemAccess.ForTeacherAsync(db, teacherId, itemId, tracking: false, ct);
@@ -202,7 +202,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         var i = context.Item;
         var questions = i.Kind == ItemKinds.Quiz ? await db.QuizQuestions.CountAsync(q => q.ItemId == itemId, ct) : 0;
-        return new ItemSubmissions(i.Id, i.Kind, i.Title, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName, context.SectionLabel, i.AntiCheat, questions, rows);
+        return new ItemSubmissionList(i.Id, i.Kind, i.Title, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName, context.SectionLabel, i.AntiCheat, questions, rows);
     }
 
     public async Task<SubmissionDetail?> GetSubmissionAsync(int teacherId, int itemId, int studentId, CancellationToken ct = default)

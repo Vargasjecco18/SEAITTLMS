@@ -1,0 +1,621 @@
+@page "/teacher/subjects/{AssignmentId:int}"
+@attribute [Authorize(Roles = AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject TimeProvider Clock
+@inject NavigationManager Navigation
+
+<PageTitle>@(subject?.SubjectName ?? "Subject") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subject is null)
+{
+    <Card>
+        <EmptyState IconName="book-open" Title="Subject not found" IsPage="true">
+            <p>This subject is not one of yours, or it was removed.</p>
+            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@subject.SubjectName"
+                Subtitle="@($"{subject.SectionLabel}{(subject.Schedule is null ? "" : " · " + subject.Schedule)} · {subject.Students} {(subject.Students == 1 ? "student" : "students")}")"
+                IconName="book-open">
+        <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All subjects</ButtonLink>
+        <Button IconName="plus" OnClick="OpenNewModule">Add module</Button>
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <p class="hint-line">
+        <Icon Name="eye-off" Size="16" />
+        <span>A new module is a <strong>draft</strong>: students can't see it until you post it. Post it now, or schedule the time it appears.</span>
+    </p>
+
+    @if (subject.Modules.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="layers" Title="No modules yet">
+                <p>A module is a lesson with its activities, quizzes and task performances.</p>
+                <Button IconName="plus" OnClick="OpenNewModule">Add the first module</Button>
+            </EmptyState>
+        </Card>
+    }
+    else
+    {
+        <div class="modules">
+            @for (var n = 0; n < subject.Modules.Count; n++)
+            {
+                var module = subject.Modules[n];
+                var number = n + 1;
+                <section class="module @module.State.ToLowerInvariant()" aria-label="Module @number">
+                    <header class="module-head">
+                        <div class="module-title">
+                            <span class="module-number">@number</span>
+                            <div>
+                                <h2>@module.Title</h2>
+                                <div class="module-state">
+                                    @if (module.State == Visibility.Posted)
+                                    {
+                                        <Badge Tone="Tone.Success">Posted @PhilippineTime.FormatDate(module.VisibleFromUtc!.Value)</Badge>
+                                    }
+                                    else if (module.State == Visibility.Scheduled)
+                                    {
+                                        <Badge Tone="Tone.Warning">Scheduled for @PhilippineTime.FormatDateTime(module.VisibleFromUtc!.Value)</Badge>
+                                    }
+                                    else
+                                    {
+                                        <Badge>Draft · hidden from students</Badge>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="module-actions">
+                            @if (module.State != Visibility.Posted)
+                            {
+                                <Button Small="true" IconName="send" OnClick="() => PostNowAsync(module)">Post now</Button>
+                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="calendar-clock" OnClick="() => OpenSchedule(module)">@(module.State == Visibility.Scheduled ? "Change time" : "Schedule")</Button>
+                            }
+
+                            @if (module.State != Visibility.Draft)
+                            {
+                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye-off" OnClick="() => HideAsync(module)">Hide</Button>
+                            }
+
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-up" Title="Move up" Disabled="@(n == 0)" OnClick="() => MoveAsync(module, -1)" />
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-down" Title="Move down" Disabled="@(n == subject.Modules.Count - 1)" OnClick="() => MoveAsync(module, 1)" />
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete module" OnClick="() => AskDeleteModule(module)" />
+                        </div>
+                    </header>
+
+                    @if (!string.IsNullOrWhiteSpace(module.Description))
+                    {
+                        <p class="module-description">@module.Description</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl))
+                    {
+                        <p class="module-lesson">
+                            <Icon Name="file-text" Size="16" />
+                            @if (!string.IsNullOrWhiteSpace(module.Body))
+                            {
+                                <span>Lesson text (@module.Body.Length.ToString("N0") characters)</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
+                            {
+                                <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer"><Icon Name="link" Size="14" /> Link</a>
+                            }
+                        </p>
+                    }
+
+                    <div class="groups">
+                        @foreach (var kind in ItemKinds.All)
+                        {
+                            var items = module.Items.Where(i => i.Kind == kind).ToList();
+                            <div class="group">
+                                <div class="group-head">
+                                    <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
+                                </div>
+
+                                @if (items.Count == 0)
+                                {
+                                    <p class="none">None yet.</p>
+                                }
+                                else
+                                {
+                                    <ul class="items">
+                                        @foreach (var item in items)
+                                        {
+                                            <li class="item">
+                                                <div class="item-main">
+                                                    <a class="item-title" href="teacher/items/@item.Id">@item.Title</a>
+                                                    <div class="item-meta">
+                                                        @if (item.DueAtUtc is { } due)
+                                                        {
+                                                            <span title="@PhilippineTime.FormatDateTime(due)"><Icon Name="calendar-clock" Size="14" /> Due @PhilippineTime.FormatDateTime(due)</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>No due date</span>
+                                                        }
+                                                        <span>@item.MaxScore.ToString("0.##") points</span>
+                                                        @if (item.Kind == ItemKinds.Quiz)
+                                                        {
+                                                            <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")</span>
+                                                            @if (item.TimeLimitMinutes is { } minutes)
+                                                            {
+                                                                <span><Icon Name="timer" Size="14" /> @minutes min</span>
+                                                            }
+                                                            @if (item.AntiCheat)
+                                                            {
+                                                                <span title="Warns after @item.MaxViolations leaves of the quiz, copies or pastes"><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
+                                                            }
+                                                        }
+                                                        @if (item.State == Visibility.Scheduled && item.VisibleFromUtc is { } appears)
+                                                        {
+                                                            <Badge Tone="Tone.Warning">Appears @PhilippineTime.FormatDateTime(appears)</Badge>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="item-side">
+                                                    <span class="handed" title="Handed in of the students in this subject">@item.Submitted / @item.Students handed in</span>
+                                                    @if (item.Kind != ItemKinds.Quiz && item.Submitted - item.Graded > 0)
+                                                    {
+                                                        <Badge Tone="Tone.Warning">@(item.Submitted - item.Graded) to check</Badge>
+                                                    }
+                                                    @if (item.Flagged > 0)
+                                                    {
+                                                        <Badge Tone="Tone.Danger"><Icon Name="flag" Size="12" /> @item.Flagged flagged</Badge>
+                                                    }
+                                                </div>
+                                                <div class="item-actions">
+                                                    @if (item.Kind == ItemKinds.Quiz)
+                                                    {
+                                                        <ButtonLink Href="@($"teacher/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
+                                                    }
+                                                    <ButtonLink Href="@($"teacher/items/{item.Id}")" Variant="ButtonVariant.Secondary" Small="true" IconName="eye">Open</ButtonLink>
+                                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
+                                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    }
+}
+
+@* ===== Module: add or edit ===== *@
+<Modal Open="moduleForm is not null" Title="@(editingModuleId is null ? "Add module" : "Edit module")" OnClose="CloseModuleForm">
+    @if (moduleForm is not null)
+    {
+        <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
+            <FormErrors Errors="formErrors" />
+            <Field For="m-title" Label="Title" Required="true">
+                <InputText id="m-title" @bind-Value="moduleForm.Title" maxlength="200" autocomplete="off" />
+            </Field>
+            <Field For="m-desc" Label="Short description" Hint="One or two lines students see in the list.">
+                <InputText id="m-desc" @bind-Value="moduleForm.Description" maxlength="1000" autocomplete="off" />
+            </Field>
+            <Field For="m-body" Label="Lesson" Hint="The text of the lesson. Line breaks are kept.">
+                <InputTextArea id="m-body" @bind-Value="moduleForm.Body" rows="9" />
+            </Field>
+            <Field For="m-link" Label="Link" Hint="A file or video the lesson uses (starts with https://).">
+                <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
+            </Field>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save module")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Item: add or edit ===== *@
+<Modal Open="itemForm is not null" Title="@ItemModalTitle" OnClose="CloseItemForm" Large="true">
+    @if (itemForm is not null)
+    {
+        <EditForm Model="itemForm" OnValidSubmit="SaveItemAsync">
+            <FormErrors Errors="formErrors" />
+            <div class="two">
+                <Field For="i-kind" Label="Kind" Required="true">
+                    <InputSelect id="i-kind" @bind-Value="itemForm.Kind" disabled="@(editingItemId is not null)">
+                        @foreach (var kind in ItemKinds.All)
+                        {
+                            <option value="@kind">@ItemKinds.Display(kind)</option>
+                        }
+                    </InputSelect>
+                </Field>
+                <Field For="i-title" Label="Title" Required="true">
+                    <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
+                </Field>
+            </div>
+            <Field For="i-text" Label="Instructions">
+                <InputTextArea id="i-text" @bind-Value="itemForm.Instructions" rows="5" />
+            </Field>
+            <div class="two">
+                @if (itemForm.Kind != ItemKinds.Quiz)
+                {
+                    <Field For="i-score" Label="Highest score" Required="true">
+                        <InputNumber id="i-score" @bind-Value="itemForm.MaxScore" />
+                    </Field>
+                }
+                <Field For="i-due" Label="Due date" Hint="Philippine time. Leave empty for no due date.">
+                    <input id="i-due" type="datetime-local" value="@itemForm.DueText" @onchange="SetDue" />
+                </Field>
+                <Field For="i-from" Label="Appears on" Hint="Leave empty to show it with its module.">
+                    <input id="i-from" type="datetime-local" value="@itemForm.VisibleText" @onchange="SetVisible" />
+                </Field>
+            </div>
+
+            @if (itemForm.Kind == ItemKinds.Quiz)
+            {
+                <fieldset class="quiz-settings">
+                    <legend><Icon Name="shield-check" Size="16" /> Quiz settings</legend>
+                    <p class="muted small-text">You write the questions after saving. The quiz is worth the total of the points of its questions.</p>
+                    <div class="two">
+                        <Field For="i-limit" Label="Time limit (minutes)" Hint="Leave empty for no time limit.">
+                            <InputNumber id="i-limit" @bind-Value="itemForm.TimeLimit" />
+                        </Field>
+                        <Field For="i-warn" Label="Warnings before it is handed in" Hint="Leaving the quiz, copying or pasting is a warning.">
+                            <InputNumber id="i-warn" @bind-Value="itemForm.MaxViolations" />
+                        </Field>
+                    </div>
+                    <label class="switch">
+                        <InputCheckbox id="i-anti" @bind-Value="itemForm.AntiCheat" />
+                        <span><strong>Anti-cheating watch</strong><small>Warns the student when they leave the quiz tab or window, copy or paste. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
+                    </label>
+                    <label class="switch">
+                        <InputCheckbox id="i-shuffle-q" @bind-Value="itemForm.ShuffleQuestions" />
+                        <span><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
+                    </label>
+                    <label class="switch">
+                        <InputCheckbox id="i-shuffle-o" @bind-Value="itemForm.ShuffleOptions" />
+                        <span><strong>Shuffle the choices</strong><small>The choices of multiple choice questions change places for every student.</small></span>
+                    </label>
+                    <label class="switch">
+                        <InputCheckbox id="i-show" @bind-Value="itemForm.ShowResult" />
+                        <span><strong>Show the result right away</strong><small>The student sees their score and the right answers after handing in.</small></span>
+                    </label>
+                </fieldset>
+            }
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseItemForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : itemForm.Kind == ItemKinds.Quiz && editingItemId is null ? "Save and write questions" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Schedule ===== *@
+<Modal Open="scheduleModule is not null" Title="Schedule the module" OnClose="CloseSchedule">
+    @if (scheduleModule is not null)
+    {
+        <p class="dialog-text"><strong>@scheduleModule.Title</strong> stays hidden until the time you choose, then appears for the students by itself and they are told.</p>
+        <FormErrors Errors="formErrors" />
+        <Field For="s-at" Label="Appears on" Required="true" Hint="Philippine time.">
+            <input id="s-at" type="datetime-local" value="@scheduleText" @onchange="SetSchedule" />
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSchedule">Cancel</Button>
+            <Button IconName="calendar-clock" Disabled="busy" OnClick="SaveScheduleAsync">Schedule</Button>
+        </div>
+    }
+</Modal>
+
+@* ===== Delete ===== *@
+<Modal Open="deleteTarget is not null" Title="@(deleteTarget?.Title ?? "")" OnClose="CloseDelete">
+    @if (deleteTarget is not null)
+    {
+        <p class="dialog-text">@deleteTarget.Text <strong>This can't be undone.</strong></p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="DeleteAsync">Delete</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private sealed class ItemForm
+    {
+        public string Kind { get; set; } = ItemKinds.Activity;
+        public string Title { get; set; } = "";
+        public string? Instructions { get; set; }
+        public decimal MaxScore { get; set; } = 100;
+        public string DueText { get; set; } = "";
+        public string VisibleText { get; set; } = "";
+        public int? TimeLimit { get; set; }
+        public bool ShuffleQuestions { get; set; } = true;
+        public bool ShuffleOptions { get; set; } = true;
+        public bool AntiCheat { get; set; } = true;
+        public int MaxViolations { get; set; } = 3;
+        public bool ShowResult { get; set; } = true;
+    }
+
+    private sealed record DeleteTarget(string Title, string Text, bool IsModule, int Id);
+
+    [Parameter] public int AssignmentId { get; set; }
+
+    private int teacherId;
+    private bool loaded;
+    private TeacherSubject? subject;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    private ModuleInput? moduleForm;
+    private int? editingModuleId;
+
+    private ItemForm? itemForm;
+    private int? editingItemId;
+    private int itemModuleId;
+
+    private TeacherModule? scheduleModule;
+    private string scheduleText = "";
+
+    private DeleteTarget? deleteTarget;
+
+    private string ItemModalTitle => itemForm is null ? "" : editingItemId is null ? $"Add {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}" : $"Edit {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync() => subject = teacherId == 0 ? null : await Modules.GetTeacherSubjectAsync(teacherId, AssignmentId);
+
+    private void Say(ServiceResult result, string? fallback = null)
+    {
+        messageIsError = !result.Succeeded;
+        message = result.Succeeded ? result.Message ?? fallback : string.Join(" ", result.Errors);
+    }
+
+    private void ClearMessage() => message = null;
+
+    // ---------------------------------------------------------------- modules
+
+    private void OpenNewModule()
+    {
+        formErrors = [];
+        editingModuleId = null;
+        moduleForm = new ModuleInput();
+    }
+
+    private void OpenEditModule(TeacherModule module)
+    {
+        formErrors = [];
+        editingModuleId = module.Id;
+        moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
+    }
+
+    private void CloseModuleForm() => moduleForm = null;
+
+    private async Task SaveModuleAsync()
+    {
+        if (moduleForm is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = editingModuleId is { } id
+                ? await Modules.UpdateModuleAsync(teacherId, id, moduleForm)
+                : await Modules.CreateModuleAsync(teacherId, AssignmentId, moduleForm);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            moduleForm = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task PostNowAsync(TeacherModule module)
+    {
+        Say(await Modules.PostModuleAsync(teacherId, module.Id, null));
+        await LoadAsync();
+    }
+
+    private async Task HideAsync(TeacherModule module)
+    {
+        Say(await Modules.HideModuleAsync(teacherId, module.Id));
+        await LoadAsync();
+    }
+
+    private async Task MoveAsync(TeacherModule module, int direction)
+    {
+        await Modules.MoveModuleAsync(teacherId, module.Id, direction);
+        await LoadAsync();
+    }
+
+    private void OpenSchedule(TeacherModule module)
+    {
+        formErrors = [];
+        scheduleModule = module;
+        var suggestion = module.VisibleFromUtc is { } at && at > Clock.GetUtcNow().UtcDateTime
+            ? at
+            : Clock.GetUtcNow().UtcDateTime.AddDays(1);
+        scheduleText = PhilippineTime.ToInputValue(suggestion);
+    }
+
+    private void CloseSchedule() => scheduleModule = null;
+
+    private async Task SaveScheduleAsync()
+    {
+        if (scheduleModule is null || busy)
+        {
+            return;
+        }
+
+        var at = PhilippineTime.FromInputValue(scheduleText);
+        if (at is null || at <= Clock.GetUtcNow().UtcDateTime.AddMinutes(1))
+        {
+            formErrors = ["Pick a date and time in the future."];
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Modules.PostModuleAsync(teacherId, scheduleModule.Id, at);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            scheduleModule = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- items
+
+    private void OpenNewItem(TeacherModule module, string kind)
+    {
+        formErrors = [];
+        editingItemId = null;
+        itemModuleId = module.Id;
+        itemForm = new ItemForm { Kind = kind, MaxScore = kind == ItemKinds.TaskPerformance ? 100 : 50 };
+    }
+
+    private void OpenEditItem(TeacherModule module, TeacherItem item)
+    {
+        formErrors = [];
+        editingItemId = item.Id;
+        itemModuleId = module.Id;
+        itemForm = new ItemForm
+        {
+            Kind = item.Kind, Title = item.Title, Instructions = item.Instructions, MaxScore = item.MaxScore,
+            DueText = PhilippineTime.ToInputValue(item.DueAtUtc), VisibleText = PhilippineTime.ToInputValue(item.VisibleFromUtc),
+            TimeLimit = item.TimeLimitMinutes, ShuffleQuestions = item.ShuffleQuestions, ShuffleOptions = item.ShuffleOptions,
+            AntiCheat = item.AntiCheat, MaxViolations = item.MaxViolations, ShowResult = item.ShowResult,
+        };
+    }
+
+    private void CloseItemForm() => itemForm = null;
+
+    // The date boxes are written out (not @bind) because their text is converted by PhilippineTime, not by Blazor.
+    private void SetDue(ChangeEventArgs e) => itemForm!.DueText = e.Value?.ToString() ?? "";
+
+    private void SetVisible(ChangeEventArgs e) => itemForm!.VisibleText = e.Value?.ToString() ?? "";
+
+    private void SetSchedule(ChangeEventArgs e) => scheduleText = e.Value?.ToString() ?? "";
+
+    private async Task SaveItemAsync()
+    {
+        if (itemForm is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var input = new ItemInput
+            {
+                Kind = itemForm.Kind, Title = itemForm.Title, Instructions = itemForm.Instructions, MaxScore = itemForm.MaxScore,
+                DueAtUtc = PhilippineTime.FromInputValue(itemForm.DueText), VisibleFromUtc = PhilippineTime.FromInputValue(itemForm.VisibleText),
+                TimeLimitMinutes = itemForm.TimeLimit, ShuffleQuestions = itemForm.ShuffleQuestions, ShuffleOptions = itemForm.ShuffleOptions,
+                AntiCheat = itemForm.AntiCheat, MaxViolations = itemForm.MaxViolations, ShowResult = itemForm.ShowResult,
+            };
+            var wasNew = editingItemId is null;
+            var result = await Modules.SaveItemAsync(teacherId, itemModuleId, editingItemId, input);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            itemForm = null;
+            if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
+            {
+                Navigation.NavigateTo($"teacher/items/{quizId}/questions");
+                return;
+            }
+
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- delete
+
+    private void AskDeleteModule(TeacherModule module)
+    {
+        var count = module.Items.Count;
+        deleteTarget = new DeleteTarget("Delete this module?",
+            $"\"{module.Title}\" will be deleted with its {count} {(count == 1 ? "activity, quiz or task performance" : "activities, quizzes and task performances")} and everything the students handed in.",
+            true, module.Id);
+    }
+
+    private void AskDeleteItem(TeacherItem item)
+    {
+        var handed = item.Submitted;
+        deleteTarget = new DeleteTarget($"Delete this {ItemKinds.Display(item.Kind).ToLowerInvariant()}?",
+            handed == 0
+                ? $"\"{item.Title}\" will be deleted."
+                : $"\"{item.Title}\" will be deleted with the {handed} {(handed == 1 ? "piece of work" : "pieces of work")} the students handed in and their scores.",
+            false, item.Id);
+    }
+
+    private void CloseDelete() => deleteTarget = null;
+
+    private async Task DeleteAsync()
+    {
+        if (deleteTarget is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = deleteTarget.IsModule
+                ? await Modules.DeleteModuleAsync(teacherId, deleteTarget.Id)
+                : await Modules.DeleteItemAsync(teacherId, deleteTarget.Id);
+            deleteTarget = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

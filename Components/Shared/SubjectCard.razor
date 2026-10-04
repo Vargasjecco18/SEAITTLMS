@@ -1,0 +1,50 @@
+@* A subject as a card with a colored banner: the same card for a teacher's subject and a student's subject.
+   The color depends on the subject's name, so a subject always looks the same. *@
+<article class="subject tone-@SubjectStyle.ColorIndex(Name)">
+    <div class="banner">
+        <span class="book"><Icon Name="book-open" Size="26" /></span>
+        @if (Tag is not null)
+        {
+            <span class="tag">@Tag</span>
+        }
+    </div>
+
+    <div class="body">
+        <h3 title="@Name">@Name</h3>
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <p class="sub">@Subtitle</p>
+        }
+
+        <div class="facts">@ChildContent</div>
+
+        <div class="foot">
+            @if (Href is not null)
+            {
+                <a class="open" href="@Href">Open <Icon Name="arrow-right" Size="16" /></a>
+            }
+            else
+            {
+                <span class="open off" title="@OffText">@(OffText ?? "Not open yet")</span>
+            }
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+
+    /// <summary>A small label on the banner, like the section or the term.</summary>
+    [Parameter] public string? Tag { get; set; }
+
+    /// <summary>The line under the name, like the teacher.</summary>
+    [Parameter] public string? Subtitle { get; set; }
+
+    /// <summary>Where "Open" goes. Empty means the subject can't be opened yet.</summary>
+    [Parameter] public string? Href { get; set; }
+
+    [Parameter] public string? OffText { get; set; }
+
+    /// <summary>The small facts (badges, numbers) between the name and the button.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

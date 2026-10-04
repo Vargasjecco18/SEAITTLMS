@@ -1,0 +1,22 @@
+@using Microsoft.AspNetCore.Components.Web
+
+@* A line of feedback at the top of a page, with a button to hide it. *@
+@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="notice @(IsError ? "error" : "")" role="@(IsError ? "alert" : "status")">
+        <Icon Name="@(IsError ? "circle-alert" : "circle-check")" Size="18" />
+        <span>@Message</span>
+        <button type="button" class="dismiss" aria-label="Dismiss" @onclick="Dismiss"><Icon Name="x" Size="16" /></button>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+
+    [Parameter] public bool IsError { get; set; }
+
+    /// <summary>Called when the X is pressed. The page then clears the message.</summary>
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private Task Dismiss() => OnDismiss.InvokeAsync();
+}

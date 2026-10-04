@@ -793,5 +793,137 @@ CREATE INDEX `ix_notifications_user_id_is_read_created_at_utc` ON `notifications
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004171144_AddMessagesAndNotifications', '9.0.20');
 
+CREATE TABLE `teaching_assignments` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `teacher_id` int NOT NULL,
+    `section_id` int NOT NULL,
+    `subject_id` int NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_teaching_assignments` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_teaching_assignments_sections_section_id` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_teaching_assignments_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_teaching_assignments_teachers_teacher_id` FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `modules` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `assignment_id` int NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `description` varchar(1000) CHARACTER SET utf8mb4 NULL,
+    `body` text CHARACTER SET utf8mb4 NULL,
+    `link_url` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `position` int NOT NULL,
+    `visible_from_utc` datetime(6) NULL,
+    `notified_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_modules` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_modules_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `module_items` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `module_id` int NOT NULL,
+    `kind` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `instructions` text CHARACTER SET utf8mb4 NULL,
+    `max_score` decimal(6,2) NOT NULL,
+    `due_at_utc` datetime(6) NULL,
+    `visible_from_utc` datetime(6) NULL,
+    `notified_at_utc` datetime(6) NULL,
+    `due_reminder_sent_at_utc` datetime(6) NULL,
+    `position` int NOT NULL,
+    `time_limit_minutes` int NULL,
+    `shuffle_questions` tinyint(1) NOT NULL,
+    `shuffle_options` tinyint(1) NOT NULL,
+    `anti_cheat` tinyint(1) NOT NULL,
+    `max_violations` int NOT NULL,
+    `show_result` tinyint(1) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_module_items` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_module_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance')),
+    CONSTRAINT `ck_module_items_max_score` CHECK (max_score > 0),
+    CONSTRAINT `fk_module_items_modules_module_id` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `module_views` (
+    `module_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `first_opened_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_module_views` PRIMARY KEY (`module_id`, `student_id`),
+    CONSTRAINT `fk_module_views_modules_module_id` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_module_views_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `quiz_questions` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `item_id` int NOT NULL,
+    `position` int NOT NULL,
+    `text` varchar(1000) CHARACTER SET utf8mb4 NOT NULL,
+    `kind` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `options_text` text CHARACTER SET utf8mb4 NULL,
+    `correct_answer` varchar(500) CHARACTER SET utf8mb4 NOT NULL,
+    `points` decimal(6,2) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_quiz_questions` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_quiz_questions_kind` CHECK (kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer')),
+    CONSTRAINT `fk_quiz_questions_module_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `module_items` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `submissions` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `item_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `started_at_utc` datetime(6) NULL,
+    `submitted_at_utc` datetime(6) NULL,
+    `is_late` tinyint(1) NOT NULL,
+    `answer_text` text CHARACTER SET utf8mb4 NULL,
+    `link_url` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `answers_json` text CHARACTER SET utf8mb4 NULL,
+    `score` decimal(6,2) NULL,
+    `feedback` varchar(1000) CHARACTER SET utf8mb4 NULL,
+    `graded_at_utc` datetime(6) NULL,
+    `violation_count` int NOT NULL,
+    `violation_log` text CHARACTER SET utf8mb4 NULL,
+    `is_flagged` tinyint(1) NOT NULL,
+    `auto_submit_reason` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_submissions` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_submissions_score` CHECK (score IS NULL OR score >= 0),
+    CONSTRAINT `ck_submissions_status` CHECK (status IN ('InProgress', 'Submitted', 'Graded')),
+    CONSTRAINT `fk_submissions_module_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `module_items` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_submissions_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_module_items_due_at_utc` ON `module_items` (`due_at_utc`);
+
+CREATE INDEX `ix_module_items_module_id_kind_position` ON `module_items` (`module_id`, `kind`, `position`);
+
+CREATE INDEX `ix_module_views_student_id` ON `module_views` (`student_id`);
+
+CREATE INDEX `ix_modules_assignment_id_position` ON `modules` (`assignment_id`, `position`);
+
+CREATE INDEX `ix_modules_visible_from_utc` ON `modules` (`visible_from_utc`);
+
+CREATE INDEX `ix_quiz_questions_item_id_position` ON `quiz_questions` (`item_id`, `position`);
+
+CREATE UNIQUE INDEX `ix_submissions_item_id_student_id` ON `submissions` (`item_id`, `student_id`);
+
+CREATE INDEX `ix_submissions_student_id_status` ON `submissions` (`student_id`, `status`);
+
+CREATE UNIQUE INDEX `ix_teaching_assignments_section_id_subject_id` ON `teaching_assignments` (`section_id`, `subject_id`);
+
+CREATE INDEX `ix_teaching_assignments_subject_id` ON `teaching_assignments` (`subject_id`);
+
+CREATE INDEX `ix_teaching_assignments_teacher_id` ON `teaching_assignments` (`teacher_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004174532_AddSubjectsModulesAndSubmissions', '9.0.20');
+
 COMMIT;
 

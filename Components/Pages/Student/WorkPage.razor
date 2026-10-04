@@ -1,0 +1,283 @@
+@page "/student/items/{ItemId:int}"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject WorkService Work
+@inject QuizService Quiz
+@inject TimeProvider Clock
+@inject NavigationManager Navigation
+
+<PageTitle>@(item?.Title ?? "Work") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (item is null)
+{
+    <Card>
+        <EmptyState IconName="file-text" Title="Not found" IsPage="true">
+            <p>This work is not posted yet, or it is not one of your subjects.</p>
+            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    var now = PhilippineTime.Now(Clock);
+    var overdue = item.DueAtUtc is { } dueAt && dueAt < now.UtcDateTime;
+    var closedQuiz = item.IsQuiz && overdue && item.Status == "NotStarted";
+
+    <PageHeader Title="@item.Title" Subtitle="@($"{ItemKinds.Display(item.Kind)} · {item.SubjectName} · {item.ModuleTitle}")" IconName="@SubjectStyle.KindIcon(item.Kind)">
+        <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the module</ButtonLink>
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <div class="layout">
+        <div class="main">
+            <Card Title="@(item.IsQuiz ? "About this quiz" : "Instructions")" IconName="file-text">
+                @if (string.IsNullOrWhiteSpace(item.Instructions))
+                {
+                    <p class="muted">Your teacher did not write any instructions.</p>
+                }
+                else
+                {
+                    <div class="text">@item.Instructions</div>
+                }
+
+                @if (item.IsQuiz)
+                {
+                    <ul class="rules">
+                        <li><Icon Name="list-checks" Size="16" /> @item.Questions @(item.Questions == 1 ? "question" : "questions"), @item.MaxScore.ToString("0.##") points</li>
+                        @if (item.TimeLimitMinutes is { } minutes)
+                        {
+                            <li><Icon Name="timer" Size="16" /> You have @minutes minutes once you start. The quiz is handed in by itself when the time is over.</li>
+                        }
+
+                        @if (item.AntiCheat)
+                        {
+                            <li class="strict"><Icon Name="shield-alert" Size="16" /> Anti-cheating is on. Leaving the quiz tab or window, copying or pasting gives you a warning. After @item.MaxViolations @(item.MaxViolations == 1 ? "warning" : "warnings") the quiz is handed in and your teacher is told.</li>
+                        }
+                    </ul>
+                }
+            </Card>
+
+            @if (item.IsQuiz)
+            {
+                <Card Title="Your attempt" IconName="clipboard-check">
+                    @if (item.Status == SubmissionStatus.Graded || item.Status == SubmissionStatus.Submitted)
+                    {
+                        <p>
+                            <Badge Tone="Tone.Success">Handed in</Badge>
+                            @if (item.SubmittedAtUtc is { } at) { <span class="muted">@PhilippineTime.FormatDateTime(at)</span> }
+                        </p>
+                        @if (item.AutoSubmitReason == "violations")
+                        {
+                            <p class="warn"><Icon Name="shield-alert" Size="16" /> It was handed in by the system after too many warnings.</p>
+                        }
+                        else if (item.AutoSubmitReason == "time")
+                        {
+                            <p class="warn"><Icon Name="timer" Size="16" /> It was handed in by the system when the time was over.</p>
+                        }
+
+                        @if (item.ScoreVisible && item.Score is { } score)
+                        {
+                            <p class="big-score">@score.ToString("0.##") <span>/ @item.MaxScore.ToString("0.##")</span> <small>@SubjectStyle.Percent(score, item.MaxScore)</small></p>
+                        }
+                        else
+                        {
+                            <p class="muted">Your teacher will share the result.</p>
+                        }
+
+                        @if (review is { Count: > 0 })
+                        {
+                            <ol class="review">
+                                @foreach (var answer in review)
+                                {
+                                    <li class="@(answer.IsCorrect ? "right" : "wrong")">
+                                        <div class="q">@answer.Question <span class="pts">@answer.Earned.ToString("0.##") / @answer.Points.ToString("0.##")</span></div>
+                                        <div class="a"><span>Your answer:</span> @(answer.Given ?? "— no answer —")</div>
+                                        @if (!answer.IsCorrect)
+                                        {
+                                            <div class="a ok"><span>Right answer:</span> @answer.Correct</div>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+                    }
+                    else if (closedQuiz)
+                    {
+                        <p class="warn"><Icon Name="lock-keyhole" Size="16" /> This quiz is closed. It was due @PhilippineTime.FormatDateTime(item.DueAtUtc!.Value).</p>
+                    }
+                    else if (item.Questions == 0)
+                    {
+                        <p class="muted">Your teacher has not added the questions yet.</p>
+                    }
+                    else
+                    {
+                        <p>@(item.Status == SubmissionStatus.InProgress ? "You started this quiz. Continue where you stopped." : "You have not started this quiz.")</p>
+                        <Button IconName="arrow-right" OnClick="AskStart">@(item.Status == SubmissionStatus.InProgress ? "Continue the quiz" : "Start the quiz")</Button>
+                    }
+                </Card>
+            }
+            else
+            {
+                <Card Title="Your work" IconName="notebook-pen">
+                    @if (item.Status == SubmissionStatus.Graded)
+                    {
+                        @if (!string.IsNullOrWhiteSpace(item.AnswerText))
+                        {
+                            <div class="text submitted">@item.AnswerText</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(item.LinkUrl))
+                        {
+                            <p><Icon Name="link" Size="16" /> <a href="@item.LinkUrl" target="_blank" rel="noopener noreferrer">@item.LinkUrl</a></p>
+                        }
+
+                        <p class="muted">This was graded, so it can't be handed in again.</p>
+                    }
+                    else
+                    {
+                        <FormErrors Errors="formErrors" />
+                        <Field For="w-text" Label="Your answer">
+                            <InputTextArea id="w-text" @bind-Value="answerText" rows="8" />
+                        </Field>
+                        <Field For="w-link" Label="Link to your work" Hint="Optional. A shared file or video, starting with https://">
+                            <InputText id="w-link" @bind-Value="linkUrl" maxlength="500" autocomplete="off" />
+                        </Field>
+                        @if (overdue)
+                        {
+                            <p class="warn"><Icon Name="triangle-alert" Size="16" /> The due date has passed. You can still hand it in, but it is marked late.</p>
+                        }
+
+                        <div class="actions">
+                            <Button IconName="send" Disabled="busy" OnClick="SubmitAsync">@(busy ? "Handing in…" : item.Status == SubmissionStatus.Submitted ? "Hand in again" : "Hand in")</Button>
+                        </div>
+                    }
+                </Card>
+            }
+        </div>
+
+        <aside class="side">
+            <Card Title="Details" IconName="info">
+                <dl class="facts">
+                    <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
+                    <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
+                    <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
+                    @if (item.ScoreVisible && item.Score is { } s)
+                    {
+                        <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
+                    }
+                </dl>
+            </Card>
+
+            @if (!string.IsNullOrWhiteSpace(item.Feedback))
+            {
+                <Card Title="Feedback from your teacher" IconName="message-square">
+                    <div class="text">@item.Feedback</div>
+                </Card>
+            }
+        </aside>
+    </div>
+}
+
+@* ===== Before starting a quiz ===== *@
+<Modal Open="confirmStart" Title="Start the quiz?" OnClose="CloseStart">
+    @if (item is not null)
+    {
+        <ul class="rules">
+            @if (item.TimeLimitMinutes is { } limit)
+            {
+                <li><Icon Name="timer" Size="16" /> The time starts now: @limit minutes.</li>
+            }
+
+            @if (item.AntiCheat)
+            {
+                <li class="strict"><Icon Name="shield-alert" Size="16" /> Stay on this tab. Leaving it, copying or pasting is a warning. After @item.MaxViolations @(item.MaxViolations == 1 ? "warning" : "warnings") the quiz is handed in.</li>
+            }
+
+            <li><Icon Name="circle-check" Size="16" /> Your answers are saved as you go. You can hand in before the time is over.</li>
+        </ul>
+        <div class="actions end">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseStart">Not now</Button>
+            <Button IconName="arrow-right" OnClick="StartQuiz">Start</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter] public int ItemId { get; set; }
+
+    private bool loaded;
+    private int studentId;
+    private StudentItemView? item;
+    private IReadOnlyList<AnswerReview>? review;
+    private string? answerText;
+    private string? linkUrl;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private bool confirmStart;
+    private List<string> formErrors = [];
+
+    private string StatusText => item is null ? "" : SubjectStyle.StudentStatus(item.Status, item.IsLate, item.DueAtUtc is { } d && d < Clock.GetUtcNow().UtcDateTime, item.IsQuiz, item.IsQuiz && !item.ShowResult).Text;
+
+    private Tone StatusTone => item is null ? Tone.Neutral : SubjectStyle.StudentStatus(item.Status, item.IsLate, item.DueAtUtc is { } d && d < Clock.GetUtcNow().UtcDateTime, item.IsQuiz, item.IsQuiz && !item.ShowResult).Tone;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        studentId = await Me.GetStudentIdAsync() ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        item = studentId == 0 ? null : await Work.GetStudentItemAsync(studentId, ItemId);
+        if (item is not null)
+        {
+            answerText = item.AnswerText;
+            linkUrl = item.LinkUrl;
+            review = item.IsQuiz && item.Status != SubmissionStatus.InProgress && item.Status != "NotStarted" ? await Quiz.GetMyReviewAsync(studentId, ItemId) : null;
+        }
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task SubmitAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Work.SubmitAsync(studentId, ItemId, answerText, linkUrl);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            formErrors = [];
+            messageIsError = false;
+            message = result.Message;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void AskStart() => confirmStart = true;
+
+    private void CloseStart() => confirmStart = false;
+
+    private void StartQuiz() => Navigation.NavigateTo($"student/quiz/{ItemId}");
+}

@@ -1,0 +1,169 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.layout {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (min-width: 1000px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr) 20rem;
+    }
+}
+
+.main,
+.side {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.text {
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.text.submitted {
+    margin-bottom: 0.9rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.rules {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rules li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.rules li ::deep .icon,
+.warn ::deep .icon {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+}
+
+.rules li.strict {
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft);
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.big-score {
+    margin: 0.5rem 0 1rem;
+    font-size: 2.2rem;
+    font-weight: 750;
+    line-height: 1.1;
+}
+
+.big-score span {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.big-score small {
+    margin-left: 0.5rem;
+    color: var(--brand-strong);
+    font-size: 1.1rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.actions.end {
+    justify-content: flex-end;
+}
+
+.facts {
+    display: grid;
+    gap: 0.8rem;
+    margin: 0;
+}
+
+.facts div {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.facts dt {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.facts dd {
+    margin: 0;
+}
+
+.review {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding-left: 1.4rem;
+}
+
+.review li {
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.review li.right {
+    box-shadow: inset 3px 0 0 var(--green);
+}
+
+.review li.wrong {
+    box-shadow: inset 3px 0 0 var(--danger-solid);
+}
+
+.q {
+    font-weight: 600;
+}
+
+.pts {
+    margin-left: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.a {
+    font-size: 0.92rem;
+}
+
+.a span {
+    color: var(--text-muted);
+}
+
+.a.ok {
+    color: var(--success);
+}

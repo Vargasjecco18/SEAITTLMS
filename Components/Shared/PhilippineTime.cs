@@ -23,6 +23,14 @@ public static class PhilippineTime
     /// <summary>A stored UTC moment as the Philippine date and time for a "datetime-local" box (no time zone).</summary>
     public static DateTime ToLocal(DateTime utc) => FromUtc(utc).DateTime;
 
+    /// <summary>A stored UTC moment as the text a "datetime-local" box wants ("2026-10-05T14:30"), or empty.</summary>
+    public static string ToInputValue(DateTime? utc) =>
+        utc is { } moment ? ToLocal(moment).ToString("yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture) : "";
+
+    /// <summary>The text of a "datetime-local" box (Philippine time) as the UTC moment to store. Empty or unreadable text is no date.</summary>
+    public static DateTime? FromInputValue(string? text) =>
+        DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var local) ? ToUtc(local) : null;
+
     /// <summary>Today's date in the Philippines.</summary>
     public static DateOnly Today(TimeProvider clock) => DateOnly.FromDateTime(Now(clock).DateTime);
 

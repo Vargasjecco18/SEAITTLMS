@@ -7,6 +7,7 @@
 @using SEAITT_LMS.Auth
 @using SEAITT_LMS.Services
 @inject UserManagementService Management
+@inject TeachingService Teaching
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 
@@ -143,6 +144,11 @@
                             </td>
                             <td class="col-actions">
                                 <div class="row-actions">
+                                    @if (tab.Role == AppRoles.Teacher)
+                                    {
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"Subjects taught by {user.FullName}")"
+                                                OnClick="() => OpenTeachingAsync(user)">Subjects</Button>
+                                    }
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {user.FullName}")"
                                             OnClick="() => OpenEditAsync(user)">Edit</Button>
                                     <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true"
@@ -311,6 +317,95 @@
                 <Button Type="submit" IconName="user-plus" Disabled="busy">@(busy ? "Adding…" : $"Add {tab.Singular}")</Button>
             </div>
         </EditForm>
+    }
+</Modal>
+
+@* ===== Subjects of a teacher ===== *@
+<Modal Open="teachingFor is not null" Title="@($"Subjects of {teachingFor?.FullName}")" OnClose="CloseTeaching" Large="true">
+    @if (teachingFor is not null)
+    {
+        <p class="delete-text">
+            These are the subjects this teacher teaches, and to which section. The teacher opens them under <strong>Subjects</strong>, and the
+            students of that section see them there too. A subject of a section has one teacher.
+        </p>
+
+        @if (teachingMessage is not null)
+        {
+            <div class="banner" role="status"><Icon Name="circle-check" Size="18" /><span>@teachingMessage</span></div>
+        }
+
+        @if (formErrors.Count > 0)
+        {
+            <div class="alert" role="alert">
+                <Icon Name="circle-alert" Size="18" />
+                <ul>
+                    @foreach (var error in formErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (assignments is { Count: 0 })
+        {
+            <p class="muted">No subjects yet.</p>
+        }
+        else if (assignments is not null)
+        {
+            <ul class="assigned">
+                @foreach (var a in assignments)
+                {
+                    <li>
+                        <div class="assigned-text">
+                            <strong>@a.SubjectName</strong>
+                            <span>@a.SectionLabel@(a.Schedule is null ? "" : " · " + a.Schedule) · @a.Students @(a.Students == 1 ? "student" : "students") · @a.Modules @(a.Modules == 1 ? "module" : "modules")</span>
+                        </div>
+                        @if (removing?.Id == a.Id)
+                        {
+                            <div class="assigned-confirm">
+                                @if (removalImpact is { Modules: > 0 })
+                                {
+                                    <span>This deletes @removalImpact.Modules @(removalImpact.Modules == 1 ? "module" : "modules"), @removalImpact.Items @(removalImpact.Items == 1 ? "activity" : "activities") and @removalImpact.Submissions @(removalImpact.Submissions == 1 ? "piece" : "pieces") of handed-in work.</span>
+                                }
+                                <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="CancelRemove">Keep</Button>
+                                <Button Small="true" Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="ConfirmRemoveAsync">Remove</Button>
+                            </div>
+                        }
+                        else
+                        {
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" Title="@($"Remove {a.SubjectName} from this teacher")" OnClick="() => AskRemoveAsync(a)">Remove</Button>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        <h3 class="add-heading">Give a subject</h3>
+        <div class="two">
+            <Field For="t-section" Label="Section">
+                <select id="t-section" @bind="chosenSection" @bind:after="SectionChanged">
+                    <option value="0">Choose a section</option>
+                    @foreach (var choice in sectionChoices ?? [])
+                    {
+                        <option value="@choice.SectionId">@choice.Label</option>
+                    }
+                </select>
+            </Field>
+            <Field For="t-subject" Label="Subject">
+                <select id="t-subject" @bind="chosenSubject" disabled="@(chosenSection == 0)">
+                    <option value="0">@(chosenSection == 0 ? "Choose the section first" : "Choose a subject")</option>
+                    @foreach (var subject in SubjectsOfChosenSection)
+                    {
+                        <option value="@subject.SubjectId">@subject.Name</option>
+                    }
+                </select>
+            </Field>
+        </div>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseTeaching">Close</Button>
+            <Button IconName="plus" Disabled="@(busy || chosenSection == 0 || chosenSubject == 0)" OnClick="AssignAsync">Give the subject</Button>
+        </div>
     }
 </Modal>
 
@@ -621,6 +716,103 @@
             {
                 formErrors = result.Errors.ToList();
             }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------- the subjects of a teacher
+    private UserListItem? teachingFor;
+    private IReadOnlyList<AssignmentRow>? assignments;
+    private IReadOnlyList<SectionChoice>? sectionChoices;
+    private int chosenSection;
+    private int chosenSubject;
+    private string? teachingMessage;
+    private AssignmentRow? removing;
+    private RemovalImpact? removalImpact;
+
+    private IReadOnlyList<SubjectChoice> SubjectsOfChosenSection =>
+        sectionChoices?.FirstOrDefault(c => c.SectionId == chosenSection)?.Subjects ?? [];
+
+    private async Task OpenTeachingAsync(UserListItem user)
+    {
+        formErrors = [];
+        teachingMessage = null;
+        removing = null;
+        chosenSection = chosenSubject = 0;
+        sectionChoices = await Teaching.GetAssignableAsync();
+        assignments = await Teaching.ListForTeacherUserAsync(user.UserId);
+        teachingFor = user;
+    }
+
+    private void CloseTeaching()
+    {
+        teachingFor = null;
+        formErrors = [];
+    }
+
+    private void SectionChanged() => chosenSubject = 0;
+
+    private async Task AssignAsync()
+    {
+        if (teachingFor is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Teaching.AssignAsync(teachingFor.UserId, chosenSection, chosenSubject, currentUserId);
+            if (result.Succeeded)
+            {
+                formErrors = [];
+                teachingMessage = result.Message;
+                chosenSubject = 0;
+                assignments = await Teaching.ListForTeacherUserAsync(teachingFor.UserId);
+            }
+            else
+            {
+                teachingMessage = null;
+                formErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task AskRemoveAsync(AssignmentRow row)
+    {
+        removing = row;
+        removalImpact = await Teaching.GetRemovalImpactAsync(row.Id);
+    }
+
+    private void CancelRemove()
+    {
+        removing = null;
+        removalImpact = null;
+    }
+
+    private async Task ConfirmRemoveAsync()
+    {
+        if (teachingFor is null || removing is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Teaching.RemoveAsync(removing.Id, currentUserId);
+            teachingMessage = result.Succeeded ? result.Message : null;
+            formErrors = result.Succeeded ? [] : result.Errors.ToList();
+            removing = null;
+            removalImpact = null;
+            assignments = await Teaching.ListForTeacherUserAsync(teachingFor.UserId);
         }
         finally
         {

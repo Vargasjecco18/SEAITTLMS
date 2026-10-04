@@ -12,7 +12,7 @@ public sealed record SearchGroup(string Title, IReadOnlyList<SearchHit> Hits);
 /// The search box in the header. It only finds what the person may see: their own pages and, depending on the role,
 /// the subjects they take or teach and the people they work with.
 /// </summary>
-public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory)
+public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)
 {
     private const int PerGroup = 8;
 
@@ -52,8 +52,95 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory)
                 groups.Add(new SearchGroup("Students", students));
             }
         }
+        else if (user.Role == AppRoles.Teacher)
+        {
+            var subjects = await FindTeacherSubjectsAsync(db, user.UserId, tokens, ct);
+            if (subjects.Count > 0)
+            {
+                groups.Add(new SearchGroup("Subjects", subjects));
+            }
+        }
+        else if (user.Role == AppRoles.Student)
+        {
+            var (subjects, work) = await FindStudentWorkAsync(db, user.UserId, tokens, ct);
+            if (subjects.Count > 0)
+            {
+                groups.Add(new SearchGroup("Subjects", subjects));
+            }
+
+            if (work.Count > 0)
+            {
+                groups.Add(new SearchGroup("Modules and work", work));
+            }
+        }
 
         return groups;
+    }
+
+    /// <summary>A teacher finds the subjects they teach by the name of the subject or the section.</summary>
+    private static async Task<List<SearchHit>> FindTeacherSubjectsAsync(AppDbContext db, int userId, string[] tokens, CancellationToken ct)
+    {
+        var query = db.TeachingAssignments.AsNoTracking().Where(a => a.Teacher.UserId == userId);
+        foreach (var token in tokens)
+        {
+            var t = token;
+            query = query.Where(a => a.Subject.Name.Contains(t) || a.Section.Name.Contains(t) || a.Section.Strand.Code.Contains(t));
+        }
+
+        var rows = await query.OrderBy(a => a.Subject.Name).Take(PerGroup)
+            .Select(a => new { a.Id, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
+            .ToListAsync(ct);
+        return rows.Select(r => new SearchHit(r.Subject, TeachingService.SectionLabel(r.GradeLevel, r.Strand, r.Section), $"teacher/subjects/{r.Id}", "book-open")).ToList();
+    }
+
+    /// <summary>A student finds their subjects, and the modules and work that are posted in them, by title.</summary>
+    private async Task<(List<SearchHit> Subjects, List<SearchHit> Work)> FindStudentWorkAsync(AppDbContext db, int userId, string[] tokens, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+        var mine = db.EnrollmentSubjects.Where(x => x.Enrollment.Student.UserId == userId && x.Enrollment.Status == EnrollmentStatus.Enrolled)
+            .Select(x => new { x.Enrollment.SectionId, x.SubjectId });
+        var assignments = db.TeachingAssignments.AsNoTracking().Where(a => mine.Any(m => m.SectionId == a.SectionId && m.SubjectId == a.SubjectId));
+
+        var subjectQuery = assignments;
+        foreach (var token in tokens)
+        {
+            var t = token;
+            subjectQuery = subjectQuery.Where(a => a.Subject.Name.Contains(t) || a.Teacher.FirstName.Contains(t) || a.Teacher.LastName.Contains(t));
+        }
+
+        var subjects = (await subjectQuery.OrderBy(a => a.Subject.Name).Take(PerGroup)
+                .Select(a => new { a.Id, Subject = a.Subject.Name, Teacher = a.Teacher.FirstName + " " + a.Teacher.LastName }).ToListAsync(ct))
+            .Select(r => new SearchHit(r.Subject, r.Teacher, $"student/subjects/{r.Id}", "book-open")).ToList();
+
+        var work = new List<SearchHit>();
+
+        var moduleQuery = db.Modules.AsNoTracking().Where(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= now && assignments.Any(a => a.Id == m.AssignmentId));
+        foreach (var token in tokens)
+        {
+            var t = token;
+            moduleQuery = moduleQuery.Where(m => m.Title.Contains(t));
+        }
+
+        foreach (var m in await moduleQuery.OrderBy(m => m.Title).Take(PerGroup).Select(m => new { m.Id, m.Title, Subject = m.Assignment.Subject.Name }).ToListAsync(ct))
+        {
+            work.Add(new SearchHit(m.Title, $"Module · {m.Subject}", $"student/modules/{m.Id}", "layers"));
+        }
+
+        var itemQuery = db.ModuleItems.AsNoTracking().Where(i => (i.VisibleFromUtc == null || i.VisibleFromUtc <= now)
+                                                                  && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
+                                                                  && assignments.Any(a => a.Id == i.Module.AssignmentId));
+        foreach (var token in tokens)
+        {
+            var t = token;
+            itemQuery = itemQuery.Where(i => i.Title.Contains(t));
+        }
+
+        foreach (var i in await itemQuery.OrderBy(i => i.Title).Take(PerGroup).Select(i => new { i.Id, i.Title, i.Kind, Subject = i.Module.Assignment.Subject.Name }).ToListAsync(ct))
+        {
+            work.Add(new SearchHit(i.Title, $"{ItemKinds.Display(i.Kind)} · {i.Subject}", $"student/items/{i.Id}", i.Kind == ItemKinds.Quiz ? "file-question" : i.Kind == ItemKinds.TaskPerformance ? "clipboard-check" : "notebook-pen"));
+        }
+
+        return (subjects, work);
     }
 
     /// <summary>Administrators find everybody; each hit opens the list of that role.</summary>

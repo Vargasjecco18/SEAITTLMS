@@ -1,0 +1,174 @@
+@page "/student/subjects"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@using System.Globalization
+@inject CurrentUser Me
+@inject TeachingService Teaching
+
+<PageTitle>Subjects · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Subjects" Subtitle="Every subject you are enrolled in. Open one to read its modules and do its work." IconName="book-open" />
+
+@if (cards is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (cards.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="book-open" Title="No subjects yet">
+            <p>Your subjects appear here once the registrar has enrolled you.</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="bar">
+        @* The chips and the switch are plain links: the page opens again with the choice in its address. *@
+        <nav class="chips" aria-label="Show the subjects of">
+            <a class="chip @(Term is null ? "on" : "")" href="@Url(null, view)">All</a>
+            @foreach (var name in terms)
+            {
+                <a class="chip @(string.Equals(Term, name, StringComparison.Ordinal) ? "on" : "")" href="@Url(name, view)">@name</a>
+            }
+        </nav>
+
+        <nav class="views" aria-label="View">
+            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Term, "cards")" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
+            <a class="view @(view == "list" ? "on" : "")" href="@Url(Term, "list")" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
+        </nav>
+    </div>
+
+    @if (shown.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="search-x" Title="Nothing in this term">
+                <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Show all subjects</ButtonLink>
+            </EmptyState>
+        </Card>
+    }
+    else if (view == "list")
+    {
+        <Card>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Subject</th>
+                            <th scope="col" class="col-more">Teacher</th>
+                            <th scope="col" class="col-more">Section</th>
+                            <th scope="col">Work</th>
+                            <th scope="col" class="col-more">Average</th>
+                            <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var card in shown)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="name">@card.SubjectName</span>
+                                    <span class="sub">@card.TermName@(card.IsCurrentTerm ? " · current" : "")</span>
+                                </td>
+                                <td class="col-more">@(card.TeacherName ?? "—")</td>
+                                <td class="col-more">@card.SectionLabel</td>
+                                <td>
+                                    @if (card.AssignmentId is null)
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</span>
+                                        @if (card.ModulesUnopened > 0) { <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge> }
+                                        @if (card.ItemsOpen > 0) { <Badge Tone="Tone.Info">@card.ItemsOpen to do</Badge> }
+                                    }
+                                </td>
+                                <td class="col-more">@(card.AveragePercent is { } avg ? $"{avg:0.#}%" : "—")</td>
+                                <td class="col-actions">
+                                    @if (card.AssignmentId is { } id)
+                                    {
+                                        <ButtonLink Href="@($"student/subjects/{id}")" IconName="arrow-right">Open</ButtonLink>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">Not open yet</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach (var card in shown)
+            {
+                <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel"
+                             Subtitle="@(card.TeacherName ?? "No teacher yet")"
+                             Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet">
+                    @if (card.AssignmentId is not null)
+                    {
+                        <Badge Tone="@(card.ModulesVisible == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</Badge>
+                        @if (card.ModulesUnopened > 0)
+                        {
+                            <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge>
+                        }
+
+                        @if (card.ItemsOpen > 0)
+                        {
+                            <Badge Tone="Tone.Info">@card.ItemsOpen to do</Badge>
+                        }
+
+                        @if (card.AveragePercent is { } avg)
+                        {
+                            <Badge Tone="@(avg >= 75 ? Tone.Success : avg >= 70 ? Tone.Warning : Tone.Danger)">@avg.ToString("0.#")%</Badge>
+                        }
+                    }
+                    @if (!card.IsCurrentTerm)
+                    {
+                        <Badge>@card.TermName</Badge>
+                    }
+                </SubjectCard>
+            }
+        </div>
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "term")] private string? Term { get; set; }
+
+    [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
+
+    private IReadOnlyList<StudentSubjectCard>? cards;
+    private List<string> terms = [];
+    private List<StudentSubjectCard> shown = [];
+    private string view = "cards";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        view = ViewText == "list" ? "list" : "cards";
+        var studentId = await Me.GetStudentIdAsync();
+        cards = studentId is { } id ? await Teaching.GetStudentCardsAsync(id) : [];
+        terms = cards.Select(c => c.TermName).Distinct().ToList();
+        shown = cards.Where(c => Term is null || c.TermName == Term).ToList();
+    }
+
+    private static string Url(string? term, string view)
+    {
+        var parts = new List<string>();
+        if (term is not null)
+        {
+            parts.Add("term=" + Uri.EscapeDataString(term));
+        }
+
+        if (view == "list")
+        {
+            parts.Add("view=list");
+        }
+
+        return "student/subjects" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));
+    }
+}

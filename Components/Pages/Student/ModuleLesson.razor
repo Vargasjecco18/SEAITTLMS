@@ -1,0 +1,69 @@
+@page "/student/modules/{ModuleId:int}"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject TimeProvider Clock
+
+<PageTitle>@(module?.Title ?? "Module") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (module is null)
+{
+    <Card>
+        <EmptyState IconName="layers" Title="Module not found" IsPage="true">
+            <p>This module is not posted, or it is not one of your subjects.</p>
+            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@module.Title" Subtitle="@module.SubjectName" IconName="layers">
+        <ButtonLink Href="@($"student/subjects/{module.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @module.SubjectName</ButtonLink>
+    </PageHeader>
+
+    <div class="layout">
+        <Card Title="Lesson" IconName="book-open">
+            @if (!string.IsNullOrWhiteSpace(module.Description))
+            {
+                <p class="lead">@module.Description</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(module.Body))
+            {
+                <div class="lesson">@module.Body</div>
+            }
+            else if (string.IsNullOrWhiteSpace(module.Description) && string.IsNullOrWhiteSpace(module.LinkUrl))
+            {
+                <p class="muted">This module has no lesson text. Look at the work below.</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
+            {
+                <p class="link"><Icon Name="link" Size="16" /> <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">@module.LinkUrl <Icon Name="external-link" Size="14" /></a></p>
+            }
+        </Card>
+
+        <Card Title="Your work in this module" IconName="clipboard-list">
+            <ModuleTabs Module="module" Now="PhilippineTime.Now(Clock)" />
+        </Card>
+    </div>
+}
+
+@code {
+    [Parameter] public int ModuleId { get; set; }
+
+    private bool loaded;
+    private StudentModule? module;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var studentId = await Me.GetStudentIdAsync();
+        module = studentId is { } id ? await Modules.OpenModuleAsync(id, ModuleId) : null;
+        loaded = true;
+    }
+}

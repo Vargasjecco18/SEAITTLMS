@@ -1,7 +1,7 @@
-<a class="button @Variant.ToString().ToLowerInvariant()" href="@Href">
+<a class="button @Variant.ToString().ToLowerInvariant() @(Small ? "small" : "")" href="@Href">
     @if (!string.IsNullOrEmpty(IconName))
     {
-        <Icon Name="@IconName" Size="18" />
+        <Icon Name="@IconName" Size="@(Small ? 16 : 18)" />
     }
     <span>@ChildContent</span>
 </a>
@@ -13,6 +13,9 @@
     [Parameter] public string? IconName { get; set; }
 
     [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+
+    /// <summary>A smaller link, the size of a small <see cref="Button"/>.</summary>
+    [Parameter] public bool Small { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

@@ -166,11 +166,38 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 |---|---|---|
 | Admin | `/admin` | Dashboard, **Users Management**, My account |
 | Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, My account |
-| Teacher, Student, Guidance counselor | `/account` | My account (their own pages come with lessons and grades) |
+| Teacher | `/teacher/subjects` | **Subjects** (modules, activities, quizzes, task performances, grading), My account |
+| Student | `/student/subjects` | **Subjects** (modules, work, quizzes), My account |
+| Guidance counselor | `/account` | My account (their pages come next) |
 
 The registrar pages belong to the registrar: **an administrator cannot open them**. To get a registrar, sign in as the
 administrator, open **Users Management > Registrars**, press **Add registrar** and give the person an email and a first
 password. Then sign in as that registrar to enroll students.
+
+## Subjects, modules and work
+
+**The administrator** gives each teacher their subjects: **Users Management > Teachers > Subjects**, choose the section and
+the subject (only the subjects of that section's strand are listed). A subject of a section has one teacher.
+
+**Teacher > Subjects** shows one colored card per subject. **Open** shows its modules. A new module is a **draft**: students
+cannot see it. **Post now** shows it to the students (they get a notification), **Schedule** picks the day and time it
+appears by itself, **Hide** takes it back. At the bottom of a module are its **Activities**, **Quizzes** and **Task
+performances**; each has a due date (and can have its own time to appear). Open an item to see who handed in, read the
+work, give a score and feedback (the student is told).
+
+**Quizzes** have questions (multiple choice, true or false, short answer) that are graded by themselves, an optional time
+limit, shuffled questions and choices, and the **anti-cheating watch**: while a student takes the quiz the page tells the
+system when they leave the tab or window, copy, cut or paste (those are blocked too). Each of those is a warning; after
+the number you choose the quiz is handed in by itself and **flagged** for you, with a log of what happened. The time is
+checked on the server, and a quiz that was left open is handed in when its time is over.
+
+**Student > Subjects** shows the subjects they are enrolled in as cards (or a list), filtered by term. **Open** shows the
+posted modules; each ends with three tabs: **Activities**, **Quizzes**, **Task performance**. **Read lesson** opens the
+module's text. A module that was never opened is marked **New**.
+
+The code: `Services/TeachingService.cs`, `ModuleService.cs`, `WorkService.cs`, `QuizService.cs`, `AutomationService.cs`
+(the background job), the pages in `Components/Pages/Teacher/` and `Components/Pages/Student/`, and the anti-cheating watch in
+`wwwroot/app.js` (`seaitt.startQuizGuard`).
 
 ## Enrolling a student (registrar)
 
@@ -299,6 +326,8 @@ Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
   Admin/                     Dashboard, UsersManagement
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
+  Teacher/                   Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder
+  Student/                   Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake
   Account/                   MyAccount, Search
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it

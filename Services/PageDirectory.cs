@@ -28,6 +28,16 @@ public static class PageDirectory
             new("Student's Accounts", "The enrolled students", "registrar/student-accounts", "graduation-cap"),
             MyAccount,
         ],
+        AppRoles.Teacher =>
+        [
+            new("Subjects", "The subjects you teach, with their modules and work", "teacher/subjects", "book-open"),
+            MyAccount,
+        ],
+        AppRoles.Student =>
+        [
+            new("Subjects", "Your subjects, modules, activities and quizzes", "student/subjects", "book-open"),
+            MyAccount,
+        ],
         _ => [MyAccount],
     };
 }

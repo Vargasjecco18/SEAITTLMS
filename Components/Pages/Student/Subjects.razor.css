@@ -1,0 +1,138 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    padding: 0.4rem 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.chip:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.chip.on {
+    border-color: var(--btn-bg);
+    background: var(--btn-bg);
+    color: var(--on-brand);
+}
+
+.views {
+    display: inline-flex;
+    padding: 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.view {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--text-muted);
+}
+
+.view:hover {
+    color: var(--text);
+}
+
+.view.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1.25rem;
+}
+
+.table-wrap {
+    margin: -1.25rem;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.name {
+    display: block;
+    font-weight: 650;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.col-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .col-more {
+        display: none;
+    }
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}

@@ -123,4 +123,40 @@ window.seaitt = {
     print: function () {
         window.print();
     },
+    // The anti-cheating watch of a quiz. It tells the quiz page (a C# object, "reference") when the student leaves the tab or the
+    // window, or tries to copy, cut or paste. Copying, cutting, pasting and the right-click menu are blocked while it is on.
+    startQuizGuard: function (reference) {
+        window.seaitt.stopQuizGuard();
+        var last = 0;
+
+        function report(what) {
+            var now = Date.now();
+            // Leaving the tab fires "hidden" and "blur" together: count it once.
+            if (now - last < 1500) { return; }
+            last = now;
+            reference.invokeMethodAsync('OnSuspicious', what);
+        }
+
+        var handlers = {
+            visibilitychange: function () { if (document.hidden) { report('Left the quiz tab'); } },
+            blur: function () { report('Switched to another window'); },
+            copy: function (event) { event.preventDefault(); report('Tried to copy'); },
+            cut: function (event) { event.preventDefault(); report('Tried to cut'); },
+            paste: function (event) { event.preventDefault(); report('Tried to paste'); },
+            contextmenu: function (event) { event.preventDefault(); },
+        };
+
+        Object.keys(handlers).forEach(function (name) {
+            (name === 'visibilitychange' ? document : name === 'blur' ? window : document).addEventListener(name, handlers[name]);
+        });
+        window.seaitt.quizGuard = handlers;
+    },
+    stopQuizGuard: function () {
+        var handlers = window.seaitt.quizGuard;
+        if (!handlers) { return; }
+        Object.keys(handlers).forEach(function (name) {
+            (name === 'visibilitychange' ? document : name === 'blur' ? window : document).removeEventListener(name, handlers[name]);
+        });
+        window.seaitt.quizGuard = null;
+    },
 };

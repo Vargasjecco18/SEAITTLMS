@@ -1,0 +1,236 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 700px) {
+    .summary {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.4fr);
+    }
+}
+
+.tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.8rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.tile.alert {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+}
+
+.tile-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.tile-value.small {
+    font-size: 1.15rem;
+}
+
+.tile-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.table-wrap {
+    margin: -1.25rem;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.table tr.flagged td:first-child {
+    box-shadow: inset 3px 0 0 var(--danger);
+}
+
+.col-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+    .col-more {
+        display: none;
+    }
+}
+
+.person {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.person > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.person-name {
+    font-weight: 600;
+}
+
+.sub {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+/* ---------- one student's work ---------- */
+.detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.work {
+    margin-bottom: 0.9rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.watch {
+    margin-bottom: 1rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.watch strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.watch p {
+    margin: 0.3rem 0 0;
+}
+
+.log {
+    margin: 0.5rem 0 0;
+    font: inherit;
+    font-size: 0.88rem;
+    white-space: pre-wrap;
+}
+
+.answers {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding-left: 1.4rem;
+}
+
+.answers li {
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.answers li.right {
+    box-shadow: inset 3px 0 0 var(--green);
+}
+
+.answers li.wrong {
+    box-shadow: inset 3px 0 0 var(--danger-solid);
+}
+
+.q {
+    font-weight: 600;
+}
+
+.pts {
+    margin-left: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.a {
+    font-size: 0.92rem;
+}
+
+.a span {
+    color: var(--text-muted);
+}
+
+.a.ok {
+    color: var(--success);
+}
+
+.grade-box {
+    display: grid;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+    gap: 0 1rem;
+    align-items: start;
+}
+
+@media (max-width: 560px) {
+    .grade-box {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}

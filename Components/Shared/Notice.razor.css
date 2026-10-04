@@ -1,0 +1,42 @@
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+    color: var(--success);
+    font-weight: 600;
+    animation: notice-in 0.2s ease-out;
+}
+
+.notice.error {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.notice span {
+    flex: 1;
+}
+
+.dismiss {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.dismiss:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+@keyframes notice-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}

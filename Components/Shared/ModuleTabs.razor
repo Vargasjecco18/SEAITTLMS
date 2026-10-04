@@ -1,0 +1,86 @@
+@* The bottom of a module: three tabs, Activities, Quizzes and Task performance, each with its list. *@
+<div class="tabs" role="tablist" aria-label="Work in this module">
+    @foreach (var kind in ItemKinds.All)
+    {
+        var count = ItemsOf(kind).Count;
+        var todo = ItemsOf(kind).Count(i => i.Status is "NotStarted" or SubmissionStatus.InProgress);
+        <button type="button" role="tab" class="tab @(Active == kind ? "on" : "")" aria-selected="@(Active == kind ? "true" : "false")" @onclick="() => Active = kind">
+            <Icon Name="@SubjectStyle.KindIcon(kind)" Size="16" />
+            <span>@ItemKinds.Plural(kind)</span>
+            <span class="count">@count</span>
+            @if (todo > 0)
+            {
+                <span class="todo" title="@todo to do">@todo</span>
+            }
+        </button>
+    }
+</div>
+
+<div class="panel" role="tabpanel">
+    @{
+        var items = ItemsOf(Active);
+    }
+    @if (items.Count == 0)
+    {
+        <p class="none">No @ItemKinds.Plural(Active).ToLowerInvariant() in this module.</p>
+    }
+    else
+    {
+        <ul class="items">
+            @foreach (var item in items)
+            {
+                var hidden = item.Kind == ItemKinds.Quiz && item.Status == SubmissionStatus.Graded && item.Score is null;
+                var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, item.Kind == ItemKinds.Quiz, hidden);
+                <li class="item">
+                    <a class="item-link" href="student/items/@item.Id">
+                        <span class="item-icon"><Icon Name="@SubjectStyle.KindIcon(item.Kind)" Size="18" /></span>
+                        <span class="item-text">
+                            <span class="item-title">@item.Title</span>
+                            <span class="item-meta">
+                                @if (item.DueAtUtc is { } due)
+                                {
+                                    <span class="@(item.IsOverdue ? "late" : "")"><Icon Name="calendar-clock" Size="14" /> @PhilippineTime.DueText(due, Now)</span>
+                                }
+                                else
+                                {
+                                    <span>No due date</span>
+                                }
+                                <span>@item.MaxScore.ToString("0.##") points</span>
+                            </span>
+                        </span>
+                        <span class="item-end">
+                            @if (item.Score is { } score)
+                            {
+                                <span class="score">@score.ToString("0.##") / @item.MaxScore.ToString("0.##")</span>
+                            }
+                            <Badge Tone="@tone">@text</Badge>
+                        </span>
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public StudentModule Module { get; set; } = null!;
+
+    /// <summary>The time now in the Philippines, for the "due in 2 days" texts.</summary>
+    [Parameter, EditorRequired] public DateTimeOffset Now { get; set; }
+
+    private string? active;
+
+    private string Active
+    {
+        get => active ?? FirstWithWork();
+        set => active = value;
+    }
+
+    private List<StudentItem> ItemsOf(string kind) => Module.Items.Where(i => i.Kind == kind).ToList();
+
+    /// <summary>The tab that opens first: the first one that has something to do, otherwise the first one with anything in it.</summary>
+    private string FirstWithWork() =>
+        ItemKinds.All.FirstOrDefault(k => Module.Items.Any(i => i.Kind == k && i.Status is "NotStarted" or SubmissionStatus.InProgress))
+        ?? ItemKinds.All.FirstOrDefault(k => Module.Items.Any(i => i.Kind == k))
+        ?? ItemKinds.Activity;
+}
