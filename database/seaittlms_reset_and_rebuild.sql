@@ -943,5 +943,27 @@ CREATE INDEX `ix_todo_items_user_id_is_done_due_on` ON `todo_items` (`user_id`, 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004184220_AddTodoItems', '9.0.20');
 
+CREATE TABLE `attendance_records` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `assignment_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `attended_on` date NOT NULL,
+    `status` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `note` varchar(200) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_attendance_records` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_attendance_records_status` CHECK (status IN ('Present', 'Late', 'Absent')),
+    CONSTRAINT `fk_attendance_records_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_attendance_records_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE UNIQUE INDEX `ix_attendance_records_assignment_id_student_id_attended_on` ON `attendance_records` (`assignment_id`, `student_id`, `attended_on`);
+
+CREATE INDEX `ix_attendance_records_student_id_attended_on` ON `attendance_records` (`student_id`, `attended_on`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261004192015_AddAttendanceRecords', '9.0.20');
+
 COMMIT;
 

@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = AppRoles.Teacher)]
 @inject CurrentUser Me
 @inject DashboardService Dashboards
+@inject AttendanceService AttendanceBook
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
@@ -110,6 +111,35 @@ else
                 }
             </Card>
 
+            <Card Title="Attendance today" IconName="calendar-check">
+                @if (today.Count == 0)
+                {
+                    <EmptyState IconName="calendar-check" Title="No subjects yet" />
+                }
+                else
+                {
+                    <ul class="rows">
+                        @foreach (var t in today)
+                        {
+                            <li>
+                                <a href="teacher/attendance?subject=@t.AssignmentId">
+                                    <span class="row-icon"><Icon Name="user-check" Size="18" /></span>
+                                    <span class="row-text"><span class="row-title">@t.SubjectName</span><span class="row-sub">@t.SectionLabel · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
+                                    @if (t.Marked == 0)
+                                    {
+                                        <Badge Tone="Tone.Warning">Not marked yet</Badge>
+                                    }
+                                    else
+                                    {
+                                        <Badge Tone="Tone.Success">Marked @t.Marked / @t.Students</Badge>
+                                    }
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+
             <Card Title="Flagged quiz attempts" IconName="shield-alert">
                 @if (data.Flagged.Count == 0)
                 {
@@ -139,10 +169,15 @@ else
 
 @code {
     private TeacherDashboard? data;
+    private IReadOnlyList<AttendanceToday> today = [];
 
     protected override async Task OnInitializedAsync()
     {
         var teacherId = await Me.GetTeacherIdAsync();
         data = teacherId is { } id ? await Dashboards.GetTeacherAsync(id) : null;
+        if (teacherId is { } tid)
+        {
+            today = await AttendanceBook.GetTodayAsync(tid);
+        }
     }
 }

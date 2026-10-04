@@ -98,6 +98,62 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttendanceRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("assignment_id");
+
+                    b.Property<DateOnly>("AttendedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("attended_on");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attendance_records");
+
+                    b.HasIndex("StudentId", "AttendedOn")
+                        .HasDatabaseName("ix_attendance_records_student_id_attended_on");
+
+                    b.HasIndex("AssignmentId", "StudentId", "AttendedOn")
+                        .IsUnique()
+                        .HasDatabaseName("ix_attendance_records_assignment_id_student_id_attended_on");
+
+                    b.ToTable("attendance_records", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
                 {
                     b.Property<int>("Id")
@@ -1728,6 +1784,27 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_administrators_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttendanceRecord", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.TeachingAssignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_attendance_records_teaching_assignments_assignment_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_attendance_records_students_student_id");
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

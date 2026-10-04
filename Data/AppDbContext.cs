@@ -43,6 +43,7 @@ public class AppDbContext : DbContext
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();

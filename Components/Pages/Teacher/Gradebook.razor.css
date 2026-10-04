@@ -1,0 +1,228 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.pick {
+    max-width: 32rem;
+    margin-bottom: -0.5rem;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin: 1.25rem 0;
+}
+
+@media (min-width: 700px) {
+    .summary {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.8rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.tile.alert {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+}
+
+.tile-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.tile-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.scroll {
+    position: relative;
+    margin: -1.25rem;
+    overflow-x: auto;
+}
+
+.grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.grid th,
+.grid td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.grid thead th {
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.grid tbody tr:last-child th,
+.grid tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.sticky {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 11rem;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    text-align: left !important;
+}
+
+.grid thead .sticky {
+    background: var(--surface-2);
+}
+
+.col a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 11rem;
+    overflow: hidden;
+    color: var(--text);
+    text-decoration: none;
+    text-overflow: ellipsis;
+}
+
+.col a:hover {
+    color: var(--brand-strong);
+    text-decoration: underline;
+}
+
+.max {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.name {
+    display: block;
+    font-weight: 650;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 400;
+}
+
+.grid tbody tr:hover td,
+.grid tbody tr:hover th {
+    background: var(--surface-2);
+}
+
+.grid tbody tr.editing td,
+.grid tbody tr.editing th {
+    background: var(--brand-soft);
+}
+
+.score {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.cell.failing .score {
+    color: var(--danger);
+}
+
+.dash {
+    color: var(--text-muted);
+}
+
+.check {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--warning-soft);
+    color: var(--warning);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.score-input {
+    width: 5.2rem;
+    padding: 0.3rem 0.4rem;
+    text-align: center;
+}
+
+.late-dot,
+.flag-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-left: 0.3rem;
+    border-radius: 50%;
+    background: var(--amber);
+    vertical-align: middle;
+}
+
+.flag-dot {
+    background: var(--danger-solid);
+}
+
+.avg {
+    min-width: 6rem;
+}
+
+.edit {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    text-align: right !important;
+}
+
+.grid thead .edit {
+    background: var(--surface-2);
+}
+
+.grid tbody tr:hover .edit {
+    background: var(--surface-2);
+}
+
+.grid tbody tr.editing .edit {
+    background: var(--brand-soft);
+}
+
+.edit-actions {
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.legend {
+    margin: 1.4rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}

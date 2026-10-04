@@ -1,0 +1,264 @@
+@page "/teacher/gradebook"
+@attribute [Authorize(Roles = AppRoles.Teacher)]
+@rendermode InteractiveServer
+@using System.Globalization
+@inject CurrentUser Me
+@inject TeachingService Teaching
+@inject GradebookService Books
+
+<PageTitle>Gradebook · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Gradebook" Subtitle="The scores of every student in a subject. Press Edit grades on a row to change them." IconName="clipboard-list" />
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subjects.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="book-open" Title="No subjects yet">
+            <p>The administrator gives each teacher their subjects. The gradebook shows up once you have one.</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <Card>
+        <div class="pick">
+            <Field For="g-subject" Label="Select subject">
+                <select id="g-subject" value="@subjectId" @onchange="SubjectChanged">
+                    @foreach (var s in subjects)
+                    {
+                        <option value="@s.AssignmentId" selected="@(s.AssignmentId == subjectId)">@s.SubjectName · @s.SectionLabel</option>
+                    }
+                </select>
+            </Field>
+        </div>
+    </Card>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    @if (book is not null)
+    {
+        <div class="summary">
+            <div class="tile"><span class="tile-value">@book.Rows.Count</span><span class="tile-label">students</span></div>
+            <div class="tile"><span class="tile-value">@(book.ClassAverage is { } avg ? $"{avg:0.#}%" : "—")</span><span class="tile-label">class average</span></div>
+            <div class="tile @(book.Failing > 0 ? "alert" : "")"><span class="tile-value">@book.Failing</span><span class="tile-label">below @GradeRules.PassingPercent.ToString("0")</span></div>
+            <div class="tile"><span class="tile-value">@book.Rows.Sum(r => r.ToCheck)</span><span class="tile-label">to check</span></div>
+        </div>
+
+        <Card>
+            @if (book.Columns.Count == 0)
+            {
+                <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
+                    <p>Activities, quizzes and task performances of posted modules appear as columns here.</p>
+                    <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the subject</ButtonLink>
+                </EmptyState>
+            }
+            else if (book.Rows.Count == 0)
+            {
+                <EmptyState IconName="users" Title="No students in this subject yet" />
+            }
+            else
+            {
+                <FormErrors Errors="formErrors" />
+                <div class="scroll">
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="sticky">Student</th>
+                                @foreach (var c in book.Columns)
+                                {
+                                    <th scope="col" class="col">
+                                        <a href="teacher/items/@c.ItemId" title="@c.ModuleTitle · @ItemKinds.Display(c.Kind)"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @c.Title</a>
+                                        <span class="max">out of @c.Max.ToString("0.##")</span>
+                                    </th>
+                                }
+                                <th scope="col" class="avg">Average</th>
+                                <th scope="col" class="edit"><span class="sr-only">Edit</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in book.Rows)
+                            {
+                                var editing = editingStudent == row.StudentId;
+                                <tr class="@(editing ? "editing" : "")">
+                                    <th scope="row" class="sticky">
+                                        <span class="name">@row.Name</span>
+                                        <span class="sub">@row.Lrn</span>
+                                    </th>
+                                    @for (var n = 0; n < book.Columns.Count; n++)
+                                    {
+                                        var column = book.Columns[n];
+                                        var cell = row.Cells[n];
+                                        <td class="cell @CellClass(cell, column)">
+                                            @if (editing)
+                                            {
+                                                <input type="number" step="any" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" aria-label="@($"{row.Name}, {column.Title}")"
+                                                       value="@inputs.GetValueOrDefault(column.ItemId)" @onchange="e => inputs[column.ItemId] = e.Value?.ToString() ?? string.Empty" />
+                                            }
+                                            else if (cell.Status == SubmissionStatus.Graded && cell.Score is { } score)
+                                            {
+                                                <span class="score">@score.ToString("0.##")</span>
+                                                @if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }
+                                                @if (cell.IsFlagged) { <i class="flag-dot" title="Flagged by the anti-cheating watch"></i> }
+                                            }
+                                            else if (cell.Status == SubmissionStatus.Submitted)
+                                            {
+                                                <a class="check" href="teacher/items/@column.ItemId" title="Handed in, waiting for a score">To check</a>
+                                            }
+                                            else if (cell.Status == SubmissionStatus.InProgress)
+                                            {
+                                                <span class="dash" title="Started, not handed in">…</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="dash" title="Nothing handed in">—</span>
+                                            }
+                                        </td>
+                                    }
+                                    <td class="avg">
+                                        @if (row.Percent is { } p)
+                                        {
+                                            <Badge Tone="@GradeRules.ToneOf(p)">@p.ToString("0.#")%</Badge>
+                                        }
+                                        else
+                                        {
+                                            <span class="dash">—</span>
+                                        }
+                                    </td>
+                                    <td class="edit">
+                                        @if (editing)
+                                        {
+                                            <div class="edit-actions">
+                                                <Button Small="true" IconName="circle-check" Disabled="busy" OnClick="SaveAsync">Save</Button>
+                                                <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="CancelEdit">Cancel</Button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit grades of {row.Name}")" OnClick="() => StartEdit(row)">Edit grades</Button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="legend"><span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
+            }
+        </Card>
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "subject")] private int? SubjectQuery { get; set; }
+
+    private int teacherId;
+    private bool loaded;
+    private IReadOnlyList<TeacherSubjectCard> subjects = [];
+    private int subjectId;
+    private SubjectGradebook? book;
+    private int? editingStudent;
+    private readonly Dictionary<int, string> inputs = [];
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        subjects = teacherId == 0 ? [] : await Teaching.GetTeacherCardsAsync(teacherId);
+        subjectId = subjects.Any(s => s.AssignmentId == SubjectQuery) ? SubjectQuery!.Value : subjects.FirstOrDefault()?.AssignmentId ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task LoadAsync()
+    {
+        editingStudent = null;
+        formErrors = [];
+        book = subjectId == 0 ? null : await Books.GetAsync(teacherId, subjectId);
+    }
+
+    private async Task SubjectChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id))
+        {
+            subjectId = id;
+            message = null;
+            await LoadAsync();
+        }
+    }
+
+    /// <summary>The look of a score: red under the passing mark, a color for work waiting to be checked.</summary>
+    private static string CellClass(GradebookCell cell, GradebookColumn column) =>
+        cell.Status == SubmissionStatus.Graded && cell.Score is { } s && column.Max > 0 && s / column.Max * 100 < GradeRules.PassingPercent ? "failing" : "";
+
+    private void StartEdit(GradebookRow row)
+    {
+        formErrors = [];
+        editingStudent = row.StudentId;
+        inputs.Clear();
+        foreach (var cell in row.Cells)
+        {
+            inputs[cell.ItemId] = cell.Status == SubmissionStatus.Graded && cell.Score is { } s ? s.ToString("0.##", CultureInfo.InvariantCulture) : "";
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editingStudent = null;
+        formErrors = [];
+    }
+
+    private async Task SaveAsync()
+    {
+        if (busy || editingStudent is not { } studentId)
+        {
+            return;
+        }
+
+        var scores = new Dictionary<int, decimal?>();
+        foreach (var (itemId, text) in inputs)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                scores[itemId] = null;
+            }
+            else if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
+            {
+                scores[itemId] = value;
+            }
+            else
+            {
+                formErrors = ["A score must be a number."];
+                return;
+            }
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Books.SetScoresAsync(teacherId, subjectId, studentId, scores);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            var name = book?.Rows.FirstOrDefault(r => r.StudentId == studentId)?.Name;
+            messageIsError = false;
+            message = $"{name}: {result.Message}";
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

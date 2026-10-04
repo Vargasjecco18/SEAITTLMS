@@ -123,3 +123,22 @@ internal sealed class TodoItemConfiguration : IEntityTypeConfiguration<TodoItem>
         b.HasIndex(t => new { t.UserId, t.IsDone, t.DueOn });
     }
 }
+
+internal sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<AttendanceRecord>
+{
+    public void Configure(EntityTypeBuilder<AttendanceRecord> b)
+    {
+        b.Property(a => a.Status).HasMaxLength(10).IsRequired();
+        b.Property(a => a.Note).HasMaxLength(200);
+
+        // Attendance goes with its subject and with its student.
+        b.HasOne(a => a.Assignment).WithMany().HasForeignKey(a => a.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.Student).WithMany().HasForeignKey(a => a.StudentId).OnDelete(DeleteBehavior.Cascade);
+
+        // One mark per student, subject and day.
+        b.HasIndex(a => new { a.AssignmentId, a.StudentId, a.AttendedOn }).IsUnique();
+        b.HasIndex(a => new { a.StudentId, a.AttendedOn });
+
+        b.ToTable(t => t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')"));
+    }
+}

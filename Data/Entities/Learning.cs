@@ -225,3 +225,30 @@ public class TodoItem : AuditableEntity
     public bool IsDone { get; set; }
     public DateTime? DoneAtUtc { get; set; }
 }
+
+public static class AttendanceStatus
+{
+    public const string Present = "Present";
+    public const string Late = "Late";
+    public const string Absent = "Absent";
+
+    public static readonly string[] All = [Present, Late, Absent];
+}
+
+/// <summary>Whether a student came to a subject's class on a day. The teacher of the subject marks it.</summary>
+public class AttendanceRecord : AuditableEntity
+{
+    public int AssignmentId { get; set; }
+    public TeachingAssignment Assignment { get; set; } = null!;
+
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    /// <summary>The school day (a Philippine date).</summary>
+    public DateOnly AttendedOn { get; set; }
+
+    /// <summary>One of <see cref="AttendanceStatus"/>.</summary>
+    public string Status { get; set; } = AttendanceStatus.Present;
+
+    public string? Note { get; set; }
+}

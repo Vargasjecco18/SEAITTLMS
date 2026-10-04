@@ -1,0 +1,164 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.pick {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 0 1rem;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 560px) {
+    .pick {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.sheet-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin: 0.25rem 0 0.75rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+.sheet-date {
+    font-weight: 700;
+}
+
+.tally {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-right: auto;
+}
+
+.students {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.students li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.who {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.who > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.name {
+    font-weight: 650;
+}
+
+.sub {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.choices {
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.choice {
+    min-width: 5rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background-color 0.12s, color 0.12s, border-color 0.12s, transform 0.12s;
+}
+
+.choice:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.choice:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.choice.on {
+    transform: scale(1.03);
+}
+
+.choice.present.on { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+.choice.late.on { background: var(--warning-soft); border-color: var(--warning); color: var(--warning); }
+.choice.absent.on { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.table-wrap {
+    position: relative;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+
+.table thead th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tfoot th,
+.table tfoot td {
+    border-bottom: 0;
+    background: var(--surface-2);
+    font-weight: 700;
+}
+
+.num {
+    text-align: right !important;
+}
+
+.note {
+    margin: 0.8rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

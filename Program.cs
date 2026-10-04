@@ -64,6 +64,8 @@ builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<WorkService>();
 builder.Services.AddScoped<QuizService>();
 builder.Services.AddScoped<TodoService>();
+builder.Services.AddScoped<AttendanceService>();
+builder.Services.AddScoped<GradebookService>();
 builder.Services.AddScoped<GradeService>();
 builder.Services.AddScoped<AchievementService>();
 builder.Services.AddScoped<CalendarService>();

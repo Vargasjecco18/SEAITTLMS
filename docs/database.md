@@ -67,6 +67,8 @@ erDiagram
     students ||--o{ module_views : ""
 
     users ||--o{ todo_items : "to-do list"
+    teaching_assignments ||--o{ attendance_records : ""
+    students ||--o{ attendance_records : ""
 
     users ||--o{ messages : "sender"
     users ||--o{ messages : "recipient"
@@ -184,6 +186,7 @@ registrar who did it.
 | `quiz_questions` | The questions of a quiz: `kind` (`MultipleChoice`, `TrueFalse`, `ShortAnswer`), `text`, `options_text` (one choice per line), `correct_answer` (for a short answer several accepted answers separated by `\|`) and `points`. |
 | `submissions` | One piece of work per student and item (`unique (item_id, student_id)`): `status` (`InProgress`, `Submitted`, `Graded`), `answer_text`, `link_url`, `score`, `feedback`, `is_late`. For quizzes also the answers and the order of the questions (`answers_json`), and the anti-cheating watch: `violation_count`, `violation_log`, `is_flagged`, `auto_submit_reason` (`time` or `violations`). |
 | `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
+| `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
 | `todo_items` | A person's own to-do list (students and teachers): `user_id`, `title`, `due_on` (a date, or empty), `is_done`, `done_at_utc`. Deleted with the account. |
 
 Deleting a teacher deletes their assignments, and with them the modules, items and handed-in work. Deleting a student
@@ -265,6 +268,9 @@ Things that were decided for you, change them in the tables if they are not righ
 
 ## Rules the application enforces
 
+- Only the teacher of a subject marks its attendance, only for students on its roster, and not for a day that has not come
+  (`AttendanceService`). The attendance rate is the days present or late divided by the days marked; under 80% is "low".
+  The gradebook (`GradebookService`) changes scores through `WorkService.GradeAsync` and checks every box before saving any.
 - A teacher can only be given a subject that the section's strand has at the section's grade level, and the student must be
   on the roster (enrolled in the section with the subject) to read a module or hand in work (`TeachingService`,
   `ModuleService`, `WorkService`). Only the teacher of the subject can change its modules, items and scores.

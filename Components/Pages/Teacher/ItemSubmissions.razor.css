@@ -47,6 +47,7 @@
 }
 
 .table-wrap {
+    position: relative;
     margin: -1.25rem;
     overflow-x: auto;
 }

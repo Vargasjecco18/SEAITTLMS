@@ -166,7 +166,7 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 |---|---|---|
 | Admin | `/admin` | Dashboard, **Users Management**, My account |
 | Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, My account |
-| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Calendar**, My account |
+| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Attendance**, **Gradebook**, **Calendar**, My account |
 | Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, My account |
 | Guidance counselor | `/account` | My account (their pages come next) |
 
@@ -222,6 +222,20 @@ points possible of the graded work), the passing mark of 70 drawn on the bars, t
 each subject. A grade under 70 is shown in red with a warning; a quiz whose result the teacher hides is not counted yet.
 
 The code: `Services/DashboardService.cs`, `CalendarService.cs`, `TodoService.cs`, `GradeService.cs`, `AchievementService.cs`.
+
+## Attendance and the gradebook (teacher)
+
+**Teacher > Attendance** (`/teacher/attendance`): choose the subject and the date, press **Present**, **Late** or **Absent** for each
+student (or **Mark all present** first), then **Save attendance**. An earlier day can be opened and corrected; a day that has
+not come yet can't be marked. Under it the **Attendance summary** shows each student's present, late and absent days and the
+attendance rate (days present or late divided by days marked; under 80% is red). The dashboard says in which subjects attendance
+was not taken today. Students see their rate on **Grades**, and five days all present earn the *Perfect attendance* badge.
+
+**Teacher > Gradebook** (`/teacher/gradebook`): choose the subject; every student is a row, every activity, quiz and task
+performance of a posted module is a column (with its highest score), and the last column is the average. A score under 70% is
+red, work waiting for a score says *To check* (click it to open the work). **Edit grades** turns a row into boxes; **Save**
+changes the scores (all of them are checked first, a wrong one saves nothing) and tells the student. Feedback the teacher wrote
+is kept.
 
 ## Enrolling a student (registrar)
 
@@ -350,7 +364,7 @@ Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
   Admin/                     Dashboard, UsersManagement
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
-  Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder
+  Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook
   Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades
   Account/                   MyAccount, Search, Calendar (students and teachers)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)

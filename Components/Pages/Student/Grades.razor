@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = AppRoles.Student)]
 @inject CurrentUser Me
 @inject GradeService GradeBook
+@inject AttendanceService AttendanceBook
 
 <PageTitle>Grades and progress · SEAITT e-LMS</PageTitle>
 
@@ -48,7 +49,9 @@ else
             <div class="stats">
                 <StatCard Label="Overall average" Text="@(summary.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(summary.Overall is null ? AccentColor.Slate : summary.Overall < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
                           Hint="@(summary.Overall is { } o ? GradeRules.Descriptor(o) : "No graded work yet")" />
-                <StatCard Label="Subjects" Value="@summary.Subjects.Count" IconName="book-open" Accent="AccentColor.Blue" Hint="@($"{summary.Subjects.Count(s => s.Percent >= GradeRules.PassingPercent)} passing")" />
+                <StatCard Label="Attendance" Text="@(attendance?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
+                          Accent="@(attendance?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
+                          Hint="@(attendance is { Days: > 0 } ? $"{attendance.Present} present · {attendance.Late} late · {attendance.Absent} absent" : "Nothing marked yet")" />
                 <StatCard Label="@($"Below {GradeRules.PassingPercent:0}")" Value="@summary.FailingSubjects" IconName="triangle-alert" Accent="@(summary.FailingSubjects > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(summary.FailingSubjects == 0 ? "None, well done" : "Needs attention")" />
                 <StatCard Label="Graded works" Value="@summary.GradedCount" IconName="clipboard-check" Accent="AccentColor.Violet" Hint="@($"{summary.Subjects.Sum(s => s.Missing)} missing")" />
             </div>
@@ -117,6 +120,13 @@ else
                         </div>
 
                         <p class="counts">
+                            @{
+                                var att = attendance?.Subjects.FirstOrDefault(a => a.AssignmentId == s.AssignmentId);
+                            }
+                            @if (att is { Percent: { } attRate })
+                            {
+                                <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
+                            }
                             @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "work" : "works") graded
                             @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
                             @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
@@ -150,11 +160,16 @@ else
 
 @code {
     private StudentGradeSummary? summary;
+    private StudentAttendance? attendance;
 
     protected override async Task OnInitializedAsync()
     {
         var studentId = await Me.GetStudentIdAsync();
         summary = studentId is { } id ? await GradeBook.GetStudentSummaryAsync(id) : new StudentGradeSummary([], null, 0, 0);
+        if (studentId is { } sid)
+        {
+            attendance = await AttendanceBook.GetStudentAsync(sid);
+        }
     }
 
     private static string Band(decimal? percent) => percent switch

@@ -32,6 +32,8 @@ public static class PageDirectory
         [
             new("Dashboard", "Work to check, deadlines and drafts", "teacher", "layout-dashboard"),
             new("Subjects", "The subjects you teach, with their modules and work", "teacher/subjects", "book-open"),
+            new("Attendance", "Mark who came to class and see the attendance summary", "teacher/attendance", "calendar-check"),
+            new("Gradebook", "The scores of every student in a subject, and their average", "teacher/gradebook", "clipboard-list"),
             new("Calendar", "Deadlines, postings and your to-do list, by month or week", "calendar", "calendar-days"),
             MyAccount,
         ],

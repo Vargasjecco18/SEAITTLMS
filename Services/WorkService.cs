@@ -231,7 +231,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
     }
 
     /// <summary>Gives a score and feedback. Works also when the student handed nothing in (a task performance done in class). The student is told.</summary>
-    public async Task<ServiceResult> GradeAsync(int teacherId, int itemId, int studentId, decimal? score, string? feedback, CancellationToken ct = default)
+    public async Task<ServiceResult> GradeAsync(int teacherId, int itemId, int studentId, decimal? score, string? feedback, CancellationToken ct = default, bool keepFeedback = false)
     {
         feedback = string.IsNullOrWhiteSpace(feedback) ? null : feedback.Trim();
 
@@ -269,7 +269,11 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var isNew = s is null;
         s ??= db.Submissions.Add(new Submission { ItemId = itemId, StudentId = studentId }).Entity;
         s.Score = Math.Round(score.Value, 2);
-        s.Feedback = feedback;
+        if (!keepFeedback)
+        {
+            s.Feedback = feedback;
+        }
+
         s.Status = SubmissionStatus.Graded;
         s.GradedAtUtc = now;
 

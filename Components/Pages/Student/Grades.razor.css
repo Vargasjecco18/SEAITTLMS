@@ -203,6 +203,11 @@ h2 a:hover {
     font-size: 0.88rem;
 }
 
+.att.low {
+    color: var(--danger);
+    font-weight: 600;
+}
+
 .missing {
     color: var(--danger);
     font-weight: 600;
