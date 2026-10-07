@@ -15,7 +15,7 @@ What exists so far:
   student's email and password are made automatically) and *Student's Accounts* (a searchable list).
 - **Administrator pages** (for the administrator only): *Dashboard* and *Users Management*: one list per role, with
   search, **edit**, **delete** and add (for staff).
-- **My account** for everybody: the account, **sign-in and security** (last sign-in), **appearance** (light, night, auto, animations), shortcuts to the pages of the role, and widgets (students and teachers: the calendar, to-do list and the achievements or what needs attention; the administrator, the registrar and the guidance counselor: three numbers *at a glance*).
+- **The first page** (`/`, before signing in) lists **Our courses** by track: each track, its strands with their full names, and, when a strand is opened, the courses it studies by grade level and term.
 - **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
   strands and the subjects of grade 11.
@@ -123,9 +123,11 @@ administrator.
 
 Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
-**Sample accounts:** to get one sign-in for each of the administrator, registrar, guidance counselor and a student, open
+**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, 12 teachers and 40 students), open
 [database/seaittlms_sample_accounts.sql](database/seaittlms_sample_accounts.sql) in Workbench and click the lightning bolt.
-It only adds what is missing, so running it twice is harmless. The passwords are in the chat/handover, not in the file.
+It only adds what is missing, so running it twice is harmless. The passwords are not in the file (only their hashes): ask for the list of emails and passwords.
+The teachers and students are plain accounts: give a teacher courses in **Users Management > Teachers > Courses**, and enroll the students with the registrar's
+**Enrollments** form (type the LRN, the account is found). Until then the students are listed under *School setup > Not enrolled*.
 
 Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five old views,
 and does nothing if you don't have them):
@@ -155,8 +157,8 @@ Persist the ASP.NET Core Data Protection keys if you run in a container.
 | **Search** (middle) | Type and press Enter: the search page lists the pages you can open and, depending on your role, the people you work with. An administrator finds every account, a registrar finds students, a teacher finds the students of their subjects (the hit opens the gradebook of that subject) and the guidance counselor finds students (the hit opens the referrals page for that student). |
 | **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor and the registrar; a teacher also to students and the other staff. **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time**: the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
 | **Notifications** (bell) | What the system wants you to know (a new message, and later new modules, grades and deadlines). The number is how many are new. Click one to open the page it is about. |
-| **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). The same buttons are in **My account > Appearance**. |
-| **Name and role** (bottom of the menu) | Who is signed in. Click the name to open My account, the arrow button signs you out. |
+| **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). |
+| **Name and role** (bottom of the menu) | Who is signed in. The arrow button signs you out. |
 
 The code: `Components/Layout/HeaderTools.razor` (the three buttons), `MessagesPanel.razor` (the Messages box),
 `Services/MessageService.cs` (the rules and the 7 PM to 7 AM closing time), `Services/NotificationService.cs`.
@@ -168,22 +170,27 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | Dashboard, **Users Management**, **School setup**, **Announcements**, **Archive**, **Analytics**, My account |
-| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, **Announcements**, My account |
-| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Attendance**, **Gradebook**, **Announcements**, **Analytics**, **Calendar**, My account |
-| Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, My account |
-| Guidance counselor | `/guidance` | **Dashboard**, **Referrals**, **Students at risk**, **Analytics**, My account |
+| Admin | `/admin` | Dashboard, **Users Management**, **School setup**, **Announcements** (only the administrator writes them), **Archive Accounts**, **Analytics** |
+| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts** |
+| Teacher | `/teacher` | **Dashboard**, **Courses** (modules, activities, quizzes, task performances, grading), **Attendance**, **Calendar**, **Gradebook**, **Analytics** (in this order in the menu) |
+| Student | `/student` | **Dashboard**, **Courses** (modules, work, quizzes), **Grades**, **Calendar** |
+| Guidance counselor | `/guidance` | **Dashboard**, **Referrals**, **Students at risk**, **Analytics** |
+
+There is no "My account" page: people sign in, work, and sign out. Somebody whose role has no page of their own (it should not happen) is sent to *Access denied*.
 
 The registrar pages belong to the registrar: **an administrator cannot open them**. To get a registrar, sign in as the
 administrator, open **Users Management > Registrars**, press **Add registrar** and give the person an email and a first
 password. Then sign in as that registrar to enroll students.
 
-## Subjects, modules and work
+## Courses, modules and work
 
-**The administrator** gives each teacher their subjects: **Users Management > Teachers > Subjects**, choose the section and
-the subject (only the subjects of that section's strand are listed). A subject of a section has one teacher.
+(In the app the subjects of the school are called **courses**. The database tables keep the name `subjects`.)
 
-**Teacher > Subjects** shows one colored card per subject (a teacher with more than one section also gets a chip per section to show one
+**The administrator** gives each teacher their courses: **Users Management > Teachers > Courses**, choose the section and
+the course (only the courses of that section's strand are listed). A course of a section has one teacher. A new teacher can get
+their track, strand, section and courses right away in the **Add teacher** form (see *Users Management* below).
+
+**Teacher > Courses** shows one colored card per course (a teacher with more than one section also gets a chip per section to show one
 section at a time). **Open** shows its modules. A new module is a **draft**: students
 cannot see it. **Post now** shows it to the students (they get a notification), **Schedule** picks the day and time it
 appears by itself, **Hide** takes it back. At the bottom of a module are its **Activities**, **Quizzes** and **Task
@@ -196,7 +203,7 @@ system when they leave the tab or window, copy, cut or paste (those are blocked 
 the number you choose the quiz is handed in by itself and **flagged** for you, with a log of what happened. The time is
 checked on the server, and a quiz that was left open is handed in when its time is over.
 
-**Student > Subjects** shows the subjects they are enrolled in as cards (or a list). The chips are **All**, **Enrolled** (the term has not ended) and **Completed** (the term is over, or the enrollment was completed), each with its number. The **list** has the columns subject, teacher, section, schedule, term, status, modules and work, next due, grade and attendance. **Open** shows the
+**Student > Courses** shows the courses they are enrolled in as cards (or a list). The chips are **All**, **Enrolled** (the term has not ended) and **Completed** (the term is over, or the enrollment was completed), each with its number. The **list** has the columns course, teacher, section, schedule, term, status, modules and work, next due, grade and attendance. **Open** shows the
 posted modules; each ends with three tabs: **Activities**, **Quizzes**, **Task performance**. **Read lesson** opens the
 module's text. A module that was never opened is marked **New**.
 
@@ -207,20 +214,22 @@ The code: `Services/TeachingService.cs`, `ModuleService.cs`, `WorkService.cs`, `
 ## Dashboards, calendar and the widgets at the right
 
 **Student > Dashboard** (`/student`) shows what to do first: the work still to do with its due dates (overdue ones in red), the
-modules not opened yet, the grade of every subject, the latest scores and the **achievements** (perfect score, high grades,
+modules not opened yet, the latest scores and the **achievements** (perfect score, high grades,
 quiz ace, always on time, curious mind: earned ones are colored, the others show how far you are).
 
 **Teacher > Dashboard** (`/teacher`) shows the **unchecked activities** (work handed in that still needs a score), the
-deadlines of the next two weeks with who handed in, the modules students can't see yet (drafts and scheduled ones) and the
-quiz attempts the anti-cheating watch flagged.
+modules students can't see yet (drafts and scheduled ones) and the quiz attempts the anti-cheating watch flagged. At its right is
+the calendar (nothing else: no announcements, to-do list, deadlines list or attendance card).
 
-The column at the right of the dashboards, the subject pages and the grades page (`Components/Shared/AsideWidgets.razor`) holds a
-small **calendar** (a dot on every day with something, click a day to see it), the **to-do list** (add, check off, delete; each
-person has their own) and an **Up next** list, so the screen has no empty space. On a phone the widgets go under the page.
+The column at the right of some pages (`Components/Shared/AsideWidgets.razor`) holds the widgets that page needs, in this order. The **student
+dashboard** has the **calendar** first (a dot on every day with something, click a day to see it) and the **announcements** second. The
+student's **Courses** pages also have the **to-do list** (add, check off, delete; each person has their own) and a **Due dates** list. The teacher's
+**Courses** page has the calendar and *Needs your attention*. The grades pages and the teacher's attendance page have no column. On a phone the widgets
+go under the page.
 
 **Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next. It shows the
 deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), and the
-to-do entries that have a date. Done work is struck through, overdue work is red. Click a day number to open its week. At the right a student has an **Activities** card (the work to do, with its due text) beside the to-do list and *Up next*; the Next button has its `>` icon.
+to-do entries that have a date. Done work is struck through, overdue work is red. Click a day number to open its week. At the right a student has an **Activities** card (the work to do, with its due text) beside the to-do list and *Due dates*; the Next button has its `>` icon.
 
 **Teacher > Calendar: unassigned activities.** The card **Unassigned activities** at the right lists the teacher's activities, quizzes and task performances that have **no due date**. **Drag** one onto a day (month or week view) and a box opens with that day (5 PM Philippine time) as the due date, where the teacher can also change the title, instructions, highest score, when it appears and, for a quiz, the time limit and the **anti-cheating** settings (watch on or off, warnings before it is handed in, shuffling, showing the result). **Save** puts it on that day for the teacher and the students; **Cancel** leaves it unassigned. The **Set date** link next to an activity does the same without the mouse. Code: `Components/Pages/Account/Calendar.razor`, `ItemScheduleDialog.razor`, the drag script in `wwwroot/app.js`.
 
@@ -232,13 +241,12 @@ The code: `Services/DashboardService.cs`, `CalendarService.cs`, `TodoService.cs`
 
 ## Attendance and the gradebook (teacher)
 
-**Teacher > Attendance** (`/teacher/attendance`): choose the subject and the date, press **Present**, **Late** or **Absent** for each
+**Teacher > Attendance** (`/teacher/attendance`): choose the course and the date, press **Present**, **Late** or **Absent** for each
 student (or **Mark all present** first), then **Save attendance**. An earlier day can be opened and corrected; a day that has
 not come yet can't be marked. Under it the **Attendance summary** shows each student's present, late and absent days and the
-attendance rate (days present or late divided by days marked; under 80% is red). The dashboard says in which subjects attendance
-was not taken today. Students see their rate on **Grades**, and five days all present earn the *Perfect attendance* badge.
+attendance rate (days present or late divided by days marked; under 80% is red).  Students see their rate on **Grades**, and five days all present earn the *Perfect attendance* badge.
 
-**Teacher > Gradebook** (`/teacher/gradebook`): choose the subject; every student is a row, every activity, quiz and task
+**Teacher > Gradebook** (`/teacher/gradebook`): choose the course; every student is a row, every activity, quiz and task
 performance of a posted module is a column (with its highest score), and the last column is the average. A score under 70% is
 red, work waiting for a score says *To check* (click it to open the work). **Edit grades** turns a row into boxes; **Save**
 changes the scores (all of them are checked first, a wrong one saves nothing) and tells the student. Feedback the teacher wrote
@@ -272,7 +280,7 @@ out from the scores and the attendance that are recorded.
 
 ## Graduation (archive)
 
-**Administrator > Archive**: the grade 12 students who are still at school are listed. Tick the ones who graduate (or **Select all**), add a note
+**Administrator > Archive Accounts**: the grade 12 students who are still at school are listed. Tick the ones who graduate (or **Select all**), add a note
 ("Class of 2027") and **Archive selected**: they are marked *Graduated*, their enrollments are completed and their **sign-in is switched off**; their
 records stay. The *Archived* tab lists the graduates and can **Restore** one (the account works again; the registrar enrolls
 the student again for a class). A student in the archive can't be enrolled until an administrator restores the account.
@@ -290,22 +298,22 @@ the setup, each with its number. The administrator can **add, edit and delete**:
 | School years | Name (like 2027-2028), first and last day. One with terms or sections can't be deleted. |
 | Terms | School year, number, name, dates (inside the school year) and **the current term** (making one current takes it away from the other: only one term is current). The term after the current one is the **next term**. A term with enrollments can't change its number or school year and can't be deleted. |
 | Tracks | Code, name, offered or not. One with strands can't be deleted. |
-| Strands | Code, name, track, **the schedules** it has classes in (at least one), offered or not, and **the subjects of the strand** (the **Subjects** button: pick grade level and term, add or remove subjects). A strand with students can't move to another track; a schedule that a section uses can't be taken away; one that is or was in use can't be deleted (switch it off). |
-| Subjects | Code, name, description, in use or not. One in a strand's subjects or taken by students can't be deleted. |
+| Strands | Code, name, track, **the schedules** it has classes in (at least one), offered or not, and **the courses of the strand** (the **Courses** button: pick grade level and term, add or remove courses). A strand with students can't move to another track; a schedule that a section uses can't be taken away; one that is or was in use can't be deleted (switch it off). |
+| Courses | Code, name, description, in use or not. One in a strand's courses or taken by students can't be deleted. |
 | Sections | School year, grade level, strand, schedule (one of the strand's), name and adviser. One with students or teachers can only change its name and its adviser. |
-| Enrollments | **View only** (the eye on the tab): the registrar's enrollments, with search and a term filter. |
+| Enrolled | **View only** (the eye on the tab): the students the registrar enrolled, with search and a term filter. |
 | Not enrolled | **View only**: the students at school who are not enrolled for the next term (see below). |
 
-The subjects a student takes are **not picked at enrollment**: they are the subjects of the strand for that grade level and term, as set here. Changing the
-subjects of a strand changes the enrollments made from then on; students already enrolled keep theirs. Code: `Services/SchoolSetupService.cs`.
+The courses a student takes are **not picked at enrollment**: they are the courses of the strand for that grade level and term, as set here. Changing the
+courses of a strand changes the enrollments made from then on; students already enrolled keep theirs. Code: `Services/SchoolSetupService.cs`.
 
 ## Announcements
 
-**Announcements** (`/announcements`, in the menu of the administrator, the registrar and the teachers). The administrator and the registrar write
-a notice for **everybody** (students and teachers), for **the students** or for **the teachers**, with an optional *show until* day. A teacher writes
-one for the students of **one section they teach**. The people it is for get a notification when it is posted (editing does not notify again).
-Students see the announcements meant for them in the **Announcements** card at the right of their dashboard (the title opens the whole text); teachers see the
-school's announcements on their dashboard and under **From the school** on the page. The author can edit and delete their own; the administrator can delete any.
+**Announcements** (`/announcements`) is a page of the **administrator only** (the registrar and the teachers have no such page). The administrator writes
+a notice for **everybody** (students and teachers), for **the students** or for **the teachers**, with an optional *show until* day, and can edit and delete
+any of them. The people it is for get a notification when it is posted (editing does not notify again; a teacher's notification opens the teacher's
+dashboard). Students see the announcements meant for them in the **Announcements** card at the right of their dashboard, under the calendar (the title
+opens the whole text). Announcements that a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.
 Code: `Services/AnnouncementService.cs`.
 
 ## Enrolling a student (registrar)
@@ -349,10 +357,16 @@ student changes the password**. Until there is, an administrator can set a new o
 Typing the LRN of a student that has an account shows their name (locked) and adds a **new enrollment**, for example
 for the 2nd term. The account and the password do not change. Enrolling the same student twice in one term is refused.
 
+The form starts from where the student was the last time: the **grade level** (one more when the term is in a newer school year), the **track** and
+the **strand**, and the **schedule** and **section** they had. The registrar only changes what is different (usually the schedule or the section).
+The **Enroll** link of the *Next term* column opens the form this way, so a student who was never enrolled is the only one who needs track and strand picked.
+
 ### Student's Accounts
 
 **Registrar > Student's Accounts** (`/registrar/student-accounts`) lists every enrolled student, newest first, 20 per page. Search by name
-or LRN and filter by term, strand, schedule and **next term** (enrolled or not). The dashboard (`/registrar`) shows how many students are enrolled this
+or LRN and filter by term, strand, schedule and **next term** (enrolled or not). The **Courses** button of a row (for example "8 courses") opens a small pop-up over the page with the
+student's courses, so the columns do not move. The **Final grade** column, just left of *Next term*, is the average of the grades of the student's courses in that term (points
+earned divided by points possible of the graded work; courses nobody graded yet are left out; "No grades yet" when none is), with what it means (*Satisfactory*, ...). The dashboard (`/registrar`) shows how many students are enrolled this
 term, today, by strand and by schedule, and under *By schedule* the **Not enrolled** section.
 
 **The next term and unenrolling.** The next term is the term after the current one (set in the school setup). The **Next term** column says whether the
@@ -373,7 +387,11 @@ Administrators), each with its number of accounts, and a search box (name, LRN o
   Changing the email or the password, or switching an account off, signs that person out.
   Changing a student's name or LRN also updates it in their enrollments.
 - **Add** (teachers, registrars, guidance counselors, administrators) makes an account with the password you type.
-  Students are not added here: they get their account when the registrar enrolls them.
+  Students are not added here: they get their account when the registrar enrolls them. **Add teacher** also asks where the teacher works
+  (all optional): **Track**, **Strand**, **Section** (the sections of that strand) and the **Courses** of that section, with a tick box for each
+  (and *Select all*). The courses are given to the teacher for that section right away, and the teacher's track, strand, section and grade level are saved on
+  the teacher. The choices are checked first (the strand must be in the track, the courses must be courses of that strand at that grade level, and a
+  course another teacher already teaches to that section can't be given), and a wrong choice adds nothing. Code: `UserManagementService.AddTeacherAsync`.
 - **Delete** asks first and says what else goes: a deleted student loses their enrollments, a deleted teacher's
   sections lose their adviser, and the enrollments a registrar made stay. Deleting **cannot be undone**,
   switching the account off is the gentler choice.
@@ -447,7 +465,7 @@ Components/Pages/          The pages, in one folder per part of the system:
   Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook
   Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades
   Guidance/                  Dashboard, Referrals, StudentsAtRisk
-  Account/                   MyAccount, Announcements, Search, Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers)
+  Account/                   Announcements, Search, Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it

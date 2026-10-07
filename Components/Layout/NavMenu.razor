@@ -21,7 +21,7 @@
         </NavLink>
         <NavLink class="link" href="admin/archive">
             <Icon Name="archive" />
-            <span>Archive</span>
+            <span>Archive Accounts</span>
         </NavLink>
         <NavLink class="link" href="analytics">
             <Icon Name="chart-column" />
@@ -44,10 +44,6 @@
             <Icon Name="graduation-cap" />
             <span>Student's Accounts</span>
         </NavLink>
-        <NavLink class="link" href="announcements">
-            <Icon Name="megaphone" />
-            <span>Announcements</span>
-        </NavLink>
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Teacher">
@@ -59,27 +55,23 @@
         </NavLink>
         <NavLink class="link" href="teacher/subjects">
             <Icon Name="book-open" />
-            <span>Subjects</span>
+            <span>Courses</span>
         </NavLink>
         <NavLink class="link" href="teacher/attendance">
             <Icon Name="calendar-check" />
             <span>Attendance</span>
         </NavLink>
+        <NavLink class="link" href="calendar">
+            <Icon Name="calendar-days" />
+            <span>Calendar</span>
+        </NavLink>
         <NavLink class="link" href="teacher/gradebook">
             <Icon Name="clipboard-list" />
             <span>Gradebook</span>
         </NavLink>
-        <NavLink class="link" href="announcements">
-            <Icon Name="megaphone" />
-            <span>Announcements</span>
-        </NavLink>
         <NavLink class="link" href="analytics">
             <Icon Name="chart-column" />
             <span>Analytics</span>
-        </NavLink>
-        <NavLink class="link" href="calendar">
-            <Icon Name="calendar-days" />
-            <span>Calendar</span>
         </NavLink>
     </AuthorizeView>
 
@@ -92,7 +84,7 @@
         </NavLink>
         <NavLink class="link" href="student/subjects">
             <Icon Name="book-open" />
-            <span>Subjects</span>
+            <span>Courses</span>
         </NavLink>
         <NavLink class="link" href="student/grades">
             <Icon Name="trending-up" />
@@ -124,11 +116,4 @@
             <span>Analytics</span>
         </NavLink>
     </AuthorizeView>
-
-    <p class="heading">Account</p>
-
-    <NavLink class="link" href="account">
-        <Icon Name="id-card" />
-        <span>My account</span>
-    </NavLink>
 </nav>

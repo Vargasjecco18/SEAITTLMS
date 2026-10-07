@@ -2,7 +2,6 @@
 @attribute [Authorize(Roles = AppRoles.Teacher)]
 @inject CurrentUser Me
 @inject DashboardService Dashboards
-@inject AttendanceService AttendanceBook
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
@@ -23,12 +22,12 @@
 }
 else
 {
-    <PageWithAside Show="announcements,calendar,todo">
+    <PageWithAside Show="calendar">
         <div class="stats">
             <StatCard Label="Work to check" Value="@data.ToCheck" IconName="clipboard-list" Accent="@(data.ToCheck > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="@(data.ToCheck == 0 ? "All checked" : "Waiting for a score")" />
             <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Anti-cheating, last 30 days" />
             <StatCard Label="Not posted yet" Value="@data.DraftCount" IconName="eye-off" Accent="AccentColor.Violet" Hint="Drafts and scheduled modules" />
-            <StatCard Label="Due this week" Value="@data.DueSoon" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="@($"{data.SubjectCount} subjects · {data.StudentCount} students")" />
+            <StatCard Label="Due this week" Value="@data.DueSoon" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="@($"{data.SubjectCount} courses · {data.StudentCount} students")" />
         </div>
 
         <div class="cards">
@@ -49,30 +48,6 @@ else
                                     <span class="row-icon"><Icon Name="@SubjectStyle.KindIcon(u.Kind)" Size="18" /></span>
                                     <span class="row-text"><span class="row-title">@u.Title</span><span class="row-sub">@u.SubjectName · @u.SectionLabel · oldest @PhilippineTime.FormatDate(u.OldestAtUtc)</span></span>
                                     <Badge Tone="Tone.Warning">@u.Count to check</Badge>
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-
-            <Card Title="Upcoming deadlines" IconName="calendar-clock">
-                @if (data.Deadlines.Count == 0)
-                {
-                    <EmptyState IconName="calendar-check" Title="No deadlines soon">
-                        <p>Nothing you posted is due in the next two weeks.</p>
-                    </EmptyState>
-                }
-                else
-                {
-                    <ul class="rows">
-                        @foreach (var d in data.Deadlines)
-                        {
-                            <li>
-                                <a href="teacher/items/@d.ItemId">
-                                    <span class="row-icon"><Icon Name="@SubjectStyle.KindIcon(d.Kind)" Size="18" /></span>
-                                    <span class="row-text"><span class="row-title">@d.Title</span><span class="row-sub">@d.SubjectName · @d.SectionLabel · @PhilippineTime.DueText(d.DueAtUtc, now)</span></span>
-                                    <Badge Tone="@(d.HandedIn >= d.Students && d.Students > 0 ? Tone.Success : Tone.Neutral)">@d.HandedIn / @d.Students</Badge>
                                 </a>
                             </li>
                         }
@@ -111,35 +86,6 @@ else
                 }
             </Card>
 
-            <Card Title="Attendance today" IconName="calendar-check">
-                @if (today.Count == 0)
-                {
-                    <EmptyState IconName="calendar-check" Title="No subjects yet" />
-                }
-                else
-                {
-                    <ul class="rows">
-                        @foreach (var t in today)
-                        {
-                            <li>
-                                <a href="teacher/attendance?subject=@t.AssignmentId">
-                                    <span class="row-icon"><Icon Name="user-check" Size="18" /></span>
-                                    <span class="row-text"><span class="row-title">@t.SubjectName</span><span class="row-sub">@t.SectionLabel · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
-                                    @if (t.Marked == 0)
-                                    {
-                                        <Badge Tone="Tone.Warning">Not marked yet</Badge>
-                                    }
-                                    else
-                                    {
-                                        <Badge Tone="Tone.Success">Marked @t.Marked / @t.Students</Badge>
-                                    }
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-
             <Card Title="Flagged quiz attempts" IconName="shield-alert">
                 @if (data.Flagged.Count == 0)
                 {
@@ -169,15 +115,10 @@ else
 
 @code {
     private TeacherDashboard? data;
-    private IReadOnlyList<AttendanceToday> today = [];
 
     protected override async Task OnInitializedAsync()
     {
         var teacherId = await Me.GetTeacherIdAsync();
         data = teacherId is { } id ? await Dashboards.GetTeacherAsync(id) : null;
-        if (teacherId is { } tid)
-        {
-            today = await AttendanceBook.GetTodayAsync(tid);
-        }
     }
 }

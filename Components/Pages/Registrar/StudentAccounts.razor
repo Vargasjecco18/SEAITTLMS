@@ -86,7 +86,7 @@
             else
             {
                 <div class="table-in-card">
-                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" ShowNextTerm="true" ShowPhone="true" NextTerm="result.NextTerm" />
+                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" ShowFinalGrade="true" ShowNextTerm="true" ShowPhone="true" NextTerm="result.NextTerm" />
                 </div>
 
                 @if (result.PageCount > 1)
@@ -150,7 +150,7 @@
         lookups = await Enrollment.GetLookupsAsync();
 
         await using var db = await DbFactory.CreateDbContextAsync();
-        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule, NextText), ParseNumber(PageText) ?? 1, PageSize);
+        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule, NextText), ParseNumber(PageText) ?? 1, PageSize, withFinalGrade: true);
     }
 
     /// <summary>This page's address with another page number (the search and filters stay).</summary>

@@ -20,9 +20,6 @@ public sealed record StudentAttendance(IReadOnlyList<SubjectAttendance> Subjects
     public int Days => Present + Late + Absent;
 }
 
-/// <summary>A teacher's subject and whether attendance was taken today.</summary>
-public sealed record AttendanceToday(int AssignmentId, string SubjectName, string SectionLabel, int Students, int Marked);
-
 /// <summary>
 /// Attendance: the teacher of a subject marks Present, Late or Absent for every student of the section, one day at a time. The
 /// attendance rate is the days present or late divided by the days marked (a student who is late still came to class).
@@ -79,7 +76,7 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
         var a = await OwnAssignmentAsync(db, teacherId, assignmentId, ct);
         if (a is null)
         {
-            return ServiceResult.Fail("This is not your subject.");
+            return ServiceResult.Fail("This is not your course.");
         }
 
         var roster = await Roster.StudentIds(db, a.SectionId, a.SubjectId).ToListAsync(ct);
@@ -150,27 +147,6 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
         var rated = rows.Where(r => r.Percent is not null).ToList();
         decimal? classRate = rated.Count == 0 ? null : Rate(rated.Sum(r => r.Present), rated.Sum(r => r.Late), rated.Sum(r => r.Absent));
         return new AttendanceSummary(assignmentId, records.Select(r => r.AttendedOn).Distinct().Count(), rows, classRate);
-    }
-
-    /// <summary>For the dashboard: whether attendance was taken today in each of the teacher's subjects.</summary>
-    public async Task<IReadOnlyList<AttendanceToday>> GetTodayAsync(int teacherId, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var today = PhilippineTime.Today(clock);
-        var assignments = await db.TeachingAssignments.AsNoTracking().Where(a => a.TeacherId == teacherId)
-            .OrderBy(a => a.Section.GradeLevel).ThenBy(a => a.Section.Strand.Code).ThenBy(a => a.Section.Name).ThenBy(a => a.Subject.Name)
-            .Select(a => new { a.Id, a.SectionId, a.SubjectId, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
-            .ToListAsync(ct);
-
-        var result = new List<AttendanceToday>();
-        foreach (var a in assignments)
-        {
-            var students = await Roster.StudentIds(db, a.SectionId, a.SubjectId).CountAsync(ct);
-            var marked = await db.AttendanceRecords.CountAsync(r => r.AssignmentId == a.Id && r.AttendedOn == today, ct);
-            result.Add(new AttendanceToday(a.Id, a.Subject, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), students, marked));
-        }
-
-        return result;
     }
 
     // ======================================================================= the student

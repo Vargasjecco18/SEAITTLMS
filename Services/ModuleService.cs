@@ -172,7 +172,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         if (!await db.TeachingAssignments.AnyAsync(a => a.Id == assignmentId && a.TeacherId == teacherId, ct))
         {
-            return ServiceResult.Fail("This is not your subject.");
+            return ServiceResult.Fail("This is not your course.");
         }
 
         var position = (await db.Modules.Where(m => m.AssignmentId == assignmentId).MaxAsync(m => (int?)m.Position, ct) ?? 0) + 1;

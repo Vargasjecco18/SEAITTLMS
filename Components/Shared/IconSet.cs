@@ -46,6 +46,7 @@ internal static class IconSet
             ["map-pin"] = """<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" />""",
             ["chevron-left"] = """<path d="m15 18-6-6 6-6" />""",
             ["chevron-right"] = """<path d="m9 18 6-6-6-6" />""",
+            ["chevron-down"] = """<path d="m6 9 6 6 6-6" />""",
             ["key-round"] = """<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z" /><circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />""",
             ["clock"] = """<circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />""",
             ["list"] = """<path d="M3 5h.01" /><path d="M3 12h.01" /><path d="M3 19h.01" /><path d="M8 5h13" /><path d="M8 12h13" /><path d="M8 19h13" />""",

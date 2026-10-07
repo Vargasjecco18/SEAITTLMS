@@ -4,11 +4,11 @@
 @inject CurrentUser Me
 @inject TeachingService Teaching
 
-<PageTitle>Subjects · SEAITT e-LMS</PageTitle>
+<PageTitle>Courses · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Subjects" Subtitle="The subjects you teach. Open one to see its modules, activities, quizzes and task performances." IconName="book-open" />
+<PageHeader Title="Courses" Subtitle="The courses you teach. Open one to see its modules, activities, quizzes and task performances." IconName="book-open" />
 
-<PageWithAside Show="calendar,todo,tocheck">
+<PageWithAside Show="calendar,tocheck">
 
 @if (cards is null)
 {
@@ -17,8 +17,8 @@
 else if (cards.Count == 0)
 {
     <Card>
-        <EmptyState IconName="book-open" Title="No subjects yet">
-            <p>The administrator gives each teacher their subjects (Users Management, Teachers, Subjects). They will show up here.</p>
+        <EmptyState IconName="book-open" Title="No courses yet">
+            <p>The administrator gives each teacher their courses (Users Management, Teachers, Courses). They will show up here.</p>
         </EmptyState>
     </Card>
 }
@@ -26,7 +26,7 @@ else
 {
     @if (sections.Count > 1)
     {
-        <nav class="chips" aria-label="Show the subjects of">
+        <nav class="chips" aria-label="Show the courses of">
             <a class="chip @(Section is null ? "on" : "")" href="teacher/subjects">All</a>
             @foreach (var label in sections)
             {

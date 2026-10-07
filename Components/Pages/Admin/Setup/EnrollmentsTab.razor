@@ -6,13 +6,13 @@
 @* Read-only: the enrollments are the registrar's work. *@
 <Card>
     <div class="tab-head">
-        <p class="grow"><Icon Name="eye" Size="16" /> Enrollments are made by the registrar. You can look at them here, but not change them.</p>
+        <p class="grow"><Icon Name="eye" Size="16" /> The students are enrolled by the registrar. You can look at who is enrolled here, but not change it.</p>
     </div>
 
     <form class="toolbar" role="search" @onsubmit="SearchAsync">
         <div class="search-box">
             <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" aria-label="Search enrollments" placeholder="Name or LRN" autocomplete="off" @bind="search" />
+            <input type="search" aria-label="Search enrolled students" placeholder="Name or LRN" autocomplete="off" @bind="search" />
         </div>
         <select aria-label="Term" @bind="termId" @bind:after="SearchAsync">
             <option value="0">All terms</option>

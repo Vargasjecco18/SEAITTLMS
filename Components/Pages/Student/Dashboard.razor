@@ -11,7 +11,7 @@
     var now = PhilippineTime.Now(Clock);
 }
 
-<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {data?.FirstName ?? "student"}")" Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. Here is what is going on in your subjects.")" IconName="layout-dashboard" />
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {data?.FirstName ?? "student"}")" Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. Here is what is going on in your courses.")" IconName="layout-dashboard" />
 
 @if (data is null)
 {
@@ -23,13 +23,13 @@
 }
 else
 {
-    <PageWithAside Show="announcements,calendar,todo,upnext">
+    <PageWithAside Show="calendar,announcements">
         <div class="stats">
             <StatCard Label="Work to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
             <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />
             <StatCard Label="New modules" Value="@data.UnopenedModules" IconName="layers" Accent="AccentColor.Amber" Hint="Not opened yet" />
             <StatCard Label="Average grade" Text="@(data.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(data.Failing > 0 ? AccentColor.Rose : AccentColor.Violet)"
-                      Hint="@(data.Failing > 0 ? $"{data.Failing} subject{(data.Failing == 1 ? "" : "s")} below 70" : data.Overall is null ? "No grades yet" : "Keep it up")" Href="student/grades" />
+                      Hint="@(data.Failing > 0 ? $"{data.Failing} course{(data.Failing == 1 ? "" : "s")} below 70" : data.Overall is null ? "No grades yet" : "Keep it up")" Href="student/grades" />
         </div>
 
         <div class="cards">
@@ -94,29 +94,6 @@ else
                                     <span class="module-sub">@m.SubjectName · posted @PhilippineTime.FormatDate(m.PostedAtUtc)</span>
                                 </a>
                                 <Badge Tone="Tone.Warning">New</Badge>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-
-            <Card Title="Your subjects" IconName="book-open">
-                @if (data.Subjects.Count == 0)
-                {
-                    <EmptyState IconName="book-open" Title="No subjects yet" />
-                }
-                else
-                {
-                    <ul class="subjects">
-                        @foreach (var s in data.Subjects)
-                        {
-                            <li>
-                                <a class="subject-name" href="student/subjects/@s.AssignmentId">@s.SubjectName</a>
-                                <span class="subject-sub">@s.TeacherName@(s.OpenItems > 0 ? $" · {s.OpenItems} to do" : "")</span>
-                                <div class="bar" role="progressbar" aria-label="@($"{s.SubjectName} grade")" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(s.Percent ?? 0))">
-                                    <i class="@(s.Percent is null ? "" : s.Percent < GradeRules.PassingPercent ? "bad" : s.Percent < GradeRules.AtRiskUntil ? "warn" : "good")" style="width: @((s.Percent ?? 0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></i>
-                                </div>
-                                <span class="subject-grade">@(s.Percent is { } p ? $"{p:0.#}%" : "No grade yet")</span>
                             </li>
                         }
                     </ul>

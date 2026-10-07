@@ -23,7 +23,8 @@ public sealed record EnrollmentRow(
     DateTime EnrolledAtUtc,
     int StudentId = 0,
     int? NextEnrollmentId = null,
-    string? Phone = null);
+    string? Phone = null,
+    decimal? FinalGrade = null);
 
 /// <summary>Everything the registrar's dashboard shows.</summary>
 /// <param name="TermLabel">For example "1st Term · 2026-2027". Null when no term is marked as current.</param>
@@ -98,7 +99,8 @@ public sealed record EnrollmentPage(IReadOnlyList<EnrollmentRow> Items, int Tota
 /// <summary>The enrollments, newest first, for the registrar's list and the dashboard.</summary>
 public static class EnrollmentList
 {
-    public static async Task<EnrollmentPage> LoadAsync(AppDbContext db, EnrollmentFilter filter, int page, int pageSize, CancellationToken ct = default)
+    /// <param name="withFinalGrade">Also work out the final grade of each enrollment (the registrar's student list shows it).</param>
+    public static async Task<EnrollmentPage> LoadAsync(AppDbContext db, EnrollmentFilter filter, int page, int pageSize, CancellationToken ct = default, bool withFinalGrade = false)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -166,12 +168,15 @@ public static class EnrollmentList
                 .ToDictionary(e => e.StudentId, e => e.Id);
         }
 
+        var finalGrades = withFinalGrade ? await FinalGrades.LoadAsync(db, rows.Select(r => r.Id).ToList(), ct) : new Dictionary<int, decimal>();
+
         var items = rows.Select(r => new EnrollmentRow(
             r.Id,
             string.Join(' ', new[] { r.FirstName, r.MiddleName, r.LastName }.Where(p => !string.IsNullOrWhiteSpace(p))),
             r.Lrn, r.GradeLevel, r.Track, r.Strand, r.Schedule,
             $"{r.GradeLevel}-{r.Strand}-{r.Section}", r.Term, r.SchoolYear, r.Subjects, r.Status.ToString(), r.CreatedAtUtc,
-            r.StudentId, nextEnrollments.TryGetValue(r.StudentId, out var nextId) ? nextId : null, r.Phone)).ToList();
+            r.StudentId, nextEnrollments.TryGetValue(r.StudentId, out var nextId) ? nextId : null, r.Phone,
+            finalGrades.TryGetValue(r.Id, out var finalGrade) ? finalGrade : null)).ToList();
 
         return new EnrollmentPage(items, total, page, pageSize, next);
     }

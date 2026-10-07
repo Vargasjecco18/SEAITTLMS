@@ -80,7 +80,7 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.Teacher.UserId == user.UserId).Select(a => a.Id).ToListAsync(ct);
             if (assignmentIds.Count == 0)
             {
-                return new AnalyticsReport(false, "your subjects", 0, null, null, 0, 0, 0, "Performance by subject", [], EmptyMonths(), "Students who need attention", [], 0, 0, [], "Performance by subject", []);
+                return new AnalyticsReport(false, "your courses", 0, null, null, 0, 0, 0, "Performance by course", [], EmptyMonths(), "Students who need attention", [], 0, 0, [], "Performance by course", []);
             }
         }
 
@@ -124,11 +124,11 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
                 .Select(a => new { a.Id, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name }).ToListAsync(ct);
             string Label(int id) { var a = labels.First(x => x.Id == id); return $"{a.Subject} · {TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section)}"; }
 
-            bandsTitle = "Performance by subject";
+            bandsTitle = "Performance by course";
             bands = metrics.GroupBy(m => m.AssignmentId).OrderBy(g => Label(g.Key))
                 .Select(g => new GroupBands(Label(g.Key), Count(g.Where(m => m.Percent is not null).Select(m => m.Percent!.Value)))).ToList();
 
-            performanceTitle = "Subjects at a glance";
+            performanceTitle = "Courses at a glance";
             performance = metrics.GroupBy(m => m.AssignmentId).OrderBy(g => Label(g.Key))
                 .Select(g => new GroupPerformance(Label(g.Key), g.Count(), Avg(g.Where(m => m.Percent is not null).Select(m => m.Percent!.Value)), Pooled(g), g.Count(m => m.Percent < GradeRules.PassingPercent))).ToList();
         }
@@ -185,7 +185,7 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             openReferrals = await db.Referrals.CountAsync(r => r.Status != ReferralStatus.Resolved && r.AssignmentId != null && assignmentIds!.Contains(r.AssignmentId.Value), ct);
         }
 
-        return new AnalyticsReport(schoolWide, schoolWide ? "the whole school" : "your subjects", byStudent.Count, Avg(overall.Values.Where(v => v is not null).Select(v => v!.Value)), Pooled(metrics),
+        return new AnalyticsReport(schoolWide, schoolWide ? "the whole school" : "your courses", byStudent.Count, Avg(overall.Values.Where(v => v is not null).Select(v => v!.Value)), Pooled(metrics),
             failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, months, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance);
     }
 

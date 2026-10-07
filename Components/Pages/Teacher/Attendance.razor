@@ -9,7 +9,7 @@
 
 <PageTitle>Attendance · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Attendance" Subtitle="Mark who came to class, one subject and one day at a time." IconName="calendar-check" />
+<PageHeader Title="Attendance" Subtitle="Mark who came to class, one course and one day at a time." IconName="calendar-check" />
 
 @if (!loaded)
 {
@@ -18,131 +18,129 @@
 else if (subjects.Count == 0)
 {
     <Card>
-        <EmptyState IconName="book-open" Title="No subjects yet">
-            <p>The administrator gives each teacher their subjects. Attendance can be taken once you have one.</p>
+        <EmptyState IconName="book-open" Title="No courses yet">
+            <p>The administrator gives each teacher their courses. Attendance can be taken once you have one.</p>
         </EmptyState>
     </Card>
 }
 else
 {
-    <PageWithAside Show="calendar,todo">
-        <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
-        <Card Title="Mark attendance" IconName="user-check">
-            <div class="pick">
-                <Field For="a-subject" Label="Subject">
-                    <select id="a-subject" value="@subjectId" @onchange="SubjectChanged">
-                        @foreach (var s in subjects)
-                        {
-                            <option value="@s.AssignmentId" selected="@(s.AssignmentId == subjectId)">@s.SubjectName · @s.SectionLabel</option>
-                        }
-                    </select>
-                </Field>
-                <Field For="a-date" Label="Date">
-                    <input id="a-date" type="date" value="@date.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" @onchange="DateChanged" />
-                </Field>
+    <Card Title="Mark attendance" IconName="user-check">
+        <div class="pick">
+            <Field For="a-subject" Label="Course">
+                <select id="a-subject" value="@subjectId" @onchange="SubjectChanged">
+                    @foreach (var s in subjects)
+                    {
+                        <option value="@s.AssignmentId" selected="@(s.AssignmentId == subjectId)">@s.SubjectName · @s.SectionLabel</option>
+                    }
+                </select>
+            </Field>
+            <Field For="a-date" Label="Date">
+                <input id="a-date" type="date" value="@date.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" @onchange="DateChanged" />
+            </Field>
+        </div>
+
+        @if (sheet is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (sheet.Rows.Count == 0)
+        {
+            <EmptyState IconName="users" Title="No students in this course yet">
+                <p>Students appear here once the registrar has enrolled them in this section with this course.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="sheet-head">
+                <span class="sheet-date">@PhilippineTime.FormatLongDate(new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(8)))@(sheet.Saved ? " · saved before" : "")</span>
+                <span class="tally" aria-live="polite">
+                    <Badge Tone="Tone.Success">@Count(AttendanceStatus.Present) present</Badge>
+                    <Badge Tone="Tone.Warning">@Count(AttendanceStatus.Late) late</Badge>
+                    <Badge Tone="Tone.Danger">@Count(AttendanceStatus.Absent) absent</Badge>
+                    @if (Unmarked > 0) { <Badge>@Unmarked not marked</Badge> }
+                </span>
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="check-check" OnClick="MarkAllPresent">Mark all present</Button>
             </div>
 
-            @if (sheet is null)
-            {
-                <p class="muted">Loading…</p>
-            }
-            else if (sheet.Rows.Count == 0)
-            {
-                <EmptyState IconName="users" Title="No students in this subject yet">
-                    <p>Students appear here once the registrar has enrolled them in this section with this subject.</p>
-                </EmptyState>
-            }
-            else
-            {
-                <div class="sheet-head">
-                    <span class="sheet-date">@PhilippineTime.FormatLongDate(new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(8)))@(sheet.Saved ? " · saved before" : "")</span>
-                    <span class="tally" aria-live="polite">
-                        <Badge Tone="Tone.Success">@Count(AttendanceStatus.Present) present</Badge>
-                        <Badge Tone="Tone.Warning">@Count(AttendanceStatus.Late) late</Badge>
-                        <Badge Tone="Tone.Danger">@Count(AttendanceStatus.Absent) absent</Badge>
-                        @if (Unmarked > 0) { <Badge>@Unmarked not marked</Badge> }
-                    </span>
-                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="check-check" OnClick="MarkAllPresent">Mark all present</Button>
-                </div>
-
-                <ul class="students">
-                    @foreach (var row in sheet.Rows)
-                    {
-                        var student = row;
-                        var current = marks.GetValueOrDefault(student.StudentId);
-                        <li>
-                            <div class="who">
-                                <Avatar Name="@student.Name" Size="34" />
-                                <div><span class="name">@student.Name</span><span class="sub">@student.Lrn</span></div>
-                            </div>
-                            <div class="choices" role="radiogroup" aria-label="@($"Attendance of {student.Name}")">
-                                @foreach (var status in AttendanceStatus.All)
-                                {
-                                    var choice = status;
-                                    <button type="button" role="radio" aria-checked="@(current == choice ? "true" : "false")" class="choice @choice.ToLowerInvariant() @(current == choice ? "on" : "")" @onclick="() => Mark(student.StudentId, choice)">@choice</button>
-                                }
-                            </div>
-                        </li>
-                    }
-                </ul>
-
-                <FormErrors Errors="formErrors" />
-                <div class="actions">
-                    <Button IconName="circle-check" Disabled="@(busy || marks.Count == 0)" OnClick="SaveAsync">@(busy ? "Saving…" : "Save attendance")</Button>
-                </div>
-            }
-        </Card>
-
-        <Card Title="Attendance summary" IconName="chart-column">
-            @if (summary is null || summary.Rows.Count == 0)
-            {
-                <p class="muted">No students yet.</p>
-            }
-            else if (summary.DaysRecorded == 0)
-            {
-                <p class="muted">Nothing was marked yet. The summary appears after the first day is saved.</p>
-            }
-            else
-            {
-                <div class="table-wrap">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Student</th>
-                                <th scope="col" class="num">Present</th>
-                                <th scope="col" class="num">Late</th>
-                                <th scope="col" class="num">Absent</th>
-                                <th scope="col" class="num">Attendance</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var r in summary.Rows)
+            <ul class="students">
+                @foreach (var row in sheet.Rows)
+                {
+                    var student = row;
+                    var current = marks.GetValueOrDefault(student.StudentId);
+                    <li>
+                        <div class="who">
+                            <Avatar Name="@student.Name" Size="34" />
+                            <div><span class="name">@student.Name</span><span class="sub">@student.Lrn</span></div>
+                        </div>
+                        <div class="choices" role="radiogroup" aria-label="@($"Attendance of {student.Name}")">
+                            @foreach (var status in AttendanceStatus.All)
                             {
-                                <tr>
-                                    <td>@r.Name</td>
-                                    <td class="num">@r.Present</td>
-                                    <td class="num">@r.Late</td>
-                                    <td class="num">@r.Absent</td>
-                                    <td class="num">@if (r.Percent is { } p) { <Badge Tone="@(p < AttendanceService.LowAttendancePercent ? Tone.Danger : p < 90 ? Tone.Warning : Tone.Success)">@p.ToString("0.#")%</Badge> } else { <span class="muted">—</span> }</td>
-                                </tr>
+                                var choice = status;
+                                <button type="button" role="radio" aria-checked="@(current == choice ? "true" : "false")" class="choice @choice.ToLowerInvariant() @(current == choice ? "on" : "")" @onclick="() => Mark(student.StudentId, choice)">@choice</button>
                             }
-                        </tbody>
-                        <tfoot>
+                        </div>
+                    </li>
+                }
+            </ul>
+
+            <FormErrors Errors="formErrors" />
+            <div class="actions">
+                <Button IconName="circle-check" Disabled="@(busy || marks.Count == 0)" OnClick="SaveAsync">@(busy ? "Saving…" : "Save attendance")</Button>
+            </div>
+        }
+    </Card>
+
+    <Card Title="Attendance summary" IconName="chart-column">
+        @if (summary is null || summary.Rows.Count == 0)
+        {
+            <p class="muted">No students yet.</p>
+        }
+        else if (summary.DaysRecorded == 0)
+        {
+            <p class="muted">Nothing was marked yet. The summary appears after the first day is saved.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col" class="num">Present</th>
+                            <th scope="col" class="num">Late</th>
+                            <th scope="col" class="num">Absent</th>
+                            <th scope="col" class="num">Attendance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in summary.Rows)
+                        {
                             <tr>
-                                <th scope="row">Class (@summary.DaysRecorded @(summary.DaysRecorded == 1 ? "day" : "days") marked)</th>
-                                <td class="num">@summary.Rows.Sum(r => r.Present)</td>
-                                <td class="num">@summary.Rows.Sum(r => r.Late)</td>
-                                <td class="num">@summary.Rows.Sum(r => r.Absent)</td>
-                                <td class="num">@(summary.ClassPercent is { } c ? $"{c:0.#}%" : "—")</td>
+                                <td>@r.Name</td>
+                                <td class="num">@r.Present</td>
+                                <td class="num">@r.Late</td>
+                                <td class="num">@r.Absent</td>
+                                <td class="num">@if (r.Percent is { } p) { <Badge Tone="@(p < AttendanceService.LowAttendancePercent ? Tone.Danger : p < 90 ? Tone.Warning : Tone.Success)">@p.ToString("0.#")%</Badge> } else { <span class="muted">—</span> }</td>
                             </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                <p class="note">Attendance is the days present or late divided by the days marked. Below @AttendanceService.LowAttendancePercent.ToString("0")% is shown in red.</p>
-            }
-        </Card>
-    </PageWithAside>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row">Class (@summary.DaysRecorded @(summary.DaysRecorded == 1 ? "day" : "days") marked)</th>
+                            <td class="num">@summary.Rows.Sum(r => r.Present)</td>
+                            <td class="num">@summary.Rows.Sum(r => r.Late)</td>
+                            <td class="num">@summary.Rows.Sum(r => r.Absent)</td>
+                            <td class="num">@(summary.ClassPercent is { } c ? $"{c:0.#}%" : "—")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <p class="note">Attendance is the days present or late divided by the days marked. Below @AttendanceService.LowAttendancePercent.ToString("0")% is shown in red.</p>
+        }
+    </Card>
 }
 
 @code {

@@ -25,7 +25,7 @@ public sealed record StudentSubjectCard(
 public sealed record AssignmentRow(int Id, int SubjectId, string SubjectName, int SectionId, string SectionLabel, string? Schedule, int Students, int Modules);
 
 /// <summary>A section the administrator can give to a teacher, with the subjects its strand has at its grade level.</summary>
-public sealed record SectionChoice(int SectionId, string Label, IReadOnlyList<SubjectChoice> Subjects);
+public sealed record SectionChoice(int SectionId, string Label, IReadOnlyList<SubjectChoice> Subjects, int StrandId = 0);
 
 public sealed record SubjectChoice(int SubjectId, string Name);
 
@@ -84,7 +84,8 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             s.Id,
             $"{SectionLabel(s.GradeLevel, s.StrandCode, s.Name)}{(s.Schedule is null ? "" : " · " + s.Schedule)} · {s.Year}",
             curriculum.Where(c => c.StrandId == s.StrandId && c.GradeLevel == s.GradeLevel)
-                .Select(c => new SubjectChoice(c.SubjectId, c.Name)).DistinctBy(c => c.SubjectId).OrderBy(c => c.Name).ToList()))
+                .Select(c => new SubjectChoice(c.SubjectId, c.Name)).DistinctBy(c => c.SubjectId).OrderBy(c => c.Name).ToList(),
+            s.StrandId))
             .Where(s => s.Subjects.Count > 0)
             .ToList();
     }
@@ -95,7 +96,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
 
         if (!await IsActiveAdminAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail("Only an administrator can give subjects to teachers.");
+            return ServiceResult.Fail("Only an administrator can give courses to teachers.");
         }
 
         var teacher = await db.Teachers.AsNoTracking().Where(t => t.UserId == teacherUserId).Select(t => new { t.Id, t.User.IsActive }).FirstOrDefaultAsync(ct);
@@ -108,13 +109,13 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         var subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => new { s.Id, s.Name }).FirstOrDefaultAsync(ct);
         if (section is null || subject is null)
         {
-            return ServiceResult.Fail("Choose a section and a subject.");
+            return ServiceResult.Fail("Choose a section and a course.");
         }
 
         // The subject must be one that the strand has at the grade level of the section.
         if (!await db.StrandSubjects.AnyAsync(x => x.StrandId == section.StrandId && x.GradeLevel == section.GradeLevel && x.SubjectId == subjectId, ct))
         {
-            return ServiceResult.Fail($"{subject.Name} is not one of the subjects of {section.StrandCode} in grade {section.GradeLevel}.");
+            return ServiceResult.Fail($"{subject.Name} is not one of the courses of {section.StrandCode} in grade {section.GradeLevel}.");
         }
 
         var existing = await db.TeachingAssignments.AsNoTracking().Where(a => a.SectionId == sectionId && a.SubjectId == subjectId)
@@ -122,7 +123,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         if (existing is not null)
         {
             return ServiceResult.Fail(existing.TeacherId == teacher.Id
-                ? "This teacher already teaches that subject to that section."
+                ? "This teacher already teaches that course to that section."
                 : $"{subject.Name} of that section is already taught by {existing.Name}. Remove it from them first.");
         }
 
@@ -133,7 +134,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         }
         catch (DbUpdateException)
         {
-            return ServiceResult.Fail("Somebody just gave that subject to a teacher. Reload and look again.");
+            return ServiceResult.Fail("Somebody just gave that course to a teacher. Reload and look again.");
         }
 
         return ServiceResult.Ok($"{subject.Name} of {SectionLabel(section.GradeLevel, section.StrandCode, section.Name)} was added.");
@@ -165,11 +166,11 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
 
         if (!await IsActiveAdminAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail("Only an administrator can take subjects away from teachers.");
+            return ServiceResult.Fail("Only an administrator can take courses away from teachers.");
         }
 
         var deleted = await db.TeachingAssignments.Where(a => a.Id == assignmentId).ExecuteDeleteAsync(ct);
-        return deleted == 0 ? ServiceResult.Fail("This subject was already removed.") : ServiceResult.Ok("The subject was removed.");
+        return deleted == 0 ? ServiceResult.Fail("This course was already removed.") : ServiceResult.Ok("The course was removed.");
     }
 
     private static async Task<bool> IsActiveAdminAsync(AppDbContext db, int userId, CancellationToken ct) =>

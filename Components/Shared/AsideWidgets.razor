@@ -97,7 +97,7 @@
                     <TodoWidget />
                     break;
                 case "upnext":
-                    <Card Title="Up next" IconName="alarm-clock">
+                    <Card Title="Due dates" IconName="alarm-clock">
                         @if (upNext.Count == 0)
                         {
                             <p class="quiet">Nothing is due in the next two weeks.</p>
@@ -188,7 +188,7 @@
         order = Show.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(w => w switch
             {
-                "achievements" or "activities" => role == AppRoles.Student,
+                "achievements" or "activities" or "announcements" => role == AppRoles.Student,
                 "tocheck" or "unassigned" => role == AppRoles.Teacher,
                 _ => true,
             })
@@ -196,9 +196,7 @@
 
         if (order.Contains("announcements"))
         {
-            notices = role == AppRoles.Student
-                ? (await Me.GetStudentIdAsync() is { } sid ? await Announcements.GetForStudentAsync(sid, 5) : [])
-                : await Announcements.GetForTeachersAsync(5);
+            notices = await Me.GetStudentIdAsync() is { } sid ? await Announcements.GetForStudentAsync(sid, 5) : [];
         }
 
         if (order.Contains("unassigned") && await Me.GetTeacherIdAsync() is { } teacherIdForItems)

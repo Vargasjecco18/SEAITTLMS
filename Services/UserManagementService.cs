@@ -66,6 +66,16 @@ public sealed class UserEdit
     public string? NewPassword { get; set; }
 }
 
+/// <summary>
+/// Where a new teacher works, chosen when the administrator adds the teacher. Everything is optional (0 / empty = not chosen), but what is
+/// chosen must agree: the strand is in the track, the section is a section of the strand, and the courses are courses of that strand
+/// at the grade level of the section. The courses are given to the teacher for that section.
+/// </summary>
+public sealed record TeacherPlacement(int TrackId, int StrandId, int SectionId, IReadOnlyList<int> SubjectIds)
+{
+    public bool IsEmpty => TrackId == 0 && StrandId == 0 && SectionId == 0 && SubjectIds.Count == 0;
+}
+
 public sealed record ServiceResult(bool Succeeded, IReadOnlyList<string> Errors, string? Message = null, int? Id = null)
 {
     public static ServiceResult Ok(string? message = null, int? id = null) => new(true, [], message, id);
@@ -134,8 +144,144 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
     {
         var result = await accounts.CreateAsync(account, ct);
         return result.Succeeded
-            ? ServiceResult.Ok($"Added {FullName(account.FirstName.Trim(), NullIfBlank(account.MiddleName), account.LastName.Trim(), NullIfBlank(account.NameExtension))}.")
+            ? ServiceResult.Ok($"Added {FullName(account.FirstName.Trim(), NullIfBlank(account.MiddleName), account.LastName.Trim(), NullIfBlank(account.NameExtension))}.", result.UserId)
             : ServiceResult.Fail(result.Errors);
+    }
+
+    private sealed record ResolvedPlacement(int? TrackId, int? StrandId, int? SectionId, byte? GradeLevel, IReadOnlyList<int> SubjectIds);
+
+    /// <summary>
+    /// Adds a teacher together with the track, strand, section and courses they work in. The choices are checked first, so a wrong choice
+    /// adds nothing. The courses are given to the teacher for the chosen section.
+    /// </summary>
+    public async Task<ServiceResult> AddTeacherAsync(NewAccount account, TeacherPlacement placement, int actingUserId, CancellationToken ct = default)
+    {
+        if (account.Role != AppRoles.Teacher)
+        {
+            return ServiceResult.Fail("This is for adding teachers.");
+        }
+
+        ResolvedPlacement? resolved = null;
+        if (!placement.IsEmpty)
+        {
+            var (found, errors) = await ResolvePlacementAsync(placement, ct);
+            if (errors.Count > 0)
+            {
+                return ServiceResult.Fail(errors);
+            }
+
+            resolved = found;
+        }
+
+        var added = await AddStaffAsync(account, actingUserId, ct);
+        if (!added.Succeeded || resolved is null || added.Id is not { } userId)
+        {
+            return added;
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var teacher = await db.Teachers.FirstOrDefaultAsync(t => t.UserId == userId, ct);
+        if (teacher is null)
+        {
+            return added;
+        }
+
+        teacher.TrackId = resolved.TrackId;
+        teacher.StrandId = resolved.StrandId;
+        teacher.SectionId = resolved.SectionId;
+        teacher.GradeLevel = resolved.GradeLevel;
+        teacher.SubjectId = resolved.SubjectIds.Count > 0 ? resolved.SubjectIds[0] : null;
+        if (resolved.SectionId is { } sectionId)
+        {
+            foreach (var subjectId in resolved.SubjectIds)
+            {
+                db.TeachingAssignments.Add(new TeachingAssignment { TeacherId = teacher.Id, SectionId = sectionId, SubjectId = subjectId });
+            }
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // The account is already there; somebody else took one of the courses a moment ago.
+            return ServiceResult.Ok($"{added.Message} The courses could not be given because somebody just gave one of them to another teacher. Open Courses to give them.", userId);
+        }
+
+        return ServiceResult.Ok(
+            resolved.SubjectIds.Count == 0 ? added.Message : $"{added.Message} {(resolved.SubjectIds.Count == 1 ? "1 course" : $"{resolved.SubjectIds.Count} courses")} given.", userId);
+    }
+
+    /// <summary>Checks what was chosen for a new teacher and works out the rest (the track of the strand, the strand and grade level of the section).</summary>
+    private async Task<(ResolvedPlacement? Placement, List<string> Errors)> ResolvePlacementAsync(TeacherPlacement p, CancellationToken ct)
+    {
+        var errors = new List<string>();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+
+        var section = p.SectionId == 0 ? null : await db.Sections.AsNoTracking().Where(s => s.Id == p.SectionId)
+            .Select(s => new { s.Id, s.StrandId, s.GradeLevel, TrackId = s.Strand.TrackId, StrandCode = s.Strand.Code, s.Name }).FirstOrDefaultAsync(ct);
+        if (p.SectionId != 0 && section is null)
+        {
+            errors.Add("Choose one of the sections in the list.");
+        }
+
+        var strand = p.StrandId == 0 ? null : await db.Strands.AsNoTracking().Where(s => s.Id == p.StrandId)
+            .Select(s => new { s.Id, s.TrackId }).FirstOrDefaultAsync(ct);
+        if (p.StrandId != 0 && strand is null)
+        {
+            errors.Add("Choose one of the strands in the list.");
+        }
+
+        if (p.TrackId != 0 && !await db.Tracks.AnyAsync(t => t.Id == p.TrackId, ct))
+        {
+            errors.Add("Choose one of the tracks in the list.");
+        }
+
+        if (errors.Count > 0)
+        {
+            return (null, errors);
+        }
+
+        if (strand is not null && section is not null && section.StrandId != strand.Id)
+        {
+            errors.Add("The section is not a section of that strand.");
+        }
+
+        int? strandId = strand?.Id ?? section?.StrandId;
+        int? trackId = strand?.TrackId ?? section?.TrackId ?? (p.TrackId == 0 ? null : p.TrackId);
+        if (p.TrackId != 0 && trackId != p.TrackId)
+        {
+            errors.Add("The strand is not in that track.");
+        }
+
+        var subjectIds = p.SubjectIds.Distinct().ToList();
+        if (subjectIds.Count > 0 && section is null)
+        {
+            errors.Add("Choose the section the courses are for.");
+        }
+
+        if (errors.Count == 0 && section is not null && subjectIds.Count > 0)
+        {
+            var inCurriculum = await db.StrandSubjects.AsNoTracking()
+                .Where(x => x.StrandId == section.StrandId && x.GradeLevel == section.GradeLevel && subjectIds.Contains(x.SubjectId))
+                .Select(x => x.SubjectId).Distinct().ToListAsync(ct);
+            foreach (var missing in subjectIds.Except(inCurriculum))
+            {
+                var name = await db.Subjects.AsNoTracking().Where(s => s.Id == missing).Select(s => s.Name).FirstOrDefaultAsync(ct) ?? "A course";
+                errors.Add($"{name} is not one of the courses of {section.StrandCode} in grade {section.GradeLevel}.");
+            }
+
+            var taken = await db.TeachingAssignments.AsNoTracking()
+                .Where(a => a.SectionId == section.Id && subjectIds.Contains(a.SubjectId))
+                .Select(a => new { Subject = a.Subject.Name, Teacher = a.Teacher.FirstName + " " + a.Teacher.LastName })
+                .ToListAsync(ct);
+            errors.AddRange(taken.Select(t => $"{t.Subject} of that section is already taught by {t.Teacher}."));
+        }
+
+        return errors.Count > 0
+            ? (null, errors)
+            : (new ResolvedPlacement(trackId, strandId, section?.Id, section?.GradeLevel, subjectIds), errors);
     }
 
     public async Task<UserPage> ListAsync(string role, string? search, int page, int pageSize, CancellationToken ct = default)

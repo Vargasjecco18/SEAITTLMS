@@ -1,4 +1,5 @@
 @using SEAITT_LMS.Data.Queries
+@using SEAITT_LMS.Services
 
 <div class="table-wrap">
     <table class="table">
@@ -10,7 +11,11 @@
                 <th scope="col">Term</th>
                 @if (ShowSubjects)
                 {
-                    <th scope="col" class="col-subjects">Subjects</th>
+                    <th scope="col" class="col-subjects">Courses</th>
+                }
+                @if (ShowFinalGrade)
+                {
+                    <th scope="col" class="col-grade">Final grade</th>
                 }
                 @if (ShowNextTerm)
                 {
@@ -63,20 +68,46 @@
                         <td class="col-subjects">
                             @if (SubjectNames(row) is { Count: > 0 } names)
                             {
-                                @* Click the number to see the subjects (a plain HTML details box, it needs no script). *@
-                                <details class="subjects">
-                                    <summary>@(names.Count == 1 ? "1 subject" : $"{names.Count} subjects")</summary>
+                                @* The button opens a pop-up (the HTML popover) over the page, so the columns of the table do not move.
+                                   wwwroot/app.js puts the pop-up next to the button. *@
+                                <button type="button" class="courses-button" popovertarget="@PopupId(row)">
+                                    @(names.Count == 1 ? "1 course" : $"{names.Count} courses")
+                                </button>
+                                <div id="@PopupId(row)" popover class="courses-pop" role="group" aria-label="@($"Courses of {row.StudentName}")">
+                                    <div class="pop-head">
+                                        <div class="pop-title">
+                                            <strong>Courses</strong>
+                                            <span class="sub">@row.StudentName · @row.Term, @row.SchoolYear</span>
+                                        </div>
+                                        <button type="button" class="pop-close" popovertarget="@PopupId(row)" popovertargetaction="hide" aria-label="Close">
+                                            <Icon Name="x" Size="16" />
+                                        </button>
+                                    </div>
                                     <ul>
                                         @foreach (var name in names)
                                         {
                                             <li>@name</li>
                                         }
                                     </ul>
-                                </details>
+                                </div>
                             }
                             else
                             {
                                 <span class="sub">None</span>
+                            }
+                        </td>
+                    }
+                    @if (ShowFinalGrade)
+                    {
+                        <td class="col-grade">
+                            @if (row.FinalGrade is { } grade)
+                            {
+                                <Badge Tone="@GradeRules.ToneOf(grade)">@grade.ToString("0.#")%</Badge>
+                                <span class="sub">@GradeRules.Descriptor(grade)</span>
+                            }
+                            else
+                            {
+                                <span class="sub">No grades yet</span>
                             }
                         </td>
                     }
@@ -117,6 +148,9 @@
     /// <summary>The list of subjects makes the table wide, so the dashboard leaves it out.</summary>
     [Parameter] public bool ShowSubjects { get; set; }
 
+    /// <summary>The final grade of each enrollment (the average of its courses), left of the next term. The rows need it worked out.</summary>
+    [Parameter] public bool ShowFinalGrade { get; set; }
+
     /// <summary>The student's phone number under the LRN (the registrar's list).</summary>
     [Parameter] public bool ShowPhone { get; set; }
 
@@ -126,7 +160,9 @@
     /// <summary>The term after the current one (null when there is none).</summary>
     [Parameter] public TermRef? NextTerm { get; set; }
 
-    /// <summary>The subject names of one enrollment (they are saved as one text, separated by commas).</summary>
+    private static string PopupId(EnrollmentRow row) => $"courses-{row.Id}";
+
+    /// <summary>The course names of one enrollment (they are saved as one text, separated by commas).</summary>
     private static List<string> SubjectNames(EnrollmentRow row) =>
         (row.Subjects ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 }

@@ -11,8 +11,8 @@ public static class RoleHome
     public const string Student = "/student";
     public const string Guidance = "/guidance";
 
-    /// <summary>Anybody else (a role without a page of its own) lands on their account page.</summary>
-    public const string Account = "/account";
+    /// <summary>Anybody else (a role without a page of its own) has nowhere to go.</summary>
+    public const string NoPage = "/access-denied";
 
     public static string For(string? role) => role switch
     {
@@ -21,6 +21,6 @@ public static class RoleHome
         AppRoles.Teacher => Teacher,
         AppRoles.Student => Student,
         AppRoles.GuidanceCounselor => Guidance,
-        _ => Account,
+        _ => NoPage,
     };
 }

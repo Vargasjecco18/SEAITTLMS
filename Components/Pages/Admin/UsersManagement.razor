@@ -8,6 +8,7 @@
 @using SEAITT_LMS.Services
 @inject UserManagementService Management
 @inject TeachingService Teaching
+@inject EnrollmentService Enrollment
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 
@@ -23,7 +24,7 @@
         }
         else
         {
-            <Button IconName="user-plus" OnClick="OpenAdd">Add @tab.Singular</Button>
+            <Button IconName="user-plus" OnClick="OpenAddAsync">Add @tab.Singular</Button>
         }
     }
 </PageHeader>
@@ -146,8 +147,8 @@
                                 <div class="row-actions">
                                     @if (tab.Role == AppRoles.Teacher)
                                     {
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"Subjects taught by {user.FullName}")"
-                                                OnClick="() => OpenTeachingAsync(user)">Subjects</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"Courses taught by {user.FullName}")"
+                                                OnClick="() => OpenTeachingAsync(user)">Courses</Button>
                                     }
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {user.FullName}")"
                                             OnClick="() => OpenEditAsync(user)">Edit</Button>
@@ -312,6 +313,61 @@
                 <ValidationMessage For="() => add.Password" />
             </Field>
 
+            @if (tab.Role == AppRoles.Teacher && teachingLookups is not null)
+            {
+                @* Where the teacher works. Optional: the courses can also be given later with the Courses button of the list. *@
+                <fieldset class="teaching">
+                    <legend>Teaching <span class="optional">Optional. Courses can be given later.</span></legend>
+                    <Field For="a-track" Label="Track">
+                        <select id="a-track" @bind="add.TrackId" @bind:after="AddTrackChanged">
+                            <option value="0">Choose a track</option>
+                            @foreach (var track in teachingLookups.Tracks)
+                            {
+                                <option value="@track.Id">@track.Code</option>
+                            }
+                        </select>
+                    </Field>
+                    <Field For="a-strand" Label="Strand">
+                        <select id="a-strand" disabled="@(add.TrackId == 0)" @bind="add.StrandId" @bind:after="AddStrandChanged">
+                            <option value="0">@(add.TrackId == 0 ? "Choose a track first" : "Choose a strand")</option>
+                            @foreach (var strand in AddStrands)
+                            {
+                                <option value="@strand.Id">@strand.Code@(string.Equals(strand.Name, strand.Code, StringComparison.OrdinalIgnoreCase) ? "" : $" · {strand.Name}")</option>
+                            }
+                        </select>
+                    </Field>
+                    <Field For="a-section" Label="Section">
+                        <select id="a-section" disabled="@(add.StrandId == 0)" @bind="add.SectionId" @bind:after="AddSectionChanged">
+                            <option value="0">@(add.StrandId == 0 ? "Choose a strand first" : AddSections.Count == 0 ? "No section for this strand yet" : "Choose a section")</option>
+                            @foreach (var choice in AddSections)
+                            {
+                                <option value="@choice.SectionId">@choice.Label</option>
+                            }
+                        </select>
+                    </Field>
+                    <div class="field">
+                        <span class="field-label" id="a-courses-label">Courses</span>
+                        @if (add.SectionId == 0)
+                        {
+                            <p class="muted small">Choose a section to see its courses.</p>
+                        }
+                        else
+                        {
+                            <div class="course-picks" role="group" aria-labelledby="a-courses-label">
+                                @foreach (var course in AddCourses)
+                                {
+                                    <label class="course-pick">
+                                        <input type="checkbox" checked="@add.SubjectIds.Contains(course.SubjectId)" @onchange="e => ToggleAddCourse(course.SubjectId, e.Value is true)" />
+                                        <span>@course.Name</span>
+                                    </label>
+                                }
+                            </div>
+                            <button type="button" class="link-button" @onclick="ToggleAllAddCourses">@(add.SubjectIds.Count == AddCourses.Count ? "Clear all" : "Select all")</button>
+                        }
+                    </div>
+                </fieldset>
+            }
+
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseAdd">Cancel</Button>
                 <Button Type="submit" IconName="user-plus" Disabled="busy">@(busy ? "Adding…" : $"Add {tab.Singular}")</Button>
@@ -321,12 +377,12 @@
 </Modal>
 
 @* ===== Subjects of a teacher ===== *@
-<Modal Open="teachingFor is not null" Title="@($"Subjects of {teachingFor?.FullName}")" OnClose="CloseTeaching" Large="true">
+<Modal Open="teachingFor is not null" Title="@($"Courses of {teachingFor?.FullName}")" OnClose="CloseTeaching" Large="true">
     @if (teachingFor is not null)
     {
         <p class="delete-text">
-            These are the subjects this teacher teaches, and to which section. The teacher opens them under <strong>Subjects</strong>, and the
-            students of that section see them there too. A subject of a section has one teacher.
+            These are the courses this teacher teaches, and to which section. The teacher opens them under <strong>Courses</strong>, and the
+            students of that section see them there too. A course of a section has one teacher.
         </p>
 
         @if (teachingMessage is not null)
@@ -349,7 +405,7 @@
 
         @if (assignments is { Count: 0 })
         {
-            <p class="muted">No subjects yet.</p>
+            <p class="muted">No courses yet.</p>
         }
         else if (assignments is not null)
         {
@@ -381,7 +437,7 @@
             </ul>
         }
 
-        <h3 class="add-heading">Give a subject</h3>
+        <h3 class="add-heading">Give a course</h3>
         <div class="two">
             <Field For="t-section" Label="Section">
                 <select id="t-section" @bind="chosenSection" @bind:after="SectionChanged">
@@ -392,9 +448,9 @@
                     }
                 </select>
             </Field>
-            <Field For="t-subject" Label="Subject">
+            <Field For="t-subject" Label="Course">
                 <select id="t-subject" @bind="chosenSubject" disabled="@(chosenSection == 0)">
-                    <option value="0">@(chosenSection == 0 ? "Choose the section first" : "Choose a subject")</option>
+                    <option value="0">@(chosenSection == 0 ? "Choose the section first" : "Choose a course")</option>
                     @foreach (var subject in SubjectsOfChosenSection)
                     {
                         <option value="@subject.SubjectId">@subject.Name</option>
@@ -404,7 +460,7 @@
         </div>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseTeaching">Close</Button>
-            <Button IconName="plus" Disabled="@(busy || chosenSection == 0 || chosenSubject == 0)" OnClick="AssignAsync">Give the subject</Button>
+            <Button IconName="plus" Disabled="@(busy || chosenSection == 0 || chosenSubject == 0)" OnClick="AssignAsync">Give the course</Button>
         </div>
     }
 </Modal>
@@ -490,6 +546,12 @@
 
         [Required(ErrorMessage = "Enter the first password."), StringLength(128)]
         public string Password { get; set; } = "";
+
+        // Teachers only: where they work (all optional).
+        public int TrackId { get; set; }
+        public int StrandId { get; set; }
+        public int SectionId { get; set; }
+        public HashSet<int> SubjectIds { get; set; } = [];
     }
 
     [Parameter] public string? RoleKey { get; set; }
@@ -636,10 +698,66 @@
     }
 
     // ---------- add
-    private void OpenAdd()
+    private EnrollmentLookups? teachingLookups;
+    private IReadOnlyList<SectionChoice> addSectionChoices = [];
+
+    private IEnumerable<StrandOption> AddStrands => teachingLookups!.Strands.Where(s => s.TrackId == add!.TrackId);
+
+    private IReadOnlyList<SectionChoice> AddSections => addSectionChoices.Where(s => s.StrandId == add!.StrandId).ToList();
+
+    private IReadOnlyList<SubjectChoice> AddCourses => addSectionChoices.FirstOrDefault(s => s.SectionId == add!.SectionId)?.Subjects ?? [];
+
+    private async Task OpenAddAsync()
     {
         formErrors = [];
+
+        // A teacher is added together with the track, strand, section and courses they work in: load the choices before the box opens.
+        if (tab.Role == AppRoles.Teacher)
+        {
+            teachingLookups = await Enrollment.GetLookupsAsync();
+            addSectionChoices = await Teaching.GetAssignableAsync();
+        }
+
         add = new NewStaff();
+    }
+
+    private void AddTrackChanged()
+    {
+        add!.StrandId = 0;
+        AddStrandChanged();
+    }
+
+    private void AddStrandChanged()
+    {
+        add!.SectionId = 0;
+        add.SubjectIds.Clear();
+    }
+
+    private void AddSectionChanged() => add!.SubjectIds.Clear();
+
+    private void ToggleAddCourse(int subjectId, bool on)
+    {
+        if (on)
+        {
+            add!.SubjectIds.Add(subjectId);
+        }
+        else
+        {
+            add!.SubjectIds.Remove(subjectId);
+        }
+    }
+
+    private void ToggleAllAddCourses()
+    {
+        var all = AddCourses;
+        if (add!.SubjectIds.Count == all.Count)
+        {
+            add.SubjectIds.Clear();
+        }
+        else
+        {
+            add.SubjectIds = all.Select(c => c.SubjectId).ToHashSet();
+        }
     }
 
     private void CloseAdd()
@@ -662,7 +780,9 @@
                 tab.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
                 add.PhoneNumber, EmployeeNumber: add.EmployeeNumber);
 
-            var result = await Management.AddStaffAsync(account, currentUserId);
+            var result = tab.Role == AppRoles.Teacher
+                ? await Management.AddTeacherAsync(account, new TeacherPlacement(add.TrackId, add.StrandId, add.SectionId, add.SubjectIds.ToList()), currentUserId)
+                : await Management.AddStaffAsync(account, currentUserId);
             if (result.Succeeded)
             {
                 message = result.Message;

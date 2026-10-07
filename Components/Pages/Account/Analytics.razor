@@ -16,7 +16,7 @@ else if (report.Students == 0)
 {
     <Card>
         <EmptyState IconName="chart-column" Title="Nothing to show yet">
-            <p>@(report.SchoolWide ? "Numbers appear once students are enrolled and teachers give scores." : "Numbers appear once you have a subject with students and scores.")</p>
+            <p>@(report.SchoolWide ? "Numbers appear once students are enrolled and teachers give scores." : "Numbers appear once you have a course with students and scores.")</p>
         </EmptyState>
     </Card>
 }
@@ -26,9 +26,9 @@ else
         <StatCard Label="Students" Value="@report.Students" IconName="users" Accent="AccentColor.Blue" Hint="@report.ScopeText" />
         <StatCard Label="Average grade" Text="@(report.AverageGrade is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="AccentColor.Violet" Hint="@(report.AverageGrade is { } a2 ? GradeRules.Descriptor(a2) : "No grades yet")" />
         <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
-        <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a subject")" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students" : null)" />
+        <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students" : null)" />
         <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing work" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students?kind=AtRisk" : null)" />
-        <StatCard Label="Open referrals" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your subjects")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
+        <StatCard Label="Open referrals" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your courses")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
     </div>
 
     <div class="grid two">
@@ -193,7 +193,7 @@ else
                 <table class="table">
                     <thead>
                         <tr>
-                            <th scope="col">@(report.SchoolWide ? "Strand" : "Subject")</th>
+                            <th scope="col">@(report.SchoolWide ? "Strand" : "Course")</th>
                             <th scope="col" class="num">Students</th>
                             <th scope="col">Average grade</th>
                             <th scope="col" class="num">Attendance</th>

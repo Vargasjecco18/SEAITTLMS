@@ -1068,5 +1068,24 @@ CREATE INDEX `ix_announcements_section_id` ON `announcements` (`section_id`);
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261007022229_AddAnnouncements', '9.0.20');
 
+UPDATE `strands` SET `name` = 'Business and Entrepreneurship' WHERE `id` > 0 AND `code` = 'BUSSENT' AND `name` = 'BUSSENT';
+
+UPDATE `strands` SET `name` = 'Education' WHERE `id` > 0 AND `code` = 'EDUC' AND `name` = 'EDUC';
+
+UPDATE `strands` SET `name` = 'Engineering' WHERE `id` > 0 AND `code` = 'ENG' AND `name` = 'ENG';
+
+UPDATE `strands` SET `name` = 'Medical and Health Sciences' WHERE `id` > 0 AND `code` = 'MED' AND `name` = 'MED';
+
+UPDATE `strands` SET `name` = 'University Studies Preparatory' WHERE `id` > 0 AND `code` = 'USP' AND `name` = 'USP';
+
+UPDATE `strands` SET `name` = 'Computer System Servicing - Video Game Development' WHERE `id` > 0 AND `code` = 'CD1' AND `name` = 'CSS-VGD';
+
+UPDATE `strands` SET `name` = 'Kitchen Operations - Food and Beverage Services' WHERE `id` > 0 AND `code` = 'HT1' AND `name` = 'KO-FBS';
+
+UPDATE `strands` SET `name` = 'Food and Beverage Services - Kitchen Operations' WHERE `id` > 0 AND `code` = 'HT2' AND `name` = 'FBS-KO';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261007051735_FillStrandFullNames', '9.0.20');
+
 COMMIT;
 
