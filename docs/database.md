@@ -17,6 +17,7 @@ Start the app in Development (`dotnet watch`) and it creates every table, or upg
 | File | Use it when |
 |---|---|
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. |
+| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want one ready-made sign-in for each of the **administrator, registrar, guidance counselor and student** to try the app. It only adds rows (it never deletes) and is safe to run again; only the password hashes are in the file. |
 
 The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
 creates. It also records the migrations in `__EFMigrationsHistory`, which is why the app doesn't try to create the

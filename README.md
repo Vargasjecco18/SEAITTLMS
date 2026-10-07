@@ -123,6 +123,10 @@ administrator.
 
 Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
+**Sample accounts:** to get one sign-in for each of the administrator, registrar, guidance counselor and a student, open
+[database/seaittlms_sample_accounts.sql](database/seaittlms_sample_accounts.sql) in Workbench and click the lightning bolt.
+It only adds what is missing, so running it twice is harmless. The passwords are in the chat/handover, not in the file.
+
 Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five old views,
 and does nothing if you don't have them):
 
