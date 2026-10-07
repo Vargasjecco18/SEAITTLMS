@@ -38,7 +38,7 @@
 
                 @if (notificationList is not { Items.Count: > 0 })
                 {
-                    <p class="empty"><Icon Name="bell" Size="22" /><span>Nothing new. You will see here what happens in your subjects.</span></p>
+                    <p class="empty"><Icon Name="bell" Size="22" /><span>Nothing new. You will see here what happens in your courses.</span></p>
                 }
                 else
                 {
@@ -85,8 +85,6 @@
                     </span>
                     <span class="track" aria-hidden="true"><span class="thumb"></span></span>
                 </button>
-
-                <a class="settings-link" href="@AccountHref"><Icon Name="id-card" Size="18" /><span>My account</span></a>
             </div>
         </details>
     </div>
@@ -110,9 +108,6 @@
     private string MessagesLabel => unreadMessages > 0 ? $"Messages, {unreadMessages} unread" : "Messages";
 
     private string NotificationsLabel => unreadNotifications > 0 ? $"Notifications, {unreadNotifications} new" : "Notifications";
-
-    /// <summary>Each role has its own first page; "My account" is the same for everybody.</summary>
-    private static string AccountHref => "account";
 
     protected override async Task OnInitializedAsync()
     {

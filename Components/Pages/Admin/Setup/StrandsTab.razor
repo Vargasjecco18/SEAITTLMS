@@ -2,7 +2,7 @@
 
 <Card>
     <div class="tab-head">
-        <p class="grow">The strands of each track, the schedules they have classes in, and <strong>their subjects</strong>. When a student is enrolled the subjects are not chosen: the student gets all the subjects of the strand for that grade level and term.</p>
+        <p class="grow">The strands of each track, the schedules they have classes in, and <strong>their courses</strong>. When a student is enrolled the courses are not chosen: the student gets all the courses of the strand for that grade level and term.</p>
         <Button IconName="plus" Disabled="@(lookups is { Tracks.Count: 0 })" OnClick="OpenAdd">Add strand</Button>
     </div>
 
@@ -25,7 +25,7 @@
                         <th scope="col">Strand</th>
                         <th scope="col">Track</th>
                         <th scope="col" class="col-more">Schedules</th>
-                        <th scope="col" class="col-more">Subjects</th>
+                        <th scope="col" class="col-more">Courses</th>
                         <th scope="col" class="col-more">Sections</th>
                         <th scope="col">Status</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
@@ -49,7 +49,7 @@
                             <td><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Offered" : "Not offered")</Badge></td>
                             <td class="col-actions">
                                 <div class="row-actions">
-                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"The subjects of {row.Code}")" OnClick="() => OpenCurriculumAsync(row)">Subjects</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"The courses of {row.Code}")" OnClick="() => OpenCurriculumAsync(row)">Courses</Button>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Code}")" OnClick="() => OpenEdit(row)">Edit</Button>
                                     <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Code}")" OnClick="() => OpenDelete(row)" />
                                 </div>
@@ -112,12 +112,12 @@
 </Modal>
 
 @* ===== The subjects of a strand (its curriculum) ===== *@
-<Modal Open="curriculumOf is not null" Title="@($"Subjects of {curriculumOf?.Code}")" OnClose="CloseCurriculum" Large="true">
+<Modal Open="curriculumOf is not null" Title="@($"Courses of {curriculumOf?.Code}")" OnClose="CloseCurriculum" Large="true">
     @if (curriculumOf is not null && lookups is not null)
     {
         <p class="note-box">
-            These are the subjects every student of <strong>@curriculumOf.Code</strong> gets in a term of a grade level. Students who are
-            enrolled already keep the subjects they have; students enrolled from now on get these.
+            These are the courses every student of <strong>@curriculumOf.Code</strong> gets in a term of a grade level. Students who are
+            enrolled already keep the courses they have; students enrolled from now on get these.
         </p>
 
         <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
@@ -142,7 +142,7 @@
 
         @if (SubjectsShown.Count == 0)
         {
-            <p class="muted">No subjects yet for grade @grade, @TermName(termNumber).</p>
+            <p class="muted">No courses yet for grade @grade, @TermName(termNumber).</p>
         }
         else
         {
@@ -158,9 +158,9 @@
         }
 
         <div class="add-row">
-            <Field For="c-subject" Label="Add a subject">
+            <Field For="c-subject" Label="Add a course">
                 <select id="c-subject" @bind="pickSubject">
-                    <option value="0">Choose a subject</option>
+                    <option value="0">Choose a course</option>
                     @foreach (var subject in SubjectsToAdd)
                     {
                         <option value="@subject.Id">@subject.Name</option>
@@ -179,7 +179,7 @@
 <Modal Open="deleting is not null" Title="Delete this strand?" OnClose="CloseDelete">
     @if (deleting is not null)
     {
-        <p class="delete-text">You are about to delete the strand <strong>@deleting.Code</strong> and its list of subjects. <strong>This can't be undone.</strong></p>
+        <p class="delete-text">You are about to delete the strand <strong>@deleting.Code</strong> and its list of courses. <strong>This can't be undone.</strong></p>
         <FormErrors Errors="Errors" />
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>

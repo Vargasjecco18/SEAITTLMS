@@ -57,7 +57,7 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
             var subjects = await FindTeacherSubjectsAsync(db, user.UserId, tokens, ct);
             if (subjects.Count > 0)
             {
-                groups.Add(new SearchGroup("Subjects", subjects));
+                groups.Add(new SearchGroup("Courses", subjects));
             }
 
             var students = await FindTeacherStudentsAsync(db, user.UserId, tokens, ct);
@@ -81,7 +81,7 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
             var (subjects, work) = await FindStudentWorkAsync(db, user.UserId, tokens, ct);
             if (subjects.Count > 0)
             {
-                groups.Add(new SearchGroup("Subjects", subjects));
+                groups.Add(new SearchGroup("Courses", subjects));
             }
 
             if (work.Count > 0)

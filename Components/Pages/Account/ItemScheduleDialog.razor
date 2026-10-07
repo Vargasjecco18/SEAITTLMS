@@ -54,7 +54,7 @@
                     <legend><Icon Name="shield-check" Size="16" /> Quiz settings</legend>
                     @if (item.Questions == 0)
                     {
-                        <p class="small-text">This quiz has no questions yet. Write them under its subject; the due date is saved either way.</p>
+                        <p class="small-text">This quiz has no questions yet. Write them under its course; the due date is saved either way.</p>
                     }
 
                     <div class="two">
@@ -85,7 +85,7 @@
             }
 
             <div class="modal-actions">
-                <a class="more-link" href="teacher/subjects/@item.AssignmentId">Open in the subject</a>
+                <a class="more-link" href="teacher/subjects/@item.AssignmentId">Open in the course</a>
                 <Button Variant="ButtonVariant.Ghost" OnClick="Cancel">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
             </div>

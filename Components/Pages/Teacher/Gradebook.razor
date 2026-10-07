@@ -8,7 +8,7 @@
 
 <PageTitle>Gradebook · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Gradebook" Subtitle="The scores of every student in a subject. Press Edit grades on a row to change them." IconName="clipboard-list" />
+<PageHeader Title="Gradebook" Subtitle="The scores of every student in a course. Press Edit grades on a row to change them." IconName="clipboard-list" />
 
 @if (!loaded)
 {
@@ -17,8 +17,8 @@
 else if (subjects.Count == 0)
 {
     <Card>
-        <EmptyState IconName="book-open" Title="No subjects yet">
-            <p>The administrator gives each teacher their subjects. The gradebook shows up once you have one.</p>
+        <EmptyState IconName="book-open" Title="No courses yet">
+            <p>The administrator gives each teacher their courses. The gradebook shows up once you have one.</p>
         </EmptyState>
     </Card>
 }
@@ -26,7 +26,7 @@ else
 {
     <Card>
         <div class="pick">
-            <Field For="g-subject" Label="Select subject">
+            <Field For="g-subject" Label="Select course">
                 <select id="g-subject" value="@subjectId" @onchange="SubjectChanged">
                     @foreach (var s in subjects)
                     {
@@ -53,12 +53,12 @@ else
             {
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
                     <p>Activities, quizzes and task performances of posted modules appear as columns here.</p>
-                    <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the subject</ButtonLink>
+                    <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
                 </EmptyState>
             }
             else if (book.Rows.Count == 0)
             {
-                <EmptyState IconName="users" Title="No students in this subject yet" />
+                <EmptyState IconName="users" Title="No students in this course yet" />
             }
             else
             {

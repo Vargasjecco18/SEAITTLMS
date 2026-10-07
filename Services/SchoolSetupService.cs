@@ -624,7 +624,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
-        return ServiceResult.Ok(input.Id is null ? $"The strand {code} was added. Give it its subjects with the Subjects button." : $"The strand {code} was saved.", strandId);
+        return ServiceResult.Ok(input.Id is null ? $"The strand {code} was added. Give it its courses with the Courses button." : $"The strand {code} was saved.", strandId);
     }
 
     public async Task<ServiceResult> DeleteStrandAsync(int id, int actingUserId, CancellationToken ct = default)
@@ -697,7 +697,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         var subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => new { s.Name, s.IsActive }).FirstOrDefaultAsync(ct);
         if (strand is null || subject is null)
         {
-            return ServiceResult.Fail("Pick a subject.");
+            return ServiceResult.Fail("Pick a course.");
         }
 
         if (!subject.IsActive)
@@ -707,7 +707,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         if (await db.StrandSubjects.AnyAsync(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber && x.SubjectId == subjectId, ct))
         {
-            return ServiceResult.Fail($"{subject.Name} is already one of the subjects of {strand} in that term.");
+            return ServiceResult.Fail($"{subject.Name} is already one of the courses of {strand} in that term.");
         }
 
         db.StrandSubjects.Add(new StrandSubject { StrandId = strandId, GradeLevel = (byte)gradeLevel, TermNumber = (byte)termNumber, SubjectId = subjectId });
@@ -723,7 +723,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         var removed = await db.StrandSubjects.Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber && x.SubjectId == subjectId).ExecuteDeleteAsync(ct);
-        return removed == 0 ? ServiceResult.Fail("This subject was already removed.") : ServiceResult.Ok("The subject was removed from the strand.");
+        return removed == 0 ? ServiceResult.Fail("This course was already removed.") : ServiceResult.Ok("The course was removed from the strand.");
     }
 
     // ======================================================================= subjects
@@ -744,12 +744,12 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         var description = string.IsNullOrWhiteSpace(input.Description) ? null : input.Description.Trim();
         if (code.Length is 0 or > 30)
         {
-            errors.Add("Enter the code of the subject (up to 30 characters).");
+            errors.Add("Enter the code of the course (up to 30 characters).");
         }
 
         if (name.Length is 0 or > 150)
         {
-            errors.Add("Enter the name of the subject (up to 150 characters).");
+            errors.Add("Enter the name of the course (up to 150 characters).");
         }
 
         if (description is { Length: > 500 })
@@ -770,7 +770,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         if (await db.Subjects.AnyAsync(s => s.Code == code && s.Id != input.Id, ct))
         {
-            return ServiceResult.Fail($"There is already a subject with the code {code}.");
+            return ServiceResult.Fail($"There is already a course with the code {code}.");
         }
 
         Subject subject;
@@ -779,7 +779,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             var found = await db.Subjects.FirstOrDefaultAsync(s => s.Id == id, ct);
             if (found is null)
             {
-                return ServiceResult.Fail("This subject no longer exists.");
+                return ServiceResult.Fail("This course no longer exists.");
             }
 
             subject = found;
@@ -794,7 +794,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         subject.Name = name;
         subject.Description = description;
         subject.IsActive = input.IsActive;
-        return await SaveAsync(db, input.Id is null ? $"The subject {name} was added. Put it in a strand's subjects to use it." : $"The subject {name} was saved.", ct);
+        return await SaveAsync(db, input.Id is null ? $"The course {name} was added. Put it in a strand's courses to use it." : $"The course {name} was saved.", ct);
     }
 
     public async Task<ServiceResult> DeleteSubjectAsync(int id, int actingUserId, CancellationToken ct = default)
@@ -815,7 +815,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }).FirstOrDefaultAsync(ct);
         if (subject is null)
         {
-            return ServiceResult.Fail("This subject was already deleted.");
+            return ServiceResult.Fail("This course was already deleted.");
         }
 
         if (subject.Curriculum > 0)
@@ -829,7 +829,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await db.Subjects.Where(s => s.Id == id).ExecuteDeleteAsync(ct);
-        return ServiceResult.Ok($"The subject {subject.Name} was deleted.");
+        return ServiceResult.Ok($"The course {subject.Name} was deleted.");
     }
 
     // ======================================================================= sections

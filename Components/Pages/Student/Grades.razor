@@ -14,148 +14,146 @@
 }
 else
 {
-    <PageWithAside Show="calendar,todo">
-        @if (summary.Subjects.Count == 0)
+    @if (summary.Subjects.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="book-open" Title="No courses yet">
+                <p>Your grades appear here once you are enrolled and your teachers give scores.</p>
+            </EmptyState>
+        </Card>
+    }
+    else
+    {
+        var failing = summary.Subjects.Where(s => s.Percent < GradeRules.PassingPercent).ToList();
+        var risk = summary.Subjects.Where(s => s.Percent >= GradeRules.PassingPercent && s.Percent < GradeRules.AtRiskUntil).ToList();
+
+        @if (failing.Count > 0)
         {
-            <Card>
-                <EmptyState IconName="book-open" Title="No subjects yet">
-                    <p>Your grades appear here once you are enrolled and your teachers give scores.</p>
-                </EmptyState>
+            <div class="alert danger" role="alert">
+                <Icon Name="triangle-alert" Size="20" />
+                <span>
+                    <strong>Your grade is below @GradeRules.PassingPercent.ToString("0") in @string.Join(", ", failing.Select(f => f.SubjectName)).</strong>
+                    Talk to your teacher or the guidance counselor, and hand in the work you have missed.
+                </span>
+            </div>
+        }
+        else if (risk.Count > 0)
+        {
+            <div class="alert warn" role="status">
+                <Icon Name="info" Size="20" />
+                <span>Your grade in <strong>@string.Join(", ", risk.Select(f => f.SubjectName))</strong> is close to failing. A few good scores will lift it.</span>
+            </div>
+        }
+
+        <div class="stats">
+            <StatCard Label="Overall average" Text="@(summary.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(summary.Overall is null ? AccentColor.Slate : summary.Overall < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
+                      Hint="@(summary.Overall is { } o ? GradeRules.Descriptor(o) : "No graded work yet")" />
+            <StatCard Label="Attendance" Text="@(attendance?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
+                      Accent="@(attendance?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
+                      Hint="@(attendance is { Days: > 0 } ? $"{attendance.Present} present · {attendance.Late} late · {attendance.Absent} absent" : "Nothing marked yet")" />
+            <StatCard Label="@($"Below {GradeRules.PassingPercent:0}")" Value="@summary.FailingSubjects" IconName="triangle-alert" Accent="@(summary.FailingSubjects > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(summary.FailingSubjects == 0 ? "None, well done" : "Needs attention")" />
+            <StatCard Label="Graded works" Value="@summary.GradedCount" IconName="clipboard-check" Accent="AccentColor.Violet" Hint="@($"{summary.Subjects.Sum(s => s.Missing)} missing")" />
+        </div>
+
+        <div class="overview">
+            <Card Title="Progress by course" IconName="chart-column">
+                <ul class="bars">
+                    @foreach (var s in summary.Subjects)
+                    {
+                        <li>
+                            <span class="bar-name">@s.SubjectName</span>
+                            <span class="track" role="progressbar" aria-label="@($"{s.SubjectName} grade")" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(s.Percent ?? 0))">
+                                <i class="@Band(s.Percent)" style="width: @Width(s.Percent)%"></i>
+                                <b class="mark" style="left: @GradeRules.PassingPercent.ToString("0")%" title="Passing: @GradeRules.PassingPercent.ToString("0")"></b>
+                            </span>
+                            <span class="bar-value">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
+                        </li>
+                    }
+                </ul>
+                <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
             </Card>
-        }
-        else
-        {
-            var failing = summary.Subjects.Where(s => s.Percent < GradeRules.PassingPercent).ToList();
-            var risk = summary.Subjects.Where(s => s.Percent >= GradeRules.PassingPercent && s.Percent < GradeRules.AtRiskUntil).ToList();
 
-            @if (failing.Count > 0)
-            {
-                <div class="alert danger" role="alert">
-                    <Icon Name="triangle-alert" Size="20" />
-                    <span>
-                        <strong>Your grade is below @GradeRules.PassingPercent.ToString("0") in @string.Join(", ", failing.Select(f => f.SubjectName)).</strong>
-                        Talk to your teacher or the guidance counselor, and hand in the work you have missed.
-                    </span>
-                </div>
-            }
-            else if (risk.Count > 0)
-            {
-                <div class="alert warn" role="status">
-                    <Icon Name="info" Size="20" />
-                    <span>Your grade in <strong>@string.Join(", ", risk.Select(f => f.SubjectName))</strong> is close to failing. A few good scores will lift it.</span>
-                </div>
-            }
-
-            <div class="stats">
-                <StatCard Label="Overall average" Text="@(summary.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(summary.Overall is null ? AccentColor.Slate : summary.Overall < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
-                          Hint="@(summary.Overall is { } o ? GradeRules.Descriptor(o) : "No graded work yet")" />
-                <StatCard Label="Attendance" Text="@(attendance?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
-                          Accent="@(attendance?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
-                          Hint="@(attendance is { Days: > 0 } ? $"{attendance.Present} present · {attendance.Late} late · {attendance.Absent} absent" : "Nothing marked yet")" />
-                <StatCard Label="@($"Below {GradeRules.PassingPercent:0}")" Value="@summary.FailingSubjects" IconName="triangle-alert" Accent="@(summary.FailingSubjects > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(summary.FailingSubjects == 0 ? "None, well done" : "Needs attention")" />
-                <StatCard Label="Graded works" Value="@summary.GradedCount" IconName="clipboard-check" Accent="AccentColor.Violet" Hint="@($"{summary.Subjects.Sum(s => s.Missing)} missing")" />
-            </div>
-
-            <div class="overview">
-                <Card Title="Progress by subject" IconName="chart-column">
-                    <ul class="bars">
-                        @foreach (var s in summary.Subjects)
-                        {
-                            <li>
-                                <span class="bar-name">@s.SubjectName</span>
-                                <span class="track" role="progressbar" aria-label="@($"{s.SubjectName} grade")" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(s.Percent ?? 0))">
-                                    <i class="@Band(s.Percent)" style="width: @Width(s.Percent)%"></i>
-                                    <b class="mark" style="left: @GradeRules.PassingPercent.ToString("0")%" title="Passing: @GradeRules.PassingPercent.ToString("0")"></b>
-                                </span>
-                                <span class="bar-value">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
-                            </li>
-                        }
-                    </ul>
-                    <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
-                </Card>
-
-                <Card Title="Your latest scores" IconName="award">
-                    @{
-                        var latest = summary.AllGraded.OrderByDescending(g => g.GradedAtUtc).Take(12).Reverse().ToList();
-                    }
-                    @if (latest.Count == 0)
-                    {
-                        <EmptyState IconName="award" Title="No scores yet" />
-                    }
-                    else
-                    {
-                        <div class="spark" role="img" aria-label="Your latest scores, oldest to newest">
-                            @foreach (var g in latest)
-                            {
-                                <div class="spark-col" title="@g.Title: @g.Score.ToString("0.##") / @g.Max.ToString("0.##")">
-                                    <i class="@Band(g.Percent)" style="height: @Width(g.Percent)%"></i>
-                                </div>
-                            }
-                        </div>
-                        <p class="note">Oldest on the left, newest on the right.</p>
-                    }
-                </Card>
-            </div>
-
-            <div class="subjects">
-                @foreach (var s in summary.Subjects)
-                {
-                    <Card>
-                        <div class="subject-head">
-                            <div>
-                                <h2><a href="student/subjects/@s.AssignmentId">@s.SubjectName</a></h2>
-                                <p class="sub">@s.TeacherName · @s.SectionLabel</p>
-                            </div>
-                            <div class="grade">
-                                <span class="grade-number">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
-                                @if (s.Percent is { } pp)
-                                {
-                                    <Badge Tone="@GradeRules.ToneOf(pp)">@GradeRules.Descriptor(pp)</Badge>
-                                }
-                                else
-                                {
-                                    <Badge>No grade yet</Badge>
-                                }
-                            </div>
-                        </div>
-
-                        <p class="counts">
-                            @{
-                                var att = attendance?.Subjects.FirstOrDefault(a => a.AssignmentId == s.AssignmentId);
-                            }
-                            @if (att is { Percent: { } attRate })
-                            {
-                                <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
-                            }
-                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "work" : "works") graded
-                            @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
-                            @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
-                        </p>
-
-                        @if (s.Graded.Count > 0)
-                        {
-                            <div class="table-wrap">
-                                <table class="table">
-                                    <thead><tr><th scope="col">Work</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
-                                    <tbody>
-                                        @foreach (var g in s.Graded)
-                                        {
-                                            <tr>
-                                                <td><a href="student/items/@g.ItemId">@g.Title</a> <span class="kind">@ItemKinds.Display(g.Kind)</span>@if (g.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
-                                                <td>@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</td>
-                                                <td><Badge Tone="@GradeRules.ToneOf(g.Percent)">@g.Percent.ToString("0.#")%</Badge></td>
-                                                <td class="col-more">@(g.GradedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                    </Card>
+            <Card Title="Your latest scores" IconName="award">
+                @{
+                    var latest = summary.AllGraded.OrderByDescending(g => g.GradedAtUtc).Take(12).Reverse().ToList();
                 }
-            </div>
-        }
-    </PageWithAside>
+                @if (latest.Count == 0)
+                {
+                    <EmptyState IconName="award" Title="No scores yet" />
+                }
+                else
+                {
+                    <div class="spark" role="img" aria-label="Your latest scores, oldest to newest">
+                        @foreach (var g in latest)
+                        {
+                            <div class="spark-col" title="@g.Title: @g.Score.ToString("0.##") / @g.Max.ToString("0.##")">
+                                <i class="@Band(g.Percent)" style="height: @Width(g.Percent)%"></i>
+                            </div>
+                        }
+                    </div>
+                    <p class="note">Oldest on the left, newest on the right.</p>
+                }
+            </Card>
+        </div>
+
+        <div class="subjects">
+            @foreach (var s in summary.Subjects)
+            {
+                <Card>
+                    <div class="subject-head">
+                        <div>
+                            <h2><a href="student/subjects/@s.AssignmentId">@s.SubjectName</a></h2>
+                            <p class="sub">@s.TeacherName · @s.SectionLabel</p>
+                        </div>
+                        <div class="grade">
+                            <span class="grade-number">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
+                            @if (s.Percent is { } pp)
+                            {
+                                <Badge Tone="@GradeRules.ToneOf(pp)">@GradeRules.Descriptor(pp)</Badge>
+                            }
+                            else
+                            {
+                                <Badge>No grade yet</Badge>
+                            }
+                        </div>
+                    </div>
+
+                    <p class="counts">
+                        @{
+                            var att = attendance?.Subjects.FirstOrDefault(a => a.AssignmentId == s.AssignmentId);
+                        }
+                        @if (att is { Percent: { } attRate })
+                        {
+                            <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
+                        }
+                        @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "work" : "works") graded
+                        @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
+                        @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
+                    </p>
+
+                    @if (s.Graded.Count > 0)
+                    {
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead><tr><th scope="col">Work</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
+                                <tbody>
+                                    @foreach (var g in s.Graded)
+                                    {
+                                        <tr>
+                                            <td><a href="student/items/@g.ItemId">@g.Title</a> <span class="kind">@ItemKinds.Display(g.Kind)</span>@if (g.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
+                                            <td>@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</td>
+                                            <td><Badge Tone="@GradeRules.ToneOf(g.Percent)">@g.Percent.ToString("0.#")%</Badge></td>
+                                            <td class="col-more">@(g.GradedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </Card>
+            }
+        </div>
+    }
 }
 
 @code {

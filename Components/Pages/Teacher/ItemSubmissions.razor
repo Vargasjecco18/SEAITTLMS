@@ -15,7 +15,7 @@ else if (data is null)
     <Card>
         <EmptyState IconName="file-text" Title="Not found" IsPage="true">
             <p>This is not one of your activities, or it was deleted.</p>
-            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>
 }
@@ -27,7 +27,7 @@ else
     var flagged = data.Rows.Count(r => r.IsFlagged);
 
     <PageHeader Title="@data.Title" Subtitle="@($"{ItemKinds.Display(data.Kind)} · {data.SubjectName} · {data.SectionLabel} · {data.ModuleTitle}")" IconName="@SubjectStyle.KindIcon(data.Kind)">
-        <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the subject</ButtonLink>
+        <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
         @if (data.Kind == ItemKinds.Quiz)
         {
             <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">Questions</ButtonLink>
@@ -54,8 +54,8 @@ else
     <Card>
         @if (data.Rows.Count == 0)
         {
-            <EmptyState IconName="users" Title="No students in this subject yet">
-                <p>Students appear here once the registrar has enrolled them in this section with this subject.</p>
+            <EmptyState IconName="users" Title="No students in this course yet">
+                <p>Students appear here once the registrar has enrolled them in this section with this course.</p>
             </EmptyState>
         }
         else

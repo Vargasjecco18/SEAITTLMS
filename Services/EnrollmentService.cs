@@ -31,10 +31,13 @@ public sealed record EnrollmentLookups(
     IReadOnlyList<StrandOption> Strands,
     IReadOnlyList<ScheduleOption> Schedules);
 
+/// <summary>Where a student was placed the last time they were enrolled. The form starts from it when the student is enrolled again.</summary>
+public sealed record StudentPlacement(byte GradeLevel, int TrackId, int StrandId, int? ScheduleId, string SectionName, string SchoolYear);
+
 /// <summary>A student who already has an account (enrolled in an earlier term, for example).</summary>
 public sealed record ExistingStudent(
     int StudentId, string FullName, string FirstName, string? MiddleName, string LastName, string Email, IReadOnlyList<int> EnrolledTermIds,
-    string? PhoneNumber = null);
+    string? PhoneNumber = null, StudentPlacement? LastPlacement = null);
 
 /// <summary>
 /// The subjects are not chosen: a student takes all the subjects the strand has at that grade level and term (the curriculum, set
@@ -190,7 +193,16 @@ public sealed partial class EnrollmentService(
 
         var termIds = await db.Enrollments.AsNoTracking().Where(e => e.StudentId == student.Id).Select(e => e.TermId).ToListAsync(ct);
         var fullName = string.Join(' ', new[] { student.FirstName, student.MiddleName, student.LastName, student.NameExtension }.Where(p => !string.IsNullOrWhiteSpace(p)));
-        return new ExistingStudent(student.Id, fullName, student.FirstName, student.MiddleName, student.LastName, student.Email, termIds, student.PhoneNumber);
+
+        // The newest enrollment (latest school year, then latest term) tells where the student belongs.
+        var last = await db.Enrollments.AsNoTracking()
+            .Where(e => e.StudentId == student.Id)
+            .OrderByDescending(e => e.Term.SchoolYear.StartDate).ThenByDescending(e => e.Term.TermNumber).ThenByDescending(e => e.Id)
+            .Select(e => new { e.GradeLevel, e.TrackId, e.StrandId, ScheduleId = e.Section.ScheduleId, Section = e.Section.Name, SchoolYear = e.Term.SchoolYear.Name })
+            .FirstOrDefaultAsync(ct);
+        var placement = last is null ? null : new StudentPlacement(last.GradeLevel, last.TrackId, last.StrandId, last.ScheduleId, last.Section, last.SchoolYear);
+
+        return new ExistingStudent(student.Id, fullName, student.FirstName, student.MiddleName, student.LastName, student.Email, termIds, student.PhoneNumber, placement);
     }
 
     public async Task<EnrollmentResult> EnrollAsync(EnrollmentRequest request, int actingUserId, CancellationToken ct = default)

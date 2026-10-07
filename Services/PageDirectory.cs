@@ -11,46 +11,38 @@ public sealed record PageEntry(string Title, string Description, string Href, st
 /// </summary>
 public static class PageDirectory
 {
-    private static readonly PageEntry MyAccount = new("My account", "Your details and sign-in name", "account", "id-card");
-
     public static IReadOnlyList<PageEntry> For(string role) => role switch
     {
         AppRoles.Admin =>
         [
             new("Dashboard", "Accounts and the school setup at a glance", "admin", "layout-dashboard"),
             new("Users Management", "Students, teachers, registrars, guidance and administrators", "admin/users", "users"),
-            new("School setup", "School years, terms, tracks, strands, subjects and sections", "admin/school-setup", "school"),
+            new("School setup", "School years, terms, tracks, strands, courses and sections", "admin/school-setup", "school"),
             new("Announcements", "Write notices for students, teachers or everybody", "announcements", "megaphone"),
-            new("Archive", "Archive the students who graduate, restore a student", "admin/archive", "archive"),
+            new("Archive Accounts", "Archive the students who graduate, restore a student", "admin/archive", "archive"),
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
-            MyAccount,
         ],
         AppRoles.Registrar =>
         [
             new("Dashboard", "Enrollment at a glance", "registrar", "layout-dashboard"),
             new("Enrollments", "Enroll a student", "registrar/enrollments", "clipboard-list"),
             new("Student's Accounts", "The enrolled students, and who is enrolled for the next term", "registrar/student-accounts", "graduation-cap"),
-            new("Announcements", "Write notices for students, teachers or everybody", "announcements", "megaphone"),
-            MyAccount,
         ],
         AppRoles.Teacher =>
         [
-            new("Dashboard", "Work to check, deadlines and drafts", "teacher", "layout-dashboard"),
-            new("Subjects", "The subjects you teach, with their modules and work", "teacher/subjects", "book-open"),
+            new("Dashboard", "Work to check and drafts", "teacher", "layout-dashboard"),
+            new("Courses", "The courses you teach, with their modules and work", "teacher/subjects", "book-open"),
             new("Attendance", "Mark who came to class and see the attendance summary", "teacher/attendance", "calendar-check"),
-            new("Gradebook", "The scores of every student in a subject, and their average", "teacher/gradebook", "clipboard-list"),
-            new("Announcements", "Tell the students of your sections what they need to know", "announcements", "megaphone"),
-            new("Analytics", "How the students of your subjects are doing", "analytics", "chart-column"),
             new("Calendar", "Deadlines, postings and your to-do list, by month or week", "calendar", "calendar-days"),
-            MyAccount,
+            new("Gradebook", "The scores of every student in a course, and their average", "teacher/gradebook", "clipboard-list"),
+            new("Analytics", "How the students of your courses are doing", "analytics", "chart-column"),
         ],
         AppRoles.Student =>
         [
             new("Dashboard", "Assignments, due dates, new modules and achievements", "student", "layout-dashboard"),
-            new("Subjects", "Your subjects, modules, activities and quizzes", "student/subjects", "book-open"),
-            new("Grades and progress", "Your grade in every subject and how it is going", "student/grades", "trending-up"),
+            new("Courses", "Your courses, modules, activities and quizzes", "student/subjects", "book-open"),
+            new("Grades and progress", "Your grade in every course and how it is going", "student/grades", "trending-up"),
             new("Calendar", "Deadlines and your to-do list, by month or week", "calendar", "calendar-days"),
-            MyAccount,
         ],
         AppRoles.GuidanceCounselor =>
         [
@@ -58,8 +50,7 @@ public static class PageDirectory
             new("Referrals", "Students the system sent to you", "guidance/referrals", "flag"),
             new("Students at risk", "Failing (below 70), at risk and not attending class", "guidance/students", "triangle-alert"),
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
-            MyAccount,
         ],
-        _ => [MyAccount],
+        _ => [],
     };
 }

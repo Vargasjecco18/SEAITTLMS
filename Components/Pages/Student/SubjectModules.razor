@@ -5,7 +5,7 @@
 @inject ModuleService Modules
 @inject TimeProvider Clock
 
-<PageTitle>@(subject?.SubjectName ?? "Subject") · SEAITT e-LMS</PageTitle>
+<PageTitle>@(subject?.SubjectName ?? "Course") · SEAITT e-LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -14,16 +14,16 @@
 else if (subject is null)
 {
     <Card>
-        <EmptyState IconName="book-open" Title="Subject not found" IsPage="true">
-            <p>This is not one of your subjects.</p>
-            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        <EmptyState IconName="book-open" Title="Course not found" IsPage="true">
+            <p>This is not one of your courses.</p>
+            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>
 }
 else
 {
     <PageHeader Title="@subject.SubjectName" Subtitle="@($"{subject.SectionLabel} · {subject.TeacherName}")" IconName="book-open">
-        <ButtonLink Href="student/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All subjects</ButtonLink>
+        <ButtonLink Href="student/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
     </PageHeader>
 
     <PageWithAside Show="calendar,todo,upnext">
@@ -31,7 +31,7 @@ else
     {
         <Card>
             <EmptyState IconName="layers" Title="No modules yet">
-                <p>Your teacher has not posted any module for this subject. You will be told when one appears.</p>
+                <p>Your teacher has not posted any module for this course. You will be told when one appears.</p>
             </EmptyState>
         </Card>
     }

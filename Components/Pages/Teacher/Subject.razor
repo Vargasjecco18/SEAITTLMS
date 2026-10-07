@@ -6,7 +6,7 @@
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
-<PageTitle>@(subject?.SubjectName ?? "Subject") · SEAITT e-LMS</PageTitle>
+<PageTitle>@(subject?.SubjectName ?? "Course") · SEAITT e-LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -15,9 +15,9 @@
 else if (subject is null)
 {
     <Card>
-        <EmptyState IconName="book-open" Title="Subject not found" IsPage="true">
-            <p>This subject is not one of yours, or it was removed.</p>
-            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your subjects</ButtonLink>
+        <EmptyState IconName="book-open" Title="Course not found" IsPage="true">
+            <p>This course is not one of yours, or it was removed.</p>
+            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>
 }
@@ -26,7 +26,7 @@ else
     <PageHeader Title="@subject.SubjectName"
                 Subtitle="@($"{subject.SectionLabel}{(subject.Schedule is null ? "" : " · " + subject.Schedule)} · {subject.Students} {(subject.Students == 1 ? "student" : "students")}")"
                 IconName="book-open">
-        <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All subjects</ButtonLink>
+        <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
         <Button IconName="plus" OnClick="OpenNewModule">Add module</Button>
     </PageHeader>
 
@@ -166,7 +166,7 @@ else
                                                     </div>
                                                 </div>
                                                 <div class="item-side">
-                                                    <span class="handed" title="Handed in of the students in this subject">@item.Submitted / @item.Students handed in</span>
+                                                    <span class="handed" title="Handed in of the students in this course">@item.Submitted / @item.Students handed in</span>
                                                     @if (item.Kind != ItemKinds.Quiz && item.Submitted - item.Graded > 0)
                                                     {
                                                         <Badge Tone="Tone.Warning">@(item.Submitted - item.Graded) to check</Badge>

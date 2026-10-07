@@ -17,7 +17,7 @@ Start the app in Development (`dotnet watch`) and it creates every table, or upg
 | File | Use it when |
 |---|---|
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. |
-| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want one ready-made sign-in for each of the **administrator, registrar, guidance counselor and student** to try the app. It only adds rows (it never deletes) and is safe to run again; only the password hashes are in the file. |
+| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 12 teachers and 40 students**. It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. The students are named and signed in the way the registrar's enrollment does it (last name + the last 6 digits of the LRN), and have no enrollment yet. |
 
 The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
 creates. It also records the migrations in `__EFMigrationsHistory`, which is why the app doesn't try to create the
@@ -228,16 +228,16 @@ running it on a database that already has some of it changes nothing that exists
 | `tracks` | ACAD (Academic), TECH-PRO (Technical-Professional) |
 | `schedules` | AM (Morning), MID (Midday), PM (Afternoon) |
 
-| Strand | Track | Schedules | 1st term subjects (grade 11) |
-|---|---|---|---|
-| BUSSENT | ACAD | AM, PM | BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1 |
-| EDUC | ACAD | AM, PM | FILIPINO 1, CREATIVE COMPOSITION 1 |
-| ENG | ACAD | AM, PM | FINITE MATH 1, EMPOWERMENT TECHNOLOGY |
-| MED | ACAD | AM, PM | BIOLOGY 1, EMPOWERMENT TECHNOLOGY |
-| USP | ACAD | AM | SOCIAL SCIENCES, BIOLOGY 1 |
-| CD1 (CSS-VGD) | TECH-PRO | AM, PM | COMPUTER SYSTEM SERVICING 1 |
-| HT1 (KO-FBS) | TECH-PRO | AM, MID, PM | KITCHEN OPERATION 1 |
-| HT2 (FBS-KO) | TECH-PRO | PM | FOOD AND BEVERAGE OPERATIONS 1 |
+| Strand (`code`) | Full name (`name`) | Track | Schedules | 1st term subjects (grade 11) |
+|---|---|---|---|---|
+| BUSSENT | Business and Entrepreneurship | ACAD | AM, PM | BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1 |
+| EDUC | Education | ACAD | AM, PM | FILIPINO 1, CREATIVE COMPOSITION 1 |
+| ENG | Engineering | ACAD | AM, PM | FINITE MATH 1, EMPOWERMENT TECHNOLOGY |
+| MED | Medical and Health Sciences | ACAD | AM, PM | BIOLOGY 1, EMPOWERMENT TECHNOLOGY |
+| USP | University Studies Preparatory | ACAD | AM | SOCIAL SCIENCES, BIOLOGY 1 |
+| CD1 | Computer System Servicing - Video Game Development (CSS-VGD) | TECH-PRO | AM, PM | COMPUTER SYSTEM SERVICING 1 |
+| HT1 | Kitchen Operations - Food and Beverage Services (KO-FBS) | TECH-PRO | AM, MID, PM | KITCHEN OPERATION 1 |
+| HT2 | Food and Beverage Services - Kitchen Operations (FBS-KO) | TECH-PRO | PM | FOOD AND BEVERAGE OPERATIONS 1 |
 
 The **2nd term** has the same six subjects for every strand: EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON,
 GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE and PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO.
@@ -247,7 +247,9 @@ Things that were decided for you, change them in the tables if they are not righ
 - **The dates** of the school year and the terms are a guess (`school_years`, `terms`).
 - **Subject codes** (`BUSACCT`, `ADVMATH1`, `EMPOWERTECH`, ...) were invented, only the names are SEAITT's.
 - **Grade 12 has no curriculum yet**, so enrolling into grade 12 works but with no subjects to pick.
-- The text in brackets for CD1, HT1 and HT2 is saved as the strand's `name`. For the other strands `name` is the same as `code`.
+- The full names are made by the migration `FillStrandFullNames`: it fills a strand's `name` only while it is still the short code (or the short name CSS-VGD, KO-FBS, FBS-KO),
+  so a name the administrator typed under *School setup > Strands* is never overwritten. The first page of the app shows these names. The full names of
+  USP and the other strands are the school's to confirm: change them in *School setup > Strands* if they are not right.
 - An older version of the database had four tracks (ACAD, TVL, SPORTS, ARTS). On upgrade, **TVL became TECH-PRO**
   (kept, with its strands and students), and SPORTS and ARTS were removed if nothing used them (switched off, not
   deleted, if something did).

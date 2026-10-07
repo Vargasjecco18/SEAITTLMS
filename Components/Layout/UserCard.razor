@@ -8,13 +8,13 @@
             var role = AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role));
         }
         <div class="card">
-            <a class="who" href="account" title="My account">
+            <div class="who">
                 <Avatar Name="@name" Size="40" />
                 <span class="text">
                     <span class="name">@name</span>
                     <span class="role">@role</span>
                 </span>
-            </a>
+            </div>
 
             <form method="post" action="/account/logout">
                 <AntiforgeryToken />

@@ -69,58 +69,111 @@
     white-space: nowrap;
 }
 
-/* The subjects are a small "2 subjects" that opens the list in the cell. */
+/* The courses are a small "2 courses" button that opens a pop-up over the page (the columns do not move). */
 .col-subjects {
     min-width: 8.5rem;
-    vertical-align: top;
 }
 
-.subjects summary {
+.courses-button {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    margin-left: -0.5rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
     color: var(--brand-strong);
+    font: inherit;
     font-weight: 600;
     cursor: pointer;
-    list-style: none;
     white-space: nowrap;
 }
 
-.subjects summary::-webkit-details-marker {
-    display: none;
+.courses-button:hover {
+    background: var(--brand-soft);
 }
 
-.subjects summary::after {
-    content: "";
-    width: 0.4rem;
-    height: 0.4rem;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) translateY(-2px);
-    transition: transform 0.15s;
-}
-
-.subjects[open] summary::after {
-    transform: rotate(-135deg);
-}
-
-.subjects summary:focus-visible {
+.courses-button:focus-visible {
     outline: 2px solid var(--brand);
-    outline-offset: 2px;
-    border-radius: 4px;
+    outline-offset: 1px;
 }
 
-.subjects ul {
-    margin: 0.4rem 0 0;
-    padding: 0.5rem 0.75rem 0.5rem 1.4rem;
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    font-size: 0.85rem;
+/* A popover is shown in the middle of the screen until app.js moves it next to its button. */
+.courses-pop {
+    width: min(22rem, calc(100vw - 1.5rem));
+    max-height: min(24rem, calc(100vh - 1.5rem));
+    padding: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg, 0 12px 32px rgb(0 0 0 / 0.22));
     color: var(--text);
 }
 
-.subjects li + li {
-    margin-top: 0.2rem;
+.courses-pop::backdrop {
+    background: transparent;
+}
+
+.pop-head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem 0.6rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.pop-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pop-title .sub {
+    white-space: normal;
+}
+
+.pop-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.pop-close:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.courses-pop ul {
+    margin: 0;
+    padding: 0.7rem 1rem 0.9rem 2.2rem;
+    font-size: 0.9rem;
+}
+
+.courses-pop li + li {
+    margin-top: 0.3rem;
+}
+
+/* Final grade: the percent and what it means. */
+.col-grade {
+    min-width: 8rem;
+    white-space: nowrap;
+}
+
+.col-grade .sub {
+    margin-top: 0.15rem;
 }
 
 /* Next term: whether the student is enrolled for it, and the button to unenroll or the link to enroll. */

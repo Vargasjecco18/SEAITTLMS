@@ -293,21 +293,6 @@ html[data-motion="off"] .thumb {
     left: 3px;
 }
 
-.settings-link {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.settings-link:hover {
-    background: var(--surface-2);
-}
-
 @media (max-width: 520px) {
     /* On a phone the pop-ups are as wide as the screen. */
     .pop {

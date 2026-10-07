@@ -458,3 +458,82 @@
     margin: 0.5rem 0 0.75rem;
     font-size: 0.95rem;
 }
+
+/* ---------- where a new teacher works ---------- */
+.teaching {
+    min-width: 0;
+    margin: 0.25rem 0 1.25rem;
+    padding: 0.9rem 1rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.teaching legend {
+    padding: 0 0.4rem;
+    font-weight: 700;
+}
+
+.teaching .optional {
+    margin-left: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.teaching .field {
+    margin-bottom: 1rem;
+}
+
+.field-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.course-picks {
+    display: grid;
+    gap: 0.1rem;
+    max-height: 13rem;
+    padding: 0.35rem;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.course-pick {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.course-pick:hover {
+    background: var(--surface);
+}
+
+.course-pick input {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    accent-color: var(--btn-bg);
+}
+
+.link-button {
+    margin-top: 0.4rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}

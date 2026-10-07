@@ -2,39 +2,40 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SEAITT_LMS.Data.Queries;
 
-public sealed record CourseSubject(string Code, string Name);
+public sealed record PublicCourse(string Code, string Name);
 
-/// <param name="Name">The strand's own name. Same as the code when the school only gave a code.</param>
-public sealed record CourseStrand(string Code, string Name, string Track, IReadOnlyList<string> Schedules, IReadOnlyList<CourseSubject> Subjects);
+/// <summary>The courses a strand has in one term of one grade level.</summary>
+public sealed record PublicCourseGroup(byte GradeLevel, byte TermNumber, string TermName, IReadOnlyList<PublicCourse> Courses);
 
-public sealed record CourseTerm(byte TermNumber, string Name, IReadOnlyList<CourseStrand> Strands);
+/// <param name="Name">The strand's full name. Same as the code when the school only gave a code.</param>
+/// <param name="CourseCount">How many different courses the strand has (a course that is taught in two terms counts once).</param>
+public sealed record PublicStrand(string Code, string Name, IReadOnlyList<string> Schedules, int CourseCount, IReadOnlyList<PublicCourseGroup> Groups);
 
-public sealed record CourseGrade(byte GradeLevel, IReadOnlyList<CourseTerm> Terms);
+public sealed record PublicTrack(string Code, string Name, IReadOnlyList<PublicStrand> Strands);
 
-/// <summary>The courses shown on the public first page: for each grade level and term, the subjects of every strand.</summary>
+/// <summary>
+/// The courses shown on the public first page: first the tracks, each with its strands (full names), and under a strand the
+/// courses it has, by grade level and term.
+/// </summary>
 public static class PublicCourses
 {
-    public static async Task<IReadOnlyList<CourseGrade>> LoadAsync(AppDbContext db, CancellationToken ct = default)
+    public static async Task<IReadOnlyList<PublicTrack>> LoadAsync(AppDbContext db, CancellationToken ct = default)
     {
-        var rows = await db.StrandSubjects.AsNoTracking()
-            .Where(x => x.Strand.IsActive && x.Subject.IsActive)
-            .Select(x => new
-            {
-                x.GradeLevel,
-                x.TermNumber,
-                StrandId = x.StrandId,
-                StrandCode = x.Strand.Code,
-                StrandName = x.Strand.Name,
-                Track = x.Strand.Track.Code,
-                SubjectCode = x.Subject.Code,
-                SubjectName = x.Subject.Name,
-            })
+        var strands = await db.Strands.AsNoTracking()
+            .Where(s => s.IsActive && s.Track.IsActive)
+            .OrderBy(s => s.TrackId).ThenBy(s => s.Id)
+            .Select(s => new { s.Id, s.Code, s.Name, TrackId = s.TrackId, TrackCode = s.Track.Code, TrackName = s.Track.Name })
             .ToListAsync(ct);
 
-        if (rows.Count == 0)
+        if (strands.Count == 0)
         {
             return [];
         }
+
+        var curriculum = await db.StrandSubjects.AsNoTracking()
+            .Where(x => x.Strand.IsActive && x.Subject.IsActive)
+            .Select(x => new { x.StrandId, x.GradeLevel, x.TermNumber, x.Subject.Code, x.Subject.Name })
+            .ToListAsync(ct);
 
         var schedules = await db.StrandSchedules.AsNoTracking()
             .OrderBy(x => x.ScheduleId)
@@ -50,26 +51,28 @@ public static class PublicCourses
         string TermName(byte number) =>
             termNames.FirstOrDefault(t => t.TermNumber == number)?.Name ?? $"Term {number}";
 
-        return rows
-            .GroupBy(r => r.GradeLevel)
-            .OrderBy(g => g.Key)
-            .Select(grade => new CourseGrade(
-                grade.Key,
-                grade.GroupBy(r => r.TermNumber)
-                    .OrderBy(t => t.Key)
-                    .Select(term => new CourseTerm(
-                        term.Key,
-                        TermName(term.Key),
-                        term.GroupBy(r => new { r.StrandId, r.StrandCode, r.StrandName, r.Track })
-                            .OrderBy(s => s.Key.Track).ThenBy(s => s.Key.StrandId)
-                            .Select(strand => new CourseStrand(
-                                strand.Key.StrandCode,
-                                strand.Key.StrandName,
-                                strand.Key.Track,
-                                schedules.Where(s => s.StrandId == strand.Key.StrandId).Select(s => s.Code).ToList(),
-                                strand.OrderBy(r => r.SubjectName).Select(r => new CourseSubject(r.SubjectCode, r.SubjectName)).ToList()))
-                            .ToList()))
-                    .ToList()))
+        PublicStrand Build(int strandId, string code, string name)
+        {
+            var own = curriculum.Where(c => c.StrandId == strandId).ToList();
+            var groups = own
+                .GroupBy(c => new { c.GradeLevel, c.TermNumber })
+                .OrderBy(g => g.Key.GradeLevel).ThenBy(g => g.Key.TermNumber)
+                .Select(g => new PublicCourseGroup(
+                    g.Key.GradeLevel, g.Key.TermNumber, TermName(g.Key.TermNumber),
+                    g.OrderBy(c => c.Name).Select(c => new PublicCourse(c.Code, c.Name)).ToList()))
+                .ToList();
+            return new PublicStrand(
+                code, name,
+                schedules.Where(s => s.StrandId == strandId).Select(s => s.Code).ToList(),
+                own.Select(c => c.Code).Distinct().Count(),
+                groups);
+        }
+
+        return strands
+            .GroupBy(s => new { s.TrackId, s.TrackCode, s.TrackName })
+            .Select(track => new PublicTrack(
+                track.Key.TrackCode, track.Key.TrackName,
+                track.Select(s => Build(s.Id, s.Code, s.Name)).ToList()))
             .ToList();
     }
 }

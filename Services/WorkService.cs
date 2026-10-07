@@ -261,7 +261,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             .Select(e => (int?)e.Student.UserId).FirstOrDefaultAsync(ct);
         if (studentUserId is null)
         {
-            return ServiceResult.Fail("This student is not in the subject.");
+            return ServiceResult.Fail("This student is not in the course.");
         }
 
         var now = Now;

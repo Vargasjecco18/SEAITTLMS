@@ -45,7 +45,7 @@ else if (receipt is not null)
             <div><dt>Schedule</dt><dd>@receipt.Schedule</dd></div>
             <div><dt>Section</dt><dd>@receipt.Section</dd></div>
             <div class="wide">
-                <dt>Subjects</dt>
+                <dt>Courses</dt>
                 <dd>
                     @if (receipt.Subjects.Count == 0)
                     {
@@ -126,6 +126,10 @@ else
                         <div>
                             <strong>@existing.FullName already has an account.</strong>
                             <span>This adds a new enrollment. The name and the sign-in details stay as they are.</span>
+                            @if (existing.LastPlacement is not null)
+                            {
+                                <span>The grade level, track and strand are the ones of the last enrollment. Choose the schedule and the section.</span>
+                            }
                             @if (existing.EnrolledTermIds.Contains(form.TermId))
                             {
                                 <span class="warn">This student is already enrolled for the selected term.</span>
@@ -217,15 +221,15 @@ else
                     <Icon Name="book-open" Size="16" />
                     @if (form.StrandId == 0)
                     {
-                        <span>The student gets all the subjects of the strand for the term. Choose a strand to see how many.</span>
+                        <span>The student gets all the courses of the strand for the term. Choose a strand to see how many.</span>
                     }
                     else if (subjects.Count == 0)
                     {
-                        <span>No subjects are set for this strand, grade level and term yet. The student is enrolled without subjects.</span>
+                        <span>No courses are set for this strand, grade level and term yet. The student is enrolled without courses.</span>
                     }
                     else
                     {
-                        <span>The student gets all @subjects.Count subjects of this strand for the term: @string.Join(", ", subjects.Select(x => x.Name)).</span>
+                        <span>The student gets all @subjects.Count courses of this strand for the term: @string.Join(", ", subjects.Select(x => x.Name)).</span>
                     }
                 </p>
             </Card>
@@ -350,7 +354,39 @@ else
         {
             form.Lrn = lrn;
             existing = await Enrollment.FindStudentAsync(lrn);
+            await ApplyPlacementAsync();
         }
+    }
+
+    /// <summary>
+    /// A student who is enrolled again starts from where they were: the grade level (one more when the term is in a newer school year),
+    /// the track and strand, and the schedule and section they had, which the registrar can change.
+    /// </summary>
+    private async Task ApplyPlacementAsync()
+    {
+        if (existing?.LastPlacement is not { } last)
+        {
+            return;
+        }
+
+        var termYear = lookups!.Terms.FirstOrDefault(t => t.Id == form.TermId)?.SchoolYear;
+        form.GradeLevel = termYear is not null && termYear != last.SchoolYear ? (byte)Math.Min(12, last.GradeLevel + 1) : last.GradeLevel;
+
+        var strand = lookups.Strands.FirstOrDefault(s => s.Id == last.StrandId);
+        if (strand is null)
+        {
+            // The strand is not offered any more: the registrar chooses.
+            await ReloadChoicesAsync();
+            return;
+        }
+
+        form.TrackId = strand.TrackId;
+        form.StrandId = strand.Id;
+        form.ScheduleId = last.ScheduleId is { } scheduleId && strand.ScheduleIds.Contains(scheduleId)
+            ? scheduleId
+            : strand.ScheduleIds.Count == 1 ? strand.ScheduleIds[0] : 0;
+        form.SectionName = last.SectionName;
+        await ReloadChoicesAsync();
     }
 
     private async Task OnLrnChangedAsync()
@@ -362,6 +398,7 @@ else
         if (lrn == form.Lrn)
         {
             existing = found;
+            await ApplyPlacementAsync();
         }
     }
 

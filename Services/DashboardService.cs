@@ -20,15 +20,13 @@ public sealed record StudentDashboard(
 
 public sealed record UncheckedWork(int ItemId, string Title, string Kind, string SubjectName, string SectionLabel, int Count, DateTime OldestAtUtc);
 
-public sealed record TeacherDeadline(int ItemId, string Title, string Kind, string SubjectName, string SectionLabel, DateTime DueAtUtc, int HandedIn, int Students);
-
 public sealed record DraftModule(int ModuleId, int AssignmentId, string Title, string SubjectName, string SectionLabel, DateTime? VisibleFromUtc);
 
 public sealed record FlaggedAttempt(int ItemId, string StudentName, string Title, int Warnings, string? Reason, DateTime? AtUtc);
 
 public sealed record TeacherDashboard(
     string FirstName, int SubjectCount, int StudentCount, int ToCheck, int FlaggedCount, int DraftCount, int DueSoon,
-    IReadOnlyList<UncheckedWork> Unchecked, IReadOnlyList<TeacherDeadline> Deadlines, IReadOnlyList<DraftModule> Drafts, IReadOnlyList<FlaggedAttempt> Flagged);
+    IReadOnlyList<UncheckedWork> Unchecked, IReadOnlyList<DraftModule> Drafts, IReadOnlyList<FlaggedAttempt> Flagged);
 
 /// <summary>What the dashboards show. Every number is read from the person's own subjects.</summary>
 public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, GradeService grades, TimeProvider clock)
@@ -113,14 +111,7 @@ public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, 
             .Select(g => new UncheckedWork(g.Key, g.First().Title, g.First().Kind, g.First().Subject, Label(g.First().AssignmentId), g.Count(), g.Min(x => x.At)))
             .OrderBy(u => u.OldestAtUtc).Take(8).ToList();
 
-        // Deadlines in the next two weeks.
-        var due = await db.ModuleItems.AsNoTracking()
-            .Where(i => i.Module.Assignment.TeacherId == teacherId && i.DueAtUtc != null && i.DueAtUtc >= now && i.DueAtUtc <= now.AddDays(14)
-                        && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now)
-            .OrderBy(i => i.DueAtUtc).Take(6)
-            .Select(i => new { i.Id, i.Title, i.Kind, Subject = i.Module.Assignment.Subject.Name, i.Module.AssignmentId, Due = i.DueAtUtc!.Value, Handed = i.Submissions.Count(s => s.Status != SubmissionStatus.InProgress) })
-            .ToListAsync(ct);
-        var deadlines = due.Select(i => new TeacherDeadline(i.Id, i.Title, i.Kind, i.Subject, Label(i.AssignmentId), i.Due, i.Handed, rosters.GetValueOrDefault(i.AssignmentId)?.Count ?? 0)).ToList();
+        // How many deadlines fall in the next week (the number on the dashboard).
         var dueSoon = await db.ModuleItems.CountAsync(i => i.Module.Assignment.TeacherId == teacherId && i.DueAtUtc != null && i.DueAtUtc >= now && i.DueAtUtc <= now.AddDays(7), ct);
 
         // Modules that students can't see yet.
@@ -139,6 +130,6 @@ public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, 
                 .ToListAsync(ct))
             .Select(s => new FlaggedAttempt(s.ItemId, s.Name, s.Title, s.ViolationCount, s.AutoSubmitReason, s.At)).ToList();
 
-        return new TeacherDashboard(teacher, assignments.Count, studentCount, waiting.Count, flaggedCount, draftCount, dueSoon, unchecked_, deadlines, drafts, flagged);
+        return new TeacherDashboard(teacher, assignments.Count, studentCount, waiting.Count, flaggedCount, draftCount, dueSoon, unchecked_, drafts, flagged);
     }
 }

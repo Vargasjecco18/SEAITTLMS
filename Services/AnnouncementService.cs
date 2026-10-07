@@ -17,18 +17,13 @@ public sealed class AnnouncementInput
     public string Body { get; set; } = "";
     public string Audience { get; set; } = AnnouncementAudiences.Everyone;
 
-    /// <summary>A teacher picks the section the announcement is for. Others leave it empty.</summary>
-    public int SectionId { get; set; }
-
     public DateOnly? ExpiresOn { get; set; }
 }
 
-public sealed record AnnouncementSectionChoice(int Id, string Label);
-
 /// <summary>
-/// Announcements. The administrator and the registrar write them for everybody (students and teachers), for the students or for the
-/// teachers. A teacher writes them for the students of one section they teach. A student sees what is meant for them on the
-/// dashboard; the people it is for are also told with a notification when it is posted.
+/// Announcements. Only the administrator writes them: for everybody (students and teachers), for the students or for the teachers.
+/// A student sees what is meant for them on the dashboard; the people it is for are also told with a notification when it is posted.
+/// (Announcements that a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.)
 /// </summary>
 public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactory, NotificationService notifications, TimeProvider clock)
 {
@@ -54,40 +49,16 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         return await ViewsAsync(db, query, take, ct);
     }
 
-    /// <summary>What a teacher is meant to read: for everybody or the teachers.</summary>
-    public async Task<IReadOnlyList<AnnouncementView>> GetForTeachersAsync(int take = 5, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var today = PhilippineTime.Today(clock);
-        var query = db.Announcements.AsNoTracking()
-            .Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers)
-                        && a.SectionId == null && (a.ExpiresOn == null || a.ExpiresOn >= today));
-        return await ViewsAsync(db, query, take, ct);
-    }
-
-    /// <summary>The announcements a person manages: the administrator and the registrar see all of them, a teacher their own.</summary>
+    /// <summary>Every announcement, newest first, for the administrator who manages them.</summary>
     public async Task<IReadOnlyList<AnnouncementView>> ListManagedAsync(CurrentUserInfo user, CancellationToken ct = default)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var query = db.Announcements.AsNoTracking().AsQueryable();
-        if (user.Role == AppRoles.Teacher)
+        if (user.Role != AppRoles.Admin)
         {
-            query = query.Where(a => a.AuthorUserId == user.UserId);
+            return [];
         }
 
-        return await ViewsAsync(db, query, 100, ct);
-    }
-
-    /// <summary>The sections a teacher can write to: the ones they teach a subject to.</summary>
-    public async Task<IReadOnlyList<AnnouncementSectionChoice>> GetSectionChoicesAsync(int teacherUserId, CancellationToken ct = default)
-    {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var rows = await db.TeachingAssignments.AsNoTracking()
-            .Where(a => a.Teacher.UserId == teacherUserId)
-            .Select(a => new { a.SectionId, a.Section.GradeLevel, Strand = a.Section.Strand.Code, a.Section.Name })
-            .Distinct().ToListAsync(ct);
-        return rows.OrderBy(r => r.GradeLevel).ThenBy(r => r.Strand).ThenBy(r => r.Name)
-            .Select(r => new AnnouncementSectionChoice(r.SectionId, TeachingService.SectionLabel(r.GradeLevel, r.Strand, r.Name))).ToList();
+        return await ViewsAsync(db, db.Announcements.AsNoTracking(), 100, ct);
     }
 
     // ======================================================================= writing
@@ -107,13 +78,12 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             errors.Add($"Write the announcement (up to {MaxBodyLength} characters).");
         }
 
-        var isTeacher = user.Role == AppRoles.Teacher;
-        if (!isTeacher && user.Role is not (AppRoles.Admin or AppRoles.Registrar))
+        if (user.Role != AppRoles.Admin)
         {
-            return ServiceResult.Fail("Only the administrator, the registrar and teachers write announcements.");
+            return ServiceResult.Fail("Only the administrator writes announcements.");
         }
 
-        var audience = isTeacher ? AnnouncementAudiences.Students : input.Audience;
+        var audience = input.Audience;
         if (!AnnouncementAudiences.All.Contains(audience))
         {
             errors.Add("Pick who the announcement is for.");
@@ -130,32 +100,19 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive, ct))
+        if (!await IsAdminAsync(db, user, ct))
         {
             return ServiceResult.Fail("Please sign in again.");
-        }
-
-        // A teacher writes to one of the sections they teach.
-        int? sectionId = null;
-        if (isTeacher)
-        {
-            if (!await db.TeachingAssignments.AnyAsync(a => a.Teacher.UserId == user.UserId && a.SectionId == input.SectionId, ct))
-            {
-                return ServiceResult.Fail("Pick one of the sections you teach.");
-            }
-
-            sectionId = input.SectionId;
         }
 
         Announcement announcement;
         var isNew = input.Id is null;
         if (input.Id is { } id)
         {
-            var isAdmin = await IsAdminAsync(db, user, ct);
-            var found = await db.Announcements.FirstOrDefaultAsync(a => a.Id == id && (isAdmin || a.AuthorUserId == user.UserId), ct);
+            var found = await db.Announcements.FirstOrDefaultAsync(a => a.Id == id, ct);
             if (found is null)
             {
-                return ServiceResult.Fail("You can only change your own announcements.");
+                return ServiceResult.Fail("This announcement was deleted.");
             }
 
             announcement = found;
@@ -169,7 +126,6 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         announcement.Title = title;
         announcement.Body = body;
         announcement.Audience = audience;
-        announcement.SectionId = isNew || isTeacher ? sectionId : announcement.SectionId;
         announcement.ExpiresOn = input.ExpiresOn;
         await db.SaveChangesAsync(ct);
 
@@ -184,14 +140,18 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     public async Task<ServiceResult> DeleteAsync(CurrentUserInfo user, int id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var isAdmin = await IsAdminAsync(db, user, ct);
-        var deleted = await db.Announcements.Where(a => a.Id == id && (isAdmin || a.AuthorUserId == user.UserId)).ExecuteDeleteAsync(ct);
-        return deleted == 0 ? ServiceResult.Fail("This announcement was already deleted, or it is not yours.") : ServiceResult.Ok("The announcement was deleted.");
+        if (!await IsAdminAsync(db, user, ct))
+        {
+            return ServiceResult.Fail("Only the administrator deletes announcements.");
+        }
+
+        var deleted = await db.Announcements.Where(a => a.Id == id).ExecuteDeleteAsync(ct);
+        return deleted == 0 ? ServiceResult.Fail("This announcement was already deleted.") : ServiceResult.Ok("The announcement was deleted.");
     }
 
     // ======================================================================= helpers
 
-    /// <summary>The administrator may change and delete every announcement; everybody else only their own.</summary>
+    /// <summary>Only the administrator (still active) writes, changes and deletes announcements.</summary>
     private static async Task<bool> IsAdminAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct) =>
         user.Role == AppRoles.Admin && await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.RoleId == AppRoles.AdminId, ct);
 
@@ -222,7 +182,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
 
         var snippet = announcement.Body.Length > 140 ? announcement.Body[..139] + "…" : announcement.Body;
         await notifications.AddForManyAsync(students, "announcement", announcement.Title, snippet, "student", ct);
-        await notifications.AddForManyAsync(teachers, "announcement", announcement.Title, snippet, "announcements", ct);
+        await notifications.AddForManyAsync(teachers, "announcement", announcement.Title, snippet, "teacher", ct);
     }
 
     private static async Task<IReadOnlyList<AnnouncementView>> ViewsAsync(AppDbContext db, IQueryable<Announcement> query, int take, CancellationToken ct)

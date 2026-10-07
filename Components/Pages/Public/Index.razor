@@ -80,54 +80,60 @@
         </div>
     </section>
 
-    @* ===== The courses, read from the database ===== *@
+    @* ===== The courses, read from the database: the tracks, their strands, and under a strand its courses ===== *@
     <section class="section alt" id="courses" aria-labelledby="courses-title">
         <div class="container">
             <h2 id="courses-title">Our <span>Courses</span></h2>
+            <p class="courses-intro">Choose a strand to see the courses it studies.</p>
 
-            @if (courses.Count == 0)
+            @if (tracks.Count == 0)
             {
                 <p class="muted">The courses will be listed here soon.</p>
             }
 
-            @foreach (var grade in courses)
+            @foreach (var track in tracks)
             {
-                <h3 class="grade-heading">Grade @grade.GradeLevel</h3>
-                @foreach (var term in grade.Terms)
-                {
-                    <h4 class="term-heading">@term.Name</h4>
-                    <div class="cards">
-                        @foreach (var strand in term.Strands)
+                <div class="track-block">
+                    <h3 class="track-heading">@track.Name <span class="track-code">@track.Code</span></h3>
+                    <div class="strand-grid">
+                        @foreach (var strand in track.Strands)
                         {
-                            <article class="course-card">
-                                <header class="course-head">
-                                    <h5>
+                            <details class="strand-card">
+                                <summary>
+                                    <span class="strand-top">
+                                        <span class="strand-title">@strand.Name</span>
+                                        <Icon Name="chevron-down" Size="18" />
+                                    </span>
+                                    <span class="strand-meta">
                                         <span class="strand-code">@strand.Code</span>
-                                        @if (!string.Equals(strand.Name, strand.Code, StringComparison.OrdinalIgnoreCase))
-                                        {
-                                            <span class="strand-name">(@strand.Name)</span>
-                                        }
-                                    </h5>
-                                    <div class="course-tags">
-                                        <span class="track-pill">@strand.Track</span>
                                         @foreach (var schedule in strand.Schedules)
                                         {
                                             <span class="schedule-pill">@schedule</span>
                                         }
-                                    </div>
-                                </header>
-                                <ul class="subject-list">
-                                    @foreach (var subject in strand.Subjects)
+                                        <span class="course-count">@(strand.CourseCount == 1 ? "1 course" : $"{strand.CourseCount} courses")</span>
+                                    </span>
+                                </summary>
+                                <div class="strand-courses">
+                                    @if (strand.Groups.Count == 0)
                                     {
-                                        <li>
-                                            <a href="/login"><span>@subject.Name</span><Icon Name="chevron-right" Size="16" /></a>
-                                        </li>
+                                        <p class="muted">The courses of this strand will be listed soon.</p>
                                     }
-                                </ul>
-                            </article>
+
+                                    @foreach (var group in strand.Groups)
+                                    {
+                                        <h4 class="group-heading">Grade @group.GradeLevel · @group.TermName</h4>
+                                        <ul class="course-list">
+                                            @foreach (var course in group.Courses)
+                                            {
+                                                <li>@course.Name</li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            </details>
                         }
                     </div>
-                }
+                </div>
             }
         </div>
     </section>
@@ -184,7 +190,7 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
-    private IReadOnlyList<CourseGrade> courses = [];
+    private IReadOnlyList<PublicTrack> tracks = [];
 
     private sealed record ContactItem(string Label, string? IconName, string Text, string Href, bool External = false);
 
@@ -210,6 +216,6 @@
         }
 
         await using var db = await DbFactory.CreateDbContextAsync();
-        courses = await PublicCourses.LoadAsync(db);
+        tracks = await PublicCourses.LoadAsync(db);
     }
 }

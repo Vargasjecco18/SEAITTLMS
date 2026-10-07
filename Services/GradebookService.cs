@@ -91,13 +91,13 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var book = await GetAsync(teacherId, assignmentId, ct);
         if (book is null)
         {
-            return ServiceResult.Fail("This is not your subject.");
+            return ServiceResult.Fail("This is not your course.");
         }
 
         var row = book.Rows.FirstOrDefault(r => r.StudentId == studentId);
         if (row is null)
         {
-            return ServiceResult.Fail("This student is not in the subject.");
+            return ServiceResult.Fail("This student is not in the course.");
         }
 
         // Check every box first, so a wrong score in one box saves nothing at all.
@@ -108,7 +108,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             var column = book.Columns.FirstOrDefault(c => c.ItemId == itemId);
             if (column is null)
             {
-                errors.Add("One of the columns is not part of this subject.");
+                errors.Add("One of the columns is not part of this course.");
                 continue;
             }
 

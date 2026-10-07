@@ -246,3 +246,26 @@ window.seaitt = {
         window.seaitt.quizGuard = null;
     },
 };
+
+// The pop-up of the courses of an enrollment (EnrollmentTable.razor) opens next to the button that opened it, below it when there is
+// room and above it otherwise, and never outside the screen. Without this script it simply stays in the middle of the screen.
+document.addEventListener('toggle', function (event) {
+    var pop = event.target;
+    if (!(pop instanceof HTMLElement) || !pop.classList.contains('courses-pop') || event.newState !== 'open') { return; }
+
+    var button = document.querySelector('.courses-button[popovertarget="' + pop.id + '"]');
+    if (!button) { return; }
+
+    var anchor = button.getBoundingClientRect();
+    var box = pop.getBoundingClientRect();
+    var gap = 6;
+    var margin = 8;
+    var below = anchor.bottom + gap;
+    var top = below + box.height <= window.innerHeight - margin ? below : Math.max(margin, anchor.top - gap - box.height);
+    var left = Math.min(Math.max(margin, anchor.left), Math.max(margin, window.innerWidth - box.width - margin));
+
+    pop.style.inset = 'auto';
+    pop.style.margin = '0';
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+}, true);
