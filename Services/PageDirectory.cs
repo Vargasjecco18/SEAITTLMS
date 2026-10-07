@@ -33,7 +33,7 @@ public static class PageDirectory
             new("Dashboard", "Work to check and drafts", "teacher", "layout-dashboard"),
             new("Courses", "The courses you teach, with their modules and work", "teacher/subjects", "book-open"),
             new("Attendance", "Mark who came to class and see the attendance summary", "teacher/attendance", "calendar-check"),
-            new("Calendar", "Deadlines, postings and your to-do list, by month or week", "calendar", "calendar-days"),
+            new("Calendar", "Deadlines and postings, by month or week", "calendar", "calendar-days"),
             new("Gradebook", "The scores of every student in a course, and their average", "teacher/gradebook", "clipboard-list"),
             new("Analytics", "How the students of your courses are doing", "analytics", "chart-column"),
         ],
@@ -42,7 +42,7 @@ public static class PageDirectory
             new("Dashboard", "Assignments, due dates, new modules and achievements", "student", "layout-dashboard"),
             new("Courses", "Your courses, modules, activities and quizzes", "student/subjects", "book-open"),
             new("Grades and progress", "Your grade in every course and how it is going", "student/grades", "trending-up"),
-            new("Calendar", "Deadlines and your to-do list, by month or week", "calendar", "calendar-days"),
+            new("Calendar", "Deadlines, by month or week", "calendar", "calendar-days"),
         ],
         AppRoles.GuidanceCounselor =>
         [

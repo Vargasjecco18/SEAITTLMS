@@ -6,6 +6,7 @@
 @inject TimeProvider Clock
 
 <PageTitle>Courses · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
 <PageHeader Title="Courses" Subtitle="Every course you are enrolled in. Open one to read its modules and do its work." IconName="book-open" />
 
@@ -15,12 +16,12 @@
 }
 else
 {
-    <PageWithAside Show="calendar,todo,upnext">@Body</PageWithAside>
+    <PageWithAside Show="calendar,upnext">@Body</PageWithAside>
 }
 
 
 @code {
-    // The list has many columns, so it takes the whole width of the page; the cards share it with the widgets (calendar, to-do list, up next).
+    // The list has many columns, so it takes the whole width of the page; the cards share it with the widgets (calendar, due dates).
     private RenderFragment Body => @<text>
 
 @if (cards is null)

@@ -1765,54 +1765,6 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SEAITT_LMS.Data.Entities.TodoItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DoneAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("done_at_utc");
-
-                    b.Property<DateOnly?>("DueOn")
-                        .HasColumnType("date")
-                        .HasColumnName("due_on");
-
-                    b.Property<bool>("IsDone")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("is_done");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
-                        .HasColumnName("title");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_todo_items");
-
-                    b.HasIndex("UserId", "IsDone", "DueOn")
-                        .HasDatabaseName("ix_todo_items_user_id_is_done_due_on");
-
-                    b.ToTable("todo_items", (string)null);
-                });
-
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Track", b =>
                 {
                     b.Property<int>("Id")
@@ -2473,18 +2425,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_terms_school_years_school_year_id");
 
                     b.Navigation("SchoolYear");
-                });
-
-            modelBuilder.Entity("SEAITT_LMS.Data.Entities.TodoItem", b =>
-                {
-                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_todo_items_users_user_id");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.User", b =>

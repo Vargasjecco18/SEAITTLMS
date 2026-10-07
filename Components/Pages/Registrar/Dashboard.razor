@@ -7,6 +7,7 @@
 @inject TimeProvider Clock
 
 <PageTitle>Registrar · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
 <PageHeader Title="Registrar dashboard"
             Subtitle="@(overview?.TermLabel is { } label ? $"Enrollment for the {label}" : "No term is marked as the current term yet.")"
@@ -26,27 +27,51 @@
     </section>
 
     <div class="columns">
-        <Card Title="By strand" IconName="layers">
-            @if (overview.ByStrand.Count == 0)
-            {
-                <EmptyState IconName="layers" Title="No strands yet" />
-            }
-            else
-            {
-                <ul class="bars">
-                    @foreach (var strand in overview.ByStrand)
-                    {
-                        <li>
-                            <div class="bar-label">
-                                <span class="bar-name">@strand.Code <span class="bar-sub">@strand.Track</span></span>
-                                <strong>@strand.Count</strong>
-                            </div>
-                            <div class="bar-track"><div class="bar-fill" style="width: @(Percent(strand.Count, maxStrand))%"></div></div>
-                        </li>
-                    }
-                </ul>
-            }
-        </Card>
+        <div class="stack">
+            <Card Title="By strand" IconName="layers">
+                @if (overview.ByStrand.Count == 0)
+                {
+                    <EmptyState IconName="layers" Title="No strands yet" />
+                }
+                else
+                {
+                    <ul class="bars">
+                        @foreach (var strand in overview.ByStrand)
+                        {
+                            <li>
+                                <div class="bar-label">
+                                    <span class="bar-name">@strand.Code <span class="bar-sub">@strand.Track</span></span>
+                                    <strong>@strand.Count</strong>
+                                </div>
+                                <div class="bar-track"><div class="bar-fill" style="width: @(Percent(strand.Count, maxStrand))%"></div></div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+
+            <Card Title="By section" IconName="users">
+                @if (overview.BySection is not { Count: > 0 })
+                {
+                    <EmptyState IconName="users" Title="No sections yet" />
+                }
+                else
+                {
+                    <ul class="bars sections">
+                        @foreach (var row in overview.BySection)
+                        {
+                            <li>
+                                <div class="bar-label">
+                                    <span class="bar-name">@row.Label <span class="bar-sub">@(row.Schedule ?? "No schedule")</span></span>
+                                    <strong>@row.Count</strong>
+                                </div>
+                                <div class="bar-track"><div class="bar-fill" style="width: @(Percent(row.Count, maxSection))%"></div></div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+        </div>
 
         <div class="stack">
             <Card Title="By schedule" IconName="clock">
@@ -130,6 +155,7 @@
     private RegistrarOverview? overview;
     private int maxStrand;
     private int maxSchedule;
+    private int maxSection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -140,6 +166,7 @@
         overview = await RegistrarOverview.LoadAsync(db, startOfToday);
         maxStrand = overview.ByStrand.Select(s => s.Count).DefaultIfEmpty(0).Max();
         maxSchedule = overview.BySchedule.Select(s => s.Count).DefaultIfEmpty(0).Max();
+        maxSection = (overview.BySection ?? []).Select(s => s.Count).DefaultIfEmpty(0).Max();
     }
 
     private static int Percent(int value, int max) => max == 0 ? 0 : Math.Max(value == 0 ? 0 : 3, value * 100 / max);

@@ -7,6 +7,9 @@ public sealed record StrandCount(string Code, string Track, int Count);
 
 public sealed record ScheduleCount(string Code, string Name, int Count);
 
+/// <summary>How many students are enrolled in one section for the current term. <paramref name="Label"/> is like 11-BUSSENT-A.</summary>
+public sealed record SectionCount(string Label, string? Schedule, int Count);
+
 public sealed record EnrollmentRow(
     int Id,
     string StudentName,
@@ -37,7 +40,8 @@ public sealed record RegistrarOverview(
     IReadOnlyList<StrandCount> ByStrand,
     IReadOnlyList<ScheduleCount> BySchedule,
     IReadOnlyList<EnrollmentRow> Recent,
-    NotEnrolledPage? NotEnrolled = null)
+    NotEnrolledPage? NotEnrolled = null,
+    IReadOnlyList<SectionCount>? BySection = null)
 {
     /// <param name="startOfTodayUtc">When today began (in Philippine time), as a UTC moment.</param>
     public static async Task<RegistrarOverview> LoadAsync(AppDbContext db, DateTime startOfTodayUtc, int recent = 8, CancellationToken ct = default)
@@ -83,7 +87,22 @@ public sealed record RegistrarOverview(
             .Select(s => new ScheduleCount(s.Code, s.Name, perSchedule.FirstOrDefault(p => p.ScheduleId == s.Id)?.Count ?? 0))
             .ToList();
 
-        return new RegistrarOverview($"{term.Name} · {term.SchoolYear}", enrolledThisTerm, enrolledToday, studentsTotal, sections, byStrand, bySchedule, latest.Items, notEnrolled);
+        // Every section of this school year with how many students of it are enrolled for the current term.
+        var perSection = await db.Enrollments.AsNoTracking()
+            .Where(e => e.TermId == term.Id)
+            .GroupBy(e => e.SectionId)
+            .Select(g => new { SectionId = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        var sectionRows = await db.Sections.AsNoTracking()
+            .Where(s => s.SchoolYearId == term.SchoolYearId)
+            .OrderBy(s => s.GradeLevel).ThenBy(s => s.Strand.Code).ThenBy(s => s.Name).ThenBy(s => s.ScheduleId)
+            .Select(s => new { s.Id, s.GradeLevel, Strand = s.Strand.Code, s.Name, Schedule = s.Schedule == null ? null : s.Schedule.Code })
+            .ToListAsync(ct);
+        var bySection = sectionRows
+            .Select(s => new SectionCount($"{s.GradeLevel}-{s.Strand}-{s.Name}", s.Schedule, perSection.FirstOrDefault(p => p.SectionId == s.Id)?.Count ?? 0))
+            .ToList();
+
+        return new RegistrarOverview($"{term.Name} · {term.SchoolYear}", enrolledThisTerm, enrolledToday, studentsTotal, sections, byStrand, bySchedule, latest.Items, notEnrolled, bySection);
     }
 }
 

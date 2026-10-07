@@ -112,18 +112,6 @@ internal sealed class ModuleViewConfiguration : IEntityTypeConfiguration<ModuleV
     }
 }
 
-internal sealed class TodoItemConfiguration : IEntityTypeConfiguration<TodoItem>
-{
-    public void Configure(EntityTypeBuilder<TodoItem> b)
-    {
-        b.Property(t => t.Title).HasMaxLength(200).IsRequired();
-
-        // A person's list goes with their account.
-        b.HasOne(t => t.User).WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
-        b.HasIndex(t => new { t.UserId, t.IsDone, t.DueOn });
-    }
-}
-
 internal sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<AttendanceRecord>
 {
     public void Configure(EntityTypeBuilder<AttendanceRecord> b)

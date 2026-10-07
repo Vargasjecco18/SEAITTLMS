@@ -42,7 +42,6 @@ public class AppDbContext : DbContext
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
-    public DbSet<TodoItem> TodoItems => Set<TodoItem>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<Referral> Referrals => Set<Referral>();
 

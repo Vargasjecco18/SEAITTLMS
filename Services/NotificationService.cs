@@ -12,7 +12,7 @@ public sealed record NotificationList(IReadOnlyList<NotificationItem> Items, int
 /// The bell in the header. Other services call <see cref="AddAsync"/> when something happens that a person should know about
 /// (a module was posted, an activity was graded, a message came in, a student was referred).
 /// </summary>
-public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactory)
+public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactory, LiveUpdates? live = null)
 {
     public async Task AddAsync(int userId, string kind, string title, string? body = null, string? link = null, CancellationToken ct = default) =>
         await AddForManyAsync([userId], kind, title, body, link, ct);
@@ -39,6 +39,9 @@ public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         await db.SaveChangesAsync(ct);
+
+        // The people who have a page open see it now.
+        live?.Publish(ids);
     }
 
     public async Task<NotificationList> GetAsync(int userId, int take = 15, CancellationToken ct = default)

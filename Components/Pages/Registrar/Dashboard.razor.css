@@ -116,7 +116,7 @@
     }
 }
 
-/* The right column: By schedule, and under it Not enrolled. */
+/* The columns of cards: By strand and By section on the left, By schedule and Not enrolled on the right. */
 .stack {
     display: flex;
     flex-direction: column;
@@ -201,4 +201,11 @@
 .people-action:hover {
     border-color: var(--brand);
     background: var(--brand-soft);
+}
+
+/* By section can have many rows: it scrolls inside its card. */
+.sections {
+    max-height: 26rem;
+    padding-right: 0.5rem;
+    overflow-y: auto;
 }

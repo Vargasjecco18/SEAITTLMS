@@ -1,5 +1,6 @@
-@* The widgets of the right column. It is its own live island, so its calendar and to-do list work on pages that are otherwise plain. *@
+@* The widgets of the right column. It is its own live island, so its calendar works on pages that are otherwise plain. *@
 @rendermode InteractiveServer
+@implements IDisposable
 @inject CurrentUser Me
 @inject CalendarService Events
 @inject DashboardService Dashboards
@@ -91,10 +92,7 @@
                     </Card>
                     break;
                 case "calendar":
-                    <MiniCalendar />
-                    break;
-                case "todo":
-                    <TodoWidget />
+                    <MiniCalendar Refresh="refreshStamp" />
                     break;
                 case "upnext":
                     <Card Title="Due dates" IconName="alarm-clock">
@@ -163,8 +161,8 @@
 }
 
 @code {
-    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), calendar, todo, upnext, achievements, tocheck.</summary>
-    [Parameter] public string Show { get; set; } = "calendar,todo,upnext";
+    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), calendar, upnext (the due dates), achievements, tocheck.</summary>
+    [Parameter] public string Show { get; set; } = "calendar,upnext";
 
     private string? role;
     private string[] order = [];
@@ -174,8 +172,36 @@
     private IReadOnlyList<AnnouncementView> notices = [];
     private IReadOnlyList<DashboardWork> activities = [];
     private IReadOnlyList<UnassignedItem> unassigned = [];
+    private int refreshStamp;
+    private Timer? timer;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+
+        // The widgets look again every 30 seconds, so a new announcement, deadline or piece of work shows up without a refresh.
+        if (role is not null)
+        {
+            timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            await LoadAsync();
+            refreshStamp++;
+            StateHasChanged();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    public void Dispose() => timer?.Dispose();
+
+    private async Task LoadAsync()
     {
         var user = await Me.GetAsync();
         role = user?.Role;

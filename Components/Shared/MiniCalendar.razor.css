@@ -89,7 +89,6 @@
 .dot.quiz, .kind-dot.quiz { background: var(--violet); }
 .dot.taskperformance, .kind-dot.taskperformance { background: var(--amber); }
 .dot.module, .kind-dot.module { background: var(--green); }
-.dot.todo, .kind-dot.todo { background: var(--slate); }
 .dot.late { background: var(--danger-solid); }
 
 .picked-list {

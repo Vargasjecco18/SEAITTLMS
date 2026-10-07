@@ -56,6 +56,7 @@ builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(E
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CurrentUser>();
+builder.Services.AddSingleton<LiveUpdates>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<SearchService>();
@@ -63,7 +64,6 @@ builder.Services.AddScoped<TeachingService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<WorkService>();
 builder.Services.AddScoped<QuizService>();
-builder.Services.AddScoped<TodoService>();
 builder.Services.AddScoped<AttendanceService>();
 builder.Services.AddScoped<ReferralService>();
 builder.Services.AddScoped<StudentLifecycleService>();

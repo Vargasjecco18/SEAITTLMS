@@ -7,10 +7,9 @@
 @inject TimeProvider Clock
 
 <PageTitle>Admin · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
-<PageHeader Title="Admin dashboard" Subtitle="The accounts and the school setup at a glance." IconName="layout-dashboard">
-    <ButtonLink Href="admin/users" IconName="users">Users Management</ButtonLink>
-</PageHeader>
+<PageHeader Title="Admin dashboard" Subtitle="The teachers, the students and the school setup at a glance." IconName="layout-dashboard" />
 
 @if (overview is not null)
 {
@@ -18,10 +17,8 @@
         <h2 id="accounts-title" class="section-title">Accounts</h2>
 
         <div class="stats">
-            <StatCard Label="All accounts" Value="@overview.TotalAccounts" IconName="users" Accent="AccentColor.Slate"
-                      Hint="@InactiveHint(overview.InactiveAccounts)" />
-
-            @foreach (var role in overview.Roles)
+            @* Only the teachers and the students (the staff accounts are in Users Management). *@
+            @foreach (var role in overview.Roles.Where(r => r.Role is AppRoles.Teacher or AppRoles.Student))
             {
                 var (label, icon, color, key) = RoleLook(role.Role);
                 <StatCard Label="@label" Value="@role.Total" IconName="@icon" Accent="@color"

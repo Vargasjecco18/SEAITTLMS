@@ -60,7 +60,6 @@
 .swatch.quiz { background: var(--violet); }
 .swatch.taskperformance { background: var(--amber); }
 .swatch.module { background: var(--green); }
-.swatch.todo { background: var(--slate); }
 .swatch.late { background: var(--danger-solid); }
 
 /* ---------- month ---------- */
@@ -164,7 +163,6 @@ a.chip:hover {
 .chip.quiz { background: var(--violet-soft); color: var(--violet); }
 .chip.taskperformance { background: var(--amber-soft); color: var(--amber); }
 .chip.module { background: var(--green-soft); color: var(--green); }
-.chip.todo { background: var(--slate-soft); color: var(--slate); }
 .chip.late { background: var(--danger-soft); color: var(--danger); }
 .chip.done { opacity: 0.6; text-decoration: line-through; }
 
@@ -276,7 +274,6 @@ a.chip:hover {
 .event.quiz { background: var(--violet-soft); color: var(--violet); }
 .event.taskperformance { background: var(--amber-soft); color: var(--amber); }
 .event.module { background: var(--green-soft); color: var(--green); }
-.event.todo { background: var(--slate-soft); color: var(--slate); }
 .event.late { background: var(--danger-soft); color: var(--danger); }
 .event.done { opacity: 0.65; }
 

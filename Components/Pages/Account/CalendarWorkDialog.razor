@@ -1,0 +1,122 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject WorkService Work
+@inject NavigationManager Navigation
+
+@* The box a teacher gets when an activity, quiz or task performance is clicked on the calendar: who handed it in (and who did not),
+   with the anti-cheating warnings of a quiz, so flagged attempts are found here. "Open and grade" goes to the page of the work. *@
+<Modal Open="loaded" Title="@(data?.Title ?? "Not found")" OnClose="Close" Large="true">
+    @if (data is null)
+    {
+        <p>This work was not found. It may have been deleted, or it is not one of yours.</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
+        </div>
+    }
+    else
+    {
+        var handed = data.Rows.Where(r => r.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded).OrderByDescending(r => r.IsFlagged).ThenBy(r => r.SubmittedAtUtc).ToList();
+        var notYet = data.Rows.Where(r => r.Status is not (SubmissionStatus.Submitted or SubmissionStatus.Graded)).ToList();
+        var flagged = data.Rows.Count(r => r.IsFlagged);
+
+        <p class="where">
+            <Badge Tone="Tone.Info">@ItemKinds.Display(data.Kind)</Badge>
+            <span>@data.SubjectName · @data.SectionLabel · @data.ModuleTitle</span>
+            @if (data.DueAtUtc is { } due)
+            {
+                <span>· due @PhilippineTime.FormatDateTime(due)</span>
+            }
+        </p>
+
+        <div class="summary">
+            <div class="tile"><span class="tile-value">@handed.Count / @data.Rows.Count</span><span class="tile-label">handed in</span></div>
+            <div class="tile"><span class="tile-value">@data.Rows.Count(r => r.Status == SubmissionStatus.Submitted)</span><span class="tile-label">to check</span></div>
+            @if (data.AntiCheat)
+            {
+                <div class="tile @(flagged > 0 ? "alert" : "")"><span class="tile-value">@flagged</span><span class="tile-label">flagged</span></div>
+            }
+        </div>
+
+        <h3>Students who handed it in</h3>
+        @if (handed.Count == 0)
+        {
+            <p class="muted">Nobody has handed it in yet.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="col-more">Handed in</th>
+                            <th scope="col">Score</th>
+                            @if (data.AntiCheat)
+                            {
+                                <th scope="col">Warnings</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in handed)
+                        {
+                            <tr class="@(row.IsFlagged ? "flagged" : "")">
+                                <td><span class="person-name">@row.StudentName</span><span class="sub">@row.Lrn</span></td>
+                                <td>
+                                    <Badge Tone="@(row.Status == SubmissionStatus.Graded ? Tone.Success : Tone.Warning)">@(row.Status == SubmissionStatus.Graded ? "Graded" : "To check")</Badge>
+                                    @if (row.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }
+                                </td>
+                                <td class="col-more">@(row.SubmittedAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "—")</td>
+                                <td>@(row.Score is { } score ? $"{score:0.##} / {data.MaxScore:0.##}" : "—")</td>
+                                @if (data.AntiCheat)
+                                {
+                                    <td>
+                                        @if (row.IsFlagged)
+                                        {
+                                            <Badge Tone="Tone.Danger"><Icon Name="flag" Size="12" /> Flagged · @row.ViolationCount</Badge>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">@row.ViolationCount</span>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (notYet.Count > 0)
+        {
+            <h3>Not handed in yet (@notYet.Count)</h3>
+            <p class="muted">@string.Join(", ", notYet.Select(r => r.StudentName))</p>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
+            <ButtonLink Href="@($"teacher/items/{data.ItemId}")" IconName="pencil">Open and grade</ButtonLink>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public int ItemId { get; set; }
+
+    /// <summary>Where Close goes back to (the calendar without the work in the address).</summary>
+    [Parameter, EditorRequired] public string CloseUrl { get; set; } = "calendar";
+
+    private bool loaded;
+    private ItemSubmissionList? data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
+        loaded = true;
+    }
+
+    private void Close() => Navigation.NavigateTo(CloseUrl);
+}

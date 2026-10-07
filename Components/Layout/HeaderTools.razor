@@ -4,6 +4,7 @@
 @inject MessageService Messages
 @inject NotificationService Notifications
 @inject NavigationManager Navigation
+@inject LiveUpdates Live
 
 @* The three buttons at the right of the header: messages, notifications and settings. It is a live component, so the
    numbers on the buttons keep up with what happens while a page is open. *@
@@ -73,7 +74,7 @@
                 <p class="group-title">Appearance</p>
                 <div class="choices" role="group" aria-label="Appearance">
                     <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
-                    <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Night</span></button>
+                    <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Dark</span></button>
                     <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
                 </div>
                 <p class="hint">Auto follows the setting of your computer.</p>
@@ -104,6 +105,7 @@
     private NotificationList? notificationList;
     private bool messagesOpen;
     private Timer? timer;
+    private IDisposable? subscription;
 
     private string MessagesLabel => unreadMessages > 0 ? $"Messages, {unreadMessages} unread" : "Messages";
 
@@ -120,23 +122,27 @@
         await RefreshCountsAsync();
         await LoadNotificationsAsync();
 
-        // The numbers are looked at again every half minute while the page is open.
-        timer = new Timer(_ => _ = InvokeAsync(async () =>
-        {
-            try
-            {
-                await RefreshCountsAsync();
-                if (notificationList is not null)
-                {
-                    await LoadNotificationsAsync();
-                }
+        // New messages and notifications show up by themselves: at once when they are sent (LiveUpdates), and the numbers are looked at
+        // again every 10 seconds while the page is open, in case the news came from somewhere else.
+        subscription = Live.Subscribe(user.UserId, () => InvokeAsync(RefreshAllAsync));
+        timer = new Timer(_ => _ = InvokeAsync(RefreshAllAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
 
-                StateHasChanged();
-            }
-            catch (ObjectDisposedException)
+    private async Task RefreshAllAsync()
+    {
+        try
+        {
+            await RefreshCountsAsync();
+            if (notificationList is not null)
             {
+                await LoadNotificationsAsync();
             }
-        }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+
+            StateHasChanged();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private async Task RefreshCountsAsync()
@@ -203,5 +209,9 @@
         _ => "bell",
     };
 
-    public void Dispose() => timer?.Dispose();
+    public void Dispose()
+    {
+        timer?.Dispose();
+        subscription?.Dispose();
+    }
 }

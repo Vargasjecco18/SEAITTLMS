@@ -9,7 +9,6 @@ namespace SEAITT_LMS.Services;
 public static class CalendarKinds
 {
     public const string Module = "Module";
-    public const string Todo = "Todo";
 
     // The three kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance.
 
@@ -19,14 +18,12 @@ public static class CalendarKinds
         ItemKinds.TaskPerformance => "Task performance",
         ItemKinds.Activity => "Activity",
         Module => "Module",
-        Todo => "To-do",
         _ => kind,
     };
 
     public static string Icon(string kind) => kind switch
     {
         Module => "layers",
-        Todo => "list-checks",
         _ => SubjectStyle.KindIcon(kind),
     };
 }
@@ -39,8 +36,8 @@ public sealed record CalendarEvent(string Key, DateOnly Day, DateTime? AtUtc, st
 public sealed record UnassignedItem(int ItemId, string Title, string Kind, string SubjectName, string SectionLabel, string ModuleTitle);
 
 /// <summary>
-/// What goes on a person's calendar: for a student the deadlines of their work, the modules that appeared and their to-do list; for a
-/// teacher the deadlines of their work, the modules they posted or scheduled and their to-do list.
+/// What goes on a person's calendar: for a student the deadlines of their work and the modules that appeared; for a
+/// teacher the deadlines of their work and the modules they posted or scheduled.
 /// </summary>
 public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)
 {
@@ -137,14 +134,6 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                     (m.At > now ? "Module posts: " : "Module posted: ") + m.Title, m.Subject, CalendarKinds.Module, $"teacher/subjects/{m.AssignmentId}", m.At <= now, false)));
             }
         }
-
-        // The person's own to-do list (students and teachers).
-        var todos = await db.TodoItems.AsNoTracking()
-            .Where(t => t.UserId == user.UserId && t.DueOn != null && t.DueOn >= from && t.DueOn <= to)
-            .Select(t => new { t.Id, t.Title, DueOn = t.DueOn!.Value, t.IsDone })
-            .ToListAsync(ct);
-        var today = PhilippineTime.Today(clock);
-        events.AddRange(todos.Select(t => new CalendarEvent($"todo-{t.Id}", t.DueOn, null, t.Title, "To-do", CalendarKinds.Todo, null, t.IsDone, !t.IsDone && t.DueOn < today)));
 
         return events.OrderBy(e => e.Day).ThenBy(e => e.AtUtc ?? DateTime.MinValue).ThenBy(e => e.Title).ToList();
     }

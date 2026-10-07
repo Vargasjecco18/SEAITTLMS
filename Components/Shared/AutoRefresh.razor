@@ -1,0 +1,9 @@
+@* Put this on a page that only shows things (a dashboard, a list, the calendar): the page then looks again by itself every
+   <Seconds> seconds, so new work, grades and enrollments appear without pressing F5. wwwroot/app.js does the looking; it waits while
+   somebody is typing, a pop-up is open or the tab is hidden, and it keeps the place on the page. *@
+<span data-auto-refresh="@Seconds" hidden></span>
+
+@code {
+    /// <summary>How often the page looks again.</summary>
+    [Parameter] public int Seconds { get; set; } = 30;
+}

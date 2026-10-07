@@ -61,15 +61,15 @@ html {
     --sidebar-w: 264px;
 }
 
-/* Dark colors. They apply when dark is chosen in the settings menu (the page then has data-theme="dark"), and when
+/* Dark colors (black, not blue). They apply when dark is chosen in the settings menu (the page then has data-theme="dark"), and when
    nothing is chosen ("auto") and the computer is set to dark. data-theme="light" keeps the light colors. */
 html[data-theme="dark"] {
-    --bg: #0b1220;
-    --surface: #121b2d;
-    --surface-2: #19243b;
-    --border: #25324d;
-    --text: #e8edf6;
-    --text-muted: #9aa9c2;
+    --bg: #000000;
+    --surface: #0c0c0c;
+    --surface-2: #161616;
+    --border: #2a2a2a;
+    --text: #ededed;
+    --text-muted: #a3a3a3;
 
     --brand: #6b9bff;
     --brand-strong: #9bbaff;
@@ -114,12 +114,12 @@ html[data-theme="light"] {
 
 @media (prefers-color-scheme: dark) {
     html:not([data-theme]) {
-        --bg: #0b1220;
-        --surface: #121b2d;
-        --surface-2: #19243b;
-        --border: #25324d;
-        --text: #e8edf6;
-        --text-muted: #9aa9c2;
+        --bg: #000000;
+        --surface: #0c0c0c;
+        --surface-2: #161616;
+        --border: #2a2a2a;
+        --text: #ededed;
+        --text-muted: #a3a3a3;
 
         --brand: #6b9bff;
         --brand-strong: #9bbaff;
@@ -239,7 +239,7 @@ html[data-motion="off"] ::deep *::after {
     }
 }
 
-/* A plain box that is not inside a Field (the to-do list, filters ...): the same look as the boxes of a Field. */
+/* A plain box that is not inside a Field (filters ...): the same look as the boxes of a Field. */
 html ::deep .input {
     box-sizing: border-box;
     width: 100%;

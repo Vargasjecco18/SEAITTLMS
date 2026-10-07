@@ -13,15 +13,10 @@
 
         <Brand />
 
-        @* The search in the middle: a plain form that opens the search page. On a phone it is the magnifying glass. *@
-        <form class="search" role="search" method="get" action="search">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" name="q" placeholder="Search courses, people and pages" aria-label="Search" autocomplete="off" />
-        </form>
-        <a class="search-link" href="search" aria-label="Search" title="Search"><Icon Name="search" Size="20" /></a>
-
         <AuthorizeView>
             <Authorized>
+                @* The search in the middle opens a pop-up (on a phone it is the magnifying glass). *@
+                <SearchBox />
                 <HeaderTools />
             </Authorized>
         </AuthorizeView>

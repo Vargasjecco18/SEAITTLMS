@@ -12,7 +12,7 @@
 
 <div class="tabs" role="tablist">
     <button type="button" role="tab" class="tab @(tab == "graduating" ? "on" : "")" aria-selected="@(tab == "graduating" ? "true" : "false")" @onclick='() => tab = "graduating"'>
-        <Icon Name="graduation-cap" Size="16" /> Ready to graduate <span class="count">@candidates.Count</span>
+        <Icon Name="graduation-cap" Size="16" /> Graduating students <span class="count">@candidates.Count</span>
     </button>
     <button type="button" role="tab" class="tab @(tab == "archived" ? "on" : "")" aria-selected="@(tab == "archived" ? "true" : "false")" @onclick='() => tab = "archived"'>
         <Icon Name="archive" Size="16" /> Archived <span class="count">@archived.Count</span>

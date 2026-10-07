@@ -6,6 +6,7 @@
 @inject TimeProvider Clock
 
 <PageTitle>Calendar · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
 <PageHeader Title="Calendar" Subtitle="@Subtitle" IconName="calendar-days">
     <nav class="controls" aria-label="Calendar controls">
@@ -21,7 +22,7 @@
 
 <PageWithAside Show="@AsideShow">
     <ul class="legend" aria-label="Legend">
-        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Todo })
+        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module })
         {
             <li><span class="swatch @kind.ToLowerInvariant()"></span> @CalendarKinds.Label(kind)</li>
         }
@@ -81,7 +82,7 @@
                                     <span class="event-text">
                                         @if (e.Href is not null)
                                         {
-                                            <a href="@e.Href">@e.Title</a>
+                                            <a href="@LinkOf(e)">@e.Title</a>
                                         }
                                         else
                                         {
@@ -99,6 +100,12 @@
         </div>
     }
 </PageWithAside>
+
+@* A teacher clicked an activity, quiz or task performance on the calendar: who handed it in, with the quiz's anti-cheating warnings. *@
+@if (workItemId is { } workId)
+{
+    <CalendarWorkDialog @key="workId" ItemId="workId" CloseUrl="@Url(view, anchor)" />
+}
 
 @* A teacher dragged an unassigned activity onto a day (or pressed "Set date"): the box to give it its due date and settings. *@
 @if (editItemId is { } itemId)
@@ -118,6 +125,9 @@
 
     [SupplyParameterFromQuery(Name = "on")] private string? OnText { get; set; }
 
+    // A teacher clicked a piece of work: ?work=<item>.
+    [SupplyParameterFromQuery(Name = "work")] private string? WorkText { get; set; }
+
     private DateOnly today;
     private DateOnly anchor;
     private string view = "month";
@@ -126,10 +136,11 @@
     private IReadOnlyList<CalendarEvent> events = [];
     private bool isTeacher;
     private int? editItemId;
+    private int? workItemId;
     private DateOnly? editDay;
 
-    /// <summary>The widgets at the right: a student's activities, or the teacher's activities that have no due date yet.</summary>
-    private string AsideShow => isTeacher ? "unassigned,todo,upnext" : "activities,todo,upnext";
+    /// <summary>The widgets at the right: a student's activities and then their due dates, or the teacher's activities that have no due date yet.</summary>
+    private string AsideShow => isTeacher ? "unassigned" : "activities,upnext";
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
 
@@ -161,6 +172,7 @@
         events = user is null ? [] : await Events.GetEventsAsync(user, rangeStart, rangeStart.AddDays(rangeDays - 1));
 
         editItemId = isTeacher && int.TryParse(EditText, out var itemId) && itemId > 0 ? itemId : null;
+        workItemId = isTeacher && int.TryParse(WorkText, out var workId) && workId > 0 ? workId : null;
         editDay = DateOnly.TryParseExact(OnText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var on) && on.Year is > 2000 and < 2100 ? on : null;
     }
 
@@ -169,12 +181,19 @@
     /// <summary>The day to open for the Previous and Next buttons: a month or a week away.</summary>
     private DateOnly Step(int direction) => view == "month" ? new DateOnly(anchor.Year, anchor.Month, 1).AddMonths(direction) : anchor.AddDays(7 * direction);
 
+    /// <summary>
+    /// Where an event leads. A teacher's activity, quiz or task performance opens a box here with who handed it in (the key of
+    /// those events is item-&lt;id&gt;); everything else goes to its own page.
+    /// </summary>
+    private string LinkOf(CalendarEvent e) =>
+        isTeacher && e.Key.StartsWith("item-", StringComparison.Ordinal) ? $"{Url(view, anchor)}&work={e.Key["item-".Length..]}" : e.Href!;
+
     private static string Url(string view, DateOnly date) => $"calendar?view={view}&date={date:yyyy-MM-dd}";
 
     private RenderFragment Chip(CalendarEvent e) => @<text>
         @if (e.Href is not null)
         {
-            <a class="chip @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")" href="@e.Href" title="@e.Title · @e.Subtitle">@e.Title</a>
+            <a class="chip @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")" href="@LinkOf(e)" title="@e.Title · @e.Subtitle">@e.Title</a>
         }
         else
         {

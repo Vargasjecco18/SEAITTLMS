@@ -5,6 +5,7 @@
 @inject AnalyticsService Reports
 
 <PageTitle>Analytics · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
 <PageHeader Title="Student analytics" Subtitle="@(report is null ? "" : $"How students are doing in {report.ScopeText}. Everything is worked out from the scores and the attendance that are recorded.")" IconName="chart-column" />
 

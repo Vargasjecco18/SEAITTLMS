@@ -5,6 +5,7 @@
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
 @{
     var now = PhilippineTime.Now(Clock);
@@ -25,7 +26,7 @@ else
     <PageWithAside Show="calendar">
         <div class="stats">
             <StatCard Label="Work to check" Value="@data.ToCheck" IconName="clipboard-list" Accent="@(data.ToCheck > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="@(data.ToCheck == 0 ? "All checked" : "Waiting for a score")" />
-            <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Anti-cheating, last 30 days" />
+            <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Last 30 days. See who on the calendar." Href="calendar" />
             <StatCard Label="Not posted yet" Value="@data.DraftCount" IconName="eye-off" Accent="AccentColor.Violet" Hint="Drafts and scheduled modules" />
             <StatCard Label="Due this week" Value="@data.DueSoon" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="@($"{data.SubjectCount} courses · {data.StudentCount} students")" />
         </div>
@@ -79,30 +80,6 @@ else
                                     {
                                         <Badge>Draft</Badge>
                                     }
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-
-            <Card Title="Flagged quiz attempts" IconName="shield-alert">
-                @if (data.Flagged.Count == 0)
-                {
-                    <EmptyState IconName="shield-check" Title="Nothing suspicious">
-                        <p>Attempts the anti-cheating watch flagged appear here.</p>
-                    </EmptyState>
-                }
-                else
-                {
-                    <ul class="rows">
-                        @foreach (var f in data.Flagged)
-                        {
-                            <li>
-                                <a href="teacher/items/@f.ItemId">
-                                    <span class="row-icon danger"><Icon Name="flag" Size="18" /></span>
-                                    <span class="row-text"><span class="row-title">@f.StudentName</span><span class="row-sub">@f.Title@(f.Reason == "violations" ? " · handed in by the system" : "")</span></span>
-                                    <Badge Tone="Tone.Danger">@f.Warnings @(f.Warnings == 1 ? "warning" : "warnings")</Badge>
                                 </a>
                             </li>
                         }

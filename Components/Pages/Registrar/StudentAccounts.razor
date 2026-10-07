@@ -9,6 +9,7 @@
 @inject NavigationManager Navigation
 
 <PageTitle>Student's Accounts · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
 
 <PageHeader Title="Student's Accounts"
             Subtitle="@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")"

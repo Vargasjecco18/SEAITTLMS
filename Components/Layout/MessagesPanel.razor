@@ -1,5 +1,6 @@
 @implements IDisposable
 @inject MessageService Messages
+@inject LiveUpdates Live
 
 @* The inside of the Messages box: the conversations at the left, the open conversation at the right. On a phone one of the
    two shows at a time. *@
@@ -136,6 +137,7 @@
     private bool scrollDown;
     private ElementReference bubblesElement;
     private Timer? timer;
+    private IDisposable? subscription;
 
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
@@ -144,8 +146,9 @@
         closed = Messages.IsClosed;
         conversations = await Messages.GetConversationsAsync(UserId);
 
-        // While the box is open it looks for new messages every few seconds.
-        timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(8));
+        // While the box is open a new message shows up at once (LiveUpdates), and it also looks for new ones every 5 seconds.
+        subscription = Live.Subscribe(UserId, () => InvokeAsync(RefreshAsync));
+        timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -230,5 +233,9 @@
         }
     }
 
-    public void Dispose() => timer?.Dispose();
+    public void Dispose()
+    {
+        timer?.Dispose();
+        subscription?.Dispose();
+    }
 }

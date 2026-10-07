@@ -20,7 +20,7 @@ What exists so far:
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
   strands and the subjects of grade 11.
 - **A header** with a search bar in the middle and, at the right, **messages**, **notifications** and **settings**
-  (light / night / auto look, animations on or off). The signed-in person's name and role are at the bottom of the menu.
+  (light / dark / auto look, animations on or off). The signed-in person's name and role are at the bottom of the menu.
   Everything is phone-friendly.
 
 Lessons, assignments and quizzes are next. The database design is in [docs/database.md](docs/database.md).
@@ -154,14 +154,23 @@ Persist the ASP.NET Core Data Protection keys if you run in a container.
 
 | What | How it works |
 |---|---|
-| **Search** (middle) | Type and press Enter: the search page lists the pages you can open and, depending on your role, the people you work with. An administrator finds every account, a registrar finds students, a teacher finds the students of their subjects (the hit opens the gradebook of that subject) and the guidance counselor finds students (the hit opens the referrals page for that student). |
+| **Search** (middle) | A box that opens a **pop-up** (there is no search page): results appear as you type, in groups: the pages you can open and, depending on your role, your courses and the people you work with. Ctrl+K (Cmd+K) opens it from anywhere, Enter opens the first result, Escape closes it. An administrator finds every account, a registrar finds students, a teacher finds the students of their courses (the hit opens the gradebook of that course) and the guidance counselor finds students (the hit opens the referrals page for that student). |
 | **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor and the registrar; a teacher also to students and the other staff. **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time**: the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
 | **Notifications** (bell) | What the system wants you to know (a new message, and later new modules, grades and deadlines). The number is how many are new. Click one to open the page it is about. |
-| **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). |
+| **Settings** (gear) | **Light**, **Dark** (black) or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). |
 | **Name and role** (bottom of the menu) | Who is signed in. The arrow button signs you out. |
 
 The code: `Components/Layout/HeaderTools.razor` (the three buttons), `MessagesPanel.razor` (the Messages box),
 `Services/MessageService.cs` (the rules and the 7 PM to 7 AM closing time), `Services/NotificationService.cs`.
+
+## Everything keeps up by itself (no F5)
+
+- **Messages and notifications** arrive at once: when somebody sends a message or something happens for you, the number on the Messages button, the bell and
+  the open conversation change by themselves (`Services/LiveUpdates.cs` tells the pages that are open; they also look again every 5 to 10 seconds, in case the news
+  came from somewhere else).
+- **The dashboards, the calendar, the lists of courses, the grades, the analytics and the registrar's student list** look again every 30 seconds
+  (`<AutoRefresh />`, the script at the end of `wwwroot/app.js`). It only changes what is different, keeps the place on the page, and waits while you are typing, a pop-up is
+  open or the tab is hidden. The calendar, due dates and announcements in the column at the right look again every 30 seconds too.
 
 ## Who sees what
 
@@ -218,18 +227,18 @@ modules not opened yet, the latest scores and the **achievements** (perfect scor
 quiz ace, always on time, curious mind: earned ones are colored, the others show how far you are).
 
 **Teacher > Dashboard** (`/teacher`) shows the **unchecked activities** (work handed in that still needs a score), the
-modules students can't see yet (drafts and scheduled ones) and the quiz attempts the anti-cheating watch flagged. At its right is
-the calendar (nothing else: no announcements, to-do list, deadlines list or attendance card).
+modules students can't see yet (drafts and scheduled ones) and the number of flagged quizzes (it links to the calendar, where the flagged attempts are
+found). At its right is the calendar (nothing else).
 
 The column at the right of some pages (`Components/Shared/AsideWidgets.razor`) holds the widgets that page needs, in this order. The **student
 dashboard** has the **calendar** first (a dot on every day with something, click a day to see it) and the **announcements** second. The
-student's **Courses** pages also have the **to-do list** (add, check off, delete; each person has their own) and a **Due dates** list. The teacher's
+student's **Courses** pages also have a **Due dates** list. The teacher's
 **Courses** page has the calendar and *Needs your attention*. The grades pages and the teacher's attendance page have no column. On a phone the widgets
 go under the page.
 
 **Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next. It shows the
 deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), and the
-to-do entries that have a date. Done work is struck through, overdue work is red. Click a day number to open its week. At the right a student has an **Activities** card (the work to do, with its due text) beside the to-do list and *Due dates*; the Next button has its `>` icon.
+modules posted. Done work is struck through, overdue work is red. Click a day number to open its week. At the right a student has an **Activities** card (the work to do, with its due text) and then *Due dates*; the Next button has its `>` icon. A **teacher clicks** an activity, quiz or task performance to see **who handed it in** (and who did not), with the score and, for a quiz, the anti-cheating warnings: a flagged attempt is marked in red. *Open and grade* goes to the page of the work. Code: `CalendarWorkDialog.razor`.
 
 **Teacher > Calendar: unassigned activities.** The card **Unassigned activities** at the right lists the teacher's activities, quizzes and task performances that have **no due date**. **Drag** one onto a day (month or week view) and a box opens with that day (5 PM Philippine time) as the due date, where the teacher can also change the title, instructions, highest score, when it appears and, for a quiz, the time limit and the **anti-cheating** settings (watch on or off, warnings before it is handed in, shuffling, showing the result). **Save** puts it on that day for the teacher and the students; **Cancel** leaves it unassigned. The **Set date** link next to an activity does the same without the mouse. Code: `Components/Pages/Account/Calendar.razor`, `ItemScheduleDialog.razor`, the drag script in `wwwroot/app.js`.
 
@@ -237,7 +246,7 @@ to-do entries that have a date. Done work is struck through, overdue work is red
 points possible of the graded work), the passing mark of 70 drawn on the bars, the latest scores, and the graded works of
 each subject. A grade under 70 is shown in red with a warning; a quiz whose result the teacher hides is not counted yet.
 
-The code: `Services/DashboardService.cs`, `CalendarService.cs`, `TodoService.cs`, `GradeService.cs`, `AchievementService.cs`.
+The code: `Services/DashboardService.cs`, `CalendarService.cs`, `GradeService.cs`, `AchievementService.cs`.
 
 ## Attendance and the gradebook (teacher)
 
@@ -367,7 +376,7 @@ The **Enroll** link of the *Next term* column opens the form this way, so a stud
 or LRN and filter by term, strand, schedule and **next term** (enrolled or not). The **Courses** button of a row (for example "8 courses") opens a small pop-up over the page with the
 student's courses, so the columns do not move. The **Final grade** column, just left of *Next term*, is the average of the grades of the student's courses in that term (points
 earned divided by points possible of the graded work; courses nobody graded yet are left out; "No grades yet" when none is), with what it means (*Satisfactory*, ...). The dashboard (`/registrar`) shows how many students are enrolled this
-term, today, by strand and by schedule, and under *By schedule* the **Not enrolled** section.
+term, today, by strand, **by section** (every section of the school year with the students enrolled in it this term) and by schedule, and under *By schedule* the **Not enrolled** section.
 
 **The next term and unenrolling.** The next term is the term after the current one (set in the school setup). The **Next term** column says whether the
 student is enrolled for it: *Enrolled* with an **Unenroll** button (it asks first, then removes the student's enrollment in the next term and its subjects;

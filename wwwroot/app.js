@@ -269,3 +269,50 @@ document.addEventListener('toggle', function (event) {
     pop.style.top = top + 'px';
     pop.style.left = left + 'px';
 }, true);
+
+// Ctrl+K (Cmd+K on a Mac) opens the search pop-up of the header (Components/Layout/SearchBox.razor).
+document.addEventListener('keydown', function (event) {
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
+        var trigger = document.querySelector('[data-search-trigger]');
+        if (trigger) {
+            event.preventDefault();
+            trigger.click();
+        }
+    }
+});
+
+// Auto refresh: a page with <AutoRefresh /> (Components/Shared/AutoRefresh.razor) loads itself again every few seconds with Blazor's
+// enhanced navigation, which only changes what is different. It does not do it while somebody is typing, a pop-up or box is open, a
+// text is selected or the tab is in the background, and it keeps the scroll position.
+(function () {
+    var last = Date.now();
+    var busy = false;
+
+    function marker() { return document.querySelector('[data-auto-refresh]'); }
+
+    function somethingIsOpen() {
+        var active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) { return true; }
+        if (document.querySelector('[role="dialog"], .nav-toggle:checked, :popover-open, details.pop[open]')) { return true; }
+        var selection = window.getSelection && window.getSelection();
+        return !!(selection && !selection.isCollapsed && String(selection).length > 0);
+    }
+
+    function tick() {
+        var m = marker();
+        if (!m || busy || document.hidden || !window.Blazor || typeof Blazor.navigateTo !== 'function') { return; }
+        var seconds = parseInt(m.getAttribute('data-auto-refresh'), 10) || 30;
+        if (Date.now() - last < seconds * 1000 || somethingIsOpen()) { return; }
+
+        busy = true;
+        var x = window.scrollX, y = window.scrollY;
+        last = Date.now();
+        Blazor.navigateTo(location.pathname + location.search, { forceLoad: false, replaceHistory: true });
+        // Back to where the person was after the page has been patched.
+        setTimeout(function () { window.scrollTo(x, y); busy = false; }, 600);
+    }
+
+    // Going to another page starts the wait again.
+    document.addEventListener('enhancedload', function () { last = Date.now(); });
+    setInterval(tick, 2000);
+})();

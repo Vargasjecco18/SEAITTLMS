@@ -1087,5 +1087,10 @@ UPDATE `strands` SET `name` = 'Food and Beverage Services - Kitchen Operations' 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261007051735_FillStrandFullNames', '9.0.20');
 
+DROP TABLE `todo_items`;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261007094238_RemoveTodoItems', '9.0.20');
+
 COMMIT;
 

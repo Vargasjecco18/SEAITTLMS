@@ -67,7 +67,6 @@ erDiagram
     modules ||--o{ module_views : "opened by"
     students ||--o{ module_views : ""
 
-    users ||--o{ todo_items : "to-do list"
     students ||--o{ referrals : ""
     teaching_assignments |o--o{ referrals : "subject"
     users |o--o{ referrals : "handled by"
@@ -194,7 +193,6 @@ registrar who did it.
 | `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
 | `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
 | `referrals` | A student sent to the guidance counselor: `student_id`, `assignment_id` (the subject; dropped if the subject is removed), `reason` (`FailingGrades`, `AtRisk` or `LowAttendance`), `detail` (what was found, in words), `metric` (the grade or attendance in percent), `status` (`Open`, `InProgress`, `Resolved`), `intervention` (the help given), `notes`, `outcome` (`Improved` or `NoChange`, set when resolved), `resolved_at_utc`, `handled_by_user_id`. Made by the system, worked by the counselor. Deleted with the student. |
-| `todo_items` | A person's own to-do list (students and teachers): `user_id`, `title`, `due_on` (a date, or empty), `is_done`, `done_at_utc`. Deleted with the account. |
 
 Deleting a teacher deletes their assignments, and with them the modules, items and handed-in work. Deleting a student
 deletes their work and module views (their enrollments are deleted first, see below). A section or a subject can't be
@@ -204,6 +202,7 @@ A student's own row (`students`) also has `status` (`Active` or `Graduated`; a c
 `status_note`. A graduated student is **archived**: the records stay, the account is switched off (`users.is_active = 0`), the enrollments are
 completed and open referrals are resolved. (The withdrawal feature and its table `withdrawal_requests` were removed by the migration
 `RemoveWithdrawals`; a student who was `Withdrawn` becomes `Active` again, with the sign-in still switched off.)
+The to-do list and its table `todo_items` were removed by the migration `RemoveTodoItems` (the entries people had written are deleted with the table).
 
 ### Messages and notifications
 
@@ -311,7 +310,7 @@ Things that were decided for you, change them in the tables if they are not righ
   quizzes whose time ran out.
 - Grades are not stored: a subject's grade is the points earned divided by the points possible of the graded work
   (`GradeService`), 70 is the passing mark (`GradeRules.PassingPercent`). Achievements are worked out the same way
-  (`AchievementService`). The calendar is built from due dates, posting times and to-do dates (`CalendarService`).
+  (`AchievementService`). The calendar is built from due dates and posting times (`CalendarService`).
 - Only one term should have `is_current = 1` (MySQL has no partial unique index for this).
 - A profile row must match the user's role. Use `UserAccountService.CreateAsync` to create accounts.
 - The subjects picked for an enrollment must belong to the strand's curriculum for that grade level and term, and at least

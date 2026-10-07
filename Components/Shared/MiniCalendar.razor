@@ -1,4 +1,4 @@
-@* A small month calendar with a dot on every day that has something (a deadline, a module, a to-do). Click a day to see what is on it. *@
+@* A small month calendar with a dot on every day that has something (a deadline or a module). Click a day to see what is on it. *@
 @inject CurrentUser Me
 @inject CalendarService Events
 @inject TimeProvider Clock
@@ -80,6 +80,10 @@
     private DateOnly selected;
     private IReadOnlyList<CalendarEvent> events = [];
     private DateOnly gridStart;
+    private int lastRefresh;
+
+    /// <summary>The widgets column raises this number now and then; a new number means "look again".</summary>
+    [Parameter] public int Refresh { get; set; }
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, 42).Select(n => gridStart.AddDays(n));
 
@@ -88,7 +92,17 @@
         today = PhilippineTime.Today(Clock);
         selected = today;
         month = new DateOnly(today.Year, today.Month, 1);
+        lastRefresh = Refresh;
         await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Refresh != lastRefresh)
+        {
+            lastRefresh = Refresh;
+            await LoadAsync();
+        }
     }
 
     private async Task LoadAsync()

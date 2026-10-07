@@ -1,0 +1,154 @@
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CurrentUser Me
+@inject SearchService SearchEngine
+
+@* The search of the header. The box in the middle opens a pop-up where the results appear as you type (there is no search page).
+   Ctrl+K (or Cmd+K) opens it too; Enter opens the first result; Escape closes it. It is its own live component. *@
+<div class="search">
+    <button type="button" class="trigger" data-search-trigger aria-haspopup="dialog" aria-label="Search" title="Search (Ctrl+K)" @onclick="OpenAsync">
+        <Icon Name="search" Size="18" />
+        <span class="placeholder">Search courses, people and pages</span>
+    </button>
+
+    <Modal Open="open" Title="Search" OnClose="Close">
+        @if (open)
+        {
+            <form class="box" role="search" @onsubmit="OpenFirstAsync">
+                <Icon Name="search" Size="18" Class="box-icon" />
+                <input type="search" @ref="input" placeholder="What are you looking for?" aria-label="Search" autocomplete="off" @bind="query" @bind:event="oninput" @bind:after="QueryChangedAsync" />
+            </form>
+
+            @if (string.IsNullOrWhiteSpace(query))
+            {
+                <p class="state">Type the name of a course, a person or a page.</p>
+            }
+            else if (searching && groups.Count == 0)
+            {
+                <p class="state">Searching…</p>
+            }
+            else if (groups.Count == 0)
+            {
+                <p class="state">Nothing matches “@query”. Try another word.</p>
+            }
+            else
+            {
+                <div class="results">
+                    @foreach (var group in groups)
+                    {
+                        <section>
+                            <h3>@group.Title</h3>
+                            <ul class="hits">
+                                @foreach (var hit in group.Hits)
+                                {
+                                    <li>
+                                        <a href="@hit.Href" @onclick="Close">
+                                            <span class="hit-icon"><Icon Name="@hit.Icon" Size="18" /></span>
+                                            <span class="hit-text">
+                                                <span class="hit-title">@hit.Title</span>
+                                                @if (!string.IsNullOrEmpty(hit.Subtitle))
+                                                {
+                                                    <span class="hit-sub">@hit.Subtitle</span>
+                                                }
+                                            </span>
+                                            <Icon Name="chevron-right" Size="16" />
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </section>
+                    }
+                </div>
+            }
+        }
+    </Modal>
+</div>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private ElementReference input;
+    private bool open;
+    private bool focusInput;
+    private bool searching;
+    private string query = "";
+    private IReadOnlyList<SearchGroup> groups = [];
+    private CancellationTokenSource? pending;
+
+    private async Task OpenAsync()
+    {
+        query = "";
+        groups = [];
+        open = true;
+        focusInput = true;
+        await Task.CompletedTask;
+    }
+
+    private void Close()
+    {
+        pending?.Cancel();
+        open = false;
+    }
+
+    /// <summary>Searches 250 ms after the last key, so typing fast does not ask the database for every letter.</summary>
+    private async Task QueryChangedAsync()
+    {
+        pending?.Cancel();
+        var source = pending = new CancellationTokenSource();
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            groups = [];
+            searching = false;
+            return;
+        }
+
+        searching = true;
+        try
+        {
+            await Task.Delay(250, source.Token);
+            if (await Me.GetAsync() is { } user)
+            {
+                var found = await SearchEngine.SearchAsync(user, query, source.Token);
+                if (!source.IsCancellationRequested)
+                {
+                    groups = found;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer search replaced this one.
+            return;
+        }
+
+        if (!source.IsCancellationRequested)
+        {
+            searching = false;
+        }
+    }
+
+    /// <summary>Enter: go to the first result.</summary>
+    private void OpenFirstAsync()
+    {
+        if (groups.Count > 0 && groups[0].Hits.Count > 0)
+        {
+            var href = groups[0].Hits[0].Href;
+            Close();
+            Navigation.NavigateTo(href);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The pop-up has just opened: put the cursor in the box (the pop-up itself takes the focus first).
+        if (focusInput && open)
+        {
+            focusInput = false;
+            await Task.Delay(30);
+            await input.FocusAsync();
+        }
+    }
+
+    public void Dispose() => pending?.Cancel();
+}
