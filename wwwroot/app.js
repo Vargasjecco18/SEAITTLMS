@@ -44,14 +44,19 @@
     }
 })();
 
-// The settings menu: light / dark / automatic, and animations on or off. The choice is kept in this browser.
-// (App.razor applies it again before the next page is drawn.)
+// The settings menu: light / dark / automatic, and animations on or off. The choice is kept in this browser (localStorage)
+// and in a cookie. The cookie is what lets the server draw the right look on every page, also the ones Blazor swaps in
+// when a link is followed (App.razor reads it).
 (function () {
     var root = document.documentElement;
 
     function save(key, value) {
         try {
             if (value === null) { localStorage.removeItem(key); } else { localStorage.setItem(key, value); }
+        } catch (error) { }
+
+        try {
+            document.cookie = key + '=' + (value === null ? '' : value) + '; path=/; samesite=lax; max-age=' + (value === null ? 0 : 31536000);
         } catch (error) { }
     }
 
@@ -87,6 +92,87 @@
         if (target.closest('[data-motion-toggle]')) {
             setMotion(root.getAttribute('data-motion') === 'off');
         }
+    });
+})();
+
+// The teacher's calendar: an "unassigned activity" (an element with data-unassigned-item, in the widgets at the right) is dragged onto a day
+// (an element with data-day, in the month or week view). Dropping it opens the calendar again with ?edit=<item>&on=<day>, which shows the box
+// that sets its due date. (The "Set date" link next to every activity does the same without dragging.)
+(function () {
+    var dragging = null;
+
+    function itemOf(target) {
+        return target instanceof Element ? target.closest('[data-unassigned-item]') : null;
+    }
+
+    function dayOf(target) {
+        return target instanceof Element ? target.closest('[data-day]') : null;
+    }
+
+    function clearMarks() {
+        document.querySelectorAll('.drop-over').forEach(function (el) { el.classList.remove('drop-over'); });
+        document.querySelectorAll('.dragging').forEach(function (el) { el.classList.remove('dragging'); });
+        document.documentElement.classList.remove('dragging-item');
+    }
+
+    document.addEventListener('dragstart', function (event) {
+        var item = itemOf(event.target);
+        if (!item) {
+            return;
+        }
+
+        dragging = item.getAttribute('data-unassigned-item');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', dragging);
+        item.classList.add('dragging');
+        // The days that can take it are drawn as targets while it is held.
+        document.documentElement.classList.add('dragging-item');
+    });
+
+    document.addEventListener('dragover', function (event) {
+        var day = dayOf(event.target);
+        if (!dragging || !day) {
+            return;
+        }
+
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        document.querySelectorAll('.drop-over').forEach(function (el) { if (el !== day) { el.classList.remove('drop-over'); } });
+        day.classList.add('drop-over');
+    });
+
+    document.addEventListener('dragleave', function (event) {
+        var day = dayOf(event.target);
+        if (day && !day.contains(event.relatedTarget)) {
+            day.classList.remove('drop-over');
+        }
+    });
+
+    document.addEventListener('drop', function (event) {
+        var day = dayOf(event.target);
+        if (!dragging || !day) {
+            return;
+        }
+
+        event.preventDefault();
+        var item = dragging;
+        dragging = null;
+        clearMarks();
+
+        var url = new URL(window.location.href);
+        url.searchParams.set('edit', item);
+        url.searchParams.set('on', day.getAttribute('data-day'));
+        var target = url.pathname.replace(/^\//, '') + url.search;
+        if (window.Blazor && typeof window.Blazor.navigateTo === 'function') {
+            window.Blazor.navigateTo(target);
+        } else {
+            window.location.assign(url.toString());
+        }
+    });
+
+    document.addEventListener('dragend', function () {
+        dragging = null;
+        clearMarks();
     });
 })();
 

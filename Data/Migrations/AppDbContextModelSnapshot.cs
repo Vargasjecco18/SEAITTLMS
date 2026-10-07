@@ -98,6 +98,70 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("audience");
+
+                    b.Property<int>("AuthorUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("author_user_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateOnly?>("ExpiresOn")
+                        .HasColumnType("date")
+                        .HasColumnName("expires_on");
+
+                    b.Property<int?>("SectionId")
+                        .HasColumnType("int")
+                        .HasColumnName("section_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_announcements");
+
+                    b.HasIndex("SectionId")
+                        .HasDatabaseName("ix_announcements_section_id");
+
+                    b.HasIndex("Audience", "CreatedAtUtc")
+                        .HasDatabaseName("ix_announcements_audience_created_at_utc");
+
+                    b.HasIndex("AuthorUserId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_announcements_author_user_id_created_at_utc");
+
+                    b.ToTable("announcements", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttendanceRecord", b =>
                 {
                     b.Property<int>("Id")
@@ -1335,7 +1399,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                             t.HasCheckConstraint("ck_students_section_needs_strand_and_grade", "section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated', 'Withdrawn')");
+                            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated')");
 
                             t.HasCheckConstraint("ck_students_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
                         });
@@ -1892,70 +1956,6 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SEAITT_LMS.Data.Entities.WithdrawalRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<DateTime?>("DecidedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("decided_at_utc");
-
-                    b.Property<int?>("DecidedByUserId")
-                        .HasColumnType("int")
-                        .HasColumnName("decided_by_user_id");
-
-                    b.Property<string>("DecisionNote")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("decision_note");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("reason");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
-                        .HasColumnName("status");
-
-                    b.Property<int>("StudentId")
-                        .HasColumnType("int")
-                        .HasColumnName("student_id");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime(6)")
-                        .HasColumnName("updated_at_utc");
-
-                    b.HasKey("Id")
-                        .HasName("pk_withdrawal_requests");
-
-                    b.HasIndex("DecidedByUserId")
-                        .HasDatabaseName("ix_withdrawal_requests_decided_by_user_id");
-
-                    b.HasIndex("StudentId")
-                        .HasDatabaseName("ix_withdrawal_requests_student_id");
-
-                    b.HasIndex("Status", "StudentId")
-                        .HasDatabaseName("ix_withdrawal_requests_status_student_id");
-
-                    b.ToTable("withdrawal_requests", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_withdrawal_requests_status", "status IN ('Pending', 'Approved', 'Declined', 'Cancelled')");
-                        });
-                });
-
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
@@ -1966,6 +1966,26 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_administrators_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_announcements_users_author_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Section", "Section")
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_announcements_sections_section_id");
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Section");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttendanceRecord", b =>
@@ -2477,26 +2497,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_users_roles_role_id");
 
                     b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("SEAITT_LMS.Data.Entities.WithdrawalRequest", b =>
-                {
-                    b.HasOne("SEAITT_LMS.Data.Entities.User", "DecidedBy")
-                        .WithMany()
-                        .HasForeignKey("DecidedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_withdrawal_requests_users_decided_by_user_id");
-
-                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_withdrawal_requests_students_student_id");
-
-                    b.Navigation("DecidedBy");
-
-                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

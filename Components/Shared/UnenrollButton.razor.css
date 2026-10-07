@@ -1,0 +1,21 @@
+.quiet {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.alert {
+    margin: 0.75rem 0;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--danger-border, var(--border));
+    border-radius: var(--radius-sm);
+    background: var(--danger-soft, var(--surface-2));
+    color: var(--danger, var(--text));
+    font-size: 0.9rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}

@@ -48,24 +48,64 @@
             }
         </Card>
 
-        <Card Title="By schedule" IconName="clock">
-            <ul class="bars">
-                @foreach (var schedule in overview.BySchedule)
+        <div class="stack">
+            <Card Title="By schedule" IconName="clock">
+                <ul class="bars">
+                    @foreach (var schedule in overview.BySchedule)
+                    {
+                        <li>
+                            <div class="bar-label">
+                                <span class="bar-name">@schedule.Code <span class="bar-sub">@schedule.Name</span></span>
+                                <strong>@schedule.Count</strong>
+                            </div>
+                            <div class="bar-track"><div class="bar-fill alt" style="width: @(Percent(schedule.Count, maxSchedule))%"></div></div>
+                        </li>
+                    }
+                </ul>
+                @if (overview.EnrolledThisTerm == 0)
                 {
-                    <li>
-                        <div class="bar-label">
-                            <span class="bar-name">@schedule.Code <span class="bar-sub">@schedule.Name</span></span>
-                            <strong>@schedule.Count</strong>
-                        </div>
-                        <div class="bar-track"><div class="bar-fill alt" style="width: @(Percent(schedule.Count, maxSchedule))%"></div></div>
-                    </li>
+                    <p class="note">Nobody is enrolled for this term yet.</p>
                 }
-            </ul>
-            @if (overview.EnrolledThisTerm == 0)
-            {
-                <p class="note">Nobody is enrolled for this term yet.</p>
-            }
-        </Card>
+            </Card>
+
+            @* Under "By schedule": the students who still have to be enrolled (for the next term, or this one when there is no next term). *@
+            <Card Title="Not enrolled" IconName="user-x" Class="not-enrolled">
+                @if (overview.NotEnrolled is not { Term: not null } notEnrolled)
+                {
+                    <p class="note">No term is set up yet.</p>
+                }
+                else if (notEnrolled.Total == 0)
+                {
+                    <EmptyState IconName="circle-check" Title="Everybody is enrolled">
+                        <p>Every student at school is enrolled for the @notEnrolled.Term!.Label.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <p class="not-enrolled-head">
+                        <strong>@notEnrolled.Total.ToString("N0")</strong>
+                        <span>@(notEnrolled.Total == 1 ? "student is" : "students are") not enrolled for the @notEnrolled.Term!.Label</span>
+                    </p>
+                    <ul class="people">
+                        @foreach (var student in notEnrolled.Items)
+                        {
+                            <li>
+                                <Avatar Name="@student.Name" Size="32" />
+                                <span class="people-text">
+                                    <span class="people-name">@student.Name</span>
+                                    <span class="people-sub">@(student.LastPlacement is null ? "Never enrolled" : $"Was in {student.LastPlacement}") · LRN @student.Lrn</span>
+                                </span>
+                                <a class="people-action" href="registrar/enrollments?lrn=@student.Lrn&term=@notEnrolled.Term!.Id">Enroll</a>
+                            </li>
+                        }
+                    </ul>
+                    @if (notEnrolled.Total > notEnrolled.Items.Count)
+                    {
+                        <p class="see-all"><a href="registrar/student-accounts?next=none">See the students <Icon Name="arrow-right" Size="16" /></a></p>
+                    }
+                }
+            </Card>
+        </div>
     </div>
 
     <Card Title="Latest enrollments" IconName="list">

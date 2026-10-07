@@ -6,16 +6,13 @@
 @using SEAITT_LMS.Services
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject EnrollmentService Enrollment
-@inject StudentLifecycleService Lifecycle
 @inject NavigationManager Navigation
 
 <PageTitle>Student's Accounts · SEAITT e-LMS</PageTitle>
 
 <PageHeader Title="Student's Accounts"
             Subtitle="@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")"
-            IconName="graduation-cap">
-    <ButtonLink Href="registrar/withdrawals" Variant="ButtonVariant.Secondary" IconName="user-x">Withdrawals@(pendingWithdrawals > 0 ? $" ({pendingWithdrawals})" : "")</ButtonLink>
-</PageHeader>
+            IconName="graduation-cap" />
 
 @if (lookups is not null && result is not null)
 {
@@ -53,6 +50,13 @@
                         }
                     </select>
                 </Field>
+                <Field For="next" Label="Next term">
+                    <select id="next" name="next">
+                        <option value="">All</option>
+                        <option value="enrolled" selected="@(NextText == "enrolled")">Enrolled</option>
+                        <option value="none" selected="@(NextText == "none")">Not enrolled</option>
+                    </select>
+                </Field>
                 <div class="filter-actions">
                     <Button Type="submit" IconName="search">Search</Button>
                     @if (HasFilter)
@@ -82,7 +86,7 @@
             else
             {
                 <div class="table-in-card">
-                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" />
+                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" ShowNextTerm="true" ShowPhone="true" NextTerm="result.NextTerm" />
                 </div>
 
                 @if (result.PageCount > 1)
@@ -124,6 +128,8 @@
 
     [SupplyParameterFromQuery(Name = "schedule")] private string? ScheduleText { get; set; }
 
+    [SupplyParameterFromQuery(Name = "next")] private string? NextText { get; set; }
+
     [SupplyParameterFromQuery(Name = "page")] private string? PageText { get; set; }
 
     private int? Term => ParseNumber(TermText);
@@ -136,17 +142,15 @@
 
     private EnrollmentLookups? lookups;
     private EnrollmentPage? result;
-    private int pendingWithdrawals;
 
-    private bool HasFilter => !string.IsNullOrWhiteSpace(Q) || Term is not null || Strand is not null || Schedule is not null;
+    private bool HasFilter => !string.IsNullOrWhiteSpace(Q) || Term is not null || Strand is not null || Schedule is not null || NextText is "enrolled" or "none";
 
     protected override async Task OnInitializedAsync()
     {
         lookups = await Enrollment.GetLookupsAsync();
-        pendingWithdrawals = await Lifecycle.CountPendingAsync();
 
         await using var db = await DbFactory.CreateDbContextAsync();
-        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule), ParseNumber(PageText) ?? 1, PageSize);
+        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule, NextText), ParseNumber(PageText) ?? 1, PageSize);
     }
 
     /// <summary>This page's address with another page number (the search and filters stay).</summary>

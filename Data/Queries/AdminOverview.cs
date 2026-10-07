@@ -11,7 +11,7 @@ public sealed record AccountRow(string Name, string Email, string Role, bool IsA
 
 /// <summary>How many rows the school setup tables have.</summary>
 public sealed record SetupTotals(
-    int SchoolYears, int Terms, int Tracks, int Strands, int Subjects, int Sections, int Enrollments);
+    int SchoolYears, int Terms, int Tracks, int Strands, int Subjects, int Sections, int Enrollments, int NotEnrolled = 0);
 
 /// <summary>Everything the admin dashboard shows.</summary>
 public sealed record AdminOverview(IReadOnlyList<RoleTotal> Roles, SetupTotals Setup, IReadOnlyList<AccountRow> LatestAccounts)
@@ -47,7 +47,8 @@ public sealed record AdminOverview(IReadOnlyList<RoleTotal> Roles, SetupTotals S
             await db.Strands.CountAsync(ct),
             await db.Subjects.CountAsync(ct),
             await db.Sections.CountAsync(ct),
-            await db.Enrollments.CountAsync(ct));
+            await db.Enrollments.CountAsync(ct),
+            (await NotEnrolledList.CountAsync(db, ct)).Count);
 
         var users = await db.Users
             .AsNoTracking()

@@ -1,0 +1,140 @@
+@inherits SetupTabBase
+
+<Card>
+    <div class="tab-head">
+        <p class="grow">The years the school runs in. Every school year has its terms and its sections.</p>
+        <Button IconName="plus" OnClick="OpenAdd">Add school year</Button>
+    </div>
+
+    <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (rows.Count == 0)
+    {
+        <EmptyState IconName="calendar-range" Title="No school year yet"><p>Add the first school year, then its terms.</p></EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">First day</th>
+                        <th scope="col">Last day</th>
+                        <th scope="col" class="col-more">Terms</th>
+                        <th scope="col" class="col-more">Sections</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        <tr>
+                            <td class="name">@row.Name</td>
+                            <td class="nowrap">@PhilippineTime.FormatDate(row.StartDate)</td>
+                            <td class="nowrap">@PhilippineTime.FormatDate(row.EndDate)</td>
+                            <td class="col-more">@row.Terms</td>
+                            <td class="col-more">@row.Sections</td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Name}")" OnClick="() => OpenEdit(row)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Name}")" OnClick="() => OpenDelete(row)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+<Modal Open="form is not null" Title="@(form?.Id is null ? "Add school year" : "Edit school year")" OnClose="CloseForm">
+    @if (form is not null)
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="Errors" />
+            <Field For="y-name" Label="Name" Required="true" Hint="Like 2027-2028.">
+                <input id="y-name" maxlength="20" autocomplete="off" @bind="form.Name" />
+            </Field>
+            <div class="two">
+                <Field For="y-start" Label="First day" Required="true">
+                    <input id="y-start" type="date" @bind="form.StartDate" />
+                </Field>
+                <Field For="y-end" Label="Last day" Required="true">
+                    <input id="y-end" type="date" @bind="form.EndDate" />
+                </Field>
+            </div>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+<Modal Open="deleting is not null" Title="Delete this school year?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p class="delete-text">You are about to delete the school year <strong>@deleting.Name</strong>. <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<SchoolYearRow>? rows;
+    private SchoolYearInput? form;
+    private SchoolYearRow? deleting;
+
+    protected override async Task OnInitializedAsync() => rows = await Setup.ListSchoolYearsAsync();
+
+    private void OpenAdd()
+    {
+        Errors = [];
+        form = new SchoolYearInput();
+    }
+
+    private void OpenEdit(SchoolYearRow row)
+    {
+        Errors = [];
+        form = new SchoolYearInput { Id = row.Id, Name = row.Name, StartDate = row.StartDate, EndDate = row.EndDate };
+    }
+
+    private void CloseForm() => form = null;
+
+    private async Task SaveAsync()
+    {
+        var result = await RunAsync(userId => Setup.SaveSchoolYearAsync(form!, userId));
+        if (result.Succeeded)
+        {
+            form = null;
+            rows = await Setup.ListSchoolYearsAsync();
+        }
+    }
+
+    private void OpenDelete(SchoolYearRow row)
+    {
+        Errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        var result = await RunAsync(userId => Setup.DeleteSchoolYearAsync(deleting!.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            rows = await Setup.ListSchoolYearsAsync();
+        }
+    }
+}

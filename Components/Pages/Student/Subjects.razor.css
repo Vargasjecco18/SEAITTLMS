@@ -40,6 +40,24 @@
     color: var(--on-brand);
 }
 
+/* The number of subjects on a chip. */
+.chip .n {
+    display: inline-block;
+    min-width: 1.35rem;
+    margin-left: 0.3rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.chip.on .n {
+    background: rgba(255, 255, 255, 0.22);
+    color: inherit;
+}
+
 .views {
     display: inline-flex;
     padding: 0.2rem;
@@ -129,6 +147,7 @@
         display: none;
     }
 }
+
 
 .sr-only {
     position: absolute;

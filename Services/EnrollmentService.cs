@@ -5,6 +5,7 @@ using MySqlConnector;
 using SEAITT_LMS.Auth;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
+using SEAITT_LMS.Data.Queries;
 
 namespace SEAITT_LMS.Services;
 
@@ -32,10 +33,15 @@ public sealed record EnrollmentLookups(
 
 /// <summary>A student who already has an account (enrolled in an earlier term, for example).</summary>
 public sealed record ExistingStudent(
-    int StudentId, string FullName, string FirstName, string? MiddleName, string LastName, string Email, IReadOnlyList<int> EnrolledTermIds);
+    int StudentId, string FullName, string FirstName, string? MiddleName, string LastName, string Email, IReadOnlyList<int> EnrolledTermIds,
+    string? PhoneNumber = null);
 
-/// <param name="SubjectIds">Picked from the curriculum of the strand for that grade level and term.</param>
+/// <summary>
+/// The subjects are not chosen: a student takes all the subjects the strand has at that grade level and term (the curriculum, set
+/// by the administrator).
+/// </summary>
 /// <param name="SectionName">Like "A". It is created when the strand, grade level and schedule don't have it yet.</param>
+/// <param name="PhoneNumber">The student's mobile number. Optional. A student who already has a number keeps it.</param>
 public sealed record EnrollmentRequest(
     string Lrn,
     string FirstName,
@@ -46,8 +52,8 @@ public sealed record EnrollmentRequest(
     int TrackId,
     int StrandId,
     int ScheduleId,
-    IReadOnlyCollection<int> SubjectIds,
-    string SectionName);
+    string SectionName,
+    string? PhoneNumber = null);
 
 /// <param name="NewAccount">True when this enrollment created the student's account. The password is only filled then.</param>
 public sealed record EnrollmentReceipt(
@@ -65,7 +71,8 @@ public sealed record EnrollmentReceipt(
     IReadOnlyList<string> Subjects,
     bool NewAccount,
     string Email,
-    string? Password);
+    string? Password,
+    string? PhoneNumber = null);
 
 public sealed record EnrollmentResult(EnrollmentReceipt? Receipt, IReadOnlyList<string> Errors)
 {
@@ -126,7 +133,7 @@ public sealed partial class EnrollmentService(
         return new EnrollmentLookups(terms, tracks, strands, schedules);
     }
 
-    /// <summary>The subjects a strand takes in a term of a grade level (the curriculum), to pick a student's subjects from.</summary>
+    /// <summary>The subjects a strand takes in a term of a grade level (the curriculum): the subjects every student of that strand gets.</summary>
     public async Task<IReadOnlyList<SubjectOption>> GetCurriculumAsync(int strandId, byte gradeLevel, int termId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -174,7 +181,7 @@ public sealed partial class EnrollmentService(
 
         var student = await db.Students.AsNoTracking()
             .Where(s => s.Lrn == lrn)
-            .Select(s => new { s.Id, s.FirstName, s.MiddleName, s.LastName, s.NameExtension, s.User.Email })
+            .Select(s => new { s.Id, s.FirstName, s.MiddleName, s.LastName, s.NameExtension, s.User.Email, s.User.PhoneNumber })
             .FirstOrDefaultAsync(ct);
         if (student is null)
         {
@@ -183,7 +190,7 @@ public sealed partial class EnrollmentService(
 
         var termIds = await db.Enrollments.AsNoTracking().Where(e => e.StudentId == student.Id).Select(e => e.TermId).ToListAsync(ct);
         var fullName = string.Join(' ', new[] { student.FirstName, student.MiddleName, student.LastName, student.NameExtension }.Where(p => !string.IsNullOrWhiteSpace(p)));
-        return new ExistingStudent(student.Id, fullName, student.FirstName, student.MiddleName, student.LastName, student.Email, termIds);
+        return new ExistingStudent(student.Id, fullName, student.FirstName, student.MiddleName, student.LastName, student.Email, termIds, student.PhoneNumber);
     }
 
     public async Task<EnrollmentResult> EnrollAsync(EnrollmentRequest request, int actingUserId, CancellationToken ct = default)
@@ -223,6 +230,17 @@ public sealed partial class EnrollmentService(
         if (sectionName.Length is 0 or > MaxSectionNameLength || !SectionNamePattern().IsMatch(sectionName))
         {
             errors.Add("Enter the section, for example A. Use letters, numbers, spaces and dashes (up to 50 characters).");
+        }
+
+        // The phone number is optional. When it is typed it must be a number we can read.
+        string? phone = null;
+        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        {
+            phone = PhoneNumbers.Normalize(request.PhoneNumber);
+            if (phone is null)
+            {
+                errors.Add("The phone number is not valid. Use a mobile number like 0917 123 4567, or leave it empty.");
+            }
         }
 
         if (errors.Count > 0)
@@ -269,30 +287,13 @@ public sealed partial class EnrollmentService(
             return EnrollmentResult.Fail(errors);
         }
 
-        // The subjects must come from the curriculum of this strand, grade level and term. When the curriculum has
-        // subjects, at least one must be picked.
-        var curriculum = await db.StrandSubjects.AsNoTracking()
-            .Where(x => x.StrandId == strand!.Id && x.GradeLevel == request.GradeLevel && x.TermNumber == term!.TermNumber)
+        // The subjects are fixed by the strand: all the subjects of this strand at this grade level and term (the curriculum).
+        // A subject the administrator switched off is left out.
+        var subjects = await db.StrandSubjects.AsNoTracking()
+            .Where(x => x.StrandId == strand!.Id && x.GradeLevel == request.GradeLevel && x.TermNumber == term!.TermNumber && x.Subject.IsActive)
             .Select(x => x.Subject)
             .OrderBy(s => s.Name)
             .ToListAsync(ct);
-
-        var wanted = (request.SubjectIds ?? []).Distinct().ToList();
-        if (wanted.Any(id => curriculum.All(s => s.Id != id)))
-        {
-            errors.Add("One of the subjects is not part of this strand's subjects for that grade level and term.");
-        }
-        else if (curriculum.Count > 0 && wanted.Count == 0)
-        {
-            errors.Add("Pick at least one subject.");
-        }
-
-        if (errors.Count > 0)
-        {
-            return EnrollmentResult.Fail(errors);
-        }
-
-        var subjects = curriculum.Where(s => wanted.Contains(s.Id)).ToList();
 
         try
         {
@@ -318,6 +319,12 @@ public sealed partial class EnrollmentService(
                 firstName = student.FirstName;
                 middleName = student.MiddleName ?? "";
                 lastName = student.LastName;
+
+                // A number is only filled in when the student has none; a number they have is not overwritten here.
+                if (student.User.PhoneNumber is null && phone is not null)
+                {
+                    student.User.PhoneNumber = phone;
+                }
             }
             else
             {
@@ -336,6 +343,7 @@ public sealed partial class EnrollmentService(
                         RoleId = AppRoles.StudentId,
                         IsActive = true,
                         SecurityStamp = Guid.NewGuid().ToString("N"),
+                        PhoneNumber = phone,
                     },
                     Lrn = lrn,
                     FirstName = firstName,
@@ -400,7 +408,7 @@ public sealed partial class EnrollmentService(
                     enrollment.Id, student.Id, fullName, lrn, term.SchoolYear.Name, term.Name, request.GradeLevel,
                     strand.Track.Name, strand.Code, schedule!.Code, $"{request.GradeLevel}-{strand.Code}-{section.Name}",
                     subjects.Select(s => s.Name).ToList(),
-                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password),
+                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber),
                 []);
         }
         catch (DbUpdateException ex) when (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry } duplicate)
@@ -414,6 +422,37 @@ public sealed partial class EnrollmentService(
                         ? "This student is already enrolled for that term."
                         : "Someone else saved the same thing a moment ago. Please try again.");
         }
+    }
+
+    /// <summary>
+    /// Unenrolls a student for the next term: the student's enrollment in the term after the current one is removed (nothing has
+    /// happened in it yet), so the student shows as "not enrolled" until the registrar enrolls them again.
+    /// </summary>
+    public async Task<ServiceResult> UnenrollNextTermAsync(int studentId, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+
+        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.RegistrarId, ct))
+        {
+            return ServiceResult.Fail("Only a registrar can unenroll students.");
+        }
+
+        var next = await TermLookup.NextAsync(db, ct);
+        if (next is null)
+        {
+            return ServiceResult.Fail("There is no next term yet. An administrator adds it in the school setup.");
+        }
+
+        var student = await db.Students.AsNoTracking().Where(s => s.Id == studentId).Select(s => new { s.FirstName, s.LastName }).FirstOrDefaultAsync(ct);
+        if (student is null)
+        {
+            return ServiceResult.Fail("This student was not found.");
+        }
+
+        var removed = await db.Enrollments.Where(e => e.StudentId == studentId && e.TermId == next.Id && e.Status == EnrollmentStatus.Enrolled).ExecuteDeleteAsync(ct);
+        return removed == 0
+            ? ServiceResult.Fail($"{student.LastName}, {student.FirstName} is not enrolled for the {next.Label}.")
+            : ServiceResult.Ok($"{student.LastName}, {student.FirstName} was unenrolled for the {next.Label}.");
     }
 
     /// <summary>The first login, from the 6 digits of the LRN on, whose email nobody has yet.</summary>

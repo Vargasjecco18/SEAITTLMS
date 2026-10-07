@@ -1,0 +1,110 @@
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+@* Read-only: the registrar enrolls students. *@
+<Card>
+    <div class="tab-head">
+        <p class="grow">
+            <Icon Name="eye" Size="16" />
+            @if (result?.Term is { } term)
+            {
+                <span>Students at school who are not enrolled for the <strong>@term.Label</strong>. The registrar enrolls them; you can look at the list here, but not change it.</span>
+            }
+            else
+            {
+                <span>Students at school who are not enrolled for the next term. The registrar enrolls them.</span>
+            }
+        </p>
+    </div>
+
+    <form class="toolbar" role="search" @onsubmit="SearchAsync">
+        <div class="search-box">
+            <Icon Name="search" Size="18" Class="search-icon" />
+            <input type="search" aria-label="Search students" placeholder="Name or LRN" autocomplete="off" @bind="search" />
+        </div>
+        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
+        <span class="result-count">@(result is null ? "" : result.Total == 1 ? "1 student" : $"{result.Total:N0} students")</span>
+    </form>
+
+    @if (result is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (result.Term is null)
+    {
+        <EmptyState IconName="calendar-days" Title="No term is set up yet"><p>Add a term and mark one as the current term in <strong>Terms</strong>.</p></EmptyState>
+    }
+    else if (result.Items.Count == 0)
+    {
+        <EmptyState IconName="@(string.IsNullOrEmpty(appliedSearch) ? "circle-check" : "search-x")" Title="@(string.IsNullOrEmpty(appliedSearch) ? "Everybody is enrolled" : "No student matches")" />
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Student</th>
+                        <th scope="col">LRN</th>
+                        <th scope="col">Last enrolled in</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in result.Items)
+                    {
+                        <tr>
+                            <td class="name">@row.Name</td>
+                            <td class="nowrap mono">@row.Lrn</td>
+                            <td>
+                                @if (row.LastPlacement is null)
+                                {
+                                    <span class="muted">Never enrolled</span>
+                                }
+                                else
+                                {
+                                    <span class="name">@row.LastPlacement</span>
+                                    <span class="sub">@row.LastTerm</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (result.PageCount > 1)
+        {
+            <nav class="pager" aria-label="Pages">
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(result.Page <= 1)" OnClick="() => GoToAsync(result.Page - 1)">Previous</Button>
+                <span class="muted">Page @result.Page of @result.PageCount</span>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconAfter="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="() => GoToAsync(result.Page + 1)">Next</Button>
+            </nav>
+        }
+    }
+</Card>
+
+@code {
+    private const int PageSize = 20;
+
+    private NotEnrolledPage? result;
+    private string search = "";
+    private string appliedSearch = "";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync(1);
+
+    private async Task LoadAsync(int page)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        result = await NotEnrolledList.LoadAsync(db, appliedSearch, page, PageSize);
+    }
+
+    private async Task SearchAsync()
+    {
+        appliedSearch = search.Trim();
+        await LoadAsync(1);
+    }
+
+    private Task GoToAsync(int page) => LoadAsync(page);
+}

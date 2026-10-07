@@ -1,0 +1,73 @@
+@rendermode InteractiveServer
+@inject EnrollmentService Enrollment
+@inject CurrentUser Me
+@inject NavigationManager Navigation
+
+@* "Unenroll for next term" with a question first. It is its own live island, so it works inside a list that is otherwise plain.
+   When it is done the list is loaded again and the row says "Not enrolled". *@
+<Button Variant="ButtonVariant.Ghost" Small="true" IconName="user-x" OnClick="Ask">Unenroll</Button>
+
+<Modal Open="open" Title="Unenroll for next term" OnClose="Close">
+    <p>Unenroll <strong>@StudentName</strong> for the <strong>@TermLabel</strong>?</p>
+    <p class="quiet">The student stays in the current term. They will not be enrolled next term, and show in the "Not enrolled" list until you enroll them again.</p>
+
+    @if (error is not null)
+    {
+        <div class="alert" role="alert">@error</div>
+    }
+
+    <div class="actions">
+        <Button Variant="ButtonVariant.Danger" IconName="user-x" Disabled="busy" OnClick="ConfirmAsync">@(busy ? "Unenrolling…" : "Unenroll")</Button>
+        <Button Variant="ButtonVariant.Ghost" OnClick="Close">Keep enrolled</Button>
+    </div>
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public int StudentId { get; set; }
+
+    [Parameter, EditorRequired] public string StudentName { get; set; } = "";
+
+    /// <summary>"2nd Term · 2026-2027"</summary>
+    [Parameter, EditorRequired] public string TermLabel { get; set; } = "";
+
+    private bool open;
+    private bool busy;
+    private string? error;
+
+    private void Ask()
+    {
+        error = null;
+        open = true;
+    }
+
+    private void Close() => open = false;
+
+    private async Task ConfirmAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        error = null;
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Enrollment.UnenrollNextTermAsync(StudentId, me.UserId);
+            if (result.Succeeded)
+            {
+                open = false;
+                Navigation.Refresh();
+            }
+            else
+            {
+                error = result.Errors.FirstOrDefault() ?? "The student could not be unenrolled.";
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

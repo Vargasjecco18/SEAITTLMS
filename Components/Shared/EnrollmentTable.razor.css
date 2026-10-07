@@ -123,6 +123,33 @@
     margin-top: 0.2rem;
 }
 
+/* Next term: whether the student is enrolled for it, and the button to unenroll or the link to enroll. */
+.col-next {
+    min-width: 9rem;
+    vertical-align: top;
+}
+
+.col-next .sub {
+    margin-top: 0.15rem;
+}
+
+.col-next ::deep .button {
+    margin: 0.3rem 0 0 -0.35rem;
+}
+
+.enroll-link {
+    display: inline-block;
+    margin-top: 0.3rem;
+    color: var(--brand-strong);
+    font-size: 0.88rem;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.enroll-link:hover {
+    text-decoration: underline;
+}
+
 .col-date {
     white-space: nowrap;
 }

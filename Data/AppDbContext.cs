@@ -45,11 +45,11 @@ public class AppDbContext : DbContext
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<Referral> Referrals => Set<Referral>();
-    public DbSet<WithdrawalRequest> WithdrawalRequests => Set<WithdrawalRequest>();
 
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

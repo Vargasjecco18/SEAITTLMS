@@ -33,3 +33,22 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
         b.HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAtUtc });
     }
 }
+
+internal sealed class AnnouncementConfiguration : IEntityTypeConfiguration<Announcement>
+{
+    public void Configure(EntityTypeBuilder<Announcement> b)
+    {
+        b.Property(a => a.Title).HasMaxLength(200).IsRequired();
+        b.Property(a => a.Body).HasColumnType("text").IsRequired();
+        b.Property(a => a.Audience).HasMaxLength(10).IsRequired();
+
+        // A deleted account takes its announcements with it, and so does a deleted section.
+        b.HasOne(a => a.Author).WithMany().HasForeignKey(a => a.AuthorUserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.Section).WithMany().HasForeignKey(a => a.SectionId).OnDelete(DeleteBehavior.Cascade);
+
+        b.HasIndex(a => new { a.Audience, a.CreatedAtUtc });
+        b.HasIndex(a => new { a.AuthorUserId, a.CreatedAtUtc });
+
+        b.ToTable(t => t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')"));
+    }
+}

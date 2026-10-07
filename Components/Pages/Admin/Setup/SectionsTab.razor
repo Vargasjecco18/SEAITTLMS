@@ -1,0 +1,240 @@
+@inherits SetupTabBase
+
+<Card>
+    <div class="tab-head">
+        <p class="grow">The sections of a school year, like 11-BUSSENT-A. The registrar also makes a section the first time a student is enrolled in it. Teachers get a section's subjects under <strong>Users Management</strong>.</p>
+        <Button IconName="plus" Disabled="@(lookups is { Years.Count: 0 } or { Strands.Count: 0 })" OnClick="OpenAdd">Add section</Button>
+    </div>
+
+    <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    <form class="toolbar" role="search" @onsubmit="() => { }">
+        <div class="search-box">
+            <Icon Name="search" Size="18" Class="search-icon" />
+            <input type="search" aria-label="Search sections" placeholder="Section or adviser" autocomplete="off" @bind="search" @bind:event="oninput" />
+        </div>
+        <select aria-label="School year" @bind="yearFilter">
+            <option value="0">All school years</option>
+            @foreach (var year in lookups?.Years ?? [])
+            {
+                <option value="@year.Id">@year.Name</option>
+            }
+        </select>
+        <span class="result-count">@(Shown.Count == 1 ? "1 section" : $"{Shown.Count:N0} sections")</span>
+    </form>
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (Shown.Count == 0)
+    {
+        <EmptyState IconName="@(rows.Count == 0 ? "users" : "search-x")" Title="@(rows.Count == 0 ? "No section yet" : "No section matches")" />
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Section</th>
+                        <th scope="col">Schedule</th>
+                        <th scope="col" class="col-more">School year</th>
+                        <th scope="col" class="col-more">Adviser</th>
+                        <th scope="col">Students</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Shown)
+                    {
+                        <tr>
+                            <td class="name nowrap">@row.Label</td>
+                            <td>@if (row.Schedule is not null) { <Badge Tone="Tone.Info">@row.Schedule</Badge> } else { <span class="muted">—</span> }</td>
+                            <td class="col-more nowrap">@row.SchoolYear</td>
+                            <td class="col-more">@(row.Adviser ?? "—")</td>
+                            <td>@row.Students</td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Label}")" OnClick="() => OpenEdit(row)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Label}")" OnClick="() => OpenDelete(row)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+<Modal Open="form is not null" Title="@(form?.Id is null ? "Add section" : "Edit section")" OnClose="CloseForm">
+    @if (form is not null && lookups is not null)
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="Errors" />
+            @if (locked)
+            {
+                <p class="note-box">Students or teachers are in this section, so only its name and its adviser can change.</p>
+            }
+
+            <Field For="n-year" Label="School year" Required="true">
+                <select id="n-year" disabled="@locked" @bind="form.SchoolYearId">
+                    <option value="0">Choose a school year</option>
+                    @foreach (var year in lookups.Years)
+                    {
+                        <option value="@year.Id">@year.Name</option>
+                    }
+                </select>
+            </Field>
+            <div class="two">
+                <Field For="n-grade" Label="Grade level" Required="true">
+                    <select id="n-grade" disabled="@locked" @bind="form.GradeLevel">
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </Field>
+                <Field For="n-strand" Label="Strand" Required="true">
+                    <select id="n-strand" disabled="@locked" @bind="form.StrandId" @bind:after="StrandChanged">
+                        <option value="0">Choose a strand</option>
+                        @foreach (var strand in lookups.Strands)
+                        {
+                            <option value="@strand.Id">@strand.Code</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="n-schedule" Label="Meets in" Required="true">
+                    <select id="n-schedule" disabled="@(locked || form.StrandId == 0)" @bind="form.ScheduleId">
+                        <option value="0">@(form.StrandId == 0 ? "Choose the strand first" : "Choose")</option>
+                        @foreach (var schedule in SchedulesOfStrand)
+                        {
+                            <option value="@schedule.Id">@schedule.Code · @schedule.Name</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="n-name" Label="Section name" Required="true" Hint="Like A.">
+                    <input id="n-name" maxlength="50" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <Field For="n-adviser" Label="Adviser" Hint="Optional.">
+                <select id="n-adviser" @bind="adviserId">
+                    <option value="0">No adviser</option>
+                    @foreach (var teacher in lookups.Teachers)
+                    {
+                        <option value="@teacher.Id">@teacher.Name</option>
+                    }
+                </select>
+            </Field>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+<Modal Open="deleting is not null" Title="Delete this section?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p class="delete-text">You are about to delete the section <strong>@deleting.Label</strong> (@deleting.SchoolYear). <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<SectionRow>? rows;
+    private SetupLookups? lookups;
+    private SectionInput? form;
+    private SectionRow? deleting;
+    private bool locked;
+    private int adviserId;
+    private string search = "";
+    private int yearFilter;
+
+    private IReadOnlyList<SectionRow> Shown =>
+        rows is null ? [] : rows.Where(r => (yearFilter == 0 || r.SchoolYearId == yearFilter)
+            && (string.IsNullOrWhiteSpace(search)
+                || r.Label.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+                || (r.Adviser?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false))).ToList();
+
+    private IEnumerable<ScheduleChoice> SchedulesOfStrand
+    {
+        get
+        {
+            var strand = lookups?.Strands.FirstOrDefault(s => s.Id == form?.StrandId);
+            return strand is null ? [] : lookups!.Schedules.Where(s => strand.ScheduleIds.Contains(s.Id));
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        lookups = await Setup.GetLookupsAsync();
+        rows = await Setup.ListSectionsAsync();
+    }
+
+    private async Task ReloadAsync() => rows = await Setup.ListSectionsAsync();
+
+    private void OpenAdd()
+    {
+        Errors = [];
+        locked = false;
+        adviserId = 0;
+        form = new SectionInput { SchoolYearId = lookups?.Years.FirstOrDefault()?.Id ?? 0 };
+    }
+
+    private void OpenEdit(SectionRow row)
+    {
+        Errors = [];
+        locked = row.Students > 0 || row.Teachers > 0;
+        adviserId = row.AdviserTeacherId ?? 0;
+        form = new SectionInput
+        {
+            Id = row.Id, SchoolYearId = row.SchoolYearId, StrandId = row.StrandId, GradeLevel = row.GradeLevel, ScheduleId = row.ScheduleId ?? 0,
+            Name = row.Name, AdviserTeacherId = row.AdviserTeacherId,
+        };
+    }
+
+    private void CloseForm() => form = null;
+
+    // A strand with a single schedule needs no choosing.
+    private void StrandChanged()
+    {
+        var schedules = SchedulesOfStrand.ToList();
+        form!.ScheduleId = schedules.Count == 1 ? schedules[0].Id : 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        form!.AdviserTeacherId = adviserId == 0 ? null : adviserId;
+        var result = await RunAsync(userId => Setup.SaveSectionAsync(form!, userId));
+        if (result.Succeeded)
+        {
+            form = null;
+            await ReloadAsync();
+        }
+    }
+
+    private void OpenDelete(SectionRow row)
+    {
+        Errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        var result = await RunAsync(userId => Setup.DeleteSectionAsync(deleting!.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            await ReloadAsync();
+        }
+    }
+}

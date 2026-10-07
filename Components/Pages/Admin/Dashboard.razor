@@ -36,15 +36,18 @@
                 @foreach (var item in SetupItems(overview.Setup))
                 {
                     <li>
-                        <span class="setup-icon"><Icon Name="@item.Icon" Size="18" /></span>
-                        <span class="setup-text">
-                            <strong class="setup-count">@item.Count.ToString("N0")</strong>
-                            <span class="setup-label">@item.Label</span>
-                        </span>
+                        <a class="setup-link" href="admin/school-setup/@item.Key">
+                            <span class="setup-icon"><Icon Name="@item.Icon" Size="18" /></span>
+                            <span class="setup-text">
+                                <strong class="setup-count">@item.Count.ToString("N0")</strong>
+                                <span class="setup-label">@item.Label@(item.ReadOnly ? " · view only" : "")</span>
+                            </span>
+                        </a>
                     </li>
                 }
             </ul>
-            <p class="note">Screens for adding and editing these are coming soon.</p>
+            <p class="note">Add, edit and delete them in the school setup. Enrollments and the students who are not enrolled are the registrar's work: you can look at them, but not change them.</p>
+            <p class="see-all"><a href="admin/school-setup">Open the school setup <Icon Name="arrow-right" Size="16" /></a></p>
         </Card>
 
         <Card Title="Latest accounts" IconName="users">
@@ -132,14 +135,15 @@
         _ => ("Guidance counselors", "heart-handshake", AccentColor.Rose, "guidance"),
     };
 
-    private static (string Label, string Icon, int Count)[] SetupItems(SetupTotals setup) =>
+    private static (string Label, string Icon, int Count, string Key, bool ReadOnly)[] SetupItems(SetupTotals setup) =>
     [
-        ("School years", "calendar-range", setup.SchoolYears),
-        ("Terms", "calendar-days", setup.Terms),
-        ("Tracks", "layers", setup.Tracks),
-        ("Strands", "layout-grid", setup.Strands),
-        ("Subjects", "book-open", setup.Subjects),
-        ("Sections", "users", setup.Sections),
-        ("Enrollments", "user-check", setup.Enrollments),
+        ("School years", "calendar-range", setup.SchoolYears, "school-years", false),
+        ("Terms", "calendar-days", setup.Terms, "terms", false),
+        ("Tracks", "layers", setup.Tracks, "tracks", false),
+        ("Strands", "layout-grid", setup.Strands, "strands", false),
+        ("Subjects", "book-open", setup.Subjects, "subjects", false),
+        ("Sections", "users", setup.Sections, "sections", false),
+        ("Enrollments", "user-check", setup.Enrollments, "enrollments", true),
+        ("Not enrolled", "user-x", setup.NotEnrolled, "not-enrolled", true),
     ];
 }

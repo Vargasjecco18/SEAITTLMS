@@ -1,13 +1,12 @@
 namespace SEAITT_LMS.Data.Entities;
 
-/// <summary>Where a student is in their schooling. Graduates and withdrawn students are archived: their records stay, their login is switched off.</summary>
+/// <summary>Where a student is in their schooling. Graduates are archived: their records stay, their login is switched off.</summary>
 public static class StudentStatus
 {
     public const string Active = "Active";
     public const string Graduated = "Graduated";
-    public const string Withdrawn = "Withdrawn";
 
-    public static readonly string[] All = [Active, Graduated, Withdrawn];
+    public static readonly string[] All = [Active, Graduated];
 }
 
 /// <summary>Why a student was referred to the guidance counselor.</summary>
@@ -87,29 +86,4 @@ public class Referral : AuditableEntity
 
     public int? HandledByUserId { get; set; }
     public User? HandledBy { get; set; }
-}
-
-public static class WithdrawalStatus
-{
-    public const string Pending = "Pending";
-    public const string Approved = "Approved";
-    public const string Declined = "Declined";
-    public const string Cancelled = "Cancelled";
-}
-
-/// <summary>A student asking to leave school before finishing. The registrar approves or declines it.</summary>
-public class WithdrawalRequest : AuditableEntity
-{
-    public int StudentId { get; set; }
-    public Student Student { get; set; } = null!;
-
-    public string Reason { get; set; } = "";
-
-    /// <summary>One of <see cref="WithdrawalStatus"/>.</summary>
-    public string Status { get; set; } = WithdrawalStatus.Pending;
-
-    public DateTime? DecidedAtUtc { get; set; }
-    public int? DecidedByUserId { get; set; }
-    public User? DecidedBy { get; set; }
-    public string? DecisionNote { get; set; }
 }

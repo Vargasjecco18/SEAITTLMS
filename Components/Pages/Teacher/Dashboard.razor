@@ -23,7 +23,7 @@
 }
 else
 {
-    <PageWithAside Show="calendar,todo">
+    <PageWithAside Show="announcements,calendar,todo">
         <div class="stats">
             <StatCard Label="Work to check" Value="@data.ToCheck" IconName="clipboard-list" Accent="@(data.ToCheck > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="@(data.ToCheck == 0 ? "All checked" : "Waiting for a score")" />
             <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Anti-cheating, last 30 days" />

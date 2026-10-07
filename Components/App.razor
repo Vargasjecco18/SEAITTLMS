@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="@Theme" data-theme-pref="@(Theme ?? "auto")" data-motion="@Motion">
 
 <head>
     <meta charset="utf-8" />
@@ -7,8 +7,11 @@
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <link rel="icon" type="image/png" href="@Assets["favicon.png"]" />
-    @* The look the person chose in the settings menu (light, dark or automatic) is applied before the page is drawn, so the
-       page does not flash white first. wwwroot/app.js saves the choice. *@
+    @* The look the person chose in the settings menu (light, dark or automatic) is kept in a cookie by wwwroot/app.js, and
+       the server writes it onto <html> above. It has to come from the server: when a link is followed, Blazor swaps the page
+       for the one the server sends, attributes of <html> included, so a look that only the browser knew would be lost.
+       The script below is for a person who chose before the cookie existed (the choice was only in the browser then) and
+       draws the right look before the page is shown, so it does not flash white first. *@
     <script>
         (function () {
             try {
@@ -17,6 +20,8 @@
                 if (theme === 'light' || theme === 'dark') { root.setAttribute('data-theme', theme); }
                 root.setAttribute('data-theme-pref', theme === 'light' || theme === 'dark' ? theme : 'auto');
                 if (localStorage.getItem('seaitt-motion') === 'off') { root.setAttribute('data-motion', 'off'); }
+                if (theme && document.cookie.indexOf('seaitt-theme=') < 0) { document.cookie = 'seaitt-theme=' + theme + '; path=/; max-age=31536000; samesite=lax'; }
+                if (localStorage.getItem('seaitt-motion') === 'off' && document.cookie.indexOf('seaitt-motion=') < 0) { document.cookie = 'seaitt-motion=off; path=/; max-age=31536000; samesite=lax'; }
             } catch (e) { }
         })();
     </script>
@@ -32,3 +37,20 @@
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
+    /// <summary>"light" or "dark" when the person chose one, otherwise null (automatic: follow the computer).</summary>
+    private string? Theme
+    {
+        get
+        {
+            var choice = HttpContext?.Request.Cookies["seaitt-theme"];
+            return choice is "light" or "dark" ? choice : null;
+        }
+    }
+
+    /// <summary>"off" when the person switched the animations off, otherwise null.</summary>
+    private string? Motion => HttpContext?.Request.Cookies["seaitt-motion"] == "off" ? "off" : null;
+}

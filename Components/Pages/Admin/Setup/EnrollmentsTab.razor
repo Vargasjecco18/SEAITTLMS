@@ -1,0 +1,85 @@
+@using SEAITT_LMS.Data
+@using SEAITT_LMS.Data.Queries
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+@* Read-only: the enrollments are the registrar's work. *@
+<Card>
+    <div class="tab-head">
+        <p class="grow"><Icon Name="eye" Size="16" /> Enrollments are made by the registrar. You can look at them here, but not change them.</p>
+    </div>
+
+    <form class="toolbar" role="search" @onsubmit="SearchAsync">
+        <div class="search-box">
+            <Icon Name="search" Size="18" Class="search-icon" />
+            <input type="search" aria-label="Search enrollments" placeholder="Name or LRN" autocomplete="off" @bind="search" />
+        </div>
+        <select aria-label="Term" @bind="termId" @bind:after="SearchAsync">
+            <option value="0">All terms</option>
+            @foreach (var term in terms)
+            {
+                <option value="@term.Id">@term.SchoolYear · @term.Name</option>
+            }
+        </select>
+        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
+        <span class="result-count">@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")</span>
+    </form>
+
+    @if (result is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (result.Items.Count == 0)
+    {
+        <EmptyState IconName="search-x" Title="No enrollment matches" />
+    }
+    else
+    {
+        <div class="table-in-card">
+            <EnrollmentTable Rows="result.Items" ShowSubjects="true" />
+        </div>
+
+        @if (result.PageCount > 1)
+        {
+            <nav class="pager" aria-label="Pages">
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(result.Page <= 1)" OnClick="() => GoToAsync(result.Page - 1)">Previous</Button>
+                <span class="muted">Page @result.Page of @result.PageCount</span>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconAfter="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="() => GoToAsync(result.Page + 1)">Next</Button>
+            </nav>
+        }
+    }
+</Card>
+
+@code {
+    private const int PageSize = 20;
+
+    private EnrollmentPage? result;
+    private IReadOnlyList<YearTerm> terms = [];
+    private string search = "";
+    private string appliedSearch = "";
+    private int termId;
+
+    private sealed record YearTerm(int Id, string Name, string SchoolYear);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        terms = await db.Terms.AsNoTracking().OrderByDescending(t => t.SchoolYear.StartDate).ThenBy(t => t.TermNumber)
+            .Select(t => new YearTerm(t.Id, t.Name, t.SchoolYear.Name)).ToListAsync();
+        await LoadAsync(1);
+    }
+
+    private async Task LoadAsync(int page)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(appliedSearch, termId == 0 ? null : termId, null, null), page, PageSize);
+    }
+
+    private async Task SearchAsync()
+    {
+        appliedSearch = search.Trim();
+        await LoadAsync(1);
+    }
+
+    private Task GoToAsync(int page) => LoadAsync(page);
+}

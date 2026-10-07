@@ -11,7 +11,7 @@
     <nav class="controls" aria-label="Calendar controls">
         <ButtonLink Href="@Url(view, Step(-1))" Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left">Previous</ButtonLink>
         <ButtonLink Href="@Url(view, today)" Variant="ButtonVariant.Secondary" Small="true">Today</ButtonLink>
-        <ButtonLink Href="@Url(view, Step(1))" Variant="ButtonVariant.Secondary" Small="true">Next</ButtonLink>
+        <ButtonLink Href="@Url(view, Step(1))" Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-right" IconAfter="true">Next</ButtonLink>
         <span class="switch" role="group" aria-label="View">
             <a class="switch-link @(view == "month" ? "on" : "")" href="@Url("month", anchor)" aria-current="@(view == "month" ? "page" : null)">Month</a>
             <a class="switch-link @(view == "week" ? "on" : "")" href="@Url("week", anchor)" aria-current="@(view == "week" ? "page" : null)">Week</a>
@@ -19,7 +19,7 @@
     </nav>
 </PageHeader>
 
-<PageWithAside Show="todo,upnext">
+<PageWithAside Show="@AsideShow">
     <ul class="legend" aria-label="Legend">
         @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Todo })
         {
@@ -39,7 +39,7 @@
             @foreach (var day in Days)
             {
                 var onDay = EventsOn(day);
-                <div class="cell @(day.Month != anchor.Month ? "other" : "") @(day == today ? "today" : "")" role="gridcell">
+                <div class="cell @(day.Month != anchor.Month ? "other" : "") @(day == today ? "today" : "")" role="gridcell" data-day="@day.ToString("yyyy-MM-dd")">
                     <a class="num" href="@Url("week", day)" aria-label="@day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)">@day.Day</a>
                     <ul class="chips">
                         @foreach (var e in onDay.Take(3))
@@ -62,7 +62,7 @@
             @foreach (var day in Days)
             {
                 var onDay = EventsOn(day);
-                <section class="column @(day == today ? "today" : "")" aria-label="@day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)">
+                <section class="column @(day == today ? "today" : "")" aria-label="@day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)" data-day="@day.ToString("yyyy-MM-dd")">
                     <header>
                         <span class="wd">@day.ToString("ddd", CultureInfo.InvariantCulture)</span>
                         <span class="wn">@day.Day</span>
@@ -100,6 +100,12 @@
     }
 </PageWithAside>
 
+@* A teacher dragged an unassigned activity onto a day (or pressed "Set date"): the box to give it its due date and settings. *@
+@if (editItemId is { } itemId)
+{
+    <ItemScheduleDialog @key="@($"{itemId}-{editDay}")" ItemId="itemId" Day="editDay" CloseUrl="@Url(view, anchor)" />
+}
+
 @code {
     private static readonly string[] DayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -107,12 +113,23 @@
 
     [SupplyParameterFromQuery(Name = "date")] private string? DateText { get; set; }
 
+    // A teacher's "unassigned activity" dropped on a day: ?edit=<item>&on=<day>.
+    [SupplyParameterFromQuery(Name = "edit")] private string? EditText { get; set; }
+
+    [SupplyParameterFromQuery(Name = "on")] private string? OnText { get; set; }
+
     private DateOnly today;
     private DateOnly anchor;
     private string view = "month";
     private DateOnly rangeStart;
     private int rangeDays;
     private IReadOnlyList<CalendarEvent> events = [];
+    private bool isTeacher;
+    private int? editItemId;
+    private DateOnly? editDay;
+
+    /// <summary>The widgets at the right: a student's activities, or the teacher's activities that have no due date yet.</summary>
+    private string AsideShow => isTeacher ? "unassigned,todo,upnext" : "activities,todo,upnext";
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
 
@@ -140,7 +157,11 @@
         }
 
         var user = await Me.GetAsync();
+        isTeacher = user?.Role == AppRoles.Teacher;
         events = user is null ? [] : await Events.GetEventsAsync(user, rangeStart, rangeStart.AddDays(rangeDays - 1));
+
+        editItemId = isTeacher && int.TryParse(EditText, out var itemId) && itemId > 0 ? itemId : null;
+        editDay = DateOnly.TryParseExact(OnText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var on) && on.Year is > 2000 and < 2100 ? on : null;
     }
 
     private List<CalendarEvent> EventsOn(DateOnly day) => events.Where(e => e.Day == day).ToList();

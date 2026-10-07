@@ -69,15 +69,15 @@ erDiagram
     users ||--o{ todo_items : "to-do list"
     students ||--o{ referrals : ""
     teaching_assignments |o--o{ referrals : "subject"
-    students ||--o{ withdrawal_requests : ""
     users |o--o{ referrals : "handled by"
-    users |o--o{ withdrawal_requests : "decided by"
     teaching_assignments ||--o{ attendance_records : ""
     students ||--o{ attendance_records : ""
 
     users ||--o{ messages : "sender"
     users ||--o{ messages : "recipient"
     users ||--o{ notifications : ""
+    users ||--o{ announcements : "author"
+    sections |o--o{ announcements : "for the students of"
 
     tracks |o--o{ students : "summary"
     strands |o--o{ students : "summary"
@@ -193,22 +193,23 @@ registrar who did it.
 | `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
 | `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
 | `referrals` | A student sent to the guidance counselor: `student_id`, `assignment_id` (the subject; dropped if the subject is removed), `reason` (`FailingGrades`, `AtRisk` or `LowAttendance`), `detail` (what was found, in words), `metric` (the grade or attendance in percent), `status` (`Open`, `InProgress`, `Resolved`), `intervention` (the help given), `notes`, `outcome` (`Improved` or `NoChange`, set when resolved), `resolved_at_utc`, `handled_by_user_id`. Made by the system, worked by the counselor. Deleted with the student. |
-| `withdrawal_requests` | A student asking to leave school: `student_id`, `reason`, `status` (`Pending`, `Approved`, `Declined`, `Cancelled`), `decided_at_utc`, `decided_by_user_id`, `decision_note`. |
 | `todo_items` | A person's own to-do list (students and teachers): `user_id`, `title`, `due_on` (a date, or empty), `is_done`, `done_at_utc`. Deleted with the account. |
 
 Deleting a teacher deletes their assignments, and with them the modules, items and handed-in work. Deleting a student
 deletes their work and module views (their enrollments are deleted first, see below). A section or a subject can't be
 deleted while an assignment uses it.
 
-A student's own row (`students`) also has `status` (`Active`, `Graduated` or `Withdrawn`), `status_changed_at_utc` and `status_note`. A
-graduated or withdrawn student is **archived**: the records stay, the account is switched off (`users.is_active = 0`), the enrollments are closed
-(`Completed` for a graduate, `Dropped` for a withdrawal) and open referrals are resolved.
+A student's own row (`students`) also has `status` (`Active` or `Graduated`; a check constraint allows nothing else), `status_changed_at_utc` and
+`status_note`. A graduated student is **archived**: the records stay, the account is switched off (`users.is_active = 0`), the enrollments are
+completed and open referrals are resolved. (The withdrawal feature and its table `withdrawal_requests` were removed by the migration
+`RemoveWithdrawals`; a student who was `Withdrawn` becomes `Active` again, with the sign-in still switched off.)
 
 ### Messages and notifications
 
 | Table | What it holds |
 |---|---|
 | `messages` | A message from one account to another: `sender_user_id`, `recipient_user_id`, `body` (up to 2000 characters), `created_at_utc` (when it was sent) and `read_at_utc` (empty while unread). |
+| `announcements` | A notice: `author_user_id`, `title`, `body` (up to 2000 characters), `audience` (`Everyone`, `Students` or `Teachers`, checked), `section_id` (a teacher's announcement is for the students of one section; empty for the whole audience), `expires_on` (the last day it is shown, a Philippine date, or empty). Deleted with its author's account and with its section. |
 | `notifications` | Something the system tells a person under the bell: `user_id`, `kind` (message, module, grade, ...), `title`, `body`, `link` (the page it is about), `is_read`. |
 
 Both are deleted with the account they belong to. Messages can only be sent between 7:00 AM and 7:00 PM Philippine time
@@ -283,8 +284,18 @@ Things that were decided for you, change them in the tables if they are not righ
   is *failing*, a grade from 70 up to 75 or three or more missed works is *at risk*, and an attendance rate under 80% over at least 5 marked
   days is *not attending class*. One referral per student, subject and problem; the same problem is not sent again for 14 days after it was
   resolved. Only the guidance counselor works on referrals. Resolving one needs an outcome.
-- Only an administrator archives graduates (`StudentLifecycleService`); a student asks to withdraw and only the registrar answers (or withdraws a
-  student directly). A student who is archived can't be enrolled again until an administrator restores the account.
+- Only an administrator archives graduates (`StudentLifecycleService`). A student who is archived can't be enrolled again until an administrator restores the account.
+- A student's subjects are **not picked** at enrollment: `EnrollmentService` gives the student all the active subjects the strand has at that grade level
+  and term (`strand_subjects`, edited by the administrator in the school setup). The student's phone number is optional (`users.phone_number`) and an
+  existing number is not overwritten. The registrar can **unenroll** a student for the **next term** (the term after the current one): the enrollment in
+  that term and its `enrollment_subjects` are deleted. "Not enrolled" means an active student with no `Enrolled` enrollment in the next term (the current term
+  when there is no next one), see `Data/Queries/NotEnrolled.cs` and `TermLookup`.
+- The school setup (`SchoolSetupService`) is only for administrators and refuses what would leave the records inconsistent: a term, strand or
+  section that students use can't move to another school year, track or strand; a schedule a section uses can't be taken from its strand; a school
+  year with terms or sections, a track with strands, a subject in a curriculum or taken by students and a section with students can't be deleted; only one term is
+  current. (Edits of columns that are part of a key other tables use are made with a direct update, `ExecuteUpdate`, not through a tracked entity.)
+- Announcements (`AnnouncementService`): the administrator and the registrar write for everybody, the students or the teachers; a teacher only for a
+  section they teach; the administrator may change or delete any, everybody else only their own. People are notified once, when it is posted.
 - Only the teacher of a subject marks its attendance, only for students on its roster, and not for a day that has not come
   (`AttendanceService`). The attendance rate is the days present or late divided by the days marked; under 80% is "low".
   The gradebook (`GradebookService`) changes scores through `WorkService.GradeAsync` and checks every box before saving any.

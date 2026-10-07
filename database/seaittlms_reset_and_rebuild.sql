@@ -1032,5 +1032,41 @@ CREATE INDEX `ix_withdrawal_requests_student_id` ON `withdrawal_requests` (`stud
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261004194551_AddReferralsStudentStatusAndWithdrawals', '9.0.20');
 
+DROP TABLE `withdrawal_requests`;
+
+ALTER TABLE `students` DROP CONSTRAINT `ck_students_status`;
+
+UPDATE students SET status = 'Active', status_note = NULL WHERE id > 0 AND status = 'Withdrawn';
+
+ALTER TABLE `students` ADD CONSTRAINT `ck_students_status` CHECK (status IN ('Active', 'Graduated'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261007020549_RemoveWithdrawals', '9.0.20');
+
+CREATE TABLE `announcements` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `author_user_id` int NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `body` text CHARACTER SET utf8mb4 NOT NULL,
+    `audience` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `section_id` int NULL,
+    `expires_on` date NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_announcements` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_announcements_audience` CHECK (audience IN ('Everyone', 'Students', 'Teachers')),
+    CONSTRAINT `fk_announcements_sections_section_id` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_announcements_users_author_user_id` FOREIGN KEY (`author_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_announcements_audience_created_at_utc` ON `announcements` (`audience`, `created_at_utc`);
+
+CREATE INDEX `ix_announcements_author_user_id_created_at_utc` ON `announcements` (`author_user_id`, `created_at_utc`);
+
+CREATE INDEX `ix_announcements_section_id` ON `announcements` (`section_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261007022229_AddAnnouncements', '9.0.20');
+
 COMMIT;
 

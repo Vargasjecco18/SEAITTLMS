@@ -8,7 +8,9 @@ namespace SEAITT_LMS.Data.Queries;
 public sealed record DetailRow(string Label, string? Value, bool IsStatus = false);
 
 /// <summary>What the home page shows about the signed-in person: who they are and where they belong.</summary>
-public sealed record AccountDetails(string FullName, string FirstName, string Email, string Role, IReadOnlyList<DetailRow> Rows)
+public sealed record AccountDetails(
+    string FullName, string FirstName, string Email, string Role, IReadOnlyList<DetailRow> Rows,
+    DateTime? LastLoginAtUtc = null, DateTime? CreatedAtUtc = null, bool IsActive = true)
 {
     /// <summary>The details of one account, or null when the account no longer exists.</summary>
     public static async Task<AccountDetails?> LoadAsync(AppDbContext db, int userId, CancellationToken ct = default)
@@ -54,7 +56,7 @@ public sealed record AccountDetails(string FullName, string FirstName, string Em
 
         // An account made by hand without a profile row still works, it just has no name yet.
         var firstName = user.Profile?.FirstName ?? user.Email;
-        return new AccountDetails(user.DisplayName, firstName, user.Email, AppRoles.DisplayName(user.Role.Name), rows);
+        return new AccountDetails(user.DisplayName, firstName, user.Email, AppRoles.DisplayName(user.Role.Name), rows, user.LastLoginAtUtc, user.CreatedAtUtc, user.IsActive);
     }
 
     /// <summary>The subjects a student is enrolled in for the current term, or null when there are none.</summary>

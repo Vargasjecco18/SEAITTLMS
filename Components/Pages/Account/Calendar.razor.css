@@ -318,3 +318,17 @@ a.chip:hover {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: none; }
 }
+
+/* While an unassigned activity is dragged (app.js), every day shows it can take it, and the day under it is lit. */
+html.dragging-item .cell,
+html.dragging-item .column {
+    outline: 1px dashed var(--brand);
+    outline-offset: -3px;
+}
+
+.cell.drop-over,
+.column.drop-over {
+    background: var(--brand-soft);
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+}

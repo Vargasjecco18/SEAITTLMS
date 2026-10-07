@@ -39,6 +39,7 @@ else if (receipt is not null)
 
         <dl class="details">
             <div><dt>LRN</dt><dd>@receipt.Lrn</dd></div>
+            <div><dt>Phone</dt><dd>@(receipt.PhoneNumber ?? "Not given")</dd></div>
             <div><dt>Track</dt><dd>@receipt.Track</dd></div>
             <div><dt>Strand</dt><dd>@receipt.Strand</dd></div>
             <div><dt>Schedule</dt><dd>@receipt.Schedule</dd></div>
@@ -145,6 +146,10 @@ else
                     <input id="last-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)"
                            @bind="LastNameValue" @bind:event="oninput" />
                 </Field>
+                <Field For="phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567.">
+                    <input id="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="09XX XXX XXXX"
+                           readonly="@(existing?.PhoneNumber is not null)" @bind="PhoneValue" />
+                </Field>
             </Card>
 
             <Card Title="Enrollment" IconName="clipboard-list">
@@ -206,43 +211,27 @@ else
                         </datalist>
                     </Field>
                 </div>
+
+                @* The subjects are not picked: the strand decides them (the administrator sets them in the school setup). *@
+                <p class="subjects-note">
+                    <Icon Name="book-open" Size="16" />
+                    @if (form.StrandId == 0)
+                    {
+                        <span>The student gets all the subjects of the strand for the term. Choose a strand to see how many.</span>
+                    }
+                    else if (subjects.Count == 0)
+                    {
+                        <span>No subjects are set for this strand, grade level and term yet. The student is enrolled without subjects.</span>
+                    }
+                    else
+                    {
+                        <span>The student gets all @subjects.Count subjects of this strand for the term: @string.Join(", ", subjects.Select(x => x.Name)).</span>
+                    }
+                </p>
             </Card>
         </div>
 
         <div class="grid">
-            <Card Title="Enrolled subjects" IconName="book-open">
-                @if (form.StrandId == 0)
-                {
-                    <p class="muted">Choose a strand to see its subjects for this term.</p>
-                }
-                else if (subjects.Count == 0)
-                {
-                    <p class="muted">No subjects are set for this strand, grade level and term yet. The student is enrolled without subjects.</p>
-                }
-                else
-                {
-                    <div class="subject-tools">
-                        <span class="muted">@selectedSubjects.Count of @subjects.Count selected</span>
-                        <span>
-                            <button type="button" class="link-button" @onclick="SelectAllSubjects">Select all</button>
-                            <button type="button" class="link-button" @onclick="ClearSubjects">Clear</button>
-                        </span>
-                    </div>
-                    <ul class="subject-list">
-                        @foreach (var subject in subjects)
-                        {
-                            <li>
-                                <label class="check">
-                                    <input type="checkbox" checked="@selectedSubjects.Contains(subject.Id)"
-                                           @onchange="e => ToggleSubject(subject.Id, e.Value is true)" />
-                                    <span>@subject.Name</span>
-                                </label>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-
             <Card Title="Sign-in details" IconName="key-round">
                 @if (existing is not null)
                 {
@@ -284,13 +273,13 @@ else
         public int StrandId { get; set; }
         public int ScheduleId { get; set; }
         public string SectionName { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
     }
 
     private readonly Form form = new();
     private EnrollmentLookups? lookups;
     private ExistingStudent? existing;
     private IReadOnlyList<SubjectOption> subjects = [];
-    private readonly HashSet<int> selectedSubjects = [];
     private IReadOnlyList<string> sectionNames = [];
     private List<string> errors = [];
     private EnrollmentReceipt? receipt;
@@ -318,6 +307,13 @@ else
         set => form.LastName = value;
     }
 
+    // A student who already has a number shows it (read-only); otherwise what is typed is kept and saved with the enrollment.
+    private string PhoneValue
+    {
+        get => existing?.PhoneNumber ?? form.PhoneNumber;
+        set => form.PhoneNumber = value;
+    }
+
     private IEnumerable<StrandOption> StrandsOfTrack => lookups!.Strands.Where(s => s.TrackId == form.TrackId);
 
     private IEnumerable<ScheduleOption> SchedulesOfStrand
@@ -335,10 +331,26 @@ else
             ? Enrollment.PreviewLogin(form.LastName, form.Lrn)
             : null;
 
+    // The student list links here with ?lrn=...&term=... to enroll a student who is not enrolled yet.
+    [SupplyParameterFromQuery(Name = "lrn")] private string? LrnQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "term")] private string? TermQuery { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         lookups = await Enrollment.GetLookupsAsync();
         form.TermId = (lookups.Terms.FirstOrDefault(t => t.IsCurrent) ?? lookups.Terms.FirstOrDefault())?.Id ?? 0;
+
+        if (int.TryParse(TermQuery, out var termId) && lookups.Terms.Any(t => t.Id == termId))
+        {
+            form.TermId = termId;
+        }
+
+        if (LrnQuery is { Length: 12 } lrn && lrn.All(char.IsAsciiDigit))
+        {
+            form.Lrn = lrn;
+            existing = await Enrollment.FindStudentAsync(lrn);
+        }
     }
 
     private async Task OnLrnChangedAsync()
@@ -380,7 +392,6 @@ else
         if (form.StrandId == 0 || form.TermId == 0)
         {
             subjects = [];
-            selectedSubjects.Clear();
             sectionNames = [];
             return;
         }
@@ -397,36 +408,8 @@ else
         }
 
         subjects = curriculum;
-        selectedSubjects.Clear();
-        foreach (var subject in subjects)
-        {
-            selectedSubjects.Add(subject.Id);
-        }
-
         sectionNames = sections;
     }
-
-    private void ToggleSubject(int id, bool on)
-    {
-        if (on)
-        {
-            selectedSubjects.Add(id);
-        }
-        else
-        {
-            selectedSubjects.Remove(id);
-        }
-    }
-
-    private void SelectAllSubjects()
-    {
-        foreach (var subject in subjects)
-        {
-            selectedSubjects.Add(subject.Id);
-        }
-    }
-
-    private void ClearSubjects() => selectedSubjects.Clear();
 
     private async Task SubmitAsync()
     {
@@ -449,8 +432,8 @@ else
                 existing?.MiddleName ?? form.MiddleName,
                 existing?.LastName ?? form.LastName,
                 form.GradeLevel, form.TermId, form.TrackId, form.StrandId, form.ScheduleId,
-                selectedSubjects.ToList(),
-                form.SectionName);
+                form.SectionName,
+                form.PhoneNumber);
 
             var result = await Enrollment.EnrollAsync(request, userId);
             if (result.Succeeded)
@@ -479,6 +462,7 @@ else
         form.FirstName = "";
         form.MiddleName = "";
         form.LastName = "";
+        form.PhoneNumber = "";
     }
 
     private async Task CopyLoginAsync()

@@ -67,6 +67,8 @@ builder.Services.AddScoped<TodoService>();
 builder.Services.AddScoped<AttendanceService>();
 builder.Services.AddScoped<ReferralService>();
 builder.Services.AddScoped<StudentLifecycleService>();
+builder.Services.AddScoped<AnnouncementService>();
+builder.Services.AddScoped<SchoolSetupService>();
 builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<GradebookService>();
 builder.Services.AddScoped<GradeService>();

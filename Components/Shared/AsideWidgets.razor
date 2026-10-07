@@ -4,6 +4,7 @@
 @inject CalendarService Events
 @inject DashboardService Dashboards
 @inject AchievementService Achievements
+@inject AnnouncementService Announcements
 @inject TimeProvider Clock
 
 @if (role is not null)
@@ -13,6 +14,82 @@
         {
             @switch (widget)
             {
+                case "announcements":
+                    <Card Title="Announcements" IconName="megaphone" Class="announcements">
+                        @if (notices.Count == 0)
+                        {
+                            <p class="quiet">No announcements right now.</p>
+                        }
+                        else
+                        {
+                            <ul class="notices">
+                                @foreach (var n in notices)
+                                {
+                                    <li>
+                                        @* A plain details box: the title opens the whole text, no script needed. *@
+                                        <details>
+                                            <summary>
+                                                <span class="notice-title">@n.Title</span>
+                                                <small>@n.AuthorName · @PhilippineTime.FormatDate(n.CreatedAtUtc)@(n.SectionLabel is null ? "" : " · " + n.SectionLabel)</small>
+                                            </summary>
+                                            <p class="notice-body">@n.Body</p>
+                                        </details>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </Card>
+                    break;
+                case "unassigned":
+                    <Card Title="Unassigned activities" IconName="clipboard-list" Class="unassigned">
+                        <p class="drag-hint"><Icon Name="grip-vertical" Size="14" /> Drag one onto a day of the calendar to give it a due date.</p>
+                        @if (unassigned.Count == 0)
+                        {
+                            <p class="quiet">Every activity has a due date.</p>
+                        }
+                        else
+                        {
+                            <ul class="unassigned-list">
+                                @foreach (var u in unassigned)
+                                {
+                                    @* data-unassigned-item is what wwwroot/app.js looks for when something is dragged. "Set date" does the same without the mouse. *@
+                                    <li draggable="true" data-unassigned-item="@u.ItemId" title="Drag onto a day of the calendar">
+                                        <span class="kind @u.Kind.ToLowerInvariant()"><Icon Name="@SubjectStyle.KindIcon(u.Kind)" Size="16" /></span>
+                                        <span class="next-text">
+                                            <span class="next-title">@u.Title</span>
+                                            <small>@u.SubjectName · @u.SectionLabel</small>
+                                        </span>
+                                        <a class="set-date" href="calendar?edit=@u.ItemId" title="@($"Set the due date of {u.Title}")">Set date</a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </Card>
+                    break;
+                case "activities":
+                    <Card Title="Activities" IconName="clipboard-list">
+                        @if (activities.Count == 0)
+                        {
+                            <p class="quiet">No activities waiting for you.</p>
+                        }
+                        else
+                        {
+                            <ul class="next">
+                                @foreach (var w in activities)
+                                {
+                                    <li>
+                                        <span class="kind @w.Kind.ToLowerInvariant()"><Icon Name="@SubjectStyle.KindIcon(w.Kind)" Size="16" /></span>
+                                        <span class="next-text">
+                                            <a href="student/items/@w.ItemId">@w.Title</a>
+                                            <small>@w.SubjectName · @ItemKinds.Display(w.Kind)@(w.InProgress ? " · in progress" : "")</small>
+                                        </span>
+                                        <span class="when @(w.IsOverdue ? "late" : "")">@(w.DueAtUtc is { } due ? PhilippineTime.DueText(due, PhilippineTime.Now(Clock)).Replace("due ", "") : "No due date")</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </Card>
+                    break;
                 case "calendar":
                     <MiniCalendar />
                     break;
@@ -86,7 +163,7 @@
 }
 
 @code {
-    /// <summary>Which widgets, in this order: calendar, todo, upnext, achievements, tocheck.</summary>
+    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), calendar, todo, upnext, achievements, tocheck.</summary>
     [Parameter] public string Show { get; set; } = "calendar,todo,upnext";
 
     private string? role;
@@ -94,6 +171,9 @@
     private List<CalendarEvent> upNext = [];
     private IReadOnlyList<Achievement> achievements = [];
     private TeacherDashboard? toCheck;
+    private IReadOnlyList<AnnouncementView> notices = [];
+    private IReadOnlyList<DashboardWork> activities = [];
+    private IReadOnlyList<UnassignedItem> unassigned = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -106,8 +186,30 @@
         }
 
         order = Show.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(w => w switch { "achievements" => role == AppRoles.Student, "tocheck" => role == AppRoles.Teacher, _ => true })
+            .Where(w => w switch
+            {
+                "achievements" or "activities" => role == AppRoles.Student,
+                "tocheck" or "unassigned" => role == AppRoles.Teacher,
+                _ => true,
+            })
             .ToArray();
+
+        if (order.Contains("announcements"))
+        {
+            notices = role == AppRoles.Student
+                ? (await Me.GetStudentIdAsync() is { } sid ? await Announcements.GetForStudentAsync(sid, 5) : [])
+                : await Announcements.GetForTeachersAsync(5);
+        }
+
+        if (order.Contains("unassigned") && await Me.GetTeacherIdAsync() is { } teacherIdForItems)
+        {
+            unassigned = await Events.GetUnassignedAsync(teacherIdForItems);
+        }
+
+        if (order.Contains("activities") && await Me.GetStudentIdAsync() is { } studentIdForWork)
+        {
+            activities = (await Dashboards.GetStudentAsync(studentIdForWork))?.Work.Take(8).ToList() ?? [];
+        }
 
         if (order.Contains("upnext"))
         {

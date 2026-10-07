@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEAITT_LMS.Components.Shared;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
 
@@ -9,10 +10,16 @@ public sealed record TeacherSubjectCard(
     int AssignmentId, int SubjectId, string SubjectName, int SectionId, string SectionLabel, string? Schedule,
     int Students, int ModulesPosted, int ModulesTotal, int ToGrade);
 
-/// <summary>One subject a student takes (from their enrollment), with the numbers shown on its card.</summary>
+/// <summary>
+/// One subject a student takes (from their enrollment), with the numbers shown on its card and in the list.
+/// <paramref name="IsCompleted"/>: the term of the subject is over (the page calls those "Completed", the others "Enrolled").
+/// <paramref name="AttendancePercent"/>: the days the student came (present or late) out of the days marked, or null when none is marked.
+/// <paramref name="NextDueUtc"/>: the earliest deadline of the work not handed in yet (it may be past).
+/// </summary>
 public sealed record StudentSubjectCard(
     int SubjectId, string SubjectName, string TermName, bool IsCurrentTerm, int? AssignmentId, string? TeacherName, string SectionLabel,
-    int ModulesVisible, int ModulesUnopened, int ItemsOpen, int ItemsDone, decimal? AveragePercent);
+    int ModulesVisible, int ModulesUnopened, int ItemsOpen, int ItemsDone, decimal? AveragePercent,
+    bool IsCompleted = false, string? Schedule = null, decimal? AttendancePercent = null, DateTime? NextDueUtc = null);
 
 /// <summary>A teacher's subject as the administrator sees it.</summary>
 public sealed record AssignmentRow(int Id, int SubjectId, string SubjectName, int SectionId, string SectionLabel, string? Schedule, int Students, int Modules);
@@ -211,6 +218,8 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             {
                 x.SubjectId, SubjectName = x.Subject.Name, x.Enrollment.SectionId, x.Enrollment.GradeLevel, StrandCode = x.Enrollment.Strand.Code,
                 SectionName = x.Enrollment.Section.Name, TermName = x.Enrollment.Term.Name, x.Enrollment.Term.IsCurrent, x.Enrollment.Term.StartDate,
+                x.Enrollment.Term.EndDate, EnrollmentStatus = x.Enrollment.Status,
+                Schedule = x.Enrollment.Section.Schedule != null ? x.Enrollment.Section.Schedule.Code : null,
             })
             .ToListAsync(ct);
 
@@ -230,8 +239,13 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         var items = await db.ModuleItems.AsNoTracking()
             .Where(i => assignmentIds.Contains(i.Module.AssignmentId) && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
                         && (i.VisibleFromUtc == null || i.VisibleFromUtc <= now))
-            .Select(i => new { i.Id, i.Module.AssignmentId, i.MaxScore })
+            .Select(i => new { i.Id, i.Module.AssignmentId, i.MaxScore, i.DueAtUtc })
             .ToListAsync(ct);
+        var attendance = await db.AttendanceRecords.AsNoTracking()
+            .Where(r => r.StudentId == studentId && assignmentIds.Contains(r.AssignmentId))
+            .Select(r => new { r.AssignmentId, r.Status })
+            .ToListAsync(ct);
+        var today = PhilippineTime.Today(clock);
         var mine = await db.Submissions.AsNoTracking()
             .Where(s => s.StudentId == studentId && assignmentIds.Contains(s.Item.Module.AssignmentId))
             .Select(s => new { s.ItemId, s.Status, s.Score })
@@ -247,12 +261,20 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                 var done = its.Count(i => mine.Any(s => s.ItemId == i.Id && s.Status != SubmissionStatus.InProgress));
                 var graded = its.Where(i => mine.Any(s => s.ItemId == i.Id && s.Status == SubmissionStatus.Graded && s.Score != null))
                     .Select(i => mine.First(s => s.ItemId == i.Id).Score!.Value / i.MaxScore * 100).ToList();
+                var nextDue = its.Where(i => i.DueAtUtc != null && !mine.Any(s => s.ItemId == i.Id && s.Status != SubmissionStatus.InProgress))
+                    .Select(i => i.DueAtUtc).Min();
+                var marked = a is null ? [] : attendance.Where(r => r.AssignmentId == a.Id).ToList();
+                var came = marked.Count(r => r.Status is AttendanceStatus.Present or AttendanceStatus.Late);
 
                 return new StudentSubjectCard(
                     e.SubjectId, e.SubjectName, e.TermName, e.IsCurrent, a?.Id, a?.Teacher,
                     SectionLabel(e.GradeLevel, e.StrandCode, e.SectionName),
                     mods.Count, mods.Count(m => !opened.Contains(m.Id)), its.Count - done, done,
-                    graded.Count == 0 ? null : Math.Round(graded.Average(), 1));
+                    graded.Count == 0 ? null : Math.Round(graded.Average(), 1),
+                    IsCompleted: e.EnrollmentStatus == EnrollmentStatus.Completed || (!e.IsCurrent && e.EndDate < today),
+                    Schedule: e.Schedule,
+                    AttendancePercent: marked.Count == 0 ? null : Math.Round(came * 100m / marked.Count, 1),
+                    NextDueUtc: nextDue);
             })
             .ToList();
     }

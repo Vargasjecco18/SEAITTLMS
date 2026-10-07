@@ -23,7 +23,7 @@
 }
 else
 {
-    <PageWithAside Show="calendar,todo,upnext">
+    <PageWithAside Show="announcements,calendar,todo,upnext">
         <div class="stats">
             <StatCard Label="Work to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
             <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />

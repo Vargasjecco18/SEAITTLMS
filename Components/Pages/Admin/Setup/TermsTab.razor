@@ -1,0 +1,188 @@
+@inherits SetupTabBase
+
+<Card>
+    <div class="tab-head">
+        <p class="grow">The terms of a school year (1st Term, 2nd Term ...). One term is the <strong>current term</strong>, the one the school is running now; the term after it is the <strong>next term</strong>, which the registrar enrolls students for.</p>
+        <Button IconName="plus" Disabled="@(years is { Count: 0 })" OnClick="OpenAdd">Add term</Button>
+    </div>
+
+    <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (rows.Count == 0)
+    {
+        <EmptyState IconName="calendar-days" Title="No term yet"><p>Add a school year first, then its terms.</p></EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Term</th>
+                        <th scope="col">School year</th>
+                        <th scope="col">From</th>
+                        <th scope="col">To</th>
+                        <th scope="col" class="col-more">Enrolled</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        <tr>
+                            <td>
+                                <span class="name">@row.Name</span>
+                                @if (row.IsCurrent)
+                                {
+                                    <Badge Tone="Tone.Success">Current</Badge>
+                                }
+                                else if (row.Id == nextId)
+                                {
+                                    <Badge Tone="Tone.Info">Next</Badge>
+                                }
+                                <span class="sub">Number @row.TermNumber</span>
+                            </td>
+                            <td class="nowrap">@row.SchoolYear</td>
+                            <td class="nowrap">@PhilippineTime.FormatDate(row.StartDate)</td>
+                            <td class="nowrap">@PhilippineTime.FormatDate(row.EndDate)</td>
+                            <td class="col-more">@row.Enrollments</td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Name} of {row.SchoolYear}")" OnClick="() => OpenEdit(row)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Name} of {row.SchoolYear}")" OnClick="() => OpenDelete(row)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+<Modal Open="form is not null" Title="@(form?.Id is null ? "Add term" : "Edit term")" OnClose="CloseForm">
+    @if (form is not null)
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="Errors" />
+            <Field For="t-year" Label="School year" Required="true">
+                <select id="t-year" @bind="form.SchoolYearId">
+                    <option value="0">Choose a school year</option>
+                    @foreach (var year in years ?? [])
+                    {
+                        <option value="@year.Id">@year.Name</option>
+                    }
+                </select>
+            </Field>
+            <div class="two">
+                <Field For="t-number" Label="Number" Required="true" Hint="1 for the 1st term, 2 for the 2nd ...">
+                    <input id="t-number" type="number" min="1" max="9" @bind="form.TermNumber" />
+                </Field>
+                <Field For="t-name" Label="Name" Required="true" Hint="Like 3rd Term.">
+                    <input id="t-name" maxlength="50" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="t-start" Label="First day" Required="true">
+                    <input id="t-start" type="date" @bind="form.StartDate" />
+                </Field>
+                <Field For="t-end" Label="Last day" Required="true">
+                    <input id="t-end" type="date" @bind="form.EndDate" />
+                </Field>
+            </div>
+            <label class="switch">
+                <input id="t-current" type="checkbox" @bind="form.IsCurrent" />
+                <span>
+                    <strong>This is the current term</strong>
+                    <small>The school runs one term at a time. Making this the current term takes it away from the term that is current now.</small>
+                </span>
+            </label>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+<Modal Open="deleting is not null" Title="Delete this term?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p class="delete-text">You are about to delete <strong>@deleting.Name</strong> of <strong>@deleting.SchoolYear</strong>. <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<TermRow>? rows;
+    private IReadOnlyList<YearOption>? years;
+    private int? nextId;
+    private TermInput? form;
+    private TermRow? deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        years = (await Setup.GetLookupsAsync()).Years;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        rows = await Setup.ListTermsAsync();
+
+        // The term after the current one: the list is newest school year first, so walk it the other way round.
+        var ordered = rows.OrderBy(r => r.StartDate).ThenBy(r => r.TermNumber).ToList();
+        var current = ordered.FindIndex(r => r.IsCurrent);
+        nextId = current >= 0 && current + 1 < ordered.Count ? ordered[current + 1].Id : null;
+    }
+
+    private void OpenAdd()
+    {
+        Errors = [];
+        form = new TermInput { SchoolYearId = years?.FirstOrDefault()?.Id ?? 0, TermNumber = 1 };
+    }
+
+    private void OpenEdit(TermRow row)
+    {
+        Errors = [];
+        form = new TermInput { Id = row.Id, SchoolYearId = row.SchoolYearId, TermNumber = row.TermNumber, Name = row.Name, StartDate = row.StartDate, EndDate = row.EndDate, IsCurrent = row.IsCurrent };
+    }
+
+    private void CloseForm() => form = null;
+
+    private async Task SaveAsync()
+    {
+        var result = await RunAsync(userId => Setup.SaveTermAsync(form!, userId));
+        if (result.Succeeded)
+        {
+            form = null;
+            await LoadAsync();
+        }
+    }
+
+    private void OpenDelete(TermRow row)
+    {
+        Errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        var result = await RunAsync(userId => Setup.DeleteTermAsync(deleting!.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            await LoadAsync();
+        }
+    }
+}

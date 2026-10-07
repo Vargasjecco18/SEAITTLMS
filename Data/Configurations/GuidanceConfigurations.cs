@@ -32,19 +32,3 @@ internal sealed class ReferralConfiguration : IEntityTypeConfiguration<Referral>
         });
     }
 }
-
-internal sealed class WithdrawalRequestConfiguration : IEntityTypeConfiguration<WithdrawalRequest>
-{
-    public void Configure(EntityTypeBuilder<WithdrawalRequest> b)
-    {
-        b.Property(w => w.Reason).HasMaxLength(500).IsRequired();
-        b.Property(w => w.Status).HasMaxLength(10).IsRequired();
-        b.Property(w => w.DecisionNote).HasMaxLength(500);
-
-        b.HasOne(w => w.Student).WithMany().HasForeignKey(w => w.StudentId).OnDelete(DeleteBehavior.Cascade);
-        b.HasOne(w => w.DecidedBy).WithMany().HasForeignKey(w => w.DecidedByUserId).OnDelete(DeleteBehavior.SetNull);
-        b.HasIndex(w => new { w.Status, w.StudentId });
-
-        b.ToTable(t => t.HasCheckConstraint("ck_withdrawal_requests_status", "status IN ('Pending', 'Approved', 'Declined', 'Cancelled')"));
-    }
-}

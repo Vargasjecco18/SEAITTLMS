@@ -167,7 +167,7 @@
             <nav class="pager" aria-label="Pages">
                 <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(list.Page <= 1)" OnClick="PreviousPageAsync">Previous</Button>
                 <span class="muted">Page @list.Page of @list.PageCount</span>
-                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-right" Disabled="@(list.Page >= list.PageCount)" OnClick="NextPageAsync">Next</Button>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconAfter="true" IconName="chevron-right" Disabled="@(list.Page >= list.PageCount)" OnClick="NextPageAsync">Next</Button>
             </nav>
         }
     }

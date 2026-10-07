@@ -63,6 +63,15 @@ public sealed record TeacherItem(
     int? TimeLimitMinutes, bool ShuffleQuestions, bool ShuffleOptions, bool AntiCheat, int MaxViolations, bool ShowResult,
     int Questions, int Students, int Submitted, int Graded, int Flagged);
 
+/// <summary>An activity, quiz or task performance with the settings the calendar's edit box shows, and where it belongs.</summary>
+public sealed record ItemForEdit(
+    int ModuleId, int AssignmentId, int ItemId, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc, DateTime? VisibleFromUtc,
+    int? TimeLimitMinutes, bool ShuffleQuestions, bool ShuffleOptions, bool AntiCheat, int MaxViolations, bool ShowResult, int Questions,
+    string SubjectName, byte GradeLevel, string StrandCode, string SectionName, string ModuleTitle)
+{
+    public string SectionLabel => TeachingService.SectionLabel(GradeLevel, StrandCode, SectionName);
+}
+
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
     IReadOnlyList<TeacherItem> Items);
@@ -129,6 +138,21 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList())).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Schedule, students, result);
+    }
+
+    /// <summary>One item of the teacher with what its edit box needs, or null when it is not theirs.</summary>
+    public async Task<ItemForEdit?> GetItemForEditAsync(int teacherId, int itemId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.ModuleItems.AsNoTracking()
+            .Where(i => i.Id == itemId && i.Module.Assignment.TeacherId == teacherId)
+            .Select(i => new ItemForEdit(
+                i.ModuleId, i.Module.AssignmentId, i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, i.VisibleFromUtc, i.TimeLimitMinutes,
+                i.ShuffleQuestions, i.ShuffleOptions, i.AntiCheat, i.MaxViolations, i.ShowResult, i.Questions.Count,
+                i.Module.Assignment.Subject.Name, i.Module.Assignment.Section.GradeLevel, i.Module.Assignment.Section.Strand.Code, i.Module.Assignment.Section.Name,
+                i.Module.Title))
+            .Select(x => x)
+            .FirstOrDefaultAsync(ct);
     }
 
     private static TeacherItem ToTeacherItem(ModuleItem i, DateTime now, int questions, int students, int submitted, int graded, int flagged) => new(

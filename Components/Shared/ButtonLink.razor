@@ -1,9 +1,13 @@
 <a class="button @Variant.ToString().ToLowerInvariant() @(Small ? "small" : "")" href="@Href">
-    @if (!string.IsNullOrEmpty(IconName))
+    @if (!string.IsNullOrEmpty(IconName) && !IconAfter)
     {
         <Icon Name="@IconName" Size="@(Small ? 16 : 18)" />
     }
     <span>@ChildContent</span>
+    @if (!string.IsNullOrEmpty(IconName) && IconAfter)
+    {
+        <Icon Name="@IconName" Size="@(Small ? 16 : 18)" />
+    }
 </a>
 
 @code {
@@ -16,6 +20,9 @@
 
     /// <summary>A smaller link, the size of a small <see cref="Button"/>.</summary>
     [Parameter] public bool Small { get; set; }
+
+    /// <summary>Puts the icon after the text instead of in front of it (for a "Next &gt;" link).</summary>
+    [Parameter] public bool IconAfter { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

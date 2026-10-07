@@ -100,7 +100,7 @@
             <nav class="pager" aria-label="Pages">
                 <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(result.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
                 <span class="muted">Page @result.Page of @result.PageCount · @result.Total referrals</span>
-                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="NextAsync">Next</Button>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconAfter="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="NextAsync">Next</Button>
             </nav>
         }
     }

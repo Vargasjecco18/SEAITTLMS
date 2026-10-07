@@ -15,7 +15,7 @@ What exists so far:
   student's email and password are made automatically) and *Student's Accounts* (a searchable list).
 - **Administrator pages** (for the administrator only): *Dashboard* and *Users Management*: one list per role, with
   search, **edit**, **delete** and add (for staff).
-- **My account** for everybody.
+- **My account** for everybody: the account, **sign-in and security** (last sign-in), **appearance** (light, night, auto, animations), shortcuts to the pages of the role, and widgets (students and teachers: the calendar, to-do list and the achievements or what needs attention; the administrator, the registrar and the guidance counselor: three numbers *at a glance*).
 - **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
   strands and the subjects of grade 11.
@@ -151,7 +151,7 @@ Persist the ASP.NET Core Data Protection keys if you run in a container.
 | **Search** (middle) | Type and press Enter: the search page lists the pages you can open and, depending on your role, the people you work with. An administrator finds every account, a registrar finds students, a teacher finds the students of their subjects (the hit opens the gradebook of that subject) and the guidance counselor finds students (the hit opens the referrals page for that student). |
 | **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor and the registrar; a teacher also to students and the other staff. **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time**: the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
 | **Notifications** (bell) | What the system wants you to know (a new message, and later new modules, grades and deadlines). The number is how many are new. Click one to open the page it is about. |
-| **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser. |
+| **Settings** (gear) | **Light**, **Night** or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). The same buttons are in **My account > Appearance**. |
 | **Name and role** (bottom of the menu) | Who is signed in. Click the name to open My account, the arrow button signs you out. |
 
 The code: `Components/Layout/HeaderTools.razor` (the three buttons), `MessagesPanel.razor` (the Messages box),
@@ -164,10 +164,10 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | Dashboard, **Users Management**, **Archive**, **Analytics**, My account |
-| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, **Withdrawals**, My account |
-| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Attendance**, **Gradebook**, **Analytics**, **Calendar**, My account |
-| Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, **Withdrawal**, My account |
+| Admin | `/admin` | Dashboard, **Users Management**, **School setup**, **Announcements**, **Archive**, **Analytics**, My account |
+| Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts**, **Announcements**, My account |
+| Teacher | `/teacher` | **Dashboard**, **Subjects** (modules, activities, quizzes, task performances, grading), **Attendance**, **Gradebook**, **Announcements**, **Analytics**, **Calendar**, My account |
+| Student | `/student` | **Dashboard**, **Subjects** (modules, work, quizzes), **Grades**, **Calendar**, My account |
 | Guidance counselor | `/guidance` | **Dashboard**, **Referrals**, **Students at risk**, **Analytics**, My account |
 
 The registrar pages belong to the registrar: **an administrator cannot open them**. To get a registrar, sign in as the
@@ -192,7 +192,7 @@ system when they leave the tab or window, copy, cut or paste (those are blocked 
 the number you choose the quiz is handed in by itself and **flagged** for you, with a log of what happened. The time is
 checked on the server, and a quiz that was left open is handed in when its time is over.
 
-**Student > Subjects** shows the subjects they are enrolled in as cards (or a list), filtered by term. **Open** shows the
+**Student > Subjects** shows the subjects they are enrolled in as cards (or a list). The chips are **All**, **Enrolled** (the term has not ended) and **Completed** (the term is over, or the enrollment was completed), each with its number. The **list** has the columns subject, teacher, section, schedule, term, status, modules and work, next due, grade and attendance. **Open** shows the
 posted modules; each ends with three tabs: **Activities**, **Quizzes**, **Task performance**. **Read lesson** opens the
 module's text. A module that was never opened is marked **New**.
 
@@ -216,7 +216,9 @@ person has their own) and an **Up next** list, so the screen has no empty space.
 
 **Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next. It shows the
 deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), and the
-to-do entries that have a date. Done work is struck through, overdue work is red. Click a day number to open its week.
+to-do entries that have a date. Done work is struck through, overdue work is red. Click a day number to open its week. At the right a student has an **Activities** card (the work to do, with its due text) beside the to-do list and *Up next*; the Next button has its `>` icon.
+
+**Teacher > Calendar: unassigned activities.** The card **Unassigned activities** at the right lists the teacher's activities, quizzes and task performances that have **no due date**. **Drag** one onto a day (month or week view) and a box opens with that day (5 PM Philippine time) as the due date, where the teacher can also change the title, instructions, highest score, when it appears and, for a quiz, the time limit and the **anti-cheating** settings (watch on or off, warnings before it is handed in, shuffling, showing the result). **Save** puts it on that day for the teacher and the students; **Cancel** leaves it unassigned. The **Set date** link next to an activity does the same without the mouse. Code: `Components/Pages/Account/Calendar.razor`, `ItemScheduleDialog.razor`, the drag script in `wwwroot/app.js`.
 
 **Student > Grades** (`/student/grades`) is the grade and progress page: the average of every subject (points earned divided by
 points possible of the graded work), the passing mark of 70 drawn on the bars, the latest scores, and the graded works of
@@ -264,18 +266,43 @@ the number of students, the average grade, the attendance rate, how many student
 the **intervention effectiveness** (how many resolved referrals improved, by the help given) and the performance by strand. Everything is worked
 out from the scores and the attendance that are recorded.
 
-## Graduation and withdrawal
+## Graduation (archive)
 
 **Administrator > Archive**: the grade 12 students who are still at school are listed. Tick the ones who graduate (or **Select all**), add a note
 ("Class of 2027") and **Archive selected**: they are marked *Graduated*, their enrollments are completed and their **sign-in is switched off**; their
-records stay. The *Archived* tab lists graduates and withdrawn students and can **Restore** one (the account works again; the registrar enrolls
-the student again for a class).
+records stay. The *Archived* tab lists the graduates and can **Restore** one (the account works again; the registrar enrolls
+the student again for a class). A student in the archive can't be enrolled until an administrator restores the account.
 
-**Student > Withdrawal**: a student who has to stop school can send the registrar a request with the reason (they have to tick that they understand
-their account is switched off if it is approved), and can cancel it while it waits. **Registrar > Withdrawals** (also a button on Student's
-Accounts, with the number waiting) shows the requests: **Approve withdrawal** archives the student as *Withdrawn* (enrollment dropped, sign-in off, the
-counselor is told); **Decline** needs a reason, which the student sees. The registrar can also withdraw a student directly by LRN. A student in the
-archive can't be enrolled until an administrator restores the account.
+There is no withdrawal feature any more (the student page, the registrar page and the table were removed). A student who was *Withdrawn* before is
+a student at school again (status *Active*) after the update; their sign-in stays switched off until an administrator turns it on in Users Management.
+
+## School setup (administrator)
+
+**Administrator > School setup** (`/admin/school-setup`, also the *School setup* card of the dashboard, whose items are links) has one tab per part of
+the setup, each with its number. The administrator can **add, edit and delete**:
+
+| Tab | What it holds and the rules |
+|---|---|
+| School years | Name (like 2027-2028), first and last day. One with terms or sections can't be deleted. |
+| Terms | School year, number, name, dates (inside the school year) and **the current term** (making one current takes it away from the other: only one term is current). The term after the current one is the **next term**. A term with enrollments can't change its number or school year and can't be deleted. |
+| Tracks | Code, name, offered or not. One with strands can't be deleted. |
+| Strands | Code, name, track, **the schedules** it has classes in (at least one), offered or not, and **the subjects of the strand** (the **Subjects** button: pick grade level and term, add or remove subjects). A strand with students can't move to another track; a schedule that a section uses can't be taken away; one that is or was in use can't be deleted (switch it off). |
+| Subjects | Code, name, description, in use or not. One in a strand's subjects or taken by students can't be deleted. |
+| Sections | School year, grade level, strand, schedule (one of the strand's), name and adviser. One with students or teachers can only change its name and its adviser. |
+| Enrollments | **View only** (the eye on the tab): the registrar's enrollments, with search and a term filter. |
+| Not enrolled | **View only**: the students at school who are not enrolled for the next term (see below). |
+
+The subjects a student takes are **not picked at enrollment**: they are the subjects of the strand for that grade level and term, as set here. Changing the
+subjects of a strand changes the enrollments made from then on; students already enrolled keep theirs. Code: `Services/SchoolSetupService.cs`.
+
+## Announcements
+
+**Announcements** (`/announcements`, in the menu of the administrator, the registrar and the teachers). The administrator and the registrar write
+a notice for **everybody** (students and teachers), for **the students** or for **the teachers**, with an optional *show until* day. A teacher writes
+one for the students of **one section they teach**. The people it is for get a notification when it is posted (editing does not notify again).
+Students see the announcements meant for them in the **Announcements** card at the right of their dashboard (the title opens the whole text); teachers see the
+school's announcements on their dashboard and under **From the school** on the page. The author can edit and delete their own; the administrator can delete any.
+Code: `Services/AnnouncementService.cs`.
 
 ## Enrolling a student (registrar)
 
@@ -290,9 +317,10 @@ Menu: **Registrar > Enrollments** (`/registrar/enrollments`). Fill in:
 | Track, strand | ACAD (BUSSENT, EDUC, ENG, MED, USP) or TECH-PRO (CD1, HT1, HT2). Pick the track first, it filters the strands. |
 | Schedule | AM, MID or PM. Only the schedules the strand runs in are listed (for example HT2 only has PM). When there is only one, it is chosen for you. |
 | Section | Pick a section that already exists for that strand and schedule, or type a new one, for example `A`. The section is made if it is new. |
-| Enrolled subjects | The subjects of that strand for that grade level and term are ticked for you. Untick what the student does not take. At least one is needed. |
+| Phone number | **Optional.** A mobile number like `0917 123 4567`, saved as `+639171234567` on the student's account. A student who already has a number keeps it. |
 
-Press **Enroll student**. The page then shows what was saved and, for a new student, the **sign-in details to hand over**
+There is nothing to pick for the subjects: the student gets **all the subjects of the strand** for that grade level and term (the form tells which). Press
+**Enroll student**. The page then shows what was saved and, for a new student, the **sign-in details to hand over**
 (with *Copy the login* and *Print*).
 
 ### The automatic email and password
@@ -320,8 +348,16 @@ for the 2nd term. The account and the password do not change. Enrolling the same
 ### Student's Accounts
 
 **Registrar > Student's Accounts** (`/registrar/student-accounts`) lists every enrolled student, newest first, 20 per page. Search by name
-or LRN and filter by term, strand and schedule. The dashboard (`/registrar`) shows how many students are enrolled this
-term, today, by strand and by schedule.
+or LRN and filter by term, strand, schedule and **next term** (enrolled or not). The dashboard (`/registrar`) shows how many students are enrolled this
+term, today, by strand and by schedule, and under *By schedule* the **Not enrolled** section.
+
+**The next term and unenrolling.** The next term is the term after the current one (set in the school setup). The **Next term** column says whether the
+student is enrolled for it: *Enrolled* with an **Unenroll** button (it asks first, then removes the student's enrollment in the next term and its subjects;
+the current term is untouched), or *Not enrolled* with an **Enroll** link to the form, already filled with the LRN and the next term. The registrar enrolls a
+student for the next term with the same form (pick that term).
+
+**Not enrolled** means: a student at school (not archived) with no enrollment in the next term (or in the current term when there is no next term).
+It is shown on the registrar's dashboard (with an Enroll link for each student) and in the administrator's school setup (view only).
 
 ## Managing users (administrator)
 
@@ -402,12 +438,12 @@ Components/Layout/         Header (with the messages, notifications and settings
 Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
 Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
-  Admin/                     Dashboard, UsersManagement, Archive
-  Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list), Withdrawals
+  Admin/                     Dashboard, UsersManagement, SchoolSetup (+ Setup/: one component per tab), Archive
+  Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
   Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook
-  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades, Withdrawal
+  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades
   Guidance/                  Dashboard, Referrals, StudentsAtRisk
-  Account/                   MyAccount, Search, Calendar (students and teachers), Analytics (admin, guidance, teachers)
+  Account/                   MyAccount, Announcements, Search, Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it

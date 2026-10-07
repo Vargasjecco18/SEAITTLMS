@@ -35,12 +35,34 @@ public static class CalendarKinds
 /// <param name="AtUtc">The time of day it happens (a deadline's time), or empty for something that takes the whole day.</param>
 public sealed record CalendarEvent(string Key, DateOnly Day, DateTime? AtUtc, string Title, string? Subtitle, string Kind, string? Href, bool Done, bool Overdue);
 
+/// <summary>An activity, quiz or task performance of a teacher that has no due date yet.</summary>
+public sealed record UnassignedItem(int ItemId, string Title, string Kind, string SubjectName, string SectionLabel, string ModuleTitle);
+
 /// <summary>
 /// What goes on a person's calendar: for a student the deadlines of their work, the modules that appeared and their to-do list; for a
 /// teacher the deadlines of their work, the modules they posted or scheduled and their to-do list.
 /// </summary>
 public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)
 {
+    /// <summary>
+    /// The teacher's activities, quizzes and task performances that have no due date, in subject order. The teacher drags them onto a day
+    /// of the calendar to give them one.
+    /// </summary>
+    public async Task<IReadOnlyList<UnassignedItem>> GetUnassignedAsync(int teacherId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.ModuleItems.AsNoTracking()
+            .Where(i => i.DueAtUtc == null && i.Module.Assignment.TeacherId == teacherId)
+            .OrderBy(i => i.Module.Assignment.Subject.Name).ThenBy(i => i.Module.Position).ThenBy(i => i.Position).ThenBy(i => i.Id)
+            .Select(i => new
+            {
+                i.Id, i.Title, i.Kind, Subject = i.Module.Assignment.Subject.Name, ModuleTitle = i.Module.Title,
+                i.Module.Assignment.Section.GradeLevel, Strand = i.Module.Assignment.Section.Strand.Code, Section = i.Module.Assignment.Section.Name,
+            })
+            .ToListAsync(ct);
+        return rows.Select(r => new UnassignedItem(r.Id, r.Title, r.Kind, r.Subject, TeachingService.SectionLabel(r.GradeLevel, r.Strand, r.Section), r.ModuleTitle)).ToList();
+    }
+
     /// <summary>The events of the days from <paramref name="from"/> to <paramref name="to"/>, both included, oldest first.</summary>
     public async Task<IReadOnlyList<CalendarEvent>> GetEventsAsync(CurrentUserInfo user, DateOnly from, DateOnly to, CancellationToken ct = default)
     {

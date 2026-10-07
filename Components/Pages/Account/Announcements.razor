@@ -1,0 +1,278 @@
+@page "/announcements"
+@attribute [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Registrar + "," + AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject AnnouncementService Service
+@inject TimeProvider Clock
+
+<PageTitle>Announcements · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Announcements" Subtitle="@Subtitle" IconName="megaphone">
+    <Button IconName="plus" OnClick="OpenAdd">New announcement</Button>
+</PageHeader>
+
+<Notice Message="@message" IsError="messageIsError" OnDismiss="ClearMessage" />
+
+<div class="stack">
+    <Card Title="@(me?.Role == AppRoles.Teacher ? "Your announcements" : "Announcements")" IconName="megaphone">
+        @if (rows is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (rows.Count == 0)
+        {
+            <EmptyState IconName="megaphone" Title="No announcement yet">
+                <p>@(me?.Role == AppRoles.Teacher ? "Write a notice for the students of one of your sections." : "Write a notice for the students, the teachers or everybody.")</p>
+            </EmptyState>
+        }
+        else
+        {
+            <ul class="list">
+                @foreach (var row in rows)
+                {
+                    <li>
+                        <div class="head">
+                            <strong class="title">@row.Title</strong>
+                            <span class="badges">
+                                <Badge Tone="Tone.Info">@AudienceText(row)</Badge>
+                                @if (row.ExpiresOn is { } until)
+                                {
+                                    <Badge Tone="@(until < today ? Tone.Neutral : Tone.Warning)">@(until < today ? "Ended " : "Until ")@PhilippineTime.FormatDate(until)</Badge>
+                                }
+                            </span>
+                        </div>
+                        <p class="body">@row.Body</p>
+                        <div class="foot">
+                            <span class="muted">@row.AuthorName (@row.AuthorRole) · @PhilippineTime.FormatDateTime(row.CreatedAtUtc)</span>
+                            @if (CanChange(row))
+                            {
+                                <span class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Title}")" OnClick="() => OpenEdit(row)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" Title="@($"Delete {row.Title}")" OnClick="() => OpenDelete(row)">Delete</Button>
+                                </span>
+                            }
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </Card>
+
+    @if (me?.Role == AppRoles.Teacher)
+    {
+        <Card Title="From the school" IconName="school">
+            @if (fromSchool.Count == 0)
+            {
+                <p class="muted">Nothing from the school right now.</p>
+            }
+            else
+            {
+                <ul class="list">
+                    @foreach (var row in fromSchool)
+                    {
+                        <li>
+                            <div class="head">
+                                <strong class="title">@row.Title</strong>
+                                <Badge Tone="Tone.Info">@AudienceText(row)</Badge>
+                            </div>
+                            <p class="body">@row.Body</p>
+                            <div class="foot"><span class="muted">@row.AuthorName (@row.AuthorRole) · @PhilippineTime.FormatDateTime(row.CreatedAtUtc)</span></div>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+    }
+</div>
+
+<Modal Open="form is not null" Title="@(form?.Id is null ? "New announcement" : "Edit announcement")" OnClose="CloseForm">
+    @if (form is not null)
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="errors" />
+            <Field For="a-title" Label="Title" Required="true">
+                <input id="a-title" maxlength="@AnnouncementService.MaxTitleLength" autocomplete="off" @bind="form.Title" />
+            </Field>
+            <Field For="a-body" Label="Announcement" Required="true" Hint="@($"Up to {AnnouncementService.MaxBodyLength} characters.")">
+                <textarea id="a-body" rows="5" maxlength="@AnnouncementService.MaxBodyLength" @bind="form.Body"></textarea>
+            </Field>
+
+            @if (me?.Role == AppRoles.Teacher)
+            {
+                <Field For="a-section" Label="For the students of" Required="true">
+                    <select id="a-section" disabled="@(form.Id is not null)" @bind="form.SectionId">
+                        <option value="0">Choose a section</option>
+                        @foreach (var choice in sections)
+                        {
+                            <option value="@choice.Id">@choice.Label</option>
+                        }
+                    </select>
+                </Field>
+            }
+            else
+            {
+                <Field For="a-audience" Label="For" Required="true">
+                    <select id="a-audience" @bind="form.Audience">
+                        <option value="@AnnouncementAudiences.Everyone">Everybody (students and teachers)</option>
+                        <option value="@AnnouncementAudiences.Students">The students</option>
+                        <option value="@AnnouncementAudiences.Teachers">The teachers</option>
+                    </select>
+                </Field>
+            }
+
+            <Field For="a-until" Label="Show until" Hint="Optional. The last day it is shown. Empty: until you delete it.">
+                <input id="a-until" type="date" @bind="form.ExpiresOn" />
+            </Field>
+            <p class="hint-line">The people it is for are told with a notification when you post it.</p>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                <Button Type="submit" IconName="send" Disabled="busy">@(busy ? "Saving…" : form.Id is null ? "Post" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+<Modal Open="deleting is not null" Title="Delete this announcement?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p>You are about to delete <strong>@deleting.Title</strong>. People will not see it any more. <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="DeleteAsync">@(busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private CurrentUserInfo? me;
+    private IReadOnlyList<AnnouncementView>? rows;
+    private IReadOnlyList<AnnouncementView> fromSchool = [];
+    private IReadOnlyList<AnnouncementSectionChoice> sections = [];
+    private AnnouncementInput? form;
+    private AnnouncementView? deleting;
+    private List<string> errors = [];
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private DateOnly today;
+
+    private string Subtitle => me?.Role == AppRoles.Teacher
+        ? "Tell the students of your sections what they need to know."
+        : "Notices for the students, the teachers or everybody. Students see them on their dashboard.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        today = PhilippineTime.Today(Clock);
+        me = await Me.GetAsync();
+        if (me is null)
+        {
+            return;
+        }
+
+        if (me.Role == AppRoles.Teacher)
+        {
+            sections = await Service.GetSectionChoicesAsync(me.UserId);
+            fromSchool = await Service.GetForTeachersAsync(10);
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => rows = me is null ? [] : await Service.ListManagedAsync(me);
+
+    private void ClearMessage() => message = null;
+
+    private bool CanChange(AnnouncementView row) => me is not null && (row.AuthorUserId == me.UserId || me.Role == AppRoles.Admin);
+
+    private static string AudienceText(AnnouncementView row) => row.SectionLabel is { } section
+        ? $"Students of {section}"
+        : row.Audience switch
+        {
+            AnnouncementAudiences.Students => "The students",
+            AnnouncementAudiences.Teachers => "The teachers",
+            _ => "Everybody",
+        };
+
+    private void OpenAdd()
+    {
+        errors = [];
+        form = new AnnouncementInput { SectionId = sections.Count == 1 ? sections[0].Id : 0 };
+    }
+
+    private void OpenEdit(AnnouncementView row)
+    {
+        errors = [];
+        form = new AnnouncementInput { Id = row.Id, Title = row.Title, Body = row.Body, Audience = row.Audience, SectionId = row.SectionId ?? 0, ExpiresOn = row.ExpiresOn };
+    }
+
+    private void CloseForm() => form = null;
+
+    private async Task SaveAsync()
+    {
+        if (busy || me is null)
+        {
+            return;
+        }
+
+        busy = true;
+        errors = [];
+        try
+        {
+            var result = await Service.SaveAsync(me, form!);
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                messageIsError = false;
+                form = null;
+                await LoadAsync();
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void OpenDelete(AnnouncementView row)
+    {
+        errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        if (busy || me is null)
+        {
+            return;
+        }
+
+        busy = true;
+        errors = [];
+        try
+        {
+            var result = await Service.DeleteAsync(me, deleting!.Id);
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                messageIsError = false;
+                deleting = null;
+                await LoadAsync();
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

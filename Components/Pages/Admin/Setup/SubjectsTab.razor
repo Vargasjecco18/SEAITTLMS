@@ -1,0 +1,165 @@
+@inherits SetupTabBase
+
+<Card>
+    <div class="tab-head">
+        <p class="grow">Every subject the school teaches. A subject is given to strands (under <strong>Strands</strong>, the Subjects button) for a grade level and a term.</p>
+        <Button IconName="plus" OnClick="OpenAdd">Add subject</Button>
+    </div>
+
+    <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    <form class="toolbar" role="search" @onsubmit="() => { }">
+        <div class="search-box">
+            <Icon Name="search" Size="18" Class="search-icon" />
+            <input type="search" aria-label="Search subjects" placeholder="Code or name" autocomplete="off" @bind="search" @bind:event="oninput" />
+        </div>
+        <span class="result-count">@(Shown.Count == 1 ? "1 subject" : $"{Shown.Count:N0} subjects")</span>
+    </form>
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (Shown.Count == 0)
+    {
+        <EmptyState IconName="@(rows.Count == 0 ? "book-open" : "search-x")" Title="@(rows.Count == 0 ? "No subject yet" : "No subject matches")" />
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Code</th>
+                        <th scope="col" class="col-more">Strands</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Shown)
+                    {
+                        <tr>
+                            <td>
+                                <span class="name">@row.Name</span>
+                                @if (!string.IsNullOrWhiteSpace(row.Description))
+                                {
+                                    <span class="sub">@row.Description</span>
+                                }
+                            </td>
+                            <td class="nowrap mono">@row.Code</td>
+                            <td class="col-more">@row.Strands</td>
+                            <td><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Active" : "Switched off")</Badge></td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Name}")" OnClick="() => OpenEdit(row)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Name}")" OnClick="() => OpenDelete(row)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+<Modal Open="form is not null" Title="@(form?.Id is null ? "Add subject" : "Edit subject")" OnClose="CloseForm">
+    @if (form is not null)
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="Errors" />
+            <div class="two">
+                <Field For="j-code" Label="Code" Required="true">
+                    <input id="j-code" maxlength="30" autocomplete="off" @bind="form.Code" />
+                </Field>
+                <Field For="j-name" Label="Name" Required="true">
+                    <input id="j-name" maxlength="150" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <Field For="j-description" Label="Description" Hint="Optional. Up to 500 characters.">
+                <textarea id="j-description" rows="3" maxlength="500" @bind="form.Description"></textarea>
+            </Field>
+            <label class="switch">
+                <input id="j-active" type="checkbox" @bind="form.IsActive" />
+                <span>
+                    <strong>The subject is in use</strong>
+                    <small>Switch it off for a subject that is not taught now. Students enrolled from then on don't get it.</small>
+                </span>
+            </label>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+<Modal Open="deleting is not null" Title="Delete this subject?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p class="delete-text">You are about to delete the subject <strong>@deleting.Name</strong>. <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<SubjectRow>? rows;
+    private SubjectInput? form;
+    private SubjectRow? deleting;
+    private string search = "";
+
+    private IReadOnlyList<SubjectRow> Shown =>
+        rows is null ? [] : rows.Where(r => string.IsNullOrWhiteSpace(search)
+            || r.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+            || r.Code.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override async Task OnInitializedAsync() => rows = await Setup.ListSubjectsAsync();
+
+    private void OpenAdd()
+    {
+        Errors = [];
+        form = new SubjectInput();
+    }
+
+    private void OpenEdit(SubjectRow row)
+    {
+        Errors = [];
+        form = new SubjectInput { Id = row.Id, Code = row.Code, Name = row.Name, Description = row.Description, IsActive = row.IsActive };
+    }
+
+    private void CloseForm() => form = null;
+
+    private async Task SaveAsync()
+    {
+        var result = await RunAsync(userId => Setup.SaveSubjectAsync(form!, userId));
+        if (result.Succeeded)
+        {
+            form = null;
+            rows = await Setup.ListSubjectsAsync();
+        }
+    }
+
+    private void OpenDelete(SubjectRow row)
+    {
+        Errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        var result = await RunAsync(userId => Setup.DeleteSubjectAsync(deleting!.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            rows = await Setup.ListSubjectsAsync();
+        }
+    }
+}

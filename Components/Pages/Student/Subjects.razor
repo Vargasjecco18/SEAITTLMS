@@ -3,12 +3,25 @@
 @using System.Globalization
 @inject CurrentUser Me
 @inject TeachingService Teaching
+@inject TimeProvider Clock
 
 <PageTitle>Subjects · SEAITT e-LMS</PageTitle>
 
 <PageHeader Title="Subjects" Subtitle="Every subject you are enrolled in. Open one to read its modules and do its work." IconName="book-open" />
 
-<PageWithAside Show="calendar,todo,upnext">
+@if (view == "list")
+{
+    @Body
+}
+else
+{
+    <PageWithAside Show="calendar,todo,upnext">@Body</PageWithAside>
+}
+
+
+@code {
+    // The list has many columns, so it takes the whole width of the page; the cards share it with the widgets (calendar, to-do list, up next).
+    private RenderFragment Body => @<text>
 
 @if (cards is null)
 {
@@ -26,24 +39,23 @@ else
 {
     <div class="bar">
         @* The chips and the switch are plain links: the page opens again with the choice in its address. *@
-        <nav class="chips" aria-label="Show the subjects of">
-            <a class="chip @(Term is null ? "on" : "")" href="@Url(null, view)">All</a>
-            @foreach (var name in terms)
-            {
-                <a class="chip @(string.Equals(Term, name, StringComparison.Ordinal) ? "on" : "")" href="@Url(name, view)">@name</a>
-            }
+        <nav class="chips" aria-label="Show the subjects that are">
+            <a class="chip @(filter is null ? "on" : "")" href="@Url(null, view)">All <span class="n">@cards.Count</span></a>
+            <a class="chip @(filter == "enrolled" ? "on" : "")" href="@Url("enrolled", view)">Enrolled <span class="n">@cards.Count(c => !c.IsCompleted)</span></a>
+            <a class="chip @(filter == "completed" ? "on" : "")" href="@Url("completed", view)">Completed <span class="n">@cards.Count(c => c.IsCompleted)</span></a>
         </nav>
 
         <nav class="views" aria-label="View">
-            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Term, "cards")" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
-            <a class="view @(view == "list" ? "on" : "")" href="@Url(Term, "list")" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
+            <a class="view @(view == "cards" ? "on" : "")" href="@Url(filter, "cards")" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
+            <a class="view @(view == "list" ? "on" : "")" href="@Url(filter, "list")" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
         </nav>
     </div>
 
     @if (shown.Count == 0)
     {
         <Card>
-            <EmptyState IconName="search-x" Title="Nothing in this term">
+            <EmptyState IconName="search-x" Title="@(filter == "completed" ? "No completed subjects yet" : "No subjects you are enrolled in right now")">
+                <p>@(filter == "completed" ? "A subject is completed when its term is over." : "")</p>
                 <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Show all subjects</ButtonLink>
             </EmptyState>
         </Card>
@@ -57,9 +69,11 @@ else
                         <tr>
                             <th scope="col">Subject</th>
                             <th scope="col" class="col-more">Teacher</th>
-                            <th scope="col" class="col-more">Section</th>
-                            <th scope="col">Work</th>
-                            <th scope="col" class="col-more">Average</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Modules and work</th>
+                            <th scope="col">Next due</th>
+                            <th scope="col" class="col-more">Grade</th>
+                            <th scope="col" class="col-more">Attendance</th>
                             <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
                         </tr>
                     </thead>
@@ -69,14 +83,17 @@ else
                             <tr>
                                 <td>
                                     <span class="name">@card.SubjectName</span>
-                                    <span class="sub">@card.TermName@(card.IsCurrentTerm ? " · current" : "")</span>
+                                    <span class="sub">@card.TermName@(card.Schedule is null ? "" : " · " + card.Schedule)</span>
                                 </td>
-                                <td class="col-more">@(card.TeacherName ?? "—")</td>
-                                <td class="col-more">@card.SectionLabel</td>
+                                <td class="col-more">
+                                    @(card.TeacherName ?? "—")
+                                    <span class="sub">@card.SectionLabel</span>
+                                </td>
+                                <td><Badge Tone="@(card.IsCompleted ? Tone.Neutral : Tone.Success)">@(card.IsCompleted ? "Completed" : "Enrolled")</Badge></td>
                                 <td>
                                     @if (card.AssignmentId is null)
                                     {
-                                        <span class="muted">—</span>
+                                        <span class="muted">No teacher yet</span>
                                     }
                                     else
                                     {
@@ -85,11 +102,40 @@ else
                                         @if (card.ItemsOpen > 0) { <Badge Tone="Tone.Info">@card.ItemsOpen to do</Badge> }
                                     }
                                 </td>
-                                <td class="col-more">@(card.AveragePercent is { } avg ? $"{avg:0.#}%" : "—")</td>
+                                <td>
+                                    @if (card.NextDueUtc is { } due)
+                                    {
+                                        <Badge Tone="@(due < now.UtcDateTime ? Tone.Danger : Tone.Neutral)">@PhilippineTime.DueText(due, now)</Badge>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                                <td class="col-more">
+                                    @if (card.AveragePercent is { } avg)
+                                    {
+                                        <Badge Tone="@(avg >= 75 ? Tone.Success : avg >= 70 ? Tone.Warning : Tone.Danger)">@avg.ToString("0.#")%</Badge>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                                <td class="col-more">
+                                    @if (card.AttendancePercent is { } att)
+                                    {
+                                        <Badge Tone="@(att >= 90 ? Tone.Success : att >= 80 ? Tone.Warning : Tone.Danger)">@att.ToString("0.#")%</Badge>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
                                 <td class="col-actions">
                                     @if (card.AssignmentId is { } id)
                                     {
-                                        <ButtonLink Href="@($"student/subjects/{id}")" IconName="arrow-right">Open</ButtonLink>
+                                        <ButtonLink Href="@($"student/subjects/{id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
                                     }
                                     else
                                     {
@@ -129,6 +175,7 @@ else
                             <Badge Tone="@(avg >= 75 ? Tone.Success : avg >= 70 ? Tone.Warning : Tone.Danger)">@avg.ToString("0.#")%</Badge>
                         }
                     }
+                    <Badge Tone="@(card.IsCompleted ? Tone.Neutral : Tone.Success)">@(card.IsCompleted ? "Completed" : "Enrolled")</Badge>
                     @if (!card.IsCurrentTerm)
                     {
                         <Badge>@card.TermName</Badge>
@@ -138,33 +185,34 @@ else
         </div>
     }
 }
-</PageWithAside>
+</text>;
 
-@code {
-    [SupplyParameterFromQuery(Name = "term")] private string? Term { get; set; }
+    [SupplyParameterFromQuery(Name = "show")] private string? Show { get; set; }
 
     [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
 
     private IReadOnlyList<StudentSubjectCard>? cards;
-    private List<string> terms = [];
     private List<StudentSubjectCard> shown = [];
     private string view = "cards";
+    private string? filter;
+    private DateTimeOffset now;
 
     protected override async Task OnParametersSetAsync()
     {
         view = ViewText == "list" ? "list" : "cards";
+        filter = Show is "enrolled" or "completed" ? Show : null;
+        now = PhilippineTime.Now(Clock);
         var studentId = await Me.GetStudentIdAsync();
         cards = studentId is { } id ? await Teaching.GetStudentCardsAsync(id) : [];
-        terms = cards.Select(c => c.TermName).Distinct().ToList();
-        shown = cards.Where(c => Term is null || c.TermName == Term).ToList();
+        shown = cards.Where(c => filter is null || (filter == "completed") == c.IsCompleted).ToList();
     }
 
-    private static string Url(string? term, string view)
+    private static string Url(string? show, string view)
     {
         var parts = new List<string>();
-        if (term is not null)
+        if (show is not null)
         {
-            parts.Add("term=" + Uri.EscapeDataString(term));
+            parts.Add("show=" + show);
         }
 
         if (view == "list")

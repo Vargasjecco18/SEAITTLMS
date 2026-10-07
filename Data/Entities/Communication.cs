@@ -35,3 +35,35 @@ public class Notification : AuditableEntity
 
     public bool IsRead { get; set; }
 }
+
+public static class AnnouncementAudiences
+{
+    public const string Everyone = "Everyone";
+    public const string Students = "Students";
+    public const string Teachers = "Teachers";
+
+    public static readonly string[] All = [Everyone, Students, Teachers];
+}
+
+/// <summary>
+/// A notice for a group of people. The administrator and the registrar write them for everybody, for the students or for the
+/// teachers; a teacher writes them for the students of one of their sections. Students see them on the right of their dashboard.
+/// </summary>
+public class Announcement : AuditableEntity
+{
+    public int AuthorUserId { get; set; }
+    public User Author { get; set; } = null!;
+
+    public string Title { get; set; } = "";
+    public string Body { get; set; } = "";
+
+    /// <summary>One of <see cref="AnnouncementAudiences"/>.</summary>
+    public string Audience { get; set; } = AnnouncementAudiences.Everyone;
+
+    /// <summary>Only the students of this section (a teacher's announcement). Empty: the whole audience.</summary>
+    public int? SectionId { get; set; }
+    public Section? Section { get; set; }
+
+    /// <summary>The last day (a Philippine date) the announcement is shown. Empty: until it is deleted.</summary>
+    public DateOnly? ExpiresOn { get; set; }
+}

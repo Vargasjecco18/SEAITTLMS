@@ -3,8 +3,10 @@
 @using Microsoft.EntityFrameworkCore
 @using SEAITT_LMS.Data
 @using SEAITT_LMS.Data.Queries
+@using SEAITT_LMS.Services
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject TimeProvider Clock
+@inject ReferralService Referrals
 
 <PageTitle>My account · SEAITT e-LMS</PageTitle>
 
@@ -12,95 +14,14 @@
             Subtitle="@PhilippineTime.FormatLongDate(now)"
             IconName="id-card" />
 
-<div class="layout">
-    <div class="column">
-        <Card Title="Current term" IconName="calendar-days" Class="card-term">
-            @if (term is null)
-            {
-                <EmptyState IconName="calendar-range" Title="No current term yet">
-                    <p>An administrator sets the term the school is running. It will show up here.</p>
-                </EmptyState>
-            }
-            else
-            {
-                <p class="term-name">@term.TermName</p>
-                <p class="term-year">School year @term.SchoolYearName</p>
-                <p class="term-dates">@PhilippineTime.FormatDate(term.StartDate) – @PhilippineTime.FormatDate(term.EndDate)</p>
-
-                <div class="progress" role="progressbar" aria-label="Term progress" aria-valuemin="0" aria-valuemax="100"
-                     aria-valuenow="@TermPercent">
-                    <div class="progress-bar" style="width: @(TermPercent)%"></div>
-                </div>
-                <p class="term-progress">@TermProgressText</p>
-            }
-        </Card>
-
-        <Card Title="Coming soon" IconName="sparkles" Class="card-soon">
-            <ul class="soon">
-                <li>
-                    <span class="soon-icon"><Icon Name="book-open" Size="18" /></span>
-                    <div class="soon-text">
-                        <strong>Lessons</strong>
-                        <span>Teachers share lessons with each class.</span>
-                    </div>
-                </li>
-                <li>
-                    <span class="soon-icon"><Icon Name="clipboard-list" Size="18" /></span>
-                    <div class="soon-text">
-                        <strong>Assignments</strong>
-                        <span>Hand in work and see the grade.</span>
-                    </div>
-                </li>
-                <li>
-                    <span class="soon-icon"><Icon Name="list-checks" Size="18" /></span>
-                    <div class="soon-text">
-                        <strong>Quizzes</strong>
-                        <span>Answer quizzes online.</span>
-                    </div>
-                </li>
-            </ul>
-        </Card>
-    </div>
-
-    <div class="column">
-        <Card Title="Your account" IconName="id-card" Class="card-account">
-            <div class="profile">
-                <Avatar Name="@(account?.FullName ?? name)" Size="56" />
-                <div class="profile-text">
-                    <strong class="profile-name">@(account?.FullName ?? name)</strong>
-                    <span class="profile-email">@(account?.Email ?? email)</span>
-                    <Badge Tone="Tone.Info">@(account?.Role ?? role)</Badge>
-                </div>
-            </div>
-
-            @if (account is { Rows.Count: > 0 })
-            {
-                <dl class="rows">
-                    @foreach (var row in account.Rows)
-                    {
-                        <div class="row">
-                            <dt>@row.Label</dt>
-                            <dd>
-                                @if (row.Value is null)
-                                {
-                                    <span class="unset">Not set yet</span>
-                                }
-                                else if (row.IsStatus)
-                                {
-                                    <Badge Tone="@(row.Value == "Active" ? Tone.Success : Tone.Neutral)">@row.Value</Badge>
-                                }
-                                else
-                                {
-                                    @row.Value
-                                }
-                            </dd>
-                        </div>
-                    }
-                </dl>
-            }
-        </Card>
-    </div>
-</div>
+@if (AsideShow is { } show)
+{
+    <PageWithAside Show="@show">@Body</PageWithAside>
+}
+else
+{
+    @Body
+}
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
@@ -109,8 +30,18 @@
     private string name = "";
     private string email = "";
     private string role = "";
+    private string roleName = "";
     private AccountDetails? account;
-    private CurrentTerm? term;
+    private IReadOnlyList<PageEntry> shortcuts = [];
+    private List<(string Label, string Icon, int Value, AccentColor Accent, string? Href)> glance = [];
+
+    /// <summary>Students and teachers have the calendar and the to-do list at the right. The staff roles have no such column.</summary>
+    private string? AsideShow => roleName switch
+    {
+        AppRoles.Student => "achievements,calendar,todo",
+        AppRoles.Teacher => "tocheck,calendar,todo",
+        _ => null,
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,7 +51,9 @@
         var user = (await AuthState).User;
         name = user.Identity?.Name ?? "";
         email = user.FindFirstValue(ClaimTypes.Email) ?? "";
-        role = AppRoles.DisplayName(user.FindFirstValue(ClaimTypes.Role));
+        roleName = user.FindFirstValue(ClaimTypes.Role) ?? "";
+        role = AppRoles.DisplayName(roleName);
+        shortcuts = PageDirectory.For(roleName).Where(p => p.Href != "account").ToList();
 
         await using var db = await DbFactory.CreateDbContextAsync();
 
@@ -129,51 +62,151 @@
             account = await AccountDetails.LoadAsync(db, userId);
         }
 
-        term = await CurrentTerm.LoadAsync(db);
+        await LoadGlanceAsync(db);
     }
 
-    private DateOnly Today => DateOnly.FromDateTime(now.DateTime);
-
-    private int TermPercent
+    /// <summary>A few numbers for the staff roles, who have no dashboard widgets at the right.</summary>
+    private async Task LoadGlanceAsync(AppDbContext db)
     {
-        get
+        switch (roleName)
         {
-            if (term is null)
-            {
-                return 0;
-            }
+            case AppRoles.Admin:
+                var admin = await AdminOverview.LoadAsync(db, Clock.GetUtcNow().UtcDateTime, 0);
+                glance =
+                [
+                    ("Accounts", "users", admin.TotalAccounts, AccentColor.Blue, "admin/users"),
+                    ("Cannot sign in", "lock-keyhole", admin.InactiveAccounts, admin.InactiveAccounts > 0 ? AccentColor.Amber : AccentColor.Green, "admin/users"),
+                    ("Enrollments", "user-check", admin.Setup.Enrollments, AccentColor.Violet, null),
+                ];
+                break;
 
-            var length = term.EndDate.DayNumber - term.StartDate.DayNumber + 1;
-            var done = Today.DayNumber - term.StartDate.DayNumber + 1;
-            return Math.Clamp(done * 100 / Math.Max(length, 1), 0, 100);
+            case AppRoles.Registrar:
+                var startOfToday = new DateTimeOffset(PhilippineTime.Now(Clock).Date, TimeSpan.FromHours(8)).UtcDateTime;
+                var registrar = await RegistrarOverview.LoadAsync(db, startOfToday);
+                glance =
+                [
+                    ("Enrolled this term", "clipboard-check", registrar.EnrolledThisTerm, AccentColor.Blue, "registrar/student-accounts"),
+                    ("Enrolled today", "user-plus", registrar.EnrolledToday, AccentColor.Green, "registrar/enrollments"),
+                    ("Students in the system", "graduation-cap", registrar.StudentsTotal, AccentColor.Violet, "registrar/student-accounts"),
+                ];
+                break;
+
+            case AppRoles.GuidanceCounselor:
+                var guidance = await Referrals.GetOverviewAsync();
+                glance =
+                [
+                    ("New referrals", "flag", guidance.Open, guidance.Open > 0 ? AccentColor.Rose : AccentColor.Green, "guidance/referrals"),
+                    ("In progress", "heart-handshake", guidance.InProgress, AccentColor.Blue, "guidance/referrals"),
+                    ("Failing (below 70)", "triangle-alert", guidance.Failing, guidance.Failing > 0 ? AccentColor.Amber : AccentColor.Green, "guidance/students"),
+                ];
+                break;
         }
     }
 
-    private string TermProgressText
-    {
-        get
+    private RenderFragment Body => @<div class="layout">
+        @if (glance.Count > 0)
         {
-            if (term is null)
-            {
-                return "";
-            }
-
-            var length = term.EndDate.DayNumber - term.StartDate.DayNumber + 1;
-            var day = Today.DayNumber - term.StartDate.DayNumber + 1;
-
-            if (day < 1)
-            {
-                var days = 1 - day;
-                return days == 1 ? "Starts tomorrow" : $"Starts in {days} days";
-            }
-
-            if (day > length)
-            {
-                var days = day - length;
-                return days == 1 ? "Ended yesterday" : $"Ended {days} days ago";
-            }
-
-            return $"Day {day} of {length}";
+            <div class="stats">
+                @foreach (var item in glance)
+                {
+                    <StatCard Label="@item.Label" Value="@item.Value" IconName="@item.Icon" Accent="@item.Accent" Href="@item.Href" />
+                }
+            </div>
         }
-    }
+
+        <div class="cards">
+            <Card Title="Your account" IconName="id-card">
+                <div class="profile">
+                    <Avatar Name="@(account?.FullName ?? name)" Size="56" />
+                    <div class="profile-text">
+                        <strong class="profile-name">@(account?.FullName ?? name)</strong>
+                        <span class="profile-email">@(account?.Email ?? email)</span>
+                        <Badge Tone="Tone.Info">@(account?.Role ?? role)</Badge>
+                    </div>
+                </div>
+
+                @if (account is { Rows.Count: > 0 })
+                {
+                    <dl class="rows">
+                        @foreach (var row in account.Rows)
+                        {
+                            <div class="row">
+                                <dt>@row.Label</dt>
+                                <dd>
+                                    @if (row.Value is null)
+                                    {
+                                        <span class="unset">Not set yet</span>
+                                    }
+                                    else if (row.IsStatus)
+                                    {
+                                        <Badge Tone="@(row.Value == "Active" ? Tone.Success : Tone.Neutral)">@row.Value</Badge>
+                                    }
+                                    else
+                                    {
+                                        @row.Value
+                                    }
+                                </dd>
+                            </div>
+                        }
+                    </dl>
+                }
+            </Card>
+
+            <div class="column">
+                <Card Title="Sign-in and security" IconName="shield-check">
+                    <dl class="rows first">
+                        <div class="row"><dt>Sign-in name</dt><dd>@(account?.Email ?? email)</dd></div>
+                        <div class="row">
+                            <dt>Account</dt>
+                            <dd><Badge Tone="@(account is null || account.IsActive ? Tone.Success : Tone.Neutral)">@(account is null || account.IsActive ? "Active" : "Switched off")</Badge></dd>
+                        </div>
+                        <div class="row">
+                            <dt>Last sign-in</dt>
+                            <dd>@(account?.LastLoginAtUtc is { } last ? PhilippineTime.FormatDateTime(last) : "This is your first")</dd>
+                        </div>
+                        <div class="row">
+                            <dt>Account made</dt>
+                            <dd>@(account?.CreatedAtUtc is { } made ? PhilippineTime.FormatDate(made) : "—")</dd>
+                        </div>
+                    </dl>
+                    <p class="note"><Icon Name="lock-keyhole" Size="16" /> Keep your password private. If you forget it, ask the administrator.</p>
+                </Card>
+
+                <Card Title="Appearance" IconName="sun">
+                    <div class="choices" role="group" aria-label="Appearance">
+                        <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
+                        <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Night</span></button>
+                        <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
+                    </div>
+                    <button type="button" class="switch" data-motion-toggle>
+                        <span class="switch-text">
+                            <strong>Animations</strong>
+                            <small>Small movements when pages and menus open</small>
+                        </span>
+                        <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                    </button>
+                </Card>
+            </div>
+        </div>
+
+        @if (shortcuts.Count > 0)
+        {
+            <Card Title="Go to" IconName="arrow-right">
+                <ul class="shortcuts">
+                    @foreach (var entry in shortcuts)
+                    {
+                        <li>
+                            <a href="@entry.Href">
+                                <span class="shortcut-icon"><Icon Name="@entry.Icon" Size="18" /></span>
+                                <span class="shortcut-text">
+                                    <strong>@entry.Title</strong>
+                                    <small>@entry.Description</small>
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </Card>
+        }
+    </div>;
 }

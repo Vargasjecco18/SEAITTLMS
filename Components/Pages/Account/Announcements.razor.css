@@ -1,0 +1,96 @@
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.muted {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.list {
+    display: grid;
+    gap: 0;
+    margin: 0 -1.25rem;
+    padding: 0;
+    list-style: none;
+}
+
+.list li {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.list li:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+}
+
+.title {
+    font-size: 1.02rem;
+}
+
+.badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.body {
+    margin: 0.5rem 0 0.75rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+}
+
+.row-actions {
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.hint-line {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 0.92rem;
+}
+
+.alert ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}

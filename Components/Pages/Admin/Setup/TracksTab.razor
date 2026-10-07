@@ -1,0 +1,142 @@
+@inherits SetupTabBase
+
+<Card>
+    <div class="tab-head">
+        <p class="grow">The senior high school tracks the school offers. Every strand belongs to one track.</p>
+        <Button IconName="plus" OnClick="OpenAdd">Add track</Button>
+    </div>
+
+    <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (rows.Count == 0)
+    {
+        <EmptyState IconName="layers" Title="No track yet"><p>Add a track, then its strands.</p></EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Code</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="col-more">Strands</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        <tr>
+                            <td class="name nowrap">@row.Code</td>
+                            <td>@row.Name</td>
+                            <td><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Offered" : "Not offered")</Badge></td>
+                            <td class="col-more">@row.Strands</td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Code}")" OnClick="() => OpenEdit(row)">Edit</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Code}")" OnClick="() => OpenDelete(row)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+<Modal Open="form is not null" Title="@(form?.Id is null ? "Add track" : "Edit track")" OnClose="CloseForm">
+    @if (form is not null)
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="Errors" />
+            <div class="two">
+                <Field For="k-code" Label="Code" Required="true" Hint="Like ACAD.">
+                    <input id="k-code" maxlength="20" autocomplete="off" @bind="form.Code" />
+                </Field>
+                <Field For="k-name" Label="Name" Required="true" Hint="Like Academic.">
+                    <input id="k-name" maxlength="100" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <label class="switch">
+                <input id="k-active" type="checkbox" @bind="form.IsActive" />
+                <span>
+                    <strong>The school offers this track</strong>
+                    <small>Switch it off for a track the school does not offer (now). The registrar can't enroll students in it.</small>
+                </span>
+            </label>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+<Modal Open="deleting is not null" Title="Delete this track?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p class="delete-text">You are about to delete the track <strong>@deleting.Code</strong> (@deleting.Name). <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<TrackRow>? rows;
+    private TrackInput? form;
+    private TrackRow? deleting;
+
+    protected override async Task OnInitializedAsync() => rows = await Setup.ListTracksAsync();
+
+    private void OpenAdd()
+    {
+        Errors = [];
+        form = new TrackInput();
+    }
+
+    private void OpenEdit(TrackRow row)
+    {
+        Errors = [];
+        form = new TrackInput { Id = row.Id, Code = row.Code, Name = row.Name, IsActive = row.IsActive };
+    }
+
+    private void CloseForm() => form = null;
+
+    private async Task SaveAsync()
+    {
+        var result = await RunAsync(userId => Setup.SaveTrackAsync(form!, userId));
+        if (result.Succeeded)
+        {
+            form = null;
+            rows = await Setup.ListTracksAsync();
+        }
+    }
+
+    private void OpenDelete(TrackRow row)
+    {
+        Errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        var result = await RunAsync(userId => Setup.DeleteTrackAsync(deleting!.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            rows = await Setup.ListTracksAsync();
+        }
+    }
+}

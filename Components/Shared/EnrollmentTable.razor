@@ -12,6 +12,10 @@
                 {
                     <th scope="col" class="col-subjects">Subjects</th>
                 }
+                @if (ShowNextTerm)
+                {
+                    <th scope="col" class="col-next">Next term</th>
+                }
                 <th scope="col" class="col-date">Enrolled</th>
             </tr>
         </thead>
@@ -25,6 +29,10 @@
                             <div class="person-text">
                                 <span class="person-name">@row.StudentName</span>
                                 <span class="sub">LRN @row.Lrn</span>
+                                @if (ShowPhone && row.Phone is not null)
+                                {
+                                    <span class="sub phone">@row.Phone</span>
+                                }
                             </div>
                         </div>
                     </td>
@@ -72,6 +80,27 @@
                             }
                         </td>
                     }
+                    @if (ShowNextTerm)
+                    {
+                        <td class="col-next">
+                            @if (NextTerm is null)
+                            {
+                                <span class="sub" title="An administrator adds the next term in the school setup.">No next term yet</span>
+                            }
+                            else if (row.NextEnrollmentId is not null)
+                            {
+                                <Badge Tone="Tone.Success">Enrolled</Badge>
+                                <span class="sub">@NextTerm.Name</span>
+                                <UnenrollButton StudentId="row.StudentId" StudentName="@row.StudentName" TermLabel="@NextTerm.Label" />
+                            }
+                            else
+                            {
+                                <Badge>Not enrolled</Badge>
+                                <span class="sub">@NextTerm.Name</span>
+                                <a class="enroll-link" href="registrar/enrollments?lrn=@row.Lrn&term=@NextTerm.Id">Enroll</a>
+                            }
+                        </td>
+                    }
                     <td class="col-date">
                         <span>@PhilippineTime.FormatDate(row.EnrolledAtUtc)</span>
                         <span class="sub">@PhilippineTime.FormatTime(row.EnrolledAtUtc)</span>
@@ -87,6 +116,15 @@
 
     /// <summary>The list of subjects makes the table wide, so the dashboard leaves it out.</summary>
     [Parameter] public bool ShowSubjects { get; set; }
+
+    /// <summary>The student's phone number under the LRN (the registrar's list).</summary>
+    [Parameter] public bool ShowPhone { get; set; }
+
+    /// <summary>The column that says whether the student is enrolled for the next term, with the button to unenroll.</summary>
+    [Parameter] public bool ShowNextTerm { get; set; }
+
+    /// <summary>The term after the current one (null when there is none).</summary>
+    [Parameter] public TermRef? NextTerm { get; set; }
 
     /// <summary>The subject names of one enrollment (they are saved as one text, separated by commas).</summary>
     private static List<string> SubjectNames(EnrollmentRow row) =>
