@@ -74,7 +74,7 @@ public sealed record ItemForEdit(
 
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
-    IReadOnlyList<TeacherItem> Items);
+    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromCoordinator = false);
 
 public sealed record TeacherSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string? Schedule, int Students, IReadOnlyList<TeacherModule> Modules);
@@ -86,7 +86,7 @@ public sealed record StudentItem(
 
 public sealed record StudentModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
-    int AssignmentId = 0, string SubjectName = "");
+    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false);
 
 public sealed record StudentSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string TeacherName, IReadOnlyList<StudentModule> Modules);
@@ -133,9 +133,11 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             })
             .ToListAsync(ct);
 
+        var fromCoordinator = (await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == assignmentId).Select(d => d.ModuleId).ToListAsync(ct)).ToHashSet();
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
-            items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList())).ToList();
+            items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
+            m.IsSyllabus, fromCoordinator.Contains(m.Id))).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Schedule, students, result);
     }
@@ -376,6 +378,49 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
     /// <summary>Replaces the questions of a quiz. The score of the quiz becomes the total of the points. Not possible once somebody has started it.</summary>
     public async Task<ServiceResult> SaveQuestionsAsync(int teacherId, int itemId, IReadOnlyList<QuestionInput> questions, CancellationToken ct = default)
     {
+        var errors = ValidateQuestions(questions);
+        if (errors.Count > 0)
+        {
+            return ServiceResult.Fail(errors);
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var item = await db.ModuleItems.FirstOrDefaultAsync(i => i.Id == itemId && i.Kind == ItemKinds.Quiz && i.Module.Assignment.TeacherId == teacherId, ct);
+        if (item is null)
+        {
+            return ServiceResult.Fail("This quiz was not found.");
+        }
+
+        if (await db.Submissions.AnyAsync(s => s.ItemId == itemId, ct))
+        {
+            return ServiceResult.Fail("Students have already started this quiz, so its questions can't be changed.");
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.QuizQuestions.Where(q => q.ItemId == itemId).ExecuteDeleteAsync(ct);
+        var position = 0;
+        foreach (var q in questions)
+        {
+            db.QuizQuestions.Add(new QuizQuestion
+            {
+                ItemId = itemId, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
+                OptionsText = q.Kind == QuestionKinds.MultipleChoice ? string.Join('\n', SplitOptions(q.OptionsText)) : null,
+                CorrectAnswer = q.Kind == QuestionKinds.MultipleChoice
+                    ? SplitOptions(q.OptionsText).First(o => string.Equals(o, q.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
+                    : q.CorrectAnswer.Trim(),
+                Points = q.Points,
+            });
+        }
+
+        item.MaxScore = questions.Count == 0 ? 100 : questions.Sum(q => q.Points);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return ServiceResult.Ok($"{questions.Count} question{(questions.Count == 1 ? "" : "s")} saved. The quiz is worth {item.MaxScore:0.##} points.");
+    }
+
+    /// <summary>What is wrong with the questions of a quiz (none when they are all right). Also used for the quizzes of the course materials.</summary>
+    internal static List<string> ValidateQuestions(IReadOnlyList<QuestionInput> questions)
+    {
         var errors = new List<string>();
         for (var n = 0; n < questions.Count; n++)
         {
@@ -434,43 +479,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             errors.Add("A quiz can have at most 100 questions.");
         }
 
-        if (errors.Count > 0)
-        {
-            return ServiceResult.Fail(errors);
-        }
-
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var item = await db.ModuleItems.FirstOrDefaultAsync(i => i.Id == itemId && i.Kind == ItemKinds.Quiz && i.Module.Assignment.TeacherId == teacherId, ct);
-        if (item is null)
-        {
-            return ServiceResult.Fail("This quiz was not found.");
-        }
-
-        if (await db.Submissions.AnyAsync(s => s.ItemId == itemId, ct))
-        {
-            return ServiceResult.Fail("Students have already started this quiz, so its questions can't be changed.");
-        }
-
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        await db.QuizQuestions.Where(q => q.ItemId == itemId).ExecuteDeleteAsync(ct);
-        var position = 0;
-        foreach (var q in questions)
-        {
-            db.QuizQuestions.Add(new QuizQuestion
-            {
-                ItemId = itemId, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
-                OptionsText = q.Kind == QuestionKinds.MultipleChoice ? string.Join('\n', SplitOptions(q.OptionsText)) : null,
-                CorrectAnswer = q.Kind == QuestionKinds.MultipleChoice
-                    ? SplitOptions(q.OptionsText).First(o => string.Equals(o, q.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
-                    : q.CorrectAnswer.Trim(),
-                Points = q.Points,
-            });
-        }
-
-        item.MaxScore = questions.Count == 0 ? 100 : questions.Sum(q => q.Points);
-        await db.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
-        return ServiceResult.Ok($"{questions.Count} question{(questions.Count == 1 ? "" : "s")} saved. The quiz is worth {item.MaxScore:0.##} points.");
+        return errors;
     }
 
     public static List<string> SplitOptions(string? text) =>
@@ -510,7 +519,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         return new StudentSubject(
             a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Teacher,
             modules.Select(m => new StudentModule(m.Id, m.Title, m.Description, null, null, m.Position, m.VisibleFromUtc!.Value, opened.Contains(m.Id),
-                items.Where(i => i.ModuleId == m.Id).ToList())).ToList());
+                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus)).ToList());
     }
 
     /// <summary>A module with its text. Opening it is remembered, so it is no longer listed as not opened yet.</summary>
@@ -542,7 +551,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
         var items = await LoadStudentItemsAsync(db, studentId, [moduleId], now, ct);
         return new StudentModule(m.Module.Id, m.Module.Title, m.Module.Description, m.Module.Body, m.Module.LinkUrl, m.Module.Position, m.Module.VisibleFromUtc!.Value, true, items,
-            m.Module.AssignmentId, m.SubjectName);
+            m.Module.AssignmentId, m.SubjectName, m.Module.IsSyllabus);
     }
 
     private static async Task<List<StudentItem>> LoadStudentItemsAsync(AppDbContext db, int studentId, IReadOnlyCollection<int> moduleIds, DateTime now, CancellationToken ct)
@@ -568,9 +577,9 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
     // ======================================================================= helpers
 
-    private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    internal static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
-    private static List<string> ValidateModule(ModuleInput input)
+    internal static List<string> ValidateModule(ModuleInput input)
     {
         var errors = new List<string>();
         if (string.IsNullOrWhiteSpace(input.Title) || input.Title.Trim().Length > 200)
@@ -599,7 +608,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
     public static bool IsWebAddress(string text) =>
         text.Length <= 500 && Uri.TryCreate(text, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https";
 
-    private static List<string> ValidateItem(ItemInput input)
+    internal static List<string> ValidateItem(ItemInput input)
     {
         var errors = new List<string>();
         if (!ItemKinds.All.Contains(input.Kind))

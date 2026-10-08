@@ -1,0 +1,41 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.tasks {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tasks li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.main {
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.main strong {
+    display: block;
+}
+
+.sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+section.card + section.card,
+.tasks + * {
+    margin-top: 1.25rem;
+}

@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<Registrar> Registrars => Set<Registrar>();
     public DbSet<GuidanceCounselor> GuidanceCounselors => Set<GuidanceCounselor>();
     public DbSet<Administrator> Administrators => Set<Administrator>();
+    public DbSet<AcademicCoordinator> AcademicCoordinators => Set<AcademicCoordinator>();
 
     // Classes and enrollment
     public DbSet<SchoolYear> SchoolYears => Set<SchoolYear>();
@@ -45,6 +46,17 @@ public class AppDbContext : DbContext
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<Referral> Referrals => Set<Referral>();
 
+    // The academic coordinator: course materials and the teacher evaluation
+    public DbSet<MaterialModule> MaterialModules => Set<MaterialModule>();
+    public DbSet<MaterialItem> MaterialItems => Set<MaterialItem>();
+    public DbSet<MaterialQuestion> MaterialQuestions => Set<MaterialQuestion>();
+    public DbSet<MaterialDelivery> MaterialDeliveries => Set<MaterialDelivery>();
+    public DbSet<TeacherEvaluation> TeacherEvaluations => Set<TeacherEvaluation>();
+    public DbSet<EvaluationQuestion> EvaluationQuestions => Set<EvaluationQuestion>();
+    public DbSet<EvaluationTarget> EvaluationTargets => Set<EvaluationTarget>();
+    public DbSet<EvaluationResponse> EvaluationResponses => Set<EvaluationResponse>();
+    public DbSet<EvaluationAnswer> EvaluationAnswers => Set<EvaluationAnswer>();
+
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -54,16 +66,18 @@ public class AppDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-        // The four staff tables share one configuration...
+        // The five staff tables share one configuration...
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Teacher>(u => u.Teacher));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Registrar>(u => u.Registrar));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<GuidanceCounselor>(u => u.GuidanceCounselor));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Administrator>(u => u.Administrator));
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<AcademicCoordinator>(u => u.AcademicCoordinator));
 
-        // ...and three of them also have a contact number and a status.
+        // ...and four of them also have a contact number and a status.
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Registrar>("registrars"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<GuidanceCounselor>("guidance_counselors"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Administrator>("administrators"));
+        modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicCoordinator>("academic_coordinators"));
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

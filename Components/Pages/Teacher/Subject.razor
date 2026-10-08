@@ -34,7 +34,7 @@ else
 
     <p class="hint-line">
         <Icon Name="eye-off" Size="16" />
-        <span>A new module is a <strong>draft</strong>: students can't see it until you post it. Post it now, or schedule the time it appears.</span>
+        <span>A new module is a <strong>draft</strong>: students can't see it until you post it. Post it now, or schedule the time it appears. Materials the academic coordinator sent you are drafts too: change the text and the due dates, then post them.</span>
     </p>
 
     @if (subject.Modules.Count == 0)
@@ -52,14 +52,22 @@ else
             @for (var n = 0; n < subject.Modules.Count; n++)
             {
                 var module = subject.Modules[n];
-                var number = n + 1;
-                <section class="module @module.State.ToLowerInvariant()" aria-label="Module @number">
+                var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus);
+                <section class="module @module.State.ToLowerInvariant()" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
                     <header class="module-head">
                         <div class="module-title">
-                            <span class="module-number">@number</span>
+                            <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                             <div>
                                 <h2>@module.Title</h2>
                                 <div class="module-state">
+                                    @if (module.IsSyllabus)
+                                    {
+                                        <Badge Tone="Tone.Info">Syllabus</Badge>
+                                    }
+                                    @if (module.FromCoordinator)
+                                    {
+                                        <Badge Tone="Tone.Info">From the academic coordinator</Badge>
+                                    }
                                     @if (module.State == Visibility.Posted)
                                     {
                                         <Badge Tone="Tone.Success">Posted @PhilippineTime.FormatDate(module.VisibleFromUtc!.Value)</Badge>
@@ -116,7 +124,7 @@ else
                     }
 
                     <div class="groups">
-                        @foreach (var kind in ItemKinds.All)
+                        @foreach (var kind in ItemKinds.All.Where(k => !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
                         {
                             var items = module.Items.Where(i => i.Kind == kind).ToList();
                             <div class="group">

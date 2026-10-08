@@ -22,7 +22,7 @@
             <StatCard Label="Enrolled this term" Value="@overview.EnrolledThisTerm" IconName="clipboard-check" Accent="AccentColor.Blue" />
             <StatCard Label="Enrolled today" Value="@overview.EnrolledToday" IconName="user-plus" Accent="AccentColor.Green" />
             <StatCard Label="Students in the system" Value="@overview.StudentsTotal" IconName="graduation-cap" Accent="AccentColor.Violet" />
-            <StatCard Label="Sections this school year" Value="@overview.SectionsThisYear" IconName="users" Accent="AccentColor.Amber" />
+            <StatCard Label="Sections with students" Value="@SectionsWithStudents" IconName="users" Accent="AccentColor.Amber" Hint="@($"of {overview.SectionsThisYear:N0} sections this school year")" />
         </div>
     </section>
 
@@ -57,8 +57,10 @@
                 }
                 else
                 {
+                    var withStudents = overview.BySection.Where(s => s.Count > 0).ToList();
+                    var empty = overview.BySection.Count - withStudents.Count;
                     <ul class="bars sections">
-                        @foreach (var row in overview.BySection)
+                        @foreach (var row in withStudents)
                         {
                             <li>
                                 <div class="bar-label">
@@ -69,6 +71,15 @@
                             </li>
                         }
                     </ul>
+                    @if (withStudents.Count == 0)
+                    {
+                        <p class="empty-note">No student is in a section yet.</p>
+                    }
+
+                    @if (empty > 0)
+                    {
+                        <p class="empty-note">@empty @(empty == 1 ? "more section has" : "more sections have") no students yet.</p>
+                    }
                 }
             </Card>
         </div>
@@ -156,6 +167,8 @@
     private int maxStrand;
     private int maxSchedule;
     private int maxSection;
+
+    private int SectionsWithStudents => overview?.BySection?.Count(s => s.Count > 0) ?? 0;
 
     protected override async Task OnInitializedAsync()
     {

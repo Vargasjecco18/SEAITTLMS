@@ -175,6 +175,9 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             case AppRoles.Admin:
                 db.Administrators.Add(Person(new Administrator { EmployeeNumber = employeeNumber, PhoneNumber = phone }));
                 break;
+            case AppRoles.AcademicCoordinator:
+                db.AcademicCoordinators.Add(Person(new AcademicCoordinator { EmployeeNumber = employeeNumber, PhoneNumber = phone }));
+                break;
         }
 
         try

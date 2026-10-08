@@ -1,0 +1,283 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.hint-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.layout {
+    display: grid;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 1100px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+        align-items: start;
+    }
+}
+
+.small-text {
+    margin: 0 0 0.8rem;
+    font-size: 0.88rem;
+}
+
+.questions,
+.read-questions {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.read-questions {
+    counter-reset: q;
+}
+
+.read-questions li {
+    display: flex;
+    flex-direction: column;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.read-questions small {
+    color: var(--text-muted);
+}
+
+.question {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.number {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.question-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.question-body textarea {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.question-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.question-row input[type="text"] {
+    flex: 1 1 10rem;
+    min-width: 0;
+}
+
+.move {
+    display: inline-flex;
+    margin-left: auto;
+}
+
+.adders {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.table-wrap {
+    margin: 0 -1.25rem;
+    overflow-x: auto;
+}
+
+.note {
+    margin: 1rem 0 0;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.name {
+    font-weight: 650;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.rate {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 9rem;
+    font-size: 0.85rem;
+}
+
+.rate-bar {
+    display: block;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.rate-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--btn-bg);
+}
+
+.col-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.dialog-text {
+    margin: 0 0 1.1rem;
+}
+
+.picks {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.picks ul {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.35rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.teacher-group > strong {
+    display: block;
+}
+
+.pick {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.pick:hover {
+    background: var(--surface-2);
+}
+
+.pick ::deep input {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0.2rem 0 0;
+    accent-color: var(--btn-bg);
+}
+
+.pick span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pick small {
+    color: var(--text-muted);
+}
+
+.pick-title {
+    margin: 0 0 0.4rem;
+    font-weight: 700;
+}
+
+.link-button {
+    margin: 0 0 0.5rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.names {
+    margin: 0 0 1rem;
+    padding-left: 1.2rem;
+    columns: 2;
+}
+
+@media (max-width: 560px) {
+    .names {
+        columns: 1;
+    }
+}

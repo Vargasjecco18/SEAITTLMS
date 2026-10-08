@@ -1,0 +1,19 @@
+@* A thin bar with a percent: how far along something is. *@
+<span class="progress @Class" title="@Title">
+    <span class="track"><span class="fill @Level" style="width: @Width%"></span></span>
+    <span class="percent">@Width%</span>
+</span>
+
+@code {
+    /// <summary>0 to 100.</summary>
+    [Parameter] public int Percent { get; set; }
+
+    /// <summary>What shows when the pointer rests on the bar, like "3 of 8 done".</summary>
+    [Parameter] public string? Title { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    private int Width => Math.Clamp(Percent, 0, 100);
+
+    private string Level => Width >= 100 ? "done" : Width >= 50 ? "good" : "start";
+}

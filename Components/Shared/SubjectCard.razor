@@ -18,6 +18,14 @@
 
         <div class="facts">@ChildContent</div>
 
+        @if (Progress is { } percent)
+        {
+            <div class="progress-line">
+                <span class="progress-label">Progress</span>
+                <ProgressBar Percent="percent" Title="@ProgressText" />
+            </div>
+        }
+
         <div class="foot">
             @if (Href is not null)
             {
@@ -44,6 +52,11 @@
     [Parameter] public string? Href { get; set; }
 
     [Parameter] public string? OffText { get; set; }
+
+    /// <summary>How far along the student is, 0 to 100. Empty: no progress line.</summary>
+    [Parameter] public int? Progress { get; set; }
+
+    [Parameter] public string? ProgressText { get; set; }
 
     /// <summary>The small facts (badges, numbers) between the name and the button.</summary>
     [Parameter] public RenderFragment? ChildContent { get; set; }

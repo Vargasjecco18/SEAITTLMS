@@ -72,6 +72,7 @@ else
                             <th scope="col" class="col-more">Teacher</th>
                             <th scope="col">Status</th>
                             <th scope="col">Modules and work</th>
+                            <th scope="col">Progress</th>
                             <th scope="col">Next due</th>
                             <th scope="col" class="col-more">Grade</th>
                             <th scope="col" class="col-more">Attendance</th>
@@ -101,6 +102,16 @@ else
                                         <span>@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</span>
                                         @if (card.ModulesUnopened > 0) { <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge> }
                                         @if (card.ItemsOpen > 0) { <Badge Tone="Tone.Info">@card.ItemsOpen to do</Badge> }
+                                    }
+                                </td>
+                                <td class="progress-cell">
+                                    @if (card.ProgressPercent is { } percent)
+                                    {
+                                        <ProgressBar Percent="percent" Title="@card.ProgressText" />
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
                                     }
                                 </td>
                                 <td>
@@ -157,7 +168,8 @@ else
             {
                 <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel"
                              Subtitle="@(card.TeacherName ?? "No teacher yet")"
-                             Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet">
+                             Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet"
+                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText">
                     @if (card.AssignmentId is not null)
                     {
                         <Badge Tone="@(card.ModulesVisible == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</Badge>

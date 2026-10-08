@@ -1,0 +1,532 @@
+@page "/coordinator/evaluations/{EvaluationId:int}"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject EvaluationService Service
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+<PageTitle>@(detail?.Title ?? "Evaluation") · Teacher evaluation · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (detail is null)
+{
+    <Card>
+        <EmptyState IconName="clipboard-check" Title="Evaluation not found" IsPage="true">
+            <p>This evaluation was deleted.</p>
+            <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Secondary">Back to the evaluations</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    var draft = detail.State == EvaluationStates.Draft;
+    <PageHeader Title="@detail.Title" Subtitle="@Subtitle" IconName="clipboard-check">
+        <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Ghost" IconName="chevron-left">All evaluations</ButtonLink>
+        @if (!draft)
+        {
+            <ButtonLink Href="@($"coordinator/analytics?evaluation={detail.Id}")" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
+        }
+        @if (detail.State == EvaluationStates.Open)
+        {
+            <Button Variant="ButtonVariant.Secondary" IconName="lock-keyhole" Disabled="busy" OnClick="CloseNowAsync">Close now</Button>
+        }
+        @if (draft)
+        {
+            <Button IconName="send" Disabled="busy" OnClick="OpenSendAsync">Send to students</Button>
+        }
+        <Button Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete this evaluation" OnClick="() => confirmDelete = true" />
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    @if (draft)
+    {
+        <p class="hint-line">
+            <Icon Name="eye-off" Size="16" />
+            <span>This is a <strong>draft</strong>: the students can't see it. Change the questions, then send it with the teachers' courses and the due date.</span>
+        </p>
+    }
+    else
+    {
+        <p class="hint-line">
+            <Icon Name="@(detail.State == EvaluationStates.Open ? "clock" : "lock-keyhole")" Size="16" />
+            <span>@(detail.State == EvaluationStates.Open ? "The students can answer until the due date. You can move the due date later." : "The due date has passed: the students can't answer any more.")</span>
+        </p>
+    }
+
+    <div class="layout">
+        <Card Title="Details" IconName="file-text">
+            <EditForm Model="form" OnValidSubmit="SaveAsync">
+                <FormErrors Errors="formErrors" />
+                <Field For="e-title" Label="Title" Required="true">
+                    <InputText id="e-title" @bind-Value="form.Title" maxlength="200" autocomplete="off" />
+                </Field>
+                <Field For="e-text" Label="Instructions for the students">
+                    <InputTextArea id="e-text" @bind-Value="form.Instructions" rows="3" maxlength="2000" />
+                </Field>
+                <Field For="e-due" Label="Due date" Hint="@(draft ? "Philippine time. You can also choose it when you send." : "Philippine time. The last moment the students can answer.")">
+                    <input id="e-due" type="datetime-local" value="@dueText" @onchange="e => dueText = e.Value?.ToString() ?? string.Empty" />
+                </Field>
+                @if (!draft)
+                {
+                    <div class="modal-actions">
+                        <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
+                    </div>
+                }
+            </EditForm>
+        </Card>
+
+        <Card Title="@($"Questions ({(draft ? questions.Count : detail.Questions.Count)})")" IconName="list-checks">
+            @if (!draft)
+            {
+                <p class="muted small-text">The students are answering these, so they can't be changed any more.</p>
+                <ol class="read-questions">
+                    @foreach (var q in detail.Questions)
+                    {
+                        <li>
+                            <span>@q.Text</span>
+                            <small>@(q.Kind == EvaluationQuestionKinds.Rating ? "Rating 1 to 5" : "Comment")@(string.IsNullOrWhiteSpace(q.Category) ? "" : " · " + q.Category)</small>
+                        </li>
+                    }
+                </ol>
+            }
+            else
+            {
+                <datalist id="areas">
+                    @foreach (var area in questions.Select(q => q.Category).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct())
+                    {
+                        <option value="@area"></option>
+                    }
+                </datalist>
+                <ol class="questions">
+                    @for (var n = 0; n < questions.Count; n++)
+                    {
+                        var index = n;
+                        var q = questions[n];
+                        <li class="question">
+                            <span class="number">@(index + 1)</span>
+                            <div class="question-body">
+                                <textarea id="@($"q{index}-text")" rows="2" aria-label="@($"Question {index + 1}")" @bind="q.Text" @bind:event="oninput"></textarea>
+                                <div class="question-row">
+                                    <select aria-label="@($"How the students answer question {index + 1}")" @bind="q.Kind">
+                                        <option value="@EvaluationQuestionKinds.Rating">Rating 1 to 5</option>
+                                        <option value="@EvaluationQuestionKinds.Comment">Comment (a few words)</option>
+                                    </select>
+                                    <input type="text" list="areas" maxlength="60" placeholder="Area (optional)" aria-label="@($"Area of question {index + 1}")" @bind="q.Category" />
+                                    <span class="move">
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-up" Title="Move up" Disabled="@(index == 0)" OnClick="() => Move(index, -1)" />
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-down" Title="Move down" Disabled="@(index == questions.Count - 1)" OnClick="() => Move(index, 1)" />
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Remove this question" OnClick="() => Remove(index)" />
+                                    </span>
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ol>
+                <div class="adders">
+                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(EvaluationQuestionKinds.Rating)">Rating question</Button>
+                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(EvaluationQuestionKinds.Comment)">Comment question</Button>
+                    <span class="spacer"></span>
+                    <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save the evaluation")</Button>
+                </div>
+            }
+        </Card>
+    </div>
+
+    @if (!draft)
+    {
+        <Card Title="Answers by course" IconName="inbox">
+            @if (detail.Courses.Count == 0)
+            {
+                <p class="muted">No course was chosen.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Teacher</th>
+                                <th scope="col">Course</th>
+                                <th scope="col">Answered</th>
+                                <th scope="col">Average</th>
+                                <th scope="col" class="col-actions"><span class="sr-only">Who has not answered</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in detail.Courses)
+                            {
+                                <tr>
+                                    <td class="name">@c.TeacherName</td>
+                                    <td>@c.SubjectName<span class="sub">@c.SectionLabel</span></td>
+                                    <td>
+                                        <div class="rate" title="@c.Responses of @c.Expected answered">
+                                            <span class="rate-bar"><span class="rate-fill" style="width: @(Math.Min(100, c.RatePercent))%"></span></span>
+                                            <span>@c.Responses / @c.Expected · @c.RatePercent%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (c.Average is { } avg)
+                                        {
+                                            <Badge Tone="@AverageTone(avg)">@avg.ToString("0.00") / 5</Badge>
+                                            <span class="sub">@EvaluationQuestionKinds.AverageLabel(avg)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">No answers yet</span>
+                                        }
+                                    </td>
+                                    <td class="col-actions">
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="users" Disabled="@(c.Responses >= c.Expected)" OnClick="() => OpenNotAnsweredAsync(c)">Not answered yet</Button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted small-text note">The answers are anonymous: you see the averages and the comments, never who wrote them. See the comments and the details of a teacher in <a href="@($"coordinator/analytics?evaluation={detail.Id}")">Analytics</a>.</p>
+            }
+        </Card>
+    }
+}
+
+@* ===== Send ===== *@
+<Modal Open="sending" Title="Send to the students" OnClose="CloseSend" Large="true">
+    @if (sending)
+    {
+        <p class="dialog-text">The students of the courses you choose are told and find one questionnaire for each of their teachers in their dashboard. They answer once, anonymously, before the due date.</p>
+        <FormErrors Errors="formErrors" />
+        <Field For="s-due" Label="Due date" Required="true" Hint="Philippine time. The last moment the students can answer.">
+            <input id="s-due" type="datetime-local" value="@sendDueText" @onchange="e => sendDueText = e.Value?.ToString() ?? string.Empty" />
+        </Field>
+
+        <p class="pick-title">The teachers' courses it is about</p>
+        @if (choices is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (choices.Count == 0)
+        {
+            <p class="muted">No teacher has a course with students this school year yet. The administrator gives courses to teachers and the registrar enrolls the students.</p>
+        }
+        else
+        {
+            <button type="button" class="link-button" @onclick="ToggleAllChoices">@(sendTargets.Count == choices.Count ? "Clear all" : "Select all")</button>
+            <ul class="picks">
+                @foreach (var group in choices.GroupBy(c => c.TeacherId))
+                {
+                    <li class="teacher-group">
+                        <strong>@group.First().TeacherName</strong>
+                        <ul>
+                            @foreach (var c in group)
+                            {
+                                var id = c.AssignmentId;
+                                <li>
+                                    <label class="pick">
+                                        <input type="checkbox" checked="@sendTargets.Contains(id)" @onchange="e => TogglePick(id, e)" />
+                                        <span>
+                                            <strong>@c.SubjectName</strong>
+                                            <small>@c.SectionLabel@(c.Schedule is null ? "" : " · " + c.Schedule) · @c.Students @(c.Students == 1 ? "student" : "students")</small>
+                                        </span>
+                                    </label>
+                                </li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSend">Cancel</Button>
+            <Button IconName="send" Disabled="@(busy || choices is null || choices.Count == 0)" OnClick="SendAsync">@(busy ? "Sending…" : "Send")</Button>
+        </div>
+    }
+</Modal>
+
+@* ===== Who has not answered ===== *@
+<Modal Open="notAnswered is not null" Title="@(notAnsweredFor is null ? "" : $"Not answered yet · {notAnsweredFor.SubjectName}")" OnClose="CloseNotAnswered">
+    @if (notAnswered is not null && notAnsweredFor is not null)
+    {
+        <p class="dialog-text">@notAnsweredFor.TeacherName · @notAnsweredFor.SectionLabel · @notAnswered.Count @(notAnswered.Count == 1 ? "student has" : "students have") not answered yet.</p>
+        <ul class="names">
+            @foreach (var name in notAnswered)
+            {
+                <li>@name</li>
+            }
+        </ul>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseNotAnswered">Close</Button>
+        </div>
+    }
+</Modal>
+
+@* ===== Delete ===== *@
+<Modal Open="confirmDelete" Title="Delete this evaluation?" OnClose="CloseDelete">
+    <p class="dialog-text">"@detail?.Title" will be deleted with all the answers the students gave. <strong>This can't be undone.</strong></p>
+    <div class="modal-actions">
+        <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Cancel</Button>
+        <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="DeleteAsync">Delete</Button>
+    </div>
+</Modal>
+
+@code {
+    [Parameter] public int EvaluationId { get; set; }
+
+    private int userId;
+    private bool loaded;
+    private EvaluationDetail? detail;
+    private readonly EvaluationInput form = new();
+    private string dueText = "";
+    private List<EvaluationQuestionInput> questions = [];
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    private bool sending;
+    private IReadOnlyList<EvaluationChoice>? choices;
+    private readonly HashSet<int> sendTargets = [];
+    private string sendDueText = "";
+
+    private EvaluationCourseRow? notAnsweredFor;
+    private IReadOnlyList<string>? notAnswered;
+
+    private bool confirmDelete;
+
+    private string Subtitle => detail is null ? "" : detail.State switch
+    {
+        EvaluationStates.Draft => "Draft · not sent yet",
+        EvaluationStates.Open => $"Open · due {(detail.DueAtUtc is { } d ? PhilippineTime.FormatDateTime(d) : "")}",
+        _ => $"Closed · was due {(detail.DueAtUtc is { } d2 ? PhilippineTime.FormatDateTime(d2) : "")}",
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        detail = await Service.GetAsync(EvaluationId);
+        if (detail is null)
+        {
+            return;
+        }
+
+        form.Title = detail.Title;
+        form.Instructions = detail.Instructions;
+        dueText = PhilippineTime.ToInputValue(detail.DueAtUtc);
+        questions = detail.Questions.Select(q => new EvaluationQuestionInput { Text = q.Text, Kind = q.Kind, Category = q.Category }).ToList();
+    }
+
+    private void Say(ServiceResult result)
+    {
+        messageIsError = !result.Succeeded;
+        message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+    }
+
+    private void ClearMessage() => message = null;
+
+    private static Tone AverageTone(decimal average) => average >= 4 ? Tone.Success : average >= 3 ? Tone.Info : average >= 2 ? Tone.Warning : Tone.Danger;
+
+    // ---------------------------------------------------------------- the questions
+
+    private void Add(string kind) => questions.Add(new EvaluationQuestionInput { Kind = kind });
+
+    private void Remove(int index) => questions.RemoveAt(index);
+
+    private void Move(int index, int direction)
+    {
+        var target = index + direction;
+        if (target < 0 || target >= questions.Count)
+        {
+            return;
+        }
+
+        (questions[index], questions[target]) = (questions[target], questions[index]);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (detail is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            formErrors = [];
+            var draft = detail.State == EvaluationStates.Draft;
+            form.DueAtUtc = PhilippineTime.FromInputValue(dueText);
+            var result = await Service.SaveAsync(userId, EvaluationId, form);
+            if (result.Succeeded && draft)
+            {
+                result = await Service.SaveQuestionsAsync(userId, EvaluationId, questions);
+            }
+
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            Say(ServiceResult.Ok("Saved."));
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- sending
+
+    private async Task OpenSendAsync()
+    {
+        formErrors = [];
+
+        // What was typed is saved first, so what is sent is what is on the screen.
+        form.DueAtUtc = PhilippineTime.FromInputValue(dueText);
+        var saved = await Service.SaveQuestionsAsync(userId, EvaluationId, questions);
+        if (!saved.Succeeded)
+        {
+            Say(saved);
+            return;
+        }
+
+        sendTargets.Clear();
+        sending = true;
+        sendDueText = string.IsNullOrWhiteSpace(dueText)
+            ? PhilippineTime.ToInputValue(Clock.GetUtcNow().UtcDateTime.AddDays(7))
+            : dueText;
+        choices = await Service.GetChoicesAsync();
+        foreach (var c in choices)
+        {
+            sendTargets.Add(c.AssignmentId);
+        }
+    }
+
+    private void CloseSend() => sending = false;
+
+    private void TogglePick(int id, ChangeEventArgs e)
+    {
+        if (e.Value is true)
+        {
+            sendTargets.Add(id);
+        }
+        else
+        {
+            sendTargets.Remove(id);
+        }
+    }
+
+    private void ToggleAllChoices()
+    {
+        if (choices is null)
+        {
+            return;
+        }
+
+        if (sendTargets.Count == choices.Count)
+        {
+            sendTargets.Clear();
+        }
+        else
+        {
+            sendTargets.UnionWith(choices.Select(c => c.AssignmentId));
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var due = PhilippineTime.FromInputValue(sendDueText);
+            if (due is null)
+            {
+                formErrors = ["Choose the due date."];
+                return;
+            }
+
+            var meta = await Service.SaveAsync(userId, EvaluationId, new EvaluationInput { Title = form.Title, Instructions = form.Instructions, DueAtUtc = due });
+            var result = meta.Succeeded ? await Service.SendAsync(userId, EvaluationId, [.. sendTargets], due.Value) : meta;
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            sending = false;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task CloseNowAsync()
+    {
+        Say(await Service.CloseNowAsync(userId, EvaluationId));
+        await LoadAsync();
+    }
+
+    // ---------------------------------------------------------------- who has not answered
+
+    private async Task OpenNotAnsweredAsync(EvaluationCourseRow course)
+    {
+        notAnsweredFor = course;
+        notAnswered = await Service.GetNotAnsweredAsync(EvaluationId, course.AssignmentId);
+    }
+
+    private void CloseNotAnswered()
+    {
+        notAnswered = null;
+        notAnsweredFor = null;
+    }
+
+    // ---------------------------------------------------------------- delete
+
+    private void CloseDelete() => confirmDelete = false;
+
+    private async Task DeleteAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Service.DeleteAsync(userId, EvaluationId);
+            confirmDelete = false;
+            if (result.Succeeded)
+            {
+                Navigation.NavigateTo("coordinator/evaluations");
+                return;
+            }
+
+            Say(result);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

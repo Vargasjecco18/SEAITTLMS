@@ -54,6 +54,7 @@ public sealed class AuthService(
             .Include(u => u.Role)
             .Include(u => u.Administrator)
             .Include(u => u.GuidanceCounselor)
+            .Include(u => u.AcademicCoordinator)
             .Include(u => u.Registrar)
             .Include(u => u.Teacher)
             .Include(u => u.Student)

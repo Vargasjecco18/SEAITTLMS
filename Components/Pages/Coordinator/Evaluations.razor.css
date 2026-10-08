@@ -1,0 +1,88 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.table-wrap {
+    margin: 0 -1.25rem -1.25rem;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.name {
+    display: block;
+    font-weight: 650;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.name:hover {
+    color: var(--brand-strong);
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.rate {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 9rem;
+    font-size: 0.85rem;
+}
+
+.rate-bar {
+    display: block;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.rate-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--btn-bg);
+}
+
+.col-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}

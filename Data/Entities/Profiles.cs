@@ -115,3 +115,6 @@ public class Registrar : StaffContactProfile;
 public class GuidanceCounselor : StaffContactProfile;
 
 public class Administrator : StaffContactProfile;
+
+/// <summary>Sets up the academic side of the school (school years, courses, sections), sends course materials to the teachers and runs the teacher evaluation.</summary>
+public class AcademicCoordinator : StaffContactProfile;

@@ -9,7 +9,18 @@
 
 <PageHeader Title="Courses" Subtitle="The courses you teach. Open one to see its modules, activities, quizzes and task performances." IconName="book-open" />
 
-<PageWithAside Show="calendar,tocheck">
+@if (view == "list")
+{
+    @Body
+}
+else
+{
+    <PageWithAside Show="calendar,tocheck">@Body</PageWithAside>
+}
+
+@code {
+    // The list has many columns, so it takes the whole width of the page; the cards share it with the widgets (calendar, what to check).
+    private RenderFragment Body => @<text>
 
 @if (cards is null)
 {
@@ -25,44 +36,134 @@ else if (cards.Count == 0)
 }
 else
 {
-    @if (sections.Count > 1)
-    {
-        <nav class="chips" aria-label="Show the courses of">
-            <a class="chip @(Section is null ? "on" : "")" href="teacher/subjects">All</a>
-            @foreach (var label in sections)
-            {
-                <a class="chip @(string.Equals(Section, label, StringComparison.Ordinal) ? "on" : "")" href="teacher/subjects?section=@Uri.EscapeDataString(label)">@label</a>
-            }
-        </nav>
-    }
-
-    <div class="grid">
-        @foreach (var card in shown)
+    <div class="bar">
+        @* The chips and the switch are plain links: the page opens again with the choice in its address. *@
+        @if (sections.Count > 1)
         {
-            <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@(card.Schedule is null ? null : card.Schedule + " schedule")" Href="@($"teacher/subjects/{card.AssignmentId}")">
-                <Badge Tone="@(card.ModulesTotal == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesPosted of @card.ModulesTotal @(card.ModulesTotal == 1 ? "module" : "modules") posted</Badge>
-                @if (card.ToGrade > 0)
+            <nav class="chips" aria-label="Show the courses of">
+                <a class="chip @(Section is null ? "on" : "")" href="@Url(null, view)">All <span class="n">@cards.Count</span></a>
+                @foreach (var label in sections)
                 {
-                    <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
+                    <a class="chip @(string.Equals(Section, label, StringComparison.Ordinal) ? "on" : "")" href="@Url(label, view)">@label <span class="n">@cards.Count(c => c.SectionLabel == label)</span></a>
                 }
-            </SubjectCard>
+            </nav>
         }
-    </div>
-}
-</PageWithAside>
+        else
+        {
+            <span></span>
+        }
 
-@code {
+        <nav class="views" aria-label="View">
+            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Section, "cards")" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
+            <a class="view @(view == "list" ? "on" : "")" href="@Url(Section, "list")" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
+        </nav>
+    </div>
+
+    @if (view == "list")
+    {
+        <Card>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Course</th>
+                            <th scope="col">Section</th>
+                            <th scope="col" class="col-more">Students</th>
+                            <th scope="col">Modules posted</th>
+                            <th scope="col">To check</th>
+                            <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var card in shown)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="name">@card.SubjectName</span>
+                                    @if (card.Schedule is not null) { <span class="sub">@card.Schedule schedule</span> }
+                                </td>
+                                <td>@card.SectionLabel</td>
+                                <td class="col-more">@card.Students</td>
+                                <td class="progress-cell">
+                                    @if (card.ModulesTotal == 0)
+                                    {
+                                        <span class="muted">No modules yet</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="posted">@card.ModulesPosted of @card.ModulesTotal</span>
+                                        <ProgressBar Percent="@(card.ModulesPosted * 100 / card.ModulesTotal)" Title="@($"{card.ModulesPosted} of {card.ModulesTotal} modules are posted")" />
+                                    }
+                                </td>
+                                <td>
+                                    @if (card.ToGrade > 0)
+                                    {
+                                        <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
+                                <td class="col-actions">
+                                    <ButtonLink Href="@($"teacher/subjects/{card.AssignmentId}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach (var card in shown)
+            {
+                <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@(card.Schedule is null ? null : card.Schedule + " schedule")" Href="@($"teacher/subjects/{card.AssignmentId}")">
+                    <Badge Tone="@(card.ModulesTotal == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesPosted of @card.ModulesTotal @(card.ModulesTotal == 1 ? "module" : "modules") posted</Badge>
+                    @if (card.ToGrade > 0)
+                    {
+                        <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
+                    }
+                </SubjectCard>
+            }
+        </div>
+    }
+}
+</text>;
+
     [SupplyParameterFromQuery(Name = "section")] private string? Section { get; set; }
+
+    [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
 
     private IReadOnlyList<TeacherSubjectCard>? cards;
     private List<string> sections = [];
     private List<TeacherSubjectCard> shown = [];
+    private string view = "cards";
 
     protected override async Task OnParametersSetAsync()
     {
+        view = ViewText == "list" ? "list" : "cards";
         var teacherId = await Me.GetTeacherIdAsync();
         cards = teacherId is { } id ? await Teaching.GetTeacherCardsAsync(id) : [];
         sections = cards.Select(c => c.SectionLabel).Distinct().ToList();
         shown = cards.Where(c => Section is null || c.SectionLabel == Section).ToList();
+    }
+
+    private static string Url(string? section, string view)
+    {
+        var parts = new List<string>();
+        if (section is not null)
+        {
+            parts.Add("section=" + Uri.EscapeDataString(section));
+        }
+
+        if (view == "list")
+        {
+            parts.Add("view=list");
+        }
+
+        return "teacher/subjects" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));
     }
 }

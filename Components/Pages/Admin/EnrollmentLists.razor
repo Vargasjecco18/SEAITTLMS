@@ -1,0 +1,62 @@
+@page "/admin/enrollment"
+@page "/admin/enrollment/{TabKey}"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@rendermode InteractiveServer
+@using SEAITT_LMS.Components.Pages.Admin.Enrollment
+@inject SchoolSetupService Setup
+
+<PageTitle>@tab.Label · Enrollment · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Enrollment" Subtitle="Who is enrolled and who is not enrolled yet. The registrar enrolls the students: you can look at the lists here." IconName="user-check" />
+
+<div class="setup">
+    <nav class="tabs" aria-label="Enrollment">
+        @foreach (var t in Tabs)
+        {
+            <a class="tab @(t.Key == tab.Key ? "active" : "")" href="@($"admin/enrollment/{t.Key}")" aria-current="@(t.Key == tab.Key ? "page" : null)">
+                <Icon Name="@t.Icon" Size="18" />
+                <span>@t.Label</span>
+                <span class="count">@CountOf(t.Key)</span>
+            </a>
+        }
+    </nav>
+
+    @switch (tab.Key)
+    {
+        case "enrolled":
+            <EnrolledView />
+            break;
+        case "not-enrolled":
+            <NotEnrolledView />
+            break;
+    }
+</div>
+
+@code {
+    private sealed record EnrollmentTab(string Key, string Label, string Icon);
+
+    private static readonly EnrollmentTab[] Tabs =
+    [
+        new("enrolled", "Enrolled", "user-check"),
+        new("not-enrolled", "Not enrolled", "user-x"),
+    ];
+
+    [Parameter] public string? TabKey { get; set; }
+
+    private EnrollmentTab tab = Tabs[0];
+    private SetupCounts? counts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // An address that is not a tab (or none) shows the first one.
+        tab = Tabs.FirstOrDefault(t => string.Equals(t.Key, TabKey, StringComparison.OrdinalIgnoreCase)) ?? Tabs[0];
+        counts ??= await Setup.GetCountsAsync();
+    }
+
+    private string CountOf(string key) => counts is null ? "" : key switch
+    {
+        "enrolled" => counts.Enrollments.ToString(),
+        "not-enrolled" => counts.NotEnrolled.ToString(),
+        _ => "",
+    };
+}

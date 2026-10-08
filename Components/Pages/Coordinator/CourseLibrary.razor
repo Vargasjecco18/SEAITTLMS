@@ -1,0 +1,710 @@
+@page "/coordinator/materials/{SubjectId:int}"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject MaterialService Library
+@inject NavigationManager Navigation
+
+<PageTitle>@(course?.Name ?? "Course") · Course materials · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (course is null)
+{
+    <Card>
+        <EmptyState IconName="folder-open" Title="Course not found" IsPage="true">
+            <p>This course was removed.</p>
+            <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Secondary">Back to the courses</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    var syllabus = course.Modules.FirstOrDefault(m => m.IsSyllabus);
+    var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
+
+    <PageHeader Title="@course.Name" Subtitle="@($"{course.Code} · course materials")" IconName="folder-open">
+        <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
+        @if (syllabus is null)
+        {
+            <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
+        }
+        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
+        <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <p class="hint-line">
+        <Icon Name="send" Size="16" />
+        <span>What you send reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and can change the due dates and the text.</span>
+    </p>
+
+    <div class="tiles">
+        <div class="tile"><strong>@(syllabus is null ? "No" : "Yes")</strong><span>Syllabus</span></div>
+        <div class="tile"><strong>@modules.Count</strong><span>Modules</span></div>
+        <div class="tile"><strong>@ItemCount(ItemKinds.Activity)</strong><span>Activities</span></div>
+        <div class="tile"><strong>@ItemCount(ItemKinds.Quiz)</strong><span>Quizzes</span></div>
+        <div class="tile"><strong>@ItemCount(ItemKinds.TaskPerformance)</strong><span>Task performances</span></div>
+    </div>
+
+    <div class="layout">
+        <Card Title="Teachers of this course" IconName="presentation">
+            @if (course.Teachers.Count == 0)
+            {
+                <p class="muted">No teacher has this course this school year yet. The administrator gives courses to teachers (Users Management, Teachers, Courses). You can prepare the materials now and send them later.</p>
+            }
+            else
+            {
+                <ul class="teachers">
+                    @foreach (var t in course.Teachers)
+                    {
+                        var got = t.Received.Count;
+                        <li>
+                            <span class="who"><strong>@t.TeacherName</strong><span>@t.SectionLabel@(t.Schedule is null ? "" : " · " + t.Schedule) · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
+                            @if (course.Modules.Count == 0)
+                            {
+                                <span class="muted">Nothing to send yet</span>
+                            }
+                            else
+                            {
+                                <Badge Tone="@(got == 0 ? Tone.Neutral : got >= course.Modules.Count ? Tone.Success : Tone.Info)">Got @got of @course.Modules.Count</Badge>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+    </div>
+
+    @if (course.Modules.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="layers" Title="Nothing prepared yet">
+                <p>Start with the syllabus, then add the modules. Each module can have activities, quizzes and task performances.</p>
+                <div class="modal-actions">
+                    <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
+                    <Button IconName="plus" OnClick="OpenNewModule">Add the first module</Button>
+                </div>
+            </EmptyState>
+        </Card>
+    }
+    else
+    {
+        <div class="modules">
+            @foreach (var module in course.Modules)
+            {
+                var number = module.IsSyllabus ? 0 : modules.IndexOf(module) + 1;
+                <section class="module @(module.IsSyllabus ? "syllabus" : "library")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                    <header class="module-head">
+                        <div class="module-title">
+                            <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
+                            <div>
+                                <h2>@module.Title</h2>
+                                <div class="module-state">
+                                    @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> }
+                                    <Badge Tone="@(module.SentTo == 0 ? Tone.Neutral : Tone.Success)">@(module.SentTo == 0 ? "Not sent yet" : $"Sent to {module.SentTo} {(module.SentTo == 1 ? "course" : "courses")}")</Badge>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="module-actions">
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteModule(module)" />
+                        </div>
+                    </header>
+
+                    @if (!string.IsNullOrWhiteSpace(module.Description))
+                    {
+                        <p class="module-description">@module.Description</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl))
+                    {
+                        <p class="module-lesson">
+                            <Icon Name="file-text" Size="16" />
+                            @if (!string.IsNullOrWhiteSpace(module.Body))
+                            {
+                                <span>Text (@module.Body.Length.ToString("N0") characters)</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
+                            {
+                                <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer"><Icon Name="link" Size="14" /> Link to the file</a>
+                            }
+                        </p>
+                    }
+
+                    @if (!module.IsSyllabus)
+                    {
+                        <div class="groups">
+                            @foreach (var kind in ItemKinds.All)
+                            {
+                                var items = module.Items.Where(i => i.Kind == kind).ToList();
+                                <div class="group">
+                                    <div class="group-head">
+                                        <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
+                                    </div>
+
+                                    @if (items.Count == 0)
+                                    {
+                                        <p class="none">None yet.</p>
+                                    }
+                                    else
+                                    {
+                                        <ul class="items">
+                                            @foreach (var item in items)
+                                            {
+                                                <li class="item">
+                                                    <div class="item-main">
+                                                        <span class="item-title">@item.Title</span>
+                                                        <div class="item-meta">
+                                                            @if (item.DueAtUtc is { } due)
+                                                            {
+                                                                <span title="@PhilippineTime.FormatDateTime(due)"><Icon Name="calendar-clock" Size="14" /> Suggested due date @PhilippineTime.FormatDateTime(due)</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span>No due date</span>
+                                                            }
+                                                            <span>@item.MaxScore.ToString("0.##") points</span>
+                                                            @if (item.Kind == ItemKinds.Quiz)
+                                                            {
+                                                                <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")</span>
+                                                                @if (item.TimeLimitMinutes is { } minutes)
+                                                                {
+                                                                    <span><Icon Name="timer" Size="14" /> @minutes min</span>
+                                                                }
+                                                                @if (item.AntiCheat)
+                                                                {
+                                                                    <span><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <div class="item-actions">
+                                                        @if (item.Kind == ItemKinds.Quiz)
+                                                        {
+                                                            <ButtonLink Href="@($"coordinator/materials/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
+                                                        }
+                                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
+                                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+        </div>
+    }
+}
+
+@* ===== Module or syllabus: add or edit ===== *@
+<Modal Open="moduleForm is not null" Title="@ModuleModalTitle" OnClose="CloseModuleForm">
+    @if (moduleForm is not null)
+    {
+        <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
+            <FormErrors Errors="formErrors" />
+            <Field For="m-title" Label="Title" Required="true">
+                <InputText id="m-title" @bind-Value="moduleForm.Title" maxlength="200" autocomplete="off" />
+            </Field>
+            <Field For="m-desc" Label="Short description" Hint="One or two lines the students see in the list.">
+                <InputText id="m-desc" @bind-Value="moduleForm.Description" maxlength="1000" autocomplete="off" />
+            </Field>
+            <Field For="m-body" Label="@(editingIsSyllabus ? "Syllabus" : "Lesson")" Hint="The text. Line breaks are kept.">
+                <InputTextArea id="m-body" @bind-Value="moduleForm.Body" rows="9" />
+            </Field>
+            <Field For="m-link" Label="Link to the file" Hint="A file or a video, for example in Google Drive (starts with https://).">
+                <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
+            </Field>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Item: add or edit ===== *@
+<Modal Open="itemForm is not null" Title="@ItemModalTitle" OnClose="CloseItemForm" Large="true">
+    @if (itemForm is not null)
+    {
+        <EditForm Model="itemForm" OnValidSubmit="SaveItemAsync">
+            <FormErrors Errors="formErrors" />
+            <div class="two">
+                <Field For="i-kind" Label="Kind" Required="true">
+                    <InputSelect id="i-kind" @bind-Value="itemForm.Kind" disabled="@(editingItemId is not null)">
+                        @foreach (var kind in ItemKinds.All)
+                        {
+                            <option value="@kind">@ItemKinds.Display(kind)</option>
+                        }
+                    </InputSelect>
+                </Field>
+                <Field For="i-title" Label="Title" Required="true">
+                    <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
+                </Field>
+            </div>
+            <Field For="i-text" Label="Instructions">
+                <InputTextArea id="i-text" @bind-Value="itemForm.Instructions" rows="5" />
+            </Field>
+            <div class="two">
+                @if (itemForm.Kind != ItemKinds.Quiz)
+                {
+                    <Field For="i-score" Label="Highest score" Required="true">
+                        <InputNumber id="i-score" @bind-Value="itemForm.MaxScore" />
+                    </Field>
+                }
+                <Field For="i-due" Label="Suggested due date" Hint="Philippine time. The teacher can change it. Leave empty for none.">
+                    <input id="i-due" type="datetime-local" value="@itemForm.DueText" @onchange="SetDue" />
+                </Field>
+            </div>
+
+            @if (itemForm.Kind == ItemKinds.Quiz)
+            {
+                <fieldset class="quiz-settings">
+                    <legend><Icon Name="shield-check" Size="16" /> Quiz settings</legend>
+                    <p class="muted small-text">You write the questions after saving. The quiz is worth the total of the points of its questions.</p>
+                    <div class="two">
+                        <Field For="i-limit" Label="Time limit (minutes)" Hint="Leave empty for no time limit.">
+                            <InputNumber id="i-limit" @bind-Value="itemForm.TimeLimit" />
+                        </Field>
+                        <Field For="i-warn" Label="Warnings before it is handed in" Hint="Leaving the quiz, copying or pasting is a warning.">
+                            <InputNumber id="i-warn" @bind-Value="itemForm.MaxViolations" />
+                        </Field>
+                    </div>
+                    <label class="switch">
+                        <InputCheckbox id="i-anti" @bind-Value="itemForm.AntiCheat" />
+                        <span><strong>Anti-cheating watch</strong><small>Warns the student when they leave the quiz, copy or paste.</small></span>
+                    </label>
+                    <label class="switch">
+                        <InputCheckbox id="i-shuffle-q" @bind-Value="itemForm.ShuffleQuestions" />
+                        <span><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
+                    </label>
+                    <label class="switch">
+                        <InputCheckbox id="i-shuffle-o" @bind-Value="itemForm.ShuffleOptions" />
+                        <span><strong>Shuffle the choices</strong><small>The choices of multiple choice questions change places for every student.</small></span>
+                    </label>
+                    <label class="switch">
+                        <InputCheckbox id="i-show" @bind-Value="itemForm.ShowResult" />
+                        <span><strong>Show the result right away</strong><small>The student sees their score after handing in.</small></span>
+                    </label>
+                </fieldset>
+            }
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseItemForm">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : itemForm.Kind == ItemKinds.Quiz && editingItemId is null ? "Save and write questions" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Send to teachers ===== *@
+<Modal Open="sending" Title="Send to teachers" OnClose="CloseSend" Large="true">
+    @if (sending && course is not null)
+    {
+        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A module that a teacher's course already got is not sent again.</p>
+        <FormErrors Errors="formErrors" />
+
+        <p class="pick-title">What to send</p>
+        <button type="button" class="link-button" @onclick="ToggleAllModules">@(sendModules.Count == course.Modules.Count ? "Clear all" : "Select all")</button>
+        <ul class="picks">
+            @foreach (var module in course.Modules)
+            {
+                var id = module.Id;
+                <li>
+                    <label class="pick">
+                        <input type="checkbox" checked="@sendModules.Contains(id)" @onchange="e => TogglePick(sendModules, id, e)" />
+                        <span>
+                            <strong>@(module.IsSyllabus ? "Syllabus: " : "")@module.Title</strong>
+                            <small>@(module.IsSyllabus ? "Syllabus" : $"{module.Items.Count} {(module.Items.Count == 1 ? "activity, quiz or task" : "activities, quizzes and tasks")}") · sent to @module.SentTo of @course.Teachers.Count</small>
+                        </span>
+                    </label>
+                </li>
+            }
+        </ul>
+
+        <p class="pick-title">Who gets it</p>
+        @if (course.Teachers.Count == 0)
+        {
+            <p class="muted">No teacher has this course this school year.</p>
+        }
+        else
+        {
+            <button type="button" class="link-button" @onclick="ToggleAllTeachers">@(sendTargets.Count == course.Teachers.Count ? "Clear all" : "Select all")</button>
+            <ul class="picks">
+                @foreach (var t in course.Teachers)
+                {
+                    var id = t.AssignmentId;
+                    <li>
+                        <label class="pick">
+                            <input type="checkbox" checked="@sendTargets.Contains(id)" @onchange="e => TogglePick(sendTargets, id, e)" />
+                            <span>
+                                <strong>@t.TeacherName</strong>
+                                <small>@t.SectionLabel@(t.Schedule is null ? "" : " · " + t.Schedule) · @t.Students @(t.Students == 1 ? "student" : "students")</small>
+                            </span>
+                        </label>
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSend">Cancel</Button>
+            <Button IconName="send" Disabled="@(busy || course.Teachers.Count == 0)" OnClick="SendAsync">@(busy ? "Sending…" : "Send")</Button>
+        </div>
+    }
+</Modal>
+
+@* ===== Delete ===== *@
+<Modal Open="deleteTarget is not null" Title="@(deleteTarget?.Title ?? "")" OnClose="CloseDelete">
+    @if (deleteTarget is not null)
+    {
+        <p class="dialog-text">@deleteTarget.Text</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="DeleteAsync">Delete</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private sealed class ItemForm
+    {
+        public string Kind { get; set; } = ItemKinds.Activity;
+        public string Title { get; set; } = "";
+        public string? Instructions { get; set; }
+        public decimal MaxScore { get; set; } = 100;
+        public string DueText { get; set; } = "";
+        public int? TimeLimit { get; set; }
+        public bool ShuffleQuestions { get; set; } = true;
+        public bool ShuffleOptions { get; set; } = true;
+        public bool AntiCheat { get; set; } = true;
+        public int MaxViolations { get; set; } = 3;
+        public bool ShowResult { get; set; } = true;
+    }
+
+    private sealed record DeleteTarget(string Title, string Text, bool IsModule, int Id);
+
+    [Parameter] public int SubjectId { get; set; }
+
+    private int userId;
+    private bool loaded;
+    private CourseMaterials? course;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    private ModuleInput? moduleForm;
+    private int? editingModuleId;
+    private bool editingIsSyllabus;
+
+    private ItemForm? itemForm;
+    private int? editingItemId;
+    private int itemModuleId;
+
+    private bool sending;
+    private readonly HashSet<int> sendModules = [];
+    private readonly HashSet<int> sendTargets = [];
+
+    private DeleteTarget? deleteTarget;
+
+    private string ModuleModalTitle => editingIsSyllabus
+        ? (editingModuleId is null ? "Add syllabus" : "Edit syllabus")
+        : (editingModuleId is null ? "Add module" : "Edit module");
+
+    private string ItemModalTitle => itemForm is null ? "" : editingItemId is null ? $"Add {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}" : $"Edit {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync() => course = await Library.GetCourseAsync(SubjectId);
+
+    private int ItemCount(string kind) => course?.Modules.Sum(m => m.Items.Count(i => i.Kind == kind)) ?? 0;
+
+    private void Say(ServiceResult result, string? fallback = null)
+    {
+        messageIsError = !result.Succeeded;
+        message = result.Succeeded ? result.Message ?? fallback : string.Join(" ", result.Errors);
+    }
+
+    private void ClearMessage() => message = null;
+
+    // ---------------------------------------------------------------- modules and the syllabus
+
+    private void OpenNewModule()
+    {
+        formErrors = [];
+        editingModuleId = null;
+        editingIsSyllabus = false;
+        moduleForm = new ModuleInput();
+    }
+
+    private void OpenNewSyllabus()
+    {
+        formErrors = [];
+        editingModuleId = null;
+        editingIsSyllabus = true;
+        moduleForm = new ModuleInput { Title = course is null ? "Syllabus" : $"Syllabus: {course.Name}" };
+    }
+
+    private void OpenEditModule(MaterialModuleView module)
+    {
+        formErrors = [];
+        editingModuleId = module.Id;
+        editingIsSyllabus = module.IsSyllabus;
+        moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
+    }
+
+    private void CloseModuleForm() => moduleForm = null;
+
+    private async Task SaveModuleAsync()
+    {
+        if (moduleForm is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Library.SaveModuleAsync(userId, SubjectId, editingModuleId, moduleForm, editingIsSyllabus);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            moduleForm = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- items
+
+    private void OpenNewItem(MaterialModuleView module, string kind)
+    {
+        formErrors = [];
+        editingItemId = null;
+        itemModuleId = module.Id;
+        itemForm = new ItemForm { Kind = kind, MaxScore = kind == ItemKinds.TaskPerformance ? 100 : 50 };
+    }
+
+    private void OpenEditItem(MaterialModuleView module, MaterialItemView item)
+    {
+        formErrors = [];
+        editingItemId = item.Id;
+        itemModuleId = module.Id;
+        itemForm = new ItemForm
+        {
+            Kind = item.Kind, Title = item.Title, Instructions = item.Instructions, MaxScore = item.MaxScore,
+            DueText = PhilippineTime.ToInputValue(item.DueAtUtc), TimeLimit = item.TimeLimitMinutes,
+            ShuffleQuestions = item.ShuffleQuestions, ShuffleOptions = item.ShuffleOptions, AntiCheat = item.AntiCheat,
+            MaxViolations = item.MaxViolations, ShowResult = item.ShowResult,
+        };
+    }
+
+    private void CloseItemForm() => itemForm = null;
+
+    // The date box is written out (not @bind) because its text is converted by PhilippineTime, not by Blazor.
+    private void SetDue(ChangeEventArgs e) => itemForm!.DueText = e.Value?.ToString() ?? "";
+
+    private async Task SaveItemAsync()
+    {
+        if (itemForm is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var input = new ItemInput
+            {
+                Kind = itemForm.Kind, Title = itemForm.Title, Instructions = itemForm.Instructions, MaxScore = itemForm.MaxScore,
+                DueAtUtc = PhilippineTime.FromInputValue(itemForm.DueText), TimeLimitMinutes = itemForm.TimeLimit,
+                ShuffleQuestions = itemForm.ShuffleQuestions, ShuffleOptions = itemForm.ShuffleOptions, AntiCheat = itemForm.AntiCheat,
+                MaxViolations = itemForm.MaxViolations, ShowResult = itemForm.ShowResult,
+            };
+            var wasNew = editingItemId is null;
+            var result = await Library.SaveItemAsync(userId, itemModuleId, editingItemId, input);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            itemForm = null;
+            if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
+            {
+                Navigation.NavigateTo($"coordinator/materials/items/{quizId}/questions");
+                return;
+            }
+
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- send
+
+    private void OpenSend()
+    {
+        if (course is null)
+        {
+            return;
+        }
+
+        formErrors = [];
+        sendModules.Clear();
+        sendTargets.Clear();
+
+        // What a teacher's course still lacks is chosen at the start; the teachers are all chosen.
+        foreach (var module in course.Modules.Where(m => m.SentTo < course.Teachers.Count || course.Teachers.Count == 0))
+        {
+            sendModules.Add(module.Id);
+        }
+
+        foreach (var teacher in course.Teachers)
+        {
+            sendTargets.Add(teacher.AssignmentId);
+        }
+
+        sending = true;
+    }
+
+    private void CloseSend() => sending = false;
+
+    private static void TogglePick(HashSet<int> set, int id, ChangeEventArgs e)
+    {
+        if (e.Value is true)
+        {
+            set.Add(id);
+        }
+        else
+        {
+            set.Remove(id);
+        }
+    }
+
+    private void ToggleAllModules()
+    {
+        if (course is null)
+        {
+            return;
+        }
+
+        if (sendModules.Count == course.Modules.Count)
+        {
+            sendModules.Clear();
+        }
+        else
+        {
+            sendModules.UnionWith(course.Modules.Select(m => m.Id));
+        }
+    }
+
+    private void ToggleAllTeachers()
+    {
+        if (course is null)
+        {
+            return;
+        }
+
+        if (sendTargets.Count == course.Teachers.Count)
+        {
+            sendTargets.Clear();
+        }
+        else
+        {
+            sendTargets.UnionWith(course.Teachers.Select(t => t.AssignmentId));
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Library.SendAsync(userId, SubjectId, [.. sendModules], [.. sendTargets]);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            sending = false;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- delete
+
+    private void AskDeleteModule(MaterialModuleView module)
+    {
+        var count = module.Items.Count;
+        deleteTarget = new DeleteTarget(module.IsSyllabus ? "Delete the syllabus?" : "Delete this module?",
+            module.IsSyllabus
+                ? $"\"{module.Title}\" will be deleted from the library. The copies the teachers already got stay with them."
+                : $"\"{module.Title}\" will be deleted from the library with its {count} {(count == 1 ? "activity, quiz or task performance" : "activities, quizzes and task performances")}. The copies the teachers already got stay with them.",
+            true, module.Id);
+    }
+
+    private void AskDeleteItem(MaterialItemView item) =>
+        deleteTarget = new DeleteTarget($"Delete this {ItemKinds.Display(item.Kind).ToLowerInvariant()}?", $"\"{item.Title}\" will be deleted from the library. The copies the teachers already got stay with them.", false, item.Id);
+
+    private void CloseDelete() => deleteTarget = null;
+
+    private async Task DeleteAsync()
+    {
+        if (deleteTarget is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = deleteTarget.IsModule
+                ? await Library.DeleteModuleAsync(userId, deleteTarget.Id)
+                : await Library.DeleteItemAsync(userId, deleteTarget.Id);
+            deleteTarget = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

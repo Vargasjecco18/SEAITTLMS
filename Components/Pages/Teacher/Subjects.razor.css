@@ -1,18 +1,20 @@
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-    gap: 1.25rem;
-}
-
 .muted {
     color: var(--text-muted);
+}
+
+.bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.25rem;
 }
 
 .chip {
@@ -36,4 +38,136 @@
     border-color: var(--btn-bg);
     background: var(--btn-bg);
     color: var(--on-brand);
+}
+
+/* The number of subjects on a chip. */
+.chip .n {
+    display: inline-block;
+    min-width: 1.35rem;
+    margin-left: 0.3rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.chip.on .n {
+    background: rgba(255, 255, 255, 0.22);
+    color: inherit;
+}
+
+.views {
+    display: inline-flex;
+    padding: 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.view {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--text-muted);
+}
+
+.view:hover {
+    color: var(--text);
+}
+
+.view.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1.25rem;
+}
+
+.table-wrap {
+    position: relative;
+    margin: -1.25rem;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.name {
+    display: block;
+    font-weight: 650;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.col-actions {
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .col-more {
+        display: none;
+    }
+}
+
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+
+.progress-cell {
+    width: 10rem;
+}
+
+.progress-cell ::deep .progress {
+    min-width: 6rem;
+}
+
+.posted {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
 }

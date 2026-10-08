@@ -46,7 +46,7 @@ public static class AnnouncementAudiences
 }
 
 /// <summary>
-/// A notice for a group of people. The administrator and the registrar write them for everybody, for the students or for the
+/// A notice for a group of people. The academic coordinator writes them for everybody, for the students or for the
 /// teachers; a teacher writes them for the students of one of their sections. Students see them on the right of their dashboard.
 /// </summary>
 public class Announcement : AuditableEntity

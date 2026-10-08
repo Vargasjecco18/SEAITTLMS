@@ -109,10 +109,10 @@ public sealed class SectionInput
 }
 
 /// <summary>
-/// What an administrator edits in the school setup: school years, terms, tracks, strands (with their schedules and their
-/// curriculum), subjects and sections. Enrollments and the list of students who are not enrolled are the registrar's work: the
-/// administrator can look at them (see <see cref="EnrollmentList"/> and <see cref="NotEnrolledList"/>) but not change them here.
-/// Every change checks again, in the database, that the person doing it is an active administrator, and refuses what would leave
+/// What the academic coordinator edits in the academic setup: school years, terms, tracks, strands (with their schedules and their
+/// curriculum), courses and sections. Enrollments and the list of students who are not enrolled are the registrar's work: the
+/// administrator can look at them (see <see cref="EnrollmentList"/> and <see cref="NotEnrolledList"/>) but not change them.
+/// Every change checks again, in the database, that the person doing it is an active academic coordinator, and refuses what would leave
 /// the records inconsistent (a strand with students can't move to another track, a section with students can't move to another strand, ...).
 /// </summary>
 public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> dbFactory)
@@ -120,7 +120,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     [GeneratedRegex(@"^[\p{L}\p{N}][\p{L}\p{N} \-]*$")]
     private static partial Regex SectionNamePattern();
 
-    private const string AdminOnly = "Only an administrator can change the school setup.";
+    private const string CoordinatorOnly = "Only the academic coordinator can change the academic setup.";
 
     // ======================================================================= counts and choices
 
@@ -193,9 +193,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         if (await db.SchoolYears.AnyAsync(y => y.Name == name && y.Id != input.Id, ct))
@@ -236,9 +236,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> DeleteSchoolYearAsync(int id, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var year = await db.SchoolYears.Where(y => y.Id == id).Select(y => new { y.Name, Terms = y.Terms.Count, Sections = db.Sections.Count(s => s.SchoolYearId == id) }).FirstOrDefaultAsync(ct);
@@ -296,9 +296,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var year = await db.SchoolYears.AsNoTracking().FirstOrDefaultAsync(y => y.Id == input.SchoolYearId, ct);
@@ -378,9 +378,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> DeleteTermAsync(int id, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var term = await db.Terms.Where(t => t.Id == id).Select(t => new { t.Name, Year = t.SchoolYear.Name, t.IsCurrent, Enrollments = db.Enrollments.Count(e => e.TermId == id) }).FirstOrDefaultAsync(ct);
@@ -429,9 +429,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         if (await db.Tracks.AnyAsync(t => t.Code == code && t.Id != input.Id, ct))
@@ -470,9 +470,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> DeleteTrackAsync(int id, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var track = await db.Tracks.Where(t => t.Id == id).Select(t => new { t.Code, Strands = db.Strands.Count(s => s.TrackId == id) }).FirstOrDefaultAsync(ct);
@@ -537,9 +537,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         if (!await db.Tracks.AnyAsync(t => t.Id == input.TrackId, ct))
@@ -630,9 +630,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> DeleteStrandAsync(int id, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var strand = await db.Strands.Where(s => s.Id == id).Select(s => new
@@ -688,9 +688,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var strand = await db.Strands.AsNoTracking().Where(s => s.Id == strandId).Select(s => s.Code).FirstOrDefaultAsync(ct);
@@ -717,9 +717,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> RemoveCurriculumSubjectAsync(int strandId, int gradeLevel, int termNumber, int subjectId, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var removed = await db.StrandSubjects.Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber && x.SubjectId == subjectId).ExecuteDeleteAsync(ct);
@@ -763,9 +763,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         if (await db.Subjects.AnyAsync(s => s.Code == code && s.Id != input.Id, ct))
@@ -800,9 +800,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> DeleteSubjectAsync(int id, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var subject = await db.Subjects.Where(s => s.Id == id).Select(s => new
@@ -871,9 +871,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var strand = await db.Strands.AsNoTracking().Where(s => s.Id == input.StrandId).Select(s => new { s.Id, s.Code }).FirstOrDefaultAsync(ct);
@@ -948,9 +948,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<ServiceResult> DeleteSectionAsync(int id, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, actingUserId, ct))
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
         {
-            return ServiceResult.Fail(AdminOnly);
+            return ServiceResult.Fail(CoordinatorOnly);
         }
 
         var section = await db.Sections.Where(s => s.Id == id).Select(s => new
@@ -977,8 +977,8 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
     // ======================================================================= helpers
 
-    private static Task<bool> IsAdminAsync(AppDbContext db, int userId, CancellationToken ct) =>
-        db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AdminId, ct);
+    private static Task<bool> IsCoordinatorAsync(AppDbContext db, int userId, CancellationToken ct) =>
+        db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
 
     private const string SaveFailed = "It could not be saved: someone else saved the same thing, or something depends on it. Reload and try again.";
 

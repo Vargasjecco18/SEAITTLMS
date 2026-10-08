@@ -1,0 +1,20 @@
+@* A rating from 1 to 5 as a bar with its number. *@
+<span class="meter-wrap" title="@(Value is { } v ? $"{v:0.00} out of 5" : "No ratings yet")">
+    <span class="meter"><span class="meter-fill @Level" style="width: @Width%"></span></span>
+    <span class="meter-value">@(Value is { } shown ? shown.ToString("0.00") : "—")</span>
+</span>
+
+@code {
+    [Parameter] public decimal? Value { get; set; }
+
+    private int Width => Value is { } v ? (int)Math.Clamp(Math.Round(v / 5m * 100m), 0, 100) : 0;
+
+    private string Level => Value switch
+    {
+        >= 4m => "high",
+        >= 3m => "mid",
+        >= 2m => "low",
+        null => "",
+        _ => "bad",
+    };
+}

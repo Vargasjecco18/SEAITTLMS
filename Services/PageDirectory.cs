@@ -15,12 +15,21 @@ public static class PageDirectory
     {
         AppRoles.Admin =>
         [
-            new("Dashboard", "Accounts and the school setup at a glance", "admin", "layout-dashboard"),
-            new("Users Management", "Students, teachers, registrars, guidance and administrators", "admin/users", "users"),
-            new("School setup", "School years, terms, tracks, strands, courses and sections", "admin/school-setup", "school"),
-            new("Announcements", "Write notices for students, teachers or everybody", "announcements", "megaphone"),
+            new("Dashboard", "Accounts and enrollment at a glance", "admin", "layout-dashboard"),
+            new("Users Management", "Students, teachers, registrars, guidance, academic coordinators and administrators", "admin/users", "users"),
+            new("Enrolled", "The students who are enrolled", "admin/enrollment/enrolled", "user-check"),
+            new("Not enrolled", "The students who are not enrolled yet", "admin/enrollment/not-enrolled", "user-x"),
             new("Archive Accounts", "Archive the students who graduate, restore a student", "admin/archive", "archive"),
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
+        ],
+        AppRoles.AcademicCoordinator =>
+        [
+            new("Dashboard", "Materials, evaluations and the school setup at a glance", "coordinator", "layout-dashboard"),
+            new("Academic setup", "School years, terms, tracks, strands, courses and sections", "coordinator/academic-setup", "school"),
+            new("Course materials", "Syllabus, modules, activities, quizzes and task performances to send to the teachers", "coordinator/materials", "folder-open"),
+            new("Teacher evaluation", "Questionnaires for the students about their teachers, with their responses", "coordinator/evaluations", "clipboard-check"),
+            new("Announcements", "Write notices for students, teachers or everybody", "coordinator/announcements", "megaphone"),
+            new("Analytics", "How the teachers were evaluated", "coordinator/analytics", "chart-column"),
         ],
         AppRoles.Registrar =>
         [

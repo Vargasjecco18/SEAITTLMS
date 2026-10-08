@@ -10,6 +10,7 @@ public static class RoleHome
     public const string Teacher = "/teacher";
     public const string Student = "/student";
     public const string Guidance = "/guidance";
+    public const string Coordinator = "/coordinator";
 
     /// <summary>Anybody else (a role without a page of its own) has nowhere to go.</summary>
     public const string NoPage = "/access-denied";
@@ -21,6 +22,7 @@ public static class RoleHome
         AppRoles.Teacher => Teacher,
         AppRoles.Student => Student,
         AppRoles.GuidanceCounselor => Guidance,
+        AppRoles.AcademicCoordinator => Coordinator,
         _ => NoPage,
     };
 }

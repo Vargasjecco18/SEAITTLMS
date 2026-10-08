@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using SEAITT_LMS.Services;
 
-namespace SEAITT_LMS.Components.Pages.Admin.Setup;
+namespace SEAITT_LMS.Components.Pages.Coordinator.Setup;
 
-/// <summary>What the tabs of the school setup have in common: the service, the signed-in administrator, the message line and the errors of a form.</summary>
+/// <summary>What the tabs of the academic setup have in common: the service, the signed-in academic coordinator, the message line and the errors of a form.</summary>
 public abstract class SetupTabBase : ComponentBase
 {
     [Inject] protected SchoolSetupService Setup { get; set; } = null!;

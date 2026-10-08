@@ -1,5 +1,5 @@
-@page "/announcements"
-@attribute [Authorize(Roles = AppRoles.Admin)]
+@page "/coordinator/announcements"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject AnnouncementService Service

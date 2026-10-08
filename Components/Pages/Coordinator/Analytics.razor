@@ -1,0 +1,269 @@
+@page "/coordinator/analytics"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@inject EvaluationService Service
+
+<PageTitle>Analytics · SEAITT e-LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+<PageHeader Title="Teacher evaluation analytics"
+            Subtitle="How the students rated their teachers: the averages, the questions, and what they wrote. The answers are anonymous."
+            IconName="chart-column">
+    <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Secondary" IconName="clipboard-check">Evaluations</ButtonLink>
+</PageHeader>
+
+@if (data is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (data.EvaluationId is null)
+{
+    <Card>
+        <EmptyState IconName="chart-column" Title="No evaluation was sent yet">
+            <p>The analytics appear when the first teacher evaluation has been sent and the students start to answer.</p>
+            <ButtonLink Href="coordinator/evaluations" IconName="clipboard-check">Go to the evaluations</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <form class="picker" method="get" action="coordinator/analytics">
+        <label for="evaluation">Evaluation</label>
+        <select id="evaluation" name="evaluation" onchange="this.form.submit()">
+            @foreach (var e in data.Evaluations.OrderByDescending(x => x.SentAtUtc))
+            {
+                <option value="@e.EvaluationId" selected="@(e.EvaluationId == data.EvaluationId)">@e.Title · @PhilippineTime.FormatDate(e.SentAtUtc)</option>
+            }
+        </select>
+        <noscript><button type="submit">Show</button></noscript>
+    </form>
+
+    <div class="stats">
+        <StatCard Label="Answers" Value="@data.Responses" IconName="inbox" Accent="AccentColor.Blue" Hint="@($"of {data.Expected:N0} expected")" />
+        <StatCard Label="Answered" Text="@($"{data.RatePercent}%")" IconName="gauge" Accent="@(data.RatePercent >= 75 ? AccentColor.Green : data.RatePercent >= 40 ? AccentColor.Amber : AccentColor.Rose)" Hint="Of the students asked" />
+        <StatCard Label="Average rating" Text="@(data.Average is { } avg ? $"{avg:0.00} / 5" : "—")" IconName="star" Accent="AccentColor.Violet" Hint="@(data.Average is { } a2 ? EvaluationQuestionKinds.AverageLabel(a2) : "No ratings yet")" />
+        <StatCard Label="Teachers" Value="@data.Teachers.Count" IconName="presentation" Accent="AccentColor.Slate" Hint="Evaluated in this round" />
+    </div>
+
+    @if (detail is not null)
+    {
+        <section class="detail" aria-label="@($"Results of {detail.TeacherName}")">
+            <Card Title="@($"{detail.TeacherName}")" IconName="presentation">
+                <div class="detail-top">
+                    <div class="big">
+                        <strong>@(detail.Average is { } da ? da.ToString("0.00") : "—")</strong><span> / 5</span>
+                        @if (detail.Average is { } dv)
+                        {
+                            <Badge Tone="@AverageTone(dv)">@EvaluationQuestionKinds.AverageLabel(dv)</Badge>
+                        }
+                    </div>
+                    <p class="muted">@detail.Responses of @detail.Expected students answered.</p>
+                    <ButtonLink Href="@($"coordinator/analytics?evaluation={data.EvaluationId}")" Variant="ButtonVariant.Ghost" IconName="x" Small="true">Close the details</ButtonLink>
+                </div>
+
+                <h3>By course</h3>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th scope="col">Course</th><th scope="col">Answered</th><th scope="col">Average</th></tr></thead>
+                        <tbody>
+                            @foreach (var c in detail.Courses)
+                            {
+                                <tr>
+                                    <td>@c.SubjectName<span class="sub">@c.SectionLabel</span></td>
+                                    <td>@c.Responses / @c.Expected · @c.RatePercent%</td>
+                                    <td>@(c.Average is { } cv ? $"{cv:0.00} / 5" : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>By question</h3>
+                <ul class="bars">
+                    @foreach (var q in detail.Questions)
+                    {
+                        <li>
+                            <span class="bar-label">@q.Text</span>
+                            <Meter Value="q.Average" />
+                        </li>
+                    }
+                </ul>
+
+                <h3>What the students wrote <span class="count">@detail.Comments.Count</span></h3>
+                @if (detail.Comments.Count == 0)
+                {
+                    <p class="muted">No comments yet.</p>
+                }
+                else
+                {
+                    <ul class="comments">
+                        @foreach (var c in detail.Comments)
+                        {
+                            <li>
+                                <p>@c.Text</p>
+                                <span class="sub">@c.Question · @c.SubjectName · @c.SectionLabel · @PhilippineTime.FormatDate(c.AtUtc)</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+        </section>
+    }
+
+    <div class="grid">
+        <div class="wide">
+            <Card Title="By teacher" IconName="presentation">
+                @if (data.Teachers.Count == 0)
+                {
+                    <p class="muted">No course was chosen for this evaluation.</p>
+                }
+                else
+                {
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Teacher</th>
+                                    <th scope="col" class="col-more">Courses</th>
+                                    <th scope="col">Answered</th>
+                                    <th scope="col">Average</th>
+                                    <th scope="col" class="col-actions"><span class="sr-only">Details</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in data.Teachers)
+                                {
+                                    <tr class="@(detail?.TeacherId == t.TeacherId ? "picked" : "")">
+                                        <td class="rank">@(t.Average is null ? "—" : t.Rank)</td>
+                                        <td class="name">@t.TeacherName</td>
+                                        <td class="col-more">@t.Courses</td>
+                                        <td>@t.Responses / @t.Expected · @t.RatePercent%</td>
+                                        <td>
+                                            @if (t.Average is { } tv)
+                                            {
+                                                <Meter Value="tv" />
+                                                <span class="sub">@EvaluationQuestionKinds.AverageLabel(tv)</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="muted">No answers yet</span>
+                                            }
+                                        </td>
+                                        <td class="col-actions">
+                                            <ButtonLink Href="@($"coordinator/analytics?evaluation={data.EvaluationId}&teacher={t.TeacherId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="eye">Details</ButtonLink>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </Card>
+        </div>
+
+        <Card Title="How the students rated" IconName="star">
+            @{
+                var total = data.Distribution.Sum();
+            }
+            @if (total == 0)
+            {
+                <p class="muted">No ratings yet.</p>
+            }
+            else
+            {
+                <ul class="bars">
+                    @for (var n = 5; n >= 1; n--)
+                    {
+                        var count = data.Distribution[n - 1];
+                        <li>
+                            <span class="bar-label">@n · @EvaluationQuestionKinds.RatingLabel(n)</span>
+                            <span class="dist"><span class="dist-fill r@(n)" style="width: @(count * 100 / total)%"></span></span>
+                            <span class="dist-n">@count (@(count * 100 / total)%)</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="By area" IconName="layers">
+            @if (data.Categories.Count == 0)
+            {
+                <p class="muted">The questions of this evaluation have no areas.</p>
+            }
+            else
+            {
+                <ul class="bars">
+                    @foreach (var c in data.Categories)
+                    {
+                        <li>
+                            <span class="bar-label">@c.Text</span>
+                            <Meter Value="c.Average" />
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <div class="wide">
+            <Card Title="By question" IconName="list-checks">
+                @if (data.Questions.Count == 0)
+                {
+                    <p class="muted">No rating question.</p>
+                }
+                else
+                {
+                    <ul class="bars">
+                        @foreach (var q in data.Questions)
+                        {
+                            <li>
+                                <span class="bar-label">@q.Text@if (!string.IsNullOrWhiteSpace(q.Category)) { <small> · @q.Category</small> }</span>
+                                <Meter Value="q.Average" />
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+        </div>
+
+        @if (data.Evaluations.Count > 1)
+        {
+            <div class="wide">
+                <Card Title="Evaluation after evaluation" IconName="trending-up">
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th scope="col">Evaluation</th><th scope="col">Sent</th><th scope="col">Answered</th><th scope="col">Average</th></tr></thead>
+                            <tbody>
+                                @foreach (var e in data.Evaluations.OrderByDescending(x => x.SentAtUtc))
+                                {
+                                    <tr>
+                                        <td class="name"><a href="coordinator/analytics?evaluation=@e.EvaluationId">@e.Title</a></td>
+                                        <td>@PhilippineTime.FormatDate(e.SentAtUtc)</td>
+                                        <td>@e.Responses / @e.Expected · @e.RatePercent%</td>
+                                        <td>@(e.Average is { } ev ? $"{ev:0.00} / 5" : "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "evaluation")] private int? EvaluationQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "teacher")] private int? TeacherQuery { get; set; }
+
+    private EvaluationAnalytics? data;
+    private TeacherDetail? detail;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        data = await Service.GetAnalyticsAsync(EvaluationQuery);
+        detail = data.EvaluationId is { } id && TeacherQuery is { } teacher ? await Service.GetTeacherDetailAsync(id, teacher) : null;
+    }
+
+    private static Tone AverageTone(decimal average) => average >= 4 ? Tone.Success : average >= 3 ? Tone.Info : average >= 2 ? Tone.Warning : Tone.Danger;
+}

@@ -1092,5 +1092,209 @@ DROP TABLE `todo_items`;
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261007094238_RemoveTodoItems', '9.0.20');
 
+CREATE TABLE `academic_coordinators` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    CONSTRAINT `pk_academic_coordinators` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_academic_coordinators_status` CHECK (status IN ('Active', 'Inactive')),
+    CONSTRAINT `fk_academic_coordinators_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `roles` (`id`, `name`)
+VALUES (6, 'AcademicCoordinator');
+
+CREATE UNIQUE INDEX `ix_academic_coordinators_employee_number` ON `academic_coordinators` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_academic_coordinators_user_id` ON `academic_coordinators` (`user_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261008091522_AddAcademicCoordinatorRole', '9.0.20');
+
+ALTER TABLE `modules` ADD `is_syllabus` tinyint(1) NOT NULL DEFAULT FALSE;
+
+CREATE TABLE `material_modules` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `subject_id` int NOT NULL,
+    `is_syllabus` tinyint(1) NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `description` varchar(1000) CHARACTER SET utf8mb4 NULL,
+    `body` text CHARACTER SET utf8mb4 NULL,
+    `link_url` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `position` int NOT NULL,
+    `created_by_user_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_material_modules` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_material_modules_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_material_modules_users_created_by_user_id` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `teacher_evaluations` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `instructions` varchar(2000) CHARACTER SET utf8mb4 NULL,
+    `sent_at_utc` datetime(6) NULL,
+    `due_at_utc` datetime(6) NULL,
+    `term_id` int NULL,
+    `created_by_user_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_teacher_evaluations` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_teacher_evaluations_terms_term_id` FOREIGN KEY (`term_id`) REFERENCES `terms` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_teacher_evaluations_users_created_by_user_id` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `material_deliveries` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `material_module_id` int NOT NULL,
+    `assignment_id` int NOT NULL,
+    `module_id` int NOT NULL,
+    `sent_by_user_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_material_deliveries` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_material_deliveries_material_modules_material_module_id` FOREIGN KEY (`material_module_id`) REFERENCES `material_modules` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_material_deliveries_modules_module_id` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_material_deliveries_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_material_deliveries_users_sent_by_user_id` FOREIGN KEY (`sent_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `material_items` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `module_id` int NOT NULL,
+    `kind` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `title` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `instructions` text CHARACTER SET utf8mb4 NULL,
+    `max_score` decimal(6,2) NOT NULL,
+    `due_at_utc` datetime(6) NULL,
+    `position` int NOT NULL,
+    `time_limit_minutes` int NULL,
+    `shuffle_questions` tinyint(1) NOT NULL,
+    `shuffle_options` tinyint(1) NOT NULL,
+    `anti_cheat` tinyint(1) NOT NULL,
+    `max_violations` int NOT NULL,
+    `show_result` tinyint(1) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_material_items` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_material_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance')),
+    CONSTRAINT `ck_material_items_max_score` CHECK (max_score > 0),
+    CONSTRAINT `fk_material_items_material_modules_module_id` FOREIGN KEY (`module_id`) REFERENCES `material_modules` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `evaluation_questions` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `evaluation_id` int NOT NULL,
+    `position` int NOT NULL,
+    `text` varchar(500) CHARACTER SET utf8mb4 NOT NULL,
+    `kind` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `category` varchar(60) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_evaluation_questions` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_evaluation_questions_kind` CHECK (kind IN ('Rating', 'Comment')),
+    CONSTRAINT `fk_evaluation_questions_teacher_evaluations_evaluation_id` FOREIGN KEY (`evaluation_id`) REFERENCES `teacher_evaluations` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `evaluation_responses` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `evaluation_id` int NOT NULL,
+    `assignment_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `submitted_at_utc` datetime(6) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_evaluation_responses` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_evaluation_responses_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_evaluation_responses_teacher_evaluations_evaluation_id` FOREIGN KEY (`evaluation_id`) REFERENCES `teacher_evaluations` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_evaluation_responses_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `evaluation_targets` (
+    `evaluation_id` int NOT NULL,
+    `assignment_id` int NOT NULL,
+    CONSTRAINT `pk_evaluation_targets` PRIMARY KEY (`evaluation_id`, `assignment_id`),
+    CONSTRAINT `fk_evaluation_targets_teacher_evaluations_evaluation_id` FOREIGN KEY (`evaluation_id`) REFERENCES `teacher_evaluations` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_evaluation_targets_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `material_questions` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `item_id` int NOT NULL,
+    `position` int NOT NULL,
+    `text` varchar(1000) CHARACTER SET utf8mb4 NOT NULL,
+    `kind` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `options_text` text CHARACTER SET utf8mb4 NULL,
+    `correct_answer` varchar(500) CHARACTER SET utf8mb4 NOT NULL,
+    `points` decimal(6,2) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_material_questions` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_material_questions_kind` CHECK (kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer')),
+    CONSTRAINT `fk_material_questions_material_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `material_items` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `evaluation_answers` (
+    `response_id` int NOT NULL,
+    `question_id` int NOT NULL,
+    `rating` tinyint unsigned NULL,
+    `comment` varchar(1000) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `pk_evaluation_answers` PRIMARY KEY (`response_id`, `question_id`),
+    CONSTRAINT `ck_evaluation_answers_rating` CHECK (rating IS NULL OR rating BETWEEN 1 AND 5),
+    CONSTRAINT `fk_evaluation_answers_evaluation_questions_question_id` FOREIGN KEY (`question_id`) REFERENCES `evaluation_questions` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_evaluation_answers_evaluation_responses_response_id` FOREIGN KEY (`response_id`) REFERENCES `evaluation_responses` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_evaluation_answers_question_id` ON `evaluation_answers` (`question_id`);
+
+CREATE INDEX `ix_evaluation_questions_evaluation_id_position` ON `evaluation_questions` (`evaluation_id`, `position`);
+
+CREATE INDEX `ix_evaluation_responses_assignment_id` ON `evaluation_responses` (`assignment_id`);
+
+CREATE UNIQUE INDEX `ix_evaluation_responses_evaluation_id_assignment_id_student_id` ON `evaluation_responses` (`evaluation_id`, `assignment_id`, `student_id`);
+
+CREATE INDEX `ix_evaluation_responses_student_id_evaluation_id` ON `evaluation_responses` (`student_id`, `evaluation_id`);
+
+CREATE INDEX `ix_evaluation_targets_assignment_id` ON `evaluation_targets` (`assignment_id`);
+
+CREATE INDEX `ix_material_deliveries_assignment_id` ON `material_deliveries` (`assignment_id`);
+
+CREATE UNIQUE INDEX `ix_material_deliveries_material_module_id_assignment_id` ON `material_deliveries` (`material_module_id`, `assignment_id`);
+
+CREATE UNIQUE INDEX `ix_material_deliveries_module_id` ON `material_deliveries` (`module_id`);
+
+CREATE INDEX `ix_material_deliveries_sent_by_user_id` ON `material_deliveries` (`sent_by_user_id`);
+
+CREATE INDEX `ix_material_items_module_id_position` ON `material_items` (`module_id`, `position`);
+
+CREATE INDEX `ix_material_modules_created_by_user_id` ON `material_modules` (`created_by_user_id`);
+
+CREATE INDEX `ix_material_modules_subject_id_position` ON `material_modules` (`subject_id`, `position`);
+
+CREATE INDEX `ix_material_questions_item_id_position` ON `material_questions` (`item_id`, `position`);
+
+CREATE INDEX `ix_teacher_evaluations_created_by_user_id` ON `teacher_evaluations` (`created_by_user_id`);
+
+CREATE INDEX `ix_teacher_evaluations_sent_at_utc` ON `teacher_evaluations` (`sent_at_utc`);
+
+CREATE INDEX `ix_teacher_evaluations_term_id` ON `teacher_evaluations` (`term_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261008092129_AddCourseMaterialsAndTeacherEvaluation', '9.0.20');
+
+INSERT INTO `sections` (`school_year_id`, `strand_id`, `grade_level`, `schedule_id`, `name`, `created_at_utc`, `updated_at_utc`) SELECT y.`id`, ss.`strand_id`, c.`grade_level`, ss.`schedule_id`, n.`name`, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM (SELECT COALESCE((SELECT `school_year_id` FROM `terms` WHERE `is_current` = 1 ORDER BY `id` LIMIT 1),                       (SELECT `id` FROM `school_years` ORDER BY `start_date` DESC, `id` DESC LIMIT 1)) AS `id`) y JOIN `strand_schedules` ss JOIN (SELECT DISTINCT `strand_id`, `grade_level` FROM `strand_subjects`) c ON c.`strand_id` = ss.`strand_id` JOIN (SELECT 'A' AS `name` UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E') n WHERE y.`id` IS NOT NULL   AND NOT EXISTS (SELECT 1 FROM `sections` x WHERE x.`school_year_id` = y.`id` AND x.`strand_id` = ss.`strand_id`                   AND x.`grade_level` = c.`grade_level` AND x.`schedule_id` = ss.`schedule_id` AND x.`name` = n.`name`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261008092155_AddSectionsAToE', '9.0.20');
+
 COMMIT;
 

@@ -43,7 +43,7 @@ public sealed record ExistingStudent(
 /// The subjects are not chosen: a student takes all the subjects the strand has at that grade level and term (the curriculum, set
 /// by the administrator).
 /// </summary>
-/// <param name="SectionName">Like "A". It is created when the strand, grade level and schedule don't have it yet.</param>
+/// <param name="SectionName">One of A to E (or a section that exists already). It is created when the strand, grade level and schedule don't have it yet.</param>
 /// <param name="PhoneNumber">The student's mobile number. Optional. A student who already has a number keeps it.</param>
 public sealed record EnrollmentRequest(
     string Lrn,
@@ -241,7 +241,7 @@ public sealed partial class EnrollmentService(
         var sectionName = Clean(request.SectionName);
         if (sectionName.Length is 0 or > MaxSectionNameLength || !SectionNamePattern().IsMatch(sectionName))
         {
-            errors.Add("Enter the section, for example A. Use letters, numbers, spaces and dashes (up to 50 characters).");
+            errors.Add("Choose the section: A, B, C, D or E.");
         }
 
         // The phone number is optional. When it is typed it must be a number we can read.
@@ -371,6 +371,12 @@ public sealed partial class EnrollmentService(
                 && s.ScheduleId == schedule!.Id && s.Name == sectionName, ct);
             if (section is null)
             {
+                // The registrar chooses the section (A to E), nobody types a new name. Other names only exist when the coordinator made them.
+                if (!SectionNames.IsChoice(sectionName))
+                {
+                    return EnrollmentResult.Fail($"There is no section {sectionName} for this strand, grade level and schedule. Choose A, B, C, D or E.");
+                }
+
                 section = new Section
                 {
                     SchoolYearId = term!.SchoolYearId,
@@ -452,7 +458,7 @@ public sealed partial class EnrollmentService(
         var next = await TermLookup.NextAsync(db, ct);
         if (next is null)
         {
-            return ServiceResult.Fail("There is no next term yet. An administrator adds it in the school setup.");
+            return ServiceResult.Fail("There is no next term yet. The academic coordinator adds it in the academic setup.");
         }
 
         var student = await db.Students.AsNoTracking().Where(s => s.Id == studentId).Select(s => new { s.FirstName, s.LastName }).FirstOrDefaultAsync(ct);

@@ -21,7 +21,7 @@ public sealed record AdminOverview(IReadOnlyList<RoleTotal> Roles, SetupTotals S
     public int InactiveAccounts => Roles.Sum(r => r.Inactive);
 
     private static readonly string[] RoleOrder =
-        [AppRoles.Admin, AppRoles.Teacher, AppRoles.Student, AppRoles.Registrar, AppRoles.GuidanceCounselor];
+        [AppRoles.Admin, AppRoles.Teacher, AppRoles.Student, AppRoles.Registrar, AppRoles.GuidanceCounselor, AppRoles.AcademicCoordinator];
 
     public static async Task<AdminOverview> LoadAsync(AppDbContext db, DateTime nowUtc, int latest = 8, CancellationToken ct = default)
     {
@@ -55,6 +55,7 @@ public sealed record AdminOverview(IReadOnlyList<RoleTotal> Roles, SetupTotals S
             .Include(u => u.Role)
             .Include(u => u.Administrator)
             .Include(u => u.GuidanceCounselor)
+            .Include(u => u.AcademicCoordinator)
             .Include(u => u.Registrar)
             .Include(u => u.Teacher)
             .Include(u => u.Student)

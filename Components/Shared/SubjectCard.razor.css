@@ -121,3 +121,20 @@ a.open:focus-visible {
     color: var(--text-muted);
     box-shadow: inset 0 0 0 1px var(--border);
 }
+
+.progress-line {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.2rem 0 0.9rem;
+}
+
+.progress-label {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.progress-line ::deep .progress {
+    flex: 1;
+}

@@ -1,0 +1,100 @@
+.stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 1000px) {
+    .stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+    }
+}
+
+.cards {
+    display: grid;
+    gap: 1.25rem;
+}
+
+@media (min-width: 1000px) {
+    .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+.list {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.list li > a,
+.list-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.list-title {
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.list li > a:hover .list-title {
+    color: var(--brand-strong);
+}
+
+.list-sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.bar {
+    display: block;
+    height: 7px;
+    margin-top: 0.35rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--btn-bg);
+}
+
+.more {
+    margin: 1rem 0 0;
+    font-size: 0.9rem;
+}
+
+.more a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--brand-strong);
+    font-weight: 600;
+}
+
+.quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}

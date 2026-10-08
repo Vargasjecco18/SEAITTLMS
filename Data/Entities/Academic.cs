@@ -98,6 +98,14 @@ public class StrandSubject
     public Subject Subject { get; set; } = null!;
 }
 
+/// <summary>The section names the registrar can choose when enrolling a student: A to E. (Sections with other names can exist; the registrar can still pick those.)</summary>
+public static class SectionNames
+{
+    public static readonly IReadOnlyList<string> Choices = ["A", "B", "C", "D", "E"];
+
+    public static bool IsChoice(string name) => Choices.Contains(name, StringComparer.Ordinal);
+}
+
 /// <summary>A group of students, e.g. "11-BUSSENT-A" (grade 11, strand BUSSENT, section A) for school year 2026-2027.</summary>
 public class Section : AuditableEntity
 {

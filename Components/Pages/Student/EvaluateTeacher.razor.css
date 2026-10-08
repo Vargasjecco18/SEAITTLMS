@@ -1,0 +1,122 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.anon {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.form {
+    display: grid;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.group {
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.group h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.question + .question {
+    margin-top: 1.1rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+}
+
+.text {
+    margin: 0 0 0.6rem;
+    font-weight: 600;
+}
+
+.number {
+    color: var(--text-muted);
+}
+
+.scale {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.choice:hover {
+    background: var(--surface-2);
+}
+
+.choice.on {
+    border-color: var(--btn-bg);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.choice:has(input:focus-visible) {
+    outline: 2px solid var(--btn-bg);
+    outline-offset: 2px;
+}
+
+.choice strong {
+    font-size: 1.15rem;
+}
+
+.choice span {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.choice.on span {
+    color: inherit;
+}
+
+textarea {
+    width: 100%;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+@media (max-width: 520px) {
+    .scale {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.3rem;
+    }
+
+    .choice span {
+        display: none;
+    }
+}

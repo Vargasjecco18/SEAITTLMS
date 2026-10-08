@@ -1,0 +1,130 @@
+@page "/coordinator/evaluations"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject EvaluationService Service
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+<PageTitle>Teacher evaluation · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
+
+<PageHeader Title="Teacher evaluation"
+            Subtitle="Make a questionnaire about the teachers, send it to the students with a due date, and read their answers."
+            IconName="clipboard-check">
+    <ButtonLink Href="coordinator/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
+    <Button IconName="plus" Disabled="busy" OnClick="CreateAsync">New evaluation</Button>
+</PageHeader>
+
+<Notice Message="@message" IsError="true" OnDismiss="ClearMessage" />
+
+<Card>
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (rows.Count == 0)
+    {
+        <EmptyState IconName="clipboard-check" Title="No evaluation yet">
+            <p>A new evaluation starts with the usual questions about a teacher. You change them, choose the teachers' courses and the due date, and send it. The students are told and answer in their dashboard.</p>
+            <Button IconName="plus" Disabled="busy" OnClick="CreateAsync">New evaluation</Button>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Evaluation</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Due</th>
+                        <th scope="col">Answers</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        <tr>
+                            <td>
+                                <a class="name" href="coordinator/evaluations/@row.Id">@row.Title</a>
+                                <span class="sub">@row.Questions @(row.Questions == 1 ? "question" : "questions")@(row.State == EvaluationStates.Draft ? "" : $" · {row.Courses} {(row.Courses == 1 ? "course" : "courses")}")</span>
+                            </td>
+                            <td><Badge Tone="@StateTone(row.State)">@row.State</Badge></td>
+                            <td>
+                                @if (row.DueAtUtc is { } due)
+                                {
+                                    <span>@PhilippineTime.FormatDateTime(due)</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (row.State == EvaluationStates.Draft)
+                                {
+                                    <span class="muted">Not sent yet</span>
+                                }
+                                else
+                                {
+                                    <div class="rate" title="@row.Responses of @row.Expected answered">
+                                        <span class="rate-bar"><span class="rate-fill" style="width: @(Math.Min(100, row.RatePercent))%"></span></span>
+                                        <span>@row.Responses / @row.Expected · @row.RatePercent%</span>
+                                    </div>
+                                }
+                            </td>
+                            <td class="col-actions">
+                                <ButtonLink Href="@($"coordinator/evaluations/{row.Id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+@code {
+    private IReadOnlyList<EvaluationRow>? rows;
+    private string? message;
+    private bool busy;
+
+    protected override async Task OnInitializedAsync() => rows = await Service.ListAsync();
+
+    private void ClearMessage() => message = null;
+
+    private static Tone StateTone(string state) => state switch
+    {
+        EvaluationStates.Open => Tone.Success,
+        EvaluationStates.Closed => Tone.Neutral,
+        _ => Tone.Warning,
+    };
+
+    private async Task CreateAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Service.CreateAsync(me.UserId);
+            if (!result.Succeeded || result.Id is not { } id)
+            {
+                message = string.Join(" ", result.Errors);
+                return;
+            }
+
+            Navigation.NavigateTo($"coordinator/evaluations/{id}");
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

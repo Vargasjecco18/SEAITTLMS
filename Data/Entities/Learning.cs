@@ -37,6 +37,9 @@ public class LearningModule : AuditableEntity
     /// <summary>A link to a file or a video the lesson uses.</summary>
     public string? LinkUrl { get; set; }
 
+    /// <summary>The syllabus of the course (sent by the academic coordinator or written by the teacher). It has no activities.</summary>
+    public bool IsSyllabus { get; set; }
+
     /// <summary>The order in the subject, 1, 2, 3 ...</summary>
     public int Position { get; set; }
 

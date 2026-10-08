@@ -1,28 +1,24 @@
-@page "/admin/school-setup"
-@page "/admin/school-setup/{TabKey}"
-@attribute [Authorize(Roles = AppRoles.Admin)]
+@page "/coordinator/academic-setup"
+@page "/coordinator/academic-setup/{TabKey}"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
 @rendermode InteractiveServer
-@using SEAITT_LMS.Components.Pages.Admin.Setup
+@using SEAITT_LMS.Components.Pages.Coordinator.Setup
 @using SEAITT_LMS.Services
 @inject SchoolSetupService Setup
 
-<PageTitle>@tab.Label · School setup · SEAITT e-LMS</PageTitle>
+<PageTitle>@tab.Label · Academic setup · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="School setup" Subtitle="School years, terms, tracks, strands, courses and sections. The enrolled students and the students who are not enrolled are the registrar's work: you can look at them here." IconName="school" />
+<PageHeader Title="Academic setup" Subtitle="School years, terms, tracks, strands, courses and sections: the academic side of the school." IconName="school" />
 
 <div class="setup">
-    <nav class="tabs" aria-label="School setup">
+    <nav class="tabs" aria-label="Academic setup">
         @foreach (var t in Tabs)
         {
             @* The open tab is the one this page shows (an address that is not a tab, or none, shows the first), so it is marked here, not by the address. *@
-            <a class="tab @(t.Key == tab.Key ? "active" : "")" href="@($"admin/school-setup/{t.Key}")" aria-current="@(t.Key == tab.Key ? "page" : null)">
+            <a class="tab @(t.Key == tab.Key ? "active" : "")" href="@($"coordinator/academic-setup/{t.Key}")" aria-current="@(t.Key == tab.Key ? "page" : null)">
                 <Icon Name="@t.Icon" Size="18" />
                 <span>@t.Label</span>
                 <span class="count">@CountOf(t.Key)</span>
-                @if (!t.Editable)
-                {
-                    <Icon Name="eye" Size="14" Class="look" />
-                }
             </a>
         }
     </nav>
@@ -47,29 +43,20 @@
         case "sections":
             <SectionsTab OnChanged="ReloadCountsAsync" />
             break;
-        case "enrollments":
-            <EnrollmentsTab />
-            break;
-        case "not-enrolled":
-            <NotEnrolledTab />
-            break;
     }
 </div>
 
 @code {
-    private sealed record SetupTab(string Key, string Label, string Icon, bool Editable);
+    private sealed record SetupTab(string Key, string Label, string Icon);
 
-    // The two tabs that can only be looked at have an eye on them. They are the registrar's records.
     private static readonly SetupTab[] Tabs =
     [
-        new("school-years", "School years", "calendar-range", true),
-        new("terms", "Terms", "calendar-days", true),
-        new("tracks", "Tracks", "layers", true),
-        new("strands", "Strands", "layout-grid", true),
-        new("subjects", "Courses", "book-open", true),
-        new("sections", "Sections", "users", true),
-        new("enrollments", "Enrolled", "user-check", false),
-        new("not-enrolled", "Not enrolled", "user-x", false),
+        new("school-years", "School years", "calendar-range"),
+        new("terms", "Terms", "calendar-days"),
+        new("tracks", "Tracks", "layers"),
+        new("strands", "Strands", "layout-grid"),
+        new("subjects", "Courses", "book-open"),
+        new("sections", "Sections", "users"),
     ];
 
     [Parameter] public string? TabKey { get; set; }
@@ -94,8 +81,6 @@
         "strands" => counts.Strands.ToString(),
         "subjects" => counts.Subjects.ToString(),
         "sections" => counts.Sections.ToString(),
-        "enrollments" => counts.Enrollments.ToString(),
-        "not-enrolled" => counts.NotEnrolled.ToString(),
         _ => "",
     };
 }

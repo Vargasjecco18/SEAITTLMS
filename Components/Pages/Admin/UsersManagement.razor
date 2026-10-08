@@ -92,11 +92,16 @@
                         {
                             <th scope="col">LRN</th>
                             <th scope="col" class="col-more">Section</th>
+                            <th scope="col" class="col-more">Courses</th>
                         }
                         else
                         {
                             <th scope="col">Employee no.</th>
-                            @if (tab.Role != AppRoles.Teacher)
+                            @if (tab.Role == AppRoles.Teacher)
+                            {
+                                <th scope="col" class="col-more">Course · Section</th>
+                            }
+                            else
                             {
                                 <th scope="col" class="col-more">Phone</th>
                             }
@@ -123,11 +128,16 @@
                             {
                                 <td class="mono">@user.Lrn</td>
                                 <td class="col-more">@(user.Placement ?? "Not set yet")</td>
+                                <td class="col-more">@CourseList(user.Courses, 3, "Not enrolled yet")</td>
                             }
                             else
                             {
                                 <td>@(user.EmployeeNumber ?? "—")</td>
-                                @if (tab.Role != AppRoles.Teacher)
+                                @if (tab.Role == AppRoles.Teacher)
+                                {
+                                    <td class="col-more">@CourseList(user.Courses, 3, "No course yet")</td>
+                                }
+                                else
                                 {
                                     <td class="col-more">@(user.PhoneNumber ?? "—")</td>
                                 }
@@ -507,6 +517,27 @@
 @code {
     private const int PageSize = 15;
 
+    /// <summary>The courses of a person, a few of them on separate lines and "+ 2 more" for the rest (the whole list is in the tooltip).</summary>
+    private static RenderFragment CourseList(IReadOnlyList<string>? courses, int show, string none) => @<text>
+        @if (courses is null || courses.Count == 0)
+        {
+            <span class="muted">@none</span>
+        }
+        else
+        {
+            <ul class="course-list" title="@string.Join("\n", courses)">
+                @foreach (var course in courses.Take(show))
+                {
+                    <li>@course</li>
+                }
+                @if (courses.Count > show)
+                {
+                    <li class="more">+ @(courses.Count - show) more</li>
+                }
+            </ul>
+        }
+    </text>;
+
     /// <summary>Label is what the tab says (short, so all five fit), Title is the plural name used in the texts.</summary>
     private sealed record Tab(string Key, string Role, string Title, string Singular, string Icon, string? ShortLabel = null)
     {
@@ -519,6 +550,7 @@
         new("teachers", AppRoles.Teacher, "Teachers", "teacher", "presentation"),
         new("registrars", AppRoles.Registrar, "Registrars", "registrar", "clipboard-check"),
         new("guidance", AppRoles.GuidanceCounselor, "Guidance counselors", "guidance counselor", "heart-handshake", "Guidance"),
+        new("coordinators", AppRoles.AcademicCoordinator, "Academic coordinators", "academic coordinator", "clipboard-list", "Coordinators"),
         new("administrators", AppRoles.Admin, "Administrators", "administrator", "shield-check"),
     ];
 

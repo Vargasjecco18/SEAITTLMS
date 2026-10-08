@@ -27,6 +27,7 @@ internal sealed class LearningModuleConfiguration : IEntityTypeConfiguration<Lea
         b.Property(m => m.Description).HasMaxLength(1000);
         b.Property(m => m.Body).HasColumnType("text");
         b.Property(m => m.LinkUrl).HasMaxLength(500);
+        b.Property(m => m.IsSyllabus).HasDefaultValue(false);
 
         b.HasOne(m => m.Assignment).WithMany(a => a.Modules).HasForeignKey(m => m.AssignmentId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(m => new { m.AssignmentId, m.Position });

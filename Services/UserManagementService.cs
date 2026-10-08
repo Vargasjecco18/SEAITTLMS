@@ -10,6 +10,7 @@ namespace SEAITT_LMS.Services;
 
 /// <summary>One account in a role's list.</summary>
 /// <param name="Placement">For students: the section as kept on the student's row (or, when that is empty, of their latest enrollment), like 11-BUSSENT-A. Empty otherwise.</param>
+/// <param name="Courses">For students: the courses of their enrollment (the current term's, else the latest). For teachers: each course they teach with its section, like "BUSINESS ACCOUNTING · 11-BUSSENT-A". Empty otherwise.</param>
 public sealed record UserListItem(
     int UserId,
     string Role,
@@ -21,7 +22,8 @@ public sealed record UserListItem(
     bool IsActive,
     DateTime? LastLoginAtUtc,
     DateTime CreatedAtUtc,
-    string? Placement);
+    string? Placement,
+    IReadOnlyList<string>? Courses = null);
 
 public sealed record UserPage(IReadOnlyList<UserListItem> Items, int Total, int Page, int PageSize)
 {
@@ -328,13 +330,28 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                         .GroupBy(e => e.StudentId)
                         .ToDictionary(g => g.Key, g => Placement(g.First().GradeLevel, g.First().StrandCode, g.First().SectionName));
 
+                // The courses of each student: those of the current term, or of their latest term when they have none now.
+                var studentIds = rows.Select(r => r.StudentId).ToList();
+                var taken = await db.EnrollmentSubjects.AsNoTracking()
+                    .Where(x => studentIds.Contains(x.Enrollment.StudentId) && x.Enrollment.Status != EnrollmentStatus.Dropped)
+                    .Select(x => new { x.Enrollment.StudentId, x.Enrollment.TermId, x.Enrollment.Term.IsCurrent, x.Enrollment.Term.StartDate, Course = x.Subject.Name })
+                    .ToListAsync(ct);
+                IReadOnlyList<string> CoursesOf(int studentId)
+                {
+                    var own = taken.Where(t => t.StudentId == studentId).ToList();
+                    var term = own.Where(t => t.IsCurrent).Select(t => (int?)t.TermId).FirstOrDefault()
+                               ?? own.OrderByDescending(t => t.StartDate).Select(t => (int?)t.TermId).FirstOrDefault();
+                    return own.Where(t => t.TermId == term).Select(t => t.Course).Distinct().OrderBy(c => c).ToList();
+                }
+
                 var items = rows.Select(r => new UserListItem(
                     r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, null, r.Lrn,
                     r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc,
                     r.SectionId is null && latest.TryGetValue(r.StudentId, out var fromEnrollment)
                         ? fromEnrollment
                         : Placement(r.GradeLevel, r.StrandId is { } sid ? strandCodes.GetValueOrDefault(sid) : null,
-                            r.SectionId is { } secId ? sectionNames.GetValueOrDefault(secId) : null))).ToList();
+                            r.SectionId is { } secId ? sectionNames.GetValueOrDefault(secId) : null),
+                    CoursesOf(r.StudentId))).ToList();
                 return new UserPage(items, total, page, pageSize);
             }
 
@@ -354,9 +371,18 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                     })
                     .ToListAsync(ct);
 
+                // What each teacher teaches: the course and its section.
+                var teacherUserIds = rows.Select(r => r.UserId).ToList();
+                var taught = await db.TeachingAssignments.AsNoTracking()
+                    .Where(a => teacherUserIds.Contains(a.Teacher.UserId))
+                    .OrderBy(a => a.Subject.Name).ThenBy(a => a.Section.GradeLevel).ThenBy(a => a.Section.Strand.Code).ThenBy(a => a.Section.Name)
+                    .Select(a => new { a.Teacher.UserId, Course = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
+                    .ToListAsync(ct);
+
                 return new UserPage(rows.Select(r => new UserListItem(
                     r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, r.EmployeeNumber, null,
-                    r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null)).ToList(), total, page, pageSize);
+                    r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null,
+                    taught.Where(t => t.UserId == r.UserId).Select(t => $"{t.Course} · {t.GradeLevel}-{t.Strand}-{t.Section}").ToList())).ToList(), total, page, pageSize);
             }
 
             case AppRoles.Registrar:
@@ -364,6 +390,9 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
 
             case AppRoles.GuidanceCounselor:
                 return await StaffPageAsync(db.GuidanceCounselors.AsNoTracking(), role, tokens, page, pageSize, ct);
+
+            case AppRoles.AcademicCoordinator:
+                return await StaffPageAsync(db.AcademicCoordinators.AsNoTracking(), role, tokens, page, pageSize, ct);
 
             case AppRoles.Admin:
                 return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, page, pageSize, ct);
@@ -705,6 +734,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
         AppRoles.Teacher => await db.Teachers.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.Registrar => await db.Registrars.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.GuidanceCounselor => await db.GuidanceCounselors.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
+        AppRoles.AcademicCoordinator => await db.AcademicCoordinators.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.Admin => await db.Administrators.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         _ => false,
     };
@@ -752,6 +782,7 @@ internal static class UserQueryExtensions
         .Include(u => u.Role)
         .Include(u => u.Administrator)
         .Include(u => u.GuidanceCounselor)
+        .Include(u => u.AcademicCoordinator)
         .Include(u => u.Registrar)
         .Include(u => u.Teacher)
         .Include(u => u.Student);

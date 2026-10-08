@@ -11,19 +11,40 @@
             <Icon Name="users" />
             <span>Users Management</span>
         </NavLink>
-        <NavLink class="link" href="admin/school-setup">
-            <Icon Name="school" />
-            <span>School setup</span>
-        </NavLink>
-        <NavLink class="link" href="announcements">
-            <Icon Name="megaphone" />
-            <span>Announcements</span>
-        </NavLink>
         <NavLink class="link" href="admin/archive">
             <Icon Name="archive" />
             <span>Archive Accounts</span>
         </NavLink>
         <NavLink class="link" href="analytics">
+            <Icon Name="chart-column" />
+            <span>Analytics</span>
+        </NavLink>
+    </AuthorizeView>
+
+    <AuthorizeView Roles="@AppRoles.AcademicCoordinator">
+        <p class="heading">Academics</p>
+
+        <NavLink class="link" href="coordinator" Match="NavLinkMatch.All">
+            <Icon Name="layout-dashboard" />
+            <span>Dashboard</span>
+        </NavLink>
+        <NavLink class="link" href="coordinator/academic-setup">
+            <Icon Name="school" />
+            <span>Academic setup</span>
+        </NavLink>
+        <NavLink class="link" href="coordinator/materials">
+            <Icon Name="folder-open" />
+            <span>Course materials</span>
+        </NavLink>
+        <NavLink class="link" href="coordinator/evaluations">
+            <Icon Name="clipboard-check" />
+            <span>Teacher evaluation</span>
+        </NavLink>
+        <NavLink class="link" href="coordinator/announcements">
+            <Icon Name="megaphone" />
+            <span>Announcements</span>
+        </NavLink>
+        <NavLink class="link" href="coordinator/analytics">
             <Icon Name="chart-column" />
             <span>Analytics</span>
         </NavLink>

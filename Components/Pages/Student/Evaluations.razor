@@ -1,0 +1,90 @@
+@page "/student/evaluations"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@inject CurrentUser Me
+@inject EvaluationService Service
+@inject TimeProvider Clock
+
+<PageTitle>Teacher evaluation · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
+
+<PageHeader Title="Teacher evaluation"
+            Subtitle="Tell the school how your teachers are doing. Your answers are anonymous: your teachers will not know who wrote what."
+            IconName="clipboard-check" />
+
+@if (tasks is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (tasks.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="clipboard-check" Title="Nothing to answer right now">
+            <p>When the academic coordinator sends a teacher evaluation, you will be told and it will show up here and in your dashboard.</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    var pending = tasks.Where(t => !t.Answered && !t.Closed).ToList();
+    var rest = tasks.Where(t => t.Answered || t.Closed).ToList();
+
+    <Card Title="@($"To answer ({pending.Count})")" IconName="clipboard-pen">
+        @if (pending.Count == 0)
+        {
+            <p class="muted">You answered everything that is open. Thank you!</p>
+        }
+        else
+        {
+            <ul class="tasks">
+                @foreach (var t in pending)
+                {
+                    <li>
+                        <div class="main">
+                            <strong>@t.TeacherName</strong>
+                            <span class="sub">@t.SubjectName · @t.Title</span>
+                        </div>
+                        <Badge Tone="Tone.Warning">@PhilippineTime.DueText(t.DueAtUtc, now)</Badge>
+                        <ButtonLink Href="@($"student/evaluations/{t.EvaluationId}/{t.AssignmentId}")" IconName="arrow-right" IconAfter="true" Small="true">Answer</ButtonLink>
+                    </li>
+                }
+            </ul>
+        }
+    </Card>
+
+    @if (rest.Count > 0)
+    {
+        <Card Title="Done or closed" IconName="circle-check">
+            <ul class="tasks">
+                @foreach (var t in rest)
+                {
+                    <li>
+                        <div class="main">
+                            <strong>@t.TeacherName</strong>
+                            <span class="sub">@t.SubjectName · @t.Title</span>
+                        </div>
+                        @if (t.Answered)
+                        {
+                            <Badge Tone="Tone.Success">Answered</Badge>
+                        }
+                        else
+                        {
+                            <Badge Tone="Tone.Neutral">Closed, not answered</Badge>
+                        }
+                    </li>
+                }
+            </ul>
+        </Card>
+    }
+}
+
+@code {
+    private IReadOnlyList<StudentEvaluationTask>? tasks;
+    private DateTimeOffset now;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        now = PhilippineTime.Now(Clock);
+        var studentId = await Me.GetStudentIdAsync();
+        tasks = studentId is { } id ? await Service.GetStudentTasksAsync(id) : [];
+    }
+}

@@ -21,7 +21,7 @@ public sealed class AnnouncementInput
 }
 
 /// <summary>
-/// Announcements. Only the administrator writes them: for everybody (students and teachers), for the students or for the teachers.
+/// Announcements. Only the academic coordinator writes them: for everybody (students and teachers), for the students or for the teachers.
 /// A student sees what is meant for them on the dashboard; the people it is for are also told with a notification when it is posted.
 /// (Announcements that a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.)
 /// </summary>
@@ -49,10 +49,10 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         return await ViewsAsync(db, query, take, ct);
     }
 
-    /// <summary>Every announcement, newest first, for the administrator who manages them.</summary>
+    /// <summary>Every announcement, newest first, for the academic coordinator who manages them.</summary>
     public async Task<IReadOnlyList<AnnouncementView>> ListManagedAsync(CurrentUserInfo user, CancellationToken ct = default)
     {
-        if (user.Role != AppRoles.Admin)
+        if (user.Role != AppRoles.AcademicCoordinator)
         {
             return [];
         }
@@ -78,9 +78,9 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             errors.Add($"Write the announcement (up to {MaxBodyLength} characters).");
         }
 
-        if (user.Role != AppRoles.Admin)
+        if (user.Role != AppRoles.AcademicCoordinator)
         {
-            return ServiceResult.Fail("Only the administrator writes announcements.");
+            return ServiceResult.Fail("Only the academic coordinator writes announcements.");
         }
 
         var audience = input.Audience;
@@ -100,7 +100,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, user, ct))
+        if (!await IsCoordinatorAsync(db, user, ct))
         {
             return ServiceResult.Fail("Please sign in again.");
         }
@@ -140,9 +140,9 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     public async Task<ServiceResult> DeleteAsync(CurrentUserInfo user, int id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsAdminAsync(db, user, ct))
+        if (!await IsCoordinatorAsync(db, user, ct))
         {
-            return ServiceResult.Fail("Only the administrator deletes announcements.");
+            return ServiceResult.Fail("Only the academic coordinator deletes announcements.");
         }
 
         var deleted = await db.Announcements.Where(a => a.Id == id).ExecuteDeleteAsync(ct);
@@ -151,9 +151,9 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
 
     // ======================================================================= helpers
 
-    /// <summary>Only the administrator (still active) writes, changes and deletes announcements.</summary>
-    private static async Task<bool> IsAdminAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct) =>
-        user.Role == AppRoles.Admin && await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.RoleId == AppRoles.AdminId, ct);
+    /// <summary>Only the academic coordinator (still active) writes, changes and deletes announcements.</summary>
+    private static async Task<bool> IsCoordinatorAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct) =>
+        user.Role == AppRoles.AcademicCoordinator && await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
 
     /// <summary>Tells the people it is for. (The author is not told about their own announcement.)</summary>
     private async Task NotifyAsync(AppDbContext db, Announcement announcement, CancellationToken ct)
@@ -193,6 +193,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             .Include(a => a.Author).ThenInclude(u => u.Role)
             .Include(a => a.Author).ThenInclude(u => u.Administrator)
             .Include(a => a.Author).ThenInclude(u => u.Registrar)
+            .Include(a => a.Author).ThenInclude(u => u.AcademicCoordinator)
             .Include(a => a.Author).ThenInclude(u => u.Teacher)
             .Include(a => a.Section).ThenInclude(s => s!.Strand)
             .ToListAsync(ct);

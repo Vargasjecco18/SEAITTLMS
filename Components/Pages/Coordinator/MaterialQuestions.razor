@@ -1,0 +1,220 @@
+@page "/coordinator/materials/items/{ItemId:int}/questions"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject MaterialService Library
+
+<PageTitle>Questions · @(info?.Title ?? "Quiz") · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (info is null || info.Kind != ItemKinds.Quiz || questions is null)
+{
+    <Card>
+        <EmptyState IconName="file-question" Title="Quiz not found" IsPage="true">
+            <p>This quiz was deleted from the library.</p>
+            <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Secondary">Back to the courses</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@info.Title" Subtitle="@($"Questions · {info.SubjectName} · {info.ModuleTitle}")" IconName="file-question">
+        <ButtonLink Href="@($"coordinator/materials/{info.SubjectId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <p class="hint-line">
+        <Icon Name="send" Size="16" />
+        <span>The questions go with the quiz to the teachers. A teacher can change them until the first student starts the quiz.</span>
+    </p>
+
+    <FormErrors Errors="formErrors" />
+
+    <div class="total">
+        <strong>@questions.Count @(questions.Count == 1 ? "question" : "questions")</strong>
+        <span>·</span>
+        <span>The quiz is worth <strong>@questions.Sum(q => q.Points).ToString("0.##")</strong> points</span>
+        @if (!locked)
+        {
+            <span class="spacer"></span>
+            <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save questions")</Button>
+        }
+    </div>
+
+    @if (questions.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="file-question" Title="No questions yet">
+                <p>Add multiple choice, true or false, and short answer questions. The quiz is graded by itself when the student hands it in.</p>
+            </EmptyState>
+        </Card>
+    }
+
+    <ol class="questions">
+        @for (var n = 0; n < questions.Count; n++)
+        {
+            var index = n; // the boxes are drawn later, so they must use this copy and not the loop variable
+            var q = questions[n];
+            var options = ModuleService.SplitOptions(q.OptionsText);
+            <li class="question">
+                <header class="question-head">
+                    <span class="number">@(index + 1)</span>
+                    <InputSelect id="@($"q{index}-kind")" class="input kind" Value="q.Kind" ValueChanged="(string kind) => ChangeKind(q, kind)" ValueExpression="() => q.Kind" disabled="@locked" aria-label="@($"Kind of question {index + 1}")">
+                        <option value="@QuestionKinds.MultipleChoice">Multiple choice</option>
+                        <option value="@QuestionKinds.TrueFalse">True or false</option>
+                        <option value="@QuestionKinds.ShortAnswer">Short answer</option>
+                    </InputSelect>
+                    <label class="points">
+                        <span>Points</span>
+                        <InputNumber id="@($"q{index}-points")" class="input" @bind-Value="q.Points" disabled="@locked" />
+                    </label>
+                    @if (!locked)
+                    {
+                        <span class="move">
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-up" Title="Move up" Disabled="@(index == 0)" OnClick="() => Move(index, -1)" />
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-down" Title="Move down" Disabled="@(index == questions.Count - 1)" OnClick="() => Move(index, 1)" />
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Remove this question" OnClick="() => Remove(index)" />
+                        </span>
+                    }
+                </header>
+
+                <Field For="@($"q{index}-text")" Label="Question">
+                    <InputTextArea id="@($"q{index}-text")" @bind-Value="q.Text" rows="2" disabled="@locked" />
+                </Field>
+
+                @if (q.Kind == QuestionKinds.MultipleChoice)
+                {
+                    <div class="two">
+                        <Field For="@($"q{index}-options")" Label="Choices" Hint="One choice per line, at least two.">
+                            @* A plain box (not InputTextArea) so the "Right choice" list follows the typing letter by letter. *@
+                            <textarea id="@($"q{index}-options")" @bind="q.OptionsText" @bind:event="oninput" rows="4" disabled="@locked"></textarea>
+                        </Field>
+                        <Field For="@($"q{index}-correct")" Label="Right choice">
+                            <InputSelect id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" disabled="@locked">
+                                <option value="">Pick the right choice</option>
+                                @foreach (var option in options)
+                                {
+                                    <option value="@option">@option</option>
+                                }
+                            </InputSelect>
+                        </Field>
+                    </div>
+                }
+                else if (q.Kind == QuestionKinds.TrueFalse)
+                {
+                    <Field For="@($"q{index}-correct")" Label="The statement is">
+                        <InputSelect id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" disabled="@locked">
+                            <option value="True">True</option>
+                            <option value="False">False</option>
+                        </InputSelect>
+                    </Field>
+                }
+                else
+                {
+                    <Field For="@($"q{index}-correct")" Label="Right answer" Hint="Capital letters and extra spaces don't matter. Separate other accepted answers with |, like: equity | owner's equity">
+                        <InputText id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" maxlength="500" autocomplete="off" disabled="@locked" />
+                    </Field>
+                }
+            </li>
+        }
+    </ol>
+
+    @if (!locked)
+    {
+        <div class="adders">
+            <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(QuestionKinds.MultipleChoice)">Multiple choice</Button>
+            <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(QuestionKinds.TrueFalse)">True or false</Button>
+            <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(QuestionKinds.ShortAnswer)">Short answer</Button>
+            <span class="spacer"></span>
+            <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save questions")</Button>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int ItemId { get; set; }
+
+    private bool locked => false;
+
+    private int userId;
+    private bool loaded;
+    private MaterialItemInfo? info;
+    private List<QuestionInput>? questions;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private List<string> formErrors = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        info = await Library.GetItemAsync(ItemId);
+        if (info is { Kind: ItemKinds.Quiz })
+        {
+            var saved = await Library.GetQuestionsAsync(ItemId);
+            questions = saved is null ? null : [.. saved];
+        }
+
+        loaded = true;
+    }
+
+    private void ClearMessage() => message = null;
+
+    private void Add(string kind) => questions!.Add(new QuestionInput
+    {
+        Kind = kind,
+        Points = 1,
+        CorrectAnswer = kind == QuestionKinds.TrueFalse ? "True" : "",
+    });
+
+    private void Remove(int index) => questions!.RemoveAt(index);
+
+    private void Move(int index, int direction)
+    {
+        var target = index + direction;
+        if (target < 0 || target >= questions!.Count)
+        {
+            return;
+        }
+
+        (questions[index], questions[target]) = (questions[target], questions[index]);
+    }
+
+    private static void ChangeKind(QuestionInput q, string kind)
+    {
+        q.Kind = kind;
+        q.CorrectAnswer = kind == QuestionKinds.TrueFalse ? "True" : "";
+    }
+
+    private async Task SaveAsync()
+    {
+        if (busy || questions is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Library.SaveQuestionsAsync(userId, ItemId, questions);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                message = null;
+                return;
+            }
+
+            formErrors = [];
+            messageIsError = false;
+            message = result.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

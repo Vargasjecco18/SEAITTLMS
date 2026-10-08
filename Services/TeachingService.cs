@@ -19,7 +19,18 @@ public sealed record TeacherSubjectCard(
 public sealed record StudentSubjectCard(
     int SubjectId, string SubjectName, string TermName, bool IsCurrentTerm, int? AssignmentId, string? TeacherName, string SectionLabel,
     int ModulesVisible, int ModulesUnopened, int ItemsOpen, int ItemsDone, decimal? AveragePercent,
-    bool IsCompleted = false, string? Schedule = null, decimal? AttendancePercent = null, DateTime? NextDueUtc = null);
+    bool IsCompleted = false, string? Schedule = null, decimal? AttendancePercent = null, DateTime? NextDueUtc = null)
+{
+    /// <summary>The parts of the course the student has gone through (modules opened, work handed in) and all the parts that are posted.</summary>
+    public int ProgressDone => (ModulesVisible - ModulesUnopened) + ItemsDone;
+
+    public int ProgressTotal => ModulesVisible + ItemsOpen + ItemsDone;
+
+    /// <summary>How far along the student is in the course: the modules they opened and the work they handed in, out of everything posted. Null when nothing is posted yet.</summary>
+    public int? ProgressPercent => AssignmentId is null || ProgressTotal == 0 ? null : (int)Math.Round(ProgressDone * 100.0 / ProgressTotal);
+
+    public string ProgressText => $"{ProgressDone} of {ProgressTotal} done: modules opened and work handed in";
+}
 
 /// <summary>A teacher's subject as the administrator sees it.</summary>
 public sealed record AssignmentRow(int Id, int SubjectId, string SubjectName, int SectionId, string SectionLabel, string? Schedule, int Students, int Modules);

@@ -9,12 +9,15 @@ What exists so far:
   **Log in** button.
 - **Custom login** with the school's picture next to the form: email + password, PBKDF2 password hashing, cookie
   sign-in, account lockout, "keep me signed in". After signing in, everybody lands on the page of their role.
-- **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor, each with its own table
+- **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor and **Academic Coordinator**, each with its own table
   holding the person's name and details.
 - **Registrar pages** (for the registrar only): *Dashboard*, *Enrollments* (the form that enrolls a student; the
   student's email and password are made automatically) and *Student's Accounts* (a searchable list).
-- **Administrator pages** (for the administrator only): *Dashboard* and *Users Management*: one list per role, with
+- **Administrator pages** (for the administrator only): *Dashboard* (accounts, and who is **enrolled** or **not enrolled**) and *Users Management*: one list per role, with
   search, **edit**, **delete** and add (for staff).
+- **Academic coordinator pages** (for the academic coordinator only): *Dashboard*, *Academic setup* (school years, terms, tracks, strands, courses and sections),
+  *Course materials* (syllabus, modules, activities, quizzes and task performances sent to the teachers as drafts), *Teacher evaluation* (a questionnaire the students answer
+  about their teachers), *Announcements* and *Analytics* (the results of the teacher evaluation).
 - **The first page** (`/`, before signing in) lists **Our courses** by track: each track, its strands with their full names, and, when a strand is opened, the courses it studies by grade level and term.
 - **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
@@ -123,11 +126,12 @@ administrator.
 
 Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
-**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, 12 teachers and 40 students), open
+**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, **2 academic coordinators**, 12 teachers and 40 students), open
 [database/seaittlms_sample_accounts.sql](database/seaittlms_sample_accounts.sql) in Workbench and click the lightning bolt.
 It only adds what is missing, so running it twice is harmless. The passwords are not in the file (only their hashes): ask for the list of emails and passwords.
 The teachers and students are plain accounts: give a teacher courses in **Users Management > Teachers > Courses**, and enroll the students with the registrar's
-**Enrollments** form (type the LRN, the account is found). Until then the students are listed under *School setup > Not enrolled*.
+**Enrollments** form (type the LRN, the account is found). Until then the students are listed under *Not enrolled* (a card in the Accounts of the administrator's dashboard).
+The academic coordinators sign in with `coordinator@legazpi.seaitt.edu.ph` (password `coordinator123`) and `coordinator2@legazpi.seaitt.edu.ph` (password `coordinator456`): easy ones, to try the system.
 
 Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five old views,
 and does nothing if you don't have them):
@@ -179,7 +183,8 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | Dashboard, **Users Management**, **School setup**, **Announcements** (only the administrator writes them), **Archive Accounts**, **Analytics** |
+| Admin | `/admin` | Dashboard (with **Enrolled** and **Not enrolled** under *Accounts*), **Users Management**, **Archive Accounts**, **Analytics** |
+| Academic coordinator | `/coordinator` | **Dashboard**, **Academic setup**, **Course materials**, **Teacher evaluation**, **Announcements**, **Analytics** (teacher evaluation) |
 | Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts** |
 | Teacher | `/teacher` | **Dashboard**, **Courses** (modules, activities, quizzes, task performances, grading), **Attendance**, **Calendar**, **Gradebook**, **Analytics** (in this order in the menu) |
 | Student | `/student` | **Dashboard**, **Courses** (modules, work, quizzes), **Grades**, **Calendar** |
@@ -200,7 +205,9 @@ the course (only the courses of that section's strand are listed). A course of a
 their track, strand, section and courses right away in the **Add teacher** form (see *Users Management* below).
 
 **Teacher > Courses** shows one colored card per course (a teacher with more than one section also gets a chip per section to show one
-section at a time). **Open** shows its modules. A new module is a **draft**: students
+section at a time). The two buttons at the right of the chips **change the view**, like the student's page: **Cards** (with the calendar at the right) or a **List** (course, section,
+students, modules posted with a bar, what is to check). **Open** shows its modules. The **syllabus** and the modules the academic coordinator sent are drafts here too, marked
+*From the academic coordinator*. A new module is a **draft**: students
 cannot see it. **Post now** shows it to the students (they get a notification), **Schedule** picks the day and time it
 appears by itself, **Hide** takes it back. At the bottom of a module are its **Activities**, **Quizzes** and **Task
 performances**; each has a due date (and can have its own time to appear). Open an item to see who handed in, read the
@@ -212,7 +219,8 @@ system when they leave the tab or window, copy, cut or paste (those are blocked 
 the number you choose the quiz is handed in by itself and **flagged** for you, with a log of what happened. The time is
 checked on the server, and a quiz that was left open is handed in when its time is over.
 
-**Student > Courses** shows the courses they are enrolled in as cards (or a list). The chips are **All**, **Enrolled** (the term has not ended) and **Completed** (the term is over, or the enrollment was completed), each with its number. The **list** has the columns course, teacher, section, schedule, term, status, modules and work, next due, grade and attendance. **Open** shows the
+**Student > Courses** shows the courses they are enrolled in as cards (or a list). The chips are **All**, **Enrolled** (the term has not ended) and **Completed** (the term is over, or the enrollment was completed), each with its number. The **list** has the columns course, teacher, section, schedule, term, status, modules and work, **progress**, next due, grade and attendance. The **progress** (a bar and a percent, also on every card)
+is how far along the student is: the modules they opened and the work they handed in, out of everything posted so far. **Open** shows the
 posted modules; each ends with three tabs: **Activities**, **Quizzes**, **Task performance**. **Read lesson** opens the
 module's text. A module that was never opened is marked **New**.
 
@@ -297,10 +305,10 @@ the student again for a class). A student in the archive can't be enrolled until
 There is no withdrawal feature any more (the student page, the registrar page and the table were removed). A student who was *Withdrawn* before is
 a student at school again (status *Active*) after the update; their sign-in stays switched off until an administrator turns it on in Users Management.
 
-## School setup (administrator)
+## Academic setup (academic coordinator)
 
-**Administrator > School setup** (`/admin/school-setup`, also the *School setup* card of the dashboard, whose items are links) has one tab per part of
-the setup, each with its number. The administrator can **add, edit and delete**:
+**Academic coordinator > Academic setup** (`/coordinator/academic-setup`) has one tab per part of the setup, each with its number. The coordinator
+(and nobody else: the administrator no longer changes it) can **add, edit and delete**:
 
 | Tab | What it holds and the rules |
 |---|---|
@@ -310,20 +318,44 @@ the setup, each with its number. The administrator can **add, edit and delete**:
 | Strands | Code, name, track, **the schedules** it has classes in (at least one), offered or not, and **the courses of the strand** (the **Courses** button: pick grade level and term, add or remove courses). A strand with students can't move to another track; a schedule that a section uses can't be taken away; one that is or was in use can't be deleted (switch it off). |
 | Courses | Code, name, description, in use or not. One in a strand's courses or taken by students can't be deleted. |
 | Sections | School year, grade level, strand, schedule (one of the strand's), name and adviser. One with students or teachers can only change its name and its adviser. |
-| Enrolled | **View only** (the eye on the tab): the students the registrar enrolled, with search and a term filter. |
-| Not enrolled | **View only**: the students at school who are not enrolled for the next term (see below). |
 
 The courses a student takes are **not picked at enrollment**: they are the courses of the strand for that grade level and term, as set here. Changing the
 courses of a strand changes the enrollments made from then on; students already enrolled keep theirs. Code: `Services/SchoolSetupService.cs`.
 
+**Sections A to E.** The database comes with sections **A, B, C, D and E** for the current school year, for every schedule of every strand, at grade 11 (the grade that
+has courses): the migration `AddSectionsAToE` adds them (and adds only what is missing when it runs again). The registrar **chooses** the section from a list when enrolling
+a student (A to E, plus any other section that exists) and does not type it; the coordinator can still make a section with another name in the *Sections* tab.
+
+**Administrator > Enrolled and Not enrolled** (`/admin/enrollment/enrolled`, `/admin/enrollment/not-enrolled`) are two lists the administrator can only look at (the registrar enrolls the
+students). They are the **Enrolled** and **Not enrolled** cards under *Accounts* on the administrator's dashboard.
+
 ## Announcements
 
-**Announcements** (`/announcements`) is a page of the **administrator only** (the registrar and the teachers have no such page). The administrator writes
+**Announcements** (`/coordinator/announcements`) is a page of the **academic coordinator only** (the administrator, the registrar and the teachers have no such page). The coordinator writes
 a notice for **everybody** (students and teachers), for **the students** or for **the teachers**, with an optional *show until* day, and can edit and delete
 any of them. The people it is for get a notification when it is posted (editing does not notify again; a teacher's notification opens the teacher's
 dashboard). Students see the announcements meant for them in the **Announcements** card at the right of their dashboard, under the calendar (the title
-opens the whole text). Announcements that a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.
+opens the whole text). Announcements that an administrator, a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.
 Code: `Services/AnnouncementService.cs`.
+
+## Academic coordinator: course materials, teacher evaluation, analytics
+
+**Course materials** (`/coordinator/materials`) is the coordinator's library, one per course. Open a course to prepare its **syllabus** (one per course), its **modules**
+and the **activities, quizzes and task performances** in each module (a quiz has its questions and the anti-cheating settings; a suggested due date can be given).
+**Send to teachers** chooses what to send and which teachers' courses (the teachers who have the course this school year): each teacher's course gets **its own copy as a
+draft**. The students can't see a draft: the teacher changes what they want (the text, the points, the due dates, when it is posted) and posts it. The teacher is told (the bell)
+and the copy says *From the academic coordinator*. A module sent to a course is not sent to it again; when the teacher deletes the copy, it can be sent again. The syllabus
+comes first in the course and has a *Syllabus* badge for the students. Code: `Services/MaterialService.cs`, `Components/Pages/Coordinator/CourseLibrary.razor`.
+
+**Teacher evaluation** (`/coordinator/evaluations`): **New evaluation** starts with the usual 12 questions about a teacher (10 to rate from 1 to 5, in areas such as *Teaching* and
+*Classroom management*, and 2 for comments); the coordinator changes, adds and removes questions while it is a draft. **Send to students** picks the teachers' courses it is about and a **due
+date**: the students of those courses are told and find, in their dashboard and in **Teacher evaluation** (`/student/evaluations`), one questionnaire for each teacher. A student answers
+once for each teacher before the due date. The answers are **anonymous**: the coordinator sees averages and comments, never who wrote them, only **who has not answered yet** (by name,
+to remind them). **Close now** ends it early; the due date can be moved later. Code: `Services/EvaluationService.cs`.
+
+**Analytics** (`/coordinator/analytics`) is about the teacher evaluation: the answers and how many students answered, the average rating, the teachers **ranked** by their average (with
+*Outstanding / Very satisfactory / Satisfactory / Fair / Needs improvement*), how the students rated (1 to 5), the averages **by area** and **by question**, the trend from one evaluation to the
+next, and for each teacher a *Details* view with the courses, the questions and the comments without names.
 
 ## Enrolling a student (registrar)
 
@@ -384,12 +416,14 @@ the current term is untouched), or *Not enrolled* with an **Enroll** link to the
 student for the next term with the same form (pick that term).
 
 **Not enrolled** means: a student at school (not archived) with no enrollment in the next term (or in the current term when there is no next term).
-It is shown on the registrar's dashboard (with an Enroll link for each student) and in the administrator's school setup (view only).
+It is shown on the registrar's dashboard (with an Enroll link for each student) and, for the administrator to look at, on the *Not enrolled* card of the administrator's dashboard.
 
 ## Managing users (administrator)
 
 **Administrator > Users Management** (`/admin/users`). There is one tab per role (Students, Teachers, Registrars, Guidance,
-Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email).
+Coordinators, Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email). The students' list has a **Courses** column (the courses of
+their enrollment) and the teachers' list a **Course · Section** column (what each teacher teaches and to which section). There can be several academic coordinators (there is only one
+administrator, one registrar and one guidance counselor).
 
 - **Edit** changes the name, email, LRN (students) or employee number (staff), phone number and the **new password**
   (leave it empty to keep the old one). The **Account is active** switch decides whether the person can sign in.
@@ -469,12 +503,13 @@ Components/Layout/         Header (with the messages, notifications and settings
 Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
 Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
-  Admin/                     Dashboard, UsersManagement, SchoolSetup (+ Setup/: one component per tab), Archive
+  Admin/                     Dashboard, UsersManagement, EnrollmentLists (+ Enrollment/: Enrolled and Not enrolled), Archive
+  Coordinator/               Dashboard, AcademicSetup (+ Setup/: one component per tab), Announcements, Materials, CourseLibrary, MaterialQuestions, Evaluations, EvaluationEditor, Analytics
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
   Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook
-  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades
+  Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades, Evaluations, EvaluateTeacher
   Guidance/                  Dashboard, Referrals, StudentsAtRisk
-  Account/                   Announcements, Search, Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers)
+  Account/                   Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL file for starting over in MySQL Workbench and the script that generates it

@@ -209,3 +209,9 @@
     padding-right: 0.5rem;
     overflow-y: auto;
 }
+
+.empty-note {
+    margin: 0.75rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

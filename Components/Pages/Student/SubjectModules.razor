@@ -42,20 +42,24 @@ else
             @for (var n = 0; n < subject.Modules.Count; n++)
             {
                 var module = subject.Modules[n];
-                <section class="module" aria-label="Module @(n + 1)">
+                var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus);
+                <section class="module" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
                     <header class="module-head">
-                        <span class="module-number">@(n + 1)</span>
+                        <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                         <div class="module-text">
-                            <h2>@module.Title @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</h2>
+                            <h2>@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</h2>
                             @if (!string.IsNullOrWhiteSpace(module.Description))
                             {
                                 <p>@module.Description</p>
                             }
                         </div>
-                        <ButtonLink Href="@($"student/modules/{module.Id}")" Variant="@(module.Opened ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="book-open">@(module.Opened ? "Read again" : "Read lesson")</ButtonLink>
+                        <ButtonLink Href="@($"student/modules/{module.Id}")" Variant="@(module.Opened ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="book-open">@(module.IsSyllabus ? (module.Opened ? "Read again" : "Read syllabus") : module.Opened ? "Read again" : "Read lesson")</ButtonLink>
                     </header>
 
-                    <ModuleTabs Module="module" Now="now" />
+                    @if (!module.IsSyllabus || module.Items.Count > 0)
+                    {
+                        <ModuleTabs Module="module" Now="now" />
+                    }
                 </section>
             }
         </div>

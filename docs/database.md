@@ -17,7 +17,7 @@ Start the app in Development (`dotnet watch`) and it creates every table, or upg
 | File | Use it when |
 |---|---|
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. |
-| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 12 teachers and 40 students**. It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. The students are named and signed in the way the registrar's enrollment does it (last name + the last 6 digits of the LRN), and have no enrollment yet. |
+| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 12 teachers and 40 students**. It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. The students are named and signed in the way the registrar's enrollment does it (last name + the last 6 digits of the LRN), and have no enrollment yet. |
 
 The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
 creates. It also records the migrations in `__EFMigrationsHistory`, which is why the app doesn't try to create the
@@ -35,6 +35,7 @@ erDiagram
     users ||--o| registrars : "user_id"
     users ||--o| guidance_counselors : "user_id"
     users ||--o| administrators : "user_id"
+    users ||--o| academic_coordinators : "user_id"
 
     school_years ||--|{ terms : ""
     school_years ||--o{ sections : ""
@@ -93,19 +94,19 @@ erDiagram
 
 | Table | What it holds |
 |---|---|
-| `roles` | The five fixed roles: Admin (1), Teacher (2), Student (3), Registrar (4), GuidanceCounselor (5). |
+| `roles` | The six fixed roles: Admin (1), Teacher (2), Student (3), Registrar (4), GuidanceCounselor (5), AcademicCoordinator (6). |
 | `users` | **Only the login account**: `email` (unique, lower-case), `password_hash`, `phone_number` (E.164, for the future two-factor feature), `role_id`, `is_active`, lockout columns, `security_stamp`. |
-| `students`, `teachers`, `administrators`, `guidance_counselors`, `registrars` | Who the person is. One table per role, see below. |
+| `students`, `teachers`, `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators` | Who the person is. One table per role, see below. |
 
 Each person has **one** `users` row and **one** row in the table that matches their role (`user_id` is unique in every
 one of those tables). Accounts are created through `UserAccountService`, which inserts both rows in one transaction so
 they always match. The Users page (`UserManagementService`) and the enrollment form (`EnrollmentService`) both go through it.
 
-The five role tables have these columns, in this order:
+The six role tables have these columns, in this order:
 
 | Table | Columns |
 |---|---|
-| `administrators`, `guidance_counselors`, `registrars` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `phone_number`, `status`, timestamps |
+| `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `phone_number`, `status`, timestamps |
 | `teachers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `grade_level`, `track_id`, `strand_id`, `subject_id`, `section_id`, timestamps |
 | `students` | `id`, `user_id`, `lrn`, `first_name`, `middle_name`, `last_name`, `name_extension`, `birth_date`, `sex`, `grade_level`, `track_id`, `strand_id`, `subject_id`, `section_id`, timestamps |
 
@@ -158,7 +159,7 @@ SET st.grade_level = s.grade_level,
 WHERE st.id > 0;
 ```
 
-### School setup and enrollment
+### Academic setup and enrollment
 
 | Table | What it holds |
 |---|---|
@@ -204,6 +205,23 @@ completed and open referrals are resolved. (The withdrawal feature and its table
 `RemoveWithdrawals`; a student who was `Withdrawn` becomes `Active` again, with the sign-in still switched off.)
 The to-do list and its table `todo_items` were removed by the migration `RemoveTodoItems` (the entries people had written are deleted with the table).
 
+### Course materials and the teacher evaluation (the academic coordinator)
+
+| Table | What it holds |
+|---|---|
+| `material_modules` | The coordinator's library, per course (`subject_id`): a module (or, with `is_syllabus = 1`, the syllabus, one per course in practice): `title`, `description`, `body`, `link_url`, `position`, `created_by_user_id`. |
+| `material_items` | An activity, quiz or task performance of a library module: the same columns as `module_items` (`kind`, `max_score`, a suggested `due_at_utc`, the quiz settings). |
+| `material_questions` | The questions of a quiz of the library (same columns as `quiz_questions`). |
+| `material_deliveries` | That a library module was sent to a teacher's course: `material_module_id`, `assignment_id` and `module_id` (the teacher's copy, a draft). Unique per library module and course. It is deleted with the teacher's copy, with the course or with the library module (the copy stays). |
+| `teacher_evaluations` | A questionnaire about the teachers: `title`, `instructions`, `sent_at_utc` (empty = draft), `due_at_utc`, `term_id`, `created_by_user_id`. |
+| `evaluation_questions` | Its questions: `position`, `text`, `kind` (`Rating` 1 to 5, or `Comment`, checked), `category` (the area, optional). |
+| `evaluation_targets` | The teachers' courses (`assignment_id`) an evaluation was sent about. |
+| `evaluation_responses` | A student's answers for one teacher's course: unique per `(evaluation_id, assignment_id, student_id)`, with `submitted_at_utc`. |
+| `evaluation_answers` | One answer: `rating` (1 to 5, checked) or `comment`, per response and question. |
+
+`modules.is_syllabus` marks the syllabus of a course (a module without activities). The coordinator can read the averages and the comments of the evaluation but the screens never show which student wrote an answer: only whether a student has answered (`evaluation_responses`).
+Deleting a teaching assignment deletes its targets, answers and deliveries too.
+
 ### Messages and notifications
 
 | Table | What it holds |
@@ -247,13 +265,15 @@ Things that were decided for you, change them in the tables if they are not righ
 - **Subject codes** (`BUSACCT`, `ADVMATH1`, `EMPOWERTECH`, ...) were invented, only the names are SEAITT's.
 - **Grade 12 has no curriculum yet**, so enrolling into grade 12 works but with no subjects to pick.
 - The full names are made by the migration `FillStrandFullNames`: it fills a strand's `name` only while it is still the short code (or the short name CSS-VGD, KO-FBS, FBS-KO),
-  so a name the administrator typed under *School setup > Strands* is never overwritten. The first page of the app shows these names. The full names of
-  USP and the other strands are the school's to confirm: change them in *School setup > Strands* if they are not right.
+  so a name the coordinator typed under *Academic setup > Strands* is never overwritten. The first page of the app shows these names. The full names of
+  USP and the other strands are the school's to confirm: change them in *Academic setup > Strands* if they are not right.
 - An older version of the database had four tracks (ACAD, TVL, SPORTS, ARTS). On upgrade, **TVL became TECH-PRO**
   (kept, with its strands and students), and SPORTS and ARTS were removed if nothing used them (switched off, not
   deleted, if something did).
 - USP was first put under TECH-PRO. The migration `MoveUspToAcad` moves it (with the students, teachers and enrollments that list it) to ACAD.
 - Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
+- The migration `AddSectionsAToE` adds **sections A, B, C, D and E** for the current school year (the year of the current term, else the latest), for every schedule of every strand, at the grade levels that strand has courses for (now grade 11): 5 for each strand and schedule. A section that is already there is left alone. The registrar picks the section from this list when enrolling a student. Its `Down` removes the ones nobody uses.
+- The migration `AddAcademicCoordinatorRole` adds the role `AcademicCoordinator` (6) and the table `academic_coordinators`; `AddCourseMaterialsAndTeacherEvaluation` adds the tables of the previous section and `modules.is_syllabus`.
 
 ## Rules the database enforces
 

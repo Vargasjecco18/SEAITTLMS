@@ -1,0 +1,163 @@
+@page "/student/evaluations/{EvaluationId:int}/{AssignmentId:int}"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject EvaluationService Service
+
+<PageTitle>Evaluate your teacher · SEAITT e-LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (form is null)
+{
+    <Card>
+        <EmptyState IconName="clipboard-check" Title="Evaluation not found" IsPage="true">
+            <p>This evaluation is not for you, or it was deleted.</p>
+            <ButtonLink Href="student/evaluations" Variant="ButtonVariant.Secondary">Back to the evaluations</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@($"Evaluate {form.TeacherName}")" Subtitle="@($"{form.SubjectName} · {form.SectionLabel} · due {PhilippineTime.FormatDateTime(form.DueAtUtc)}")" IconName="clipboard-check">
+        <ButtonLink Href="student/evaluations" Variant="ButtonVariant.Ghost" IconName="chevron-left">All evaluations</ButtonLink>
+    </PageHeader>
+
+    @if (done || form.Answered)
+    {
+        <Card>
+            <EmptyState IconName="circle-check" Title="Thank you!" Tone="Tone.Success">
+                <p>@(done ? thanks : "You already answered this one. Thank you!")</p>
+                <ButtonLink Href="student/evaluations" Variant="ButtonVariant.Secondary">Back to the evaluations</ButtonLink>
+            </EmptyState>
+        </Card>
+    }
+    else if (form.Closed)
+    {
+        <Card>
+            <EmptyState IconName="lock-keyhole" Title="This evaluation is closed">
+                <p>The due date has passed, so it can't be answered any more.</p>
+                <ButtonLink Href="student/evaluations" Variant="ButtonVariant.Secondary">Back to the evaluations</ButtonLink>
+            </EmptyState>
+        </Card>
+    }
+    else
+    {
+        <p class="anon">
+            <Icon Name="lock-keyhole" Size="16" />
+            <span>Your answers are <strong>anonymous</strong>. Your teacher and your classmates will not know who wrote what. @form.Instructions</span>
+        </p>
+
+        <FormErrors Errors="errors" />
+
+        <div class="form">
+            @foreach (var group in form.Questions.GroupBy(q => q.Category ?? ""))
+            {
+                <section class="group">
+                    @if (!string.IsNullOrWhiteSpace(group.Key))
+                    {
+                        <h2>@group.Key</h2>
+                    }
+
+                    @foreach (var q in group)
+                    {
+                        var id = q.Id;
+                        <div class="question">
+                            <p class="text"><span class="number">@q.Position.</span> @q.Text</p>
+                            @if (q.Kind == EvaluationQuestionKinds.Rating)
+                            {
+                                <div class="scale" role="radiogroup" aria-label="@q.Text">
+                                    @for (var n = 5; n >= 1; n--)
+                                    {
+                                        var value = n;
+                                        <label class="choice @(ratings.GetValueOrDefault(id) == value ? "on" : "")">
+                                            <input type="radio" name="q-@id" value="@value" checked="@(ratings.GetValueOrDefault(id) == value)" @onchange="() => ratings[id] = value" />
+                                            <strong>@value</strong>
+                                            <span>@EvaluationQuestionKinds.RatingLabel(value)</span>
+                                        </label>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <textarea rows="3" maxlength="1000" aria-label="@q.Text" placeholder="Optional" @bind="comments[id]" @bind:event="oninput"></textarea>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+        </div>
+
+        <div class="actions">
+            <ButtonLink Href="student/evaluations" Variant="ButtonVariant.Ghost">Cancel</ButtonLink>
+            <Button IconName="send" Disabled="busy" OnClick="SubmitAsync">@(busy ? "Sending…" : "Send my answers")</Button>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int EvaluationId { get; set; }
+
+    [Parameter] public int AssignmentId { get; set; }
+
+    private bool loaded;
+    private bool busy;
+    private bool done;
+    private string thanks = "";
+    private int studentId;
+    private EvaluationForm? form;
+    private readonly Dictionary<int, int> ratings = [];
+    private readonly Dictionary<int, string> comments = [];
+    private List<string> errors = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        studentId = await Me.GetStudentIdAsync() ?? 0;
+        form = studentId == 0 ? null : await Service.GetFormAsync(studentId, EvaluationId, AssignmentId);
+        foreach (var q in form?.Questions ?? [])
+        {
+            if (q.Kind == EvaluationQuestionKinds.Comment)
+            {
+                comments.TryAdd(q.Id, "");
+            }
+        }
+
+        loaded = true;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (busy || form is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var answers = form.Questions.Select(q => new EvaluationAnswerInput
+            {
+                QuestionId = q.Id,
+                Rating = ratings.TryGetValue(q.Id, out var r) ? r : null,
+                Comment = comments.GetValueOrDefault(q.Id),
+            }).ToList();
+
+            var result = await Service.SubmitAsync(studentId, EvaluationId, AssignmentId, answers);
+            if (!result.Succeeded)
+            {
+                errors = [.. result.Errors];
+                return;
+            }
+
+            errors = [];
+            thanks = result.Message ?? "Thank you!";
+            done = true;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

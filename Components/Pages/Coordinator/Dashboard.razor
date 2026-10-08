@@ -1,0 +1,133 @@
+@page "/coordinator"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@inject CurrentUser Me
+@inject MaterialService Library
+@inject EvaluationService Evaluations
+@inject TimeProvider Clock
+
+<PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
+
+@{
+    var now = PhilippineTime.Now(Clock);
+}
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "coordinator"}")"
+            Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. The course materials, the teacher evaluation and the academic setup at a glance.")"
+            IconName="layout-dashboard" />
+
+@if (materials is not null && evaluations is not null)
+{
+    var open = evaluations.Where(e => e.State == EvaluationStates.Open).ToList();
+    var drafts = evaluations.Count(e => e.State == EvaluationStates.Draft);
+
+    <div class="stats">
+        <StatCard Label="Courses taught" Value="@materials.CoursesTaught" IconName="book-open" Accent="AccentColor.Blue" Hint="This school year" Href="coordinator/materials" />
+        <StatCard Label="Materials sent" Value="@materials.Sent" IconName="send" Accent="AccentColor.Green"
+                  Hint="@(materials.Sent == 0 ? "Nothing sent yet" : materials.StillDrafts == 0 ? "All posted by the teachers" : $"{materials.StillDrafts} still drafts with the teachers")" Href="coordinator/materials" />
+        <StatCard Label="Open evaluations" Value="@open.Count" IconName="clipboard-check" Accent="AccentColor.Violet"
+                  Hint="@(drafts == 0 ? "Students are answering" : $"{drafts} draft{(drafts == 1 ? "" : "s")}")" Href="coordinator/evaluations" />
+        <StatCard Label="In the library" Value="@materials.LibraryModules" IconName="folder-open" Accent="AccentColor.Amber"
+                  Hint="@($"{materials.LibraryItems} activities, quizzes and tasks")" Href="coordinator/materials" />
+    </div>
+
+    <div class="cards">
+        <Card Title="Teacher evaluation" IconName="clipboard-check">
+            @if (open.Count == 0)
+            {
+                <EmptyState IconName="clipboard-check" Title="No evaluation is open">
+                    <p>Make a questionnaire about the teachers, send it to the students with a due date, and read their answers.</p>
+                    <ButtonLink Href="coordinator/evaluations" IconName="plus">New evaluation</ButtonLink>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="list">
+                    @foreach (var e in open)
+                    {
+                        <li>
+                            <a href="coordinator/evaluations/@e.Id">
+                                <span class="list-title">@e.Title</span>
+                                <span class="list-sub">Due @PhilippineTime.FormatDateTime(e.DueAtUtc!.Value) · @e.Responses of @e.Expected answered</span>
+                                <span class="bar"><span class="bar-fill" style="width: @(Math.Min(100, e.RatePercent))%"></span></span>
+                            </a>
+                            <Badge Tone="@(e.RatePercent >= 75 ? Tone.Success : Tone.Warning)">@e.RatePercent%</Badge>
+                        </li>
+                    }
+                </ul>
+            }
+            <p class="more"><a href="coordinator/analytics">Open the analytics <Icon Name="arrow-right" Size="14" /></a></p>
+        </Card>
+
+        <Card Title="Courses still without a syllabus" IconName="book-marked">
+            @if (materials.WithoutSyllabus.Count == 0)
+            {
+                <EmptyState IconName="circle-check" Title="Every course has a syllabus">
+                    <p>The courses that have a teacher this year all have a syllabus in the library.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="list">
+                    @foreach (var c in materials.WithoutSyllabus)
+                    {
+                        <li>
+                            <a href="coordinator/materials/@c.SubjectId">
+                                <span class="list-title">@c.Name</span>
+                                <span class="list-sub">@c.Teachers @(c.Teachers == 1 ? "teacher's course" : "teachers' courses")</span>
+                            </a>
+                            <ButtonLink Href="@($"coordinator/materials/{c.SubjectId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="plus">Add</ButtonLink>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="Sent to the teachers lately" IconName="send">
+            @if (materials.Recent.Count == 0)
+            {
+                <EmptyState IconName="send" Title="Nothing sent yet">
+                    <p>Prepare a course's materials and send them to its teachers. Each teacher gets a draft to edit and post.</p>
+                    <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Secondary" IconName="folder-open">Course materials</ButtonLink>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="list">
+                    @foreach (var d in materials.Recent)
+                    {
+                        <li>
+                            <span class="list-text">
+                                <span class="list-title">@(d.IsSyllabus ? "Syllabus" : d.ModuleTitle) · @d.SubjectName</span>
+                                <span class="list-sub">@d.TeacherName · @d.SectionLabel · @PhilippineTime.FormatDate(d.SentAtUtc)</span>
+                            </span>
+                            <Badge Tone="@(d.Posted ? Tone.Success : Tone.Neutral)">@(d.Posted ? "Posted" : "Draft")</Badge>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="Quick links" IconName="sparkles">
+            <div class="quick">
+                <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Secondary" IconName="folder-open">Course materials</ButtonLink>
+                <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Secondary" IconName="clipboard-check">Teacher evaluation</ButtonLink>
+                <ButtonLink Href="coordinator/academic-setup" Variant="ButtonVariant.Secondary" IconName="school">Academic setup</ButtonLink>
+                <ButtonLink Href="coordinator/announcements" Variant="ButtonVariant.Secondary" IconName="megaphone">Announcements</ButtonLink>
+            </div>
+        </Card>
+    </div>
+}
+
+@code {
+    private string? name;
+    private MaterialOverview? materials;
+    private IReadOnlyList<EvaluationRow>? evaluations;
+
+    protected override async Task OnInitializedAsync()
+    {
+        name = (await Me.GetAsync())?.Name.Split(' ').FirstOrDefault();
+        materials = await Library.GetOverviewAsync();
+        evaluations = await Evaluations.ListAsync();
+    }
+}

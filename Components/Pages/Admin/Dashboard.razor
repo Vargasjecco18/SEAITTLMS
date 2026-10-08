@@ -9,7 +9,7 @@
 <PageTitle>Admin · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Admin dashboard" Subtitle="The teachers, the students and the school setup at a glance." IconName="layout-dashboard" />
+<PageHeader Title="Admin dashboard" Subtitle="The teachers, the students and who is enrolled at a glance." IconName="layout-dashboard" />
 
 @if (overview is not null)
 {
@@ -24,29 +24,16 @@
                 <StatCard Label="@label" Value="@role.Total" IconName="@icon" Accent="@color"
                           Hint="@InactiveHint(role.Inactive)" Href="@($"admin/users/{key}")" />
             }
+
+            @* Who is enrolled and who is not are the registrar's records: the administrator looks at them here. *@
+            <StatCard Label="Enrolled" Value="@overview.Setup.Enrollments" IconName="user-check" Accent="AccentColor.Violet"
+                      Hint="Enrollments on record" Href="admin/enrollment/enrolled" />
+            <StatCard Label="Not enrolled" Value="@overview.Setup.NotEnrolled" IconName="user-x" Accent="AccentColor.Amber"
+                      Hint="Not enrolled for the next term" Href="admin/enrollment/not-enrolled" />
         </div>
     </section>
 
     <div class="stack">
-        <Card Title="School setup" IconName="school">
-            <ul class="setup">
-                @foreach (var item in SetupItems(overview.Setup))
-                {
-                    <li>
-                        <a class="setup-link" href="admin/school-setup/@item.Key">
-                            <span class="setup-icon"><Icon Name="@item.Icon" Size="18" /></span>
-                            <span class="setup-text">
-                                <strong class="setup-count">@item.Count.ToString("N0")</strong>
-                                <span class="setup-label">@item.Label@(item.ReadOnly ? " · view only" : "")</span>
-                            </span>
-                        </a>
-                    </li>
-                }
-            </ul>
-            <p class="note">Add, edit and delete them in the school setup. Enrollments and the students who are not enrolled are the registrar's work: you can look at them, but not change them.</p>
-            <p class="see-all"><a href="admin/school-setup">Open the school setup <Icon Name="arrow-right" Size="16" /></a></p>
-        </Card>
-
         <Card Title="Latest accounts" IconName="users">
             @if (overview.LatestAccounts.Count == 0)
             {
@@ -129,18 +116,7 @@
         AppRoles.Teacher => ("Teachers", "presentation", AccentColor.Blue, "teachers"),
         AppRoles.Student => ("Students", "graduation-cap", AccentColor.Green, "students"),
         AppRoles.Registrar => ("Registrars", "clipboard-check", AccentColor.Amber, "registrars"),
+        AppRoles.AcademicCoordinator => ("Academic coordinators", "clipboard-list", AccentColor.Slate, "coordinators"),
         _ => ("Guidance counselors", "heart-handshake", AccentColor.Rose, "guidance"),
     };
-
-    private static (string Label, string Icon, int Count, string Key, bool ReadOnly)[] SetupItems(SetupTotals setup) =>
-    [
-        ("School years", "calendar-range", setup.SchoolYears, "school-years", false),
-        ("Terms", "calendar-days", setup.Terms, "terms", false),
-        ("Tracks", "layers", setup.Tracks, "tracks", false),
-        ("Strands", "layout-grid", setup.Strands, "strands", false),
-        ("Courses", "book-open", setup.Subjects, "subjects", false),
-        ("Sections", "users", setup.Sections, "sections", false),
-        ("Enrollments", "user-check", setup.Enrollments, "enrollments", true),
-        ("Not enrolled", "user-x", setup.NotEnrolled, "not-enrolled", true),
-    ];
 }

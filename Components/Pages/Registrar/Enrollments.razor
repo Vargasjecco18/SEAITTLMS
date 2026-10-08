@@ -204,19 +204,18 @@ else
                             }
                         </select>
                     </Field>
-                    <Field For="section" Label="Section" Required="true" Hint="Pick one that exists or type a new one, for example A.">
-                        <input id="section" type="text" maxlength="50" autocomplete="off" required list="section-names"
-                               @bind="form.SectionName" @bind:event="oninput" />
-                        <datalist id="section-names">
-                            @foreach (var name in sectionNames)
+                    <Field For="section" Label="Section" Required="true" Hint="Choose the section, A to E.">
+                        <select id="section" required @bind="form.SectionName">
+                            <option value="">Choose</option>
+                            @foreach (var name in SectionChoices)
                             {
-                                <option value="@name"></option>
+                                <option value="@name">@name</option>
                             }
-                        </datalist>
+                        </select>
                     </Field>
                 </div>
 
-                @* The subjects are not picked: the strand decides them (the administrator sets them in the school setup). *@
+                @* The subjects are not picked: the strand decides them (the academic coordinator sets them in the academic setup). *@
                 <p class="subjects-note">
                     <Icon Name="book-open" Size="16" />
                     @if (form.StrandId == 0)
@@ -285,6 +284,9 @@ else
     private ExistingStudent? existing;
     private IReadOnlyList<SubjectOption> subjects = [];
     private IReadOnlyList<string> sectionNames = [];
+
+    /// <summary>A to E, and the sections with another name that this strand, grade level and schedule already have.</summary>
+    private IEnumerable<string> SectionChoices => SectionNames.Choices.Concat(sectionNames.Where(n => !SectionNames.IsChoice(n)));
     private List<string> errors = [];
     private EnrollmentReceipt? receipt;
     private bool busy;

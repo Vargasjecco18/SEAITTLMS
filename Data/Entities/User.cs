@@ -35,6 +35,7 @@ public class User : AuditableEntity
     // query uses Include.
     public Administrator? Administrator { get; set; }
     public GuidanceCounselor? GuidanceCounselor { get; set; }
+    public AcademicCoordinator? AcademicCoordinator { get; set; }
     public Registrar? Registrar { get; set; }
     public Teacher? Teacher { get; set; }
     public Student? Student { get; set; }
@@ -43,7 +44,7 @@ public class User : AuditableEntity
     {
         get
         {
-            PersonProfile?[] all = [Administrator, GuidanceCounselor, Registrar, Teacher, Student];
+            PersonProfile?[] all = [Administrator, GuidanceCounselor, AcademicCoordinator, Registrar, Teacher, Student];
             return all.FirstOrDefault(p => p is not null);
         }
     }

@@ -3,6 +3,7 @@
 @inject CurrentUser Me
 @inject DashboardService Dashboards
 @inject AchievementService Achievements
+@inject EvaluationService EvaluationTasks
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
@@ -34,6 +35,31 @@ else
         </div>
 
         <div class="cards">
+            @if (pendingEvaluations.Count > 0)
+            {
+                <div class="wide">
+                <Card Title="Teacher evaluation" IconName="clipboard-check">
+                    <p class="eval-note">The school asks you to rate your teachers. Your answers are anonymous.</p>
+                    <ul class="work">
+                        @foreach (var e in pendingEvaluations.Take(5))
+                        {
+                            <li>
+                                <a class="work-link" href="student/evaluations/@e.EvaluationId/@e.AssignmentId">
+                                    <span class="work-icon"><Icon Name="clipboard-pen" Size="18" /></span>
+                                    <span class="work-text">
+                                        <span class="work-title">@e.TeacherName</span>
+                                        <span class="work-sub">@e.SubjectName · @e.Title</span>
+                                    </span>
+                                    <span class="work-end"><Badge Tone="Tone.Warning">@PhilippineTime.DueText(e.DueAtUtc, now)</Badge></span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                    <p class="more"><a href="student/evaluations">Open Teacher evaluation (@pendingEvaluations.Count to answer) <Icon Name="arrow-right" Size="14" /></a></p>
+                </Card>
+                </div>
+            }
+
             <div class="wide">
             <Card Title="Assignments and due dates" IconName="clipboard-list">
                 @if (data.Work.Count == 0)
@@ -135,6 +161,7 @@ else
 @code {
     private StudentDashboard? data;
     private IReadOnlyList<Achievement> achievements = [];
+    private IReadOnlyList<StudentEvaluationTask> pendingEvaluations = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -143,6 +170,7 @@ else
         if (studentId is { } sid)
         {
             achievements = await Achievements.GetAsync(sid);
+            pendingEvaluations = (await EvaluationTasks.GetStudentTasksAsync(sid)).Where(e => !e.Answered && !e.Closed).ToList();
         }
     }
 }
