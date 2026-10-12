@@ -251,12 +251,6 @@ else
             .Where(q => !places.TryGetValue(q.Id, out var map) || map.Count != q.Options!.Count || map.Values.Distinct().Count() != q.Options.Count)
             .Select(q => $"Question {q.Position}: give every option its own place, from 1 to {q.Options!.Count}.")
             .ToList();
-        if (rankErrors.Count > 0)
-        {
-            errors = rankErrors;
-            return;
-        }
-
         busy = true;
         try
         {
@@ -267,6 +261,14 @@ else
                 Comment = comments.GetValueOrDefault(q.Id),
                 Selection = SelectionOf(q),
             }).ToList();
+
+            if (rankErrors.Count > 0)
+            {
+                // The ranking problems, and everything else that is missing, are listed together.
+                var others = await Service.SubmitAsync(studentId, EvaluationId, AssignmentId, answers, validateOnly: true);
+                errors = [.. rankErrors.Concat(others.Errors).Distinct()];
+                return;
+            }
 
             var result = await Service.SubmitAsync(studentId, EvaluationId, AssignmentId, answers);
             if (!result.Succeeded)

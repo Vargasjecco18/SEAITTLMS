@@ -318,7 +318,7 @@ when the counselor starts. (There is no separate "Students at risk" page: the ca
 
 **Analytics** (`/analytics`) is for the administrator and the guidance counselor (the whole school) and for a teacher (only their subjects). It shows
 the number of students, the average grade, the attendance rate, how many students are failing or at risk, the grades by band for each grade level
-(each subject for a teacher), the monthly trend of grades and attendance (a line chart), the **primary concern categories** (referrals by problem),
+(each subject for a teacher), the **attendance** (the rate, how many were present, late and absent, and the rate of each section, or of each course for a teacher; there is no monthly trend any more), the **primary concern categories** (referrals by problem),
 the **intervention effectiveness** (how many resolved referrals improved, by the help given) and the performance by strand. Everything is worked
 out from the scores and the attendance that are recorded.
 

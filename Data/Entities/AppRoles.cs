@@ -42,6 +42,9 @@ public static class AppRoles
         _ => role ?? "",
     };
 
+    /// <summary>"a" or "an" in front of a noun ("an academic coordinator", "a registrar").</summary>
+    public static string WithArticle(string noun) => (noun.Length > 0 && "aeiou".Contains(char.ToLowerInvariant(noun[0])) ? "an " : "a ") + noun;
+
     /// <summary>The school has exactly one administrator, one registrar, one guidance counselor, one academic coordinator and one academic provider, so no more can be added.</summary>
     public static bool OnlyOneAllowed(string? role) => role is Admin or Registrar or GuidanceCounselor or AcademicCoordinator or AcademicProvider;
 }

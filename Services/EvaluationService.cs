@@ -146,7 +146,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         new() { Category = "Overall", Kind = EvaluationQuestionKinds.Binary, Text = "Would you recommend this teacher to other students?" },
         new()
         {
-            Category = "Teaching", Kind = EvaluationQuestionKinds.Ranking, Text = "Rank what helps you learn the most, from the first (best) to the last.",
+            Category = "Overall", Kind = EvaluationQuestionKinds.Ranking, Text = "Rank what helps you learn the most, from the first (best) to the last.",
             Options = ["Explanations in class", "Activities and worksheets", "Quizzes", "Task performances (projects)"],
         },
         new()
@@ -596,7 +596,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             TeachingService.SectionLabel(target.GradeLevel, target.StrandCode, target.SectionName), target.Due, answered, target.Due <= now, questions);
     }
 
-    public async Task<ServiceResult> SubmitAsync(int studentId, int evaluationId, int assignmentId, IReadOnlyList<EvaluationAnswerInput> answers, CancellationToken ct = default)
+    public async Task<ServiceResult> SubmitAsync(int studentId, int evaluationId, int assignmentId, IReadOnlyList<EvaluationAnswerInput> answers, CancellationToken ct = default, bool validateOnly = false)
     {
         var form = await GetFormAsync(studentId, evaluationId, assignmentId, ct);
         if (form is null)
@@ -685,6 +685,12 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);
+        }
+
+        // Only asked whether the answers are complete (the page lists every problem at once): nothing is saved.
+        if (validateOnly)
+        {
+            return ServiceResult.Ok();
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);

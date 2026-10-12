@@ -76,3 +76,9 @@ a.pager-link:hover {
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+.result-count {
+    margin: 0 0 0.6rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

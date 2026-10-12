@@ -128,7 +128,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                 await using var db = await dbFactory.CreateDbContextAsync(ct);
                 if (await db.Users.AnyAsync(u => u.RoleId == AppRoles.Ids[account.Role], ct))
                 {
-                    return ServiceResult.Fail($"There is already a {AppRoles.DisplayName(account.Role).ToLowerInvariant()}. The school can have only one.");
+                    return ServiceResult.Fail($"There is already {AppRoles.WithArticle(AppRoles.DisplayName(account.Role).ToLowerInvariant())}. The school can have only one.");
                 }
             }
 

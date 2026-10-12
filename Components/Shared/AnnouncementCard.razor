@@ -1,6 +1,6 @@
 @* One announcement as a card: the icon of its category, the title, the text, who it is for and who wrote it. With OnEdit and OnDelete set it
    has the buttons to change or delete it (for the person who manages it). *@
-<article class="notice @Item.Category" aria-label="@Item.Title">
+<article class="announcement @Item.Category" aria-label="@Item.Title">
     <span class="icon" aria-hidden="true"><Icon Name="@AnnouncementCategories.Icon(Item.Category)" Size="20" /></span>
     <div class="main">
         <div class="top">

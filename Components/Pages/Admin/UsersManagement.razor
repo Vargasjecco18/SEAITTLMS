@@ -20,7 +20,7 @@
     {
         @if (AppRoles.OnlyOneAllowed(tab.Role) && counts.GetValueOrDefault(tab.Role) >= 1)
         {
-            <span class="one-only"><Icon Name="info" Size="16" /> There is already a @tab.Singular. The school can have only one.</span>
+            <span class="one-only"><Icon Name="info" Size="16" /> There is already @AppRoles.WithArticle(tab.Singular). The school can have only one.</span>
         }
         else
         {
