@@ -1,0 +1,92 @@
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.1rem;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.1rem;
+    align-items: start;
+}
+
+@media (min-width: 1100px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr) 22rem;
+    }
+}
+
+.side {
+    display: grid;
+    gap: 1.1rem;
+}
+
+.name {
+    overflow-wrap: anywhere;
+}
+
+.when {
+    white-space: nowrap;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+tr.new {
+    background: var(--brand-soft);
+}
+
+.note {
+    margin: 0 0 0.9rem;
+    color: var(--text-muted);
+}
+
+.upload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.file-pick {
+    display: flex;
+    flex: 1 1 12rem;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.4rem 0.6rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+}
+
+.file-pick input {
+    min-width: 0;
+    max-width: 100%;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.tips {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.tips li + li {
+    margin-top: 0.4rem;
+}
+
+@media (max-width: 760px) {
+    .col-more {
+        display: none;
+    }
+}

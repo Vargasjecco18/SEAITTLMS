@@ -1296,5 +1296,169 @@ INSERT INTO `sections` (`school_year_id`, `strand_id`, `grade_level`, `schedule_
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261008092155_AddSectionsAToE', '9.0.20');
 
+CREATE TABLE `profile_photos` (
+    `user_id` int NOT NULL,
+    `content_type` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `data` mediumblob NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_profile_photos` PRIMARY KEY (`user_id`),
+    CONSTRAINT `fk_profile_photos_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012031156_AddProfilePhotos', '9.0.20');
+
+CREATE TABLE `friendships` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `requester_user_id` int NOT NULL,
+    `addressee_user_id` int NOT NULL,
+    `status` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `responded_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_friendships` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_friendships_status` CHECK (status IN ('Pending', 'Accepted')),
+    CONSTRAINT `fk_friendships_users_addressee_user_id` FOREIGN KEY (`addressee_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_friendships_users_requester_user_id` FOREIGN KEY (`requester_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `security_logs` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `kind` varchar(40) CHARACTER SET utf8mb4 NOT NULL,
+    `severity` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `user_id` int NULL,
+    `email` varchar(254) CHARACTER SET utf8mb4 NULL,
+    `actor_user_id` int NULL,
+    `actor_name` varchar(200) CHARACTER SET utf8mb4 NULL,
+    `ip_address` varchar(45) CHARACTER SET utf8mb4 NULL,
+    `user_agent` varchar(300) CHARACTER SET utf8mb4 NULL,
+    `details` varchar(1000) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_security_logs` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_security_logs_users_actor_user_id` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_security_logs_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `stored_files` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `owner_user_id` int NOT NULL,
+    `name` varchar(255) CHARACTER SET utf8mb4 NOT NULL,
+    `content_type` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
+    `size_bytes` bigint NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_stored_files` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_stored_files_size` CHECK (size_bytes >= 0),
+    CONSTRAINT `fk_stored_files_users_owner_user_id` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `study_groups` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `description` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `owner_user_id` int NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_study_groups` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_study_groups_users_owner_user_id` FOREIGN KEY (`owner_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `system_settings` (
+    `key` varchar(80) CHARACTER SET utf8mb4 NOT NULL,
+    `value` varchar(2000) CHARACTER SET utf8mb4 NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `updated_by_user_id` int NULL,
+    CONSTRAINT `pk_system_settings` PRIMARY KEY (`key`),
+    CONSTRAINT `fk_system_settings_users_updated_by_user_id` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `stored_file_contents` (
+    `file_id` int NOT NULL,
+    `data` longblob NOT NULL,
+    CONSTRAINT `pk_stored_file_contents` PRIMARY KEY (`file_id`),
+    CONSTRAINT `fk_stored_file_contents_stored_files_file_id` FOREIGN KEY (`file_id`) REFERENCES `stored_files` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `group_posts` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `group_id` int NOT NULL,
+    `author_user_id` int NOT NULL,
+    `body` varchar(2000) CHARACTER SET utf8mb4 NOT NULL,
+    `parent_post_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_group_posts` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_group_posts_group_posts_parent_post_id` FOREIGN KEY (`parent_post_id`) REFERENCES `group_posts` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_group_posts_study_groups_group_id` FOREIGN KEY (`group_id`) REFERENCES `study_groups` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_group_posts_users_author_user_id` FOREIGN KEY (`author_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `shared_files` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `file_id` int NOT NULL,
+    `shared_with_user_id` int NULL,
+    `group_id` int NULL,
+    `assignment_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_shared_files` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_shared_files_stored_files_file_id` FOREIGN KEY (`file_id`) REFERENCES `stored_files` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_shared_files_study_groups_group_id` FOREIGN KEY (`group_id`) REFERENCES `study_groups` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_shared_files_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_shared_files_users_shared_with_user_id` FOREIGN KEY (`shared_with_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `study_group_members` (
+    `group_id` int NOT NULL,
+    `user_id` int NOT NULL,
+    `joined_at_utc` datetime(6) NOT NULL,
+    `added_by_user_id` int NULL,
+    CONSTRAINT `pk_study_group_members` PRIMARY KEY (`group_id`, `user_id`),
+    CONSTRAINT `fk_study_group_members_study_groups_group_id` FOREIGN KEY (`group_id`) REFERENCES `study_groups` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_study_group_members_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_friendships_addressee_user_id_status` ON `friendships` (`addressee_user_id`, `status`);
+
+CREATE UNIQUE INDEX `ix_friendships_requester_user_id_addressee_user_id` ON `friendships` (`requester_user_id`, `addressee_user_id`);
+
+CREATE INDEX `ix_group_posts_author_user_id` ON `group_posts` (`author_user_id`);
+
+CREATE INDEX `ix_group_posts_group_id_created_at_utc` ON `group_posts` (`group_id`, `created_at_utc`);
+
+CREATE INDEX `ix_group_posts_parent_post_id` ON `group_posts` (`parent_post_id`);
+
+CREATE INDEX `ix_security_logs_actor_user_id` ON `security_logs` (`actor_user_id`);
+
+CREATE INDEX `ix_security_logs_created_at_utc` ON `security_logs` (`created_at_utc`);
+
+CREATE INDEX `ix_security_logs_kind_created_at_utc` ON `security_logs` (`kind`, `created_at_utc`);
+
+CREATE INDEX `ix_security_logs_user_id` ON `security_logs` (`user_id`);
+
+CREATE INDEX `ix_shared_files_assignment_id` ON `shared_files` (`assignment_id`);
+
+CREATE UNIQUE INDEX `ix_shared_files_file_id_assignment_id` ON `shared_files` (`file_id`, `assignment_id`);
+
+CREATE UNIQUE INDEX `ix_shared_files_file_id_group_id` ON `shared_files` (`file_id`, `group_id`);
+
+CREATE UNIQUE INDEX `ix_shared_files_file_id_shared_with_user_id` ON `shared_files` (`file_id`, `shared_with_user_id`);
+
+CREATE INDEX `ix_shared_files_group_id` ON `shared_files` (`group_id`);
+
+CREATE INDEX `ix_shared_files_shared_with_user_id` ON `shared_files` (`shared_with_user_id`);
+
+CREATE INDEX `ix_stored_files_owner_user_id_created_at_utc` ON `stored_files` (`owner_user_id`, `created_at_utc`);
+
+CREATE INDEX `ix_study_group_members_user_id` ON `study_group_members` (`user_id`);
+
+CREATE INDEX `ix_study_groups_owner_user_id` ON `study_groups` (`owner_user_id`);
+
+CREATE INDEX `ix_system_settings_updated_by_user_id` ON `system_settings` (`updated_by_user_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012031512_AddSocialFeaturesSecurityLogsAndSettings', '9.0.20');
+
 COMMIT;
 

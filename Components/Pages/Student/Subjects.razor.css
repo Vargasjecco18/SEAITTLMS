@@ -69,8 +69,8 @@
 .view {
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 32px;
+    width: 2.25rem;
+    height: 2rem;
     border-radius: 8px;
     color: var(--text-muted);
 }

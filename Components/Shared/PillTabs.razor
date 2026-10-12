@@ -1,0 +1,45 @@
+@* Rounded tabs that change what a page shows. The page keeps the chosen key (@bind-Selected) and decides what to show for it. *@
+<div class="tabs" role="tablist" aria-label="@Label">
+    @foreach (var item in Items)
+    {
+        var key = item.Key;
+        <button type="button" role="tab" class="tab @(key == Selected ? "on" : "")" aria-selected="@(key == Selected ? "true" : "false")"
+                @onclick="() => SelectAsync(key)">
+            @if (item.IconName is not null)
+            {
+                <Icon Name="@item.IconName" Size="16" />
+            }
+            <span>@item.Title</span>
+            @if (item.Count is { } count)
+            {
+                <span class="count">@count</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    /// <param name="Key">What the page gets when the tab is chosen.</param>
+    /// <param name="Count">A number shown after the title (how many things the tab holds), or none.</param>
+    public sealed record Tab(string Key, string Title, string? IconName = null, int? Count = null);
+
+    [Parameter, EditorRequired] public IReadOnlyList<Tab> Items { get; set; } = [];
+
+    [Parameter] public string? Selected { get; set; }
+
+    [Parameter] public EventCallback<string?> SelectedChanged { get; set; }
+
+    /// <summary>What the group of tabs is, for screen readers.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    private async Task SelectAsync(string key)
+    {
+        if (key == Selected)
+        {
+            return;
+        }
+
+        Selected = key;
+        await SelectedChanged.InvokeAsync(key);
+    }
+}

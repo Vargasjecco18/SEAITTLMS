@@ -68,8 +68,8 @@
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 30px;
-    height: 30px;
+    width: 1.875rem;
+    height: 1.875rem;
     border-radius: 9px;
     background: var(--brand-soft);
     color: var(--brand-strong);
@@ -165,7 +165,7 @@
 
 .rate-bar {
     display: block;
-    height: 8px;
+    height: 0.5rem;
     overflow: hidden;
     border-radius: 999px;
     background: var(--surface-2);

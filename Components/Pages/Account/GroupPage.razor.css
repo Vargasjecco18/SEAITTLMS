@@ -1,0 +1,161 @@
+.back {
+    margin-top: 0.75rem;
+}
+
+.composer textarea {
+    resize: vertical;
+}
+
+.composer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.6rem;
+}
+
+.small {
+    font-size: 0.82rem;
+}
+
+.posts {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1rem;
+}
+
+.post {
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.post-body {
+    margin: 0.6rem 0 0.4rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.replies {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0.5rem 0 0.6rem;
+    padding: 0.3rem 0 0.1rem 1rem;
+    border-left: 2px solid var(--border);
+    list-style: none;
+}
+
+.replies .post-body {
+    margin: 0.3rem 0 0;
+    font-size: 0.95rem;
+}
+
+.reply {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.reply .input {
+    flex: 1 1 14rem;
+    width: auto;
+}
+
+.link-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.more {
+    margin: 1rem 0 0;
+    text-align: center;
+}
+
+.toolbar {
+    margin-bottom: 1rem;
+}
+
+.members {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.members li {
+    padding: 0.5rem 0.4rem;
+    border-radius: var(--radius-sm);
+}
+
+.members li:hover {
+    background: var(--surface-2);
+}
+
+.file-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.locker-pick {
+    display: grid;
+    gap: 0.35rem;
+    max-height: 18rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.pick-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.pick-row:hover {
+    background: var(--surface-2);
+}
+
+.pick-row input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--btn-bg);
+}
+
+.pick-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    overflow-wrap: anywhere;
+}
+
+.pick-row small {
+    color: var(--text-muted);
+}
+
+@media (max-width: 760px) {
+    .col-more {
+        display: none;
+    }
+}

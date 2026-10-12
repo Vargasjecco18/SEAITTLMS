@@ -8,6 +8,10 @@ html {
     color-scheme: light dark;
     -webkit-text-size-adjust: 100%;
 
+    /* The size of everything: lengths in the app are in rem, so this one number makes the whole design bigger or smaller.
+       (16px is the browser's own size; 87.5% = 14px.) */
+    font-size: 87.5%;
+
     /* Surfaces and text */
     --bg: #f5f7fb;
     --surface: #ffffff;
@@ -57,8 +61,8 @@ html {
     --radius-sm: 10px;
     --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
     --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.1);
-    --header-h: 64px;
-    --sidebar-w: 264px;
+    --header-h: 4rem;
+    --sidebar-w: 17rem;
 }
 
 /* Dark colors (black, not blue). They apply when dark is chosen in the settings menu (the page then has data-theme="dark"), and when
@@ -185,7 +189,7 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
@@ -262,4 +266,88 @@ html ::deep .input:disabled {
     background: var(--surface-2);
     color: var(--text-muted);
     cursor: not-allowed;
+}
+
+/*
+  Shared by the pages of the newer features (security log, backups, users, groups, files): a table inside a card, a bar of filters, the
+  buttons at the bottom of a dialog. A page only writes the CSS that is its own.
+*/
+html ::deep .data-wrap {
+    position: relative;
+    margin: 0 -1.25rem -1.25rem;
+    overflow-x: auto;
+}
+
+html ::deep .data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+html ::deep .data-table th,
+html ::deep .data-table td {
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+html ::deep .data-table thead th {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+html ::deep .data-table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+html ::deep .data-table .right {
+    text-align: right;
+    white-space: nowrap;
+}
+
+html ::deep .mono {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.88rem;
+}
+
+html ::deep .muted-line {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+html ::deep .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem 0.85rem;
+    margin-bottom: 1rem;
+}
+
+html ::deep .filter-bar .grow {
+    flex: 1 1 14rem;
+}
+
+html ::deep .dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+html ::deep .dialog-note {
+    margin: 0 0 0.9rem;
+}
+
+html ::deep .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
 }

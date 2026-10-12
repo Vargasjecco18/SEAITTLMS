@@ -1,0 +1,73 @@
+@inject PresenceService Presence
+
+@* A list of people with a box to tick each one, and a search box. The page owns what is ticked (Selected) and is told when it changes. *@
+<div class="picker">
+    <div class="top">
+        <input type="search" class="input" maxlength="80" placeholder="Search people" aria-label="Search people" @bind="search" @bind:event="oninput" />
+        <span class="chosen" aria-live="polite">@Selected.Count chosen</span>
+    </div>
+
+    @if (People.Count == 0)
+    {
+        <p class="none">@EmptyText</p>
+    }
+    else
+    {
+        var shown = Filtered();
+        @if (shown.Count == 0)
+        {
+            <p class="none">Nobody matches.</p>
+        }
+        else
+        {
+            <ul class="list">
+                @foreach (var p in shown)
+                {
+                    var person = p;
+                    <li>
+                        <label class="row">
+                            <input type="checkbox" checked="@Selected.Contains(person.UserId)" @onchange="e => ToggleAsync(person.UserId, e.Value is true)" aria-label="@person.Name" />
+                            <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@(person.IsStudent ? "Student · " + person.Detail : "Teacher")" Online="Presence.IsOnline(person.UserId)" Size="32" />
+                        </label>
+                    </li>
+                }
+            </ul>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<PersonCard> People { get; set; } = [];
+
+    /// <summary>The accounts that are ticked. This component changes the set; the page keeps it.</summary>
+    [Parameter, EditorRequired] public HashSet<int> Selected { get; set; } = [];
+
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    [Parameter] public string EmptyText { get; set; } = "There is nobody to choose from yet.";
+
+    private string search = "";
+
+    private List<PersonCard> Filtered()
+    {
+        var tokens = search.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return People
+            .Where(p => tokens.All(t => p.Name.Contains(t, StringComparison.OrdinalIgnoreCase) || (p.Detail?.Contains(t, StringComparison.OrdinalIgnoreCase) ?? false)))
+            .Take(200)
+            .ToList();
+    }
+
+    private async Task ToggleAsync(int userId, bool on)
+    {
+        if (on)
+        {
+            Selected.Add(userId);
+        }
+        else
+        {
+            Selected.Remove(userId);
+        }
+
+        await OnChanged.InvokeAsync();
+    }
+}

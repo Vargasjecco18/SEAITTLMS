@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
+using SEAITT_LMS.Services;
 
 namespace SEAITT_LMS.Auth;
 
@@ -14,6 +15,9 @@ public enum LoginFailure
     InvalidCredentials,
     LockedOut,
     Inactive,
+
+    /// <summary>The right password, but the system is closed for maintenance and the account is not an administrator's.</summary>
+    Maintenance,
 }
 
 /// <param name="Principal">The identity to put in the sign-in cookie, only set when the login succeeded.</param>
@@ -32,17 +36,24 @@ public sealed class AuthService(
     PasswordHasher hasher,
     IOptions<AuthOptions> options,
     TimeProvider clock,
-    ILogger<AuthService> logger)
+    ILogger<AuthService> logger,
+    SystemSettingsService? systemSettings = null,
+    SecurityLogService? securityLog = null)
 {
-    public async Task<LoginResult> LoginAsync(string? email, string? password, CancellationToken ct = default)
+    /// <param name="client">Where the sign-in came from (for the security log). Empty when it is not known.</param>
+    public async Task<LoginResult> LoginAsync(string? email, string? password, ClientInfo? client = null, CancellationToken ct = default)
     {
+        // The limits are the ones of System Settings; without them (a test) the ones of appsettings.json.
         var settings = options.Value;
+        var maxFailed = systemSettings?.Current.MaxFailedAttempts ?? settings.MaxFailedAttempts;
+        var lockoutMinutes = systemSettings?.Current.LockoutMinutes ?? settings.LockoutMinutes;
         var normalizedEmail = EmailAddresses.Normalize(email);
 
         // Never run PBKDF2 on absurd input, but still take about as long as a real attempt.
         if (normalizedEmail is null || string.IsNullOrEmpty(password) || password.Length > PasswordPolicy.MaxLength)
         {
             hasher.BurnTime(string.Empty);
+            await LogAsync(SecurityEvents.SignInFailed, null, (email ?? "").Trim(), "Not a valid email and password.", client, ct);
             return LoginResult.Fail(LoginFailure.InvalidCredentials);
         }
 
@@ -63,6 +74,7 @@ public sealed class AuthService(
         if (user is null)
         {
             hasher.BurnTime(password);
+            await LogAsync(SecurityEvents.SignInFailed, null, normalizedEmail, "There is no account with this email.", client, ct);
             return LoginResult.Fail(LoginFailure.InvalidCredentials);
         }
 
@@ -72,19 +84,34 @@ public sealed class AuthService(
         {
             hasher.BurnTime(password);
             logger.LogWarning("Sign-in refused for user {UserId}: account is locked until {LockoutEnd:u}.", user.Id, lockoutEnd);
+            await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is locked.", client, ct);
             return LoginResult.Fail(LoginFailure.LockedOut);
         }
 
         if (!hasher.Verify(password, user.PasswordHash))
         {
-            await RegisterFailedAttemptAsync(db, user.Id, settings, now, ct);
+            var lockedNow = await RegisterFailedAttemptAsync(db, user.Id, maxFailed, lockoutMinutes, now, ct);
+            await LogAsync(SecurityEvents.SignInFailed, user.Id, user.Email, "Wrong password.", client, ct);
+            if (lockedNow)
+            {
+                await LogAsync(SecurityEvents.AccountLocked, user.Id, user.Email, $"Locked for {lockoutMinutes} minutes after {maxFailed} wrong passwords.", client, ct);
+            }
+
             return LoginResult.Fail(LoginFailure.InvalidCredentials);
         }
 
         if (!user.IsActive)
         {
             logger.LogWarning("Sign-in refused for user {UserId}: account is inactive.", user.Id);
+            await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is deactivated.", client, ct);
             return LoginResult.Fail(LoginFailure.Inactive);
+        }
+
+        // While the system is closed for maintenance only an administrator gets in.
+        if (systemSettings is { IsClosed: true } && user.RoleId != AppRoles.AdminId)
+        {
+            await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The system is closed for maintenance.", client, ct);
+            return LoginResult.Fail(LoginFailure.Maintenance);
         }
 
         var newHash = hasher.NeedsRehash(user.PasswordHash) ? hasher.Hash(password) : null;
@@ -97,8 +124,12 @@ public sealed class AuthService(
                 .SetProperty(u => u.LastLoginAtUtc, now)
                 .SetProperty(u => u.PasswordHash, u => newHash ?? u.PasswordHash), ct);
 
+        await LogAsync(SecurityEvents.SignInSucceeded, user.Id, user.Email, null, client, ct);
         return new LoginResult(true, CreatePrincipal(user), LoginFailure.None);
     }
+
+    private Task LogAsync(string kind, int? userId, string? email, string? details, ClientInfo? client, CancellationToken ct) =>
+        securityLog is null ? Task.CompletedTask : securityLog.AddAsync(kind, userId, email, details, client, ct: ct);
 
     public static ClaimsPrincipal CreatePrincipal(User user)
     {
@@ -115,23 +146,26 @@ public sealed class AuthService(
         return new ClaimsPrincipal(identity);
     }
 
-    private async Task RegisterFailedAttemptAsync(AppDbContext db, int userId, AuthOptions settings, DateTime now, CancellationToken ct)
+    /// <summary>Counts a wrong password. Gives back true when this one locked the account.</summary>
+    private async Task<bool> RegisterFailedAttemptAsync(AppDbContext db, int userId, int maxFailedAttempts, int lockoutMinutes, DateTime now, CancellationToken ct)
     {
         // Counted in the database so several simultaneous guesses can't overwrite each other's count.
         await db.Users
             .Where(u => u.Id == userId)
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.FailedLoginCount, u => u.FailedLoginCount + 1), ct);
 
-        var lockoutEnd = now.AddMinutes(settings.LockoutMinutes);
+        var lockoutEnd = now.AddMinutes(lockoutMinutes);
         var locked = await db.Users
-            .Where(u => u.Id == userId && u.FailedLoginCount >= settings.MaxFailedAttempts)
+            .Where(u => u.Id == userId && u.FailedLoginCount >= maxFailedAttempts)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(u => u.FailedLoginCount, 0)
                 .SetProperty(u => u.LockoutEndUtc, (DateTime?)lockoutEnd), ct);
 
         if (locked > 0)
         {
-            logger.LogWarning("User {UserId} locked until {LockoutEnd:u} after {Attempts} failed sign-ins.", userId, lockoutEnd, settings.MaxFailedAttempts);
+            logger.LogWarning("User {UserId} locked until {LockoutEnd:u} after {Attempts} failed sign-ins.", userId, lockoutEnd, maxFailedAttempts);
         }
+
+        return locked > 0;
     }
 }

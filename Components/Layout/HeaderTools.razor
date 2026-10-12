@@ -1,10 +1,15 @@
 @rendermode InteractiveServer
+@using Microsoft.JSInterop
 @implements IDisposable
 @inject CurrentUser Me
 @inject MessageService Messages
 @inject NotificationService Notifications
 @inject NavigationManager Navigation
 @inject LiveUpdates Live
+@inject ProfilePhotoService Photos
+@inject PresenceService Presence
+@inject MessageLauncher Launcher
+@inject IJSRuntime JS
 
 @* The three buttons at the right of the header: messages, notifications and settings. It is a live component, so the
    numbers on the buttons keep up with what happens while a page is open. *@
@@ -71,6 +76,30 @@
             </summary>
 
             <div class="panel settings">
+                <p class="group-title">Profile picture</p>
+                <div class="photo-row">
+                    <Avatar @key="Photos.VersionOf(user.UserId)" Name="@user.Name" UserId="@user.UserId" Size="56" />
+                    <div class="photo-actions">
+                        <label class="photo-button" aria-busy="@photoBusy">
+                            <InputFile OnChange="PhotoChosenAsync" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Choose a picture" />
+                            <Icon Name="@(photoBusy ? "loader" : "camera")" Size="16" />
+                            <span>@(photoBusy ? "Saving…" : HasPhoto ? "Change picture" : "Upload a picture")</span>
+                        </label>
+                        @if (HasPhoto)
+                        {
+                            <button type="button" class="link-button" disabled="@photoBusy" @onclick="RemovePhotoAsync">Remove</button>
+                        }
+                    </div>
+                </div>
+                @if (photoMessage is not null)
+                {
+                    <p class="photo-message @(photoFailed ? "failed" : "")" role="status">@photoMessage</p>
+                }
+                else
+                {
+                    <p class="hint photo-hint">JPG, PNG, GIF or WebP. It is made small for you.</p>
+                }
+
                 <p class="group-title">Appearance</p>
                 <div class="choices" role="group" aria-label="Appearance">
                     <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
@@ -93,7 +122,7 @@
     <Modal Open="messagesOpen" Title="Messages" Large="true" OnClose="CloseMessages">
         @if (messagesOpen)
         {
-            <MessagesPanel UserId="user.UserId" OnChanged="RefreshCountsAsync" />
+            <MessagesPanel @key="startWith" UserId="user.UserId" StartWith="startWith" OnChanged="RefreshCountsAsync" />
         }
     </Modal>
 }
@@ -104,8 +133,15 @@
     private int unreadNotifications;
     private NotificationList? notificationList;
     private bool messagesOpen;
+    private int? startWith;
     private Timer? timer;
     private IDisposable? subscription;
+
+    private bool photoBusy;
+    private bool photoFailed;
+    private string? photoMessage;
+
+    private bool HasPhoto => user is not null && Photos.VersionOf(user.UserId) is not null;
 
     private string MessagesLabel => unreadMessages > 0 ? $"Messages, {unreadMessages} unread" : "Messages";
 
@@ -118,6 +154,10 @@
         {
             return;
         }
+
+        // This person has a page open: that is what "online" is (see PresenceService). It is said again at every look below.
+        Presence.Touch(user.UserId);
+        Launcher.Requested += OnMessageRequested;
 
         await RefreshCountsAsync();
         await LoadNotificationsAsync();
@@ -132,6 +172,11 @@
     {
         try
         {
+            if (user is not null)
+            {
+                Presence.Touch(user.UserId);
+            }
+
             await RefreshCountsAsync();
             if (notificationList is not null)
             {
@@ -185,11 +230,106 @@
         }
     }
 
+    // The picture is made small (256 pixels, JPEG) in the browser before it is sent, so a big photo from a phone is fine.
+    private async Task PhotoChosenAsync(InputFileChangeEventArgs e)
+    {
+        if (user is null || photoBusy)
+        {
+            return;
+        }
+
+        photoBusy = true;
+        photoMessage = null;
+        photoFailed = false;
+        try
+        {
+            var file = e.File;
+            if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException("Choose a picture: a JPG, PNG, GIF or WebP file.");
+            }
+
+            if (file.Size > ProfilePhotoService.MaxChosenBytes)
+            {
+                throw new InvalidDataException("That file is too big. Choose a picture under 12 MB.");
+            }
+
+            var small = await file.RequestImageFileAsync("image/jpeg", 256, 256);
+            await using var stream = small.OpenReadStream(ProfilePhotoService.MaxBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+
+            var result = await Photos.SetAsync(user.UserId, buffer.ToArray());
+            photoFailed = !result.Succeeded;
+            photoMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            if (result.Succeeded)
+            {
+                await ShowPictureInMenuAsync();
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            photoFailed = true;
+            photoMessage = ex.Message;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or JSException or TimeoutException)
+        {
+            photoFailed = true;
+            photoMessage = "That picture could not be read. Try another one.";
+        }
+        finally
+        {
+            photoBusy = false;
+        }
+    }
+
+    // The card at the bottom of the menu is not part of this live component (the page draws it), so it is told what its picture is now.
+    private async Task ShowPictureInMenuAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("seaitt.setMyPicture", user is null ? null : Photos.UrlOf(user.UserId));
+        }
+        catch (JSException)
+        {
+        }
+    }
+
+    private async Task RemovePhotoAsync()
+    {
+        if (user is null || photoBusy)
+        {
+            return;
+        }
+
+        photoBusy = true;
+        try
+        {
+            var result = await Photos.RemoveAsync(user.UserId);
+            photoFailed = !result.Succeeded;
+            photoMessage = result.Message;
+            await ShowPictureInMenuAsync();
+        }
+        finally
+        {
+            photoBusy = false;
+        }
+    }
+
     private void OpenMessages() => messagesOpen = true;
+
+    // A page asked for the messages box on one person ("Message" on the Users page).
+    private void OnMessageRequested(int otherUserId) => _ = InvokeAsync(() =>
+    {
+        startWith = otherUserId; // the box is made again for this person (the @key of the box is this number)
+        messagesOpen = true;
+        StateHasChanged();
+    });
 
     private async Task CloseMessages()
     {
         messagesOpen = false;
+        startWith = null;
         await RefreshCountsAsync();
     }
 
@@ -215,5 +355,6 @@
     {
         timer?.Dispose();
         subscription?.Dispose();
+        Launcher.Requested -= OnMessageRequested;
     }
 }

@@ -6,10 +6,11 @@
         @{
             var name = context.User.Identity?.Name ?? "";
             var role = AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role));
+            int.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
         }
         <div class="card">
             <div class="who">
-                <Avatar Name="@name" Size="40" />
+                <Avatar Name="@name" UserId="@userId" Size="40" />
                 <span class="text">
                     <span class="name">@name</span>
                     <span class="role">@role</span>

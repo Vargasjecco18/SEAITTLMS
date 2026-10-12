@@ -1,0 +1,344 @@
+@page "/users"
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CurrentUser Me
+@inject PeopleService People
+@inject FriendService Friends
+@inject PresenceService Presence
+@inject MessageLauncher Launcher
+@inject NavigationManager Navigation
+
+<PageTitle>Users · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Users" Subtitle="@(isStudent ? "Your classmates, your friends and your teachers." : "Your friends, your students and the other teachers.")" IconName="users-round" />
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+@if (loaded)
+{
+    <PillTabs Items="Tabs" Selected="@tab" SelectedChanged="TabChanged" Label="Groups of people" />
+
+    <Card>
+        <div class="filter-bar">
+            @if (tab != "friends")
+            {
+                <Field For="u-search" Label="Search" Class="grow">
+                    <input id="u-search" type="search" class="input" maxlength="80" placeholder="@(tab == "students" ? "A name or a course" : "A name")" @bind="filter" @bind:event="oninput" />
+                </Field>
+            }
+
+            <label class="online-only">
+                <input type="checkbox" @bind="onlineOnly" />
+                <span>Online only <span class="online-count">@OnlineCount</span></span>
+            </label>
+        </div>
+
+        @if (tab == "friends")
+        {
+            @if (requests.Received.Count > 0)
+            {
+                <h2 class="section">Friend requests <span class="badge-count">@requests.Received.Count</span></h2>
+                <ul class="people">
+                    @foreach (var p in requests.Received)
+                    {
+                        var person = p;
+                        <li>
+                            <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@($"{RoleText(person)} · {person.Detail}")" Online="Presence.IsOnline(person.UserId)">
+                                <Button Small="true" IconName="check" Disabled="@busy" OnClick="() => AcceptAsync(person)">Accept</Button>
+                                <Button Small="true" Variant="ButtonVariant.Secondary" Disabled="@busy" OnClick="() => DeclineAsync(person)">Decline</Button>
+                            </PersonLine>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (requests.Sent.Count > 0)
+            {
+                <h2 class="section">Requests you sent</h2>
+                <ul class="people">
+                    @foreach (var p in requests.Sent)
+                    {
+                        var person = p;
+                        <li>
+                            <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@($"{RoleText(person)} · {person.Detail}")" Online="Presence.IsOnline(person.UserId)">
+                                <Badge>Waiting for an answer</Badge>
+                                <Button Small="true" Variant="ButtonVariant.Ghost" Disabled="@busy" OnClick="() => CancelAsync(person)">Take back</Button>
+                            </PersonLine>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <h2 class="section">Your friends <span class="badge-count">@friends.Count</span></h2>
+            var shownFriends = Shown(friends);
+            @if (friends.Count == 0)
+            {
+                <p class="empty">You have no friends here yet. Find people below, or ask somebody from the <button type="button" class="link-button" @onclick='() => TabChanged(isStudent ? "classmates" : "students")'>@(isStudent ? "classmates" : "students")</button> list.</p>
+            }
+            else if (shownFriends.Count == 0)
+            {
+                <p class="empty">None of your friends is online.</p>
+            }
+            else
+            {
+                <ul class="people">
+                    @foreach (var p in shownFriends)
+                    {
+                        <li><PersonRow Person="p" Busy="busy" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
+                    }
+                </ul>
+            }
+
+            <h2 class="section">Find people</h2>
+            <form class="find" @onsubmit="FindAsync">
+                <input id="u-find" type="search" class="input" maxlength="80" placeholder="Type a name (at least 2 letters)" aria-label="Find people" @bind="findText" />
+                <Button Type="submit" Variant="ButtonVariant.Secondary" IconName="search">Search</Button>
+            </form>
+            @if (found is not null)
+            {
+                @if (found.Count == 0)
+                {
+                    <p class="empty">Nobody has this name.</p>
+                }
+                else
+                {
+                    <ul class="people">
+                        @foreach (var p in found)
+                        {
+                            <li><PersonRow Person="p" Busy="busy" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
+                        }
+                    </ul>
+                }
+            }
+        }
+        else
+        {
+            var list = Shown(CurrentList());
+            @if (CurrentList().Count == 0)
+            {
+                <EmptyState IconName="users-round" Title="@EmptyTitle">
+                    <p>@EmptyText</p>
+                </EmptyState>
+            }
+            else if (list.Count == 0)
+            {
+                <p class="empty">Nobody matches.</p>
+            }
+            else
+            {
+                <ul class="people">
+                    @foreach (var p in list)
+                    {
+                        <li><PersonRow Person="p" Busy="busy" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
+                    }
+                </ul>
+            }
+        }
+    </Card>
+}
+
+<Modal Open="unfriendTarget is not null" Title="Stop being friends?" OnClose="CloseUnfriend">
+    @if (unfriendTarget is { } target)
+    {
+        <p class="dialog-note">You and <strong>@target.Name</strong> will not be friends any more. You can ask again later.</p>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseUnfriend">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="user-round-x" Disabled="@busy" OnClick="UnfriendAsync">Unfriend</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int userId;
+    private bool isStudent;
+    private bool loaded;
+    private string tab = "";
+    private string filter = "";
+    private bool onlineOnly;
+    private bool busy;
+    private string? message;
+    private bool messageIsError;
+    private string findText = "";
+    private IReadOnlyList<PersonCard>? found;
+    private IReadOnlyList<PersonCard> classmates = [];
+    private IReadOnlyList<PersonCard> teachers = [];
+    private IReadOnlyList<PersonCard> students = [];
+    private IReadOnlyList<PersonCard> colleagues = [];
+    private IReadOnlyList<PersonCard> friends = [];
+    private FriendRequests requests = new([], []);
+    private PersonCard? unfriendTarget;
+    private Timer? timer;
+
+    [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "online")] private string? OnlineQuery { get; set; }
+
+    private IReadOnlyList<PillTabs.Tab> Tabs => isStudent
+        ?
+        [
+            new("classmates", "Classmates", "users-round", classmates.Count),
+            new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
+            new("teachers", "Teachers", "presentation", teachers.Count),
+        ]
+        :
+        [
+            new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
+            new("students", "Students", "graduation-cap", students.Count),
+            new("teachers", "Teachers", "presentation", colleagues.Count),
+        ];
+
+    private string EmptyTitle => tab switch
+    {
+        "classmates" => "No classmates yet",
+        "students" => "No students yet",
+        _ => isStudent ? "No teachers yet" : "No other teachers",
+    };
+
+    private string EmptyText => tab switch
+    {
+        "classmates" => "When you are enrolled in a section, the students of it are listed here.",
+        "students" => "The students of the courses you teach are listed here.",
+        _ => isStudent ? "The teachers of your courses are listed here once you are enrolled." : "The other teachers of the school are listed here.",
+    };
+
+    private int OnlineCount => tab == "friends" ? OnlineIn(friends) : OnlineIn(CurrentList());
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Me.GetAsync();
+        userId = me?.UserId ?? 0;
+        isStudent = me?.Role == AppRoles.Student;
+        tab = isStudent ? "classmates" : "friends";
+        onlineOnly = OnlineQuery == "1";
+        await LoadAsync();
+
+        if (TabQuery is { } wanted && Tabs.Any(t => t.Key == wanted))
+        {
+            tab = wanted;
+        }
+
+        loaded = true;
+
+        // The green dots look again every 10 seconds; the lists (new friend requests ...) every minute.
+        var ticks = 0;
+        timer = new Timer(_ => _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                if (++ticks % 6 == 0 && !busy)
+                {
+                    await LoadAsync();
+                }
+
+                StateHasChanged();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    private async Task LoadAsync()
+    {
+        friends = await People.GetFriendsAsync(userId);
+        requests = await People.GetRequestsAsync(userId);
+        if (isStudent)
+        {
+            classmates = await People.GetClassmatesAsync(userId);
+            teachers = await People.GetMyTeachersAsync(userId);
+        }
+        else
+        {
+            students = await People.GetMyStudentsAsync(userId);
+            colleagues = await People.GetColleaguesAsync(userId);
+        }
+
+        if (found is not null)
+        {
+            found = await People.FindAsync(userId, findText);
+        }
+    }
+
+    private void ClearMessage() => message = null;
+
+    private void TabChanged(string? key)
+    {
+        tab = key ?? tab;
+        filter = "";
+        found = null;
+    }
+
+    private IReadOnlyList<PersonCard> CurrentList() => tab switch
+    {
+        "classmates" => classmates,
+        "teachers" => isStudent ? teachers : colleagues,
+        "students" => students,
+        _ => friends,
+    };
+
+    private int OnlineIn(IReadOnlyList<PersonCard> list) => list.Count(p => Presence.IsOnline(p.UserId));
+
+    /// <summary>The list as it is filtered by the search box and "online only".</summary>
+    private IReadOnlyList<PersonCard> Shown(IReadOnlyList<PersonCard> list)
+    {
+        var tokens = filter.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return list
+            .Where(p => tokens.All(t => p.Name.Contains(t, StringComparison.OrdinalIgnoreCase) || (p.Detail?.Contains(t, StringComparison.OrdinalIgnoreCase) ?? false)))
+            .Where(p => !onlineOnly || Presence.IsOnline(p.UserId))
+            .OrderByDescending(p => Presence.IsOnline(p.UserId)).ThenBy(p => p.Name)
+            .ToList();
+    }
+
+    private static string RoleText(PersonCard p) => p.IsStudent ? "Student" : "Teacher";
+
+    private void OpenMessage(PersonCard person) => Launcher.Open(person.UserId);
+
+    private async Task FindAsync() => found = await People.FindAsync(userId, findText);
+
+    private async Task RunAsync(Func<Task<ServiceResult>> action)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await action();
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private Task AddAsync(PersonCard p) => RunAsync(() => Friends.RequestAsync(userId, p.UserId));
+
+    private Task AcceptAsync(PersonCard p) => RunAsync(() => Friends.AcceptAsync(userId, p.UserId));
+
+    private Task DeclineAsync(PersonCard p) => RunAsync(() => Friends.DeclineAsync(userId, p.UserId));
+
+    private Task CancelAsync(PersonCard p) => RunAsync(() => Friends.CancelAsync(userId, p.UserId));
+
+    private void AskUnfriend(PersonCard p) => unfriendTarget = p;
+
+    private void CloseUnfriend() => unfriendTarget = null;
+
+    private async Task UnfriendAsync()
+    {
+        if (unfriendTarget is not { } target)
+        {
+            return;
+        }
+
+        unfriendTarget = null;
+        await RunAsync(() => Friends.UnfriendAsync(userId, target.UserId));
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

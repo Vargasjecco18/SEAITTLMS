@@ -1,0 +1,132 @@
+@page "/groups"
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject GroupService Groups
+@inject PeopleService People
+@inject NavigationManager Navigation
+
+<PageTitle>Groups · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Groups" Subtitle="Study groups and teams: write to each other and share files." IconName="users">
+    <Button IconName="plus" OnClick="OpenCreate">New group</Button>
+</PageHeader>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (groups.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="users" Title="You are not in a group yet">
+            <p>Make a group for your study group or your team, and add the classmates, friends or teachers you work with. Everybody in the group can write on its wall and share files.</p>
+            <div class="empty-actions"><Button IconName="plus" OnClick="OpenCreate">Make the first group</Button></div>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="grid">
+        @foreach (var g in groups)
+        {
+            <a class="group" href="@($"groups/{g.Id}")">
+                <span class="group-icon"><Icon Name="users" Size="22" /></span>
+                <span class="group-body">
+                    <span class="group-name">@g.Name</span>
+                    @if (!string.IsNullOrWhiteSpace(g.Description))
+                    {
+                        <span class="group-description">@g.Description</span>
+                    }
+                    <span class="group-meta">
+                        @g.Members @(g.Members == 1 ? "member" : "members") · @(g.IsOwner ? "you made it" : "by " + g.OwnerName)
+                    </span>
+                    <span class="group-meta">
+                        @(g.Posts == 0 ? "No posts yet" : $"{g.Posts} {(g.Posts == 1 ? "post" : "posts")} · last {PhilippineTime.FormatDate(g.LastActivityUtc)}")
+                    </span>
+                </span>
+                @if (g.IsOwner)
+                {
+                    <Badge Tone="Tone.Info">Owner</Badge>
+                }
+            </a>
+        }
+    </div>
+}
+
+<Modal Open="creating" Title="New group" OnClose="CloseCreate" Large="true">
+    @if (creating)
+    {
+        <FormErrors Errors="errors" />
+        <Field For="g-name" Label="Name of the group" Required="true">
+            <input id="g-name" type="text" class="input" maxlength="100" required placeholder="Finite Math study group" @bind="name" />
+        </Field>
+        <Field For="g-description" Label="What it is for" Hint="Optional.">
+            <textarea id="g-description" class="input" rows="2" maxlength="500" @bind="description"></textarea>
+        </Field>
+        <p class="pick-title">Add people</p>
+        <PeoplePicker People="reachable" Selected="picked" EmptyText="You can add classmates, teachers and friends. There is nobody to choose yet; you can add people later." />
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseCreate">Cancel</Button>
+            <Button IconName="plus" Disabled="@busy" OnClick="CreateAsync">@(busy ? "Making…" : "Make the group")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int userId;
+    private bool loaded;
+    private IReadOnlyList<GroupSummary> groups = [];
+    private IReadOnlyList<PersonCard> reachable = [];
+    private readonly HashSet<int> picked = [];
+    private bool creating;
+    private string name = "";
+    private string description = "";
+    private IReadOnlyList<string> errors = [];
+    private bool busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        groups = await Groups.ListMineAsync(userId);
+        loaded = true;
+    }
+
+    private async Task OpenCreate()
+    {
+        name = "";
+        description = "";
+        errors = [];
+        picked.Clear();
+        reachable = await People.GetReachableAsync(userId);
+        creating = true;
+    }
+
+    private void CloseCreate() => creating = false;
+
+    private async Task CreateAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Groups.CreateAsync(userId, name, description, [.. picked]);
+            if (!result.Succeeded)
+            {
+                errors = result.Errors;
+                return;
+            }
+
+            creating = false;
+            Navigation.NavigateTo($"groups/{result.Id}");
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

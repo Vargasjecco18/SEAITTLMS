@@ -1,0 +1,37 @@
+@* A person in a list: their picture, a green dot when they are online, the name, a line about them, and (at the right) what can be done. *@
+<div class="person">
+    <span class="face">
+        <Avatar Name="@Name" UserId="@UserId" Size="@Size" />
+        @if (Online is { } online)
+        {
+            <span class="dot @(online ? "on" : "")" title="@(online ? "Online" : "Offline")" role="img" aria-label="@(online ? "Online" : "Offline")"></span>
+        }
+    </span>
+    <span class="text">
+        <span class="name">@Name</span>
+        @if (!string.IsNullOrWhiteSpace(Detail))
+        {
+            <span class="detail" title="@Detail">@Detail</span>
+        }
+    </span>
+    @if (ChildContent is not null)
+    {
+        <span class="actions">@ChildContent</span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public int UserId { get; set; }
+
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+
+    [Parameter] public string? Detail { get; set; }
+
+    /// <summary>True: a green dot. False: a grey dot. Null: no dot.</summary>
+    [Parameter] public bool? Online { get; set; }
+
+    [Parameter] public int Size { get; set; } = 40;
+
+    /// <summary>The buttons at the right.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

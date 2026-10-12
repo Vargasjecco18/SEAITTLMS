@@ -117,7 +117,7 @@
                         <tr>
                             <td>
                                 <div class="person">
-                                    <Avatar Name="@user.FullName" Size="34" />
+                                    <Avatar Name="@user.FullName" UserId="@user.UserId" Size="34" />
                                     <div class="person-text">
                                         <span class="person-name">@user.FullName@if (user.UserId == currentUserId) { <span class="you">You</span> }</span>
                                         <span class="sub" title="@user.Email">@user.Email</span>

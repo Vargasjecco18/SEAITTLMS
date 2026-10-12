@@ -8,7 +8,7 @@
 .track {
     display: block;
     flex: 1;
-    height: 8px;
+    height: 0.5rem;
     overflow: hidden;
     border-radius: 999px;
     background: var(--surface-2);

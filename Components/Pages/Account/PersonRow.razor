@@ -1,0 +1,42 @@
+@inject PresenceService Presence
+
+@* One person of the Users page with the buttons that fit the friendship: write, add as a friend, wait, accept, unfriend. *@
+<PersonLine UserId="Person.UserId" Name="@Person.Name" Detail="@Person.Detail" Online="Presence.IsOnline(Person.UserId)">
+    @if (Person.State == FriendState.RequestReceived)
+    {
+        <Button Small="true" IconName="check" Disabled="Busy" OnClick="() => OnAccept.InvokeAsync(Person)">Accept</Button>
+        <Button Small="true" Variant="ButtonVariant.Secondary" Disabled="Busy" OnClick="() => OnDecline.InvokeAsync(Person)">Decline</Button>
+    }
+    else if (Person.State == FriendState.RequestSent)
+    {
+        <Button Small="true" Variant="ButtonVariant.Ghost" Disabled="Busy" OnClick="() => OnCancel.InvokeAsync(Person)">Request sent · take back</Button>
+    }
+    else if (Person.State == FriendState.Friends)
+    {
+        <Badge Tone="Tone.Success">Friends</Badge>
+        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="user-round-x" Title="@($"Unfriend {Person.Name}")" Disabled="Busy" OnClick="() => OnUnfriend.InvokeAsync(Person)" />
+    }
+    else
+    {
+        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="user-round-plus" Disabled="Busy" OnClick="() => OnAdd.InvokeAsync(Person)">Add friend</Button>
+    }
+    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="message-square" Title="@($"Write to {Person.Name}")" OnClick="() => OnMessage.InvokeAsync(Person)" />
+</PersonLine>
+
+@code {
+    [Parameter, EditorRequired] public PersonCard Person { get; set; } = default!;
+
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnMessage { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnAdd { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnAccept { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnDecline { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnCancel { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnUnfriend { get; set; }
+}

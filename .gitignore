@@ -6,3 +6,6 @@ obj/
 
 # Private settings (passwords) for this computer
 appsettings.Local.json
+
+# Database backups made from the Admin > Database Backup & Restore page (they contain everyone's data)
+Backups/

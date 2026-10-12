@@ -6,8 +6,10 @@
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.Extensions.Options
 @using SEAITT_LMS.Auth
+@using SEAITT_LMS.Services
 @inject AuthService Auth
 @inject IOptions<AuthOptions> AuthSettings
+@inject SystemSettingsService SystemSettings
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
@@ -15,11 +17,11 @@
 
 <div class="login">
     <section class="panel">
-        <a class="logo-link" href="/" aria-label="SEAITT eLMS, home page">
+        <a class="logo-link" href="/" aria-label="@(SystemSettings.Current.SchoolShortName) eLMS, home page">
             <img class="logo" src="@Assets["images/logo.png"]" alt="" width="72" height="72" />
         </a>
 
-        <h1>SEAITT eLMS</h1>
+        <h1>@SystemSettings.Current.SchoolShortName eLMS</h1>
         <p class="subtitle">Log-in to access your courses</p>
 
         @if (!string.IsNullOrEmpty(errorMessage))
@@ -81,14 +83,23 @@
 
     private async Task SignInAsync()
     {
-        var result = await Auth.LoginAsync(Input.Email, Input.Password, HttpContext.RequestAborted);
+        var result = await Auth.LoginAsync(Input.Email, Input.Password, ClientInfo.From(HttpContext), HttpContext.RequestAborted);
 
         if (!result.Succeeded)
         {
-            // The same message for every kind of failure, so it doesn't reveal which emails have accounts.
-            var settings = AuthSettings.Value;
-            errorMessage = $"Incorrect email or password. After {settings.MaxFailedAttempts} wrong attempts " +
-                           $"the account is locked for {settings.LockoutMinutes} minutes.";
+            if (result.Failure == LoginFailure.Maintenance)
+            {
+                // Only said to somebody who knew the password, so it doesn't reveal which emails have accounts.
+                errorMessage = SystemSettings.ClosedMessage;
+            }
+            else
+            {
+                // The same message for every kind of failure, so it doesn't reveal which emails have accounts.
+                var limits = SystemSettings.Current;
+                errorMessage = $"Incorrect email or password. After {limits.MaxFailedAttempts} wrong attempts " +
+                               $"the account is locked for {limits.LockoutMinutes} minutes.";
+            }
+
             Input.Password = "";
             return;
         }

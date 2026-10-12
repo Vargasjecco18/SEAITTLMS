@@ -29,7 +29,7 @@
     align-items: center;
     justify-content: flex-start;
     gap: 2px;
-    min-height: 38px;
+    min-height: 2.375rem;
     padding: 0.2rem 0 0.15rem;
     border: 1px solid transparent;
     border-radius: 9px;
@@ -58,8 +58,8 @@
 .day.today .num {
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 999px;
     background: var(--btn-bg);
     color: var(--on-brand);

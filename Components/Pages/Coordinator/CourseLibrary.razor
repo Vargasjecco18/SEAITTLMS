@@ -94,7 +94,27 @@ else
     else
     {
         <div class="modules">
-            @foreach (var module in course.Modules)
+            @* The syllabus always comes first: when there is none yet, its place is held. *@
+            @if (syllabus is null)
+            {
+                <section class="module syllabus syllabus-missing" aria-label="Syllabus">
+                    <header class="module-head">
+                        <div class="module-title">
+                            <span class="module-number"><Icon Name="book-marked" Size="18" /></span>
+                            <div>
+                                <h2>Syllabus</h2>
+                                <div class="module-state"><Badge Tone="Tone.Warning">Not added yet</Badge></div>
+                            </div>
+                        </div>
+                        <div class="module-actions">
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewSyllabus">Add syllabus</Button>
+                        </div>
+                    </header>
+                    <p class="module-description">The syllabus is sent first, before the modules and their activities, quizzes and task performances.</p>
+                </section>
+            }
+
+            @foreach (var module in course.Modules.OrderByDescending(m => m.IsSyllabus))
             {
                 var number = module.IsSyllabus ? 0 : modules.IndexOf(module) + 1;
                 <section class="module @(module.IsSyllabus ? "syllabus" : "library")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
@@ -315,7 +335,21 @@ else
         <p class="pick-title">What to send</p>
         <button type="button" class="link-button" @onclick="ToggleAllModules">@(sendModules.Count == course.Modules.Count ? "Clear all" : "Select all")</button>
         <ul class="picks">
-            @foreach (var module in course.Modules)
+            @* The syllabus is the first thing on the list (and the first thing the teacher sees in the course). *@
+            @if (!course.Modules.Any(m => m.IsSyllabus))
+            {
+                <li>
+                    <div class="pick pick-missing">
+                        <Icon Name="book-marked" Size="18" />
+                        <span>
+                            <strong>Syllabus</strong>
+                            <small>Not added yet. Add it and it goes first, before the modules.</small>
+                        </span>
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="AddSyllabusFromSend">Add syllabus</Button>
+                    </div>
+                </li>
+            }
+            @foreach (var module in course.Modules.OrderByDescending(m => m.IsSyllabus))
             {
                 var id = module.Id;
                 <li>
@@ -594,6 +628,13 @@ else
     }
 
     private void CloseSend() => sending = false;
+
+    // "Add syllabus" inside the send window: the window closes and the form of the syllabus opens.
+    private void AddSyllabusFromSend()
+    {
+        sending = false;
+        OpenNewSyllabus();
+    }
 
     private static void TogglePick(HashSet<int> set, int id, ChangeEventArgs e)
     {

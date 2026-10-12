@@ -9,8 +9,8 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
+    width: 2.5rem;
+    height: 2.5rem;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -44,8 +44,8 @@
     position: absolute;
     top: 3px;
     right: 2px;
-    min-width: 17px;
-    height: 17px;
+    min-width: 1.0625rem;
+    height: 1.0625rem;
     padding: 0 4px;
     border-radius: 999px;
     background: var(--danger-solid);
@@ -141,8 +141,8 @@
     display: grid;
     place-items: center;
     flex: none;
-    width: 34px;
-    height: 34px;
+    width: 2.125rem;
+    height: 2.125rem;
     border-radius: 50%;
     background: var(--surface-2);
     color: var(--brand-strong);
@@ -174,7 +174,84 @@
 /* ---------- settings ---------- */
 .settings {
     padding: 1rem;
-    width: min(320px, calc(100vw - 1.5rem));
+    width: min(20rem, calc(100vw - 1.5rem));
+    max-height: calc(100vh - var(--header-h) - 1rem);
+    overflow-y: auto;
+}
+
+/* The picture of the person: the circle and the button to change it. */
+.photo-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.photo-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.photo-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.photo-button:hover,
+.photo-button:focus-within {
+    background: var(--surface-2);
+}
+
+.photo-button:focus-within {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+/* The file box itself is hidden; the label is the button (and still opens the file chooser). InputFile is a component, hence ::deep. */
+.photo-button ::deep input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.photo-actions .link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--danger);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.photo-message,
+.photo-hint {
+    margin: 0.5rem 0 1rem;
+    font-size: 0.8rem;
+}
+
+.photo-message {
+    color: var(--success);
+}
+
+.photo-message.failed {
+    color: var(--danger);
 }
 
 .group-title {
@@ -267,8 +344,8 @@ html[data-theme-pref="auto"] .choice[data-theme-choice="auto"] {
 .track {
     position: relative;
     flex: none;
-    width: 38px;
-    height: 22px;
+    width: 2.375rem;
+    height: 1.375rem;
     border-radius: 999px;
     background: var(--brand);
     transition: background-color 0.2s;
@@ -276,10 +353,10 @@ html[data-theme-pref="auto"] .choice[data-theme-choice="auto"] {
 
 .thumb {
     position: absolute;
-    top: 3px;
-    left: 19px;
-    width: 16px;
-    height: 16px;
+    top: 0.1875rem;
+    left: 1.1875rem;
+    width: 1rem;
+    height: 1rem;
     border-radius: 50%;
     background: #ffffff;
     transition: left 0.2s var(--ease);
@@ -290,7 +367,7 @@ html[data-motion="off"] .track {
 }
 
 html[data-motion="off"] .thumb {
-    left: 3px;
+    left: 0.1875rem;
 }
 
 @media (max-width: 520px) {

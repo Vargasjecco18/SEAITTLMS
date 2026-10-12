@@ -1,4 +1,4 @@
-<svg class="icon @Class" width="@Size" height="@Size" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+<svg class="icon @Class" width="@Size" height="@Size" style="@SizeStyle" viewBox="0 0 24 24" fill="none" stroke="currentColor"
      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
     @((MarkupString)Shapes)
 </svg>
@@ -11,6 +11,9 @@
     [Parameter] public int Size { get; set; } = 20;
 
     [Parameter] public string? Class { get; set; }
+
+    // The size in rem (Size is in pixels at the browser's normal text size), so the icons follow the size of the text of the whole design.
+    private string SizeStyle => FormattableString.Invariant($"width:{Size / 16.0:0.####}rem;height:{Size / 16.0:0.####}rem");
 
     // The shapes come from our own IconSet (trusted, fixed text), never from user input.
     private string Shapes => IconSet.Shapes.TryGetValue(Name, out var shapes) ? shapes : "";

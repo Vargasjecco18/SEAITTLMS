@@ -25,7 +25,7 @@
                 @foreach (var contact in contacts)
                 {
                     <button type="button" class="person @(selected?.UserId == contact.UserId ? "active" : "")" @onclick="() => SelectAsync(contact)">
-                        <Avatar Name="@contact.Name" Size="38" />
+                        <Avatar Name="@contact.Name" UserId="@contact.UserId" Size="38" />
                         <span class="person-text">
                             <span class="person-name">@contact.Name</span>
                             <span class="person-sub">@contact.Detail</span>
@@ -48,7 +48,7 @@
                 {
                     <button type="button" class="person @(selected?.UserId == conversation.With.UserId ? "active" : "") @(conversation.Unread > 0 ? "unread" : "")"
                             @onclick="() => SelectAsync(conversation.With)">
-                        <Avatar Name="@conversation.With.Name" Size="38" />
+                        <Avatar Name="@conversation.With.Name" UserId="@conversation.With.UserId" Size="38" />
                         <span class="person-text">
                             <span class="person-name">@conversation.With.Name</span>
                             <span class="person-sub">@(conversation.LastFromMe ? "You: " : "")@conversation.LastBody</span>
@@ -75,7 +75,7 @@
         {
             <header class="thread-head">
                 <button type="button" class="back" aria-label="Back to the conversations" @onclick="Back"><Icon Name="chevron-left" Size="20" /></button>
-                <Avatar Name="@selected.Name" Size="38" />
+                <Avatar Name="@selected.Name" UserId="@selected.UserId" Size="38" />
                 <div class="thread-who">
                     <strong>@selected.Name</strong>
                     <span>@selected.Detail</span>
@@ -122,6 +122,9 @@
 @code {
     [Parameter, EditorRequired] public int UserId { get; set; }
 
+    /// <summary>The person whose conversation is opened first (when the box is opened from "Message" on a person).</summary>
+    [Parameter] public int? StartWith { get; set; }
+
     /// <summary>Called when something was read or sent, so the numbers in the header can be updated.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }
 
@@ -145,6 +148,14 @@
     {
         closed = Messages.IsClosed;
         conversations = await Messages.GetConversationsAsync(UserId);
+
+        if (StartWith is { } first && await Messages.GetContactAsync(UserId, first) is { } contact)
+        {
+            selected = contact;
+            thread = await Messages.GetThreadAsync(UserId, contact.UserId);
+            scrollDown = true;
+            await OnChanged.InvokeAsync();
+        }
 
         // While the box is open a new message shows up at once (LiveUpdates), and it also looks for new ones every 5 seconds.
         subscription = Live.Subscribe(UserId, () => InvokeAsync(RefreshAsync));

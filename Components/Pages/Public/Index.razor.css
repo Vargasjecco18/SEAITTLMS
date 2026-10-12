@@ -27,7 +27,7 @@
     align-items: center;
     gap: 1.5rem;
     max-width: 1120px;
-    height: 64px;
+    height: 4rem;
     margin: 0 auto;
     padding: 0 1.25rem;
 }
@@ -250,8 +250,8 @@ h1:focus {
 }
 
 .hero-dot {
-    width: 10px;
-    height: 10px;
+    width: 0.625rem;
+    height: 0.625rem;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
@@ -273,7 +273,7 @@ h1:focus {
 
 .hero:has(.slide-radio:checked) .hero-dot {
     animation: none;
-    width: 10px;
+    width: 0.625rem;
     background: rgba(255, 255, 255, 0.4);
 }
 
@@ -281,7 +281,7 @@ h1:focus {
 .hero:has(#slide-2:checked) .hero-dot:nth-child(2),
 .hero:has(#slide-3:checked) .hero-dot:nth-child(3),
 .hero:has(#slide-4:checked) .hero-dot:nth-child(4) {
-    width: 26px;
+    width: 1.625rem;
     background: #ffffff;
 }
 
@@ -336,8 +336,8 @@ h2 span {
 .info-icon {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 3rem;
+    height: 3rem;
     margin-bottom: 1rem;
     border-radius: 14px;
     background: var(--brand-soft);
@@ -577,8 +577,8 @@ h3 {
 .contact-icon {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 3rem;
+    height: 3rem;
     margin-bottom: 0.5rem;
     border-radius: 14px;
     background: var(--brand-soft);
@@ -656,7 +656,7 @@ h3 {
     }
 
     .hero-dot:first-child {
-        width: 26px;
+        width: 1.625rem;
         background: #ffffff;
     }
 }

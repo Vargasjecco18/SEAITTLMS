@@ -1,0 +1,301 @@
+@page "/admin/security-logs"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject SecurityLogService Logs
+
+<PageTitle>Security Logs · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Security Logs" Subtitle="Who signed in, who tried and failed, and what was changed in the accounts and in the system." IconName="scroll-text">
+    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
+    <ButtonLink Href="@ExportHref" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false" download>Download CSV</ButtonLink>
+    <Button Variant="ButtonVariant.Ghost" IconName="trash-2" OnClick="OpenClear">Clear old lines</Button>
+</PageHeader>
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+@if (summary is not null)
+{
+    <div class="stats">
+        <StatCard Label="Sign-ins" Value="summary.SignIns" Hint="last 24 hours" IconName="log-in" Accent="AccentColor.Green" />
+        <StatCard Label="Failed sign-ins" Value="summary.FailedSignIns" Hint="last 24 hours" IconName="shield-alert" Accent="AccentColor.Amber" />
+        <StatCard Label="Locked accounts" Value="summary.LockedAccounts" Hint="right now" IconName="lock" Accent="AccentColor.Rose" />
+        <StatCard Label="Warnings" Value="summary.Warnings" Hint="last 24 hours" IconName="triangle-alert" Accent="AccentColor.Violet" />
+    </div>
+}
+
+<PillTabs Items="Tabs" Selected="@group" SelectedChanged="GroupChangedAsync" Label="What to show" />
+
+<Card>
+    <form class="filter-bar" @onsubmit="ApplyAsync">
+        <Field For="log-search" Label="Search" Class="grow">
+            <input id="log-search" type="search" class="input" maxlength="100" placeholder="An email, a name, an address or a word" @bind="search" @bind:event="oninput" />
+        </Field>
+        <Field For="log-severity" Label="Kind">
+            <select id="log-severity" class="input" @bind="severity" @bind:after="ApplyAsync">
+                <option value="">All</option>
+                <option value="Info">Information</option>
+                <option value="Warning">Warnings</option>
+                <option value="Critical">Critical</option>
+            </select>
+        </Field>
+        <Field For="log-from" Label="From">
+            <input id="log-from" type="date" class="input" value="@from" @onchange="FromChangedAsync" />
+        </Field>
+        <Field For="log-to" Label="To">
+            <input id="log-to" type="date" class="input" value="@to" @onchange="ToChangedAsync" />
+        </Field>
+        <Button Type="submit" IconName="search">Search</Button>
+    </form>
+
+    @if (data is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (data.Items.Count == 0)
+    {
+        <EmptyState IconName="scroll-text" Title="No lines here">
+            <p>Nothing matches. Sign-ins, wrong passwords, changes to accounts, backups and changes to the settings are written here as they happen.</p>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="data-wrap">
+            <table class="data-table logs">
+                <thead>
+                    <tr>
+                        <th scope="col">When</th>
+                        <th scope="col">What happened</th>
+                        <th scope="col">Who</th>
+                        <th scope="col" class="col-more">Details</th>
+                        <th scope="col" class="col-more">From</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in data.Items)
+                    {
+                        <tr>
+                            <td class="when">
+                                @PhilippineTime.FormatDate(row.AtUtc)
+                                <span class="muted-line">@PhilippineTime.FormatTime(row.AtUtc)</span>
+                            </td>
+                            <td><Badge Tone="@ToneOf(row.Severity)">@SecurityEvents.Display(row.Kind)</Badge></td>
+                            <td class="who">
+                                @if (!string.IsNullOrEmpty(row.Email))
+                                {
+                                    <span class="email">@row.Email</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                @if (!string.IsNullOrEmpty(row.ActorName))
+                                {
+                                    <span class="muted-line">by @row.ActorName</span>
+                                }
+                            </td>
+                            <td class="col-more details">@row.Details</td>
+                            <td class="col-more from">
+                                @if (!string.IsNullOrEmpty(row.IpAddress))
+                                {
+                                    <span class="mono">@row.IpAddress</span>
+                                }
+                                @if (DeviceText(row.UserAgent) is { Length: > 0 } device)
+                                {
+                                    <span class="muted-line" title="@row.UserAgent">@device</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pager" aria-label="Pages of the log">
+            <span class="muted">@data.Total.ToString("N0") @(data.Total == 1 ? "line" : "lines")</span>
+            <span class="pager-buttons">
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(data.Page <= 1)" OnClick="PreviousAsync">Newer</Button>
+                <span>Page @data.Page of @data.PageCount</span>
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(data.Page >= data.PageCount)" OnClick="NextAsync">Older</Button>
+            </span>
+        </nav>
+    }
+</Card>
+
+<Modal Open="clearing" Title="Clear old lines" OnClose="CloseClear">
+    @if (clearing)
+    {
+        <p class="dialog-note">Delete the lines of the log that are older than:</p>
+        <Field For="log-clear" Label="Older than">
+            <select id="log-clear" class="input" @bind="clearDays">
+                <option value="365">1 year</option>
+                <option value="180">6 months</option>
+                <option value="90">3 months</option>
+                <option value="30">30 days</option>
+            </select>
+        </Field>
+        <p class="muted small">The last 30 days are always kept. The system also clears the lines older than the number of days chosen in System Settings, once a day.</p>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseClear">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="@busy" OnClick="ClearAsync">Delete the old lines</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int userId;
+    private SecurityLogPage? data;
+    private SecuritySummary? summary;
+    private string group = "all";
+    private string search = "";
+    private string severity = "";
+    private string from = "";
+    private string to = "";
+    private int pageNumber = 1;
+    private bool clearing;
+    private int clearDays = 180;
+    private bool busy;
+    private string? message;
+    private bool messageIsError;
+
+    private static readonly IReadOnlyList<PillTabs.Tab> Tabs =
+    [
+        new("all", "All", "list"),
+        .. SecurityLogService.Groups.Select(g => new PillTabs.Tab(g.Key, g.Title, g.Key switch
+        {
+            "signins" => "log-in",
+            "failed" => "shield-alert",
+            "accounts" => "users",
+            _ => "settings-2",
+        })),
+    ];
+
+    private SecurityLogFilter Filter => new(
+        group == "all" ? null : group, search, DateOnly.TryParse(from, out var f) ? f : null, DateOnly.TryParse(to, out var t) ? t : null,
+        string.IsNullOrEmpty(severity) ? null : severity);
+
+    // The file has the same filter as the list.
+    private string ExportHref => "admin/security-logs/export?" + string.Join("&", new[]
+    {
+        group == "all" ? null : "group=" + Uri.EscapeDataString(group),
+        string.IsNullOrWhiteSpace(search) ? null : "q=" + Uri.EscapeDataString(search.Trim()),
+        string.IsNullOrEmpty(severity) ? null : "severity=" + severity,
+        DateOnly.TryParse(from, out var f) ? "from=" + f.ToString("yyyy-MM-dd") : null,
+        DateOnly.TryParse(to, out var t) ? "to=" + t.ToString("yyyy-MM-dd") : null,
+    }.Where(x => x is not null));
+
+    [SupplyParameterFromQuery(Name = "group")] private string? GroupQuery { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        if (GroupQuery is { } wanted && Tabs.Any(t => t.Key == wanted))
+        {
+            group = wanted;
+        }
+
+        await ReloadAsync();
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task ReloadAsync()
+    {
+        summary = await Logs.GetSummaryAsync();
+        data = await Logs.GetPageAsync(Filter, pageNumber);
+        pageNumber = data.Page;
+    }
+
+    private async Task GroupChangedAsync(string? key)
+    {
+        group = key ?? "all";
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task FromChangedAsync(ChangeEventArgs e)
+    {
+        from = e.Value?.ToString() ?? "";
+        await ApplyAsync();
+    }
+
+    private async Task ToChangedAsync(ChangeEventArgs e)
+    {
+        to = e.Value?.ToString() ?? "";
+        await ApplyAsync();
+    }
+
+    private async Task ApplyAsync()
+    {
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task PreviousAsync()
+    {
+        pageNumber--;
+        await ReloadAsync();
+    }
+
+    private async Task NextAsync()
+    {
+        pageNumber++;
+        await ReloadAsync();
+    }
+
+    private void OpenClear() => clearing = true;
+
+    private void CloseClear() => clearing = false;
+
+    private async Task ClearAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Logs.ClearOldAsync(userId, clearDays);
+            clearing = false;
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await ReloadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private static Tone ToneOf(string severity) => severity switch
+    {
+        "Critical" => Tone.Danger,
+        "Warning" => Tone.Warning,
+        _ => Tone.Success,
+    };
+
+    /// <summary>"Chrome on Windows" from what the browser says about itself (a guess, only to help the eye).</summary>
+    internal static string DeviceText(string? agent)
+    {
+        if (string.IsNullOrWhiteSpace(agent))
+        {
+            return "";
+        }
+
+        var browser = agent.Contains("Edg/") ? "Edge"
+            : agent.Contains("OPR/") ? "Opera"
+            : agent.Contains("Firefox/") ? "Firefox"
+            : agent.Contains("Chrome/") || agent.Contains("CriOS/") ? "Chrome"
+            : agent.Contains("Safari/") ? "Safari"
+            : "A browser";
+        var system = agent.Contains("Windows") ? "Windows"
+            : agent.Contains("Android") ? "Android"
+            : agent.Contains("iPhone") || agent.Contains("iPad") ? "iOS"
+            : agent.Contains("Mac OS") ? "macOS"
+            : agent.Contains("Linux") ? "Linux"
+            : "";
+        return system.Length == 0 ? browser : $"{browser} on {system}";
+    }
+}

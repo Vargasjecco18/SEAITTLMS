@@ -8,7 +8,7 @@
 .meter {
     display: block;
     flex: 1;
-    height: 9px;
+    height: 0.5625rem;
     overflow: hidden;
     border-radius: 999px;
     background: var(--surface-2);

@@ -1,0 +1,585 @@
+@page "/groups/{Id:int}"
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CurrentUser Me
+@inject GroupService Groups
+@inject PeopleService People
+@inject FileService Files
+@inject PresenceService Presence
+@inject MessageLauncher Launcher
+@inject NavigationManager Navigation
+
+@if (!loaded)
+{
+    <PageTitle>Group · SEAITT e-LMS</PageTitle>
+    <p class="muted">Loading…</p>
+}
+else if (group is null)
+{
+    <PageTitle>Group · SEAITT e-LMS</PageTitle>
+    <Card>
+        <EmptyState IconName="users" Title="This group is not here">
+            <p>It was deleted, or you are not a member of it.</p>
+            <div class="back"><ButtonLink Href="groups" Variant="ButtonVariant.Secondary" IconName="chevron-left">All groups</ButtonLink></div>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageTitle>@group.Name · SEAITT e-LMS</PageTitle>
+
+    <PageHeader Title="@group.Name" Subtitle="@(string.IsNullOrWhiteSpace(group.Description) ? $"A group by {group.OwnerName}" : group.Description)" IconName="users">
+        <ButtonLink Href="groups" Variant="ButtonVariant.Ghost" IconName="chevron-left">All groups</ButtonLink>
+        @if (group.IsOwner)
+        {
+            <Button Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="OpenEdit">Edit</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" OnClick="AskDelete">Delete</Button>
+        }
+        else
+        {
+            <Button Variant="ButtonVariant.Secondary" IconName="log-out" OnClick="AskLeave">Leave</Button>
+        }
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <PillTabs Items="Tabs" Selected="@tab" SelectedChanged="TabChanged" Label="Parts of the group" />
+
+    @if (tab == "wall")
+    {
+        <Card>
+            <form class="composer" @onsubmit="PostAsync">
+                <label for="g-post" class="sr-only">Write something to the group</label>
+                <textarea id="g-post" class="input" rows="3" maxlength="2000" placeholder="Write something to the group…" @bind="draft" @bind:event="oninput"></textarea>
+                <div class="composer-bar">
+                    <span class="muted small">@draft.Length / 2000</span>
+                    <Button Type="submit" IconName="send" Disabled="@(busy || string.IsNullOrWhiteSpace(draft))">Post</Button>
+                </div>
+            </form>
+        </Card>
+
+        @if (group.Posts.Count == 0)
+        {
+            <Card>
+                <EmptyState IconName="message-circle" Title="Nothing here yet">
+                    <p>Be the first to write: a question, a plan for the project, the room of the meeting.</p>
+                </EmptyState>
+            </Card>
+        }
+        else
+        {
+            <div class="posts">
+                @foreach (var post in group.Posts)
+                {
+                    var p = post;
+                    <article class="post" aria-label="@($"Post of {p.AuthorName}")">
+                        <PersonLine UserId="p.AuthorUserId" Name="@p.AuthorName" Detail="@((p.AuthorRole == AppRoles.Teacher ? "Teacher · " : "") + PostTime(p.AtUtc))" Size="36">
+                            @if (p.CanDelete)
+                            {
+                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete this post" Disabled="@busy" OnClick="() => DeletePostAsync(p.Id)" />
+                            }
+                        </PersonLine>
+                        <p class="post-body">@p.Body</p>
+
+                        @if (p.Replies.Count > 0)
+                        {
+                            <ul class="replies">
+                                @foreach (var reply in p.Replies)
+                                {
+                                    var r = reply;
+                                    <li>
+                                        <PersonLine UserId="r.AuthorUserId" Name="@r.AuthorName" Detail="@PostTime(r.AtUtc)" Size="28">
+                                            @if (r.CanDelete)
+                                            {
+                                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete this reply" Disabled="@busy" OnClick="() => DeletePostAsync(r.Id)" />
+                                            }
+                                        </PersonLine>
+                                        <p class="post-body">@r.Body</p>
+                                    </li>
+                                }
+                            </ul>
+                        }
+
+                        @if (replyingTo == p.Id)
+                        {
+                            <form class="reply" @onsubmit="ReplyAsync">
+                                <input type="text" class="input" maxlength="2000" placeholder="Write a reply…" aria-label="Write a reply" @bind="replyDraft" @bind:event="oninput" />
+                                <Button Type="submit" Small="true" IconName="send" Disabled="@(busy || string.IsNullOrWhiteSpace(replyDraft))">Reply</Button>
+                                <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="CancelReply">Cancel</Button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="link-button" @onclick="() => StartReply(p.Id)"><Icon Name="message-circle" Size="14" /> Reply</button>
+                        }
+                    </article>
+                }
+            </div>
+
+            @if (group.TotalPosts > group.Posts.Count)
+            {
+                <p class="more"><Button Variant="ButtonVariant.Secondary" OnClick="ShowMorePosts">Show older posts</Button></p>
+            }
+        }
+    }
+    else if (tab == "members")
+    {
+        <Card>
+            @if (group.IsOwner)
+            {
+                <div class="toolbar"><Button IconName="user-round-plus" OnClick="OpenAdd">Add people</Button></div>
+            }
+
+            <ul class="members">
+                @foreach (var m in group.Members)
+                {
+                    var member = m;
+                    <li>
+                        <PersonLine UserId="member.UserId" Name="@member.Name" Detail="@(member.Role == AppRoles.Teacher ? "Teacher" : "Student")" Online="Presence.IsOnline(member.UserId)">
+                            @if (member.IsOwner)
+                            {
+                                <Badge Tone="Tone.Info">Owner</Badge>
+                            }
+
+                            @if (member.UserId != userId)
+                            {
+                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="message-square" Title="@($"Write to {member.Name}")" OnClick="() => Launcher.Open(member.UserId)" />
+                                @if (group.IsOwner)
+                                {
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="user-round-x" Title="@($"Remove {member.Name}")" Disabled="@busy" OnClick="() => RemoveMemberAsync(member)" />
+                                }
+                            }
+                        </PersonLine>
+                    </li>
+                }
+            </ul>
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <div class="toolbar"><Button IconName="share-2" OnClick="OpenShare">Share a file with the group</Button></div>
+            @if (files.Count == 0)
+            {
+                <EmptyState IconName="files" Title="No files shared yet">
+                    <p>Share a file from your locker (Resources) and everybody in the group can open it.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="data-wrap">
+                    <table class="data-table">
+                        <thead><tr><th scope="col">File</th><th scope="col" class="col-more">Shared by</th><th scope="col" class="col-more">Size</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+                        <tbody>
+                            @foreach (var f in files)
+                            {
+                                var file = f;
+                                <tr>
+                                    <td><span class="file-name"><Icon Name="file" Size="16" /> @file.Name</span><span class="muted-line">@PhilippineTime.FormatDate(file.SharedAtUtc)</span></td>
+                                    <td class="col-more">@file.OwnerName</td>
+                                    <td class="col-more">@FileSize.Text(file.SizeBytes)</td>
+                                    <td class="right">
+                                        <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                        @if (file.OwnerUserId != userId)
+                                        {
+                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="folder-plus" Title="Keep a copy in my locker" Disabled="@busy" OnClick="() => SaveCopyAsync(file)" />
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    }
+}
+
+<Modal Open="editing" Title="Edit the group" OnClose="CloseEdit">
+    @if (editing)
+    {
+        <FormErrors Errors="errors" />
+        <Field For="e-name" Label="Name of the group" Required="true">
+            <input id="e-name" type="text" class="input" maxlength="100" required @bind="editName" />
+        </Field>
+        <Field For="e-description" Label="What it is for">
+            <textarea id="e-description" class="input" rows="2" maxlength="500" @bind="editDescription"></textarea>
+        </Field>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseEdit">Cancel</Button>
+            <Button IconName="save" Disabled="@busy" OnClick="SaveEditAsync">Save</Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="adding" Title="Add people" OnClose="CloseAdd" Large="true">
+    @if (adding)
+    {
+        <PeoplePicker People="addable" Selected="picked" EmptyText="Everybody you can add is in the group already." />
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseAdd">Cancel</Button>
+            <Button IconName="user-round-plus" Disabled="@(busy || picked.Count == 0)" OnClick="AddMembersAsync">Add @(picked.Count == 0 ? "" : picked.Count.ToString())</Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="sharing" Title="Share files with the group" OnClose="CloseShare">
+    @if (sharing)
+    {
+        @if (locker.Count == 0)
+        {
+            <p class="dialog-note">Your locker is empty. Add files in <a href="resources">Resources</a> first.</p>
+        }
+        else
+        {
+            <p class="dialog-note">Tick the files of your locker the group can open.</p>
+            <ul class="locker-pick">
+                @foreach (var f in locker)
+                {
+                    var file = f;
+                    <li>
+                        <label class="pick-row">
+                            <input type="checkbox" checked="@sharedPick.Contains(file.Id)" @onchange="e => TogglePick(file.Id, e.Value is true)" />
+                            <span><Icon Name="file" Size="16" /> @file.Name <small>@FileSize.Text(file.SizeBytes)</small></span>
+                        </label>
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseShare">Cancel</Button>
+            <Button IconName="share-2" Disabled="@(busy || locker.Count == 0)" OnClick="SaveShareAsync">Save</Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="confirm is not null" Title="@(confirm == "delete" ? "Delete this group?" : "Leave this group?")" OnClose="CloseConfirm">
+    @if (confirm is not null && group is not null)
+    {
+        <p class="dialog-note">
+            @if (confirm == "delete")
+            {
+                <span>The group <strong>@group.Name</strong>, its posts and the files shared in it are deleted for everybody. This can't be undone.</span>
+            }
+            else
+            {
+                <span>You will not see <strong>@group.Name</strong> any more.@(group.IsOwner ? " Somebody else becomes the owner." : "")</span>
+            }
+        </p>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseConfirm">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="@(confirm == "delete" ? "trash-2" : "log-out")" Disabled="@busy" OnClick="ConfirmAsync">@(confirm == "delete" ? "Delete the group" : "Leave")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private int userId;
+    private bool loaded;
+    private GroupDetail? group;
+    private IReadOnlyList<SharedFileRow> files = [];
+    private string tab = "wall";
+    private string draft = "";
+    private string replyDraft = "";
+    private int? replyingTo;
+    private int takePosts = 30;
+    private bool busy;
+    private string? message;
+    private bool messageIsError;
+    private Timer? timer;
+
+    // dialogs
+    private bool editing;
+    private string editName = "";
+    private string editDescription = "";
+    private IReadOnlyList<string> errors = [];
+    private bool adding;
+    private IReadOnlyList<PersonCard> addable = [];
+    private readonly HashSet<int> picked = [];
+    private bool sharing;
+    private IReadOnlyList<FileRow> locker = [];
+    private readonly HashSet<int> sharedPick = [];
+    private HashSet<int> sharedBefore = [];
+    private string? confirm;
+
+    private IReadOnlyList<PillTabs.Tab> Tabs =>
+    [
+        new("wall", "Wall", "message-square-text"),
+        new("members", "Members", "users-round", group?.Members.Count),
+        new("files", "Files", "files", files.Count),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        await LoadAsync();
+        loaded = true;
+
+        // The wall and the green dots look again every 10 seconds, so what the others write shows up by itself.
+        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    private async Task TickAsync()
+    {
+        try
+        {
+            if (!busy && !editing && !adding && !sharing)
+            {
+                await LoadAsync();
+            }
+
+            StateHasChanged();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        group = await Groups.GetAsync(userId, Id, takePosts);
+        files = group is null ? [] : await Files.GetGroupFilesAsync(userId, Id);
+    }
+
+    private void ClearMessage() => message = null;
+
+    private void TabChanged(string? key) => tab = key ?? "wall";
+
+    private static string PostTime(DateTime utc) => $"{PhilippineTime.FormatDate(utc)} · {PhilippineTime.FormatTime(utc)}";
+
+    private async Task RunAsync(Func<Task<ServiceResult>> action, bool reload = true)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await action();
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            if (reload)
+            {
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---- the wall
+
+    private async Task PostAsync()
+    {
+        var text = draft;
+        await RunAsync(async () =>
+        {
+            var result = await Groups.PostAsync(userId, Id, text);
+            if (result.Succeeded)
+            {
+                draft = "";
+            }
+
+            return result;
+        });
+    }
+
+    private void StartReply(int postId)
+    {
+        replyingTo = postId;
+        replyDraft = "";
+    }
+
+    private void CancelReply() => replyingTo = null;
+
+    private async Task ReplyAsync()
+    {
+        if (replyingTo is not { } postId)
+        {
+            return;
+        }
+
+        var text = replyDraft;
+        await RunAsync(async () =>
+        {
+            var result = await Groups.PostAsync(userId, Id, text, postId);
+            if (result.Succeeded)
+            {
+                replyingTo = null;
+                replyDraft = "";
+            }
+
+            return result;
+        });
+    }
+
+    private Task DeletePostAsync(int postId) => RunAsync(() => Groups.DeletePostAsync(userId, Id, postId));
+
+    private async Task ShowMorePosts()
+    {
+        takePosts += 30;
+        await LoadAsync();
+    }
+
+    // ---- members
+
+    private async Task OpenAdd()
+    {
+        picked.Clear();
+        var inGroup = group?.Members.Select(m => m.UserId).ToHashSet() ?? [];
+        addable = (await People.GetReachableAsync(userId)).Where(p => !inGroup.Contains(p.UserId)).ToList();
+        adding = true;
+    }
+
+    private void CloseAdd() => adding = false;
+
+    private async Task AddMembersAsync()
+    {
+        var ids = picked.ToList();
+        await RunAsync(() => Groups.AddMembersAsync(userId, Id, ids));
+        adding = false;
+    }
+
+    private Task RemoveMemberAsync(GroupMemberView member) => RunAsync(() => Groups.RemoveMemberAsync(userId, Id, member.UserId));
+
+    // ---- files
+
+    private async Task SaveCopyAsync(SharedFileRow file) => await RunAsync(() => Files.SaveCopyAsync(userId, file.Id), reload: false);
+
+    private async Task OpenShare()
+    {
+        locker = await Files.GetLockerAsync(userId);
+        sharedBefore = files.Where(f => f.OwnerUserId == userId).Select(f => f.Id).ToHashSet();
+        sharedPick.Clear();
+        sharedPick.UnionWith(sharedBefore);
+        sharing = true;
+    }
+
+    private void CloseShare() => sharing = false;
+
+    private void TogglePick(int fileId, bool on)
+    {
+        if (on) { sharedPick.Add(fileId); } else { sharedPick.Remove(fileId); }
+    }
+
+    private async Task SaveShareAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var problems = new List<string>();
+            foreach (var file in locker)
+            {
+                var want = sharedPick.Contains(file.Id);
+                if (want == sharedBefore.Contains(file.Id))
+                {
+                    continue;
+                }
+
+                var result = await Files.ShareWithGroupAsync(userId, file.Id, Id, want);
+                if (!result.Succeeded)
+                {
+                    problems.AddRange(result.Errors);
+                }
+            }
+
+            sharing = false;
+            messageIsError = problems.Count > 0;
+            message = problems.Count > 0 ? string.Join(" ", problems) : "The files the group can open were saved.";
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---- the group itself
+
+    private void OpenEdit()
+    {
+        errors = [];
+        editName = group?.Name ?? "";
+        editDescription = group?.Description ?? "";
+        editing = true;
+    }
+
+    private void CloseEdit() => editing = false;
+
+    private async Task SaveEditAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Groups.UpdateAsync(userId, Id, editName, editDescription);
+            if (!result.Succeeded)
+            {
+                errors = result.Errors;
+                return;
+            }
+
+            editing = false;
+            messageIsError = false;
+            message = result.Message;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void AskDelete() => confirm = "delete";
+
+    private void AskLeave() => confirm = "leave";
+
+    private void CloseConfirm() => confirm = null;
+
+    private async Task ConfirmAsync()
+    {
+        if (busy || confirm is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = confirm == "delete" ? await Groups.DeleteAsync(userId, Id) : await Groups.LeaveAsync(userId, Id);
+            confirm = null;
+            if (result.Succeeded)
+            {
+                Navigation.NavigateTo("groups");
+            }
+            else
+            {
+                messageIsError = true;
+                message = string.Join(" ", result.Errors);
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

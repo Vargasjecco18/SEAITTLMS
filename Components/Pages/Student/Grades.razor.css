@@ -84,7 +84,7 @@
 .track {
     position: relative;
     display: block;
-    height: 10px;
+    height: 0.625rem;
     border-radius: 999px;
     background: var(--border);
 }

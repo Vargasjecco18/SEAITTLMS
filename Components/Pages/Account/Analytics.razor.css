@@ -53,8 +53,8 @@
 
 .swatch {
     display: inline-block;
-    width: 10px;
-    height: 10px;
+    width: 0.625rem;
+    height: 0.625rem;
     border-radius: 3px;
 }
 
@@ -86,7 +86,7 @@
 
 .stack {
     display: flex;
-    height: 28px;
+    height: 1.75rem;
     overflow: hidden;
     border-radius: 8px;
     background: var(--border);
@@ -191,7 +191,7 @@
 
 .track {
     display: block;
-    height: 10px;
+    height: 0.625rem;
     overflow: hidden;
     border-radius: 999px;
     background: var(--border);

@@ -1,4 +1,16 @@
-<span class="avatar" style="--avatar-size: @(Size)px" aria-hidden="true">@Initials</span>
+@inject ProfilePhotoService Photos
+
+@* The picture of the person when they uploaded one (UserId is given), otherwise their initials. *@
+<span class="avatar" style="--avatar-size: @(Rem)rem" data-initials="@Initials" aria-hidden="true">
+    @if (PhotoUrl is { } url)
+    {
+        <img src="@url" alt="" loading="lazy" decoding="async" />
+    }
+    else
+    {
+        @Initials
+    }
+</span>
 
 @code {
     private static readonly HashSet<string> Suffixes = new(StringComparer.OrdinalIgnoreCase) { "jr", "sr", "ii", "iii", "iv", "v" };
@@ -7,6 +19,14 @@
     [Parameter] public string? Name { get; set; }
 
     [Parameter] public int Size { get; set; } = 36;
+
+    /// <summary>The person's account id. When given and they have a picture, the picture is shown instead of the initials.</summary>
+    [Parameter] public int? UserId { get; set; }
+
+    private string? PhotoUrl => UserId is { } id ? Photos.UrlOf(id) : null;
+
+    // Size is in pixels at the browser's normal text size; the avatar is drawn in rem so it follows the size of the whole design.
+    private string Rem => (Size / 16.0).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
 
     // First letter of the first name and of the last name. "Juan Santos Dela Cruz Jr." gives JC: the Jr. is skipped.
     private string Initials

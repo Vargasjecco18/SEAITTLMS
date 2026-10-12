@@ -1,0 +1,56 @@
+.top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+}
+
+.top .input {
+    flex: 1;
+    width: auto;
+}
+
+.chosen {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.list {
+    display: grid;
+    gap: 0.1rem;
+    max-height: 18rem;
+    margin: 0;
+    padding: 0.25rem;
+    overflow-y: auto;
+    list-style: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.row:hover {
+    background: var(--surface-2);
+}
+
+.row input {
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--btn-bg);
+}
+
+.none {
+    margin: 0.5rem 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}

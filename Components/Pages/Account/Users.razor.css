@@ -1,0 +1,96 @@
+.people {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.people li {
+    padding: 0.5rem 0.4rem;
+    border-radius: var(--radius-sm);
+}
+
+.people li:hover {
+    background: var(--surface-2);
+}
+
+.section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.2rem 0 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.section:first-of-type {
+    margin-top: 0.25rem;
+}
+
+.badge-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.35rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.75rem;
+}
+
+.empty {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+.online-only {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.55rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.online-only input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--btn-bg);
+}
+
+.online-count {
+    display: inline-block;
+    min-width: 1.35rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.find {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.find .input {
+    flex: 1 1 14rem;
+    width: auto;
+}
+
+.link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}

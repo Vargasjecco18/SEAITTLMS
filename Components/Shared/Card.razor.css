@@ -17,8 +17,8 @@
 .card-icon {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 2.125rem;
+    height: 2.125rem;
     border-radius: 10px;
     background: var(--brand-soft);
     color: var(--brand-strong);

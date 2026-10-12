@@ -1,0 +1,225 @@
+@page "/admin/settings"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject SystemSettingsService Settings
+
+<PageTitle>System Settings · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="System Settings" Subtitle="The things about the whole system that the administrator decides." IconName="settings-2">
+    <Button Type="submit" IconName="save" Disabled="@busy" form="settings-form">@(busy ? "Saving…" : "Save settings")</Button>
+</PageHeader>
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+<FormErrors Errors="errors" />
+
+@if (form is not null)
+{
+    <form id="settings-form" class="grid" @onsubmit="SaveAsync">
+        <Card Title="The school" IconName="building-2">
+            <p class="note">Shown at the top of every page, on the home page and the sign-in page, and on the Help page.</p>
+            <Field For="s-name" Label="Name of the school" Required="true">
+                <input id="s-name" type="text" class="input" maxlength="150" required @bind="form.SchoolName" />
+            </Field>
+            <div class="two">
+                <Field For="s-short" Label="Short name" Hint="Like SEAITT. The pages show it before “e-LMS”." Required="true">
+                    <input id="s-short" type="text" class="input" maxlength="20" required @bind="form.SchoolShortName" />
+                </Field>
+                <Field For="s-tagline" Label="Line under the name" Hint="For example Senior High School.">
+                    <input id="s-tagline" type="text" class="input" maxlength="80" @bind="form.Tagline" />
+                </Field>
+            </div>
+            <Field For="s-address" Label="Address">
+                <input id="s-address" type="text" class="input" maxlength="250" @bind="form.Address" />
+            </Field>
+            <div class="two">
+                <Field For="s-email" Label="Contact email" Hint="Where people can ask for help.">
+                    <input id="s-email" type="email" class="input" maxlength="254" @bind="form.ContactEmail" />
+                </Field>
+                <Field For="s-phone" Label="Contact number">
+                    <input id="s-phone" type="text" class="input" maxlength="40" @bind="form.ContactPhone" />
+                </Field>
+            </div>
+        </Card>
+
+        <Card Title="Signing in" IconName="lock-keyhole">
+            <p class="note">An account is locked for a while after too many wrong passwords in a row, so nobody can keep guessing.</p>
+            <div class="two">
+                <Field For="s-attempts" Label="Wrong passwords before it is locked" Hint="From 3 to 20.">
+                    <input id="s-attempts" type="number" class="input" min="3" max="20" @bind="form.MaxFailedAttempts" />
+                </Field>
+                <Field For="s-lockout" Label="Minutes it stays locked" Hint="From 1 to 1440.">
+                    <input id="s-lockout" type="number" class="input" min="1" max="1440" @bind="form.LockoutMinutes" />
+                </Field>
+            </div>
+        </Card>
+
+        <Card Title="Maintenance" IconName="settings-2">
+            <p class="note">While maintenance is on, only administrators can sign in or use the system. Everybody else sees the message below.</p>
+            <label class="check">
+                <input id="s-maintenance" type="checkbox" @bind="form.MaintenanceOn" />
+                <span><strong>Close the system for maintenance</strong><small>People who are signed in are sent to the message when they open another page.</small></span>
+            </label>
+            <Field For="s-message" Label="Message">
+                <textarea id="s-message" class="input" rows="3" maxlength="300" @bind="form.MaintenanceMessage"></textarea>
+            </Field>
+        </Card>
+
+        <Card Title="Messages" IconName="message-square">
+            <p class="note">Messages between people can be closed at night. Reading them is always possible.</p>
+            <label class="check">
+                <input id="s-closing" type="checkbox" @bind="form.MessagesHaveClosingHours" />
+                <span><strong>Messages can't be sent at night</strong><small>Philippine time.</small></span>
+            </label>
+            <div class="two">
+                <Field For="s-close" Label="Closes at">
+                    <select id="s-close" class="input" disabled="@(!form.MessagesHaveClosingHours)" @bind="form.MessagesCloseHour">
+                        @foreach (var hour in Hours)
+                        {
+                            <option value="@hour">@MessagingHours.HourText(hour)</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="s-open" Label="Opens again at">
+                    <select id="s-open" class="input" disabled="@(!form.MessagesHaveClosingHours)" @bind="form.MessagesOpenHour">
+                        @foreach (var hour in Hours)
+                        {
+                            <option value="@hour">@MessagingHours.HourText(hour)</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+        </Card>
+
+        <Card Title="Backups and the log" IconName="database-backup">
+            <p class="note">The backups themselves are made on the <a href="admin/backups">Database Backup &amp; Restore</a> page.</p>
+            <label class="check">
+                <input id="s-auto" type="checkbox" @bind="form.AutoBackupOn" />
+                <span><strong>Make a backup by itself every day</strong><small>The system must be running at that time.</small></span>
+            </label>
+            <div class="two">
+                <Field For="s-auto-hour" Label="From this hour (Philippine time)">
+                    <select id="s-auto-hour" class="input" disabled="@(!form.AutoBackupOn)" @bind="form.AutoBackupHour">
+                        @foreach (var hour in Hours)
+                        {
+                            <option value="@hour">@MessagingHours.HourText(hour)</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="s-keep" Label="Automatic backups to keep" Hint="The older ones are deleted. From 1 to 60.">
+                    <input id="s-keep" type="number" class="input" min="1" max="60" disabled="@(!form.AutoBackupOn)" @bind="form.BackupsToKeep" />
+                </Field>
+            </div>
+            <Field For="s-log" Label="Days the security log is kept" Hint="Older lines are deleted once a day. From 30 to 3650.">
+                <input id="s-log" type="number" class="input" min="30" max="3650" @bind="form.LogKeepDays" />
+            </Field>
+        </Card>
+
+        <Card Title="Files" IconName="folder-open">
+            <p class="note">Every student and teacher has a locker (Resources) for their files.</p>
+            <div class="two">
+                <Field For="s-file" Label="Biggest file (MB)" Hint="From 1 to 50.">
+                    <input id="s-file" type="number" class="input" min="1" max="50" @bind="form.MaxFileMegabytes" />
+                </Field>
+                <Field For="s-locker" Label="Size of a locker (MB)" Hint="From 10 to 5000.">
+                    <input id="s-locker" type="number" class="input" min="10" max="5000" @bind="form.LockerMegabytes" />
+                </Field>
+            </div>
+        </Card>
+
+        <div class="save-bar">
+            <Button Type="submit" IconName="save" Disabled="@busy">@(busy ? "Saving…" : "Save settings")</Button>
+            <Button Variant="ButtonVariant.Ghost" IconName="rotate-ccw" Disabled="@busy" OnClick="Reload">Undo my changes</Button>
+        </div>
+    </form>
+}
+
+@code {
+    private static readonly int[] Hours = Enumerable.Range(0, 24).ToArray();
+
+    private int userId;
+    private SettingsForm? form;
+    private IReadOnlyList<string> errors = [];
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        Reload();
+    }
+
+    private void ClearMessage() => message = null;
+
+    private void Reload()
+    {
+        form = SettingsForm.From(Settings.Current);
+        errors = [];
+    }
+
+    private async Task SaveAsync()
+    {
+        if (busy || form is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Settings.SaveAsync(userId, form.ToValues());
+            errors = result.Succeeded ? [] : result.Errors;
+            messageIsError = false;
+            message = result.Succeeded ? result.Message : null;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // The boxes are bound to this (the record of the settings can't change, so it is copied in and out).
+    private sealed class SettingsForm
+    {
+        public string SchoolName { get; set; } = "";
+        public string SchoolShortName { get; set; } = "";
+        public string Tagline { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string ContactEmail { get; set; } = "";
+        public string ContactPhone { get; set; } = "";
+        public int MaxFailedAttempts { get; set; }
+        public int LockoutMinutes { get; set; }
+        public bool MaintenanceOn { get; set; }
+        public string MaintenanceMessage { get; set; } = "";
+        public bool MessagesHaveClosingHours { get; set; }
+        public int MessagesCloseHour { get; set; }
+        public int MessagesOpenHour { get; set; }
+        public bool AutoBackupOn { get; set; }
+        public int AutoBackupHour { get; set; }
+        public int BackupsToKeep { get; set; }
+        public int LogKeepDays { get; set; }
+        public int MaxFileMegabytes { get; set; }
+        public int LockerMegabytes { get; set; }
+
+        public static SettingsForm From(SystemSettingsValues v) => new()
+        {
+            SchoolName = v.SchoolName, SchoolShortName = v.SchoolShortName, Tagline = v.Tagline, Address = v.Address,
+            ContactEmail = v.ContactEmail, ContactPhone = v.ContactPhone, MaxFailedAttempts = v.MaxFailedAttempts, LockoutMinutes = v.LockoutMinutes,
+            MaintenanceOn = v.MaintenanceOn, MaintenanceMessage = v.MaintenanceMessage, MessagesHaveClosingHours = v.MessagesHaveClosingHours,
+            MessagesCloseHour = v.MessagesCloseHour, MessagesOpenHour = v.MessagesOpenHour, AutoBackupOn = v.AutoBackupOn,
+            AutoBackupHour = v.AutoBackupHour, BackupsToKeep = v.BackupsToKeep, LogKeepDays = v.LogKeepDays,
+            MaxFileMegabytes = v.MaxFileMegabytes, LockerMegabytes = v.LockerMegabytes,
+        };
+
+        public SystemSettingsValues ToValues() => new()
+        {
+            SchoolName = SchoolName, SchoolShortName = SchoolShortName, Tagline = Tagline, Address = Address,
+            ContactEmail = ContactEmail, ContactPhone = ContactPhone, MaxFailedAttempts = MaxFailedAttempts, LockoutMinutes = LockoutMinutes,
+            MaintenanceOn = MaintenanceOn, MaintenanceMessage = MaintenanceMessage, MessagesHaveClosingHours = MessagesHaveClosingHours,
+            MessagesCloseHour = MessagesCloseHour, MessagesOpenHour = MessagesOpenHour, AutoBackupOn = AutoBackupOn,
+            AutoBackupHour = AutoBackupHour, BackupsToKeep = BackupsToKeep, LogKeepDays = LogKeepDays,
+            MaxFileMegabytes = MaxFileMegabytes, LockerMegabytes = LockerMegabytes,
+        };
+    }
+}

@@ -57,6 +57,20 @@ public class AppDbContext : DbContext
     public DbSet<EvaluationResponse> EvaluationResponses => Set<EvaluationResponse>();
     public DbSet<EvaluationAnswer> EvaluationAnswers => Set<EvaluationAnswer>();
 
+    // What people share: pictures (and, below, friends, groups and files)
+    public DbSet<ProfilePhoto> ProfilePhotos => Set<ProfilePhoto>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<StudyGroup> StudyGroups => Set<StudyGroup>();
+    public DbSet<StudyGroupMember> StudyGroupMembers => Set<StudyGroupMember>();
+    public DbSet<GroupPost> GroupPosts => Set<GroupPost>();
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<StoredFileContent> StoredFileContents => Set<StoredFileContent>();
+    public DbSet<SharedFile> SharedFiles => Set<SharedFile>();
+
+    // The administrator: the security log and the system settings
+    public DbSet<SecurityLog> SecurityLogs => Set<SecurityLog>();
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Notification> Notifications => Set<Notification>();

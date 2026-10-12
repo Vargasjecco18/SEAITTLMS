@@ -15,6 +15,9 @@
         {
             @switch (widget)
             {
+                case "online":
+                    <OnlineStudents />
+                    break;
                 case "announcements":
                     <Card Title="Announcements" IconName="megaphone" Class="announcements">
                         @if (notices.Count == 0)
@@ -161,7 +164,7 @@
 }
 
 @code {
-    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), calendar, upnext (the due dates), achievements, tocheck.</summary>
+    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), calendar, upnext (the due dates), achievements, tocheck, online (the students who are online).</summary>
     [Parameter] public string Show { get; set; } = "calendar,upnext";
 
     private string? role;
@@ -216,6 +219,7 @@
             {
                 "achievements" or "activities" or "announcements" => role == AppRoles.Student,
                 "tocheck" or "unassigned" => role == AppRoles.Teacher,
+                "online" => true,
                 _ => true,
             })
             .ToArray();

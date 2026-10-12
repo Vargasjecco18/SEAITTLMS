@@ -29,8 +29,8 @@
 .book {
     display: grid;
     place-items: center;
-    width: 46px;
-    height: 46px;
+    width: 2.875rem;
+    height: 2.875rem;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.22);
 }

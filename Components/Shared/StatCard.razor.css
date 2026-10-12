@@ -29,8 +29,8 @@
 .stat-icon {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 3rem;
+    height: 3rem;
     flex: none;
     border-radius: 14px;
     background: var(--accent-soft);
@@ -71,8 +71,8 @@
     }
 
     .stat-icon {
-        width: 40px;
-        height: 40px;
+        width: 2.5rem;
+        height: 2.5rem;
         border-radius: 12px;
     }
 

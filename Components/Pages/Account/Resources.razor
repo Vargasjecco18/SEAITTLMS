@@ -1,0 +1,510 @@
+@page "/resources"
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject FileService Files
+@inject SystemSettingsService Settings
+
+<PageTitle>Resources · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Resources" Subtitle="Your locker for your own files, and the files that others uploaded for you." IconName="folder-open" />
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+@if (loaded)
+{
+    <PillTabs Items="Tabs" Selected="@tab" SelectedChanged="TabChanged" Label="Resources" />
+
+    @if (tab == "locker")
+    {
+        <div class="top">
+            <Card Title="Your locker" IconName="hard-drive">
+                <p class="usage-line"><strong>@FileSize.Text(usage.UsedBytes)</strong> of @FileSize.Text(usage.LimitBytes) used · @usage.Files @(usage.Files == 1 ? "file" : "files")</p>
+                <div class="full-bar"><ProgressBar Percent="usage.Percent" Title="@($"{usage.Percent}% of your locker")" /></div>
+                <p class="hint">Only you can see these files, until you share one.</p>
+            </Card>
+
+            <Card Title="Add files" IconName="cloud-upload">
+                <label class="drop @(uploading ? "busy" : "")">
+                    <InputFile OnChange="UploadAsync" multiple accept="*/*" disabled="@uploading" aria-label="Choose files to add to your locker" />
+                    <Icon Name="@(uploading ? "loader" : "file-up")" Size="22" />
+                    <span class="drop-text">
+                        <strong>@(uploading ? uploadStatus : "Choose files to add")</strong>
+                        <small>Up to @Settings.Current.MaxFileMegabytes MB each. Programs and scripts are not kept.</small>
+                    </span>
+                </label>
+            </Card>
+        </div>
+
+        <Card>
+            <form class="filter-bar" @onsubmit="SearchAsync">
+                <Field For="r-search" Label="Search your files" Class="grow">
+                    <input id="r-search" type="search" class="input" maxlength="80" placeholder="Part of a file name" @bind="search" />
+                </Field>
+                <Button Type="submit" IconName="search" Variant="ButtonVariant.Secondary">Search</Button>
+            </form>
+
+            @if (locker.Count == 0)
+            {
+                <EmptyState IconName="folder-open" Title="@(string.IsNullOrWhiteSpace(search) ? "Your locker is empty" : "No file has this name")">
+                    <p>@(string.IsNullOrWhiteSpace(search) ? "Add the files you need: notes, projects, reviewers. You can share them with your friends, a group or (teachers) a course." : "Try another part of the name.")</p>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="data-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">File</th>
+                                <th scope="col" class="col-more">Size</th>
+                                <th scope="col" class="col-more">Added</th>
+                                <th scope="col">Shared with</th>
+                                <th scope="col"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in locker)
+                            {
+                                var file = f;
+                                <tr>
+                                    <td><span class="file-name"><Icon Name="@IconFor(file.Name, file.ContentType)" Size="18" /> <span>@file.Name</span></span></td>
+                                    <td class="col-more">@FileSize.Text(file.SizeBytes)</td>
+                                    <td class="col-more">@PhilippineTime.FormatDate(file.AtUtc)</td>
+                                    <td>
+                                        @if (file.ShareText is null)
+                                        {
+                                            <span class="muted">Only you</span>
+                                        }
+                                        else
+                                        {
+                                            <Badge Tone="Tone.Info">@file.ShareText</Badge>
+                                        }
+                                    </td>
+                                    <td class="right actions">
+                                        <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="share-2" OnClick="() => OpenShareAsync(file)">Share</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Rename" OnClick="() => OpenRename(file)" />
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDelete(file)" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <div class="filter-bar">
+                <Field For="r-from" Label="Show">
+                    <select id="r-from" class="input" @bind="from">
+                        <option value="">All the files</option>
+                        <option value="person">From people</option>
+                        <option value="group">From my groups</option>
+                        <option value="course">For my courses</option>
+                    </select>
+                </Field>
+            </div>
+
+            @{
+                var list = shared.Where(s => from == "" || s.Via == from).ToList();
+            }
+            @if (list.Count == 0)
+            {
+                <EmptyState IconName="files" Title="Nothing uploaded for you yet">
+                    <p>When a teacher shares a file with your course, or a friend or a group shares one with you, it is listed here.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="data-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">File</th>
+                                <th scope="col">From</th>
+                                <th scope="col" class="col-more">Size</th>
+                                <th scope="col" class="col-more">Shared</th>
+                                <th scope="col"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in list)
+                            {
+                                var file = s;
+                                <tr>
+                                    <td><span class="file-name"><Icon Name="@IconFor(file.Name, file.ContentType)" Size="18" /> <span>@file.Name</span></span></td>
+                                    <td>
+                                        @file.OwnerName
+                                        <span class="muted-line">@ViaText(file)</span>
+                                    </td>
+                                    <td class="col-more">@FileSize.Text(file.SizeBytes)</td>
+                                    <td class="col-more">@PhilippineTime.FormatDate(file.SharedAtUtc)</td>
+                                    <td class="right actions">
+                                        <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="folder-plus" Title="Keep a copy in my locker" Disabled="@busy" OnClick="() => SaveCopyAsync(file)" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    }
+}
+
+<Modal Open="renameTarget is not null" Title="Rename the file" OnClose="CloseRename">
+    @if (renameTarget is not null)
+    {
+        <FormErrors Errors="errors" />
+        <Field For="r-name" Label="File name" Required="true">
+            <input id="r-name" type="text" class="input" maxlength="255" required @bind="renameText" />
+        </Field>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseRename">Cancel</Button>
+            <Button IconName="save" Disabled="@busy" OnClick="RenameAsync">Save</Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="deleteTarget is not null" Title="Delete this file?" OnClose="CloseDelete">
+    @if (deleteTarget is { } doomed)
+    {
+        <p class="dialog-note"><strong>@doomed.Name</strong> is deleted from your locker@(doomed.ShareCount > 0 ? ", and the people it is shared with can't open it any more" : ""). This can't be undone.</p>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="@busy" OnClick="DeleteAsync">Delete</Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="shareTarget is not null" Title="@($"Share {shareTarget?.Name}")" OnClose="CloseShare" Large="true">
+    @if (shareTarget is not null && shareOptions is not null)
+    {
+        <FormErrors Errors="errors" />
+        <p class="dialog-note">Choose who can open this file. They can download it and keep a copy; they can't change yours.</p>
+
+        <h3 class="share-title"><Icon Name="users-round" Size="16" /> People</h3>
+        <PeoplePicker People="shareOptions.People" Selected="sharePeople" EmptyText="You can share with classmates, teachers, students and friends. Nobody to choose yet." />
+
+        <h3 class="share-title"><Icon Name="users" Size="16" /> Groups</h3>
+        @if (shareOptions.Groups.Count == 0)
+        {
+            <p class="muted">You are not in a group. <a href="groups">Make one</a> to share with it.</p>
+        }
+        else
+        {
+            <ul class="checks">
+                @foreach (var g in shareOptions.Groups)
+                {
+                    var group = g;
+                    <li><label class="check"><input type="checkbox" checked="@shareGroups.Contains(group.Id)" @onchange="e => TogglePick(shareGroups, group.Id, e.Value is true)" /> <span>@group.Name</span></label></li>
+                }
+            </ul>
+        }
+
+        @if (shareOptions.Courses.Count > 0)
+        {
+            <h3 class="share-title"><Icon Name="book-open" Size="16" /> My courses (the students of the course)</h3>
+            <ul class="checks">
+                @foreach (var c in shareOptions.Courses)
+                {
+                    var course = c;
+                    <li><label class="check"><input type="checkbox" checked="@shareCourses.Contains(course.AssignmentId)" @onchange="e => TogglePick(shareCourses, course.AssignmentId, e.Value is true)" /> <span>@course.Label</span></label></li>
+                }
+            </ul>
+        }
+
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseShare">Cancel</Button>
+            <Button IconName="share-2" Disabled="@busy" OnClick="SaveShareAsync">Save sharing</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int userId;
+    private bool loaded;
+    private string tab = "locker";
+    private string search = "";
+    private string from = "";
+    private bool busy;
+    private bool uploading;
+    private string uploadStatus = "";
+    private string? message;
+    private bool messageIsError;
+    private IReadOnlyList<string> errors = [];
+
+    private IReadOnlyList<FileRow> locker = [];
+    private IReadOnlyList<SharedFileRow> shared = [];
+    private LockerUsage usage = new(0, 0, 0);
+
+    private FileRow? renameTarget;
+    private string renameText = "";
+    private FileRow? deleteTarget;
+    private FileRow? shareTarget;
+    private ShareOptions? shareOptions;
+    private readonly HashSet<int> sharePeople = [];
+    private readonly HashSet<int> shareGroups = [];
+    private readonly HashSet<int> shareCourses = [];
+
+    [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
+
+    private IReadOnlyList<PillTabs.Tab> Tabs =>
+    [
+        new("locker", "Locker", "hard-drive", usage.Files),
+        new("uploaded", "Uploaded files", "files", shared.Count),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        if (TabQuery == "uploaded")
+        {
+            tab = "uploaded";
+        }
+
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        locker = await Files.GetLockerAsync(userId, search);
+        usage = await Files.GetUsageAsync(userId);
+        shared = await Files.GetSharedWithMeAsync(userId);
+    }
+
+    private void ClearMessage() => message = null;
+
+    private void TabChanged(string? key) => tab = key ?? "locker";
+
+    private async Task SearchAsync() => locker = await Files.GetLockerAsync(userId, search);
+
+    private static string IconFor(string name, string contentType)
+    {
+        var extension = Path.GetExtension(name).ToLowerInvariant();
+        if (contentType.StartsWith("image/") || extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".bmp")
+        {
+            return "file-image";
+        }
+
+        return extension switch
+        {
+            ".xls" or ".xlsx" or ".csv" => "file-spreadsheet",
+            ".zip" or ".rar" or ".7z" or ".tar" or ".gz" => "file-archive",
+            ".pdf" or ".doc" or ".docx" or ".txt" or ".rtf" or ".odt" or ".ppt" or ".pptx" or ".md" => "file-text",
+            _ => "file",
+        };
+    }
+
+    private static string ViaText(SharedFileRow file) => file.Via switch
+    {
+        "group" => $"in the group {file.Where}",
+        "course" => $"for {file.Where}",
+        _ => "shared with you",
+    };
+
+    // ---- adding files
+
+    private async Task UploadAsync(InputFileChangeEventArgs e)
+    {
+        if (uploading)
+        {
+            return;
+        }
+
+        uploading = true;
+        message = null;
+        var added = 0;
+        var problems = new List<string>();
+        try
+        {
+            IReadOnlyList<IBrowserFile> chosen;
+            try
+            {
+                chosen = e.GetMultipleFiles(20);
+            }
+            catch (InvalidOperationException)
+            {
+                problems.Add("Choose at most 20 files at a time.");
+                chosen = [];
+            }
+
+            var maxBytes = Settings.Current.MaxFileMegabytes * 1024L * 1024;
+            var number = 0;
+            foreach (var file in chosen)
+            {
+                number++;
+                uploadStatus = $"Adding {number} of {chosen.Count}…";
+                StateHasChanged();
+
+                if (file.Size > maxBytes)
+                {
+                    problems.Add($"{file.Name} is bigger than {Settings.Current.MaxFileMegabytes} MB.");
+                    continue;
+                }
+
+                try
+                {
+                    await using var stream = file.OpenReadStream(maxBytes);
+                    var result = await Files.UploadAsync(userId, file.Name, file.ContentType, stream);
+                    if (result.Succeeded)
+                    {
+                        added++;
+                    }
+                    else
+                    {
+                        problems.AddRange(result.Errors);
+                    }
+                }
+                catch (IOException)
+                {
+                    problems.Add($"{file.Name} could not be read.");
+                }
+            }
+        }
+        finally
+        {
+            uploading = false;
+            uploadStatus = "";
+        }
+
+        messageIsError = problems.Count > 0 && added == 0;
+        message = (added > 0 ? $"{added} {(added == 1 ? "file was" : "files were")} added to your locker. " : "") + string.Join(" ", problems);
+        search = "";
+        await LoadAsync();
+    }
+
+    // ---- one file
+
+    private async Task RunAsync(Func<Task<ServiceResult>> action)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await action();
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private Task SaveCopyAsync(SharedFileRow file) => RunAsync(() => Files.SaveCopyAsync(userId, file.Id));
+
+    private void OpenRename(FileRow file)
+    {
+        errors = [];
+        renameText = file.Name;
+        renameTarget = file;
+    }
+
+    private void CloseRename() => renameTarget = null;
+
+    private async Task RenameAsync()
+    {
+        if (renameTarget is not { } target || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Files.RenameAsync(userId, target.Id, renameText);
+            if (!result.Succeeded)
+            {
+                errors = result.Errors;
+                return;
+            }
+
+            renameTarget = null;
+            messageIsError = false;
+            message = result.Message;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void AskDelete(FileRow file) => deleteTarget = file;
+
+    private void CloseDelete() => deleteTarget = null;
+
+    private async Task DeleteAsync()
+    {
+        if (deleteTarget is not { } target)
+        {
+            return;
+        }
+
+        deleteTarget = null;
+        await RunAsync(() => Files.DeleteAsync(userId, target.Id));
+    }
+
+    // ---- sharing
+
+    private async Task OpenShareAsync(FileRow file)
+    {
+        errors = [];
+        shareOptions = await Files.GetShareOptionsAsync(userId);
+        var current = await Files.GetSharesAsync(userId, file.Id);
+        sharePeople.Clear();
+        sharePeople.UnionWith(current.UserIds);
+        shareGroups.Clear();
+        shareGroups.UnionWith(current.GroupIds);
+        shareCourses.Clear();
+        shareCourses.UnionWith(current.AssignmentIds);
+        shareTarget = file;
+    }
+
+    private void CloseShare() => shareTarget = null;
+
+    private static void TogglePick(HashSet<int> set, int id, bool on)
+    {
+        if (on) { set.Add(id); } else { set.Remove(id); }
+    }
+
+    private async Task SaveShareAsync()
+    {
+        if (shareTarget is not { } target || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Files.SetSharesAsync(userId, target.Id, new ShareTargets([.. sharePeople], [.. shareGroups], [.. shareCourses]));
+            if (!result.Succeeded)
+            {
+                errors = result.Errors;
+                return;
+            }
+
+            shareTarget = null;
+            messageIsError = false;
+            message = result.Message;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

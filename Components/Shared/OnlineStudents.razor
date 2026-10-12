@@ -1,0 +1,105 @@
+@rendermode InteractiveServer
+@implements IDisposable
+@inject CurrentUser Me
+@inject PeopleService People
+@inject PresenceService Presence
+@inject MessageLauncher Launcher
+
+@* The students who are online right now: for a student their classmates and friends, for a teacher their students. Who counts is read now and then
+   (every minute); who of them is online is looked at every few seconds (the app knows it in memory, see PresenceService). *@
+<Card Title="Online students" IconName="wifi">
+    @if (!loaded)
+    {
+        <p class="quiet">Looking…</p>
+    }
+    else if (online.Count == 0)
+    {
+        <p class="quiet">@(students.Count == 0 ? "You don't have students to see here yet." : "Nobody is online right now.")</p>
+    }
+    else
+    {
+        <p class="count"><span class="dot"></span> @online.Count online</p>
+        <ul class="list">
+            @foreach (var s in online.Take(8))
+            {
+                var person = s;
+                <li>
+                    <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@person.Detail" Online="true" Size="34">
+                        <button type="button" class="chat" title="@($"Write to {person.Name}")" aria-label="@($"Write to {person.Name}")" @onclick="() => Launcher.Open(person.UserId)">
+                            <Icon Name="message-square" Size="16" />
+                        </button>
+                    </PersonLine>
+                </li>
+            }
+        </ul>
+        @if (online.Count > 8)
+        {
+            <p class="more">and @(online.Count - 8) more</p>
+        }
+    }
+
+    <a class="see-all" href="@SeeAllHref">See all users <Icon Name="arrow-right" Size="14" /></a>
+</Card>
+
+@code {
+    private int userId;
+    private string role = "";
+    private bool loaded;
+    private IReadOnlyList<PersonCard> students = [];
+    private IReadOnlyList<PersonCard> online = [];
+    private Timer? timer;
+    private DateTime lastLoad;
+
+    private string SeeAllHref => role == AppRoles.Teacher ? "users?tab=students" : "users?tab=classmates";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Me.GetAsync();
+        if (me is null)
+        {
+            return;
+        }
+
+        userId = me.UserId;
+        role = me.Role;
+        await LoadAsync();
+        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    private async Task LoadAsync()
+    {
+        var reachable = await People.GetReachableAsync(userId);
+        students = reachable.Where(p => p.IsStudent).ToList();
+        lastLoad = DateTime.UtcNow;
+        loaded = true;
+        Recount();
+    }
+
+    private void Recount()
+    {
+        var here = Presence.OnlineAmong(students.Select(s => s.UserId));
+        online = students.Where(s => here.Contains(s.UserId)).ToList();
+    }
+
+    private async Task TickAsync()
+    {
+        try
+        {
+            if (DateTime.UtcNow - lastLoad > TimeSpan.FromMinutes(1))
+            {
+                await LoadAsync();
+            }
+            else
+            {
+                Recount();
+            }
+
+            StateHasChanged();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

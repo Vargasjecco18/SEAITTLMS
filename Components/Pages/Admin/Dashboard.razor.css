@@ -149,7 +149,7 @@
 
     /* Lines up with the name, past the picture (34px) and its gap (0.75rem). */
     .table td:nth-child(2) {
-        margin-left: calc(34px + 0.75rem);
+        margin-left: calc(2.125rem + 0.75rem);
     }
 
     .table .last-sign-in {

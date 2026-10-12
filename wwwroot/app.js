@@ -44,6 +44,70 @@
     }
 })();
 
+// The box that opens beside a page of the menu (NavItem). The CSS shows and hides it; this only puts it at the height of the page it belongs to
+// (without it the box would be where it sits in the menu, which also works), and keeps it on the screen.
+(function () {
+    function place(item) {
+        const flyout = item.querySelector('.flyout');
+        if (!flyout) { return; }
+        const rect = item.getBoundingClientRect();
+        const header = document.querySelector('.header');
+        const top = header ? header.getBoundingClientRect().bottom : 0;
+        const height = flyout.offsetHeight || 0;
+        let y = rect.top - 6;
+        y = Math.min(y, window.innerHeight - height - 8);
+        y = Math.max(y, top + 4);
+        flyout.style.setProperty('--fly-top', y + 'px');
+    }
+
+    function onEnter(event) {
+        const target = event.target;
+        if (!(target instanceof Element)) { return; }
+        const item = target.closest('.item[data-flyout]');
+        if (item) { place(item); }
+    }
+
+    document.addEventListener('mouseover', onEnter);
+    document.addEventListener('focusin', onEnter);
+
+    // A click on a link of the menu closes its box until the pointer leaves the page's item (the pointer is still over it, and the box would cover the page).
+    document.addEventListener('click', function (event) {
+        const target = event.target;
+        if (!(target instanceof Element)) { return; }
+        const item = target.closest('.item[data-flyout]');
+        if (item && target.closest('a')) { item.setAttribute('data-rest', ''); }
+    });
+    document.addEventListener('mouseover', function (event) {
+        const target = event.target;
+        document.querySelectorAll('.item[data-rest]').forEach(function (item) {
+            if (!(target instanceof Node) || !item.contains(target)) { item.removeAttribute('data-rest'); }
+        });
+    });
+})();
+
+// The picture of the person in the card at the bottom of the menu changes when they upload or remove it in the settings menu (the card is drawn
+// by the page, not by the settings menu, so the settings menu tells it).
+(function () {
+    window.seaitt = window.seaitt || {};
+    window.seaitt.setMyPicture = function (url) {
+        document.querySelectorAll('.sidebar-user .avatar').forEach(function (avatar) {
+            let img = avatar.querySelector('img');
+            if (url) {
+                if (!img) {
+                    avatar.textContent = '';
+                    img = document.createElement('img');
+                    img.alt = '';
+                    avatar.appendChild(img);
+                }
+                img.src = url;
+            } else {
+                if (img) { img.remove(); }
+                avatar.textContent = avatar.getAttribute('data-initials') || '';
+            }
+        });
+    };
+})();
+
 // The settings menu: light / dark / automatic, and animations on or off. The choice is kept in this browser (localStorage)
 // and in a cookie. The cookie is what lets the server draw the right look on every page, also the ones Blazor swaps in
 // when a link is followed (App.razor reads it).
@@ -177,7 +241,7 @@
 })();
 
 // Used by the pages that show a login to hand over (called from C# as "seaitt.copyText" and "seaitt.print").
-window.seaitt = {
+window.seaitt = Object.assign(window.seaitt || {}, {
     copyText: async function (text) {
         try {
             await navigator.clipboard.writeText(text);
@@ -245,7 +309,7 @@ window.seaitt = {
         });
         window.seaitt.quizGuard = null;
     },
-};
+});
 
 // The pop-up of the courses of an enrollment (EnrollmentTable.razor) opens next to the button that opened it, below it when there is
 // room and above it otherwise, and never outside the screen. Without this script it simply stays in the middle of the screen.

@@ -11,7 +11,12 @@ public sealed record PageEntry(string Title, string Description, string Href, st
 /// </summary>
 public static class PageDirectory
 {
-    public static IReadOnlyList<PageEntry> For(string role) => role switch
+    private static readonly PageEntry Help = new("Help", "How to use the system, for your role", "help", "circle-help");
+
+    /// <summary>The pages of a role, and the Help page that every role has.</summary>
+    public static IReadOnlyList<PageEntry> For(string role) => Pages(role) is { Count: > 0 } pages ? [.. pages, Help] : [];
+
+    private static IReadOnlyList<PageEntry> Pages(string role) => role switch
     {
         AppRoles.Admin =>
         [
@@ -21,6 +26,9 @@ public static class PageDirectory
             new("Not enrolled", "The students who are not enrolled yet", "admin/enrollment/not-enrolled", "user-x"),
             new("Archive Accounts", "Archive the students who graduate, restore a student", "admin/archive", "archive"),
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
+            new("Security Logs", "Sign-ins, failed sign-ins and changes to accounts and the system", "admin/security-logs", "scroll-text"),
+            new("Database Backup & Restore", "Save a copy of all the data, and put it back", "admin/backups", "database-backup"),
+            new("System Settings", "The school, signing in, maintenance, messages, backups and files", "admin/settings", "settings-2"),
         ],
         AppRoles.AcademicCoordinator =>
         [
@@ -45,6 +53,9 @@ public static class PageDirectory
             new("Calendar", "Deadlines and postings, by month or week", "calendar", "calendar-days"),
             new("Gradebook", "The scores of every student in a course, and their average", "teacher/gradebook", "clipboard-list"),
             new("Analytics", "How the students of your courses are doing", "analytics", "chart-column"),
+            new("Users", "Your friends, your students and the other teachers", "users", "users-round"),
+            new("Groups", "Study groups and teams you are in", "groups", "users"),
+            new("Resources", "Your locker and the files shared with you", "resources", "folder-open"),
         ],
         AppRoles.Student =>
         [
@@ -52,6 +63,9 @@ public static class PageDirectory
             new("Courses", "Your courses, modules, activities and quizzes", "student/subjects", "book-open"),
             new("Grades and progress", "Your grade in every course and how it is going", "student/grades", "trending-up"),
             new("Calendar", "Deadlines, by month or week", "calendar", "calendar-days"),
+            new("Users", "Your classmates, your friends and your teachers", "users", "users-round"),
+            new("Groups", "Study groups and teams you are in", "groups", "users"),
+            new("Resources", "Your locker and the files shared with you", "resources", "folder-open"),
         ],
         AppRoles.GuidanceCounselor =>
         [

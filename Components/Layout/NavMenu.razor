@@ -1,140 +1,274 @@
 <nav class="nav" aria-label="Main menu">
-    @* Each role sees only its own pages. *@
+    @* Each role sees only its own pages. When the pointer rests on a page, a box shows what is inside it (see NavItem). *@
     <AuthorizeView Roles="@AppRoles.Admin">
         <p class="heading">Administration</p>
 
-        <NavLink class="link" href="admin" Match="NavLinkMatch.All">
-            <Icon Name="layout-dashboard" />
-            <span>Dashboard</span>
-        </NavLink>
-        <NavLink class="link" href="admin/users">
-            <Icon Name="users" />
-            <span>Users Management</span>
-        </NavLink>
-        <NavLink class="link" href="admin/archive">
-            <Icon Name="archive" />
-            <span>Archive Accounts</span>
-        </NavLink>
-        <NavLink class="link" href="analytics">
-            <Icon Name="chart-column" />
-            <span>Analytics</span>
-        </NavLink>
+        <NavItem Href="admin" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="Accounts and enrollment of the school at a glance."
+                 Items="AdminDashboard" />
+        <NavItem Href="admin/users" Icon="users" Label="Users Management"
+                 Description="Add, edit and switch off the accounts of every role."
+                 Items="AdminUsers" />
+        <NavItem Href="admin/archive" Icon="archive" Label="Archive Accounts"
+                 Description="Students who graduated or left school are archived here."
+                 Contents="AdminArchive" />
+        <NavItem Href="analytics" Icon="chart-column" Label="Analytics"
+                 Description="How the students are doing across the school."
+                 Contents="AnalyticsContents" />
+        <NavItem Href="admin/security-logs" Icon="scroll-text" Label="Security Logs"
+                 Description="Who signed in, who failed to, and what was changed."
+                 Items="AdminLogs" />
+        <NavItem Href="admin/backups" Icon="database-backup" Label="Database Backup &amp; Restore"
+                 Description="Save a copy of all the data, and put it back."
+                 Contents="AdminBackups" />
+        <NavItem Href="admin/settings" Icon="settings-2" Label="System Settings"
+                 Description="The school, signing in, maintenance, messages, backups and files."
+                 Contents="AdminSettings" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.AcademicCoordinator">
         <p class="heading">Academics</p>
 
-        <NavLink class="link" href="coordinator" Match="NavLinkMatch.All">
-            <Icon Name="layout-dashboard" />
-            <span>Dashboard</span>
-        </NavLink>
-        <NavLink class="link" href="coordinator/academic-setup">
-            <Icon Name="school" />
-            <span>Academic setup</span>
-        </NavLink>
-        <NavLink class="link" href="coordinator/materials">
-            <Icon Name="folder-open" />
-            <span>Course materials</span>
-        </NavLink>
-        <NavLink class="link" href="coordinator/evaluations">
-            <Icon Name="clipboard-check" />
-            <span>Teacher evaluation</span>
-        </NavLink>
-        <NavLink class="link" href="coordinator/announcements">
-            <Icon Name="megaphone" />
-            <span>Announcements</span>
-        </NavLink>
-        <NavLink class="link" href="coordinator/analytics">
-            <Icon Name="chart-column" />
-            <span>Analytics</span>
-        </NavLink>
+        <NavItem Href="coordinator" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="Course materials, evaluations and the school setup at a glance."
+                 Contents="CoordinatorDashboard" />
+        <NavItem Href="coordinator/academic-setup" Icon="school" Label="Academic setup"
+                 Description="The school year, terms, tracks, strands, courses and sections."
+                 Items="CoordinatorSetup" />
+        <NavItem Href="coordinator/materials" Icon="folder-open" Label="Course materials"
+                 Description="The syllabus, modules and activities you send to the teachers."
+                 Contents="CoordinatorMaterials" />
+        <NavItem Href="coordinator/evaluations" Icon="clipboard-check" Label="Teacher evaluation"
+                 Description="Questionnaires about the teachers, sent to the students."
+                 Contents="CoordinatorEvaluations" />
+        <NavItem Href="coordinator/announcements" Icon="megaphone" Label="Announcements"
+                 Description="Notices for the students, the teachers or everybody."
+                 Contents="CoordinatorAnnouncements" />
+        <NavItem Href="coordinator/analytics" Icon="chart-column" Label="Analytics"
+                 Description="How the teachers were evaluated."
+                 Contents="CoordinatorAnalytics" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Registrar">
         <p class="heading">Registrar</p>
 
-        <NavLink class="link" href="registrar" Match="NavLinkMatch.All">
-            <Icon Name="layout-dashboard" />
-            <span>Dashboard</span>
-        </NavLink>
-        <NavLink class="link" href="registrar/enrollments">
-            <Icon Name="clipboard-list" />
-            <span>Enrollments</span>
-        </NavLink>
-        <NavLink class="link" href="registrar/student-accounts">
-            <Icon Name="graduation-cap" />
-            <span>Student's Accounts</span>
-        </NavLink>
+        <NavItem Href="registrar" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="Enrollment at a glance."
+                 Contents="RegistrarDashboard" />
+        <NavItem Href="registrar/enrollments" Icon="clipboard-list" Label="Enrollments"
+                 Description="Enroll a student: LRN, section, courses."
+                 Contents="RegistrarEnrollments" />
+        <NavItem Href="registrar/student-accounts" Icon="graduation-cap" Label="Student's Accounts"
+                 Description="The enrolled students, and who is enrolled for the next term."
+                 Contents="RegistrarAccounts" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Teacher">
         <p class="heading">Teaching</p>
 
-        <NavLink class="link" href="teacher" Match="NavLinkMatch.All">
-            <Icon Name="layout-dashboard" />
-            <span>Dashboard</span>
-        </NavLink>
-        <NavLink class="link" href="teacher/subjects">
-            <Icon Name="book-open" />
-            <span>Courses</span>
-        </NavLink>
-        <NavLink class="link" href="teacher/attendance">
-            <Icon Name="calendar-check" />
-            <span>Attendance</span>
-        </NavLink>
-        <NavLink class="link" href="calendar">
-            <Icon Name="calendar-days" />
-            <span>Calendar</span>
-        </NavLink>
-        <NavLink class="link" href="teacher/gradebook">
-            <Icon Name="clipboard-list" />
-            <span>Gradebook</span>
-        </NavLink>
-        <NavLink class="link" href="analytics">
-            <Icon Name="chart-column" />
-            <span>Analytics</span>
-        </NavLink>
+        <NavItem Href="teacher" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="What needs your attention today."
+                 Contents="TeacherDashboard" />
+        <NavItem Href="teacher/subjects" Icon="book-open" Label="Courses"
+                 Description="The courses you teach, with their modules and work."
+                 Items="TeacherCourses" />
+        <NavItem Href="teacher/attendance" Icon="calendar-check" Label="Attendance"
+                 Description="Mark who came to class."
+                 Contents="TeacherAttendance" />
+        <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
+                 Description="Deadlines and postings."
+                 Items="CalendarViews" />
+        <NavItem Href="teacher/gradebook" Icon="clipboard-list" Label="Gradebook"
+                 Description="The scores of every student of a course."
+                 Contents="TeacherGradebook" />
+        <NavItem Href="analytics" Icon="chart-column" Label="Analytics"
+                 Description="How the students of your courses are doing."
+                 Contents="AnalyticsContents" />
+        <NavItem Href="users" Icon="users-round" Label="Users"
+                 Description="Your friends, your students and the other teachers."
+                 Items="TeacherUsers" />
+        <NavItem Href="groups" Icon="users" Label="Groups"
+                 Description="Study groups and teams you are in."
+                 Items="GroupItems" />
+        <NavItem Href="resources" Icon="folder-open" Label="Resources"
+                 Description="Your locker and the files shared with you."
+                 Items="ResourceItems" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Student">
         <p class="heading">Learning</p>
 
-        <NavLink class="link" href="student" Match="NavLinkMatch.All">
-            <Icon Name="layout-dashboard" />
-            <span>Dashboard</span>
-        </NavLink>
-        <NavLink class="link" href="student/subjects">
-            <Icon Name="book-open" />
-            <span>Courses</span>
-        </NavLink>
-        <NavLink class="link" href="student/grades">
-            <Icon Name="trending-up" />
-            <span>Grades</span>
-        </NavLink>
-        <NavLink class="link" href="calendar">
-            <Icon Name="calendar-days" />
-            <span>Calendar</span>
-        </NavLink>
+        <NavItem Href="student" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="Your day at a glance."
+                 Contents="StudentDashboard" />
+        <NavItem Href="student/subjects" Icon="book-open" Label="Courses"
+                 Description="Your courses, with how far along you are."
+                 Items="StudentCourses" />
+        <NavItem Href="student/grades" Icon="trending-up" Label="Grades"
+                 Description="Your grade in every course."
+                 Contents="StudentGrades" />
+        <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
+                 Description="Deadlines of your work."
+                 Items="CalendarViews" />
+        <NavItem Href="users" Icon="users-round" Label="Users"
+                 Description="Your classmates, your friends and your teachers."
+                 Items="StudentUsers" />
+        <NavItem Href="groups" Icon="users" Label="Groups"
+                 Description="Study groups and teams you are in."
+                 Items="GroupItems" />
+        <NavItem Href="resources" Icon="folder-open" Label="Resources"
+                 Description="Your locker and the files shared with you."
+                 Items="ResourceItems" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.GuidanceCounselor">
         <p class="heading">Guidance</p>
 
-        <NavLink class="link" href="guidance" Match="NavLinkMatch.All">
-            <Icon Name="layout-dashboard" />
-            <span>Dashboard</span>
-        </NavLink>
-        <NavLink class="link" href="guidance/referrals">
-            <Icon Name="flag" />
-            <span>Referrals</span>
-        </NavLink>
-        <NavLink class="link" href="guidance/students">
-            <Icon Name="triangle-alert" />
-            <span>Students at risk</span>
-        </NavLink>
-        <NavLink class="link" href="analytics">
-            <Icon Name="chart-column" />
-            <span>Analytics</span>
-        </NavLink>
+        <NavItem Href="guidance" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="Referrals and students who need help."
+                 Contents="GuidanceDashboard" />
+        <NavItem Href="guidance/referrals" Icon="flag" Label="Referrals"
+                 Description="Students the system sent to you."
+                 Items="GuidanceReferrals" />
+        <NavItem Href="guidance/students" Icon="triangle-alert" Label="Students at risk"
+                 Description="Who is failing, close to failing, or missing class."
+                 Items="GuidanceAtRisk" />
+        <NavItem Href="analytics" Icon="chart-column" Label="Analytics"
+                 Description="How the students are doing across the school."
+                 Contents="AnalyticsContents" />
     </AuthorizeView>
 </nav>
+
+@code {
+    // What each page has inside, for the box that opens beside the menu. A link goes to a part of the page (a tab, a filter);
+    // a plain line only says what is on the page.
+
+    private static readonly IReadOnlyList<NavItem.Sub> CalendarViews =
+    [
+        new("Month", "calendar?view=month", "calendar-days"),
+        new("Week", "calendar?view=week", "calendar-range"),
+    ];
+
+    private static readonly IReadOnlyList<NavItem.Sub> GroupItems =
+    [
+        new("My groups", "groups", "users"),
+    ];
+
+    private static readonly IReadOnlyList<NavItem.Sub> ResourceItems =
+    [
+        new("Locker", "resources?tab=locker", "hard-drive", "my files"),
+        new("Uploaded files", "resources?tab=uploaded", "files", "shared with me"),
+    ];
+
+    private static readonly IReadOnlyList<string> AnalyticsContents = ["Grades and progress", "Attendance", "Who needs help"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> AdminDashboard =
+    [
+        new("Enrolled", "admin/enrollment/enrolled", "user-check", "students"),
+        new("Not enrolled", "admin/enrollment/not-enrolled", "user-x", "students"),
+    ];
+
+    private static readonly IReadOnlyList<NavItem.Sub> AdminUsers =
+    [
+        new("Students", "admin/users/students", "graduation-cap"),
+        new("Teachers", "admin/users/teachers", "presentation"),
+        new("Registrars", "admin/users/registrars", "clipboard-check"),
+        new("Guidance counselors", "admin/users/guidance", "heart-handshake"),
+        new("Academic coordinators", "admin/users/coordinators", "clipboard-list"),
+        new("Administrators", "admin/users/administrators", "shield-check"),
+    ];
+
+    private static readonly IReadOnlyList<string> AdminArchive = ["Graduating students", "Archived students (restore one)"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> AdminLogs =
+    [
+        new("All the lines", "admin/security-logs", "list"),
+        new("Sign-ins", "admin/security-logs?group=signins", "log-in"),
+        new("Failed sign-ins", "admin/security-logs?group=failed", "shield-alert"),
+        new("Account changes", "admin/security-logs?group=accounts", "users"),
+        new("System", "admin/security-logs?group=system", "settings-2"),
+    ];
+
+    private static readonly IReadOnlyList<string> AdminBackups = ["Back up now", "Download or delete a backup", "Restore from a backup", "Upload a backup file"];
+
+    private static readonly IReadOnlyList<string> AdminSettings = ["The school", "Signing in", "Maintenance mode", "Messages", "Backups and the log", "Files"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> CoordinatorSetup =
+    [
+        new("School years", "coordinator/academic-setup/school-years", "calendar-range"),
+        new("Terms", "coordinator/academic-setup/terms", "calendar-days"),
+        new("Tracks", "coordinator/academic-setup/tracks", "layers"),
+        new("Strands", "coordinator/academic-setup/strands", "layout-grid"),
+        new("Courses", "coordinator/academic-setup/subjects", "book-open"),
+        new("Sections", "coordinator/academic-setup/sections", "users"),
+    ];
+
+    private static readonly IReadOnlyList<string> CoordinatorDashboard = ["Materials sent and waiting", "Evaluations that are open", "The school setup"];
+
+    private static readonly IReadOnlyList<string> CoordinatorMaterials = ["A course at a time", "The syllabus first", "Modules, activities, quizzes and task performances", "Send to the teachers as drafts"];
+
+    private static readonly IReadOnlyList<string> CoordinatorEvaluations = ["Make a questionnaire", "Send it with a due date", "Who has not answered yet"];
+
+    private static readonly IReadOnlyList<string> CoordinatorAnnouncements = ["Write a notice", "Choose who reads it", "An end date"];
+
+    private static readonly IReadOnlyList<string> CoordinatorAnalytics = ["Ratings of the teachers", "By area of the questionnaire", "The comments"];
+
+    private static readonly IReadOnlyList<string> RegistrarDashboard = ["Students by section", "Who is enrolled and who is not", "Latest enrollments"];
+
+    private static readonly IReadOnlyList<string> RegistrarEnrollments = ["Type the LRN", "Choose the section A to E", "Courses of the strand"];
+
+    private static readonly IReadOnlyList<string> RegistrarAccounts = ["The enrolled students", "Their courses and final grades", "Next term"];
+
+    private static readonly IReadOnlyList<string> TeacherDashboard = ["Work to check", "Drafts waiting to be posted", "Your calendar", "Online students"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> TeacherCourses =
+    [
+        new("Cards", "teacher/subjects?view=cards", "layout-grid"),
+        new("List", "teacher/subjects?view=list", "list"),
+    ];
+
+    private static readonly IReadOnlyList<string> TeacherAttendance = ["Choose a course and a day", "Present, late or absent", "The summary"];
+
+    private static readonly IReadOnlyList<string> TeacherGradebook = ["One course at a time", "Every activity, quiz and task", "The average of each student"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> TeacherUsers =
+    [
+        new("Friends", "users?tab=friends", "handshake"),
+        new("Students", "users?tab=students", "graduation-cap"),
+        new("Teachers", "users?tab=teachers", "presentation"),
+    ];
+
+    private static readonly IReadOnlyList<string> StudentDashboard = ["Work to do and overdue", "Assignments and due dates", "New modules", "Recent grades", "Online classmates"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> StudentCourses =
+    [
+        new("Enrolled", "student/subjects?show=enrolled", "book-open", "this term"),
+        new("Completed", "student/subjects?show=completed", "circle-check", "past terms"),
+    ];
+
+    private static readonly IReadOnlyList<string> StudentGrades = ["Your grade in each course", "Your progress", "Courses below 70"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> StudentUsers =
+    [
+        new("Classmates", "users?tab=classmates", "users-round"),
+        new("Friends", "users?tab=friends", "handshake"),
+        new("Teachers", "users?tab=teachers", "presentation"),
+    ];
+
+    private static readonly IReadOnlyList<string> GuidanceDashboard = ["New referrals", "Students at risk", "Follow-ups"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> GuidanceReferrals =
+    [
+        new("All", "guidance/referrals", "list"),
+        new("Open", "guidance/referrals?status=Open", "circle-dot"),
+        new("In progress", "guidance/referrals?status=InProgress", "clock"),
+        new("Resolved", "guidance/referrals?status=Resolved", "circle-check"),
+    ];
+
+    private static readonly IReadOnlyList<NavItem.Sub> GuidanceAtRisk =
+    [
+        new("Failing", "guidance/students?kind=FailingGrades", "triangle-alert", "below 70"),
+        new("At risk", "guidance/students?kind=AtRisk", "shield-alert"),
+        new("Low attendance", "guidance/students?kind=LowAttendance", "calendar-check"),
+    ];
+}

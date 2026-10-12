@@ -1,4 +1,4 @@
-<a class="button @Variant.ToString().ToLowerInvariant() @(Small ? "small" : "")" href="@Href">
+<a class="button @Variant.ToString().ToLowerInvariant() @(Small ? "small" : "")" href="@Href" @attributes="Attributes">
     @if (!string.IsNullOrEmpty(IconName) && !IconAfter)
     {
         <Icon Name="@IconName" Size="@(Small ? 16 : 18)" />
@@ -25,4 +25,7 @@
     [Parameter] public bool IconAfter { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Anything else written on the tag, like download or data-enhance-nav="false" (a link to a file the browser should save).</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? Attributes { get; set; }
 }

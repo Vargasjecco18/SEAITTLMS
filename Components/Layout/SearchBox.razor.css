@@ -50,8 +50,8 @@
 
     .trigger {
         justify-content: center;
-        width: 40px;
-        height: 40px;
+        width: 2.5rem;
+        height: 2.5rem;
         padding: 0;
         border: 0;
         border-radius: 50%;
@@ -150,8 +150,8 @@ h3 {
     display: grid;
     flex: none;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 2.125rem;
+    height: 2.125rem;
     border-radius: 10px;
     background: var(--brand-soft);
     color: var(--brand-strong);

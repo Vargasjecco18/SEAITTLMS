@@ -168,7 +168,7 @@ h3 {
 .dist {
     display: block;
     width: 12rem;
-    height: 10px;
+    height: 0.625rem;
     overflow: hidden;
     border-radius: 999px;
     background: var(--surface-2);

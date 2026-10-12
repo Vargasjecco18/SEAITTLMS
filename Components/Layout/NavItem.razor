@@ -1,0 +1,78 @@
+@* One page of the menu. When the pointer rests on it (or the keyboard is on it) a small box opens at its side with what is inside the page,
+   for example the tabs of Courses: Enrolled and Completed. The box is plain HTML and CSS (wwwroot/app.js only puts it at the right height). *@
+<div class="item" data-flyout="@(HasFlyout ? "true" : null)">
+    <NavLink class="link" href="@Href" Match="@Match">
+        <Icon Name="@Icon" />
+        <span>@Label</span>
+    </NavLink>
+
+    @if (HasFlyout)
+    {
+        <div class="flyout" role="group" aria-label="@($"Inside {Label}")">
+            <p class="fly-title"><Icon Name="@Icon" Size="16" /> @Label</p>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p class="fly-text">@Description</p>
+            }
+
+            @if (Items is { Count: > 0 })
+            {
+                <ul class="fly-links">
+                    @foreach (var sub in Items)
+                    {
+                        <li>
+                            <a class="fly-link" href="@sub.Href">
+                                @if (sub.Icon is not null)
+                                {
+                                    <Icon Name="@sub.Icon" Size="16" />
+                                }
+                                <span class="fly-label">@sub.Label</span>
+                                @if (sub.Hint is not null)
+                                {
+                                    <span class="fly-hint">@sub.Hint</span>
+                                }
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (Contents is { Count: > 0 })
+            {
+                <ul class="fly-contents">
+                    @foreach (var line in Contents)
+                    {
+                        <li>@line</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <param name="Label">What the link says.</param>
+    /// <param name="Href">Where it goes (an address inside the app, with its tab or filter).</param>
+    /// <param name="Icon">A name of <see cref="IconSet"/>, or none.</param>
+    /// <param name="Hint">A few words after the label, or none.</param>
+    public sealed record Sub(string Label, string Href, string? Icon = null, string? Hint = null);
+
+    [Parameter, EditorRequired] public string Href { get; set; } = "";
+
+    [Parameter, EditorRequired] public string Icon { get; set; } = "";
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+
+    [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+
+    /// <summary>One line about the page.</summary>
+    [Parameter] public string? Description { get; set; }
+
+    /// <summary>The parts of the page that have an address of their own (tabs, filters): links.</summary>
+    [Parameter] public IReadOnlyList<Sub>? Items { get; set; }
+
+    /// <summary>What is on the page, when it has no parts to link to.</summary>
+    [Parameter] public IReadOnlyList<string>? Contents { get; set; }
+
+    private bool HasFlyout => !string.IsNullOrWhiteSpace(Description) || Items is { Count: > 0 } || Contents is { Count: > 0 };
+}

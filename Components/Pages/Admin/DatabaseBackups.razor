@@ -1,0 +1,287 @@
+@page "/admin/backups"
+@attribute [Authorize(Roles = AppRoles.Admin)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject BackupService Backups
+@inject SystemSettingsService Settings
+
+<PageTitle>Database Backup &amp; Restore · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Database Backup &amp; Restore" Subtitle="Save a copy of all the data of the school, and put it back when something goes wrong." IconName="database-backup">
+    <Button IconName="database-backup" Disabled="@busy" OnClick="BackUpNowAsync">@(working == "backup" ? "Making the backup…" : "Back up now")</Button>
+</PageHeader>
+
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+@if (summary is not null)
+{
+    <div class="stats">
+        <StatCard Label="Database" Text="@summary.DatabaseName" Hint="@("MySQL " + summary.ServerVersion)" IconName="database" Accent="AccentColor.Blue" />
+        <StatCard Label="Tables" Value="summary.Tables" Hint="@($"{summary.Rows:N0} rows")" IconName="layers" Accent="AccentColor.Violet" />
+        <StatCard Label="Size" Text="@SizeText(summary.SizeBytes)" Hint="data and pictures and files" IconName="hard-drive" Accent="AccentColor.Amber" />
+        <StatCard Label="Last backup" Text="@LastBackupText" Hint="@AutoText" IconName="history" Accent="AccentColor.Green" />
+    </div>
+}
+
+<div class="layout">
+    <Card Title="Backups" IconName="folder-open">
+        @if (backups.Count == 0)
+        {
+            <EmptyState IconName="database-backup" Title="No backup yet">
+                <p>Press <strong>Back up now</strong>. The file is saved in the <span class="mono">@BackupFolder</span> folder and can be downloaded to keep it somewhere safe.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Backup</th>
+                            <th scope="col" class="col-more">Kind</th>
+                            <th scope="col">Made</th>
+                            <th scope="col" class="col-more">Size</th>
+                            <th scope="col"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in backups)
+                        {
+                            var backup = b;
+                            <tr class="@(backup.FileName == highlight ? "new" : "")">
+                                <td>
+                                    <span class="mono name">@backup.FileName</span>
+                                    @if (!backup.Valid)
+                                    {
+                                        <span class="muted-line">Not a backup made by this system</span>
+                                    }
+                                </td>
+                                <td class="col-more"><Badge Tone="@(backup.Kind == "auto" ? Tone.Info : backup.Kind == "before-restore" ? Tone.Warning : Tone.Neutral)">@backup.KindText</Badge></td>
+                                <td class="when">
+                                    @PhilippineTime.FormatDate(backup.CreatedAtUtc)
+                                    <span class="muted-line">@PhilippineTime.FormatTime(backup.CreatedAtUtc)</span>
+                                </td>
+                                <td class="col-more">@SizeText(backup.SizeBytes)</td>
+                                <td class="right actions">
+                                    <ButtonLink Href="@($"admin/backups/download/{backup.FileName}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false" download>Download</ButtonLink>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="rotate-ccw" Disabled="@(busy || !backup.Valid)" OnClick="() => AskRestore(backup)">Restore</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete this backup" Disabled="@busy" OnClick="() => AskDelete(backup)" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+
+    <div class="side">
+        <Card Title="Restore from a file" IconName="cloud-upload">
+            <p class="note">Have a backup file from this system on your computer (downloaded before, or from another computer)? Send it here, then press <strong>Restore</strong> beside it in the list.</p>
+            <form method="post" action="admin/backups/upload" enctype="multipart/form-data" class="upload">
+                <AntiforgeryToken />
+                <label class="file-pick">
+                    <Icon Name="file-up" Size="18" />
+                    <input type="file" name="backup" accept=".sql" required aria-label="Backup file" />
+                </label>
+                <Button Type="submit" Variant="ButtonVariant.Secondary" IconName="upload">Upload</Button>
+            </form>
+        </Card>
+
+        <Card Title="Good to know" IconName="info">
+            <ul class="tips">
+                <li>A backup holds <strong>everything</strong>: accounts, courses, grades, messages, pictures and the files in the lockers.</li>
+                <li>Before a restore the system makes a backup of what is there now. If the restore fails, that one is put back by itself.</li>
+                <li>While a restore runs, only administrators can use the system.</li>
+                <li>Automatic backups are set in <a href="admin/settings">System Settings</a>.</li>
+            </ul>
+        </Card>
+    </div>
+</div>
+
+<Modal Open="restoreTarget is not null" Title="Restore this backup?" OnClose="CloseRestore">
+    @if (restoreTarget is { } target)
+    {
+        <Notice Message="@("Everything in the system is replaced by what is in " + target.FileName + ". Work done after " + PhilippineTime.FormatDateTime(target.CreatedAtUtc) + " will be gone.")" IsError="true" />
+        <p class="dialog-note">A backup of what is there now is made first, so it can be undone. Type <strong>RESTORE</strong> to go on.</p>
+        <Field For="restore-confirm" Label="Type RESTORE">
+            <input id="restore-confirm" type="text" class="input" autocomplete="off" @bind="restoreText" @bind:event="oninput" />
+        </Field>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" Disabled="@busy" OnClick="CloseRestore">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="rotate-ccw" Disabled="@(busy || !string.Equals(restoreText.Trim(), "RESTORE", StringComparison.Ordinal))" OnClick="RestoreAsync">
+                @(working == "restore" ? "Restoring… keep this page open" : "Restore")
+            </Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="deleteTarget is not null" Title="Delete this backup?" OnClose="CloseDelete">
+    @if (deleteTarget is { } doomed)
+    {
+        <p class="dialog-note"><span class="mono">@doomed.FileName</span> is deleted from the folder. This can't be undone.</p>
+        <div class="dialog-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="@busy" OnClick="DeleteAsync">Delete</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int userId;
+    private IReadOnlyList<BackupInfo> backups = [];
+    private DatabaseSummary? summary;
+    private BackupInfo? restoreTarget;
+    private BackupInfo? deleteTarget;
+    private string restoreText = "";
+    private string? highlight;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+    private string? working;
+
+    [SupplyParameterFromQuery(Name = "uploaded")] private string? Uploaded { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")] private string? UploadError { get; set; }
+
+    private string BackupFolder => Backups.Directory;
+
+    private string LastBackupText => backups.Count == 0 ? "None yet" : PhilippineTime.FormatDate(backups[0].CreatedAtUtc);
+
+    private string AutoText => Settings.Current.AutoBackupOn
+        ? $"Automatic: every day from {MessagingHours.HourText(Settings.Current.AutoBackupHour)}"
+        : "Automatic backup is off";
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+
+        // What the upload form sent back.
+        if (!string.IsNullOrEmpty(Uploaded))
+        {
+            highlight = Uploaded;
+            message = $"{Uploaded} was uploaded. Press Restore beside it to use it.";
+        }
+        else if (!string.IsNullOrEmpty(UploadError))
+        {
+            message = UploadError;
+            messageIsError = true;
+        }
+
+        await LoadAsync();
+    }
+
+    private void ClearMessage() => message = null;
+
+    private async Task LoadAsync()
+    {
+        backups = Backups.List();
+        summary = await Backups.GetSummaryAsync();
+    }
+
+    private static string SizeText(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        var kilobytes = bytes / 1024.0;
+        if (kilobytes < 1024)
+        {
+            return $"{kilobytes:0.#} KB";
+        }
+
+        var megabytes = kilobytes / 1024;
+        return megabytes < 1024 ? $"{megabytes:0.#} MB" : $"{megabytes / 1024:0.##} GB";
+    }
+
+    private async Task BackUpNowAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        working = "backup";
+        try
+        {
+            var result = await Backups.CreateAsync("manual", userId);
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? $"The backup {result.FileName} was made. Download it to keep a copy somewhere else." : result.Error;
+            highlight = result.FileName;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+            working = null;
+        }
+    }
+
+    private void AskRestore(BackupInfo backup)
+    {
+        restoreText = "";
+        restoreTarget = backup;
+    }
+
+    private void CloseRestore()
+    {
+        if (!busy)
+        {
+            restoreTarget = null;
+        }
+    }
+
+    private async Task RestoreAsync()
+    {
+        if (busy || restoreTarget is null || restoreText.Trim() != "RESTORE")
+        {
+            return;
+        }
+
+        busy = true;
+        working = "restore";
+        try
+        {
+            var result = await Backups.RestoreAsync(userId, restoreTarget.FileName);
+            restoreTarget = null;
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+            working = null;
+        }
+    }
+
+    private void AskDelete(BackupInfo backup) => deleteTarget = backup;
+
+    private void CloseDelete() => deleteTarget = null;
+
+    private async Task DeleteAsync()
+    {
+        if (busy || deleteTarget is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Backups.DeleteAsync(userId, deleteTarget.FileName);
+            deleteTarget = null;
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+}

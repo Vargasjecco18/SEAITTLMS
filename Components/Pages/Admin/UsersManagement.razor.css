@@ -104,8 +104,8 @@
 .dismiss {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     border: 0;
     border-radius: 6px;
     background: transparent;
@@ -335,7 +335,7 @@
     }
 
     .table td:nth-child(2) {
-        margin-left: calc(34px + 0.75rem);
+        margin-left: calc(2.125rem + 0.75rem);
     }
 
     .table .col-actions {

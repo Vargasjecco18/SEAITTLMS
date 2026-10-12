@@ -92,7 +92,7 @@ public sealed record DeleteImpact(string FullName, string Role, IReadOnlyList<st
 /// What an administrator does with accounts: list them by role, edit them, delete them. Every change checks again, in
 /// the database, that the person doing it is an active administrator.
 /// </summary>
-public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFactory, PasswordHasher hasher, UserAccountService accounts)
+public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFactory, PasswordHasher hasher, UserAccountService accounts, SecurityLogService? securityLog = null)
 {
     /// <summary>
     /// Adds an account for a teacher, registrar, guidance counselor or administrator. (Students are added by enrolling them.)
@@ -132,7 +132,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                 }
             }
 
-            return await CreateStaffAsync(account, ct);
+            return await CreateStaffAsync(account, actingUserId, ct);
         }
         finally
         {
@@ -142,9 +142,14 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> RoleGates = new();
 
-    private async Task<ServiceResult> CreateStaffAsync(NewAccount account, CancellationToken ct)
+    private async Task<ServiceResult> CreateStaffAsync(NewAccount account, int actingUserId, CancellationToken ct)
     {
         var result = await accounts.CreateAsync(account, ct);
+        if (result.Succeeded && securityLog is not null)
+        {
+            await securityLog.AddAsync(SecurityEvents.AccountCreated, result.UserId, details: $"A {AppRoles.DisplayName(account.Role).ToLowerInvariant()} account was added.", actorUserId: actingUserId, ct: ct);
+        }
+
         return result.Succeeded
             ? ServiceResult.Ok($"Added {FullName(account.FirstName.Trim(), NullIfBlank(account.MiddleName), account.LastName.Trim(), NullIfBlank(account.NameExtension))}.", result.UserId)
             : ServiceResult.Fail(result.Errors);
@@ -575,6 +580,8 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
 
         // Signing out everywhere (a new security stamp) when the way in changes or the account is switched off.
         var rotateStamp = newPassword is not null || email != user.Email || (user.IsActive && !edit.IsActive);
+        var wasActive = user.IsActive;
+        var oldEmail = user.Email;
 
         // The account and the copies of the name in the enrollments are saved together, or not at all.
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -628,6 +635,25 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
         catch (DbUpdateException ex) when (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry })
         {
             return ServiceResult.Fail("The email, LRN or employee number is already used by another account.");
+        }
+
+        if (securityLog is not null)
+        {
+            var who = FullName(firstName, middleName, lastName, nameExtension);
+            await securityLog.AddAsync(SecurityEvents.AccountChanged, user.Id, email, $"The account of {who} was saved" + (email != oldEmail ? $" (the email was {oldEmail})." : "."), actorUserId: actingUserId, ct: ct);
+            if (newPassword is not null)
+            {
+                await securityLog.AddAsync(SecurityEvents.PasswordReset, user.Id, email, $"A new password was set for {who}.", actorUserId: actingUserId, ct: ct);
+            }
+
+            if (wasActive && !edit.IsActive)
+            {
+                await securityLog.AddAsync(SecurityEvents.AccountDeactivated, user.Id, email, $"The account of {who} was switched off.", actorUserId: actingUserId, ct: ct);
+            }
+            else if (!wasActive && edit.IsActive)
+            {
+                await securityLog.AddAsync(SecurityEvents.AccountActivated, user.Id, email, $"The account of {who} was switched on.", actorUserId: actingUserId, ct: ct);
+            }
         }
 
         return ServiceResult.Ok($"Saved {FullName(firstName, middleName, lastName, nameExtension)}.");
@@ -722,6 +748,11 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
         // The profile row goes with the user (cascade); "enrolled by" in enrollments is cleared by the database.
         await db.Users.Where(u => u.Id == userId).ExecuteDeleteAsync(ct);
         await transaction.CommitAsync(ct);
+
+        if (securityLog is not null)
+        {
+            await securityLog.AddAsync(SecurityEvents.AccountDeleted, null, user.Email, $"The {AppRoles.DisplayName(user.Role.Name).ToLowerInvariant()} account of {profile.FullName} was deleted.", actorUserId: actingUserId, ct: ct);
+        }
 
         return ServiceResult.Ok($"Deleted {profile.FullName}.");
     }

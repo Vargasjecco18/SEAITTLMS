@@ -111,8 +111,8 @@
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 2rem;
+    height: 2rem;
     border-radius: 9px;
     background: var(--brand-soft);
     color: var(--brand-strong);

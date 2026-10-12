@@ -51,8 +51,8 @@
 
 .swatch {
     display: inline-block;
-    width: 10px;
-    height: 10px;
+    width: 0.625rem;
+    height: 0.625rem;
     border-radius: 3px;
     background: var(--brand);
 }
@@ -109,8 +109,8 @@
 .num {
     display: inline-grid;
     place-items: center;
-    min-width: 26px;
-    height: 26px;
+    min-width: 1.625rem;
+    height: 1.625rem;
     border-radius: 999px;
     color: var(--text);
     font-size: 0.85rem;

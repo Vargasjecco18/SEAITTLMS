@@ -1,0 +1,124 @@
+@page "/help"
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject SystemSettingsService Settings
+
+<PageTitle>Help · SEAITT e-LMS</PageTitle>
+
+<PageHeader Title="Help" Subtitle="@($"How to use {Settings.Current.SchoolTitle}: answers for everybody, and a guide for your role.")" IconName="circle-help" />
+
+@if (sections.Count > 0)
+{
+    <div class="layout">
+        <div class="main">
+            <Card>
+                <label for="help-search" class="sr-only">Search the help</label>
+                <div class="search">
+                    <Icon Name="search" Size="18" />
+                    <input id="help-search" type="search" class="input" maxlength="80" placeholder="Search the help (for example: password, quiz, backup)" @bind="search" @bind:event="oninput" />
+                </div>
+            </Card>
+
+            @{
+                var any = false;
+            }
+            @foreach (var group in sections)
+            {
+                var topics = group.Topics.Where(Matches).ToList();
+                if (topics.Count == 0)
+                {
+                    continue;
+                }
+
+                any = true;
+                <section class="topic-group" aria-labelledby="@($"help-{Slug(group.Title)}")">
+                    <h2 id="@($"help-{Slug(group.Title)}")"><Icon Name="@group.Icon" Size="20" /> @group.Title</h2>
+                    <div class="topics">
+                        @foreach (var topic in topics)
+                        {
+                            <details class="topic" open="@(!string.IsNullOrWhiteSpace(search))">
+                                <summary>
+                                    <span>@topic.Question</span>
+                                    <Icon Name="chevron-down" Size="18" Class="chevron" />
+                                </summary>
+                                <div class="answer">
+                                    <ol>
+                                        @foreach (var step in topic.Steps)
+                                        {
+                                            <li>@step</li>
+                                        }
+                                    </ol>
+                                    @if (topic.Link is not null)
+                                    {
+                                        <a class="go" href="@topic.Link">@(topic.LinkText ?? "Open the page") <Icon Name="arrow-right" Size="14" /></a>
+                                    }
+                                </div>
+                            </details>
+                        }
+                    </div>
+                </section>
+            }
+
+            @if (!any)
+            {
+                <Card>
+                    <EmptyState IconName="search-x" Title="No answer for this">
+                        <p>Try other words, or ask the school (see “Need more help?”).</p>
+                    </EmptyState>
+                </Card>
+            }
+        </div>
+
+        <aside class="side" aria-label="More help">
+            <Card Title="Need more help?" IconName="life-buoy">
+                <p class="note">Ask the school if you can't find the answer here.</p>
+                <ul class="contact">
+                    <li><Icon Name="building-2" Size="16" /> <span>@Settings.Current.SchoolName</span></li>
+                    @if (!string.IsNullOrWhiteSpace(Settings.Current.Address))
+                    {
+                        <li><Icon Name="map-pin" Size="16" /> <span>@Settings.Current.Address</span></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Settings.Current.ContactEmail))
+                    {
+                        <li><Icon Name="mail" Size="16" /> <a href="@($"mailto:{Settings.Current.ContactEmail}")">@Settings.Current.ContactEmail</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Settings.Current.ContactPhone))
+                    {
+                        <li><Icon Name="phone" Size="16" /> <span>@Settings.Current.ContactPhone</span></li>
+                    }
+                </ul>
+                @if (string.IsNullOrWhiteSpace(Settings.Current.ContactEmail) && string.IsNullOrWhiteSpace(Settings.Current.ContactPhone))
+                {
+                    <p class="note">You can also write to a teacher, the registrar or the guidance counselor with the messages button at the top.</p>
+                }
+            </Card>
+
+            <Card Title="Tips" IconName="sparkles">
+                <ul class="tips">
+                    <li>Rest the pointer on a page of the menu to see what is inside it.</li>
+                    <li>The search box at the top finds courses, people and pages.</li>
+                    <li>The gear at the top right changes the look and your picture.</li>
+                </ul>
+            </Card>
+        </aside>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<HelpSection> sections = [];
+    private string search = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Me.GetAsync();
+        sections = HelpContent.For(me?.Role ?? "", Settings.Current);
+    }
+
+    private bool Matches(HelpTopic topic)
+    {
+        var tokens = search.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return tokens.All(t => topic.Text.Contains(t, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string Slug(string text) => new string(text.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray());
+}

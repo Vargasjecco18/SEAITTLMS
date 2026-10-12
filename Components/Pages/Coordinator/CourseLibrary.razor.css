@@ -50,8 +50,8 @@
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 2.25rem;
+    height: 2.25rem;
     border-radius: 10px;
     background: var(--brand-soft);
     color: var(--brand-strong);
@@ -303,6 +303,7 @@ h3 {
 /* ---------- the coordinator's page ---------- */
 .module.syllabus { border-left-color: var(--violet, #7c3aed); }
 .module.library { border-left-color: var(--brand); }
+.module.syllabus-missing { border-style: dashed; border-left-style: solid; }
 
 .tiles {
     display: grid;
@@ -384,6 +385,22 @@ h3 {
 
 .pick:hover {
     background: var(--surface-2);
+}
+
+/* The place of a syllabus that is not made yet: not a choice, so no pointer and no hover. */
+.pick.pick-missing {
+    align-items: center;
+    border-style: dashed;
+    color: var(--text-muted);
+    cursor: default;
+}
+
+.pick.pick-missing:hover {
+    background: none;
+}
+
+.pick.pick-missing span {
+    flex: 1;
 }
 
 .pick ::deep input {

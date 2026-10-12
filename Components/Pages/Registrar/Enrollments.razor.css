@@ -160,8 +160,8 @@ dd {
     display: grid;
     flex: none;
     place-items: center;
-    width: 56px;
-    height: 56px;
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 50%;
     background: var(--success-soft);
     color: var(--success);

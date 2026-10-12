@@ -1,0 +1,35 @@
+@page "/maintenance"
+@layout BlankLayout
+@attribute [AllowAnonymous]
+@inject SystemSettingsService School
+@inject NavigationManager Navigation
+
+<PageTitle>Maintenance · @School.Current.SchoolTitle</PageTitle>
+
+@* Where a person is sent while the administrator has the system closed (System Settings > Maintenance). An administrator is never sent here. *@
+<main class="maintenance">
+    <section class="box">
+        <Brand Large="true" />
+        <span class="icon"><Icon Name="settings-2" Size="28" /></span>
+        <h1>We'll be right back</h1>
+        <p class="message">@School.ClosedMessage</p>
+        <div class="actions">
+            <a class="retry" href="/">Try again</a>
+            <form method="post" action="/account/logout">
+                <AntiforgeryToken />
+                <button type="submit" class="sign-out">Sign out</button>
+            </form>
+        </div>
+    </section>
+</main>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Nothing to wait for: go on to the home page.
+        if (!School.IsClosed)
+        {
+            Navigation.NavigateTo("/", replace: true);
+        }
+    }
+}

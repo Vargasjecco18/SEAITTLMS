@@ -8,8 +8,8 @@
 .icon {
     display: grid;
     place-items: center;
-    width: 60px;
-    height: 60px;
+    width: 3.75rem;
+    height: 3.75rem;
     margin-bottom: 1rem;
     border-radius: 50%;
     background: var(--brand-soft);

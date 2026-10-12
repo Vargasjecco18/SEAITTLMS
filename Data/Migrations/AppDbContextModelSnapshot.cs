@@ -581,6 +581,107 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("evaluation_targets", (string)null);
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Friendship", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AddresseeUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("addressee_user_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("RequesterUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("requester_user_id");
+
+                    b.Property<DateTime?>("RespondedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("responded_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_friendships");
+
+                    b.HasIndex("AddresseeUserId", "Status")
+                        .HasDatabaseName("ix_friendships_addressee_user_id_status");
+
+                    b.HasIndex("RequesterUserId", "AddresseeUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_friendships_requester_user_id_addressee_user_id");
+
+                    b.ToTable("friendships", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_friendships_status", "status IN ('Pending', 'Accepted')");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.GroupPost", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AuthorUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("author_user_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int")
+                        .HasColumnName("group_id");
+
+                    b.Property<int?>("ParentPostId")
+                        .HasColumnType("int")
+                        .HasColumnName("parent_post_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_group_posts");
+
+                    b.HasIndex("AuthorUserId")
+                        .HasDatabaseName("ix_group_posts_author_user_id");
+
+                    b.HasIndex("ParentPostId")
+                        .HasDatabaseName("ix_group_posts_parent_post_id");
+
+                    b.HasIndex("GroupId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_group_posts_group_id_created_at_utc");
+
+                    b.ToTable("group_posts", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.GuidanceCounselor", b =>
                 {
                     b.Property<int>("Id")
@@ -1227,6 +1328,33 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("notifications", (string)null);
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ProfilePhoto", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("content_type");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("mediumblob")
+                        .HasColumnName("data");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("UserId")
+                        .HasName("pk_profile_photos");
+
+                    b.ToTable("profile_photos", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.QuizQuestion", b =>
                 {
                     b.Property<int>("Id")
@@ -1675,6 +1803,212 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.SecurityLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("actor_name");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("details");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("varchar(254)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("varchar(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("severity");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("user_agent");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_security_logs");
+
+                    b.HasIndex("ActorUserId")
+                        .HasDatabaseName("ix_security_logs_actor_user_id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_security_logs_created_at_utc");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_security_logs_user_id");
+
+                    b.HasIndex("Kind", "CreatedAtUtc")
+                        .HasDatabaseName("ix_security_logs_kind_created_at_utc");
+
+                    b.ToTable("security_logs", (string)null);
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.SharedFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssignmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("assignment_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("FileId")
+                        .HasColumnType("int")
+                        .HasColumnName("file_id");
+
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("int")
+                        .HasColumnName("group_id");
+
+                    b.Property<int?>("SharedWithUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("shared_with_user_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shared_files");
+
+                    b.HasIndex("AssignmentId")
+                        .HasDatabaseName("ix_shared_files_assignment_id");
+
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_shared_files_group_id");
+
+                    b.HasIndex("SharedWithUserId")
+                        .HasDatabaseName("ix_shared_files_shared_with_user_id");
+
+                    b.HasIndex("FileId", "AssignmentId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shared_files_file_id_assignment_id");
+
+                    b.HasIndex("FileId", "GroupId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shared_files_file_id_group_id");
+
+                    b.HasIndex("FileId", "SharedWithUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shared_files_file_id_shared_with_user_id");
+
+                    b.ToTable("shared_files", (string)null);
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StoredFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("OwnerUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stored_files");
+
+                    b.HasIndex("OwnerUserId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_stored_files_owner_user_id_created_at_utc");
+
+                    b.ToTable("stored_files", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stored_files_size", "size_bytes >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StoredFileContent", b =>
+                {
+                    b.Property<int>("FileId")
+                        .HasColumnType("int")
+                        .HasColumnName("file_id");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("longblob")
+                        .HasColumnName("data");
+
+                    b.HasKey("FileId")
+                        .HasName("pk_stored_file_contents");
+
+                    b.ToTable("stored_file_contents", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Strand", b =>
                 {
                     b.Property<int>("Id")
@@ -1915,6 +2249,74 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("OwnerUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_study_groups");
+
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_study_groups_owner_user_id");
+
+                    b.ToTable("study_groups", (string)null);
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroupMember", b =>
+                {
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int")
+                        .HasColumnName("group_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<int?>("AddedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("added_by_user_id");
+
+                    b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("joined_at_utc");
+
+                    b.HasKey("GroupId", "UserId")
+                        .HasName("pk_study_group_members");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_study_group_members_user_id");
+
+                    b.ToTable("study_group_members", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Subject", b =>
                 {
                     b.Property<int>("Id")
@@ -2066,6 +2468,36 @@ namespace SEAITT_LMS.Data.Migrations
 
                             t.HasCheckConstraint("ck_submissions_status", "status IN ('InProgress', 'Submitted', 'Graded')");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.SystemSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("key");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Key")
+                        .HasName("pk_system_settings");
+
+                    b.HasIndex("UpdatedByUserId")
+                        .HasDatabaseName("ix_system_settings_updated_by_user_id");
+
+                    b.ToTable("system_settings", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Teacher", b =>
@@ -2714,6 +3146,56 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Evaluation");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Friendship", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "Addressee")
+                        .WithMany()
+                        .HasForeignKey("AddresseeUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friendships_users_addressee_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "Requester")
+                        .WithMany()
+                        .HasForeignKey("RequesterUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_friendships_users_requester_user_id");
+
+                    b.Navigation("Addressee");
+
+                    b.Navigation("Requester");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.GroupPost", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_posts_users_author_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.StudyGroup", "Group")
+                        .WithMany("Posts")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_posts_study_groups_group_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.GroupPost", "Parent")
+                        .WithMany()
+                        .HasForeignKey("ParentPostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_group_posts_group_posts_parent_post_id");
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Parent");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.GuidanceCounselor", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
@@ -2882,6 +3364,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ProfilePhoto", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("SEAITT_LMS.Data.Entities.ProfilePhoto", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_profile_photos_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.QuizQuestion", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.ModuleItem", "Item")
@@ -2977,6 +3471,81 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Strand");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.SecurityLog", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_security_logs_users_actor_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_security_logs_users_user_id");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.SharedFile", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.TeachingAssignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_shared_files_teaching_assignments_assignment_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.StoredFile", "File")
+                        .WithMany("Shares")
+                        .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_shared_files_stored_files_file_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.StudyGroup", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_shared_files_study_groups_group_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "SharedWithUser")
+                        .WithMany()
+                        .HasForeignKey("SharedWithUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_shared_files_users_shared_with_user_id");
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("File");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("SharedWithUser");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StoredFile", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stored_files_users_owner_user_id");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StoredFileContent", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.StoredFile", "File")
+                        .WithOne("Content")
+                        .HasForeignKey("SEAITT_LMS.Data.Entities.StoredFileContent", "FileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stored_file_contents_stored_files_file_id");
+
+                    b.Navigation("File");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Strand", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.Track", "Track")
@@ -3069,6 +3638,39 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroup", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_study_groups_users_owner_user_id");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroupMember", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.StudyGroup", "Group")
+                        .WithMany("Members")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_study_group_members_study_groups_group_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_study_group_members_users_user_id");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Submission", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.ModuleItem", "Item")
@@ -3088,6 +3690,15 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Item");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.SystemSetting", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_system_settings_users_updated_by_user_id");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Teacher", b =>
@@ -3236,6 +3847,20 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.SchoolYear", b =>
                 {
                     b.Navigation("Terms");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StoredFile", b =>
+                {
+                    b.Navigation("Content");
+
+                    b.Navigation("Shares");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroup", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Posts");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.TeacherEvaluation", b =>
