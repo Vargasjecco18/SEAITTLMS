@@ -24,10 +24,9 @@ else
 {
     var row = detail.Row;
     <PageHeader Title="@(row.IsSyllabus ? $"Syllabus · {row.SubjectName}" : row.Title)"
-                Subtitle="@($"{row.SubjectName} · {row.SectionLabel} · sent to {row.TeacherName}")"
                 IconName="eye">
         <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Ghost" IconName="chevron-left">All of them</ButtonLink>
-        <ButtonLink Href="@($"provider/users/{row.TeacherUserId}")" Variant="ButtonVariant.Secondary" IconName="presentation">The teacher</ButtonLink>
+        <ButtonLink Href="@($"provider/tracking/users/{row.TeacherUserId}")" Variant="ButtonVariant.Secondary" IconName="presentation">The teacher</ButtonLink>
     </PageHeader>
 
     <ol class="steps" aria-label="Where it is">
@@ -115,7 +114,7 @@ else
                             @foreach (var s in Students)
                             {
                                 <tr>
-                                    <td><a class="name-link" href="provider/users/@s.UserId">@s.Name</a></td>
+                                    <td><a class="name-link" href="provider/tracking/users/@s.UserId">@s.Name</a></td>
                                     <td>
                                         @if (s.ModuleOpenedAtUtc is { } at)
                                         {

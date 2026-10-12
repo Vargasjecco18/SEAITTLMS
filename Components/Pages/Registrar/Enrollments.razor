@@ -10,7 +10,6 @@
 <PageTitle>Enrollments · SEAITT e-LMS</PageTitle>
 
 <PageHeader Title="Enrollments"
-            Subtitle="Fill in the form to enroll a student. The student's email and password are made for you."
             IconName="user-plus" />
 
 @if (lookups is null)
@@ -204,7 +203,7 @@ else
                             }
                         </select>
                     </Field>
-                    <Field For="section" Label="Section" Required="true" Hint="Choose the section, A to E.">
+                    <Field For="section" Label="Section" Required="true" Hint="Choose the section, A, B or C.">
                         <select id="section" required @bind="form.SectionName">
                             <option value="">Choose</option>
                             @foreach (var name in SectionChoices)
@@ -285,7 +284,7 @@ else
     private IReadOnlyList<SubjectOption> subjects = [];
     private IReadOnlyList<string> sectionNames = [];
 
-    /// <summary>A to E, and the sections with another name that this strand, grade level and schedule already have.</summary>
+    /// <summary>A to C, and the sections with another name that this strand, grade level and schedule already have.</summary>
     private IEnumerable<string> SectionChoices => SectionNames.Choices.Concat(sectionNames.Where(n => !SectionNames.IsChoice(n)));
     private List<string> errors = [];
     private EnrollmentReceipt? receipt;

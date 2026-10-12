@@ -14,7 +14,6 @@
 }
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "coordinator"}")"
-            Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. The teacher evaluation, the announcements and the academic setup at a glance.")"
             IconName="layout-dashboard" />
 
 @if (evaluations is not null && counts is not null)

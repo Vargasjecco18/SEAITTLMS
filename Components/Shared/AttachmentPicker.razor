@@ -1,0 +1,139 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject SystemSettingsService Settings
+
+@* The files part of a form for a syllabus, a module or an activity: the files that are attached now (each can be taken off) and a box to choose
+   new ones. The files are read when they are chosen and kept in this component; the page that owns the form saves them after it saved the syllabus,
+   module or item (it needs its number): it reads <see cref="Pending"/> and <see cref="Removed"/> (through @ref) and gives them to AttachmentService. *@
+<div class="picker">
+    <p class="picker-title"><Icon Name="paperclip" Size="16" /> @Title</p>
+
+    @if (Existing.Count > 0 || pending.Count > 0)
+    {
+        <ul class="chosen">
+            @foreach (var f in Existing)
+            {
+                var isRemoved = removed.Contains(f.Id);
+                var id = f.Id;
+                <li class="@(isRemoved ? "gone" : "")">
+                    <Icon Name="@AttachmentList.IconOf(f.Name)" Size="16" />
+                    <span class="name">@f.Name</span>
+                    <span class="size">@FileSize.Text(f.SizeBytes)</span>
+                    @if (isRemoved)
+                    {
+                        <button type="button" class="act" @onclick="() => Keep(id)">Keep it</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="act" aria-label="@($"Take {f.Name} off")" title="Take off" @onclick="() => Remove(id)"><Icon Name="x" Size="14" /></button>
+                    }
+                </li>
+            }
+
+            @foreach (var f in pending)
+            {
+                var file = f;
+                <li class="new">
+                    <Icon Name="@AttachmentList.IconOf(file.Name)" Size="16" />
+                    <span class="name">@file.Name</span>
+                    <span class="size">@FileSize.Text(file.Data.Length) · new</span>
+                    <button type="button" class="act" aria-label="@($"Do not attach {file.Name}")" title="Do not attach" @onclick="() => pending.Remove(file)"><Icon Name="x" Size="14" /></button>
+                </li>
+            }
+        </ul>
+    }
+
+    <label class="drop @(busy ? "busy" : "")">
+        <InputFile OnChange="ChooseAsync" multiple disabled="@(busy || Count >= AttachmentService.MaxPerOwner)" aria-label="@Title" />
+        <Icon Name="@(busy ? "loader" : "file-up")" Size="18" />
+        <span class="drop-text">
+            <strong>@(busy ? "Reading…" : "Choose files")</strong>
+            <small>Up to @Settings.Current.MaxFileMegabytes MB each, @AttachmentService.MaxPerOwner files at most. A PDF, a picture or a text file opens in the browser.</small>
+        </span>
+    </label>
+
+    @if (problem is not null)
+    {
+        <p class="problem" role="alert">@problem</p>
+    }
+</div>
+
+@code {
+    private readonly List<NewAttachment> pending = [];
+    private readonly HashSet<int> removed = [];
+    private bool busy;
+    private string? problem;
+
+    [Parameter] public string Title { get; set; } = "Files";
+
+    /// <summary>The files that are attached already.</summary>
+    [Parameter] public IReadOnlyList<AttachmentRow> Existing { get; set; } = [];
+
+    /// <summary>The files chosen and not saved yet.</summary>
+    public IReadOnlyList<NewAttachment> Pending => pending;
+
+    /// <summary>The numbers of the attached files that were taken off.</summary>
+    public IReadOnlyCollection<int> Removed => removed;
+
+    private int Count => Existing.Count(f => !removed.Contains(f.Id)) + pending.Count;
+
+    private void Remove(int id) => removed.Add(id);
+
+    private void Keep(int id) => removed.Remove(id);
+
+    private async Task ChooseAsync(InputFileChangeEventArgs e)
+    {
+        busy = true;
+        problem = null;
+        try
+        {
+            var maxBytes = Settings.Current.MaxFileMegabytes * 1024L * 1024;
+            IReadOnlyList<IBrowserFile> chosen;
+            try
+            {
+                chosen = e.GetMultipleFiles(AttachmentService.MaxPerOwner);
+            }
+            catch (InvalidOperationException)
+            {
+                problem = $"Choose at most {AttachmentService.MaxPerOwner} files at a time.";
+                return;
+            }
+
+            foreach (var file in chosen)
+            {
+                if (Count >= AttachmentService.MaxPerOwner)
+                {
+                    problem = $"At most {AttachmentService.MaxPerOwner} files can be attached.";
+                    break;
+                }
+
+                if (FileService.IsBlocked(file.Name))
+                {
+                    problem = $"{file.Name}: programs and scripts can't be attached.";
+                    continue;
+                }
+
+                if (file.Size > maxBytes)
+                {
+                    problem = $"{file.Name} is bigger than {Settings.Current.MaxFileMegabytes} MB.";
+                    continue;
+                }
+
+                try
+                {
+                    await using var stream = file.OpenReadStream(maxBytes);
+                    using var buffer = new MemoryStream();
+                    await stream.CopyToAsync(buffer);
+                    pending.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
+                }
+                catch (IOException)
+                {
+                    problem = $"{file.Name} could not be read.";
+                }
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

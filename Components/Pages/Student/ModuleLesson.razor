@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject ModuleService Modules
+@inject AttachmentService Files
 @inject TimeProvider Clock
 
 <PageTitle>@(module?.Title ?? "Module") · SEAITT e-LMS</PageTitle>
@@ -22,7 +23,7 @@ else if (module is null)
 }
 else
 {
-    <PageHeader Title="@module.Title" Subtitle="@module.SubjectName" IconName="layers">
+    <PageHeader Title="@module.Title" IconName="layers">
         <ButtonLink Href="@($"student/subjects/{module.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @module.SubjectName</ButtonLink>
     </PageHeader>
 
@@ -46,6 +47,12 @@ else
             {
                 <p class="link"><Icon Name="link" Size="16" /> <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">@module.LinkUrl <Icon Name="external-link" Size="14" /></a></p>
             }
+
+            @if (files.Count > 0)
+            {
+                <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
+                <AttachmentList Items="files" Label="Files of this module" />
+            }
         </Card>
 
         <Card Title="Your work in this module" IconName="clipboard-list">
@@ -59,11 +66,13 @@ else
 
     private bool loaded;
     private StudentModule? module;
+    private IReadOnlyList<AttachmentRow> files = [];
 
     protected override async Task OnParametersSetAsync()
     {
         var studentId = await Me.GetStudentIdAsync();
         module = studentId is { } id ? await Modules.OpenModuleAsync(id, ModuleId) : null;
+        files = module is null ? [] : await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Module, ModuleId));
         loaded = true;
     }
 }

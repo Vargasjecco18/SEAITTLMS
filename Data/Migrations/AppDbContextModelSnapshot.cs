@@ -259,6 +259,10 @@ namespace SEAITT_LMS.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AssignmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("assignment_id");
+
                     b.Property<string>("Audience")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -273,6 +277,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("body");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Other")
+                        .HasColumnName("category");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -299,6 +311,9 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_announcements");
 
+                    b.HasIndex("AssignmentId")
+                        .HasDatabaseName("ix_announcements_assignment_id");
+
                     b.HasIndex("SectionId")
                         .HasDatabaseName("ix_announcements_section_id");
 
@@ -311,7 +326,103 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("announcements", null, t =>
                         {
                             t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
+
+                            t.HasCheckConstraint("ck_announcements_category", "category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other')");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int?>("ItemId")
+                        .HasColumnType("int")
+                        .HasColumnName("item_id");
+
+                    b.Property<int?>("MaterialItemId")
+                        .HasColumnType("int")
+                        .HasColumnName("material_item_id");
+
+                    b.Property<int?>("MaterialModuleId")
+                        .HasColumnType("int")
+                        .HasColumnName("material_module_id");
+
+                    b.Property<int?>("ModuleId")
+                        .HasColumnType("int")
+                        .HasColumnName("module_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("name");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int?>("UploadedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("uploaded_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attachments");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_attachments_item_id");
+
+                    b.HasIndex("MaterialItemId")
+                        .HasDatabaseName("ix_attachments_material_item_id");
+
+                    b.HasIndex("MaterialModuleId")
+                        .HasDatabaseName("ix_attachments_material_module_id");
+
+                    b.HasIndex("ModuleId")
+                        .HasDatabaseName("ix_attachments_module_id");
+
+                    b.HasIndex("UploadedByUserId")
+                        .HasDatabaseName("ix_attachments_uploaded_by_user_id");
+
+                    b.ToTable("attachments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_attachments_size", "size_bytes >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttachmentContent", b =>
+                {
+                    b.Property<int>("AttachmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("attachment_id");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("longblob")
+                        .HasColumnName("data");
+
+                    b.HasKey("AttachmentId")
+                        .HasName("pk_attachment_contents");
+
+                    b.ToTable("attachment_contents", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttendanceRecord", b =>
@@ -523,6 +634,11 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("tinyint unsigned")
                         .HasColumnName("rating");
 
+                    b.Property<string>("Selection")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("selection");
+
                     b.HasKey("ResponseId", "QuestionId")
                         .HasName("pk_evaluation_answers");
 
@@ -559,9 +675,13 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<string>("Kind")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)")
                         .HasColumnName("kind");
+
+                    b.Property<string>("OptionsText")
+                        .HasColumnType("text")
+                        .HasColumnName("options_text");
 
                     b.Property<int>("Position")
                         .HasColumnType("int")
@@ -585,7 +705,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("evaluation_questions", null, t =>
                         {
-                            t.HasCheckConstraint("ck_evaluation_questions_kind", "kind IN ('Rating', 'Comment')");
+                            t.HasCheckConstraint("ck_evaluation_questions_kind", "kind IN ('Likert', 'Performance', 'Frequency', 'Binary', 'Ranking', 'SelectAll', 'Comment')");
                         });
                 });
 
@@ -2366,6 +2486,15 @@ namespace SEAITT_LMS.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AutoKey")
+                        .HasColumnType("int")
+                        .HasColumnName("auto_key");
+
+                    b.Property<string>("AutoKind")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("auto_kind");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
@@ -2381,7 +2510,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("name");
 
-                    b.Property<int>("OwnerUserId")
+                    b.Property<int?>("OwnerUserId")
                         .HasColumnType("int")
                         .HasColumnName("owner_user_id");
 
@@ -2395,7 +2524,14 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("OwnerUserId")
                         .HasDatabaseName("ix_study_groups_owner_user_id");
 
-                    b.ToTable("study_groups", (string)null);
+                    b.HasIndex("AutoKind", "AutoKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_study_groups_auto_kind_auto_key");
+
+                    b.ToTable("study_groups", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_study_groups_auto_kind", "auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers')");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroupMember", b =>
@@ -3055,6 +3191,12 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
                 {
+                    b.HasOne("SEAITT_LMS.Data.Entities.TeachingAssignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_announcements_teaching_assignments_assignment_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorUserId")
@@ -3068,9 +3210,66 @@ namespace SEAITT_LMS.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_announcements_sections_section_id");
 
+                    b.Navigation("Assignment");
+
                     b.Navigation("Author");
 
                     b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.ModuleItem", "Item")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_attachments_module_items_item_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.MaterialItem", "MaterialItem")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MaterialItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_attachments_material_items_material_item_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.MaterialModule", "MaterialModule")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MaterialModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_attachments_material_modules_material_module_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.LearningModule", "Module")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_attachments_modules_module_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "UploadedBy")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_attachments_users_uploaded_by_user_id");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("MaterialItem");
+
+                    b.Navigation("MaterialModule");
+
+                    b.Navigation("Module");
+
+                    b.Navigation("UploadedBy");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttachmentContent", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Attachment", "Attachment")
+                        .WithOne("Content")
+                        .HasForeignKey("SEAITT_LMS.Data.Entities.AttachmentContent", "AttachmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_attachment_contents_attachments_attachment_id");
+
+                    b.Navigation("Attachment");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.AttendanceRecord", b =>
@@ -3785,7 +3984,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany()
                         .HasForeignKey("OwnerUserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("fk_study_groups_users_owner_user_id");
 
                     b.Navigation("Owner");
@@ -3951,6 +4149,11 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>
+                {
+                    b.Navigation("Content");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
                 {
                     b.Navigation("EnrolledSubjects");
@@ -3963,16 +4166,22 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.LearningModule", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Items");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialItem", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialModule", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Deliveries");
 
                     b.Navigation("Items");
@@ -3980,6 +4189,8 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.ModuleItem", b =>
                 {
+                    b.Navigation("Attachments");
+
                     b.Navigation("Questions");
 
                     b.Navigation("Submissions");

@@ -7,10 +7,6 @@
             }
             <span>@Title</span>
         </h1>
-        @if (!string.IsNullOrEmpty(Subtitle))
-        {
-            <p>@Subtitle</p>
-        }
     </div>
 
     @if (ChildContent is not null)
@@ -21,8 +17,6 @@
 
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = "";
-
-    [Parameter] public string? Subtitle { get; set; }
 
     /// <summary>The icon in front of the title (a name from <see cref="IconSet"/>).</summary>
     [Parameter] public string? IconName { get; set; }

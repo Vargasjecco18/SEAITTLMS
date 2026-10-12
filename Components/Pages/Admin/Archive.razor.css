@@ -128,7 +128,7 @@
 }
 
 .mono {
-    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-variant-numeric: tabular-nums;
     font-size: 0.9rem;
 }
 

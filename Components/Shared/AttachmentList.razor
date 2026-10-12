@@ -1,0 +1,33 @@
+@* The files attached to a syllabus, a module or an activity. A name opens the file in a new tab of the browser when the browser can show it (a PDF,
+   a picture, a text file, a sound, a video; the browser's own viewer has the download and print buttons), otherwise it saves the file. The small
+   arrow always saves it. *@
+@if (Items.Count > 0)
+{
+    <ul class="files" aria-label="@Label">
+        @foreach (var f in Items)
+        {
+            <li>
+                <span class="file-icon" aria-hidden="true"><Icon Name="@IconOf(f.Name)" Size="16" /></span>
+                <a class="file-name" href="files/a/@f.Id" target="_blank" rel="noopener noreferrer" title="@(f.CanPreview ? "Open in a new tab" : "Download")">@f.Name</a>
+                <span class="file-size">@FileSize.Text(f.SizeBytes)</span>
+                <a class="file-save" href="files/a/@f.Id?download=1" download="@f.Name" aria-label="@($"Download {f.Name}")" title="Download"><Icon Name="download" Size="15" /></a>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AttachmentRow> Items { get; set; } = [];
+
+    /// <summary>What the list is, for screen readers.</summary>
+    [Parameter] public string Label { get; set; } = "Attached files";
+
+    internal static string IconOf(string name) => Path.GetExtension(name).ToLowerInvariant() switch
+    {
+        ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" => "file-image",
+        ".xls" or ".xlsx" or ".csv" => "file-spreadsheet",
+        ".zip" or ".rar" or ".7z" => "file-archive",
+        ".pdf" or ".doc" or ".docx" or ".txt" or ".md" or ".ppt" or ".pptx" => "file-text",
+        _ => "file",
+    };
+}

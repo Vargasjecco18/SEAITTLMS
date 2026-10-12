@@ -26,7 +26,8 @@ public sealed record FriendRequests(IReadOnlyList<PersonCard> Received, IReadOnl
 
 /// <summary>
 /// The people a student or a teacher can see in the Users page: a student sees the classmates (the students of the sections they are in),
-/// the teachers of their courses and their friends; a teacher sees their students, the other teachers and their friends. Friends can be
+/// all the students of the school, the teachers of their courses and their friends; a teacher sees their students, all the other teachers
+/// and their friends. Friends can be
 /// anyone of the two roles. The lists only read, the friendship itself is changed through <see cref="FriendService"/>.
 /// </summary>
 public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
@@ -65,6 +66,18 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
             .OrderBy(c => c.Name)
             .ToList();
 
+        return await WithStatesAsync(db, userId, cards, ct);
+    }
+
+    /// <summary>Every other student of the school (active accounts), each with the section they are in. For the "Students" list of a student.</summary>
+    public async Task<IReadOnlyList<PersonCard>> GetAllStudentsAsync(int userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var ids = await db.Students.AsNoTracking()
+            .Where(s => s.UserId != userId && s.Status == StudentStatus.Active && s.User.IsActive)
+            .Select(s => s.UserId).ToListAsync(ct);
+
+        var cards = (await CardsAsync(db, ids, ct)).OrderBy(c => c.Name).ToList();
         return await WithStatesAsync(db, userId, cards, ct);
     }
 

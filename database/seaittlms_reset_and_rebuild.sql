@@ -1500,5 +1500,95 @@ CREATE INDEX `ix_item_views_student_id` ON `item_views` (`student_id`);
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261012045434_AddAcademicProviderRoleAndOpenTracking', '9.0.20');
 
+INSERT INTO `subjects` (`code`, `name`, `is_active`, `created_at_utc`, `updated_at_utc`) SELECT d.`code`, d.`name`, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM (SELECT 'BUSACCT2' AS `code`, 'BUSINESS ACCOUNTING 2' AS `name` UNION ALL SELECT 'ADVMATH2', 'ADVANCE MATHEMATICS 2' UNION ALL SELECT 'FIL2', 'FILIPINO 2' UNION ALL SELECT 'CREACOMP2', 'CREATIVE COMPOSITION 2' UNION ALL SELECT 'FINMATH2', 'FINITE MATH 2' UNION ALL SELECT 'EMPOWERTECH2', 'EMPOWERMENT TECHNOLOGY 2' UNION ALL SELECT 'BIO2', 'BIOLOGY 2' UNION ALL SELECT 'SOCSCI2', 'SOCIAL SCIENCES 2' UNION ALL SELECT 'CSS2', 'COMPUTER SYSTEM SERVICING 2' UNION ALL SELECT 'KITCHENOPS2', 'KITCHEN OPERATION 2' UNION ALL SELECT 'FBSOPS2', 'FOOD AND BEVERAGE OPERATIONS 2' UNION ALL SELECT 'EFFCOMM2', 'EFFECTIVE COMMUNICATION 2' UNION ALL SELECT 'MABKOM2', 'MABISANG KOMUNIKASYON 2' UNION ALL SELECT 'GENMATH2', 'GENERAL MATHEMATICS 2' UNION ALL SELECT 'LIFECAREER2', 'LIFE AND CAREER SKILLS 2' UNION ALL SELECT 'GENSCI2', 'GENERAL SCIENCE 2' UNION ALL SELECT 'KASAYSAYAN2', 'PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2') d WHERE NOT EXISTS (SELECT 1 FROM `subjects` s WHERE s.`code` = d.`code`);
+
+INSERT INTO `strand_subjects` (`strand_id`, `grade_level`, `term_number`, `subject_id`) SELECT st.`id`, 12, d.`term_number`, sub.`id` FROM (SELECT 'BUSSENT' AS `strand_code`, '1' AS `term_number`, 'BUSACCT2' AS `subject_code` UNION ALL SELECT 'BUSSENT', '1', 'ADVMATH2' UNION ALL SELECT 'EDUC', '1', 'FIL2' UNION ALL SELECT 'EDUC', '1', 'CREACOMP2' UNION ALL SELECT 'ENG', '1', 'FINMATH2' UNION ALL SELECT 'ENG', '1', 'EMPOWERTECH2' UNION ALL SELECT 'MED', '1', 'BIO2' UNION ALL SELECT 'MED', '1', 'EMPOWERTECH2' UNION ALL SELECT 'USP', '1', 'SOCSCI2' UNION ALL SELECT 'USP', '1', 'BIO2' UNION ALL SELECT 'CD1', '1', 'CSS2' UNION ALL SELECT 'HT1', '1', 'KITCHENOPS2' UNION ALL SELECT 'HT2', '1', 'FBSOPS2' UNION ALL SELECT 'BUSSENT', '2', 'EFFCOMM2' UNION ALL SELECT 'BUSSENT', '2', 'MABKOM2' UNION ALL SELECT 'BUSSENT', '2', 'GENMATH2' UNION ALL SELECT 'BUSSENT', '2', 'LIFECAREER2' UNION ALL SELECT 'BUSSENT', '2', 'GENSCI2' UNION ALL SELECT 'BUSSENT', '2', 'KASAYSAYAN2' UNION ALL SELECT 'EDUC', '2', 'EFFCOMM2' UNION ALL SELECT 'EDUC', '2', 'MABKOM2' UNION ALL SELECT 'EDUC', '2', 'GENMATH2' UNION ALL SELECT 'EDUC', '2', 'LIFECAREER2' UNION ALL SELECT 'EDUC', '2', 'GENSCI2' UNION ALL SELECT 'EDUC', '2', 'KASAYSAYAN2' UNION ALL SELECT 'ENG', '2', 'EFFCOMM2' UNION ALL SELECT 'ENG', '2', 'MABKOM2' UNION ALL SELECT 'ENG', '2', 'GENMATH2' UNION ALL SELECT 'ENG', '2', 'LIFECAREER2' UNION ALL SELECT 'ENG', '2', 'GENSCI2' UNION ALL SELECT 'ENG', '2', 'KASAYSAYAN2' UNION ALL SELECT 'MED', '2', 'EFFCOMM2' UNION ALL SELECT 'MED', '2', 'MABKOM2' UNION ALL SELECT 'MED', '2', 'GENMATH2' UNION ALL SELECT 'MED', '2', 'LIFECAREER2' UNION ALL SELECT 'MED', '2', 'GENSCI2' UNION ALL SELECT 'MED', '2', 'KASAYSAYAN2' UNION ALL SELECT 'USP', '2', 'EFFCOMM2' UNION ALL SELECT 'USP', '2', 'MABKOM2' UNION ALL SELECT 'USP', '2', 'GENMATH2' UNION ALL SELECT 'USP', '2', 'LIFECAREER2' UNION ALL SELECT 'USP', '2', 'GENSCI2' UNION ALL SELECT 'USP', '2', 'KASAYSAYAN2' UNION ALL SELECT 'CD1', '2', 'EFFCOMM2' UNION ALL SELECT 'CD1', '2', 'MABKOM2' UNION ALL SELECT 'CD1', '2', 'GENMATH2' UNION ALL SELECT 'CD1', '2', 'LIFECAREER2' UNION ALL SELECT 'CD1', '2', 'GENSCI2' UNION ALL SELECT 'CD1', '2', 'KASAYSAYAN2' UNION ALL SELECT 'HT1', '2', 'EFFCOMM2' UNION ALL SELECT 'HT1', '2', 'MABKOM2' UNION ALL SELECT 'HT1', '2', 'GENMATH2' UNION ALL SELECT 'HT1', '2', 'LIFECAREER2' UNION ALL SELECT 'HT1', '2', 'GENSCI2' UNION ALL SELECT 'HT1', '2', 'KASAYSAYAN2' UNION ALL SELECT 'HT2', '2', 'EFFCOMM2' UNION ALL SELECT 'HT2', '2', 'MABKOM2' UNION ALL SELECT 'HT2', '2', 'GENMATH2' UNION ALL SELECT 'HT2', '2', 'LIFECAREER2' UNION ALL SELECT 'HT2', '2', 'GENSCI2' UNION ALL SELECT 'HT2', '2', 'KASAYSAYAN2') d JOIN `strands` st ON st.`code` = d.`strand_code` JOIN `subjects` sub ON sub.`code` = d.`subject_code` WHERE NOT EXISTS (SELECT 1 FROM `strand_subjects` x WHERE x.`strand_id` = st.`id` AND x.`grade_level` = 12 AND x.`term_number` = d.`term_number` AND x.`subject_id` = sub.`id`);
+
+INSERT INTO `sections` (`school_year_id`, `strand_id`, `grade_level`, `schedule_id`, `name`, `created_at_utc`, `updated_at_utc`) SELECT y.`id`, ss.`strand_id`, c.`grade_level`, ss.`schedule_id`, n.`name`, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM (SELECT COALESCE((SELECT `school_year_id` FROM `terms` WHERE `is_current` = 1 ORDER BY `id` LIMIT 1),                       (SELECT `id` FROM `school_years` ORDER BY `start_date` DESC, `id` DESC LIMIT 1)) AS `id`) y JOIN `strand_schedules` ss JOIN (SELECT DISTINCT `strand_id`, `grade_level` FROM `strand_subjects`) c ON c.`strand_id` = ss.`strand_id` JOIN (SELECT 'A' AS `name` UNION ALL SELECT 'B' UNION ALL SELECT 'C') n WHERE y.`id` IS NOT NULL   AND NOT EXISTS (SELECT 1 FROM `sections` x WHERE x.`school_year_id` = y.`id` AND x.`strand_id` = ss.`strand_id`                   AND x.`grade_level` = c.`grade_level` AND x.`schedule_id` = ss.`schedule_id` AND x.`name` = n.`name`);
+
+DELETE FROM `sections` WHERE `id` > 0 AND `name` IN ('D', 'E') AND NOT EXISTS (SELECT 1 FROM `enrollments` e WHERE e.`section_id` = `sections`.`id`) AND NOT EXISTS (SELECT 1 FROM `teaching_assignments` a WHERE a.`section_id` = `sections`.`id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012144652_AddGrade12CurriculumAndSectionsAToC', '9.0.20');
+
+ALTER TABLE `study_groups` MODIFY COLUMN `owner_user_id` int NULL;
+
+ALTER TABLE `study_groups` ADD `auto_key` int NULL;
+
+ALTER TABLE `study_groups` ADD `auto_kind` varchar(20) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `announcements` ADD `assignment_id` int NULL;
+
+ALTER TABLE `announcements` ADD `category` varchar(20) CHARACTER SET utf8mb4 NOT NULL DEFAULT 'Other';
+
+CREATE UNIQUE INDEX `ix_study_groups_auto_kind_auto_key` ON `study_groups` (`auto_kind`, `auto_key`);
+
+ALTER TABLE `study_groups` ADD CONSTRAINT `ck_study_groups_auto_kind` CHECK (auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers'));
+
+CREATE INDEX `ix_announcements_assignment_id` ON `announcements` (`assignment_id`);
+
+ALTER TABLE `announcements` ADD CONSTRAINT `ck_announcements_category` CHECK (category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other'));
+
+ALTER TABLE `announcements` ADD CONSTRAINT `fk_announcements_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012145934_AddAnnouncementCategoriesAndAutomaticGroups', '9.0.20');
+
+ALTER TABLE `evaluation_questions` DROP CONSTRAINT `ck_evaluation_questions_kind`;
+
+ALTER TABLE `evaluation_questions` MODIFY COLUMN `kind` varchar(12) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `evaluation_questions` ADD `options_text` text CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `evaluation_answers` ADD `selection` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+UPDATE `evaluation_questions` SET `kind` = 'Performance' WHERE `id` > 0 AND `kind` = 'Rating';
+
+ALTER TABLE `evaluation_questions` ADD CONSTRAINT `ck_evaluation_questions_kind` CHECK (kind IN ('Likert', 'Performance', 'Frequency', 'Binary', 'Ranking', 'SelectAll', 'Comment'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012151328_AddEvaluationScales', '9.0.20');
+
+CREATE TABLE `attachments` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) CHARACTER SET utf8mb4 NOT NULL,
+    `content_type` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `size_bytes` bigint NOT NULL,
+    `uploaded_by_user_id` int NULL,
+    `material_module_id` int NULL,
+    `material_item_id` int NULL,
+    `module_id` int NULL,
+    `item_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_attachments` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_attachments_size` CHECK (size_bytes >= 0),
+    CONSTRAINT `fk_attachments_material_items_material_item_id` FOREIGN KEY (`material_item_id`) REFERENCES `material_items` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_attachments_material_modules_material_module_id` FOREIGN KEY (`material_module_id`) REFERENCES `material_modules` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_attachments_module_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `module_items` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_attachments_modules_module_id` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_attachments_users_uploaded_by_user_id` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `attachment_contents` (
+    `attachment_id` int NOT NULL,
+    `data` longblob NOT NULL,
+    CONSTRAINT `pk_attachment_contents` PRIMARY KEY (`attachment_id`),
+    CONSTRAINT `fk_attachment_contents_attachments_attachment_id` FOREIGN KEY (`attachment_id`) REFERENCES `attachments` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_attachments_item_id` ON `attachments` (`item_id`);
+
+CREATE INDEX `ix_attachments_material_item_id` ON `attachments` (`material_item_id`);
+
+CREATE INDEX `ix_attachments_material_module_id` ON `attachments` (`material_module_id`);
+
+CREATE INDEX `ix_attachments_module_id` ON `attachments` (`module_id`);
+
+CREATE INDEX `ix_attachments_uploaded_by_user_id` ON `attachments` (`uploaded_by_user_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012151904_AddAttachments', '9.0.20');
+
 COMMIT;
 

@@ -1,10 +1,10 @@
-@page "/provider/users/{UserId:int}"
+@page "/provider/tracking/users/{UserId:int}"
 @attribute [Authorize(Roles = AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @inject ProviderService Provider
 @inject TimeProvider Clock
 
-<PageTitle>@(title ?? "User") · Users · SEAITT e-LMS</PageTitle>
+<PageTitle>@(title ?? "User") · Tracking · SEAITT e-LMS</PageTitle>
 <AutoRefresh Seconds="60" />
 
 @if (!loaded)
@@ -14,8 +14,8 @@
 else if (teacher is not null)
 {
     var t = teacher.Summary;
-    <PageHeader Title="@t.Name" Subtitle="Teacher · what you sent them and what they did with it" IconName="presentation">
-        <ButtonLink Href="provider/users?tab=teachers" Variant="ButtonVariant.Ghost" IconName="chevron-left">All the teachers</ButtonLink>
+    <PageHeader Title="@t.Name" IconName="presentation">
+        <ButtonLink Href="provider/tracking?tab=teachers" Variant="ButtonVariant.Ghost" IconName="chevron-left">All the teachers</ButtonLink>
     </PageHeader>
 
     <div class="kpis">
@@ -82,8 +82,8 @@ else if (teacher is not null)
 }
 else if (student is not null)
 {
-    <PageHeader Title="@student.Name" Subtitle="@($"Student · {student.SectionLabel}".TrimEnd(' ', '·'))" IconName="graduation-cap">
-        <ButtonLink Href="provider/users?tab=students" Variant="ButtonVariant.Ghost" IconName="chevron-left">All the students</ButtonLink>
+    <PageHeader Title="@student.Name" IconName="graduation-cap">
+        <ButtonLink Href="provider/tracking?tab=students" Variant="ButtonVariant.Ghost" IconName="chevron-left">All the students</ButtonLink>
     </PageHeader>
 
     <div class="kpis">
@@ -145,7 +145,7 @@ else
     <Card>
         <EmptyState IconName="users-round" Title="Not found" IsPage="true">
             <p>This is not a teacher or a student of this school.</p>
-            <ButtonLink Href="provider/users" Variant="ButtonVariant.Secondary">Back to the users</ButtonLink>
+            <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary">Back to the tracking</ButtonLink>
         </EmptyState>
     </Card>
 }

@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject MaterialService Library
+@inject AttachmentService Files
 @inject NavigationManager Navigation
 
 <PageTitle>@(course?.Name ?? "Course") · Course library · SEAITT e-LMS</PageTitle>
@@ -25,7 +26,7 @@ else
     var syllabus = course.Modules.FirstOrDefault(m => m.IsSyllabus);
     var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
 
-    <PageHeader Title="@course.Name" Subtitle="@($"{course.Code} · course library")" IconName="folder-open">
+    <PageHeader Title="@course.Name" IconName="folder-open">
         <ButtonLink Href="provider/library" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
         @if (syllabus is null)
         {
@@ -39,7 +40,7 @@ else
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span>What you send reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and can change the due dates and the text.</span>
+        <span>What you send, with its files, reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and can change the due dates, the text and the settings of the quizzes. Open the syllabus or a module to see its activities, quizzes and task performances.</span>
     </p>
 
     <div class="tiles">
@@ -117,103 +118,120 @@ else
             @foreach (var module in course.Modules.OrderByDescending(m => m.IsSyllabus))
             {
                 var number = module.IsSyllabus ? 0 : modules.IndexOf(module) + 1;
-                <section class="module @(module.IsSyllabus ? "syllabus" : "library")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                var id = module.Id;
+                var isOpen = openModules.Contains(id);
+                var moduleFiles = FilesOf(moduleAttachments, id);
+                <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                    @* A click on the title opens the syllabus or the module: its text, its files and its activities, quizzes and task performances. *@
                     <header class="module-head">
-                        <div class="module-title">
+                        <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{id}")" @onclick="() => ToggleModule(id)">
+                            <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
                             <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
-                            <div>
-                                <h2>@module.Title</h2>
-                                <div class="module-state">
+                            <span class="module-heading">
+                                <span class="module-name">@module.Title</span>
+                                <span class="module-state">
                                     @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> }
                                     <Badge Tone="@(module.SentTo == 0 ? Tone.Neutral : Tone.Success)">@(module.SentTo == 0 ? "Not sent yet" : $"Sent to {module.SentTo} {(module.SentTo == 1 ? "course" : "courses")}")</Badge>
-                                </div>
-                            </div>
-                        </div>
+                                    @if (moduleFiles.Count > 0)
+                                    {
+                                        <span class="count-chip"><Icon Name="paperclip" Size="13" /> @moduleFiles.Count</span>
+                                    }
+                                    @if (!module.IsSyllabus)
+                                    {
+                                        <span class="count-chip">@Summary(module)</span>
+                                    }
+                                </span>
+                            </span>
+                        </button>
                         <div class="module-actions">
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
                             <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteModule(module)" />
                         </div>
                     </header>
 
-                    @if (!string.IsNullOrWhiteSpace(module.Description))
+                    @if (isOpen)
                     {
-                        <p class="module-description">@module.Description</p>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl))
-                    {
-                        <p class="module-lesson">
-                            <Icon Name="file-text" Size="16" />
-                            @if (!string.IsNullOrWhiteSpace(module.Body))
+                        <div class="module-body" id="@($"module-{id}")">
+                            @if (!string.IsNullOrWhiteSpace(module.Description))
                             {
-                                <span>Text (@module.Body.Length.ToString("N0") characters)</span>
+                                <p class="module-description">@module.Description</p>
                             }
-                            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
-                            {
-                                <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer"><Icon Name="link" Size="14" /> Link to the file</a>
-                            }
-                        </p>
-                    }
 
-                    @if (!module.IsSyllabus)
-                    {
-                        <div class="groups">
-                            @foreach (var kind in ItemKinds.All)
+                            @if (!string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl))
                             {
-                                var items = module.Items.Where(i => i.Kind == kind).ToList();
-                                <div class="group">
-                                    <div class="group-head">
-                                        <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
-                                    </div>
-
-                                    @if (items.Count == 0)
+                                <p class="module-lesson">
+                                    <Icon Name="file-text" Size="16" />
+                                    @if (!string.IsNullOrWhiteSpace(module.Body))
                                     {
-                                        <p class="none">None yet.</p>
+                                        <span>Text (@module.Body.Length.ToString("N0") characters)</span>
                                     }
-                                    else
+                                    @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
                                     {
-                                        <ul class="items">
-                                            @foreach (var item in items)
+                                        <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer"><Icon Name="link" Size="14" /> Link to the file</a>
+                                    }
+                                </p>
+                            }
+
+                            <AttachmentList Items="moduleFiles" Label="@($"Files of {module.Title}")" />
+
+                            @if (!module.IsSyllabus)
+                            {
+                                <div class="groups">
+                                    @foreach (var kind in ItemKinds.All)
+                                    {
+                                        var items = module.Items.Where(i => i.Kind == kind).ToList();
+                                        <div class="group">
+                                            <div class="group-head">
+                                                <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
+                                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
+                                            </div>
+
+                                            @if (items.Count == 0)
                                             {
-                                                <li class="item">
-                                                    <div class="item-main">
-                                                        <span class="item-title">@item.Title</span>
-                                                        <div class="item-meta">
-                                                            @if (item.DueAtUtc is { } due)
-                                                            {
-                                                                <span title="@PhilippineTime.FormatDateTime(due)"><Icon Name="calendar-clock" Size="14" /> Suggested due date @PhilippineTime.FormatDateTime(due)</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span>No due date</span>
-                                                            }
-                                                            <span>@item.MaxScore.ToString("0.##") points</span>
-                                                            @if (item.Kind == ItemKinds.Quiz)
-                                                            {
-                                                                <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")</span>
-                                                                @if (item.TimeLimitMinutes is { } minutes)
-                                                                {
-                                                                    <span><Icon Name="timer" Size="14" /> @minutes min</span>
-                                                                }
-                                                                @if (item.AntiCheat)
-                                                                {
-                                                                    <span><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
-                                                                }
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <div class="item-actions">
-                                                        @if (item.Kind == ItemKinds.Quiz)
-                                                        {
-                                                            <ButtonLink Href="@($"provider/library/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
-                                                        }
-                                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
-                                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
-                                                    </div>
-                                                </li>
+                                                <p class="none">None yet.</p>
                                             }
-                                        </ul>
+                                            else
+                                            {
+                                                <ul class="items">
+                                                    @foreach (var item in items)
+                                                    {
+                                                        var itemFiles = FilesOf(itemAttachments, item.Id);
+                                                        <li class="item">
+                                                            <div class="item-main">
+                                                                <span class="item-title">@item.Title</span>
+                                                                <div class="item-meta">
+                                                                    @if (item.DueAtUtc is { } due)
+                                                                    {
+                                                                        <span title="@PhilippineTime.FormatDateTime(due)"><Icon Name="calendar-clock" Size="14" /> Suggested due date @PhilippineTime.FormatDateTime(due)</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>No due date</span>
+                                                                    }
+                                                                    @if (item.Kind != ItemKinds.Quiz)
+                                                                    {
+                                                                        <span>@item.MaxScore.ToString("0.##") points</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")@(item.Questions > 0 ? $" · {item.MaxScore:0.##} points" : "")</span>
+                                                                    }
+                                                                </div>
+                                                                <AttachmentList Items="itemFiles" Label="@($"Files of {item.Title}")" />
+                                                            </div>
+                                                            <div class="item-actions">
+                                                                @if (item.Kind == ItemKinds.Quiz)
+                                                                {
+                                                                    <ButtonLink Href="@($"provider/library/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
+                                                                }
+                                                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
+                                                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
+                                                            </div>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
                                     }
                                 </div>
                             }
@@ -240,9 +258,10 @@ else
             <Field For="m-body" Label="@(editingIsSyllabus ? "Syllabus" : "Lesson")" Hint="The text. Line breaks are kept.">
                 <InputTextArea id="m-body" @bind-Value="moduleForm.Body" rows="9" />
             </Field>
-            <Field For="m-link" Label="Link to the file" Hint="A file or a video, for example in Google Drive (starts with https://).">
+            <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
+            <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@FilesOf(moduleAttachments, editingModuleId)" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
@@ -287,39 +306,21 @@ else
 
             @if (itemForm.Kind == ItemKinds.Quiz)
             {
-                <fieldset class="quiz-settings">
-                    <legend><Icon Name="shield-check" Size="16" /> Quiz settings</legend>
-                    <p class="muted small-text">You write the questions after saving. The quiz is worth the total of the points of its questions.</p>
-                    <div class="two">
-                        <Field For="i-limit" Label="Time limit (minutes)" Hint="Leave empty for no time limit.">
-                            <InputNumber id="i-limit" @bind-Value="itemForm.TimeLimit" />
-                        </Field>
-                        <Field For="i-warn" Label="Warnings before it is handed in" Hint="Leaving the quiz, copying or pasting is a warning.">
-                            <InputNumber id="i-warn" @bind-Value="itemForm.MaxViolations" />
-                        </Field>
-                    </div>
-                    <label class="switch">
-                        <InputCheckbox id="i-anti" @bind-Value="itemForm.AntiCheat" />
-                        <span><strong>Anti-cheating watch</strong><small>Warns the student when they leave the quiz, copy or paste.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="i-shuffle-q" @bind-Value="itemForm.ShuffleQuestions" />
-                        <span><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="i-shuffle-o" @bind-Value="itemForm.ShuffleOptions" />
-                        <span><strong>Shuffle the choices</strong><small>The choices of multiple choice questions change places for every student.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="i-show" @bind-Value="itemForm.ShowResult" />
-                        <span><strong>Show the result right away</strong><small>The student sees their score after handing in.</small></span>
-                    </label>
-                </fieldset>
+                <p class="quiz-note">
+                    <Icon Name="info" Size="16" />
+                    <span>A quiz is <strong>questions</strong>, <strong>a file</strong>, or both. Attach the file below, or write the questions after saving. <strong>The teacher</strong> sets the time limit, the anti-cheating watch and the rest of the settings.</span>
+                </p>
             }
+
+            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz" : "Files")" Existing="@FilesOf(itemAttachments, editingItemId)" />
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseItemForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : itemForm.Kind == ItemKinds.Quiz && editingItemId is null ? "Save and write questions" : "Save")</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
+                @if (itemForm.Kind == ItemKinds.Quiz)
+                {
+                    <Button Variant="ButtonVariant.Secondary" IconName="list-checks" Disabled="busy" OnClick="SaveAndWriteQuestionsAsync">Save and write questions</Button>
+                }
             </div>
         </EditForm>
     }
@@ -416,12 +417,6 @@ else
         public string? Instructions { get; set; }
         public decimal MaxScore { get; set; } = 100;
         public string DueText { get; set; } = "";
-        public int? TimeLimit { get; set; }
-        public bool ShuffleQuestions { get; set; } = true;
-        public bool ShuffleOptions { get; set; } = true;
-        public bool AntiCheat { get; set; } = true;
-        public int MaxViolations { get; set; } = 3;
-        public bool ShowResult { get; set; } = true;
     }
 
     private sealed record DeleteTarget(string Title, string Text, bool IsModule, int Id);
@@ -450,6 +445,17 @@ else
 
     private DeleteTarget? deleteTarget;
 
+    // which syllabus or modules are open (their text and files, and their activities, quizzes and task performances)
+    private readonly HashSet<int> openModules = [];
+
+    // the files of the library, by syllabus or module and by item
+    private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> moduleAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
+    private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> itemAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
+    private AttachmentPicker? modulePicker;
+    private AttachmentPicker? itemPicker;
+    private int moduleFormKey;
+    private int itemFormKey;
+
     private string ModuleModalTitle => editingIsSyllabus
         ? (editingModuleId is null ? "Add syllabus" : "Edit syllabus")
         : (editingModuleId is null ? "Add module" : "Edit module");
@@ -463,7 +469,62 @@ else
         loaded = true;
     }
 
-    private async Task LoadAsync() => course = await Library.GetCourseAsync(SubjectId);
+    private async Task LoadAsync()
+    {
+        course = await Library.GetCourseAsync(SubjectId);
+        var modules = course?.Modules ?? [];
+        moduleAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialModule, modules.Select(m => m.Id).ToList());
+        itemAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialItem, modules.SelectMany(m => m.Items).Select(i => i.Id).ToList());
+    }
+
+    private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>
+        id is { } key && map.TryGetValue(key, out var list) ? list : [];
+
+    private void ToggleModule(int id)
+    {
+        if (!openModules.Remove(id))
+        {
+            openModules.Add(id);
+        }
+    }
+
+    /// <summary>"3 activities, 1 quiz, 1 task performance" for the line under the title of a module.</summary>
+    private static string Summary(MaterialModuleView module)
+    {
+        string Part(string kind, string one, string many)
+        {
+            var n = module.Items.Count(i => i.Kind == kind);
+            return n == 0 ? "" : $"{n} {(n == 1 ? one : many)}";
+        }
+
+        var parts = new[] { Part(ItemKinds.Activity, "activity", "activities"), Part(ItemKinds.Quiz, "quiz", "quizzes"), Part(ItemKinds.TaskPerformance, "task performance", "task performances") }
+            .Where(p => p.Length > 0).ToList();
+        return parts.Count == 0 ? "No activities yet" : string.Join(", ", parts);
+    }
+
+    /// <summary>Saves the files chosen in a form for the syllabus, module or item with this number: the new ones are attached, the ones taken off are removed.</summary>
+    private async Task<List<string>> ApplyFilesAsync(AttachmentPicker? picker, AttachmentOwner owner)
+    {
+        var problems = new List<string>();
+        if (picker is null)
+        {
+            return problems;
+        }
+
+        var removed = await Files.RemoveAsync(userId, [.. picker.Removed]);
+        if (!removed.Succeeded)
+        {
+            problems.AddRange(removed.Errors);
+        }
+
+        var added = await Files.AddAsync(userId, owner, picker.Pending);
+        if (!added.Succeeded)
+        {
+            problems.AddRange(added.Errors);
+        }
+
+        return problems;
+    }
 
     private int ItemCount(string kind) => course?.Modules.Sum(m => m.Items.Count(i => i.Kind == kind)) ?? 0;
 
@@ -482,6 +543,7 @@ else
         formErrors = [];
         editingModuleId = null;
         editingIsSyllabus = false;
+        moduleFormKey++;
         moduleForm = new ModuleInput();
     }
 
@@ -490,6 +552,7 @@ else
         formErrors = [];
         editingModuleId = null;
         editingIsSyllabus = true;
+        moduleFormKey++;
         moduleForm = new ModuleInput { Title = course is null ? "Syllabus" : $"Syllabus: {course.Name}" };
     }
 
@@ -498,6 +561,7 @@ else
         formErrors = [];
         editingModuleId = module.Id;
         editingIsSyllabus = module.IsSyllabus;
+        moduleFormKey++;
         moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
     }
 
@@ -520,8 +584,20 @@ else
                 return;
             }
 
+            var fileProblems = result.Id is { } savedModuleId ? await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.MaterialModule, savedModuleId)) : [];
             moduleForm = null;
+            if (result.Id is { } newModuleId)
+            {
+                openModules.Add(newModuleId);
+            }
+
             Say(result);
+            if (fileProblems.Count > 0)
+            {
+                messageIsError = true;
+                message = $"{result.Message} But the files: {string.Join(" ", fileProblems)}";
+            }
+
             await LoadAsync();
         }
         finally
@@ -537,6 +613,7 @@ else
         formErrors = [];
         editingItemId = null;
         itemModuleId = module.Id;
+        itemFormKey++;
         itemForm = new ItemForm { Kind = kind, MaxScore = kind == ItemKinds.TaskPerformance ? 100 : 50 };
     }
 
@@ -548,10 +625,9 @@ else
         itemForm = new ItemForm
         {
             Kind = item.Kind, Title = item.Title, Instructions = item.Instructions, MaxScore = item.MaxScore,
-            DueText = PhilippineTime.ToInputValue(item.DueAtUtc), TimeLimit = item.TimeLimitMinutes,
-            ShuffleQuestions = item.ShuffleQuestions, ShuffleOptions = item.ShuffleOptions, AntiCheat = item.AntiCheat,
-            MaxViolations = item.MaxViolations, ShowResult = item.ShowResult,
+            DueText = PhilippineTime.ToInputValue(item.DueAtUtc),
         };
+        itemFormKey++;
     }
 
     private void CloseItemForm() => itemForm = null;
@@ -559,7 +635,11 @@ else
     // The date box is written out (not @bind) because its text is converted by PhilippineTime, not by Blazor.
     private void SetDue(ChangeEventArgs e) => itemForm!.DueText = e.Value?.ToString() ?? "";
 
-    private async Task SaveItemAsync()
+    private Task SaveItemAsync() => SaveItemCoreAsync(writeQuestions: false);
+
+    private Task SaveAndWriteQuestionsAsync() => SaveItemCoreAsync(writeQuestions: true);
+
+    private async Task SaveItemCoreAsync(bool writeQuestions)
     {
         if (itemForm is null || busy)
         {
@@ -572,11 +652,8 @@ else
             var input = new ItemInput
             {
                 Kind = itemForm.Kind, Title = itemForm.Title, Instructions = itemForm.Instructions, MaxScore = itemForm.MaxScore,
-                DueAtUtc = PhilippineTime.FromInputValue(itemForm.DueText), TimeLimitMinutes = itemForm.TimeLimit,
-                ShuffleQuestions = itemForm.ShuffleQuestions, ShuffleOptions = itemForm.ShuffleOptions, AntiCheat = itemForm.AntiCheat,
-                MaxViolations = itemForm.MaxViolations, ShowResult = itemForm.ShowResult,
+                DueAtUtc = PhilippineTime.FromInputValue(itemForm.DueText),
             };
-            var wasNew = editingItemId is null;
             var result = await Library.SaveItemAsync(userId, itemModuleId, editingItemId, input);
             if (!result.Succeeded)
             {
@@ -584,14 +661,22 @@ else
                 return;
             }
 
+            var fileProblems = result.Id is { } savedItemId ? await ApplyFilesAsync(itemPicker, new AttachmentOwner(AttachmentOwnerKind.MaterialItem, savedItemId)) : [];
             itemForm = null;
-            if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
+            openModules.Add(itemModuleId);
+            if (writeQuestions && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
             {
                 Navigation.NavigateTo($"provider/library/items/{quizId}/questions");
                 return;
             }
 
             Say(result);
+            if (fileProblems.Count > 0)
+            {
+                messageIsError = true;
+                message = $"{result.Message} But the files: {string.Join(" ", fileProblems)}";
+            }
+
             await LoadAsync();
         }
         finally

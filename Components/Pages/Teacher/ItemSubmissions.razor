@@ -27,7 +27,7 @@ else
     var scored = data.Rows.Where(r => r.Score is not null).ToList();
     var flagged = data.Rows.Count(r => r.IsFlagged);
 
-    <PageHeader Title="@data.Title" Subtitle="@($"{ItemKinds.Display(data.Kind)} · {data.SubjectName} · {data.SectionLabel} · {data.ModuleTitle}")" IconName="@SubjectStyle.KindIcon(data.Kind)">
+    <PageHeader Title="@data.Title" IconName="@SubjectStyle.KindIcon(data.Kind)">
         <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
         @if (data.Kind == ItemKinds.Quiz)
         {

@@ -47,9 +47,15 @@ internal sealed class StudyGroupConfiguration : IEntityTypeConfiguration<StudyGr
         b.Property(g => g.Name).HasMaxLength(100).IsRequired();
         b.Property(g => g.Description).HasMaxLength(500);
 
-        // A deleted account takes the groups it owns with it.
+        b.Property(g => g.AutoKind).HasMaxLength(20);
+
+        // A deleted account takes the groups it owns with it. (An automatic group has no owner.)
         b.HasOne(g => g.Owner).WithMany().HasForeignKey(g => g.OwnerUserId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(g => g.OwnerUserId);
+
+        // The system makes one automatic group of each kind and number (more than one row with an empty kind is fine: those are the groups people made).
+        b.HasIndex(g => new { g.AutoKind, g.AutoKey }).IsUnique();
+        b.ToTable(t => t.HasCheckConstraint("ck_study_groups_auto_kind", "auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers')"));
     }
 }
 

@@ -7,60 +7,56 @@
 
 <PageTitle>Announcements · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Announcements" Subtitle="Notices for the students, the teachers or everybody. Students see them on their dashboard." IconName="megaphone">
+<PageHeader Title="Announcements" IconName="megaphone">
     <Button IconName="plus" OnClick="OpenAdd">New announcement</Button>
 </PageHeader>
 
 <Notice Message="@message" IsError="messageIsError" OnDismiss="ClearMessage" />
 
-<div class="stack">
-    <Card Title="Announcements" IconName="megaphone">
-        @if (rows is null)
-        {
-            <p class="muted">Loading…</p>
-        }
-        else if (rows.Count == 0)
-        {
-            <EmptyState IconName="megaphone" Title="No announcement yet">
-                <p>Write a notice for the students, the teachers or everybody.</p>
-            </EmptyState>
-        }
-        else
-        {
-            <ul class="list">
-                @foreach (var row in rows)
-                {
-                    <li>
-                        <div class="head">
-                            <strong class="title">@row.Title</strong>
-                            <span class="badges">
-                                <Badge Tone="Tone.Info">@AudienceText(row)</Badge>
-                                @if (row.ExpiresOn is { } until)
-                                {
-                                    <Badge Tone="@(until < today ? Tone.Neutral : Tone.Warning)">@(until < today ? "Ended " : "Until ")@PhilippineTime.FormatDate(until)</Badge>
-                                }
-                            </span>
-                        </div>
-                        <p class="body">@row.Body</p>
-                        <div class="foot">
-                            <span class="muted">@row.AuthorName (@row.AuthorRole) · @PhilippineTime.FormatDateTime(row.CreatedAtUtc)</span>
-                            <span class="row-actions">
-                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Title}")" OnClick="() => OpenEdit(row)">Edit</Button>
-                                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" Title="@($"Delete {row.Title}")" OnClick="() => OpenDelete(row)">Delete</Button>
-                            </span>
-                        </div>
-                    </li>
-                }
-            </ul>
-        }
+<PillTabs Items="Tabs" Selected="@filter" SelectedChanged="FilterChanged" Label="Kinds of announcements" />
+
+@if (rows is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (Shown.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="megaphone" Title="@(rows.Count == 0 ? "No announcement yet" : "Nothing in this part")">
+            <p>@(rows.Count == 0 ? "Write a notice about an exam, a holiday, the semester break, a teachers' meeting or anything else." : "There is no announcement of this kind.")</p>
+        </EmptyState>
     </Card>
-</div>
+}
+else
+{
+    <div class="notices">
+        @foreach (var row in Shown)
+        {
+            <AnnouncementCard Item="row" Today="today" OnEdit="OpenEdit" OnDelete="OpenDelete" />
+        }
+    </div>
+}
 
 <Modal Open="form is not null" Title="@(form?.Id is null ? "New announcement" : "Edit announcement")" OnClose="CloseForm">
     @if (form is not null)
     {
         <EditForm Model="form" OnSubmit="SaveAsync">
             <FormErrors Errors="errors" />
+
+            <fieldset class="kinds">
+                <legend>What is it about?</legend>
+                <div class="kind-grid" role="radiogroup" aria-label="What the announcement is about">
+                    @foreach (var category in AnnouncementCategories.All)
+                    {
+                        var c = category;
+                        <button type="button" role="radio" aria-checked="@(form.Category == c ? "true" : "false")" class="kind @c @(form.Category == c ? "on" : "")" @onclick="() => PickCategory(c)">
+                            <Icon Name="@AnnouncementCategories.Icon(c)" Size="18" />
+                            <span>@AnnouncementCategories.DisplayPlural(c)</span>
+                        </button>
+                    }
+                </div>
+            </fieldset>
+
             <Field For="a-title" Label="Title" Required="true">
                 <input id="a-title" maxlength="@AnnouncementService.MaxTitleLength" autocomplete="off" @bind="form.Title" />
             </Field>
@@ -68,17 +64,19 @@
                 <textarea id="a-body" rows="5" maxlength="@AnnouncementService.MaxBodyLength" @bind="form.Body"></textarea>
             </Field>
 
-            <Field For="a-audience" Label="For" Required="true">
-                <select id="a-audience" @bind="form.Audience">
-                    <option value="@AnnouncementAudiences.Everyone">Everybody (students and teachers)</option>
-                    <option value="@AnnouncementAudiences.Students">The students</option>
-                    <option value="@AnnouncementAudiences.Teachers">The teachers</option>
-                </select>
-            </Field>
+            <div class="two">
+                <Field For="a-audience" Label="For" Required="true" Hint="@(form.Category == AnnouncementCategories.TeachersMeeting ? "A teachers' meeting is for the teachers." : null)">
+                    <select id="a-audience" @bind="form.Audience" disabled="@(form.Category == AnnouncementCategories.TeachersMeeting)">
+                        <option value="@AnnouncementAudiences.Everyone">Everybody (students and teachers)</option>
+                        <option value="@AnnouncementAudiences.Students">The students</option>
+                        <option value="@AnnouncementAudiences.Teachers">The teachers</option>
+                    </select>
+                </Field>
 
-            <Field For="a-until" Label="Show until" Hint="Optional. The last day it is shown. Empty: until you delete it.">
-                <input id="a-until" type="date" @bind="form.ExpiresOn" />
-            </Field>
+                <Field For="a-until" Label="Show until" Hint="Optional. Empty: until you delete it.">
+                    <input id="a-until" type="date" @bind="form.ExpiresOn" />
+                </Field>
+            </div>
             <p class="hint-line">The people it is for are told with a notification when you post it.</p>
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
@@ -110,6 +108,26 @@
     private bool messageIsError;
     private bool busy;
     private DateOnly today;
+    private string filter = "all";
+
+    private IReadOnlyList<PillTabs.Tab> Tabs =>
+    [
+        new("all", "All", "megaphone", rows?.Count),
+        .. AnnouncementCategories.All.Select(c => new PillTabs.Tab(c, AnnouncementCategories.DisplayPlural(c), AnnouncementCategories.Icon(c), rows?.Count(r => r.Category == c))),
+    ];
+
+    private IReadOnlyList<AnnouncementView> Shown => rows is null ? [] : filter == "all" ? rows : rows.Where(r => r.Category == filter).ToList();
+
+    private void FilterChanged(string? key) => filter = key ?? "all";
+
+    private void PickCategory(string category)
+    {
+        form!.Category = category;
+        if (category == AnnouncementCategories.TeachersMeeting)
+        {
+            form.Audience = AnnouncementAudiences.Teachers;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,15 +145,6 @@
 
     private void ClearMessage() => message = null;
 
-    private static string AudienceText(AnnouncementView row) => row.SectionLabel is { } section
-        ? $"Students of {section}"
-        : row.Audience switch
-        {
-            AnnouncementAudiences.Students => "The students",
-            AnnouncementAudiences.Teachers => "The teachers",
-            _ => "Everybody",
-        };
-
     private void OpenAdd()
     {
         errors = [];
@@ -145,7 +154,7 @@
     private void OpenEdit(AnnouncementView row)
     {
         errors = [];
-        form = new AnnouncementInput { Id = row.Id, Title = row.Title, Body = row.Body, Audience = row.Audience, ExpiresOn = row.ExpiresOn };
+        form = new AnnouncementInput { Id = row.Id, Title = row.Title, Body = row.Body, Audience = row.Audience, Category = row.Category, ExpiresOn = row.ExpiresOn };
     }
 
     private void CloseForm() => form = null;

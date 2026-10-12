@@ -7,19 +7,12 @@
 <PageTitle>Courses · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Courses" Subtitle="The courses you teach. Open one to see its modules, activities, quizzes and task performances." IconName="book-open" />
+<PageHeader Title="Courses" IconName="book-open" />
 
-@if (view == "list")
-{
-    @Body
-}
-else
-{
-    <PageWithAside Show="calendar,tocheck">@Body</PageWithAside>
-}
+<PageWithAside Show="calendar,tocheck">@Body</PageWithAside>
 
 @code {
-    // The list has many columns, so it takes the whole width of the page; the cards share it with the widgets (calendar, what to check).
+    // The cards and the list both share the page with the widgets at the right (calendar, what to check); a wide list scrolls sideways inside its own box.
     private RenderFragment Body => @<text>
 
 @if (cards is null)

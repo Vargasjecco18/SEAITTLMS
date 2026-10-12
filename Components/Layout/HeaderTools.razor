@@ -9,9 +9,10 @@
 @inject ProfilePhotoService Photos
 @inject PresenceService Presence
 @inject MessageLauncher Launcher
+@inject AnnouncementService Announcements
 @inject IJSRuntime JS
 
-@* The three buttons at the right of the header: messages, notifications and settings. It is a live component, so the
+@* The buttons at the right of the header: messages, announcements, notifications and settings. It is a live component, so the
    numbers on the buttons keep up with what happens while a page is open. *@
 @if (user is not null)
 {
@@ -23,6 +24,51 @@
                 <span class="badge" aria-hidden="true">@Count(unreadMessages)</span>
             }
         </button>
+
+        <details class="pop" id="announcements-menu" @ontoggle="OnAnnouncementsToggle">
+            <summary class="tool" aria-label="Announcements" title="Announcements">
+                <Icon Name="megaphone" Size="20" />
+            </summary>
+
+            <div class="panel announcements">
+                <div class="panel-head">
+                    <strong>Announcements</strong>
+                    @if (AnnouncementsPage is { } allPage)
+                    {
+                        <a class="link-button" href="@allPage">See all</a>
+                    }
+                </div>
+
+                @if (announcementList is null)
+                {
+                    <p class="empty"><Icon Name="megaphone" Size="22" /><span>Loading…</span></p>
+                }
+                else if (announcementList.Count == 0)
+                {
+                    <p class="empty"><Icon Name="megaphone" Size="22" /><span>No announcements right now.</span></p>
+                }
+                else
+                {
+                    <ul class="announcement-list">
+                        @foreach (var item in announcementList)
+                        {
+                            <li class="@item.Category">
+                                <span class="kind"><Icon Name="@AnnouncementCategories.Icon(item.Category)" Size="18" /></span>
+                                <span class="text">
+                                    <span class="title">@item.Title</span>
+                                    <span class="body">@item.Body</span>
+                                    <span class="when">
+                                        @AnnouncementCategories.Display(item.Category)
+                                        @(item.CourseName is null ? "" : " · " + item.CourseName)
+                                        · @item.AuthorName · @PhilippineTime.FormatDate(item.CreatedAtUtc)
+                                    </span>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </details>
 
         <details class="pop" id="notifications-menu" @ontoggle="OnNotificationsToggle">
             <summary class="tool" aria-label="@NotificationsLabel" title="Notifications">
@@ -132,6 +178,7 @@
     private int unreadMessages;
     private int unreadNotifications;
     private NotificationList? notificationList;
+    private IReadOnlyList<AnnouncementView>? announcementList;
     private bool messagesOpen;
     private int? startWith;
     private Timer? timer;
@@ -183,6 +230,11 @@
                 await LoadNotificationsAsync();
             }
 
+            if (announcementList is not null)
+            {
+                await LoadAnnouncementsAsync();
+            }
+
             StateHasChanged();
         }
         catch (ObjectDisposedException)
@@ -211,6 +263,25 @@
     }
 
     private async Task OnNotificationsToggle() => await LoadNotificationsAsync();
+
+    // The announcements are read when the box is opened (and again with every look below, once it was opened).
+    private async Task OnAnnouncementsToggle() => await LoadAnnouncementsAsync();
+
+    private async Task LoadAnnouncementsAsync()
+    {
+        if (user is not null)
+        {
+            announcementList = await Announcements.GetForUserAsync(user, 12);
+        }
+    }
+
+    /// <summary>Where the whole list is, for the people who have such a page (the coordinator and the teachers).</summary>
+    private string? AnnouncementsPage => user?.Role switch
+    {
+        AppRoles.AcademicCoordinator => "coordinator/announcements",
+        AppRoles.Teacher => "teacher/announcements",
+        _ => null,
+    };
 
     private async Task OpenNotificationAsync(NotificationItem item)
     {

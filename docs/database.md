@@ -17,8 +17,8 @@ Start the app in Development (`dotnet watch`) and it creates every table, or upg
 | File | Use it when |
 |---|---|
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. |
-| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 2 academic providers, 13 teachers and 40 students** (easy sign-ins: `vargas@legazpi.seaitt.edu.ph` with `Teacher1`, `delacruz@legazpi.seaitt.edu.ph` with `Student1`, ...). It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. They have no enrollment yet. |
-| [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql) | You want the tables filled with practice data: run it **once**, after the sample accounts. It enrolls the 40 students in six sections, gives the 13 teachers their courses, and adds the provider's library and what it sent (some opened, some waiting, some posted), modules, activities, quizzes, who opened what, grades, attendance, announcements, messages, friends, groups, files, the security log, the settings and a teacher evaluation. It adds nothing if any of the students is enrolled already. |
+| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 1 academic coordinator, 1 academic provider, 8 teachers and 40 students** (easy sign-ins: `vargas@legazpi.seaitt.edu.ph` with `Teacher1`, `delacruz@legazpi.seaitt.edu.ph` with `Student1`, ...). It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. They have no enrollment yet. |
+| [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql) | You want the tables filled with practice data: run it **once**, after the sample accounts. It enrolls the 40 students in four groups of 10 (grade 11 and grade 12, ACAD BUSSENT and TECH-PRO HT1), gives the 8 teachers their courses, and adds the provider's library and what it sent (some opened, some waiting, some posted), modules, activities, quizzes, who opened what, grades, attendance, announcements, messages, friends, groups, files, the security log, the settings and a teacher evaluation. It adds nothing if any of the students is enrolled already. |
 
 The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
 creates. It also records the migrations in `__EFMigrationsHistory`, which is why the app doesn't try to create the
@@ -232,10 +232,10 @@ The to-do list and its table `todo_items` were removed by the migration `RemoveT
 | `material_questions` | The questions of a quiz of the library (same columns as `quiz_questions`). |
 | `material_deliveries` | That a library module was sent to a teacher's course: `material_module_id`, `assignment_id` and `module_id` (the teacher's copy, a draft). Unique per library module and course. `sent_by_user_id` is the provider; `created_at_utc` is when it was sent; `opened_at_utc` is when the teacher first opened their copy (its text, one of its activities, or posting it; empty until then). The state shown in Tracking comes from it and from the copy's `visible_from_utc`. It is deleted with the teacher's copy, with the course or with the library module (the copy stays). |
 | `teacher_evaluations` | A questionnaire about the teachers: `title`, `instructions`, `sent_at_utc` (empty = draft), `due_at_utc`, `term_id`, `created_by_user_id`. |
-| `evaluation_questions` | Its questions: `position`, `text`, `kind` (`Rating` 1 to 5, or `Comment`, checked), `category` (the area, optional). |
+| `evaluation_questions` | Its questions: `position`, `text`, `kind` (`Likert`, `Performance`, `Frequency`, `Binary`, `Ranking`, `SelectAll` or `Comment`, checked), `options_text` (the options of a ranking or select-all question, one in each line) and `category` (the area, optional). |
 | `evaluation_targets` | The teachers' courses (`assignment_id`) an evaluation was sent about. |
 | `evaluation_responses` | A student's answers for one teacher's course: unique per `(evaluation_id, assignment_id, student_id)`, with `submitted_at_utc`. |
-| `evaluation_answers` | One answer: `rating` (1 to 5, checked) or `comment`, per response and question. |
+| `evaluation_answers` | One answer, per response and question: `rating` (1 to 5, checked; the Likert, Performance and Frequency scales), `selection` (a binary question: `Yes` or `No`; a ranking: the numbers of the options from the best, like `2,0,1`; a select-all: the numbers ticked, like `0,2`) or `comment`. |
 
 `modules.is_syllabus` marks the syllabus of a course (a module without activities). The academic coordinator no longer sends materials: the migration `AddAcademicProviderRoleAndOpenTracking` moved that to the provider (the rows already in the library stay). The coordinator can read the averages and the comments of the evaluation but the screens never show which student wrote an answer: only whether a student has answered (`evaluation_responses`).
 Deleting a teaching assignment deletes its targets, answers and deliveries too.
@@ -246,7 +246,7 @@ Deleting a teaching assignment deletes its targets, answers and deliveries too.
 |---|---|
 | `profile_photos` | The picture of a person (`user_id` is the key): `content_type`, `data` (a small image, at most 256 by 256 pixels), `updated_at_utc` (also the version in the address of the picture). Deleted with the account. |
 | `friendships` | A friend request or a friendship: `requester_user_id`, `addressee_user_id`, `status` (`Pending` or `Accepted`, checked), `responded_at_utc`. One row for two people. Saying no, taking it back and unfriending delete the row. |
-| `study_groups`, `study_group_members`, `group_posts` | A group (name, description, owner), its members (`group_id`, `user_id`, `joined_at_utc`) and its wall (posts and replies: `parent_post_id`). Deleted with the owner's account. |
+| `study_groups`, `study_group_members`, `group_posts` | A group (name, description, owner), its members (`group_id`, `user_id`, `joined_at_utc`) and its wall (posts and replies: `parent_post_id`). A group someone made is deleted with the owner's account. A group the **system** makes (`auto_kind` is `GradeStudents`, `CourseStudents` (one strand), `AllStudents`, `GradeTeachers` or `AllTeachers`; `auto_key` says which grade level or strand; `owner_user_id` is empty) is kept up to date by `GroupService.SyncAutomaticAsync`: it adds and removes the members by itself, and nobody can edit or delete it. |
 | `stored_files`, `stored_file_contents`, `shared_files` | A file in a person's locker (`owner_user_id`, `name`, `content_type`, `size_bytes`); its bytes in a separate table (a list of files never reads them); and who it is shared with: one person, one group or one teacher's course (exactly one of `shared_with_user_id`, `group_id`, `assignment_id`, kept by `FileService`). |
 | `security_logs` | One line of the log: `kind`, `severity`, `user_id` and `actor_user_id` (emptied, not deleted, when the account is deleted), `email`, `actor_name`, `ip_address`, `user_agent`, `details`. |
 | `system_settings` | A setting the administrator changed: `key`, `value`, `updated_at_utc`, `updated_by_user_id`. A setting with no row uses its default. |
@@ -254,12 +254,22 @@ Deleting a teaching assignment deletes its targets, answers and deliveries too.
 The migrations `AddProfilePhotos` and `AddSocialFeaturesSecurityLogsAndSettings` add them. (MySQL does not allow a check constraint on a column that has a cascading foreign key, so that two people differ in
 `friendships` and that a share has one target are kept by the services, not by the database.) Backups are not in the database: they are SQL files in the `Backups/` folder.
 
+### Files on course materials
+
+| Table | What it holds |
+|---|---|
+| `attachments` | A file attached to a syllabus or module of the provider's library or a teacher's module (`module_id`, `material_module_id`), or to an activity, quiz or task performance (`item_id`, `material_item_id`): `name`, `content_type`, `size_bytes`, `position`, `uploaded_by_user_id` (emptied when that account is deleted; the file stays). **Exactly one** of the four links is set (`AttachmentService` keeps that; MySQL does not allow a check constraint on columns with a cascading foreign key). Deleted with the module or item it is on. |
+| `attachment_contents` | The bytes of a file, one row for each attachment (`attachment_id` is the key), apart from `attachments` so that a list of files never reads them. |
+
+When the provider **sends** a module, its files are copied to the teacher's copy (and the activities' files to the activities of the copy); the teacher's copy is then the teacher's own. A student sees the files of a module
+or item they can see (the module is posted and they take the course). Files open in the browser when `FilePreview` allows it (PDF, pictures, text, sound, video), otherwise they download.
+
 ### Messages and notifications
 
 | Table | What it holds |
 |---|---|
 | `messages` | A message from one account to another: `sender_user_id`, `recipient_user_id`, `body` (up to 2000 characters), `created_at_utc` (when it was sent) and `read_at_utc` (empty while unread). |
-| `announcements` | A notice: `author_user_id`, `title`, `body` (up to 2000 characters), `audience` (`Everyone`, `Students` or `Teachers`, checked), `section_id` (a teacher's announcement is for the students of one section; empty for the whole audience), `expires_on` (the last day it is shown, a Philippine date, or empty). Deleted with its author's account and with its section. |
+| `announcements` | A notice: `author_user_id`, `title`, `body` (up to 2000 characters), `audience` (`Everyone`, `Students` or `Teachers`, checked), `category` (`Exam`, `Holiday`, `SemesterBreak`, `TeachersMeeting` or `Other`, checked; a teacher's class announcement is an `Exam` or `Other`), `section_id` (a teacher's announcement is for the students of one section; empty for the whole audience), `assignment_id` (a teacher's announcement for **one class**, a course of theirs; empty for the others), `expires_on` (the last day it is shown, a Philippine date, or empty). Deleted with its author's account, with its section and with its class. |
 | `notifications` | Something the system tells a person under the bell: `user_id`, `kind` (message, module, grade, ...), `title`, `body`, `link` (the page it is about), `is_read`. |
 
 Both are deleted with the account they belong to. Messages can only be sent between 7:00 AM and 7:00 PM Philippine time (those hours can be changed in System Settings)
@@ -295,7 +305,7 @@ Things that were decided for you, change them in the tables if they are not righ
 
 - **The dates** of the school year and the terms are a guess (`school_years`, `terms`).
 - **Subject codes** (`BUSACCT`, `ADVMATH1`, `EMPOWERTECH`, ...) were invented, only the names are SEAITT's.
-- **Grade 12 has no curriculum yet**, so enrolling into grade 12 works but with no subjects to pick.
+- **Grade 12 has a curriculum**, made up like the grade 11 one: the migration `AddGrade12CurriculumAndSectionsAToC` gives every strand its grade 12 version of the 1st term courses (`BUSINESS ACCOUNTING 2`, ...) and six common courses in the 2nd term. The names and codes are invented, only the pattern is SEAITT's.
 - The full names are made by the migration `FillStrandFullNames`: it fills a strand's `name` only while it is still the short code (or the short name CSS-VGD, KO-FBS, FBS-KO),
   so a name the coordinator typed under *Academic setup > Strands* is never overwritten. The first page of the app shows these names. The full names of
   USP and the other strands are the school's to confirm: change them in *Academic setup > Strands* if they are not right.
@@ -304,7 +314,8 @@ Things that were decided for you, change them in the tables if they are not righ
   deleted, if something did).
 - USP was first put under TECH-PRO. The migration `MoveUspToAcad` moves it (with the students, teachers and enrollments that list it) to ACAD.
 - Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
-- The migration `AddSectionsAToE` adds **sections A, B, C, D and E** for the current school year (the year of the current term, else the latest), for every schedule of every strand, at the grade levels that strand has courses for (now grade 11): 5 for each strand and schedule. A section that is already there is left alone. The registrar picks the section from this list when enrolling a student. Its `Down` removes the ones nobody uses.
+- The migration `AddSectionsAToE` added sections A to E; **`AddGrade12CurriculumAndSectionsAToC` keeps only A, B and C**: it adds A, B and C at grade 11 and grade 12 for the current school year (the year of the current term, else the latest), for every schedule of every strand, and removes the D and E nobody uses (one with students or a teacher stays). A section that is already there is left alone. The registrar picks the section from this list when enrolling a student (`SectionNames.Choices`).
+- The migration `AddAnnouncementCategoriesAndAutomaticGroups` adds `announcements.category` and `assignment_id`, and `study_groups.auto_kind` and `auto_key` (and makes `owner_user_id` optional). `AddEvaluationScales` adds `evaluation_questions.options_text` and `evaluation_answers.selection`; the old `Rating` questions become `Performance` questions (the same 1 to 5). `AddAttachments` adds the two tables `attachments` and `attachment_contents`.
 - The migration `AddAcademicProviderRoleAndOpenTracking` adds the role `AcademicProvider` (7), the table `academic_providers`, the table `item_views` and `material_deliveries.opened_at_utc`.
 - The migration `AddAcademicCoordinatorRole` adds the role `AcademicCoordinator` (6) and the table `academic_coordinators`; `AddCourseMaterialsAndTeacherEvaluation` adds the tables of the previous section and `modules.is_syllabus`.
 

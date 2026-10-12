@@ -55,13 +55,102 @@
     color: var(--text-muted);
 }
 
-.question {
-    display: flex;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border);
+/* ---- adding a question: pick the kind of answer */
+.palette {
+    margin: 0 0 1.25rem;
+    padding: 0.9rem;
+    border: 1px dashed var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface-2);
+}
+
+.palette h3 {
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+}
+
+.types {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.5rem;
+}
+
+.type {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s, transform 0.15s;
+}
+
+.type:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.type:active {
+    transform: scale(0.98);
+}
+
+.type:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.type-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 10px;
+    background: var(--tone-bg);
+    color: var(--tone-text);
+}
+
+.type-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.type-text small {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.Likert { --tone-bg: var(--blue-soft); --tone-text: var(--blue); }
+.Performance { --tone-bg: var(--amber-soft); --tone-text: var(--amber); }
+.Frequency { --tone-bg: var(--violet-soft); --tone-text: var(--violet); }
+.Binary { --tone-bg: var(--green-soft); --tone-text: var(--green); }
+.Ranking { --tone-bg: var(--rose-soft); --tone-text: var(--rose); }
+.SelectAll { --tone-bg: var(--slate-soft); --tone-text: var(--slate); }
+.Comment { --tone-bg: var(--surface-2); --tone-text: var(--text-muted); }
+
+/* ---- the questions */
+.question {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.q-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
 }
 
 .number {
@@ -76,14 +165,20 @@
     font-weight: 700;
 }
 
-.question-body {
-    flex: 1;
-    min-width: 0;
+.q-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--tone-bg);
+    color: var(--tone-text);
+    font-size: 0.78rem;
+    font-weight: 650;
 }
 
-.question-body textarea {
+.question textarea {
     width: 100%;
-    margin-bottom: 0.5rem;
 }
 
 .question-row {
@@ -91,6 +186,11 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
+}
+
+.question-row select {
+    flex: 0 1 15rem;
+    min-width: 0;
 }
 
 .question-row input[type="text"] {
@@ -101,6 +201,75 @@
 .move {
     display: inline-flex;
     margin-left: auto;
+}
+
+.options {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.options legend {
+    padding: 0 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.option input {
+    flex: 1;
+    min-width: 0;
+}
+
+.option-number {
+    flex: none;
+    width: 1.4rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 650;
+    text-align: center;
+}
+
+.options ::deep > button {
+    justify-self: start;
+}
+
+.preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding-top: 0.55rem;
+    border-top: 1px dashed var(--border);
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.chip strong {
+    color: var(--text);
+}
+
+.read-options {
+    color: var(--text-muted);
 }
 
 .adders {

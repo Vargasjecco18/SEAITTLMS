@@ -3,6 +3,8 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject ModuleService Modules
+@inject GradeService GradeBook
+@inject AttendanceService AttendanceBook
 @inject TimeProvider Clock
 
 <PageTitle>@(subject?.SubjectName ?? "Course") · SEAITT e-LMS</PageTitle>
@@ -22,9 +24,21 @@ else if (subject is null)
 }
 else
 {
-    <PageHeader Title="@subject.SubjectName" Subtitle="@($"{subject.SectionLabel} · {subject.TeacherName}")" IconName="book-open">
+    <PageHeader Title="@subject.SubjectName" IconName="book-open">
         <ButtonLink Href="student/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
     </PageHeader>
+
+    @* What was on the card of the course in the list is here, after the click: the attendance, the work and the grade of this course. *@
+    <div class="kpis three">
+        <StatCard Label="Attendance" Text="@(attendanceOf?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
+                  Accent="@(attendanceOf?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
+                  Hint="@(attendanceOf is { Percent: not null } ? $"{attendanceOf.Present} present · {attendanceOf.Late} late · {attendanceOf.Absent} absent" : "Nothing marked yet")" />
+        <StatCard Label="Work" Text="@(gradeOf is null ? "—" : $"{gradeOf.GradedCount} of {gradeOf.TotalItems}")" IconName="clipboard-check" Accent="AccentColor.Violet"
+                  Hint="@(gradeOf is null ? "" : $"graded · {gradeOf.OpenItems} to do" + (gradeOf.Missing > 0 ? $" · {gradeOf.Missing} missing" : ""))" />
+        <StatCard Label="Grade" Text="@(gradeOf?.Percent is { } pct ? $"{pct:0.#}%" : "—")" IconName="trending-up"
+                  Accent="@(gradeOf?.Percent is { } p2 && p2 < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
+                  Hint="@(gradeOf?.Percent is { } p3 ? GradeRules.Descriptor(p3) : "No grade yet")" />
+    </div>
 
     <PageWithAside Show="calendar,upnext">
     @if (subject.Modules.Count == 0)
@@ -72,11 +86,19 @@ else
 
     private bool loaded;
     private StudentSubject? subject;
+    private SubjectGrade? gradeOf;
+    private SubjectAttendance? attendanceOf;
 
     protected override async Task OnParametersSetAsync()
     {
         var studentId = await Me.GetStudentIdAsync();
         subject = studentId is { } id ? await Modules.GetStudentSubjectAsync(id, AssignmentId) : null;
+        if (studentId is { } sid && subject is not null)
+        {
+            gradeOf = (await GradeBook.GetStudentSummaryAsync(sid)).Subjects.FirstOrDefault(g => g.AssignmentId == AssignmentId);
+            attendanceOf = (await AttendanceBook.GetStudentAsync(sid)).Subjects.FirstOrDefault(a => a.AssignmentId == AssignmentId);
+        }
+
         loaded = true;
     }
 }

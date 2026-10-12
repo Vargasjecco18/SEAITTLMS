@@ -1,4 +1,6 @@
 .card {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -31,5 +33,6 @@ h2 {
 }
 
 .card-body {
+    flex: 1;
     padding: 1.25rem;
 }

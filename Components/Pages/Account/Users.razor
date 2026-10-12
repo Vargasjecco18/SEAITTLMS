@@ -11,7 +11,7 @@
 
 <PageTitle>Users · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Users" Subtitle="@(isStudent ? "Your classmates, your friends and your teachers." : "Your friends, your students and the other teachers.")" IconName="users-round" />
+<PageHeader Title="Users" IconName="users-round" />
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
@@ -24,7 +24,7 @@
             @if (tab != "friends")
             {
                 <Field For="u-search" Label="Search" Class="grow">
-                    <input id="u-search" type="search" class="input" maxlength="80" placeholder="@(tab == "students" ? "A name or a course" : "A name")" @bind="filter" @bind:event="oninput" />
+                    <input id="u-search" type="search" class="input" maxlength="80" placeholder="@(tab is "students" or "classmates" ? "A name or a section" : "A name")" @bind="filter" @bind:event="oninput" />
                 </Field>
             }
 
@@ -178,6 +178,7 @@
         ?
         [
             new("classmates", "Classmates", "users-round", classmates.Count),
+            new("students", "Students", "graduation-cap", students.Count),
             new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
             new("teachers", "Teachers", "presentation", teachers.Count),
         ]
@@ -191,15 +192,15 @@
     private string EmptyTitle => tab switch
     {
         "classmates" => "No classmates yet",
-        "students" => "No students yet",
+        "students" => isStudent ? "No other students" : "No students yet",
         _ => isStudent ? "No teachers yet" : "No other teachers",
     };
 
     private string EmptyText => tab switch
     {
         "classmates" => "When you are enrolled in a section, the students of it are listed here.",
-        "students" => "The students of the courses you teach are listed here.",
-        _ => isStudent ? "The teachers of your courses are listed here once you are enrolled." : "The other teachers of the school are listed here.",
+        "students" => isStudent ? "The other students of the school are listed here." : "The students of the courses you teach are listed here.",
+        _ => isStudent ? "The teachers of your courses are listed here once you are enrolled." : "All the other teachers of the school are listed here.",
     };
 
     private int OnlineCount => tab == "friends" ? OnlineIn(friends) : OnlineIn(CurrentList());
@@ -246,6 +247,7 @@
         if (isStudent)
         {
             classmates = await People.GetClassmatesAsync(userId);
+            students = await People.GetAllStudentsAsync(userId);
             teachers = await People.GetMyTeachersAsync(userId);
         }
         else

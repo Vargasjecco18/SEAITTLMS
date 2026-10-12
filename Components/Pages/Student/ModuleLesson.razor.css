@@ -41,3 +41,11 @@
     gap: 0.3rem;
     color: var(--brand-strong);
 }
+
+.files-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 1rem 0 0.5rem;
+    font-size: 0.92rem;
+}

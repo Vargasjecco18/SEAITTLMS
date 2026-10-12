@@ -52,6 +52,25 @@ public class Friendship : AuditableEntity
 
 // ====================================================================== groups
 
+/// <summary>The groups the system makes by itself.</summary>
+public static class AutoGroupKinds
+{
+    /// <summary>The students of one grade level ("Grade 11 students").</summary>
+    public const string GradeStudents = "GradeStudents";
+
+    /// <summary>The students of one course (strand), of all grade levels.</summary>
+    public const string CourseStudents = "CourseStudents";
+
+    public const string AllStudents = "AllStudents";
+
+    /// <summary>The teachers who teach in one grade level ("Grade 11 teachers").</summary>
+    public const string GradeTeachers = "GradeTeachers";
+
+    public const string AllTeachers = "AllTeachers";
+
+    public static readonly string[] All = [GradeStudents, CourseStudents, AllStudents, GradeTeachers, AllTeachers];
+}
+
 /// <summary>
 /// A group of students and teachers (a study group, a project team, a club): a list of members and a wall where the members write.
 /// The owner made it; they can add and remove members and delete the group. Anybody can leave.
@@ -61,8 +80,18 @@ public class StudyGroup : AuditableEntity
     public string Name { get; set; } = "";
     public string? Description { get; set; }
 
-    public int OwnerUserId { get; set; }
-    public User Owner { get; set; } = null!;
+    /// <summary>The person who made the group. Empty for an automatic group (see <see cref="AutoKind"/>): nobody owns it.</summary>
+    public int? OwnerUserId { get; set; }
+    public User? Owner { get; set; }
+
+    /// <summary>
+    /// Set for the groups the system makes and keeps by itself (one of <see cref="AutoGroupKinds"/>); empty for a group a student or teacher made.
+    /// Who is in an automatic group is not chosen: it follows the enrollments and the courses of the teachers.
+    /// </summary>
+    public string? AutoKind { get; set; }
+
+    /// <summary>With <see cref="AutoKind"/>: the grade level (11, 12) or the strand id; 0 when the group has no such number (all the students).</summary>
+    public int? AutoKey { get; set; }
 
     public List<StudyGroupMember> Members { get; set; } = [];
     public List<GroupPost> Posts { get; set; } = [];

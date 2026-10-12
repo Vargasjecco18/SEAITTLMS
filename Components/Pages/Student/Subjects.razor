@@ -8,20 +8,13 @@
 <PageTitle>Courses · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Courses" Subtitle="Every course you are enrolled in. Open one to read its modules and do its work." IconName="book-open" />
+<PageHeader Title="Courses" IconName="book-open" />
 
-@if (view == "list")
-{
-    @Body
-}
-else
-{
-    <PageWithAside Show="calendar,upnext">@Body</PageWithAside>
-}
+<PageWithAside Show="calendar,upnext">@Body</PageWithAside>
 
 
 @code {
-    // The list has many columns, so it takes the whole width of the page; the cards share it with the widgets (calendar, due dates).
+    // The cards and the list both share the page with the widgets at the right (calendar, due dates); a wide list scrolls sideways inside its own box.
     private RenderFragment Body => @<text>
 
 @if (cards is null)
@@ -169,31 +162,7 @@ else
                 <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel"
                              Subtitle="@(card.TeacherName ?? "No teacher yet")"
                              Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet"
-                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText">
-                    @if (card.AssignmentId is not null)
-                    {
-                        <Badge Tone="@(card.ModulesVisible == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</Badge>
-                        @if (card.ModulesUnopened > 0)
-                        {
-                            <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge>
-                        }
-
-                        @if (card.ItemsOpen > 0)
-                        {
-                            <Badge Tone="Tone.Info">@card.ItemsOpen to do</Badge>
-                        }
-
-                        @if (card.AveragePercent is { } avg)
-                        {
-                            <Badge Tone="@(avg >= 75 ? Tone.Success : avg >= 70 ? Tone.Warning : Tone.Danger)">@avg.ToString("0.#")%</Badge>
-                        }
-                    }
-                    <Badge Tone="@(card.IsCompleted ? Tone.Neutral : Tone.Success)">@(card.IsCompleted ? "Completed" : "Enrolled")</Badge>
-                    @if (!card.IsCurrentTerm)
-                    {
-                        <Badge>@card.TermName</Badge>
-                    }
-                </SubjectCard>
+                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText" />
             }
         </div>
     }

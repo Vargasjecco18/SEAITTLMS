@@ -7,7 +7,7 @@
 <PageTitle>Analytics · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Student analytics" Subtitle="@(report is null ? "" : $"How students are doing in {report.ScopeText}. Everything is worked out from the scores and the attendance that are recorded.")" IconName="chart-column" />
+<PageHeader Title="Student analytics" IconName="chart-column" />
 
 @if (report is null)
 {
@@ -69,63 +69,32 @@ else
             }
         </Card>
 
-        <Card Title="Monthly trends" IconName="trending-up">
-            @{
-                const double W = 300, H = 140;
-                var months = report.Months;
-                double X(int i) => months.Count <= 1 ? W / 2 : i * W / (months.Count - 1);
-                double Y(decimal v) => H - (double)Math.Clamp(v, 0, 100) / 100 * H;
-            }
-            @if (months.All(m => m.Grade is null && m.Attendance is null))
+        <Card Title="Attendance" IconName="calendar-check">
+            @if (report.Attendance.Marks == 0)
             {
-                <p class="muted">Months fill in as scores are given and attendance is marked.</p>
+                <p class="muted">Attendance fills in as the teachers mark who came to class.</p>
             }
             else
             {
-                <ul class="legend">
-                    <li><span class="swatch grade"></span> Average grade</li>
-                    <li><span class="swatch attendance"></span> Attendance</li>
+                var att = report.Attendance;
+                <div class="att-top">
+                    <span class="att-rate">@(att.Rate is { } r ? $"{r:0.#}%" : "—")</span>
+                    <span class="att-counts">
+                        <Badge Tone="Tone.Success">@att.Present.ToString("N0") present</Badge>
+                        <Badge Tone="Tone.Warning">@att.Late.ToString("N0") late</Badge>
+                        <Badge Tone="Tone.Danger">@att.Absent.ToString("N0") absent</Badge>
+                    </span>
+                </div>
+                <ul class="att-groups" aria-label="@(report.SchoolWide ? "Attendance by section" : "Attendance by course")">
+                    @foreach (var g in att.Groups)
+                    {
+                        <li class="@(g.Rate < AttendanceService.LowAttendancePercent ? "low" : "")">
+                            <span class="att-name" title="@g.Label">@g.Label</span>
+                            <ProgressBar Percent="(int)Math.Round(g.Rate ?? 0m)" Title="@($"{g.Present} present, {g.Late} late, {g.Absent} absent")" />
+                        </li>
+                    }
                 </ul>
-                <svg class="chart" viewBox="-28 -8 @((W + 40).ToString(CultureInfo.InvariantCulture)) @((H + 34).ToString(CultureInfo.InvariantCulture))" role="img" aria-label="Average grade and attendance by month">
-                    @foreach (var line in new[] { 0, 25, 50, 75, 100 })
-                    {
-                        <line x1="0" x2="@W.ToString(CultureInfo.InvariantCulture)" y1="@Y(line).ToString("0.#", CultureInfo.InvariantCulture)" y2="@Y(line).ToString("0.#", CultureInfo.InvariantCulture)" class="gridline" />
-                        @SvgText(-6, Y(line) + 3, "axis end", line.ToString(CultureInfo.InvariantCulture))
-                    }
-                    <line x1="0" x2="@W.ToString(CultureInfo.InvariantCulture)" y1="@Y(GradeRules.PassingPercent).ToString("0.#", CultureInfo.InvariantCulture)" y2="@Y(GradeRules.PassingPercent).ToString("0.#", CultureInfo.InvariantCulture)" class="passing" />
-                    @for (var i = 0; i < months.Count; i++)
-                    {
-                        @SvgText(X(i), H + 18, "axis mid", months[i].Label)
-                    }
-
-                    @foreach (var series in new[] { (Name: "grade", Values: months.Select(m => m.Grade).ToList()), (Name: "attendance", Values: months.Select(m => m.Attendance).ToList()) })
-                    {
-                        var path = "";
-                        var open = false;
-                        for (var i = 0; i < series.Values.Count; i++)
-                        {
-                            if (series.Values[i] is { } v)
-                            {
-                                path += (open ? " L " : " M ") + X(i).ToString("0.#", CultureInfo.InvariantCulture) + " " + Y(v).ToString("0.#", CultureInfo.InvariantCulture);
-                                open = true;
-                            }
-                            else
-                            {
-                                open = false;
-                            }
-                        }
-
-                        <path d="@path" class="line @series.Name" />
-                        @for (var i = 0; i < series.Values.Count; i++)
-                        {
-                            if (series.Values[i] is { } v)
-                            {
-                                <circle cx="@X(i).ToString("0.#", CultureInfo.InvariantCulture)" cy="@Y(v).ToString("0.#", CultureInfo.InvariantCulture)" r="3.5" class="dot @series.Name"><title>@months[i].Label: @v.ToString("0.#")%</title></circle>
-                            }
-                        }
-                    }
-                </svg>
-                <p class="note">The dashed line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
+                <p class="note">Late counts as half. Below @AttendanceService.LowAttendancePercent.ToString("0") the line is marked.</p>
             }
         </Card>
     </div>
@@ -237,11 +206,6 @@ else
     ];
 
     private AnalyticsReport? report;
-
-    /// <summary>A label inside the chart. Razor treats a text tag as its own, so an SVG one is written out (the texts are numbers and month names).</summary>
-    private static MarkupString SvgText(double x, double y, string cssClass, string text) =>
-        new($"<text x=\"{x.ToString("0.#", CultureInfo.InvariantCulture)}\" y=\"{y.ToString("0.#", CultureInfo.InvariantCulture)}\" class=\"{cssClass}\">{System.Net.WebUtility.HtmlEncode(text)}</text>");
-
     private string Role { get; set; } = "";
 
     protected override async Task OnInitializedAsync()

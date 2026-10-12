@@ -7,7 +7,7 @@
 <PageTitle>Grades and progress · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Grades and progress" Subtitle="@($"Your grades are worked out from the scores of your graded work. A grade below {GradeRules.PassingPercent:0} is failing.")" IconName="trending-up" />
+<PageHeader Title="Grades and progress" IconName="trending-up" />
 
 @if (summary is null)
 {
@@ -72,28 +72,6 @@ else
                     }
                 </ul>
                 <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
-            </Card>
-
-            <Card Title="Your latest scores" IconName="award">
-                @{
-                    var latest = summary.AllGraded.OrderByDescending(g => g.GradedAtUtc).Take(12).Reverse().ToList();
-                }
-                @if (latest.Count == 0)
-                {
-                    <EmptyState IconName="award" Title="No scores yet" />
-                }
-                else
-                {
-                    <div class="spark" role="img" aria-label="Your latest scores, oldest to newest">
-                        @foreach (var g in latest)
-                        {
-                            <div class="spark-col" title="@g.Title: @g.Score.ToString("0.##") / @g.Max.ToString("0.##")">
-                                <i class="@Band(g.Percent)" style="height: @Width(g.Percent)%"></i>
-                            </div>
-                        }
-                    </div>
-                    <p class="note">Oldest on the left, newest on the right.</p>
-                }
             </Card>
         </div>
 

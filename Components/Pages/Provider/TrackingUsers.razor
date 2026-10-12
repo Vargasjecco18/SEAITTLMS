@@ -1,29 +1,14 @@
-@page "/provider/users"
-@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
-@rendermode InteractiveServer
 @inject ProviderService Provider
-@inject TimeProvider Clock
-
-<PageTitle>Users · SEAITT e-LMS</PageTitle>
-<AutoRefresh Seconds="60" />
-
-<PageHeader Title="Users"
-            Subtitle="The teachers you send to and the students who read it: who opened what, who is slow, and who has not opened anything."
-            IconName="users-round">
-    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
-</PageHeader>
-
-<PillTabs Items="Tabs" Selected="@tab" SelectedChanged="TabChangedAsync" Label="Teachers or students" />
 
 <Card>
     <form class="filter-bar" @onsubmit="ApplyAsync">
         <Field For="user-search" Label="Search" Class="grow">
-            <input id="user-search" type="search" class="input" maxlength="100" placeholder="@(tab == "teachers" ? "A teacher" : "A student or a section")" @bind="search" @bind:event="oninput" />
+            <input id="user-search" type="search" class="input" maxlength="100" placeholder="@(Tab == "teachers" ? "A teacher" : "A student or a section")" @bind="search" @bind:event="oninput" />
         </Field>
         <Button Type="submit" IconName="search">Search</Button>
     </form>
 
-    @if (tab == "teachers")
+    @if (Tab == "teachers")
     {
         @if (teachers is null)
         {
@@ -55,7 +40,7 @@
                         @foreach (var t in teachers)
                         {
                             <tr>
-                                <td><a class="name-link" href="provider/users/@t.UserId">@t.Name</a></td>
+                                <td><a class="name-link" href="provider/tracking/users/@t.UserId">@t.Name</a></td>
                                 <td class="num">@t.Courses</td>
                                 <td class="num">@t.Received</td>
                                 <td class="bar-cell">
@@ -119,7 +104,7 @@
                         @foreach (var s in students.Rows)
                         {
                             <tr>
-                                <td><a class="name-link" href="provider/users/@s.UserId">@s.Name</a></td>
+                                <td><a class="name-link" href="provider/tracking/users/@s.UserId">@s.Name</a></td>
                                 <td>@s.SectionLabel</td>
                                 <td class="num">@s.Available</td>
                                 <td class="bar-cell">
@@ -149,31 +134,35 @@
 </Card>
 
 @code {
-    private string tab = "teachers";
     private string search = "";
+    private string loadedTab = "";
     private int pageNumber = 1;
     private IReadOnlyList<TeacherTrack>? teachers;
     private StudentTrackPage? students;
 
-    private static readonly IReadOnlyList<PillTabs.Tab> Tabs =
-    [
-        new("teachers", "Teachers", "presentation"),
-        new("students", "Students", "graduation-cap"),
-    ];
-
-    [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
+    /// <summary>"teachers" or "students": which list this is.</summary>
+    [Parameter] public string Tab { get; set; } = "teachers";
 
     private int StudentPages => students is null ? 1 : Math.Max(1, (int)Math.Ceiling(students.Total / (double)students.PageSize));
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        tab = TabQuery == "students" ? "students" : "teachers";
-        await ReloadAsync();
+        // The tab changed (the parent keeps this component and gives it another list): start that list from its first page.
+        if (loadedTab != Tab)
+        {
+            loadedTab = Tab;
+            search = "";
+            pageNumber = 1;
+            teachers = null;
+            students = null;
+            await ReloadAsync();
+        }
     }
 
-    private async Task ReloadAsync()
+    /// <summary>Looks at the list again (the Refresh button of the page).</summary>
+    public async Task ReloadAsync()
     {
-        if (tab == "teachers")
+        if (Tab == "teachers")
         {
             teachers = await Provider.ListTeachersAsync(search);
         }
@@ -182,16 +171,8 @@
             students = await Provider.ListStudentsAsync(search, pageNumber);
             pageNumber = students.Page;
         }
-    }
 
-    private async Task TabChangedAsync(string? key)
-    {
-        tab = key == "students" ? "students" : "teachers";
-        search = "";
-        pageNumber = 1;
-        teachers = null;
-        students = null;
-        await ReloadAsync();
+        StateHasChanged();
     }
 
     private async Task ApplyAsync()

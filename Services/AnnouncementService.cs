@@ -8,7 +8,7 @@ namespace SEAITT_LMS.Services;
 /// <summary>An announcement as it is shown: who wrote it, for whom, and until when.</summary>
 public sealed record AnnouncementView(
     int Id, int AuthorUserId, string Title, string Body, string AuthorName, string AuthorRole, string Audience, int? SectionId, string? SectionLabel,
-    DateTime CreatedAtUtc, DateOnly? ExpiresOn);
+    DateTime CreatedAtUtc, DateOnly? ExpiresOn, string Category = AnnouncementCategories.Other, int? AssignmentId = null, string? CourseName = null);
 
 public sealed class AnnouncementInput
 {
@@ -17,13 +17,20 @@ public sealed class AnnouncementInput
     public string Body { get; set; } = "";
     public string Audience { get; set; } = AnnouncementAudiences.Everyone;
 
+    /// <summary>One of <see cref="AnnouncementCategories"/>.</summary>
+    public string Category { get; set; } = AnnouncementCategories.Other;
+
+    /// <summary>A teacher's announcement: the course (teaching assignment) it is for. The coordinator's notices have none.</summary>
+    public int? AssignmentId { get; set; }
+
     public DateOnly? ExpiresOn { get; set; }
 }
 
 /// <summary>
-/// Announcements. Only the academic coordinator writes them: for everybody (students and teachers), for the students or for the teachers.
-/// A student sees what is meant for them on the dashboard; the people it is for are also told with a notification when it is posted.
-/// (Announcements that a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.)
+/// Announcements. The academic coordinator writes the notices of the school: an exam, a holiday, the semester break, a teachers' meeting or
+/// anything else, for everybody (students and teachers), for the students or for the teachers. A teacher writes them for their own class only
+/// (one of their courses: the students of that subject and section). A person reads what is meant for them on the dashboard and in the
+/// announcements button of the header; the people it is for are also told with a notification when it is posted.
 /// </summary>
 public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactory, NotificationService notifications, TimeProvider clock)
 {
@@ -42,23 +49,67 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             .Where(e => e.StudentId == studentId && e.Status == EnrollmentStatus.Enrolled)
             .Select(e => e.SectionId).Distinct().ToListAsync(ct);
 
+        var courseIds = await Roster.AssignmentsOf(db, studentId).Select(a => a.Id).ToListAsync(ct);
+
         var query = db.Announcements.AsNoTracking()
             .Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Students)
                         && (a.SectionId == null || sectionIds.Contains(a.SectionId.Value))
+                        && (a.AssignmentId == null || courseIds.Contains(a.AssignmentId.Value))
                         && (a.ExpiresOn == null || a.ExpiresOn >= today));
         return await ViewsAsync(db, query, take, ct);
     }
 
-    /// <summary>Every announcement, newest first, for the academic coordinator who manages them.</summary>
+    /// <summary>The notices of the school for the teachers (for everybody or for the teachers), newest first.</summary>
+    public async Task<IReadOnlyList<AnnouncementView>> GetForTeachersAsync(int take = 20, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var today = PhilippineTime.Today(clock);
+        var query = db.Announcements.AsNoTracking()
+            .Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers)
+                        && a.SectionId == null && (a.ExpiresOn == null || a.ExpiresOn >= today));
+        return await ViewsAsync(db, query, take, ct);
+    }
+
+    /// <summary>
+    /// What the announcements button of the header shows: a student what is meant for them; a teacher the notices of the school for the teachers
+    /// and their own announcements to their classes; the coordinator the notices they wrote; the other staff the notices for everybody.
+    /// </summary>
+    public async Task<IReadOnlyList<AnnouncementView>> GetForUserAsync(CurrentUserInfo user, int take = 12, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var today = PhilippineTime.Today(clock);
+
+        switch (user.Role)
+        {
+            case AppRoles.Student:
+                var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == user.UserId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+                return studentId is null ? [] : await GetForStudentAsync(studentId.Value, take, ct);
+
+            case AppRoles.Teacher:
+                return await ViewsAsync(db, db.Announcements.AsNoTracking()
+                    .Where(a => (a.ExpiresOn == null || a.ExpiresOn >= today)
+                                && (a.AuthorUserId == user.UserId
+                                    || ((a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers) && a.SectionId == null))), take, ct);
+
+            case AppRoles.AcademicCoordinator:
+                return await ViewsAsync(db, db.Announcements.AsNoTracking().Where(a => a.AssignmentId == null), take, ct);
+
+            default:
+                return await ViewsAsync(db, db.Announcements.AsNoTracking()
+                    .Where(a => a.Audience == AnnouncementAudiences.Everyone && a.SectionId == null && (a.ExpiresOn == null || a.ExpiresOn >= today)), take, ct);
+        }
+    }
+
+    /// <summary>The announcements the person manages, newest first: the coordinator the notices of the school (all but what teachers wrote to their classes), a teacher the ones to their classes.</summary>
     public async Task<IReadOnlyList<AnnouncementView>> ListManagedAsync(CurrentUserInfo user, CancellationToken ct = default)
     {
-        if (user.Role != AppRoles.AcademicCoordinator)
-        {
-            return [];
-        }
-
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await ViewsAsync(db, db.Announcements.AsNoTracking(), 100, ct);
+        return user.Role switch
+        {
+            AppRoles.AcademicCoordinator => await ViewsAsync(db, db.Announcements.AsNoTracking().Where(a => a.AssignmentId == null), 100, ct),
+            AppRoles.Teacher => await ViewsAsync(db, db.Announcements.AsNoTracking().Where(a => a.AuthorUserId == user.UserId), 100, ct),
+            _ => [],
+        };
     }
 
     // ======================================================================= writing
@@ -78,15 +129,28 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             errors.Add($"Write the announcement (up to {MaxBodyLength} characters).");
         }
 
-        if (user.Role != AppRoles.AcademicCoordinator)
+        if (user.Role is not (AppRoles.AcademicCoordinator or AppRoles.Teacher))
         {
-            return ServiceResult.Fail("Only the academic coordinator writes announcements.");
+            return ServiceResult.Fail("Only the academic coordinator and the teachers write announcements.");
         }
 
-        var audience = input.Audience;
+        var isTeacher = user.Role == AppRoles.Teacher;
+        var category = input.Category;
+        if (!(isTeacher ? AnnouncementCategories.ForClass : AnnouncementCategories.All).Contains(category))
+        {
+            errors.Add("Pick what the announcement is about.");
+        }
+
+        // A teachers' meeting is for the teachers only; a teacher's announcement is for the students of one of their courses.
+        var audience = isTeacher ? AnnouncementAudiences.Students : category == AnnouncementCategories.TeachersMeeting ? AnnouncementAudiences.Teachers : input.Audience;
         if (!AnnouncementAudiences.All.Contains(audience))
         {
             errors.Add("Pick who the announcement is for.");
+        }
+
+        if (isTeacher && input.AssignmentId is null)
+        {
+            errors.Add("Pick the class the announcement is for.");
         }
 
         if (input.ExpiresOn is { } expires && expires < PhilippineTime.Today(clock))
@@ -100,16 +164,32 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, user, ct))
+        if (!await IsActiveAsync(db, user, ct))
         {
             return ServiceResult.Fail("Please sign in again.");
+        }
+
+        // A teacher can only write for a course they teach.
+        int? sectionId = null;
+        if (isTeacher)
+        {
+            var course = await db.TeachingAssignments.AsNoTracking()
+                .Where(a => a.Id == input.AssignmentId && a.Teacher.UserId == user.UserId)
+                .Select(a => new { a.SectionId }).FirstOrDefaultAsync(ct);
+            if (course is null)
+            {
+                return ServiceResult.Fail("You can only write to your own classes.");
+            }
+
+            sectionId = course.SectionId;
         }
 
         Announcement announcement;
         var isNew = input.Id is null;
         if (input.Id is { } id)
         {
-            var found = await db.Announcements.FirstOrDefaultAsync(a => a.Id == id, ct);
+            // The coordinator changes the notices of the school; what a teacher wrote to their class is the teacher's.
+            var found = await db.Announcements.FirstOrDefaultAsync(a => a.Id == id && (isTeacher ? a.AuthorUserId == user.UserId : a.AssignmentId == null), ct);
             if (found is null)
             {
                 return ServiceResult.Fail("This announcement was deleted.");
@@ -126,6 +206,9 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         announcement.Title = title;
         announcement.Body = body;
         announcement.Audience = audience;
+        announcement.Category = category;
+        announcement.AssignmentId = isTeacher ? input.AssignmentId : null;
+        announcement.SectionId = isTeacher ? sectionId : announcement.SectionId;
         announcement.ExpiresOn = input.ExpiresOn;
         await db.SaveChangesAsync(ct);
 
@@ -140,20 +223,25 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     public async Task<ServiceResult> DeleteAsync(CurrentUserInfo user, int id, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, user, ct))
+        if (user.Role is not (AppRoles.AcademicCoordinator or AppRoles.Teacher) || !await IsActiveAsync(db, user, ct))
         {
-            return ServiceResult.Fail("Only the academic coordinator deletes announcements.");
+            return ServiceResult.Fail("Only the academic coordinator and the teachers delete announcements.");
         }
 
-        var deleted = await db.Announcements.Where(a => a.Id == id).ExecuteDeleteAsync(ct);
+        // The coordinator deletes the notices of the school; a teacher only their own.
+        var isTeacher = user.Role == AppRoles.Teacher;
+        var deleted = await db.Announcements.Where(a => a.Id == id && (isTeacher ? a.AuthorUserId == user.UserId : a.AssignmentId == null)).ExecuteDeleteAsync(ct);
         return deleted == 0 ? ServiceResult.Fail("This announcement was already deleted.") : ServiceResult.Ok("The announcement was deleted.");
     }
 
     // ======================================================================= helpers
 
-    /// <summary>Only the academic coordinator (still active) writes, changes and deletes announcements.</summary>
-    private static async Task<bool> IsCoordinatorAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct) =>
-        user.Role == AppRoles.AcademicCoordinator && await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
+    /// <summary>The coordinator and the teachers (still active) write, change and delete announcements.</summary>
+    private static async Task<bool> IsActiveAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct)
+    {
+        var roleId = user.Role == AppRoles.Teacher ? AppRoles.TeacherId : AppRoles.AcademicCoordinatorId;
+        return await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.RoleId == roleId, ct);
+    }
 
     /// <summary>Tells the people it is for. (The author is not told about their own announcement.)</summary>
     private async Task NotifyAsync(AppDbContext db, Announcement announcement, CancellationToken ct)
@@ -167,7 +255,12 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         if (forStudents)
         {
             var query = db.Students.AsNoTracking().Where(s => s.Status == StudentStatus.Active && s.User.IsActive);
-            if (announcement.SectionId is { } sectionId)
+            if (announcement.AssignmentId is { } courseId)
+            {
+                var course = await db.TeachingAssignments.AsNoTracking().Where(a => a.Id == courseId).Select(a => new { a.SectionId, a.SubjectId }).FirstOrDefaultAsync(ct);
+                query = course is null ? query.Where(_ => false) : query.Where(s => Roster.Enrollments(db, course.SectionId, course.SubjectId).Any(e => e.StudentId == s.Id));
+            }
+            else if (announcement.SectionId is { } sectionId)
             {
                 query = query.Where(s => db.Enrollments.Any(e => e.StudentId == s.Id && e.SectionId == sectionId && e.Status == EnrollmentStatus.Enrolled));
             }
@@ -196,11 +289,12 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             .Include(a => a.Author).ThenInclude(u => u.AcademicCoordinator)
             .Include(a => a.Author).ThenInclude(u => u.Teacher)
             .Include(a => a.Section).ThenInclude(s => s!.Strand)
+            .Include(a => a.Assignment).ThenInclude(x => x!.Subject)
             .ToListAsync(ct);
 
         return rows.Select(a => new AnnouncementView(
             a.Id, a.AuthorUserId, a.Title, a.Body, a.Author.DisplayName, AppRoles.DisplayName(a.Author.Role.Name), a.Audience, a.SectionId,
             a.Section is null ? null : TeachingService.SectionLabel(a.Section.GradeLevel, a.Section.Strand.Code, a.Section.Name),
-            a.CreatedAtUtc, a.ExpiresOn)).ToList();
+            a.CreatedAtUtc, a.ExpiresOn, a.Category, a.AssignmentId, a.Assignment?.Subject.Name)).ToList();
     }
 }

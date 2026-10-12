@@ -132,15 +132,15 @@ public static class HelpContent
         ], "student/evaluations", "Open the evaluations"),
         new("How do I add friends and see my classmates?",
         [
-            "Open Users. Classmates are the students of your section; Teachers are the teachers of your courses.",
+            "Open Users. Classmates are the students of your section; Students are all the students of the school; Teachers are the teachers of your courses.",
             "Press “Add friend” beside a person. They get a request and must accept. In Friends you can also find any student or teacher by name.",
             "Friends can write to each other, put each other in groups and share files.",
         ], "users", "Open Users"),
         new("How do groups work?",
         [
-            "Open Groups and press “New group”. Give it a name and tick the people to add (classmates, friends, teachers).",
-            "Everybody in the group can write on its wall, reply, and see its members and files. Only the person who made it can add or remove people, change it or delete it.",
-            "Anybody can leave a group.",
+            "Open Groups. Some groups are made for you by the system: Grade 11 students (or your grade level), the students of your course (strand) and All students. You are in them automatically and cannot leave them.",
+            "Press “Add a group” to make your own: give it a name and tick the people to add (classmates, friends, teachers).",
+            "Everybody in a group can write on its wall, reply, and see its members and files. Only the person who made a group can add or remove people, change it or delete it. Anybody can leave a group they were added to.",
         ], "groups", "Open Groups"),
         new("What is the locker?",
         [
@@ -196,9 +196,14 @@ public static class HelpContent
         ], "calendar", "Open Calendar"),
         new("How do I find my students, and make friends?",
         [
-            "Open Users. Students are the students of your courses (with the course and section they share); Teachers are your colleagues; Friends are the people who accepted your request.",
+            "Open Users. Students are the students of your courses (with the course and section they share); Teachers are all the other teachers of the school; Friends are the people who accepted your request.",
             "Green dots show who is online. The dashboard also lists your students who are online.",
         ], "users", "Open Users"),
+        new("How do I write to my class?",
+        [
+            "Open Announcements and press “New announcement”. Choose the class (one of your courses), what it is about (an exam or other), and write it. Only the students of that class see it, and they are told with a notification.",
+            "“From the school” lists the notices of the academic coordinator for the teachers: exams, holidays, the semester break and teachers' meetings.",
+        ], "teacher/announcements", "Open Announcements"),
         new("How do I share a file with my students?",
         [
             "Open Resources and add the file to your locker (Add files).",
@@ -252,7 +257,7 @@ public static class HelpContent
         new("How do I enroll a student?",
         [
             "Open Enrollments. Type the 12-digit LRN. If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "Choose the term, the grade level, the track and strand, the schedule and the section (A to E), then the courses. Press Enroll.",
+            "Choose the term, the grade level, the track and strand, the schedule and the section (A, B or C), then the courses. Press Enroll.",
         ], "registrar/enrollments", "Open Enrollments"),
         new("Where do I see the enrolled students?",
         [
@@ -261,7 +266,7 @@ public static class HelpContent
         ], "registrar/student-accounts", "Open Student's Accounts"),
         new("The section I need is not in the list.",
         [
-            "Sections A to E exist for each strand and schedule. If one is missing, ask the academic coordinator to make it in Academic setup.",
+            "Sections A, B and C exist for each strand and schedule, for Grade 11 and Grade 12. If one is missing, ask the academic coordinator to make it in Academic setup.",
         ]),
     ]);
 
@@ -279,17 +284,18 @@ public static class HelpContent
         ]),
         new("How do I evaluate the teachers?",
         [
-            "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Choose who it is about and the due date, then send it.",
+            "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Add a question by choosing how the students answer: a 5-point Likert scale, a 5-point performance scale, a frequency scale, a binary (Yes/No) scale, a ranking, select-all-that-apply, or a comment. Choose who it is about and the due date, then send it.",
             "Students answer once for each of their teachers; answers are anonymous. The page shows how many answered and who has not.",
             "Close it early, or let it close on its due date.",
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
-            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, and the comments.",
+            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments.",
         ], "coordinator/analytics", "Open Analytics"),
         new("How do I write an announcement?",
         [
-            "Open Announcements, write the title and the text, choose who reads it (everybody, the students, the teachers) and, if you want, the last day it is shown.",
+            "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody, the students, the teachers; a teachers' meeting is for the teachers) and, if you want, the last day it is shown.",
+            "The megaphone button at the top, next to Messages, shows the latest announcements to everybody.",
         ], "coordinator/announcements", "Open Announcements"),
     ]);
 
@@ -297,9 +303,10 @@ public static class HelpContent
     [
         new("How do I send a syllabus, modules and activities to the teachers?",
         [
-            "Open Course library and choose a course. Add the syllabus first, then the modules with their activities, quizzes and task performances.",
+            "Open Course library and choose a course. Add the syllabus first, then the modules. Press a syllabus or a module to open it and see its activities, quizzes and task performances.",
+            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module, an activity, a quiz or a task performance. A quiz is questions, a file, or both; the teacher sets its time limit and anti-cheating settings.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
-            "Each teacher gets their own copy as a draft: they edit the text and the due dates and post it to their students when they are ready.",
+            "Each teacher gets their own copy as a draft, with the files: they edit the text and the due dates and post it to their students when they are ready. A PDF or a picture opens in a new tab of the browser, where it can be downloaded and printed.",
         ], "provider/library", "Open Course library"),
         new("How do I know if the teachers opened what I sent?",
         [
@@ -313,9 +320,9 @@ public static class HelpContent
         ]),
         new("Where do I see one teacher or one student?",
         [
-            "Open Users and choose Teachers or Students. A teacher's line shows what they received, opened and posted, and how long they took. A student's line shows how much of what was posted to them they opened.",
+            "Open Tracking and choose the Teachers or the Students tab. A teacher's line shows what they received, opened and posted, and how long they took. A student's line shows how much of what was posted to them they opened.",
             "Press a name to see every thing sent, one by one.",
-        ], "provider/users", "Open Users"),
+        ], "provider/tracking?tab=teachers", "Open the teachers"),
         new("What do the analytics show?",
         [
             "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, activity, quiz, task performance), by section and week by week.",
@@ -333,9 +340,9 @@ public static class HelpContent
         [
             "Press “Work on it” on a referral. Choose the status, the intervention and write your notes (only you can read them). When it is resolved, say whether the student Improved or had No change.",
         ]),
-        new("How do I see all the students at risk?",
+        new("How do I see the students who are failing or at risk?",
         [
-            "Open Students at risk and use the tabs: Failing, At risk and Low attendance.",
-        ], "guidance/students", "Open Students at risk"),
+            "Open Referrals. Each line shows the student, the grade level, the course, the problem and the grade. Filter by status, by problem (failing, at risk, not attending) and by grade level.",
+        ], "guidance/referrals", "Open Referrals"),
     ]);
 }

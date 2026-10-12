@@ -12,7 +12,6 @@
 }
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "provider"}")"
-            Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. What you sent to the teachers, and who opened it.")"
             IconName="layout-dashboard">
     <ButtonLink Href="provider/library" IconName="folder-open">Course library</ButtonLink>
 </PageHeader>
@@ -145,7 +144,7 @@ else
             <div class="quick">
                 <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary" IconName="folder-open">Course library</ButtonLink>
                 <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary" IconName="eye">Tracking</ButtonLink>
-                <ButtonLink Href="provider/users" Variant="ButtonVariant.Secondary" IconName="users-round">Users</ButtonLink>
+                <ButtonLink Href="provider/tracking?tab=teachers" Variant="ButtonVariant.Secondary" IconName="users-round">Teachers and students</ButtonLink>
                 <ButtonLink Href="provider/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
             </div>
         </Card>

@@ -21,7 +21,7 @@ else if (info is null || info.Kind != ItemKinds.Quiz || questions is null)
 }
 else
 {
-    <PageHeader Title="@info.Title" Subtitle="@($"Questions · {info.SubjectName} · {info.ModuleTitle}")" IconName="file-question">
+    <PageHeader Title="@info.Title" IconName="file-question">
         <ButtonLink Href="@($"provider/library/{info.SubjectId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
     </PageHeader>
 

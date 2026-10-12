@@ -1,0 +1,159 @@
+.quiz-settings {
+    margin: 0 0 1rem;
+}
+
+.quiz-settings h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+}
+
+.note {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 0.75rem;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.panel header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.panel-icon {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 8px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.preset {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.preset:hover {
+    color: var(--text);
+}
+
+.preset:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.preset.on {
+    border-color: var(--btn-bg);
+    background: var(--btn-bg);
+    color: var(--on-brand);
+}
+
+.inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+}
+
+.inline input {
+    width: 6.5rem;
+}
+
+/* A switch is a real checkbox that is drawn as a track with a thumb. */
+.switch {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 0.65rem;
+    cursor: pointer;
+}
+
+.switch input {
+    position: absolute;
+    width: 2.4rem;
+    height: 1.4rem;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.track {
+    position: relative;
+    width: 2.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background-color 0.15s;
+}
+
+.thumb {
+    position: absolute;
+    top: 0.2rem;
+    left: 0.2rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s;
+}
+
+.switch input:checked + .track {
+    background: var(--btn-bg);
+}
+
+.switch input:checked + .track .thumb {
+    transform: translateX(1rem);
+}
+
+.switch input:focus-visible + .track {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.switch-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.switch-text small {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}

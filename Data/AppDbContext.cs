@@ -67,6 +67,8 @@ public class AppDbContext : DbContext
     public DbSet<GroupPost> GroupPosts => Set<GroupPost>();
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
     public DbSet<StoredFileContent> StoredFileContents => Set<StoredFileContent>();
+    public DbSet<Attachment> Attachments => Set<Attachment>();
+    public DbSet<AttachmentContent> AttachmentContents => Set<AttachmentContent>();
     public DbSet<SharedFile> SharedFiles => Set<SharedFile>();
 
     // The administrator: the security log and the system settings

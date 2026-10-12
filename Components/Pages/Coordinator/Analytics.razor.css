@@ -40,7 +40,6 @@
 @media (min-width: 1000px) {
     .grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: start;
     }
 
     .grid .wide {
@@ -225,4 +224,21 @@ h3 {
     .dist {
         width: 7rem;
     }
+}
+
+.others {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.other h4 {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+}
+
+.other h4 small {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
 }

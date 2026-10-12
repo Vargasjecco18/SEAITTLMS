@@ -1,0 +1,92 @@
+.muted {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.notices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+    gap: 1rem;
+}
+
+.kinds {
+    margin: 0 0 1rem;
+    padding: 0;
+    border: 0;
+}
+
+.kinds legend {
+    margin-bottom: 0.45rem;
+    padding: 0;
+    font-weight: 650;
+}
+
+.kind-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.5rem;
+}
+
+.kind {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.kind:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.kind:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.kind.on {
+    border-color: var(--kind-text);
+    background: var(--kind-bg);
+    color: var(--kind-text);
+}
+
+.Exam { --kind-bg: var(--rose-soft); --kind-text: var(--rose); }
+.Holiday { --kind-bg: var(--green-soft); --kind-text: var(--green); }
+.SemesterBreak { --kind-bg: var(--violet-soft); --kind-text: var(--violet); }
+.TeachersMeeting { --kind-bg: var(--amber-soft); --kind-text: var(--amber); }
+.Other { --kind-bg: var(--slate-soft); --kind-text: var(--slate); }
+
+.two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 1rem;
+}
+
+@media (max-width: 560px) {
+    .two {
+        grid-template-columns: 1fr;
+    }
+}
+
+.hint-line {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}

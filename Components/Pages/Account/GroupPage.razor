@@ -29,12 +29,16 @@ else
 {
     <PageTitle>@group.Name · SEAITT e-LMS</PageTitle>
 
-    <PageHeader Title="@group.Name" Subtitle="@(string.IsNullOrWhiteSpace(group.Description) ? $"A group by {group.OwnerName}" : group.Description)" IconName="users">
+    <PageHeader Title="@group.Name" IconName="users">
         <ButtonLink Href="groups" Variant="ButtonVariant.Ghost" IconName="chevron-left">All groups</ButtonLink>
         @if (group.IsOwner)
         {
             <Button Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="OpenEdit">Edit</Button>
             <Button Variant="ButtonVariant.Danger" IconName="trash-2" OnClick="AskDelete">Delete</Button>
+        }
+        else if (group.IsAutomatic)
+        {
+            <Badge Tone="Tone.Success">Automatic group</Badge>
         }
         else
         {
@@ -180,7 +184,11 @@ else
                                     <td class="col-more">@file.OwnerName</td>
                                     <td class="col-more">@FileSize.Text(file.SizeBytes)</td>
                                     <td class="right">
-                                        <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                        @if (FilePreview.CanPreview(file.Name))
+                                        {
+                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                        }
+                                        <ButtonLink Href="@($"files/{file.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                         @if (file.OwnerUserId != userId)
                                         {
                                             <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="folder-plus" Title="Keep a copy in my locker" Disabled="@busy" OnClick="() => SaveCopyAsync(file)" />

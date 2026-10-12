@@ -28,22 +28,21 @@ public static class PageDirectory
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
             new("Security Logs", "Sign-ins, failed sign-ins and changes to accounts and the system", "admin/security-logs", "scroll-text"),
             new("Database Backup & Restore", "Save a copy of all the data, and put it back", "admin/backups", "database-backup"),
-            new("System Settings", "The school, signing in, maintenance, messages, backups and files", "admin/settings", "settings-2"),
+            new("System Settings", "Maintenance mode, backups and the log", "admin/settings", "settings-2"),
         ],
         AppRoles.AcademicCoordinator =>
         [
             new("Dashboard", "Evaluations, announcements and the school setup at a glance", "coordinator", "layout-dashboard"),
             new("Academic setup", "School years, terms, tracks, strands, courses and sections", "coordinator/academic-setup", "school"),
             new("Teacher evaluation", "Questionnaires for the students about their teachers, with their responses", "coordinator/evaluations", "clipboard-check"),
-            new("Announcements", "Write notices for students, teachers or everybody", "coordinator/announcements", "megaphone"),
+            new("Announcements", "Exams, holidays, the semester break, teachers' meetings and other notices", "coordinator/announcements", "megaphone"),
             new("Analytics", "How the teachers were evaluated", "coordinator/analytics", "chart-column"),
         ],
         AppRoles.AcademicProvider =>
         [
             new("Dashboard", "What you sent to the teachers, and who opened it", "provider", "layout-dashboard"),
             new("Course library", "Syllabus, modules, activities, quizzes and task performances to send to the teachers", "provider/library", "folder-open"),
-            new("Tracking", "Every module you sent, and whether the teacher and the students opened it", "provider/tracking", "eye"),
-            new("Users", "The teachers and the students, and what they opened", "provider/users", "users-round"),
+            new("Tracking", "Every module you sent, the teachers who got it and the students who see it, and whether they opened it", "provider/tracking", "eye"),
             new("Analytics", "How far what you send gets: teachers, students, courses", "provider/analytics", "chart-column"),
         ],
         AppRoles.Registrar =>
@@ -58,9 +57,10 @@ public static class PageDirectory
             new("Courses", "The courses you teach, with their modules and work", "teacher/subjects", "book-open"),
             new("Attendance", "Mark who came to class and see the attendance summary", "teacher/attendance", "calendar-check"),
             new("Calendar", "Deadlines and postings, by month or week", "calendar", "calendar-days"),
+            new("Announcements", "Write to the students of your classes, and read the notices of the school", "teacher/announcements", "megaphone"),
             new("Gradebook", "The scores of every student in a course, and their average", "teacher/gradebook", "clipboard-list"),
             new("Analytics", "How the students of your courses are doing", "analytics", "chart-column"),
-            new("Users", "Your friends, your students and the other teachers", "users", "users-round"),
+            new("Users", "Your friends, your students and all the teachers", "users", "users-round"),
             new("Groups", "Study groups and teams you are in", "groups", "users"),
             new("Resources", "Your locker and the files shared with you", "resources", "folder-open"),
         ],
@@ -68,17 +68,16 @@ public static class PageDirectory
         [
             new("Dashboard", "Assignments, due dates, new modules and achievements", "student", "layout-dashboard"),
             new("Courses", "Your courses, modules, activities and quizzes", "student/subjects", "book-open"),
-            new("Grades and progress", "Your grade in every course and how it is going", "student/grades", "trending-up"),
             new("Calendar", "Deadlines, by month or week", "calendar", "calendar-days"),
-            new("Users", "Your classmates, your friends and your teachers", "users", "users-round"),
+            new("Grades and progress", "Your grade in every course and how it is going", "student/grades", "trending-up"),
+            new("Users", "Your classmates, all the students, your friends and your teachers", "users", "users-round"),
             new("Groups", "Study groups and teams you are in", "groups", "users"),
             new("Resources", "Your locker and the files shared with you", "resources", "folder-open"),
         ],
         AppRoles.GuidanceCounselor =>
         [
             new("Dashboard", "Referrals and students who need help", "guidance", "layout-dashboard"),
-            new("Referrals", "Students the system sent to you", "guidance/referrals", "flag"),
-            new("Students at risk", "Failing (below 70), at risk and not attending class", "guidance/students", "triangle-alert"),
+            new("Referrals", "Students the system sent to you: failing, at risk and not attending, with grade level and course", "guidance/referrals", "flag"),
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
         ],
         _ => [],

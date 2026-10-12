@@ -138,11 +138,11 @@
 }
 
 .review li.right {
-    box-shadow: inset 3px 0 0 var(--green);
+    background: color-mix(in srgb, var(--green) 12%, transparent);
 }
 
 .review li.wrong {
-    box-shadow: inset 3px 0 0 var(--danger-solid);
+    background: color-mix(in srgb, var(--danger-solid) 12%, transparent);
 }
 
 .q {
@@ -166,4 +166,12 @@
 
 .a.ok {
     color: var(--success);
+}
+
+.files-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 1rem 0 0.5rem;
+    font-size: 0.92rem;
 }

@@ -22,7 +22,7 @@ else if (data is null || data.Kind != ItemKinds.Quiz || questions is null)
 }
 else
 {
-    <PageHeader Title="@data.Title" Subtitle="@($"Questions · {data.SubjectName} · {data.SectionLabel} · {data.ModuleTitle}")" IconName="file-question">
+    <PageHeader Title="@data.Title" IconName="file-question">
         <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
         <ButtonLink Href="@($"teacher/items/{data.ItemId}")" Variant="ButtonVariant.Secondary" IconName="eye">Results</ButtonLink>
     </PageHeader>

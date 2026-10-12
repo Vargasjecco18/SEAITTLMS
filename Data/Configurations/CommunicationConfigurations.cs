@@ -41,14 +41,22 @@ internal sealed class AnnouncementConfiguration : IEntityTypeConfiguration<Annou
         b.Property(a => a.Title).HasMaxLength(200).IsRequired();
         b.Property(a => a.Body).HasColumnType("text").IsRequired();
         b.Property(a => a.Audience).HasMaxLength(10).IsRequired();
+        b.Property(a => a.Category).HasMaxLength(20).IsRequired().HasDefaultValue(AnnouncementCategories.Other);
 
         // A deleted account takes its announcements with it, and so does a deleted section.
         b.HasOne(a => a.Author).WithMany().HasForeignKey(a => a.AuthorUserId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Section).WithMany().HasForeignKey(a => a.SectionId).OnDelete(DeleteBehavior.Cascade);
 
+        // A teacher's announcement for a course goes with the course.
+        b.HasOne(a => a.Assignment).WithMany().HasForeignKey(a => a.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+
         b.HasIndex(a => new { a.Audience, a.CreatedAtUtc });
         b.HasIndex(a => new { a.AuthorUserId, a.CreatedAtUtc });
 
-        b.ToTable(t => t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')"));
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
+            t.HasCheckConstraint("ck_announcements_category", "category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other')");
+        });
     }
 }

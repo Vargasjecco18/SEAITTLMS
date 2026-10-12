@@ -10,7 +10,7 @@
     var now = PhilippineTime.Now(Clock);
 }
 
-<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, counselor")" Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. Students are referred to you by themselves when their grades or attendance need help.")" IconName="layout-dashboard" />
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, counselor")" IconName="layout-dashboard" />
 
 @if (overview is null)
 {
@@ -21,9 +21,9 @@ else
     <div class="stats">
         <StatCard Label="New referrals" Value="@overview.Open" IconName="flag" Accent="@(overview.Open > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Waiting for you" Href="guidance/referrals?status=Open" />
         <StatCard Label="In progress" Value="@overview.InProgress" IconName="heart-handshake" Accent="AccentColor.Blue" Hint="You are helping" Href="guidance/referrals?status=InProgress" />
-        <StatCard Label="Failing" Value="@overview.Failing" IconName="triangle-alert" Accent="@(overview.Failing > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Students below {GradeRules.PassingPercent:0}")" Href="guidance/students" />
-        <StatCard Label="At risk" Value="@overview.AtRisk" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing or missing work" Href="guidance/students?kind=AtRisk" />
-        <StatCard Label="Not attending" Value="@overview.LowAttendance" IconName="user-x" Accent="AccentColor.Violet" Hint="@($"Attendance under {AttendanceService.LowAttendancePercent:0}%")" Href="guidance/students?kind=LowAttendance" />
+        <StatCard Label="Failing" Value="@overview.Failing" IconName="triangle-alert" Accent="@(overview.Failing > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Students below {GradeRules.PassingPercent:0}")" Href="guidance/referrals?reason=FailingGrades" />
+        <StatCard Label="At risk" Value="@overview.AtRisk" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing or missing work" Href="guidance/referrals?reason=AtRisk" />
+        <StatCard Label="Not attending" Value="@overview.LowAttendance" IconName="user-x" Accent="AccentColor.Violet" Hint="@($"Attendance under {AttendanceService.LowAttendancePercent:0}%")" Href="guidance/referrals?reason=LowAttendance" />
         <StatCard Label="Resolved this month" Value="@overview.ResolvedThisMonth" IconName="circle-check" Accent="AccentColor.Green" Hint="Referrals closed" Href="guidance/referrals?status=Resolved" />
     </div>
 
@@ -69,7 +69,7 @@ else
                     @foreach (var s in failing.Take(6))
                     {
                         <li>
-                            <a href="guidance/students">
+                            <a href="guidance/referrals?reason=FailingGrades">
                                 <span class="row-icon failinggrades"><Icon Name="trending-down" Size="18" /></span>
                                 <span class="row-text">
                                     <span class="row-title">@s.StudentName</span>
@@ -80,7 +80,7 @@ else
                         </li>
                     }
                 </ul>
-                <p class="more"><a href="guidance/students">See all students at risk <Icon Name="arrow-right" Size="14" /></a></p>
+                <p class="more"><a href="guidance/referrals?reason=FailingGrades">See the referrals <Icon Name="arrow-right" Size="14" /></a></p>
             }
         </Card>
     </div>

@@ -1,6 +1,6 @@
 @* A page with a column of widgets at its right (a small calendar, the due dates, ...) so the screen has no empty space.
    On a narrow screen the widgets go under the page. Show = which widgets, like "calendar,upnext". *@
-<div class="split">
+<div class="split @(Stacked ? "stacked" : "")">
     <div class="split-main">@ChildContent</div>
     <aside class="split-aside" aria-label="Calendar and other widgets">
         <AsideWidgets Show="@Show" />
@@ -9,6 +9,9 @@
 
 @code {
     [Parameter] public string Show { get; set; } = "calendar,upnext";
+
+    /// <summary>The widgets go under the page, side by side, instead of in a column at the right (for a page that needs the whole width, like the week of the calendar).</summary>
+    [Parameter] public bool Stacked { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

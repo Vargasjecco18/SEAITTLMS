@@ -106,7 +106,7 @@
 
 /* ---------- the login ---------- */
 .mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-variant-numeric: tabular-nums;
 }
 
 dl {

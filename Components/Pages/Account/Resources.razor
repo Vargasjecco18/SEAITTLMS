@@ -7,7 +7,7 @@
 
 <PageTitle>Resources · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Resources" Subtitle="Your locker for your own files, and the files that others uploaded for you." IconName="folder-open" />
+<PageHeader Title="Resources" IconName="folder-open" />
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
@@ -82,7 +82,11 @@
                                         }
                                     </td>
                                     <td class="right actions">
-                                        <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                        @if (FilePreview.CanPreview(file.Name))
+                                        {
+                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                        }
+                                        <ButtonLink Href="@($"files/{file.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                         <Button Small="true" Variant="ButtonVariant.Secondary" IconName="share-2" OnClick="() => OpenShareAsync(file)">Share</Button>
                                         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Rename" OnClick="() => OpenRename(file)" />
                                         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDelete(file)" />
@@ -144,7 +148,11 @@
                                     <td class="col-more">@FileSize.Text(file.SizeBytes)</td>
                                     <td class="col-more">@PhilippineTime.FormatDate(file.SharedAtUtc)</td>
                                     <td class="right actions">
-                                        <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                        @if (FilePreview.CanPreview(file.Name))
+                                        {
+                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                        }
+                                        <ButtonLink Href="@($"files/{file.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="folder-plus" Title="Keep a copy in my locker" Disabled="@busy" OnClick="() => SaveCopyAsync(file)" />
                                     </td>
                                 </tr>

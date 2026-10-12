@@ -98,13 +98,14 @@ internal sealed class EvaluationQuestionConfiguration : IEntityTypeConfiguration
     {
         b.ToTable("evaluation_questions");
         b.Property(q => q.Text).HasMaxLength(500).IsRequired();
-        b.Property(q => q.Kind).HasMaxLength(10).IsRequired();
+        b.Property(q => q.Kind).HasMaxLength(12).IsRequired();
+        b.Property(q => q.OptionsText).HasColumnType("text");
         b.Property(q => q.Category).HasMaxLength(60);
 
         b.HasOne(q => q.Evaluation).WithMany(e => e.Questions).HasForeignKey(q => q.EvaluationId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(q => new { q.EvaluationId, q.Position });
 
-        b.ToTable(t => t.HasCheckConstraint("ck_evaluation_questions_kind", "kind IN ('Rating', 'Comment')"));
+        b.ToTable(t => t.HasCheckConstraint("ck_evaluation_questions_kind", "kind IN ('Likert', 'Performance', 'Frequency', 'Binary', 'Ranking', 'SelectAll', 'Comment')"));
     }
 }
 
@@ -142,6 +143,7 @@ internal sealed class EvaluationAnswerConfiguration : IEntityTypeConfiguration<E
         b.ToTable("evaluation_answers");
         b.HasKey(a => new { a.ResponseId, a.QuestionId });
         b.Property(a => a.Comment).HasMaxLength(1000);
+        b.Property(a => a.Selection).HasMaxLength(100);
 
         b.HasOne(a => a.Response).WithMany(r => r.Answers).HasForeignKey(a => a.ResponseId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Question).WithMany().HasForeignKey(a => a.QuestionId).OnDelete(DeleteBehavior.Cascade);

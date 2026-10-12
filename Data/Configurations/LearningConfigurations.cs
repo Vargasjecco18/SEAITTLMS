@@ -143,3 +143,38 @@ internal sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<A
         b.ToTable(t => t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')"));
     }
 }
+
+internal sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
+{
+    public void Configure(EntityTypeBuilder<Attachment> b)
+    {
+        b.ToTable("attachments");
+        b.Property(a => a.Name).HasMaxLength(255).IsRequired();
+        b.Property(a => a.ContentType).HasMaxLength(100).IsRequired();
+
+        // A file goes with the syllabus, module or item it is attached to. A deleted account keeps the files it added (the link is dropped).
+        b.HasOne(a => a.MaterialModule).WithMany(m => m.Attachments).HasForeignKey(a => a.MaterialModuleId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.MaterialItem).WithMany(i => i.Attachments).HasForeignKey(a => a.MaterialItemId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.Module).WithMany(m => m.Attachments).HasForeignKey(a => a.ModuleId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.Item).WithMany(i => i.Attachments).HasForeignKey(a => a.ItemId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.UploadedBy).WithMany().HasForeignKey(a => a.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(a => a.Content).WithOne(c => c.Attachment).HasForeignKey<AttachmentContent>(c => c.AttachmentId).OnDelete(DeleteBehavior.Cascade);
+
+        // (Exactly one of the four owners is set; MySQL does not allow a check on columns with a cascading foreign key, so AttachmentService makes sure.)
+        b.HasIndex(a => a.MaterialModuleId);
+        b.HasIndex(a => a.MaterialItemId);
+        b.HasIndex(a => a.ModuleId);
+        b.HasIndex(a => a.ItemId);
+        b.ToTable(t => t.HasCheckConstraint("ck_attachments_size", "size_bytes >= 0"));
+    }
+}
+
+internal sealed class AttachmentContentConfiguration : IEntityTypeConfiguration<AttachmentContent>
+{
+    public void Configure(EntityTypeBuilder<AttachmentContent> b)
+    {
+        b.ToTable("attachment_contents");
+        b.HasKey(c => c.AttachmentId);
+        b.Property(c => c.Data).HasColumnType("longblob").IsRequired();
+    }
+}

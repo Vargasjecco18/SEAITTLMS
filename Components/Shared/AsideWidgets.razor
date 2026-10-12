@@ -33,8 +33,9 @@
                                         @* A plain details box: the title opens the whole text, no script needed. *@
                                         <details>
                                             <summary>
+                                                <span class="notice-kind"><AnnouncementTag Category="@n.Category" /></span>
                                                 <span class="notice-title">@n.Title</span>
-                                                <small>@n.AuthorName · @PhilippineTime.FormatDate(n.CreatedAtUtc)@(n.SectionLabel is null ? "" : " · " + n.SectionLabel)</small>
+                                                <small>@n.AuthorName · @PhilippineTime.FormatDate(n.CreatedAtUtc)@(n.CourseName is null ? (n.SectionLabel is null ? "" : " · " + n.SectionLabel) : " · " + n.CourseName)</small>
                                             </summary>
                                             <p class="notice-body">@n.Body</p>
                                         </details>
@@ -131,6 +132,29 @@
                 case "achievements":
                     <AchievementsWidget Items="achievements" />
                     break;
+                case "unchecked":
+                    <Card Title="Unchecked activities" IconName="clipboard-pen" Class="unchecked">
+                        @if (toCheck is null || toCheck.Unchecked.Count == 0)
+                        {
+                            <p class="quiet">Every activity is checked.</p>
+                        }
+                        else
+                        {
+                            <ul class="unchecked-list">
+                                @foreach (var u in toCheck.Unchecked.Take(8))
+                                {
+                                    <li>
+                                        <a href="@($"teacher/items/{u.ItemId}")">
+                                            <span class="u-title">@u.Title</span>
+                                            <small>@u.SubjectName · @u.SectionLabel · @PhilippineTime.FormatDate(u.OldestAtUtc)</small>
+                                        </a>
+                                        <Badge Tone="Tone.Warning">@u.Count</Badge>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </Card>
+                    break;
                 case "tocheck":
                     <Card Title="Needs your attention" IconName="clipboard-list">
                         @if (toCheck is null || (toCheck.ToCheck == 0 && toCheck.FlaggedCount == 0 && toCheck.DraftCount == 0))
@@ -164,7 +188,7 @@
 }
 
 @code {
-    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), calendar, upnext (the due dates), achievements, tocheck, online (the students who are online).</summary>
+    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), unchecked (teachers: the work waiting to be checked), calendar, upnext (the due dates), achievements, tocheck, online (the students who are online).</summary>
     [Parameter] public string Show { get; set; } = "calendar,upnext";
 
     private string? role;
@@ -218,7 +242,7 @@
             .Where(w => w switch
             {
                 "achievements" or "activities" or "announcements" => role == AppRoles.Student,
-                "tocheck" or "unassigned" => role == AppRoles.Teacher,
+                "tocheck" or "unassigned" or "unchecked" => role == AppRoles.Teacher,
                 "online" => true,
                 _ => true,
             })
@@ -253,7 +277,7 @@
             achievements = await Achievements.GetAsync(studentId);
         }
 
-        if (order.Contains("tocheck") && await Me.GetTeacherIdAsync() is { } teacherId)
+        if ((order.Contains("tocheck") || order.Contains("unchecked")) && await Me.GetTeacherIdAsync() is { } teacherId)
         {
             toCheck = await Dashboards.GetTeacherAsync(teacherId);
         }

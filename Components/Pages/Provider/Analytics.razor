@@ -6,7 +6,6 @@
 <AutoRefresh Seconds="60" />
 
 <PageHeader Title="Analytics"
-            Subtitle="How far what you send gets: do the teachers open it and post it, do the students open it, and where it gets stuck."
             IconName="chart-column">
     <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary" IconName="eye">Tracking</ButtonLink>
 </PageHeader>
@@ -179,7 +178,7 @@ else
                     @foreach (var t in data.SlowestTeachers)
                     {
                         <li>
-                            <a href="provider/users/@t.UserId">
+                            <a href="provider/tracking/users/@t.UserId">
                                 <span class="plist-title">@t.Name</span>
                                 <span class="plist-sub">@t.Waiting waiting · the oldest @(t.LongestWaitingDays is { } d && d > 0 ? $"{d} days" : "from today")</span>
                             </a>

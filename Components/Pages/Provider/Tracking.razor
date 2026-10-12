@@ -8,12 +8,20 @@
 <AutoRefresh Seconds="60" />
 
 <PageHeader Title="Tracking"
-            Subtitle="Every syllabus and module you sent, with the teacher it went to and what happened: opened, posted, and how many students opened it."
             IconName="eye">
     <ButtonLink Href="provider/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
-    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
+    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="RefreshAsync">Refresh</Button>
 </PageHeader>
 
+@* What was sent (modules), the teachers who got it and the students who see it. *@
+<PillTabs Items="PartTabs" Selected="@part" SelectedChanged="PartChangedAsync" Label="Part of the tracking" />
+
+@if (part != "modules")
+{
+    <TrackingUsers @ref="usersPanel" Tab="@part" />
+}
+else
+{
 <PillTabs Items="Tabs" Selected="@state" SelectedChanged="StateChangedAsync" Label="State of what was sent" />
 
 <Card>
@@ -64,7 +72,7 @@
                                 <span class="muted-line">@row.SubjectName · @PhilippineTime.FormatDate(row.SentAtUtc)</span>
                             </td>
                             <td>
-                                <a class="name-link" href="provider/users/@row.TeacherUserId">@row.TeacherName</a>
+                                <a class="name-link" href="provider/tracking/users/@row.TeacherUserId">@row.TeacherName</a>
                                 <span class="muted-line">@row.SectionLabel</span>
                             </td>
                             <td>
@@ -117,14 +125,19 @@
         </nav>
     }
 </Card>
+}
 
 @code {
+    private TrackingUsers? usersPanel;
+    private string part = "modules";
     private TrackingPage? data;
     private string state = "";
     private string search = "";
     private string kind = "";
     private int pageNumber = 1;
     private DateTime nowUtc;
+
+    [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = "state")] private string? StateQuery { get; set; }
 
@@ -133,6 +146,13 @@
     [SupplyParameterFromQuery(Name = "kind")] private string? KindQuery { get; set; }
 
     private int PageCount => data is null ? 1 : Math.Max(1, (int)Math.Ceiling(data.Total / (double)data.PageSize));
+
+    private static readonly IReadOnlyList<PillTabs.Tab> PartTabs =
+    [
+        new("modules", "Modules", "eye"),
+        new("teachers", "Teachers", "presentation"),
+        new("students", "Students", "graduation-cap"),
+    ];
 
     private IReadOnlyList<PillTabs.Tab> Tabs => data is null
         ? [new("", "All", "list")]
@@ -145,8 +165,17 @@
             new(DeliveryStates.Posted, "Posted", "circle-check", data.Posted),
         ];
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        // The links in the menu change the address of this same page (?tab=teachers), so the address is read every time it changes.
+        var wantedPart = TabQuery is "teachers" or "students" ? TabQuery : "modules";
+        if (data is not null && wantedPart == part && StateQuery == lastStateQuery)
+        {
+            return;
+        }
+
+        part = wantedPart;
+        lastStateQuery = StateQuery;
         if (StateQuery is { } wanted && DeliveryStates.All.Contains(wanted))
         {
             state = wanted;
@@ -155,6 +184,29 @@
         search = SearchQuery ?? "";
         kind = KindQuery is "Syllabus" or "Module" ? KindQuery : "";
         await ReloadAsync();
+    }
+
+    private string? lastStateQuery;
+
+    private async Task PartChangedAsync(string? key)
+    {
+        part = key is "teachers" or "students" ? key : "modules";
+        if (part == "modules")
+        {
+            await ReloadAsync();
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (part == "modules")
+        {
+            await ReloadAsync();
+        }
+        else if (usersPanel is not null)
+        {
+            await usersPanel.ReloadAsync();
+        }
     }
 
     private async Task ReloadAsync()

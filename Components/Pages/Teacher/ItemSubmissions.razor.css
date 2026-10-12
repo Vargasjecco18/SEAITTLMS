@@ -83,7 +83,7 @@
 }
 
 .table tr.flagged td:first-child {
-    box-shadow: inset 3px 0 0 var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .col-actions {
@@ -185,11 +185,11 @@
 }
 
 .answers li.right {
-    box-shadow: inset 3px 0 0 var(--green);
+    background: color-mix(in srgb, var(--green) 12%, transparent);
 }
 
 .answers li.wrong {
-    box-shadow: inset 3px 0 0 var(--danger-solid);
+    background: color-mix(in srgb, var(--danger-solid) 12%, transparent);
 }
 
 .q {

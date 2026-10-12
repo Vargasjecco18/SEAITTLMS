@@ -4,6 +4,7 @@
 @inject CurrentUser Me
 @inject WorkService Work
 @inject QuizService Quiz
+@inject AttachmentService Files
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
@@ -28,7 +29,7 @@ else
     var overdue = item.DueAtUtc is { } dueAt && dueAt < now.UtcDateTime;
     var closedQuiz = item.IsQuiz && overdue && item.Status == "NotStarted";
 
-    <PageHeader Title="@item.Title" Subtitle="@($"{ItemKinds.Display(item.Kind)} · {item.SubjectName} · {item.ModuleTitle}")" IconName="@SubjectStyle.KindIcon(item.Kind)">
+    <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
         <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the module</ButtonLink>
     </PageHeader>
 
@@ -44,6 +45,12 @@ else
                 else
                 {
                     <div class="text">@item.Instructions</div>
+                }
+
+                @if (files.Count > 0)
+                {
+                    <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
+                    <AttachmentList Items="files" Label="@($"Files of {item.Title}")" />
                 }
 
                 @if (item.IsQuiz)
@@ -110,6 +117,10 @@ else
                     else if (closedQuiz)
                     {
                         <p class="warn"><Icon Name="lock-keyhole" Size="16" /> This quiz is closed. It was due @PhilippineTime.FormatDateTime(item.DueAtUtc!.Value).</p>
+                    }
+                    else if (item.Questions == 0 && files.Count > 0)
+                    {
+                        <p class="muted">This quiz is in the file above. Your teacher tells you how to answer it.</p>
                     }
                     else if (item.Questions == 0)
                     {
@@ -215,6 +226,7 @@ else
     private int studentId;
     private StudentItemView? item;
     private IReadOnlyList<AnswerReview>? review;
+    private IReadOnlyList<AttachmentRow> files = [];
     private string? answerText;
     private string? linkUrl;
     private string? message;
@@ -240,6 +252,7 @@ else
         if (item is not null)
         {
             await Work.RecordViewAsync(studentId, ItemId);
+            files = await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId));
             answerText = item.AnswerText;
             linkUrl = item.LinkUrl;
             review = item.IsQuiz && item.Status != SubmissionStatus.InProgress && item.Status != "NotStarted" ? await Quiz.GetMyReviewAsync(studentId, ItemId) : null;

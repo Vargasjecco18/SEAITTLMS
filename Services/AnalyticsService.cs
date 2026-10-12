@@ -13,7 +13,15 @@ public sealed record BandCounts(int Outstanding, int VerySatisfactory, int Satis
 
 public sealed record GroupBands(string Label, BandCounts Bands);
 
-public sealed record MonthPoint(string Label, decimal? Grade, decimal? Attendance);
+/// <summary>How many times students were present, late and absent in a group (a section for the school, a course for a teacher), and the attendance rate.</summary>
+public sealed record AttendanceGroup(string Label, int Present, int Late, int Absent, decimal? Rate);
+
+public sealed record AnalyticsAttendance(int Present, int Late, int Absent, decimal? Rate, IReadOnlyList<AttendanceGroup> Groups)
+{
+    public static AnalyticsAttendance Empty { get; } = new(0, 0, 0, null, []);
+
+    public int Marks => Present + Late + Absent;
+}
 
 public sealed record ConcernCount(string Reason, int Count);
 
@@ -23,7 +31,7 @@ public sealed record GroupPerformance(string Label, int Students, decimal? Avera
 
 public sealed record AnalyticsReport(
     bool SchoolWide, string ScopeText, int Students, decimal? AverageGrade, decimal? AttendanceRate, int FailingStudents, int AtRiskStudents, int OpenReferrals,
-    string BandsTitle, IReadOnlyList<GroupBands> Bands, IReadOnlyList<MonthPoint> Months,
+    string BandsTitle, IReadOnlyList<GroupBands> Bands, AnalyticsAttendance Attendance,
     string ConcernTitle, IReadOnlyList<ConcernCount> Concerns,
     int Resolved, int Improved, IReadOnlyList<InterventionStat> Interventions,
     string PerformanceTitle, IReadOnlyList<GroupPerformance> Performance);
@@ -34,8 +42,6 @@ public sealed record AnalyticsReport(
 /// </summary>
 public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)
 {
-    public const int MonthsShown = 6;
-
     private static BandCounts Count(IEnumerable<decimal> percents)
     {
         int o = 0, v = 0, s = 0, f = 0, x = 0;
@@ -80,7 +86,7 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.Teacher.UserId == user.UserId).Select(a => a.Id).ToListAsync(ct);
             if (assignmentIds.Count == 0)
             {
-                return new AnalyticsReport(false, "your courses", 0, null, null, 0, 0, 0, "Performance by course", [], EmptyMonths(), "Students who need attention", [], 0, 0, [], "Performance by course", []);
+                return new AnalyticsReport(false, "your courses", 0, null, null, 0, 0, 0, "Performance by course", [], AnalyticsAttendance.Empty, "Students who need attention", [], 0, 0, [], "Performance by course", []);
             }
         }
 
@@ -133,29 +139,25 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
                 .Select(g => new GroupPerformance(Label(g.Key), g.Count(), Avg(g.Where(m => m.Percent is not null).Select(m => m.Percent!.Value)), Pooled(g), g.Count(m => m.Percent < GradeRules.PassingPercent))).ToList();
         }
 
-        // ---- the months
-        var today = PhilippineTime.Today(clock);
-        var firstMonth = new DateOnly(today.Year, today.Month, 1).AddMonths(-(MonthsShown - 1));
-        var fromUtc = PhilippineTime.ToUtc(firstMonth.ToDateTime(TimeOnly.MinValue));
-        var graded = await db.Submissions.AsNoTracking()
-            .Where(s => s.Status == SubmissionStatus.Graded && s.Score != null && s.GradedAtUtc != null && s.GradedAtUtc >= fromUtc
-                        && s.Student.Status == StudentStatus.Active && (assignmentIds == null || assignmentIds.Contains(s.Item.Module.AssignmentId)))
-            .Select(s => new { At = s.GradedAtUtc!.Value, Score = s.Score!.Value, Max = s.Item.MaxScore })
-            .ToListAsync(ct);
-        var marks = await db.AttendanceRecords.AsNoTracking()
-            .Where(r => r.AttendedOn >= firstMonth && r.Student.Status == StudentStatus.Active && (assignmentIds == null || assignmentIds.Contains(r.AssignmentId)))
-            .Select(r => new { r.AttendedOn, r.Status }).ToListAsync(ct);
-
-        var months = new List<MonthPoint>();
-        for (var n = 0; n < MonthsShown; n++)
+        // ---- attendance: how many times present, late and absent, by section for the school and by course for a teacher
+        Dictionary<int, string>? sectionLabels = null, courseLabels = null;
+        var assignmentsOfMetrics = metrics.Select(m => m.AssignmentId).Distinct().ToList();
+        var named = await db.TeachingAssignments.AsNoTracking().Where(a => assignmentsOfMetrics.Contains(a.Id))
+            .Select(a => new { a.Id, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name }).ToListAsync(ct);
+        if (schoolWide)
         {
-            var month = firstMonth.AddMonths(n);
-            var g = graded.Where(x => { var d = PhilippineTime.DayOf(x.At); return d.Year == month.Year && d.Month == month.Month; }).ToList();
-            var a = marks.Where(x => x.AttendedOn.Year == month.Year && x.AttendedOn.Month == month.Month).ToList();
-            months.Add(new MonthPoint(month.ToString("MMM", CultureInfo.InvariantCulture),
-                g.Count == 0 ? null : Math.Round(g.Sum(x => x.Score) / Math.Max(1, g.Sum(x => x.Max)) * 100, 1),
-                a.Count == 0 ? null : AttendanceService.Rate(a.Count(x => x.Status == AttendanceStatus.Present), a.Count(x => x.Status == AttendanceStatus.Late), a.Count(x => x.Status == AttendanceStatus.Absent))));
+            sectionLabels = named.ToDictionary(a => a.Id, a => TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section));
         }
+        else
+        {
+            courseLabels = named.ToDictionary(a => a.Id, a => $"{a.Subject} · {TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section)}");
+        }
+
+        string GroupLabel(int assignmentId) => schoolWide ? sectionLabels![assignmentId] : courseLabels![assignmentId];
+        var groups = metrics.Where(m => m.Present + m.Late + m.Absent > 0).GroupBy(m => GroupLabel(m.AssignmentId))
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new AttendanceGroup(g.Key, g.Sum(m => m.Present), g.Sum(m => m.Late), g.Sum(m => m.Absent), Pooled(g))).ToList();
+        var attendance = new AnalyticsAttendance(metrics.Sum(m => m.Present), metrics.Sum(m => m.Late), metrics.Sum(m => m.Absent), Pooled(metrics), groups);
 
         // ---- concerns and the help given
         string concernTitle;
@@ -186,13 +188,6 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         return new AnalyticsReport(schoolWide, schoolWide ? "the whole school" : "your courses", byStudent.Count, Avg(overall.Values.Where(v => v is not null).Select(v => v!.Value)), Pooled(metrics),
-            failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, months, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance);
-    }
-
-    private IReadOnlyList<MonthPoint> EmptyMonths()
-    {
-        var today = PhilippineTime.Today(clock);
-        var first = new DateOnly(today.Year, today.Month, 1).AddMonths(-(MonthsShown - 1));
-        return Enumerable.Range(0, MonthsShown).Select(n => new MonthPoint(first.AddMonths(n).ToString("MMM", CultureInfo.InvariantCulture), null, null)).ToList();
+            failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, attendance, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance);
     }
 }

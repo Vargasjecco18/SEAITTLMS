@@ -7,7 +7,8 @@ namespace SEAITT_LMS.Services;
 
 public sealed record ReferralRow(
     int Id, int StudentId, string StudentName, string Lrn, string? Placement, int? AssignmentId, string? SubjectName, string? TeacherName,
-    string Reason, string Detail, decimal? Metric, string Status, string? Intervention, string? Notes, string? Outcome, DateTime CreatedAtUtc, DateTime? ResolvedAtUtc);
+    string Reason, string Detail, decimal? Metric, string Status, string? Intervention, string? Notes, string? Outcome, DateTime CreatedAtUtc, DateTime? ResolvedAtUtc,
+    byte? GradeLevel = null, string? Strand = null);
 
 public sealed record ReferralPage(IReadOnlyList<ReferralRow> Items, int Total, int Page, int PageCount);
 
@@ -158,10 +159,15 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             newest);
     }
 
-    public async Task<ReferralPage> ListAsync(string? status, string? reason, string? search, int page, CancellationToken ct = default)
+    public async Task<ReferralPage> ListAsync(string? status, string? reason, string? search, int page, int? gradeLevel = null, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var query = db.Referrals.AsNoTracking().AsQueryable();
+        if (gradeLevel is 11 or 12)
+        {
+            query = query.Where(r => r.Student.GradeLevel == gradeLevel);
+        }
+
         if (status is not null && ReferralStatus.All.Contains(status))
         {
             query = query.Where(r => r.Status == status);
@@ -289,13 +295,14 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     {
         var rows = await query.Select(r => new
         {
-            r.Id, r.StudentId, r.Student.FirstName, r.Student.LastName, r.Student.Lrn, r.Student.SectionId, r.AssignmentId,
+            r.Id, r.StudentId, r.Student.FirstName, r.Student.LastName, r.Student.Lrn, r.Student.SectionId, r.Student.GradeLevel, r.Student.StrandId, r.AssignmentId,
             Subject = r.Assignment != null ? r.Assignment.Subject.Name : null,
             Teacher = r.Assignment != null ? r.Assignment.Teacher.FirstName + " " + r.Assignment.Teacher.LastName : null,
             r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc,
         }).ToListAsync(ct);
         var sections = await SectionLabelsAsync(db, ct);
+        var strands = await db.Strands.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.Code, ct);
         return rows.Select(r => new ReferralRow(r.Id, r.StudentId, $"{r.LastName}, {r.FirstName}", r.Lrn, r.SectionId is { } s ? sections.GetValueOrDefault(s) : null, r.AssignmentId, r.Subject, r.Teacher,
-            r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc)).ToList();
+            r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc, r.GradeLevel, r.StrandId is { } strandId ? strands.GetValueOrDefault(strandId) : null)).ToList();
     }
 }

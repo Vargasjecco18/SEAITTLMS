@@ -21,7 +21,7 @@ else if (form is null)
 }
 else
 {
-    <PageHeader Title="@($"Evaluate {form.TeacherName}")" Subtitle="@($"{form.SubjectName} · {form.SectionLabel} · due {PhilippineTime.FormatDateTime(form.DueAtUtc)}")" IconName="clipboard-check">
+    <PageHeader Title="@($"Evaluate {form.TeacherName}")" IconName="clipboard-check">
         <ButtonLink Href="student/evaluations" Variant="ButtonVariant.Ghost" IconName="chevron-left">All evaluations</ButtonLink>
     </PageHeader>
 
@@ -66,7 +66,7 @@ else
                         var id = q.Id;
                         <div class="question">
                             <p class="text"><span class="number">@q.Position.</span> @q.Text</p>
-                            @if (q.Kind == EvaluationQuestionKinds.Rating)
+                            @if (EvaluationQuestionKinds.IsScale(q.Kind))
                             {
                                 <div class="scale" role="radiogroup" aria-label="@q.Text">
                                     @for (var n = 5; n >= 1; n--)
@@ -75,10 +75,62 @@ else
                                         <label class="choice @(ratings.GetValueOrDefault(id) == value ? "on" : "")">
                                             <input type="radio" name="q-@id" value="@value" checked="@(ratings.GetValueOrDefault(id) == value)" @onchange="() => ratings[id] = value" />
                                             <strong>@value</strong>
-                                            <span>@EvaluationQuestionKinds.RatingLabel(value)</span>
+                                            <span>@EvaluationQuestionKinds.ScaleLabel(q.Kind, value)</span>
                                         </label>
                                     }
                                 </div>
+                                <p class="legend">5 = @EvaluationQuestionKinds.ScaleLabel(q.Kind, 5) · 1 = @EvaluationQuestionKinds.ScaleLabel(q.Kind, 1)</p>
+                            }
+                            else if (q.Kind == EvaluationQuestionKinds.Binary)
+                            {
+                                <div class="yesno" role="radiogroup" aria-label="@q.Text">
+                                    @foreach (var answer in new[] { EvaluationQuestionKinds.Yes, EvaluationQuestionKinds.No })
+                                    {
+                                        var value = answer;
+                                        <label class="choice wide @(choices.GetValueOrDefault(id) == value ? "on" : "")">
+                                            <input type="radio" name="q-@id" value="@value" checked="@(choices.GetValueOrDefault(id) == value)" @onchange="() => choices[id] = value" />
+                                            <strong><Icon Name="@(value == EvaluationQuestionKinds.Yes ? "check" : "x")" Size="18" /> @value</strong>
+                                        </label>
+                                    }
+                                </div>
+                            }
+                            else if (q.Kind == EvaluationQuestionKinds.Ranking)
+                            {
+                                var options = q.Options ?? [];
+                                <p class="legend">Give every option its own place: 1 is the best.</p>
+                                <ul class="rank">
+                                    @for (var o = 0; o < options.Count; o++)
+                                    {
+                                        var optionIndex = o;
+                                        <li>
+                                            <select aria-label="@($"Place of {options[optionIndex]}")" value="@PlaceOf(id, optionIndex)" @onchange="e => SetPlace(id, optionIndex, e.Value?.ToString())">
+                                                <option value="">–</option>
+                                                @for (var place = 1; place <= options.Count; place++)
+                                                {
+                                                    <option value="@place" selected="@(PlaceOf(id, optionIndex) == place.ToString())">@place</option>
+                                                }
+                                            </select>
+                                            <span>@options[optionIndex]</span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else if (q.Kind == EvaluationQuestionKinds.SelectAll)
+                            {
+                                var options = q.Options ?? [];
+                                <p class="legend">Tick every option that fits. You can tick none.</p>
+                                <ul class="ticks">
+                                    @for (var o = 0; o < options.Count; o++)
+                                    {
+                                        var optionIndex = o;
+                                        <li>
+                                            <label class="tick @(IsTicked(id, optionIndex) ? "on" : "")">
+                                                <input type="checkbox" checked="@IsTicked(id, optionIndex)" @onchange="e => Tick(id, optionIndex, e.Value is true)" />
+                                                <span>@options[optionIndex]</span>
+                                            </label>
+                                        </li>
+                                    }
+                                </ul>
                             }
                             else
                             {
@@ -110,6 +162,9 @@ else
     private EvaluationForm? form;
     private readonly Dictionary<int, int> ratings = [];
     private readonly Dictionary<int, string> comments = [];
+    private readonly Dictionary<int, string> choices = [];                     // binary questions: Yes or No
+    private readonly Dictionary<int, Dictionary<int, int>> places = [];         // ranking questions: option -> place (1 is the best)
+    private readonly Dictionary<int, HashSet<int>> ticked = [];                 // select-all questions: the options ticked
     private List<string> errors = [];
 
     protected override async Task OnParametersSetAsync()
@@ -127,10 +182,78 @@ else
         loaded = true;
     }
 
+    private string PlaceOf(int questionId, int option) =>
+        places.TryGetValue(questionId, out var map) && map.TryGetValue(option, out var place) ? place.ToString() : "";
+
+    private void SetPlace(int questionId, int option, string? value)
+    {
+        if (!places.TryGetValue(questionId, out var map))
+        {
+            places[questionId] = map = [];
+        }
+
+        if (int.TryParse(value, out var place))
+        {
+            map[option] = place;
+        }
+        else
+        {
+            map.Remove(option);
+        }
+    }
+
+    private bool IsTicked(int questionId, int option) => ticked.TryGetValue(questionId, out var set) && set.Contains(option);
+
+    private void Tick(int questionId, int option, bool on)
+    {
+        if (!ticked.TryGetValue(questionId, out var set))
+        {
+            ticked[questionId] = set = [];
+        }
+
+        if (on)
+        {
+            set.Add(option);
+        }
+        else
+        {
+            set.Remove(option);
+        }
+    }
+
+    /// <summary>What the student chose, in the form the service wants: Yes/No, the options in the order of the places, or the numbers of the options ticked.</summary>
+    private string? SelectionOf(EvaluationQuestionView q)
+    {
+        switch (q.Kind)
+        {
+            case EvaluationQuestionKinds.Binary:
+                return choices.GetValueOrDefault(q.Id);
+            case EvaluationQuestionKinds.Ranking:
+                // The options in the order of their places. If a place is missing or used twice the list is not a full order and the service says so.
+                return places.TryGetValue(q.Id, out var map) ? string.Join(',', map.OrderBy(kv => kv.Value).ThenBy(kv => kv.Key).Select(kv => kv.Key)) : "";
+            case EvaluationQuestionKinds.SelectAll:
+                return ticked.TryGetValue(q.Id, out var set) ? string.Join(',', set.OrderBy(i => i)) : "";
+            default:
+                return null;
+        }
+    }
+
     private async Task SubmitAsync()
     {
         if (busy || form is null)
         {
+            return;
+        }
+
+        // Every option of a ranking question needs its own place (the service only sees the order, so two options with the same place are caught here).
+        var rankErrors = form.Questions
+            .Where(q => q.Kind == EvaluationQuestionKinds.Ranking && q.Options is { Count: > 0 })
+            .Where(q => !places.TryGetValue(q.Id, out var map) || map.Count != q.Options!.Count || map.Values.Distinct().Count() != q.Options.Count)
+            .Select(q => $"Question {q.Position}: give every option its own place, from 1 to {q.Options!.Count}.")
+            .ToList();
+        if (rankErrors.Count > 0)
+        {
+            errors = rankErrors;
             return;
         }
 
@@ -142,6 +265,7 @@ else
                 QuestionId = q.Id,
                 Rating = ratings.TryGetValue(q.Id, out var r) ? r : null,
                 Comment = comments.GetValueOrDefault(q.Id),
+                Selection = SelectionOf(q),
             }).ToList();
 
             var result = await Service.SubmitAsync(studentId, EvaluationId, AssignmentId, answers);

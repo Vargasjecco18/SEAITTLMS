@@ -90,6 +90,7 @@ builder.Services.AddScoped<PeopleService>();
 builder.Services.AddScoped<FriendService>();
 builder.Services.AddScoped<GroupService>();
 builder.Services.AddScoped<FileService>();
+builder.Services.AddScoped<AttachmentService>();
 builder.Services.Configure<BackupOptions>(builder.Configuration.GetSection(BackupOptions.SectionName));
 builder.Services.AddSingleton<BackupService>();
 builder.Services.AddHostedService<MaintenanceWorker>();
@@ -275,9 +276,17 @@ app.MapGet("/files/{id:int}", async (int id, HttpContext http, FileService files
         return Results.NotFound();
     }
 
-    http.Response.Headers.XContentTypeOptions = "nosniff";
-    http.Response.Headers.CacheControl = "private, no-store";
-    return Results.File(file.Data, "application/octet-stream", file.Name);
+    return ServeFile(http, file.Name, file.Data);
+});
+
+// A file attached to a syllabus, a module or an activity (the provider's library, a teacher's course): the provider, the teacher of the course and
+// the students of the course (once it is posted) open it. A PDF, a picture, a text file, a sound or a video opens in the browser tab, where the browser's
+// own viewer has the download and print buttons; "?download=1" saves it instead, and every other kind of file is saved.
+app.MapGet("/files/a/{id:int}", async (int id, HttpContext http, AttachmentService attachments) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var file = await attachments.OpenAsync(userId, id, http.RequestAborted);
+    return file is null ? Results.NotFound() : ServeFile(http, file.Name, file.Data);
 });
 
 // A person's picture (settings menu). The address has the version of the picture (?v=), so the browser may keep it for good
@@ -311,6 +320,17 @@ await using (var scope = app.Services.CreateAsyncScope())
     // Who has a picture (so an avatar is drawn without asking the database each time), and the settings of the administrator.
     await scope.ServiceProvider.GetRequiredService<ProfilePhotoService>().LoadAsync();
     await scope.ServiceProvider.GetRequiredService<SystemSettingsService>().LoadAsync();
+}
+
+// Hands a file to the browser: shown in the tab when it is a kind the browser can show (and "?download=1" was not asked), otherwise saved.
+static IResult ServeFile(HttpContext http, string name, byte[] data)
+{
+    var (type, canShow) = FilePreview.Decide(name, data);
+    var show = canShow && http.Request.Query["download"] != "1";
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers.CacheControl = "private, no-store";
+    http.Response.Headers.ContentDisposition = FilePreview.Disposition(show, name);
+    return Results.File(data, show ? type : "application/octet-stream", enableRangeProcessing: show);
 }
 
 app.Run();

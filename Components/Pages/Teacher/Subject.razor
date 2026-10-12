@@ -3,10 +3,11 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject ModuleService Modules
+@inject AttachmentService Files
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
-<PageTitle>@(subject?.SubjectName ?? "Course") · SEAITT e-LMS</PageTitle>
+<PageTitle>@(subject is null ? "Course" : $"{subject.SubjectName} · {subject.SectionLabel}") · SEAITT e-LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -23,8 +24,8 @@ else if (subject is null)
 }
 else
 {
-    <PageHeader Title="@subject.SubjectName"
-                Subtitle="@($"{subject.SectionLabel}{(subject.Schedule is null ? "" : " · " + subject.Schedule)} · {subject.Students} {(subject.Students == 1 ? "student" : "students")}")"
+    @* Two sections can have the same course, so the section is part of the title. *@
+    <PageHeader Title="@($"{subject.SubjectName} · {subject.SectionLabel}")"
                 IconName="book-open">
         <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
         <Button IconName="plus" OnClick="OpenNewModule">Add module</Button>
@@ -123,6 +124,8 @@ else
                         </p>
                     }
 
+                    <AttachmentList Items="FilesOf(moduleFiles, module.Id)" Label="@($"Files of {module.Title}")" />
+
                     <div class="groups">
                         @foreach (var kind in ItemKinds.All.Where(k => !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
                         {
@@ -172,6 +175,7 @@ else
                                                             <Badge Tone="Tone.Warning">Appears @PhilippineTime.FormatDateTime(appears)</Badge>
                                                         }
                                                     </div>
+                                                    <AttachmentList Items="FilesOf(itemFiles, item.Id)" Label="@($"Files of {item.Title}")" />
                                                 </div>
                                                 <div class="item-side">
                                                     <span class="handed" title="Handed in of the students in this course">@item.Submitted / @item.Students handed in</span>
@@ -224,6 +228,7 @@ else
             <Field For="m-link" Label="Link" Hint="A file or video the lesson uses (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
+            <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="Files of the module" Existing="@FilesOf(moduleFiles, editingModuleId)" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save module")</Button>
@@ -269,36 +274,13 @@ else
                 </Field>
             </div>
 
+            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz (optional)" : "Files")" Existing="@FilesOf(itemFiles, editingItemId)" />
+
             @if (itemForm.Kind == ItemKinds.Quiz)
             {
-                <fieldset class="quiz-settings">
-                    <legend><Icon Name="shield-check" Size="16" /> Quiz settings</legend>
-                    <p class="muted small-text">You write the questions after saving. The quiz is worth the total of the points of its questions.</p>
-                    <div class="two">
-                        <Field For="i-limit" Label="Time limit (minutes)" Hint="Leave empty for no time limit.">
-                            <InputNumber id="i-limit" @bind-Value="itemForm.TimeLimit" />
-                        </Field>
-                        <Field For="i-warn" Label="Warnings before it is handed in" Hint="Leaving the quiz, copying or pasting is a warning.">
-                            <InputNumber id="i-warn" @bind-Value="itemForm.MaxViolations" />
-                        </Field>
-                    </div>
-                    <label class="switch">
-                        <InputCheckbox id="i-anti" @bind-Value="itemForm.AntiCheat" />
-                        <span><strong>Anti-cheating watch</strong><small>Warns the student when they leave the quiz tab or window, copy or paste. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="i-shuffle-q" @bind-Value="itemForm.ShuffleQuestions" />
-                        <span><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="i-shuffle-o" @bind-Value="itemForm.ShuffleOptions" />
-                        <span><strong>Shuffle the choices</strong><small>The choices of multiple choice questions change places for every student.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="i-show" @bind-Value="itemForm.ShowResult" />
-                        <span><strong>Show the result right away</strong><small>The student sees their score and the right answers after handing in.</small></span>
-                    </label>
-                </fieldset>
+                <QuizSettings IdPrefix="i" Note="You write the questions after saving. The quiz is worth the total of the points of its questions."
+                              @bind-TimeLimit="itemForm.TimeLimit" @bind-MaxViolations="itemForm.MaxViolations" @bind-AntiCheat="itemForm.AntiCheat"
+                              @bind-ShuffleQuestions="itemForm.ShuffleQuestions" @bind-ShuffleOptions="itemForm.ShuffleOptions" @bind-ShowResult="itemForm.ShowResult" />
             }
 
             <div class="modal-actions">
@@ -373,6 +355,13 @@ else
     private int? editingItemId;
     private int itemModuleId;
 
+    private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> moduleFiles = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
+    private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> itemFiles = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
+    private AttachmentPicker? modulePicker;
+    private AttachmentPicker? itemPicker;
+    private int moduleFormKey;
+    private int itemFormKey;
+
     private TeacherModule? scheduleModule;
     private string scheduleText = "";
 
@@ -387,7 +376,42 @@ else
         loaded = true;
     }
 
-    private async Task LoadAsync() => subject = teacherId == 0 ? null : await Modules.GetTeacherSubjectAsync(teacherId, AssignmentId);
+    private async Task LoadAsync()
+    {
+        subject = teacherId == 0 ? null : await Modules.GetTeacherSubjectAsync(teacherId, AssignmentId);
+        var all = subject?.Modules ?? [];
+        moduleFiles = await Files.ListForAsync(AttachmentOwnerKind.Module, all.Select(m => m.Id).ToList());
+        itemFiles = await Files.ListForAsync(AttachmentOwnerKind.Item, all.SelectMany(m => m.Items).Select(i => i.Id).ToList());
+    }
+
+    private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>
+        id is { } key && map.TryGetValue(key, out var list) ? list : [];
+
+    /// <summary>Saves the files chosen in a form for the module or item with this number: new ones are attached, the ones taken off are removed. Returns what went wrong.</summary>
+    private async Task<List<string>> ApplyFilesAsync(AttachmentPicker? picker, AttachmentOwner owner)
+    {
+        var problems = new List<string>();
+        if (picker is null)
+        {
+            return problems;
+        }
+
+        var removed = await Files.RemoveAsync(await UserIdAsync(), [.. picker.Removed]);
+        if (!removed.Succeeded)
+        {
+            problems.AddRange(removed.Errors);
+        }
+
+        var added = await Files.AddAsync(await UserIdAsync(), owner, picker.Pending);
+        if (!added.Succeeded)
+        {
+            problems.AddRange(added.Errors);
+        }
+
+        return problems;
+    }
+
+    private async Task<int> UserIdAsync() => (await Me.GetAsync())?.UserId ?? 0;
 
     private void Say(ServiceResult result, string? fallback = null)
     {
@@ -403,6 +427,7 @@ else
     {
         formErrors = [];
         editingModuleId = null;
+        moduleFormKey++;
         moduleForm = new ModuleInput();
     }
 
@@ -415,6 +440,7 @@ else
 
         formErrors = [];
         editingModuleId = module.Id;
+        moduleFormKey++;
         moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
     }
 
@@ -439,8 +465,15 @@ else
                 return;
             }
 
+            var fileProblems = await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.Module, result.Id ?? editingModuleId ?? 0));
             moduleForm = null;
             Say(result);
+            if (fileProblems.Count > 0)
+            {
+                messageIsError = true;
+                message = $"{result.Message} But the files: {string.Join(" ", fileProblems)}";
+            }
+
             await LoadAsync();
         }
         finally
@@ -520,6 +553,7 @@ else
         formErrors = [];
         editingItemId = null;
         itemModuleId = module.Id;
+        itemFormKey++;
         itemForm = new ItemForm { Kind = kind, MaxScore = kind == ItemKinds.TaskPerformance ? 100 : 50 };
     }
 
@@ -533,6 +567,7 @@ else
         formErrors = [];
         editingItemId = item.Id;
         itemModuleId = module.Id;
+        itemFormKey++;
         itemForm = new ItemForm
         {
             Kind = item.Kind, Title = item.Title, Instructions = item.Instructions, MaxScore = item.MaxScore,
@@ -576,14 +611,21 @@ else
                 return;
             }
 
+            var fileProblems = result.Id is { } savedItemId ? await ApplyFilesAsync(itemPicker, new AttachmentOwner(AttachmentOwnerKind.Item, savedItemId)) : [];
             itemForm = null;
-            if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
+            if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId && fileProblems.Count == 0)
             {
                 Navigation.NavigateTo($"teacher/items/{quizId}/questions");
                 return;
             }
 
             Say(result);
+            if (fileProblems.Count > 0)
+            {
+                messageIsError = true;
+                message = $"{result.Message} But the files: {string.Join(" ", fileProblems)}";
+            }
+
             await LoadAsync();
         }
         finally

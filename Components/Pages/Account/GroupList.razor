@@ -8,53 +8,49 @@
 
 <PageTitle>Groups · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Groups" Subtitle="Study groups and teams: write to each other and share files." IconName="users">
-    <Button IconName="plus" OnClick="OpenCreate">New group</Button>
+<PageHeader Title="Groups" IconName="users">
+    <Button IconName="plus" OnClick="OpenCreate">Add a group</Button>
 </PageHeader>
 
 @if (!loaded)
 {
     <p class="muted">Loading…</p>
 }
-else if (groups.Count == 0)
-{
-    <Card>
-        <EmptyState IconName="users" Title="You are not in a group yet">
-            <p>Make a group for your study group or your team, and add the classmates, friends or teachers you work with. Everybody in the group can write on its wall and share files.</p>
-            <div class="empty-actions"><Button IconName="plus" OnClick="OpenCreate">Make the first group</Button></div>
-        </EmptyState>
-    </Card>
-}
 else
 {
-    <div class="grid">
-        @foreach (var g in groups)
-        {
-            <a class="group" href="@($"groups/{g.Id}")">
-                <span class="group-icon"><Icon Name="users" Size="22" /></span>
-                <span class="group-body">
-                    <span class="group-name">@g.Name</span>
-                    @if (!string.IsNullOrWhiteSpace(g.Description))
-                    {
-                        <span class="group-description">@g.Description</span>
-                    }
-                    <span class="group-meta">
-                        @g.Members @(g.Members == 1 ? "member" : "members") · @(g.IsOwner ? "you made it" : "by " + g.OwnerName)
-                    </span>
-                    <span class="group-meta">
-                        @(g.Posts == 0 ? "No posts yet" : $"{g.Posts} {(g.Posts == 1 ? "post" : "posts")} · last {PhilippineTime.FormatDate(g.LastActivityUtc)}")
-                    </span>
-                </span>
-                @if (g.IsOwner)
-                {
-                    <Badge Tone="Tone.Info">Owner</Badge>
-                }
-            </a>
-        }
-    </div>
+    @if (automatic.Count > 0)
+    {
+        <h2 class="section">Your groups <span class="count">@automatic.Count</span></h2>
+        <div class="grid">
+            @foreach (var g in automatic)
+            {
+                @GroupCard(g)
+            }
+        </div>
+    }
+
+    <h2 class="section">Groups you made or joined <span class="count">@custom.Count</span></h2>
+    @if (custom.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="users" Title="No group of your own yet">
+                <p>Add a group for your study group or your team, and add the classmates, friends or teachers you work with. Everybody in the group can write on its wall and share files.</p>
+                <div class="empty-actions"><Button IconName="plus" OnClick="OpenCreate">Add the first group</Button></div>
+            </EmptyState>
+        </Card>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach (var g in custom)
+            {
+                @GroupCard(g)
+            }
+        </div>
+    }
 }
 
-<Modal Open="creating" Title="New group" OnClose="CloseCreate" Large="true">
+<Modal Open="creating" Title="Add a group" OnClose="CloseCreate" Large="true">
     @if (creating)
     {
         <FormErrors Errors="errors" />
@@ -74,9 +70,36 @@ else
 </Modal>
 
 @code {
+    private RenderFragment GroupCard(GroupSummary g) => @<a class="group" href="@($"groups/{g.Id}")">
+        <span class="group-icon"><Icon Name="users" Size="22" /></span>
+        <span class="group-body">
+            <span class="group-name">@g.Name</span>
+            @if (!string.IsNullOrWhiteSpace(g.Description))
+            {
+                <span class="group-description">@g.Description</span>
+            }
+            <span class="group-meta">
+                @g.Members @(g.Members == 1 ? "member" : "members")@(g.IsAutomatic ? "" : g.IsOwner ? " · you made it" : " · by " + g.OwnerName)
+            </span>
+            <span class="group-meta">
+                @(g.Posts == 0 ? "No posts yet" : $"{g.Posts} {(g.Posts == 1 ? "post" : "posts")} · last {PhilippineTime.FormatDate(g.LastActivityUtc)}")
+            </span>
+        </span>
+        @if (g.IsAutomatic)
+        {
+            <Badge Tone="Tone.Success">Automatic</Badge>
+        }
+        else if (g.IsOwner)
+        {
+            <Badge Tone="Tone.Info">Owner</Badge>
+        }
+    </a>;
+
     private int userId;
     private bool loaded;
     private IReadOnlyList<GroupSummary> groups = [];
+    private IReadOnlyList<GroupSummary> automatic => groups.Where(g => g.IsAutomatic).ToList();
+    private IReadOnlyList<GroupSummary> custom => groups.Where(g => !g.IsAutomatic).ToList();
     private IReadOnlyList<PersonCard> reachable = [];
     private readonly HashSet<int> picked = [];
     private bool creating;

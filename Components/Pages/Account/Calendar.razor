@@ -8,11 +8,12 @@
 <PageTitle>Calendar · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Calendar" Subtitle="@Subtitle" IconName="calendar-days">
+<PageHeader Title="Calendar" IconName="calendar-days">
     <nav class="controls" aria-label="Calendar controls">
         <ButtonLink Href="@Url(view, Step(-1))" Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left">Previous</ButtonLink>
         <ButtonLink Href="@Url(view, today)" Variant="ButtonVariant.Secondary" Small="true">Today</ButtonLink>
         <ButtonLink Href="@Url(view, Step(1))" Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-right" IconAfter="true">Next</ButtonLink>
+        <strong class="range-label" aria-live="polite">@Subtitle</strong>
         <span class="switch" role="group" aria-label="View">
             <a class="switch-link @(view == "month" ? "on" : "")" href="@Url("month", anchor)" aria-current="@(view == "month" ? "page" : null)">Month</a>
             <a class="switch-link @(view == "week" ? "on" : "")" href="@Url("week", anchor)" aria-current="@(view == "week" ? "page" : null)">Week</a>
@@ -20,7 +21,7 @@
     </nav>
 </PageHeader>
 
-<PageWithAside Show="@AsideShow">
+<PageWithAside Show="@AsideShow" Stacked="@(view == "week")">
     <ul class="legend" aria-label="Legend">
         @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module })
         {
@@ -139,8 +140,8 @@
     private int? workItemId;
     private DateOnly? editDay;
 
-    /// <summary>The widgets at the right: a student's activities and then their due dates, or the teacher's activities that have no due date yet.</summary>
-    private string AsideShow => isTeacher ? "unassigned" : "activities,upnext";
+    /// <summary>The widgets at the right: a student's activities and then their due dates, or the teacher's unchecked activities and then the ones that have no due date yet.</summary>
+    private string AsideShow => isTeacher ? "unchecked,unassigned" : "activities,upnext";
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
 

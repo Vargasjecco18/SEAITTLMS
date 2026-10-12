@@ -6,7 +6,6 @@
 <AutoRefresh Seconds="60" />
 
 <PageHeader Title="Teacher evaluation analytics"
-            Subtitle="How the students rated their teachers: the averages, the questions, and what they wrote. The answers are anonymous."
             IconName="chart-column">
     <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Secondary" IconName="clipboard-check">Evaluations</ButtonLink>
 </PageHeader>
@@ -88,6 +87,12 @@ else
                     }
                 </ul>
 
+                @if (detail.OtherQuestions is { Count: > 0 } detailOthers)
+                {
+                    <h3>Yes or No, rankings and choices</h3>
+                    @OtherResults(detailOthers)
+                }
+
                 <h3>What the students wrote <span class="count">@detail.Comments.Count</span></h3>
                 @if (detail.Comments.Count == 0)
                 {
@@ -161,13 +166,13 @@ else
             </Card>
         </div>
 
-        <Card Title="How the students rated" IconName="star">
+        <Card Title="How the students answered the 5-point scales" IconName="star">
             @{
                 var total = data.Distribution.Sum();
             }
             @if (total == 0)
             {
-                <p class="muted">No ratings yet.</p>
+                <p class="muted">No answers to the scales yet.</p>
             }
             else
             {
@@ -176,7 +181,7 @@ else
                     {
                         var count = data.Distribution[n - 1];
                         <li>
-                            <span class="bar-label">@n · @EvaluationQuestionKinds.RatingLabel(n)</span>
+                            <span class="bar-label">@n@(n == 5 ? " · highest" : n == 1 ? " · lowest" : "")</span>
                             <span class="dist"><span class="dist-fill r@(n)" style="width: @(count * 100 / total)%"></span></span>
                             <span class="dist-n">@count (@(count * 100 / total)%)</span>
                         </li>
@@ -225,6 +230,15 @@ else
             </Card>
         </div>
 
+        @if (data.OtherQuestions is { Count: > 0 } others)
+        {
+            <div class="wide">
+                <Card Title="Yes or No, rankings and choices" IconName="list-ordered">
+                    @OtherResults(others)
+                </Card>
+            </div>
+        }
+
         @if (data.Evaluations.Count > 1)
         {
             <div class="wide">
@@ -252,6 +266,45 @@ else
 }
 
 @code {
+    /// <summary>The binary, ranking and select-all questions: each with its options as bars (the share who chose it, or the average place).</summary>
+    private RenderFragment OtherResults(IReadOnlyList<QuestionResult> results) => @<div class="others">
+        @foreach (var r in results)
+        {
+            <section class="other">
+                <h4>@r.Text <small>@EvaluationQuestionKinds.Display(r.Kind) · @r.Answers @(r.Answers == 1 ? "answer" : "answers")@(string.IsNullOrWhiteSpace(r.Category) ? "" : " · " + r.Category)</small></h4>
+                @if (r.Answers == 0)
+                {
+                    <p class="muted">No answers yet.</p>
+                }
+                else
+                {
+                    <ul class="bars">
+                        @foreach (var o in r.Options)
+                        {
+                            var width = r.Kind == EvaluationQuestionKinds.Ranking
+                                ? (o.Value is { } place ? (int)Math.Round((r.Options.Count + 1 - place) * 100m / r.Options.Count) : 0)
+                                : (int)Math.Round(o.Value ?? 0);
+                            <li>
+                                <span class="bar-label">@o.Label</span>
+                                <span class="dist"><span class="dist-fill r@(r.Kind == EvaluationQuestionKinds.Ranking ? 4 : o.Label == EvaluationQuestionKinds.No ? 2 : 5)" style="width: @(Math.Clamp(width, 0, 100))%"></span></span>
+                                <span class="dist-n">
+                                    @if (r.Kind == EvaluationQuestionKinds.Ranking)
+                                    {
+                                        @($"place {o.Value:0.0} · {o.Count} first")
+                                    }
+                                    else
+                                    {
+                                        @($"{o.Count} ({o.Value:0.#}%)")
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+    </div>;
+
     [SupplyParameterFromQuery(Name = "evaluation")] private int? EvaluationQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = "teacher")] private int? TeacherQuery { get; set; }

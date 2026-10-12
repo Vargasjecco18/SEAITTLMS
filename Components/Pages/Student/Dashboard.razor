@@ -13,7 +13,7 @@
     var now = PhilippineTime.Now(Clock);
 }
 
-<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {data?.FirstName ?? "student"}")" Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. Here is what is going on in your courses.")" IconName="layout-dashboard" />
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {data?.FirstName ?? "student"}")" IconName="layout-dashboard" />
 
 @if (data is null)
 {

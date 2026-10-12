@@ -16,7 +16,12 @@
 }
 
 @media (min-width: 1180px) {
-    .split {
+    .split:not(.stacked) {
         grid-template-columns: minmax(0, 1fr) 21rem;
     }
+}
+
+.split.stacked .split-aside {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    align-items: start;
 }

@@ -1,0 +1,10 @@
+@* The small label of an announcement: its category with the icon and the color of the category. *@
+<span class="tag @Category">
+    <Icon Name="@AnnouncementCategories.Icon(Category)" Size="13" />
+    <span>@AnnouncementCategories.Display(Category)</span>
+</span>
+
+@code {
+    /// <summary>One of <see cref="AnnouncementCategories"/>.</summary>
+    [Parameter] public string Category { get; set; } = AnnouncementCategories.Other;
+}

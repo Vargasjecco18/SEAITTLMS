@@ -1,0 +1,103 @@
+@* The settings of a quiz, as a set of small panels: the time, the anti-cheating watch, the order and what the student sees afterwards.
+   Used when a teacher adds or edits a quiz. Every value is bound with @bind-<Name>. The inputs keep plain ids (IdPrefix-limit, -warn, -anti,
+   -shuffle-q, -shuffle-o, -show) so they can be found. *@
+<section class="quiz-settings" aria-label="Quiz settings">
+    <h3><Icon Name="shield-check" Size="16" /> Quiz settings</h3>
+    @if (!string.IsNullOrWhiteSpace(Note))
+    {
+        <p class="note">@Note</p>
+    }
+
+    <div class="panels">
+        <div class="panel">
+            <header><span class="panel-icon"><Icon Name="timer" Size="16" /></span> <strong>Time limit</strong></header>
+            <div class="presets" role="group" aria-label="Time limit">
+                <button type="button" class="preset @(TimeLimit is null ? "on" : "")" aria-pressed="@(TimeLimit is null ? "true" : "false")" @onclick="() => SetLimit(null)">No limit</button>
+                @foreach (var minutes in Presets)
+                {
+                    var m = minutes;
+                    <button type="button" class="preset @(TimeLimit == m ? "on" : "")" aria-pressed="@(TimeLimit == m ? "true" : "false")" @onclick="() => SetLimit(m)">@m min</button>
+                }
+            </div>
+            <label class="inline" for="@(IdPrefix)-limit">
+                <span>Or type the minutes</span>
+                <input id="@(IdPrefix)-limit" type="number" min="1" max="600" inputmode="numeric" placeholder="No limit" value="@TimeLimit" @onchange="LimitTyped" />
+            </label>
+        </div>
+
+        <div class="panel">
+            <header><span class="panel-icon"><Icon Name="shield-alert" Size="16" /></span> <strong>Anti-cheating watch</strong></header>
+            <label class="switch">
+                <input id="@(IdPrefix)-anti" type="checkbox" role="switch" checked="@AntiCheat" @onchange="e => AntiCheatChanged.InvokeAsync(e.Value is true)" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="switch-text"><strong>@(AntiCheat ? "On" : "Off")</strong><small>Warns the student who leaves the quiz, copies or pastes. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
+            </label>
+            @if (AntiCheat)
+            {
+                <label class="inline" for="@(IdPrefix)-warn">
+                    <span>Warnings allowed</span>
+                    <input id="@(IdPrefix)-warn" type="number" min="1" max="20" inputmode="numeric" value="@MaxViolations" @onchange="WarnTyped" />
+                </label>
+            }
+        </div>
+
+        <div class="panel">
+            <header><span class="panel-icon"><Icon Name="refresh-cw" Size="16" /></span> <strong>Order</strong></header>
+            <label class="switch">
+                <input id="@(IdPrefix)-shuffle-q" type="checkbox" role="switch" checked="@ShuffleQuestions" @onchange="e => ShuffleQuestionsChanged.InvokeAsync(e.Value is true)" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="switch-text"><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
+            </label>
+            <label class="switch">
+                <input id="@(IdPrefix)-shuffle-o" type="checkbox" role="switch" checked="@ShuffleOptions" @onchange="e => ShuffleOptionsChanged.InvokeAsync(e.Value is true)" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="switch-text"><strong>Shuffle the choices</strong><small>The choices of a multiple choice question change places for every student.</small></span>
+            </label>
+        </div>
+
+        <div class="panel">
+            <header><span class="panel-icon"><Icon Name="eye" Size="16" /></span> <strong>After handing in</strong></header>
+            <label class="switch">
+                <input id="@(IdPrefix)-show" type="checkbox" role="switch" checked="@ShowResult" @onchange="e => ShowResultChanged.InvokeAsync(e.Value is true)" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="switch-text"><strong>Show the result right away</strong><small>The student sees their score and the right answers after handing in.</small></span>
+            </label>
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly int[] Presets = [10, 15, 30, 45, 60];
+
+    /// <summary>The start of the ids of the inputs ("i" gives "i-anti", "i-limit" ...).</summary>
+    [Parameter] public string IdPrefix { get; set; } = "q";
+
+    /// <summary>A line of help under the title (for example that the questions are written after saving).</summary>
+    [Parameter] public string? Note { get; set; }
+
+    [Parameter] public int? TimeLimit { get; set; }
+    [Parameter] public EventCallback<int?> TimeLimitChanged { get; set; }
+
+    [Parameter] public int MaxViolations { get; set; } = 3;
+    [Parameter] public EventCallback<int> MaxViolationsChanged { get; set; }
+
+    [Parameter] public bool AntiCheat { get; set; } = true;
+    [Parameter] public EventCallback<bool> AntiCheatChanged { get; set; }
+
+    [Parameter] public bool ShuffleQuestions { get; set; } = true;
+    [Parameter] public EventCallback<bool> ShuffleQuestionsChanged { get; set; }
+
+    [Parameter] public bool ShuffleOptions { get; set; } = true;
+    [Parameter] public EventCallback<bool> ShuffleOptionsChanged { get; set; }
+
+    [Parameter] public bool ShowResult { get; set; } = true;
+    [Parameter] public EventCallback<bool> ShowResultChanged { get; set; }
+
+    private Task SetLimit(int? minutes) => TimeLimitChanged.InvokeAsync(minutes);
+
+    private Task LimitTyped(ChangeEventArgs e) =>
+        TimeLimitChanged.InvokeAsync(int.TryParse(e.Value?.ToString(), out var minutes) && minutes > 0 ? minutes : null);
+
+    private Task WarnTyped(ChangeEventArgs e) =>
+        MaxViolationsChanged.InvokeAsync(int.TryParse(e.Value?.ToString(), out var warnings) && warnings > 0 ? warnings : MaxViolations);
+}

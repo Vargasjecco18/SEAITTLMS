@@ -42,6 +42,6 @@ public static class AppRoles
         _ => role ?? "",
     };
 
-    /// <summary>The school has exactly one administrator, one registrar and one guidance counselor, so no more can be added. (Academic coordinators and academic providers can be several.)</summary>
-    public static bool OnlyOneAllowed(string? role) => role is Admin or Registrar or GuidanceCounselor;
+    /// <summary>The school has exactly one administrator, one registrar, one guidance counselor, one academic coordinator and one academic provider, so no more can be added.</summary>
+    public static bool OnlyOneAllowed(string? role) => role is Admin or Registrar or GuidanceCounselor or AcademicCoordinator or AcademicProvider;
 }

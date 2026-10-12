@@ -415,6 +415,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         var library = await db.MaterialModules.AsNoTracking()
             .Where(m => m.SubjectId == subjectId && moduleIds.Contains(m.Id))
             .Include(m => m.Items.OrderBy(i => i.Position).ThenBy(i => i.Id)).ThenInclude(i => i.Questions.OrderBy(q => q.Position).ThenBy(q => q.Id))
+            .Include(m => m.Items).ThenInclude(i => i.Attachments).ThenInclude(a => a.Content)
+            .Include(m => m.Attachments).ThenInclude(a => a.Content)
+            .AsSplitQuery()
             .OrderBy(m => m.Position).ThenBy(m => m.Id)
             .ToListAsync(ct);
         if (library.Count == 0)
@@ -472,8 +475,11 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                         });
                     }
 
+                    copy.Attachments.AddRange(item.Attachments.Select(a => CopyOf(a, userId)));
                     module.Items.Add(copy);
                 }
+
+                module.Attachments.AddRange(source.Attachments.Select(a => CopyOf(a, userId)));
 
                 db.Modules.Add(module);
                 db.MaterialDeliveries.Add(new MaterialDelivery { MaterialModuleId = source.Id, AssignmentId = target.Id, Module = module, SentByUserId = userId });
@@ -512,6 +518,13 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     }
 
     // ======================================================================= helpers
+
+    /// <summary>A copy of a file of the library for the teacher's draft (the teacher can take it off without touching the library).</summary>
+    private static Attachment CopyOf(Attachment source, int userId) => new()
+    {
+        Name = source.Name, ContentType = source.ContentType, SizeBytes = source.SizeBytes, UploadedByUserId = userId,
+        Content = new AttachmentContent { Data = source.Content?.Data ?? [] },
+    };
 
     private static async Task<bool> IsProviderAsync(AppDbContext db, int userId, CancellationToken ct) =>
         await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicProviderId, ct);

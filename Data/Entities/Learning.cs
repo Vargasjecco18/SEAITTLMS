@@ -53,6 +53,9 @@ public class LearningModule : AuditableEntity
     public DateTime? NotifiedAtUtc { get; set; }
 
     public List<ModuleItem> Items { get; set; } = [];
+
+    /// <summary>Files attached to the module.</summary>
+    public List<Attachment> Attachments { get; set; } = [];
 }
 
 public static class ItemKinds
@@ -120,6 +123,9 @@ public class ModuleItem : AuditableEntity
 
     public List<QuizQuestion> Questions { get; set; } = [];
     public List<Submission> Submissions { get; set; } = [];
+
+    /// <summary>Files attached to the activity, quiz or task performance.</summary>
+    public List<Attachment> Attachments { get; set; } = [];
 }
 
 public static class QuestionKinds

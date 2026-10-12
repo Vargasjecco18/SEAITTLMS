@@ -6,7 +6,7 @@
 
 <PageTitle>Referrals · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Referrals" Subtitle="Students the system sent to you. Open one to say what you did and how it ended." IconName="flag" />
+<PageHeader Title="Referrals" IconName="flag" />
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
@@ -30,8 +30,15 @@
                 }
             </select>
         </Field>
+        <Field For="r-grade" Label="Grade level">
+            <select id="r-grade" value="@grade" @onchange="GradeChanged">
+                <option value="">All</option>
+                <option value="11" selected="@(grade == "11")">Grade 11</option>
+                <option value="12" selected="@(grade == "12")">Grade 12</option>
+            </select>
+        </Field>
         <Field For="r-search" Label="Search" Class="grow">
-            <input id="r-search" type="search" placeholder="Name, LRN or course" autocomplete="off" @bind="searchText" />
+            <input id="r-search" type="search" placeholder="Name, LRN or problem" autocomplete="off" @bind="searchText" />
         </Field>
         <div class="filter-actions">
             <Button Type="submit" IconName="search">Search</Button>
@@ -55,8 +62,10 @@
                 <thead>
                     <tr>
                         <th scope="col">Student</th>
-                        <th scope="col">Problem</th>
+                        <th scope="col">Grade level</th>
                         <th scope="col" class="col-more">Course and teacher</th>
+                        <th scope="col">Problem</th>
+                        <th scope="col">Grade</th>
                         <th scope="col" class="col-more">Since</th>
                         <th scope="col">Status</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
@@ -68,15 +77,30 @@
                         <tr>
                             <td>
                                 <span class="name">@r.StudentName</span>
-                                <span class="sub">@r.Lrn@(r.Placement is null ? "" : " · " + r.Placement)</span>
+                                <span class="sub">@r.Lrn</span>
+                            </td>
+                            <td>
+                                @(r.GradeLevel is { } level ? $"Grade {level}" : "—")
+                                <span class="sub">@(r.Strand ?? "")@(r.Placement is null ? "" : " · " + r.Placement)</span>
+                            </td>
+                            <td class="col-more">
+                                @(r.SubjectName ?? "—")
+                                <span class="sub">@r.TeacherName</span>
                             </td>
                             <td>
                                 <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
                                 <span class="detail">@r.Detail</span>
                             </td>
-                            <td class="col-more">
-                                @(r.SubjectName ?? "—")
-                                <span class="sub">@r.TeacherName</span>
+                            <td>
+                                @if (r.Metric is { } metric)
+                                {
+                                    <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@metric.ToString("0.#")%</Badge>
+                                    <span class="sub">@(r.Reason == ReferralReasons.LowAttendance ? "attendance" : "grade")</span>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
                             </td>
                             <td class="col-more">@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
                             <td>
@@ -113,7 +137,7 @@
             <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(current.Reason)">@ReferralReasons.Display(current.Reason)</Badge>
             <span>@current.Detail</span>
         </div>
-        <p class="sub">@current.Lrn@(current.Placement is null ? "" : " · " + current.Placement)@(current.TeacherName is null ? "" : " · teacher " + current.TeacherName) · referred @PhilippineTime.FormatDate(current.CreatedAtUtc)</p>
+        <p class="sub">@current.Lrn@(current.GradeLevel is { } level ? $" · Grade {level}" : "")@(current.Strand is null ? "" : " · " + current.Strand)@(current.Placement is null ? "" : " · " + current.Placement)@(current.SubjectName is null ? "" : " · " + current.SubjectName)@(current.TeacherName is null ? "" : " · teacher " + current.TeacherName) · referred @PhilippineTime.FormatDate(current.CreatedAtUtc)</p>
 
         <FormErrors Errors="formErrors" />
 
@@ -164,11 +188,14 @@
 @code {
     [SupplyParameterFromQuery(Name = "status")] private string? StatusQuery { get; set; }
 
+    [SupplyParameterFromQuery(Name = "reason")] private string? ReasonQuery { get; set; }
+
     [SupplyParameterFromQuery(Name = "q")] private string? SearchQuery { get; set; }
 
     private int userId;
     private string status = "";
     private string reason = "";
+    private string grade = "";
     private string searchText = "";
     private string appliedSearch = "";
     private int pageNumber = 1;
@@ -187,6 +214,7 @@
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
         status = ReferralStatus.All.Contains(StatusQuery ?? "") ? StatusQuery! : "";
+        reason = ReferralReasons.All.Contains(ReasonQuery ?? "") ? ReasonQuery! : "";
         searchText = appliedSearch = SearchQuery?.Trim() ?? "";
         await Desk.EvaluateAsync();
         await LoadAsync();
@@ -194,7 +222,7 @@
 
     private void ClearMessage() => message = null;
 
-    private async Task LoadAsync() => result = await Desk.ListAsync(status == "" ? null : status, reason == "" ? null : reason, appliedSearch, pageNumber);
+    private async Task LoadAsync() => result = await Desk.ListAsync(status == "" ? null : status, reason == "" ? null : reason, appliedSearch, pageNumber, grade == "" ? null : int.Parse(grade));
 
     private async Task StatusChanged(ChangeEventArgs e)
     {
@@ -206,6 +234,13 @@
     private async Task ReasonChanged(ChangeEventArgs e)
     {
         reason = e.Value?.ToString() ?? "";
+        pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task GradeChanged(ChangeEventArgs e)
+    {
+        grade = e.Value?.ToString() ?? "";
         pageNumber = 1;
         await LoadAsync();
     }

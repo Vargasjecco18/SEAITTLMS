@@ -145,7 +145,8 @@
     .sidebar {
         position: sticky;
         top: var(--header-h);
-        z-index: auto;
+        /* Above the page (its cards, sticky headings and animated blocks), so the pop-up of a menu item is never behind the text; below the header. */
+        z-index: 45;
         grid-row: 2;
         grid-column: 1;
         width: auto;

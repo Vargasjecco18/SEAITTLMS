@@ -24,7 +24,7 @@ else if (detail is null)
 else
 {
     var draft = detail.State == EvaluationStates.Draft;
-    <PageHeader Title="@detail.Title" Subtitle="@Subtitle" IconName="clipboard-check">
+    <PageHeader Title="@detail.Title" IconName="clipboard-check">
         <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Ghost" IconName="chevron-left">All evaluations</ButtonLink>
         @if (!draft)
         {
@@ -89,7 +89,14 @@ else
                     {
                         <li>
                             <span>@q.Text</span>
-                            <small>@(q.Kind == EvaluationQuestionKinds.Rating ? "Rating 1 to 5" : "Comment")@(string.IsNullOrWhiteSpace(q.Category) ? "" : " · " + q.Category)</small>
+                            <small>
+                                <Icon Name="@EvaluationQuestionKinds.Icon(q.Kind)" Size="13" />
+                                @EvaluationQuestionKinds.Display(q.Kind)@(string.IsNullOrWhiteSpace(q.Category) ? "" : " · " + q.Category)
+                                @if (q.Options is { Count: > 0 } options)
+                                {
+                                    <span class="read-options"> · @string.Join(" / ", options)</span>
+                                }
+                            </small>
                         </li>
                     }
                 </ol>
@@ -102,34 +109,109 @@ else
                         <option value="@area"></option>
                     }
                 </datalist>
+
+                @* How a question is added: pick the kind of answer first. Each kind shows what the students will see. *@
+                <section class="palette" aria-labelledby="add-title">
+                    <h3 id="add-title">Add a question</h3>
+                    <div class="types">
+                        @foreach (var kind in EvaluationQuestionKinds.All)
+                        {
+                            var k = kind;
+                            <button type="button" class="type @k" @onclick="() => Add(k)">
+                                <span class="type-icon"><Icon Name="@EvaluationQuestionKinds.Icon(k)" Size="18" /></span>
+                                <span class="type-text">
+                                    <strong>@EvaluationQuestionKinds.Display(k)</strong>
+                                    <small>@EvaluationQuestionKinds.Describe(k)</small>
+                                </span>
+                                <Icon Name="plus" Size="16" />
+                            </button>
+                        }
+                    </div>
+                </section>
+
                 <ol class="questions">
                     @for (var n = 0; n < questions.Count; n++)
                     {
                         var index = n;
                         var q = questions[n];
-                        <li class="question">
-                            <span class="number">@(index + 1)</span>
-                            <div class="question-body">
-                                <textarea id="@($"q{index}-text")" rows="2" aria-label="@($"Question {index + 1}")" @bind="q.Text" @bind:event="oninput"></textarea>
-                                <div class="question-row">
-                                    <select aria-label="@($"How the students answer question {index + 1}")" @bind="q.Kind">
-                                        <option value="@EvaluationQuestionKinds.Rating">Rating 1 to 5</option>
-                                        <option value="@EvaluationQuestionKinds.Comment">Comment (a few words)</option>
-                                    </select>
-                                    <input type="text" list="areas" maxlength="60" placeholder="Area (optional)" aria-label="@($"Area of question {index + 1}")" @bind="q.Category" />
-                                    <span class="move">
-                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-up" Title="Move up" Disabled="@(index == 0)" OnClick="() => Move(index, -1)" />
-                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-down" Title="Move down" Disabled="@(index == questions.Count - 1)" OnClick="() => Move(index, 1)" />
-                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Remove this question" OnClick="() => Remove(index)" />
-                                    </span>
-                                </div>
+                        <li class="question @q.Kind">
+                            <div class="q-head">
+                                <span class="number">@(index + 1)</span>
+                                <span class="q-type"><Icon Name="@EvaluationQuestionKinds.Icon(q.Kind)" Size="14" /> @EvaluationQuestionKinds.Display(q.Kind)</span>
+                                <span class="move">
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-up" Title="Move up" Disabled="@(index == 0)" OnClick="() => Move(index, -1)" />
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-down" Title="Move down" Disabled="@(index == questions.Count - 1)" OnClick="() => Move(index, 1)" />
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="copy" Title="Make a copy of this question" OnClick="() => Copy(index)" />
+                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Remove this question" OnClick="() => Remove(index)" />
+                                </span>
+                            </div>
+
+                            <textarea id="@($"q{index}-text")" rows="2" placeholder="Write the question" aria-label="@($"Question {index + 1}")" @bind="q.Text" @bind:event="oninput"></textarea>
+
+                            <div class="question-row">
+                                <select aria-label="@($"How the students answer question {index + 1}")" value="@q.Kind" @onchange="e => ChangeKind(q, e.Value?.ToString())">
+                                    @foreach (var kind in EvaluationQuestionKinds.All)
+                                    {
+                                        <option value="@kind" selected="@(q.Kind == kind)">@EvaluationQuestionKinds.Display(kind)</option>
+                                    }
+                                </select>
+                                <input type="text" list="areas" maxlength="60" placeholder="Area (optional)" aria-label="@($"Area of question {index + 1}")" @bind="q.Category" />
+                            </div>
+
+                            @if (EvaluationQuestionKinds.HasOptions(q.Kind))
+                            {
+                                <fieldset class="options">
+                                    <legend>@(q.Kind == EvaluationQuestionKinds.Ranking ? "The options to put in order" : "The options to tick")</legend>
+                                    @for (var o = 0; o < q.Options.Count; o++)
+                                    {
+                                        var optionIndex = o;
+                                        <div class="option">
+                                            <span class="option-number">@(optionIndex + 1)</span>
+                                            <input type="text" maxlength="120" placeholder="@($"Option {optionIndex + 1}")" aria-label="@($"Option {optionIndex + 1} of question {index + 1}")" @bind="q.Options[optionIndex]" @bind:event="oninput" />
+                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="x" Title="Remove this option" Disabled="@(q.Options.Count <= EvaluationQuestionKinds.MinOptions)" OnClick="() => q.Options.RemoveAt(optionIndex)" />
+                                        </div>
+                                    }
+
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(q.Options.Count >= EvaluationQuestionKinds.MaxOptions)" OnClick="() => q.Options.Add(string.Empty)">Add an option</Button>
+                                </fieldset>
+                            }
+
+                            @* what the students will see *@
+                            <div class="preview" aria-label="How the students see it">
+                                @if (EvaluationQuestionKinds.IsScale(q.Kind))
+                                {
+                                    @foreach (var (label, number) in EvaluationQuestionKinds.ScaleLabels(q.Kind).Select((label, i) => (label, i + 1)))
+                                    {
+                                        <span class="chip"><strong>@number</strong> @label</span>
+                                    }
+                                }
+                                else if (q.Kind == EvaluationQuestionKinds.Binary)
+                                {
+                                    <span class="chip"><Icon Name="check" Size="14" /> Yes</span>
+                                    <span class="chip"><Icon Name="x" Size="14" /> No</span>
+                                }
+                                else if (EvaluationQuestionKinds.HasOptions(q.Kind))
+                                {
+                                    @foreach (var (option, number) in EvaluationService.CleanOptions(q.Options).Select((option, i) => (option, i + 1)))
+                                    {
+                                        <span class="chip">@(q.Kind == EvaluationQuestionKinds.Ranking ? $"{number}." : "☐") @option</span>
+                                    }
+
+                                    @if (EvaluationService.CleanOptions(q.Options).Count == 0)
+                                    {
+                                        <span class="muted">Write the options above.</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="chip wide">The student writes a few words (optional)</span>
+                                }
                             </div>
                         </li>
                     }
                 </ol>
                 <div class="adders">
-                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(EvaluationQuestionKinds.Rating)">Rating question</Button>
-                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => Add(EvaluationQuestionKinds.Comment)">Comment question</Button>
+                    <span class="muted">@questions.Count @(questions.Count == 1 ? "question" : "questions")</span>
                     <span class="spacer"></span>
                     <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save the evaluation")</Button>
                 </div>
@@ -298,13 +380,6 @@ else
 
     private bool confirmDelete;
 
-    private string Subtitle => detail is null ? "" : detail.State switch
-    {
-        EvaluationStates.Draft => "Draft · not sent yet",
-        EvaluationStates.Open => $"Open · due {(detail.DueAtUtc is { } d ? PhilippineTime.FormatDateTime(d) : "")}",
-        _ => $"Closed · was due {(detail.DueAtUtc is { } d2 ? PhilippineTime.FormatDateTime(d2) : "")}",
-    };
-
     protected override async Task OnParametersSetAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
@@ -323,7 +398,7 @@ else
         form.Title = detail.Title;
         form.Instructions = detail.Instructions;
         dueText = PhilippineTime.ToInputValue(detail.DueAtUtc);
-        questions = detail.Questions.Select(q => new EvaluationQuestionInput { Text = q.Text, Kind = q.Kind, Category = q.Category }).ToList();
+        questions = detail.Questions.Select(q => new EvaluationQuestionInput { Text = q.Text, Kind = q.Kind, Category = q.Category, Options = [.. q.Options ?? []] }).ToList();
     }
 
     private void Say(ServiceResult result)
@@ -338,7 +413,33 @@ else
 
     // ---------------------------------------------------------------- the questions
 
-    private void Add(string kind) => questions.Add(new EvaluationQuestionInput { Kind = kind });
+    private void Add(string kind) => questions.Add(new EvaluationQuestionInput
+    {
+        Kind = kind,
+        Category = questions.LastOrDefault()?.Category,
+        Options = EvaluationQuestionKinds.HasOptions(kind) ? ["", "", ""] : [],
+    });
+
+    private void Copy(int index)
+    {
+        var q = questions[index];
+        questions.Insert(index + 1, new EvaluationQuestionInput { Text = q.Text, Kind = q.Kind, Category = q.Category, Options = [.. q.Options] });
+    }
+
+    /// <summary>The kind of a question is changed: a question that needs options gets empty ones to fill in.</summary>
+    private static void ChangeKind(EvaluationQuestionInput q, string? kind)
+    {
+        if (kind is null || !EvaluationQuestionKinds.All.Contains(kind))
+        {
+            return;
+        }
+
+        q.Kind = kind;
+        while (EvaluationQuestionKinds.HasOptions(kind) && q.Options.Count < 3)
+        {
+            q.Options.Add(string.Empty);
+        }
+    }
 
     private void Remove(int index) => questions.RemoveAt(index);
 

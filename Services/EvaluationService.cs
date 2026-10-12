@@ -17,8 +17,11 @@ public sealed class EvaluationInput
 public sealed class EvaluationQuestionInput
 {
     public string Text { get; set; } = "";
-    public string Kind { get; set; } = EvaluationQuestionKinds.Rating;
+    public string Kind { get; set; } = EvaluationQuestionKinds.Likert;
     public string? Category { get; set; }
+
+    /// <summary>The options of a ranking or select-all question.</summary>
+    public List<string> Options { get; set; } = [];
 }
 
 // ---------------------------------------------------------------------- what the coordinator sees
@@ -37,7 +40,7 @@ public sealed record EvaluationRow(
     public int RatePercent => Expected == 0 ? 0 : (int)Math.Round(Responses * 100.0 / Expected);
 }
 
-public sealed record EvaluationQuestionView(int Id, int Position, string Text, string Kind, string? Category);
+public sealed record EvaluationQuestionView(int Id, int Position, string Text, string Kind, string? Category, IReadOnlyList<string>? Options = null);
 
 /// <summary>A course (a teacher, a section) that an evaluation is about, with how many students answered and their average.</summary>
 public sealed record EvaluationCourseRow(
@@ -65,13 +68,28 @@ public sealed record EvaluationForm(
 public sealed class EvaluationAnswerInput
 {
     public int QuestionId { get; set; }
+
+    /// <summary>1 to 5 for a Likert, performance or frequency question.</summary>
     public int? Rating { get; set; }
+
     public string? Comment { get; set; }
+
+    /// <summary>"Yes" or "No" (binary); the numbers of the options in the order of the student, like "2,0,1" (ranking); the numbers of the options ticked, like "0,2" (select-all).</summary>
+    public string? Selection { get; set; }
 }
 
 // ---------------------------------------------------------------------- analytics
 
 public sealed record QuestionAverage(int QuestionId, string Text, string? Category, decimal? Average, int Answers);
+
+/// <summary>One option of a binary, ranking or select-all question with how it did: the number of answers and a value (the share in percent, or the average place).</summary>
+public sealed record OptionResult(string Label, int Count, decimal? Value);
+
+/// <summary>
+/// The result of a binary, ranking or select-all question. Binary and select-all: <see cref="OptionResult.Value"/> is the share of the answers in percent.
+/// Ranking: <see cref="OptionResult.Value"/> is the average place (1 is the best) and <see cref="OptionResult.Count"/> how many put it first.
+/// </summary>
+public sealed record QuestionResult(int QuestionId, string Text, string? Category, string Kind, int Answers, IReadOnlyList<OptionResult> Options);
 
 public sealed record TeacherResult(
     int TeacherId, string TeacherName, int Courses, int Expected, int Responses, decimal? Average, int Rank)
@@ -86,7 +104,8 @@ public sealed record EvaluationTrend(int EvaluationId, string Title, DateTime Se
 
 public sealed record EvaluationAnalytics(
     IReadOnlyList<EvaluationTrend> Evaluations, int? EvaluationId, string? Title, int Expected, int Responses, decimal? Average,
-    IReadOnlyList<int> Distribution, IReadOnlyList<QuestionAverage> Questions, IReadOnlyList<QuestionAverage> Categories, IReadOnlyList<TeacherResult> Teachers)
+    IReadOnlyList<int> Distribution, IReadOnlyList<QuestionAverage> Questions, IReadOnlyList<QuestionAverage> Categories, IReadOnlyList<TeacherResult> Teachers,
+    IReadOnlyList<QuestionResult>? OtherQuestions = null)
 {
     public int RatePercent => Expected == 0 ? 0 : (int)Math.Round(Responses * 100.0 / Expected);
 }
@@ -95,7 +114,8 @@ public sealed record EvaluationComment(string Text, string SubjectName, string S
 
 public sealed record TeacherDetail(
     int TeacherId, string TeacherName, decimal? Average, int Responses, int Expected, IReadOnlyList<EvaluationCourseRow> Courses,
-    IReadOnlyList<QuestionAverage> Questions, IReadOnlyList<int> Distribution, IReadOnlyList<EvaluationComment> Comments);
+    IReadOnlyList<QuestionAverage> Questions, IReadOnlyList<int> Distribution, IReadOnlyList<EvaluationComment> Comments,
+    IReadOnlyList<QuestionResult>? OtherQuestions = null);
 
 /// <summary>
 /// The teacher evaluation: the academic coordinator makes a questionnaire, sends it to the students of the courses they choose with a
@@ -109,7 +129,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
 
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
 
-    /// <summary>The questions a new evaluation starts with, in the areas a teacher is usually looked at.</summary>
+    /// <summary>The questions a new evaluation starts with, in the areas a teacher is usually looked at. The coordinator changes, adds and removes them.</summary>
     public static readonly IReadOnlyList<EvaluationQuestionInput> DefaultQuestions =
     [
         new() { Category = "Knowledge of the subject", Text = "The teacher knows the subject well and explains it clearly." },
@@ -117,11 +137,23 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         new() { Category = "Teaching", Text = "The lessons and activities help me learn." },
         new() { Category = "Teaching", Text = "The teacher gives clear instructions for activities, quizzes and tasks." },
         new() { Category = "Teaching", Text = "The teacher checks my work and gives my scores on time." },
-        new() { Category = "Classroom management", Text = "The class starts and ends on time." },
+        new() { Category = "Classroom management", Kind = EvaluationQuestionKinds.Frequency, Text = "How often does the class start and end on time?" },
         new() { Category = "Classroom management", Text = "The teacher is fair and treats every student with respect." },
         new() { Category = "Classroom management", Text = "The teacher keeps the class orderly." },
         new() { Category = "Support", Text = "The teacher is easy to approach and helps students who need help." },
         new() { Category = "Support", Text = "The teacher makes the lessons interesting." },
+        new() { Category = "Overall", Kind = EvaluationQuestionKinds.Performance, Text = "Overall, how would you rate this teacher?" },
+        new() { Category = "Overall", Kind = EvaluationQuestionKinds.Binary, Text = "Would you recommend this teacher to other students?" },
+        new()
+        {
+            Category = "Teaching", Kind = EvaluationQuestionKinds.Ranking, Text = "Rank what helps you learn the most, from the first (best) to the last.",
+            Options = ["Explanations in class", "Activities and worksheets", "Quizzes", "Task performances (projects)"],
+        },
+        new()
+        {
+            Category = "Comments", Kind = EvaluationQuestionKinds.SelectAll, Text = "What does this teacher do well? Select all that apply.",
+            Options = ["Explains clearly", "Gives helpful feedback", "Makes the lessons interesting", "Is fair to everybody", "Is patient", "Is always prepared"],
+        },
         new() { Category = "Comments", Kind = EvaluationQuestionKinds.Comment, Text = "What does this teacher do well?" },
         new() { Category = "Comments", Kind = EvaluationQuestionKinds.Comment, Text = "What should this teacher do better?" },
     ];
@@ -162,8 +194,8 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             return null;
         }
 
-        var questions = await db.EvaluationQuestions.AsNoTracking().Where(q => q.EvaluationId == id).OrderBy(q => q.Position).ThenBy(q => q.Id)
-            .Select(q => new EvaluationQuestionView(q.Id, q.Position, q.Text, q.Kind, q.Category)).ToListAsync(ct);
+        var questions = (await db.EvaluationQuestions.AsNoTracking().Where(q => q.EvaluationId == id).OrderBy(q => q.Position).ThenBy(q => q.Id).ToListAsync(ct))
+            .Select(ViewOf).ToList();
 
         var courses = e.SentAtUtc is null ? [] : await CourseRowsAsync(db, id, null, ct);
         return new EvaluationDetail(e.Id, e.Title, e.Instructions, StateOf(e.SentAtUtc, e.DueAtUtc, Now), e.SentAtUtc, e.DueAtUtc, e.Term, questions, courses);
@@ -239,7 +271,11 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         var position = 0;
         foreach (var q in DefaultQuestions)
         {
-            evaluation.Questions.Add(new EvaluationQuestion { Position = ++position, Text = q.Text, Kind = q.Kind, Category = q.Category });
+            evaluation.Questions.Add(new EvaluationQuestion
+            {
+                Position = ++position, Text = q.Text, Kind = q.Kind, Category = q.Category,
+                OptionsText = EvaluationQuestionKinds.HasOptions(q.Kind) ? string.Join('\n', q.Options) : null,
+            });
         }
 
         db.TeacherEvaluations.Add(evaluation);
@@ -320,11 +356,24 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             {
                 errors.Add($"Question {n + 1}: the area can have at most 60 characters.");
             }
+
+            if (EvaluationQuestionKinds.HasOptions(q.Kind))
+            {
+                var options = CleanOptions(q.Options);
+                if (options.Count is < EvaluationQuestionKinds.MinOptions or > EvaluationQuestionKinds.MaxOptions)
+                {
+                    errors.Add($"Question {n + 1}: write {EvaluationQuestionKinds.MinOptions} to {EvaluationQuestionKinds.MaxOptions} different options.");
+                }
+                else if (options.Any(o => o.Length > 120))
+                {
+                    errors.Add($"Question {n + 1}: an option can have at most 120 characters.");
+                }
+            }
         }
 
-        if (questions.Count == 0 || !questions.Any(q => q.Kind == EvaluationQuestionKinds.Rating))
+        if (questions.Count == 0 || !questions.Any(q => EvaluationQuestionKinds.IsScale(q.Kind)))
         {
-            errors.Add("Keep at least one question that the students rate from 1 to 5.");
+            errors.Add("Keep at least one question with a 5-point scale (Likert, performance or frequency), so the teachers can be compared.");
         }
 
         if (questions.Count > MaxQuestions)
@@ -363,6 +412,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             {
                 EvaluationId = id, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
                 Category = string.IsNullOrWhiteSpace(q.Category) ? null : q.Category.Trim(),
+                OptionsText = EvaluationQuestionKinds.HasOptions(q.Kind) ? string.Join('\n', CleanOptions(q.Options)) : null,
             });
         }
 
@@ -405,9 +455,9 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             return ServiceResult.Fail("This evaluation was sent already.");
         }
 
-        if (!evaluation.Questions.Any(q => q.Kind == EvaluationQuestionKinds.Rating))
+        if (!evaluation.Questions.Any(q => EvaluationQuestionKinds.IsScale(q.Kind)))
         {
-            return ServiceResult.Fail("Add at least one question that the students rate from 1 to 5.");
+            return ServiceResult.Fail("Add at least one question with a 5-point scale (Likert, performance or frequency).");
         }
 
         var yearId = await MaterialService.CurrentYearIdAsync(db, ct);
@@ -537,8 +587,8 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             return null;
         }
 
-        var questions = await db.EvaluationQuestions.AsNoTracking().Where(q => q.EvaluationId == evaluationId).OrderBy(q => q.Position).ThenBy(q => q.Id)
-            .Select(q => new EvaluationQuestionView(q.Id, q.Position, q.Text, q.Kind, q.Category)).ToListAsync(ct);
+        var questions = (await db.EvaluationQuestions.AsNoTracking().Where(q => q.EvaluationId == evaluationId).OrderBy(q => q.Position).ThenBy(q => q.Id).ToListAsync(ct))
+            .Select(ViewOf).ToList();
 
         return new EvaluationForm(
             evaluationId, target.Title, target.Instructions, assignmentId, target.SubjectName,
@@ -570,16 +620,53 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         foreach (var q in form.Questions)
         {
             byQuestion.TryGetValue(q.Id, out var given);
-            if (q.Kind == EvaluationQuestionKinds.Rating)
+            var options = q.Options ?? [];
+            if (EvaluationQuestionKinds.IsScale(q.Kind))
             {
                 var rating = given?.Rating ?? 0;
                 if (rating is < 1 or > 5)
                 {
-                    errors.Add($"Rate question {q.Position} from 1 to 5.");
+                    errors.Add($"Answer question {q.Position}: choose from 1 to 5.");
                     continue;
                 }
 
                 rows.Add(new EvaluationAnswer { QuestionId = q.Id, Rating = (byte)rating });
+            }
+            else if (q.Kind == EvaluationQuestionKinds.Binary)
+            {
+                var choice = given?.Selection?.Trim();
+                if (choice != EvaluationQuestionKinds.Yes && choice != EvaluationQuestionKinds.No)
+                {
+                    errors.Add($"Answer question {q.Position}: Yes or No.");
+                    continue;
+                }
+
+                rows.Add(new EvaluationAnswer { QuestionId = q.Id, Selection = choice });
+            }
+            else if (q.Kind == EvaluationQuestionKinds.Ranking)
+            {
+                var order = ParseIndexes(given?.Selection);
+                if (order is null || order.Count != options.Count || !order.OrderBy(i => i).SequenceEqual(Enumerable.Range(0, options.Count)))
+                {
+                    errors.Add($"Question {q.Position}: give every option its own place, from 1 to {options.Count}.");
+                    continue;
+                }
+
+                rows.Add(new EvaluationAnswer { QuestionId = q.Id, Selection = string.Join(',', order) });
+            }
+            else if (q.Kind == EvaluationQuestionKinds.SelectAll)
+            {
+                var ticked = ParseIndexes(given?.Selection);
+                if (ticked is null || ticked.Any(i => i < 0 || i >= options.Count) || ticked.Distinct().Count() != ticked.Count)
+                {
+                    errors.Add($"Question {q.Position}: choose from the options.");
+                    continue;
+                }
+
+                if (ticked.Count > 0)
+                {
+                    rows.Add(new EvaluationAnswer { QuestionId = q.Id, Selection = string.Join(',', ticked.OrderBy(i => i)) });
+                }
             }
             else
             {
@@ -640,7 +727,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         var chosen = sent.FirstOrDefault(e => e.Id == evaluationId) ?? sent.LastOrDefault();
         if (chosen is null)
         {
-            return new EvaluationAnalytics(trend, null, null, 0, 0, null, [0, 0, 0, 0, 0], [], [], []);
+            return new EvaluationAnalytics(trend, null, null, 0, 0, null, [0, 0, 0, 0, 0], [], [], [], []);
         }
 
         var questions = await db.EvaluationQuestions.AsNoTracking().Where(q => q.EvaluationId == chosen.Id).OrderBy(q => q.Position).ThenBy(q => q.Id).ToListAsync(ct);
@@ -650,7 +737,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .ToListAsync(ct);
 
         var distribution = Enumerable.Range(1, 5).Select(n => ratings.Count(r => r.Rating == n)).ToList();
-        var questionAverages = questions.Where(q => q.Kind == EvaluationQuestionKinds.Rating)
+        var questionAverages = questions.Where(q => EvaluationQuestionKinds.IsScale(q.Kind))
             .Select(q =>
             {
                 var own = ratings.Where(r => r.QuestionId == q.Id).ToList();
@@ -658,7 +745,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             })
             .ToList();
 
-        var categoryAverages = questions.Where(q => q.Kind == EvaluationQuestionKinds.Rating && !string.IsNullOrWhiteSpace(q.Category))
+        var categoryAverages = questions.Where(q => EvaluationQuestionKinds.IsScale(q.Kind) && !string.IsNullOrWhiteSpace(q.Category))
             .GroupBy(q => q.Category!)
             .Select(g =>
             {
@@ -683,8 +770,13 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .Select((t, i) => new TeacherResult(t.TeacherId, t.Name, t.Courses, t.Expected, t.Responses, t.Average, i + 1))
             .ToList();
 
+        var selections = await db.EvaluationAnswers.AsNoTracking()
+            .Where(a => a.Response.EvaluationId == chosen.Id && a.Selection != null)
+            .Select(a => new { a.QuestionId, a.Selection }).ToListAsync(ct);
+        var others = OtherResults(questions, selections.Select(a => (a.QuestionId, a.Selection!)).ToList());
+
         var row = trend.First(t => t.EvaluationId == chosen.Id);
-        return new EvaluationAnalytics(trend, chosen.Id, chosen.Title, row.Expected, row.Responses, row.Average, distribution, questionAverages, categoryAverages, teachers);
+        return new EvaluationAnalytics(trend, chosen.Id, chosen.Title, row.Expected, row.Responses, row.Average, distribution, questionAverages, categoryAverages, teachers, others);
     }
 
     /// <summary>One teacher's results in an evaluation: course by course, question by question, and what the students wrote (without names).</summary>
@@ -711,7 +803,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .Where(a => a.Response.EvaluationId == evaluationId && assignmentIds.Contains(a.Response.AssignmentId))
             .Select(a => new
             {
-                a.QuestionId, a.Response.AssignmentId, a.Rating, a.Comment, a.Response.SubmittedAtUtc,
+                a.QuestionId, a.Response.AssignmentId, a.Rating, a.Comment, a.Selection, a.Response.SubmittedAtUtc,
                 Subject = a.Response.Assignment.Subject.Name, a.Response.Assignment.Section.GradeLevel, StrandCode = a.Response.Assignment.Section.Strand.Code,
                 SectionName = a.Response.Assignment.Section.Name,
             })
@@ -721,7 +813,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         var byAssignment = ratings.GroupBy(a => a.AssignmentId).ToDictionary(g => g.Key, g => g.Select(a => (int)a.Rating!.Value).ToList());
         var courses = (await CourseRowsAsync(db, evaluationId, byAssignment, ct)).Where(c => c.TeacherId == teacherId).ToList();
 
-        var questionRows = questions.Where(q => q.Kind == EvaluationQuestionKinds.Rating)
+        var questionRows = questions.Where(q => EvaluationQuestionKinds.IsScale(q.Kind))
             .Select(q =>
             {
                 var own = ratings.Where(a => a.QuestionId == q.Id).ToList();
@@ -738,10 +830,86 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         return new TeacherDetail(
             teacherId, UserDirectory.FullName(teacher.FirstName, teacher.MiddleName, teacher.LastName, teacher.NameExtension),
             ratings.Count == 0 ? null : Math.Round((decimal)ratings.Average(a => (int)a.Rating!.Value), 2), courses.Sum(c => c.Responses), courses.Sum(c => c.Expected),
-            courses, questionRows, Enumerable.Range(1, 5).Select(n => ratings.Count(a => a.Rating == n)).ToList(), comments);
+            courses, questionRows, Enumerable.Range(1, 5).Select(n => ratings.Count(a => a.Rating == n)).ToList(), comments,
+            OtherResults(questions, answers.Where(a => a.Selection != null).Select(a => (a.QuestionId, a.Selection!)).ToList()));
     }
 
     // ======================================================================= helpers
+
+    private static EvaluationQuestionView ViewOf(EvaluationQuestion q) =>
+        new(q.Id, q.Position, q.Text, q.Kind, q.Category, EvaluationQuestionKinds.HasOptions(q.Kind) ? EvaluationQuestionKinds.OptionsOf(q.OptionsText) : null);
+
+    /// <summary>The options as they are saved: trimmed, without empty lines and without the same option twice.</summary>
+    public static List<string> CleanOptions(IEnumerable<string>? options) =>
+        (options ?? []).Select(o => (o ?? "").Trim()).Where(o => o.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+    /// <summary>"2,0,1" to 2, 0, 1. An empty text is an empty list; anything else that is not numbers is null.</summary>
+    internal static List<int>? ParseIndexes(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return [];
+        }
+
+        var list = new List<int>();
+        foreach (var part in text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!int.TryParse(part, out var n))
+            {
+                return null;
+            }
+
+            list.Add(n);
+        }
+
+        return list;
+    }
+
+    /// <summary>The results of the binary, ranking and select-all questions, from the choices the students made.</summary>
+    private static IReadOnlyList<QuestionResult> OtherResults(IEnumerable<EvaluationQuestion> questions, IReadOnlyList<(int QuestionId, string Selection)> selections)
+    {
+        var results = new List<QuestionResult>();
+        foreach (var q in questions.Where(q => q.Kind is EvaluationQuestionKinds.Binary or EvaluationQuestionKinds.Ranking or EvaluationQuestionKinds.SelectAll))
+        {
+            var own = selections.Where(s => s.QuestionId == q.Id).Select(s => s.Selection).ToList();
+            if (q.Kind == EvaluationQuestionKinds.Binary)
+            {
+                var yes = own.Count(x => x == EvaluationQuestionKinds.Yes);
+                var no = own.Count(x => x == EvaluationQuestionKinds.No);
+                var total = yes + no;
+                results.Add(new QuestionResult(q.Id, q.Text, q.Category, q.Kind, total,
+                [
+                    new(EvaluationQuestionKinds.Yes, yes, total == 0 ? null : Math.Round(yes * 100m / total, 1)),
+                    new(EvaluationQuestionKinds.No, no, total == 0 ? null : Math.Round(no * 100m / total, 1)),
+                ]));
+                continue;
+            }
+
+            var options = EvaluationQuestionKinds.OptionsOf(q.OptionsText);
+            var parsed = own.Select(x => ParseIndexes(x)).Where(x => x is not null).Select(x => x!).ToList();
+            if (q.Kind == EvaluationQuestionKinds.Ranking)
+            {
+                results.Add(new QuestionResult(q.Id, q.Text, q.Category, q.Kind, parsed.Count,
+                    options.Select((label, i) =>
+                    {
+                        var places = parsed.Where(order => order.Contains(i)).Select(order => order.IndexOf(i) + 1).ToList();
+                        return new OptionResult(label, places.Count(p => p == 1), places.Count == 0 ? null : Math.Round((decimal)places.Average(), 2));
+                    })
+                    .OrderBy(o => o.Value ?? decimal.MaxValue).ToList()));
+            }
+            else
+            {
+                results.Add(new QuestionResult(q.Id, q.Text, q.Category, q.Kind, parsed.Count,
+                    options.Select((label, i) =>
+                    {
+                        var count = parsed.Count(ticked => ticked.Contains(i));
+                        return new OptionResult(label, count, parsed.Count == 0 ? null : Math.Round(count * 100m / parsed.Count, 1));
+                    }).ToList()));
+            }
+        }
+
+        return results;
+    }
 
     private static async Task<bool> IsCoordinatorAsync(AppDbContext db, int userId, CancellationToken ct) =>
         await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);

@@ -50,38 +50,9 @@
 
             @if (item.Kind == ItemKinds.Quiz)
             {
-                <fieldset class="quiz-settings">
-                    <legend><Icon Name="shield-check" Size="16" /> Quiz settings</legend>
-                    @if (item.Questions == 0)
-                    {
-                        <p class="small-text">This quiz has no questions yet. Write them under its course; the due date is saved either way.</p>
-                    }
-
-                    <div class="two">
-                        <Field For="d-limit" Label="Time limit (minutes)" Hint="Leave empty for no time limit.">
-                            <InputNumber id="d-limit" @bind-Value="form.TimeLimit" />
-                        </Field>
-                        <Field For="d-warn" Label="Warnings before it is handed in" Hint="Leaving the quiz, copying or pasting is a warning.">
-                            <InputNumber id="d-warn" @bind-Value="form.MaxViolations" />
-                        </Field>
-                    </div>
-                    <label class="switch">
-                        <InputCheckbox id="d-anti" @bind-Value="form.AntiCheat" />
-                        <span><strong>Anti-cheating watch</strong><small>Warns the student when they leave the quiz tab or window, copy or paste. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="d-shuffle-q" @bind-Value="form.ShuffleQuestions" />
-                        <span><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="d-shuffle-o" @bind-Value="form.ShuffleOptions" />
-                        <span><strong>Shuffle the choices</strong><small>The choices of multiple choice questions change places for every student.</small></span>
-                    </label>
-                    <label class="switch">
-                        <InputCheckbox id="d-show" @bind-Value="form.ShowResult" />
-                        <span><strong>Show the result right away</strong><small>The student sees their score and the right answers after handing in.</small></span>
-                    </label>
-                </fieldset>
+                <QuizSettings IdPrefix="d" Note="@(item.Questions == 0 ? "This quiz has no questions yet. Write them under its course; the due date is saved either way." : null)"
+                              @bind-TimeLimit="form.TimeLimit" @bind-MaxViolations="form.MaxViolations" @bind-AntiCheat="form.AntiCheat"
+                              @bind-ShuffleQuestions="form.ShuffleQuestions" @bind-ShuffleOptions="form.ShuffleOptions" @bind-ShowResult="form.ShowResult" />
             }
 
             <div class="modal-actions">

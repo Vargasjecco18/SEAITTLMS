@@ -196,18 +196,15 @@ a.chip:hover {
 }
 
 /* ---------- week ---------- */
+/* The week is always seven columns side by side, from Sunday to Saturday. When the screen is too narrow for them the week scrolls sideways. */
 .week {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(7, minmax(8.5rem, 1fr));
+    align-items: start;
     gap: 0.75rem;
+    padding-bottom: 0.5rem;
+    overflow-x: auto;
     animation: fade 0.25s ease-out;
-}
-
-@media (min-width: 900px) {
-    .week {
-        grid-template-columns: repeat(7, minmax(0, 1fr));
-        align-items: start;
-    }
 }
 
 .column {
@@ -328,4 +325,11 @@ html.dragging-item .column {
     background: var(--brand-soft);
     outline: 2px solid var(--brand);
     outline-offset: -2px;
+}
+
+.range-label {
+    min-width: 8.5rem;
+    padding: 0 0.4rem;
+    text-align: center;
+    font-size: 1rem;
 }

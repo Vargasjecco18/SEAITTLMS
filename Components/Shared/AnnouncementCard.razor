@@ -1,0 +1,54 @@
+@* One announcement as a card: the icon of its category, the title, the text, who it is for and who wrote it. With OnEdit and OnDelete set it
+   has the buttons to change or delete it (for the person who manages it). *@
+<article class="notice @Item.Category" aria-label="@Item.Title">
+    <span class="icon" aria-hidden="true"><Icon Name="@AnnouncementCategories.Icon(Item.Category)" Size="20" /></span>
+    <div class="main">
+        <div class="top">
+            <strong class="title">@Item.Title</strong>
+            <AnnouncementTag Category="@Item.Category" />
+        </div>
+        <p class="text">@Item.Body</p>
+        <div class="meta">
+            <span>@AudienceText</span>
+            @if (Item.ExpiresOn is { } until)
+            {
+                <Badge Tone="@(until < Today ? Tone.Neutral : Tone.Warning)">@(until < Today ? "Ended " : "Until ")@PhilippineTime.FormatDate(until)</Badge>
+            }
+            <span class="who">@Item.AuthorName · @PhilippineTime.FormatDateTime(Item.CreatedAtUtc)</span>
+        </div>
+        @if (OnEdit.HasDelegate || OnDelete.HasDelegate)
+        {
+            <div class="actions">
+                @if (OnEdit.HasDelegate)
+                {
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {Item.Title}")" OnClick="() => OnEdit.InvokeAsync(Item)">Edit</Button>
+                }
+                @if (OnDelete.HasDelegate)
+                {
+                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" Title="@($"Delete {Item.Title}")" OnClick="() => OnDelete.InvokeAsync(Item)">Delete</Button>
+                }
+            </div>
+        }
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public AnnouncementView Item { get; set; } = null!;
+
+    /// <summary>Today (a Philippine date), to tell a notice that has ended.</summary>
+    [Parameter] public DateOnly Today { get; set; }
+
+    [Parameter] public EventCallback<AnnouncementView> OnEdit { get; set; }
+
+    [Parameter] public EventCallback<AnnouncementView> OnDelete { get; set; }
+
+    private string AudienceText =>
+        Item.CourseName is { } course ? $"{course} · {Item.SectionLabel}"
+        : Item.SectionLabel is { } section ? $"Students of {section}"
+        : Item.Audience switch
+        {
+            AnnouncementAudiences.Students => "The students",
+            AnnouncementAudiences.Teachers => "The teachers",
+            _ => "Everybody",
+        };
+}

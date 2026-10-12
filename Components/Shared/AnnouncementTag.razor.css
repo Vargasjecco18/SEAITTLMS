@@ -1,0 +1,19 @@
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    font-size: 0.75rem;
+    font-weight: 650;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.Exam { --tag-bg: var(--rose-soft); --tag-text: var(--rose); }
+.Holiday { --tag-bg: var(--green-soft); --tag-text: var(--green); }
+.SemesterBreak { --tag-bg: var(--violet-soft); --tag-text: var(--violet); }
+.TeachersMeeting { --tag-bg: var(--amber-soft); --tag-text: var(--amber); }
+.Other { --tag-bg: var(--slate-soft); --tag-text: var(--slate); }
