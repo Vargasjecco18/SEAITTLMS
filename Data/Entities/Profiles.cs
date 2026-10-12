@@ -116,5 +116,11 @@ public class GuidanceCounselor : StaffContactProfile;
 
 public class Administrator : StaffContactProfile;
 
-/// <summary>Sets up the academic side of the school (school years, courses, sections), sends course materials to the teachers and runs the teacher evaluation.</summary>
+/// <summary>Sets up the academic side of the school (school years, courses, sections), writes the announcements and runs the teacher evaluation.</summary>
 public class AcademicCoordinator : StaffContactProfile;
+
+/// <summary>
+/// Of the central team: prepares the syllabus, modules and activities of each course, sends them to the teachers, and watches whether the teachers
+/// and the students opened them.
+/// </summary>
+public class AcademicProvider : StaffContactProfile;

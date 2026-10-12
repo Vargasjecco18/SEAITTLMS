@@ -74,7 +74,7 @@ public sealed record ItemForEdit(
 
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
-    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromCoordinator = false);
+    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false);
 
 public sealed record TeacherSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string? Schedule, int Students, IReadOnlyList<TeacherModule> Modules);
@@ -133,13 +133,37 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             })
             .ToListAsync(ct);
 
-        var fromCoordinator = (await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == assignmentId).Select(d => d.ModuleId).ToListAsync(ct)).ToHashSet();
+        var fromProvider = (await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == assignmentId).Select(d => d.ModuleId).ToListAsync(ct)).ToHashSet();
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
-            m.IsSyllabus, fromCoordinator.Contains(m.Id))).ToList();
+            m.IsSyllabus, fromProvider.Contains(m.Id))).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Schedule, students, result);
+    }
+
+    /// <summary>
+    /// Remembers that the teacher opened a module the academic provider sent them (its text, one of its activities, or they posted it). Only the first time
+    /// is kept; a module the teacher wrote themselves has no delivery, so nothing happens.
+    /// </summary>
+    public async Task MarkDeliveryOpenedAsync(int teacherId, int moduleId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = Now;
+        await db.MaterialDeliveries
+            .Where(d => d.ModuleId == moduleId && d.OpenedAtUtc == null && d.Assignment.TeacherId == teacherId)
+            .ExecuteUpdateAsync(set => set.SetProperty(d => d.OpenedAtUtc, (DateTime?)now).SetProperty(d => d.UpdatedAtUtc, now), ct);
+    }
+
+    /// <summary>The same for an activity, a quiz or a task performance of the teacher (it belongs to a module).</summary>
+    public async Task MarkItemOpenedAsync(int teacherId, int itemId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var moduleId = await db.ModuleItems.AsNoTracking().Where(i => i.Id == itemId && i.Module.Assignment.TeacherId == teacherId).Select(i => (int?)i.ModuleId).FirstOrDefaultAsync(ct);
+        if (moduleId is { } id)
+        {
+            await MarkDeliveryOpenedAsync(teacherId, id, ct);
+        }
     }
 
     /// <summary>One item of the teacher with what its edit box needs, or null when it is not theirs.</summary>
@@ -208,6 +232,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         module.Body = Clean(input.Body);
         module.LinkUrl = Clean(input.LinkUrl);
         await db.SaveChangesAsync(ct);
+        await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
         return ServiceResult.Ok("The module was saved.");
     }
 
@@ -237,6 +262,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         module.VisibleFromUtc = atUtc ?? now;
         module.NotifiedAtUtc = null;
         await db.SaveChangesAsync(ct);
+        await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
 
         if (atUtc is null)
         {
@@ -300,6 +326,8 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         {
             return ServiceResult.Fail("This module was not found.");
         }
+
+        await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
 
         ModuleItem item;
         var isNew = itemId is null;

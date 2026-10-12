@@ -112,6 +112,32 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             questions, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShowResult, s?.ViolationCount ?? 0, s?.AutoSubmitReason);
     }
 
+    /// <summary>Remembers that the student opened the page of an activity, a quiz or a task performance (the first time only).</summary>
+    public async Task RecordViewAsync(int studentId, int itemId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (await db.ItemViews.AnyAsync(v => v.ItemId == itemId && v.StudentId == studentId, ct))
+        {
+            return;
+        }
+
+        var context = await ItemAccess.ForStudentAsync(db, studentId, itemId, Now, tracking: false, ct);
+        if (context is null)
+        {
+            return;
+        }
+
+        db.ItemViews.Add(new ItemView { ItemId = itemId, StudentId = studentId, FirstOpenedAtUtc = Now });
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Opened twice at the same moment: it is remembered either way.
+        }
+    }
+
     /// <summary>Hands in an activity or a task performance. It can be handed in again until the teacher has graded it. Late work is marked late.</summary>
     public async Task<ServiceResult> SubmitAsync(int studentId, int itemId, string? answerText, string? linkUrl, CancellationToken ct = default)
     {

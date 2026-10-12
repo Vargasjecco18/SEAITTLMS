@@ -1,0 +1,74 @@
+.steps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    list-style: none;
+}
+
+@media (min-width: 1000px) {
+    .steps {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.7rem;
+    align-items: center;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.step-dot {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.step.done .step-dot {
+    background: color-mix(in srgb, var(--green, #16a34a) 18%, transparent);
+    color: var(--green, #16a34a);
+}
+
+.step-title {
+    font-weight: 650;
+}
+
+.step-sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.step.todo .step-title {
+    color: var(--text-muted);
+}
+
+.items li {
+    gap: 1rem;
+}
+
+.items ::deep .progress {
+    min-width: 8rem;
+}
+
+.check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.bar-wide ::deep .progress {
+    display: flex;
+    width: 100%;
+}

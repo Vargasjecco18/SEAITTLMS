@@ -67,10 +67,11 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
     private static string[] AllowedRoles(string role) => role switch
     {
         AppRoles.Student => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar],
-        AppRoles.Teacher => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator],
-        AppRoles.Registrar => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Admin, AppRoles.AcademicCoordinator],
-        AppRoles.AcademicCoordinator => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator],
-        _ => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator],
+        AppRoles.Teacher => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
+        AppRoles.Registrar => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
+        AppRoles.AcademicCoordinator => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
+        AppRoles.AcademicProvider => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
+        _ => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
     };
 
     /// <summary>The people this person may write to (active accounts only), by name, optionally filtered by a search text.</summary>

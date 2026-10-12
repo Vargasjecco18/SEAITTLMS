@@ -156,6 +156,11 @@ else
     protected override async Task OnParametersSetAsync()
     {
         teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        if (teacherId != 0)
+        {
+            await Modules.MarkItemOpenedAsync(teacherId, ItemId);
+        }
+
         data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
         if (data is { Kind: ItemKinds.Quiz })
         {

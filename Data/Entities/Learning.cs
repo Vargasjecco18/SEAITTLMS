@@ -37,7 +37,7 @@ public class LearningModule : AuditableEntity
     /// <summary>A link to a file or a video the lesson uses.</summary>
     public string? LinkUrl { get; set; }
 
-    /// <summary>The syllabus of the course (sent by the academic coordinator or written by the teacher). It has no activities.</summary>
+    /// <summary>The syllabus of the course (sent by the academic provider or written by the teacher). It has no activities.</summary>
     public bool IsSyllabus { get; set; }
 
     /// <summary>The order in the subject, 1, 2, 3 ...</summary>
@@ -207,6 +207,18 @@ public class ModuleView
 {
     public int ModuleId { get; set; }
     public LearningModule Module { get; set; } = null!;
+
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    public DateTime FirstOpenedAtUtc { get; set; }
+}
+
+/// <summary>That a student has opened an activity, a quiz or a task performance (its page). The academic provider reads it to see what the students opened.</summary>
+public class ItemView
+{
+    public int ItemId { get; set; }
+    public ModuleItem Item { get; set; } = null!;
 
     public int StudentId { get; set; }
     public Student Student { get; set; } = null!;

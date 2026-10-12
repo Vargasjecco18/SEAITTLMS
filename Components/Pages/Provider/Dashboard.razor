@@ -1,0 +1,166 @@
+@page "/provider"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
+@inject CurrentUser Me
+@inject ProviderService Provider
+@inject TimeProvider Clock
+
+<PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
+<AutoRefresh />
+
+@{
+    var now = PhilippineTime.Now(Clock);
+}
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "provider"}")"
+            Subtitle="@($"{PhilippineTime.FormatLongDate(now)}. What you sent to the teachers, and who opened it.")"
+            IconName="layout-dashboard">
+    <ButtonLink Href="provider/library" IconName="folder-open">Course library</ButtonLink>
+</PageHeader>
+
+@if (data is null)
+{
+    <p class="muted">Loading…</p>
+}
+else
+{
+    <div class="kpis">
+        <StatCard Label="Sent to the teachers" Value="@data.Sent" IconName="send" Accent="AccentColor.Blue"
+                  Hint="@(data.Sent == 0 ? "Nothing sent yet" : $"{ProviderUi.Plural(data.TeachersReached, "teacher", "teachers")} of {data.TeachersWithCourses:N0}")" Href="provider/tracking" />
+        <StatCard Label="Opened by the teachers" Text="@(data.Sent == 0 ? "—" : $"{data.TeacherOpenedPercent}%")" IconName="eye"
+                  Accent="@(data.Sent == 0 ? AccentColor.Slate : data.TeacherOpenedPercent >= 80 ? AccentColor.Green : data.TeacherOpenedPercent >= 50 ? AccentColor.Amber : AccentColor.Rose)"
+                  Hint="@(data.NotOpened == 0 ? "None waiting" : $"{data.NotOpened:N0} not opened yet")" Href="provider/tracking?state=NotOpened" />
+        <StatCard Label="Posted to the students" Text="@(data.Sent == 0 ? "—" : $"{data.PostedPercent}%")" IconName="circle-check" Accent="AccentColor.Violet"
+                  Hint="@($"{data.Posted:N0} posted · {data.Scheduled:N0} scheduled")" Href="provider/tracking?state=Posted" />
+        <StatCard Label="Opened by the students" Text="@(data.StudentModuleExpected == 0 ? "—" : $"{data.StudentModulePercent}%")" IconName="users-round" Accent="AccentColor.Amber"
+                  Hint="Of the modules posted" Href="provider/analytics" />
+    </div>
+
+    <div class="pcards">
+        <Card Title="Waiting to be opened" IconName="mail">
+            @if (data.Waiting.Count == 0)
+            {
+                <EmptyState IconName="circle-check" Title="Nothing is waiting">
+                    <p>@(data.Sent == 0 ? "Send a syllabus or a module to the teachers of a course and it appears here until they open it." : "Every teacher has opened what was sent to them.")</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var row in data.Waiting)
+                    {
+                        <li>
+                            <a href="provider/tracking/@row.DeliveryId">
+                                <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
+                                <span class="plist-sub">@row.TeacherName · @row.SectionLabel · sent @ProviderUi.Ago(row.SentAtUtc, nowUtc)</span>
+                            </a>
+                            @if ((nowUtc - row.SentAtUtc).TotalDays >= 3)
+                            {
+                                <Badge Tone="Tone.Danger">@((int)(nowUtc - row.SentAtUtc).TotalDays) days</Badge>
+                            }
+                            else
+                            {
+                                <Badge Tone="Tone.Warning">Not opened</Badge>
+                            }
+                        </li>
+                    }
+                </ul>
+                <p class="more-link"><a href="provider/tracking?state=NotOpened">All @data.NotOpened.ToString("N0") waiting <Icon Name="arrow-right" Size="14" /></a></p>
+            }
+        </Card>
+
+        <Card Title="Opened lately" IconName="eye">
+            @if (data.RecentlyOpened.Count == 0)
+            {
+                <EmptyState IconName="eye" Title="Nothing opened yet">
+                    <p>When a teacher reads, edits or posts what you sent, it shows here.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var row in data.RecentlyOpened)
+                    {
+                        <li>
+                            <a href="provider/tracking/@row.DeliveryId">
+                                <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
+                                <span class="plist-sub">@row.TeacherName · @row.SectionLabel · opened @ProviderUi.Ago(row.OpenedAtUtc!.Value, nowUtc)</span>
+                            </a>
+                            <Badge Tone="@ProviderUi.StateTone(row.State)">@DeliveryStates.Display(row.State)</Badge>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="What the students opened" IconName="users-round">
+            @if (data.StudentModuleExpected == 0)
+            {
+                <EmptyState IconName="users-round" Title="Nothing is posted to the students yet">
+                    <p>The numbers start when the teachers post what you sent.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="rates">
+                    <div>
+                        <span class="rate-label">Modules and syllabi</span>
+                        <ProgressBar Percent="data.StudentModulePercent" Title="@($"{data.StudentModuleOpens:N0} of {data.StudentModuleExpected:N0} opened")" Class="rate-bar" />
+                        <span class="rate-sub">@data.StudentModuleOpens.ToString("N0") of @data.StudentModuleExpected.ToString("N0") opened</span>
+                    </div>
+                    <div>
+                        <span class="rate-label">Activities, quizzes and tasks</span>
+                        <ProgressBar Percent="data.StudentItemPercent" Title="@($"{data.StudentItemOpens:N0} of {data.StudentItemExpected:N0} opened")" Class="rate-bar" />
+                        <span class="rate-sub">@data.StudentItemOpens.ToString("N0") of @data.StudentItemExpected.ToString("N0") opened</span>
+                    </div>
+                </div>
+                <p class="more-link"><a href="provider/analytics">Open the analytics <Icon Name="arrow-right" Size="14" /></a></p>
+            }
+        </Card>
+
+        <Card Title="Courses still without a syllabus" IconName="book-marked">
+            @if (data.WithoutSyllabus.Count == 0)
+            {
+                <EmptyState IconName="circle-check" Title="Every course has a syllabus">
+                    <p>The courses that have a teacher this year all have a syllabus in the library.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var c in data.WithoutSyllabus)
+                    {
+                        <li>
+                            <a href="provider/library/@c.SubjectId">
+                                <span class="plist-title">@c.Name</span>
+                                <span class="plist-sub">@ProviderUi.Plural(c.Teachers, "teacher's course", "teachers' courses")</span>
+                            </a>
+                            <ButtonLink Href="@($"provider/library/{c.SubjectId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="plus">Add</ButtonLink>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="Quick links" IconName="sparkles" Class="wide">
+            <div class="quick">
+                <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary" IconName="folder-open">Course library</ButtonLink>
+                <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary" IconName="eye">Tracking</ButtonLink>
+                <ButtonLink Href="provider/users" Variant="ButtonVariant.Secondary" IconName="users-round">Users</ButtonLink>
+                <ButtonLink Href="provider/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
+            </div>
+        </Card>
+    </div>
+}
+
+@code {
+    private string? name;
+    private ProviderOverview? data;
+    private DateTime nowUtc;
+
+    protected override async Task OnInitializedAsync()
+    {
+        name = (await Me.GetAsync())?.Name.Split(' ').FirstOrDefault();
+        nowUtc = Clock.GetUtcNow().UtcDateTime;
+        data = await Provider.GetOverviewAsync();
+    }
+}

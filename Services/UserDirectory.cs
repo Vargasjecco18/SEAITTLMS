@@ -50,6 +50,11 @@ public static class UserDirectory
             result[s.UserId] = new(s.UserId, FullName(s.FirstName, s.MiddleName, s.LastName, s.NameExtension), AppRoles.AcademicCoordinator);
         }
 
+        foreach (var s in await db.AcademicProviders.AsNoTracking().Where(x => ids.Contains(x.UserId)).Select(x => new { x.UserId, x.FirstName, x.MiddleName, x.LastName, x.NameExtension }).ToListAsync(ct))
+        {
+            result[s.UserId] = new(s.UserId, FullName(s.FirstName, s.MiddleName, s.LastName, s.NameExtension), AppRoles.AcademicProvider);
+        }
+
         foreach (var s in await db.Administrators.AsNoTracking().Where(x => ids.Contains(x.UserId)).Select(x => new { x.UserId, x.FirstName, x.MiddleName, x.LastName, x.NameExtension }).ToListAsync(ct))
         {
             result[s.UserId] = new(s.UserId, FullName(s.FirstName, s.MiddleName, s.LastName, s.NameExtension), AppRoles.Admin);

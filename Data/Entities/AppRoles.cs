@@ -12,6 +12,7 @@ public static class AppRoles
     public const string Registrar = "Registrar";
     public const string GuidanceCounselor = "GuidanceCounselor";
     public const string AcademicCoordinator = "AcademicCoordinator";
+    public const string AcademicProvider = "AcademicProvider";
 
     public const int AdminId = 1;
     public const int TeacherId = 2;
@@ -19,6 +20,7 @@ public static class AppRoles
     public const int RegistrarId = 4;
     public const int GuidanceCounselorId = 5;
     public const int AcademicCoordinatorId = 6;
+    public const int AcademicProviderId = 7;
 
     public static readonly IReadOnlyDictionary<string, int> Ids = new Dictionary<string, int>
     {
@@ -28,6 +30,7 @@ public static class AppRoles
         [Registrar] = RegistrarId,
         [GuidanceCounselor] = GuidanceCounselorId,
         [AcademicCoordinator] = AcademicCoordinatorId,
+        [AcademicProvider] = AcademicProviderId,
     };
 
     /// <summary>The name to show on screen ("Guidance Counselor" instead of "GuidanceCounselor").</summary>
@@ -35,9 +38,10 @@ public static class AppRoles
     {
         GuidanceCounselor => "Guidance Counselor",
         AcademicCoordinator => "Academic Coordinator",
+        AcademicProvider => "Academic Provider",
         _ => role ?? "",
     };
 
-    /// <summary>The school has exactly one administrator, one registrar and one guidance counselor, so no more can be added. (Academic coordinators can be several.)</summary>
+    /// <summary>The school has exactly one administrator, one registrar and one guidance counselor, so no more can be added. (Academic coordinators and academic providers can be several.)</summary>
     public static bool OnlyOneAllowed(string? role) => role is Admin or Registrar or GuidanceCounselor;
 }

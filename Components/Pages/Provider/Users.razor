@@ -1,0 +1,214 @@
+@page "/provider/users"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
+@rendermode InteractiveServer
+@inject ProviderService Provider
+@inject TimeProvider Clock
+
+<PageTitle>Users · SEAITT e-LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+<PageHeader Title="Users"
+            Subtitle="The teachers you send to and the students who read it: who opened what, who is slow, and who has not opened anything."
+            IconName="users-round">
+    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
+</PageHeader>
+
+<PillTabs Items="Tabs" Selected="@tab" SelectedChanged="TabChangedAsync" Label="Teachers or students" />
+
+<Card>
+    <form class="filter-bar" @onsubmit="ApplyAsync">
+        <Field For="user-search" Label="Search" Class="grow">
+            <input id="user-search" type="search" class="input" maxlength="100" placeholder="@(tab == "teachers" ? "A teacher" : "A student or a section")" @bind="search" @bind:event="oninput" />
+        </Field>
+        <Button Type="submit" IconName="search">Search</Button>
+    </form>
+
+    @if (tab == "teachers")
+    {
+        @if (teachers is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (teachers.Count == 0)
+        {
+            <EmptyState IconName="presentation" Title="No teacher found">
+                <p>Teachers appear here when they have a course this school year.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Teacher</th>
+                            <th scope="col" class="num">Courses</th>
+                            <th scope="col" class="num">Received</th>
+                            <th scope="col" class="bar-cell">Opened</th>
+                            <th scope="col" class="num">Posted</th>
+                            <th scope="col">Waiting</th>
+                            <th scope="col" class="col-more">Last opened</th>
+                            <th scope="col" class="col-more">Opens in</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in teachers)
+                        {
+                            <tr>
+                                <td><a class="name-link" href="provider/users/@t.UserId">@t.Name</a></td>
+                                <td class="num">@t.Courses</td>
+                                <td class="num">@t.Received</td>
+                                <td class="bar-cell">
+                                    @if (t.OpenedPercent is { } op)
+                                    {
+                                        <ProgressBar Percent="op" Title="@($"{t.Opened} of {t.Received} opened")" />
+                                    }
+                                    else
+                                    {
+                                        <span class="na">Nothing sent</span>
+                                    }
+                                </td>
+                                <td class="num">@t.Posted</td>
+                                <td>
+                                    @if (t.Waiting == 0)
+                                    {
+                                        <span class="na">—</span>
+                                    }
+                                    else
+                                    {
+                                        <Badge Tone="@(t.LongestWaitingDays >= 3 ? Tone.Danger : Tone.Warning)">@t.Waiting waiting</Badge>
+                                        <span class="muted-line">the oldest @(t.LongestWaitingDays is { } d && d > 0 ? $"{d} days" : "today")</span>
+                                    }
+                                </td>
+                                <td class="col-more">@(t.LastOpenedAtUtc is { } last ? PhilippineTime.FormatDate(last) : "—")</td>
+                                <td class="col-more">@ProviderUi.Duration(t.AverageHoursToOpen)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted foot">@teachers.Count.ToString("N0") @(teachers.Count == 1 ? "teacher" : "teachers"). “Opened” counts a teacher who read it, edited it, opened one of its activities, or posted it.</p>
+        }
+    }
+    else
+    {
+        @if (students is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (students.Rows.Count == 0)
+        {
+            <EmptyState IconName="graduation-cap" Title="No student found">
+                <p>Students appear here when a teacher has posted something you sent to their course.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">Section</th>
+                            <th scope="col" class="num">Posted to them</th>
+                            <th scope="col" class="bar-cell">Opened</th>
+                            <th scope="col" class="col-more">Last opened</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in students.Rows)
+                        {
+                            <tr>
+                                <td><a class="name-link" href="provider/users/@s.UserId">@s.Name</a></td>
+                                <td>@s.SectionLabel</td>
+                                <td class="num">@s.Available</td>
+                                <td class="bar-cell">
+                                    @if (s.OpenedPercent is { } sp)
+                                    {
+                                        <ProgressBar Percent="sp" Title="@($"{s.Opened} of {s.Available} opened")" />
+                                        <span class="muted-line">@s.Opened of @s.Available</span>
+                                    }
+                                </td>
+                                <td class="col-more">@(s.LastOpenedAtUtc is { } last ? PhilippineTime.FormatDate(last) : "Never")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <nav class="pager" aria-label="Pages of the students">
+                <span class="muted">@students.Total.ToString("N0") @(students.Total == 1 ? "student" : "students"), those who opened the least first</span>
+                <span class="pager-buttons">
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(students.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
+                    <span>Page @students.Page of @StudentPages</span>
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(students.Page >= StudentPages)" OnClick="NextAsync">Next</Button>
+                </span>
+            </nav>
+        }
+    }
+</Card>
+
+@code {
+    private string tab = "teachers";
+    private string search = "";
+    private int pageNumber = 1;
+    private IReadOnlyList<TeacherTrack>? teachers;
+    private StudentTrackPage? students;
+
+    private static readonly IReadOnlyList<PillTabs.Tab> Tabs =
+    [
+        new("teachers", "Teachers", "presentation"),
+        new("students", "Students", "graduation-cap"),
+    ];
+
+    [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
+
+    private int StudentPages => students is null ? 1 : Math.Max(1, (int)Math.Ceiling(students.Total / (double)students.PageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        tab = TabQuery == "students" ? "students" : "teachers";
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (tab == "teachers")
+        {
+            teachers = await Provider.ListTeachersAsync(search);
+        }
+        else
+        {
+            students = await Provider.ListStudentsAsync(search, pageNumber);
+            pageNumber = students.Page;
+        }
+    }
+
+    private async Task TabChangedAsync(string? key)
+    {
+        tab = key == "students" ? "students" : "teachers";
+        search = "";
+        pageNumber = 1;
+        teachers = null;
+        students = null;
+        await ReloadAsync();
+    }
+
+    private async Task ApplyAsync()
+    {
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task PreviousAsync()
+    {
+        pageNumber = Math.Max(1, pageNumber - 1);
+        await ReloadAsync();
+    }
+
+    private async Task NextAsync()
+    {
+        pageNumber++;
+        await ReloadAsync();
+    }
+}

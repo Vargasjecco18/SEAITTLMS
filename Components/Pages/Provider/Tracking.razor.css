@@ -1,0 +1,13 @@
+.tracking .what {
+    min-width: 12rem;
+}
+
+.tracking ::deep .badge {
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .col-more {
+        display: none;
+    }
+}

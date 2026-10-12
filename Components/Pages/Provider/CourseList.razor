@@ -1,16 +1,16 @@
-@page "/coordinator/materials"
-@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@page "/provider/library"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
 @inject MaterialService Library
 
-<PageTitle>Course materials · SEAITT e-LMS</PageTitle>
+<PageTitle>Course library · SEAITT e-LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Course materials"
+<PageHeader Title="Course library"
             Subtitle="Prepare the syllabus, modules, activities, quizzes and task performances of a course, then send them to the teachers who teach it."
             IconName="folder-open" />
 
 <Card>
-    <form class="toolbar" role="search" method="get" action="coordinator/materials">
+    <form class="toolbar" role="search" method="get" action="provider/library">
         <div class="search-box">
             <Icon Name="search" Size="18" Class="search-icon" />
             <input type="search" name="q" aria-label="Search courses" placeholder="Course name or code" autocomplete="off" value="@Q" />
@@ -18,7 +18,7 @@
         <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
         @if (!string.IsNullOrWhiteSpace(Q))
         {
-            <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Ghost">Clear</ButtonLink>
+            <ButtonLink Href="provider/library" Variant="ButtonVariant.Ghost">Clear</ButtonLink>
         }
         <span class="result-count">@(courses is null ? "" : courses.Count == 1 ? "1 course" : $"{courses.Count:N0} courses")</span>
     </form>
@@ -54,7 +54,7 @@
                     {
                         <tr>
                             <td>
-                                <a class="name" href="coordinator/materials/@course.SubjectId">@course.Name</a>
+                                <a class="name" href="provider/library/@course.SubjectId">@course.Name</a>
                                 <span class="sub">@course.Code</span>
                             </td>
                             <td>
@@ -86,7 +86,7 @@
                                 }
                             </td>
                             <td class="col-actions">
-                                <ButtonLink Href="@($"coordinator/materials/{course.SubjectId}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
+                                <ButtonLink Href="@($"provider/library/{course.SubjectId}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
                             </td>
                         </tr>
                     }

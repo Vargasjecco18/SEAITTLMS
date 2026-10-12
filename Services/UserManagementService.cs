@@ -399,6 +399,9 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             case AppRoles.AcademicCoordinator:
                 return await StaffPageAsync(db.AcademicCoordinators.AsNoTracking(), role, tokens, page, pageSize, ct);
 
+            case AppRoles.AcademicProvider:
+                return await StaffPageAsync(db.AcademicProviders.AsNoTracking(), role, tokens, page, pageSize, ct);
+
             case AppRoles.Admin:
                 return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, page, pageSize, ct);
 
@@ -766,6 +769,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
         AppRoles.Registrar => await db.Registrars.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.GuidanceCounselor => await db.GuidanceCounselors.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.AcademicCoordinator => await db.AcademicCoordinators.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
+        AppRoles.AcademicProvider => await db.AcademicProviders.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.Admin => await db.Administrators.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         _ => false,
     };
@@ -814,6 +818,7 @@ internal static class UserQueryExtensions
         .Include(u => u.Administrator)
         .Include(u => u.GuidanceCounselor)
         .Include(u => u.AcademicCoordinator)
+        .Include(u => u.AcademicProvider)
         .Include(u => u.Registrar)
         .Include(u => u.Teacher)
         .Include(u => u.Student);

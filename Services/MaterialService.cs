@@ -4,7 +4,7 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-/// <summary>A course in the list of the course materials, with what the coordinator has prepared for it.</summary>
+/// <summary>A course in the list of the course materials, with what the provider has prepared for it.</summary>
 public sealed record MaterialCourseRow(
     int SubjectId, string Code, string Name, bool HasSyllabus, int Modules, int Activities, int Quizzes, int TaskPerformances, int Teachers, int Sent);
 
@@ -24,7 +24,7 @@ public sealed record CourseWithoutSyllabus(int SubjectId, string Name, int Teach
 
 public sealed record RecentDelivery(string SubjectName, string ModuleTitle, string TeacherName, string SectionLabel, bool IsSyllabus, bool Posted, DateTime SentAtUtc);
 
-/// <summary>What the coordinator's dashboard shows about the course materials.</summary>
+/// <summary>What the provider's dashboard shows about the course materials.</summary>
 /// <param name="CoursesTaught">Courses that have a teacher this school year.</param>
 /// <param name="StillDrafts">Modules that were sent and that the teachers have not posted yet.</param>
 public sealed record MaterialOverview(
@@ -43,14 +43,14 @@ public sealed record CourseMaterials(
 public sealed record SendOutcome(int Copied, int Teachers, int Skipped);
 
 /// <summary>
-/// The course materials of the academic coordinator: a library per course (a syllabus, modules and the activities, quizzes and task
+/// The course materials of the academic provider: a library per course (a syllabus, modules and the activities, quizzes and task
 /// performances in them) that is sent to the teachers who teach the course. A teacher gets their own copy as a draft: students
 /// can't see it until the teacher posts it, and the teacher can change everything (when it is posted, the due dates, the text).
-/// Every change checks again, in the database, that the person is an active academic coordinator.
+/// Every change checks again, in the database, that the person is an active academic provider.
 /// </summary>
 public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, NotificationService notifications, TimeProvider clock)
 {
-    private const string CoordinatorOnly = "Only the academic coordinator prepares course materials.";
+    private const string ProviderOnly = "Only the academic provider prepares course materials.";
 
     // ======================================================================= reading
 
@@ -195,9 +195,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, userId, ct))
+        if (!await IsProviderAsync(db, userId, ct))
         {
-            return ServiceResult.Fail(CoordinatorOnly);
+            return ServiceResult.Fail(ProviderOnly);
         }
 
         if (!await db.Subjects.AnyAsync(s => s.Id == subjectId, ct))
@@ -239,9 +239,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     public async Task<ServiceResult> DeleteModuleAsync(int userId, int moduleId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, userId, ct))
+        if (!await IsProviderAsync(db, userId, ct))
         {
-            return ServiceResult.Fail(CoordinatorOnly);
+            return ServiceResult.Fail(ProviderOnly);
         }
 
         var deleted = await db.MaterialModules.Where(m => m.Id == moduleId).ExecuteDeleteAsync(ct);
@@ -262,9 +262,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, userId, ct))
+        if (!await IsProviderAsync(db, userId, ct))
         {
-            return ServiceResult.Fail(CoordinatorOnly);
+            return ServiceResult.Fail(ProviderOnly);
         }
 
         var module = await db.MaterialModules.AsNoTracking().Where(m => m.Id == moduleId).Select(m => new { m.Id, m.IsSyllabus }).FirstOrDefaultAsync(ct);
@@ -315,9 +315,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     public async Task<ServiceResult> DeleteItemAsync(int userId, int itemId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, userId, ct))
+        if (!await IsProviderAsync(db, userId, ct))
         {
-            return ServiceResult.Fail(CoordinatorOnly);
+            return ServiceResult.Fail(ProviderOnly);
         }
 
         var deleted = await db.MaterialItems.Where(i => i.Id == itemId).ExecuteDeleteAsync(ct);
@@ -347,9 +347,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, userId, ct))
+        if (!await IsProviderAsync(db, userId, ct))
         {
-            return ServiceResult.Fail(CoordinatorOnly);
+            return ServiceResult.Fail(ProviderOnly);
         }
 
         var item = await db.MaterialItems.FirstOrDefaultAsync(i => i.Id == itemId && i.Kind == ItemKinds.Quiz, ct);
@@ -401,9 +401,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsCoordinatorAsync(db, userId, ct))
+        if (!await IsProviderAsync(db, userId, ct))
         {
-            return ServiceResult.Fail(CoordinatorOnly);
+            return ServiceResult.Fail(ProviderOnly);
         }
 
         var subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct);
@@ -495,7 +495,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         {
             var list = string.Join(", ", teacher.Titles);
             await notifications.AddAsync(
-                teacher.UserId, "materials", "Course materials from the academic coordinator",
+                teacher.UserId, "materials", "Course materials from the academic provider",
                 $"{subject} · {teacher.Section}: {list}. They are drafts: set when to post them and the due dates.",
                 $"teacher/subjects/{teacher.AssignmentId}", ct);
         }
@@ -513,8 +513,8 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
     // ======================================================================= helpers
 
-    private static async Task<bool> IsCoordinatorAsync(AppDbContext db, int userId, CancellationToken ct) =>
-        await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
+    private static async Task<bool> IsProviderAsync(AppDbContext db, int userId, CancellationToken ct) =>
+        await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicProviderId, ct);
 
     /// <summary>The school year of the current term, or the latest school year when no term is current.</summary>
     internal static async Task<int?> CurrentYearIdAsync(AppDbContext db, CancellationToken ct) =>

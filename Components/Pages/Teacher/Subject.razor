@@ -34,7 +34,7 @@ else
 
     <p class="hint-line">
         <Icon Name="eye-off" Size="16" />
-        <span>A new module is a <strong>draft</strong>: students can't see it until you post it. Post it now, or schedule the time it appears. Materials the academic coordinator sent you are drafts too: change the text and the due dates, then post them.</span>
+        <span>A new module is a <strong>draft</strong>: students can't see it until you post it. Post it now, or schedule the time it appears. Materials the academic provider sent you are drafts too: change the text and the due dates, then post them.</span>
     </p>
 
     @if (subject.Modules.Count == 0)
@@ -64,9 +64,9 @@ else
                                     {
                                         <Badge Tone="Tone.Info">Syllabus</Badge>
                                     }
-                                    @if (module.FromCoordinator)
+                                    @if (module.FromProvider)
                                     {
-                                        <Badge Tone="Tone.Info">From the academic coordinator</Badge>
+                                        <Badge Tone="Tone.Info">From the academic provider</Badge>
                                     }
                                     @if (module.State == Visibility.Posted)
                                     {
@@ -406,8 +406,13 @@ else
         moduleForm = new ModuleInput();
     }
 
-    private void OpenEditModule(TeacherModule module)
+    private async Task OpenEditModule(TeacherModule module)
     {
+        if (module.FromProvider)
+        {
+            await Modules.MarkDeliveryOpenedAsync(teacherId, module.Id);
+        }
+
         formErrors = [];
         editingModuleId = module.Id;
         moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
@@ -518,8 +523,13 @@ else
         itemForm = new ItemForm { Kind = kind, MaxScore = kind == ItemKinds.TaskPerformance ? 100 : 50 };
     }
 
-    private void OpenEditItem(TeacherModule module, TeacherItem item)
+    private async Task OpenEditItem(TeacherModule module, TeacherItem item)
     {
+        if (module.FromProvider)
+        {
+            await Modules.MarkDeliveryOpenedAsync(teacherId, module.Id);
+        }
+
         formErrors = [];
         editingItemId = item.Id;
         itemModuleId = module.Id;

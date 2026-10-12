@@ -32,12 +32,19 @@ public static class PageDirectory
         ],
         AppRoles.AcademicCoordinator =>
         [
-            new("Dashboard", "Materials, evaluations and the school setup at a glance", "coordinator", "layout-dashboard"),
+            new("Dashboard", "Evaluations, announcements and the school setup at a glance", "coordinator", "layout-dashboard"),
             new("Academic setup", "School years, terms, tracks, strands, courses and sections", "coordinator/academic-setup", "school"),
-            new("Course materials", "Syllabus, modules, activities, quizzes and task performances to send to the teachers", "coordinator/materials", "folder-open"),
             new("Teacher evaluation", "Questionnaires for the students about their teachers, with their responses", "coordinator/evaluations", "clipboard-check"),
             new("Announcements", "Write notices for students, teachers or everybody", "coordinator/announcements", "megaphone"),
             new("Analytics", "How the teachers were evaluated", "coordinator/analytics", "chart-column"),
+        ],
+        AppRoles.AcademicProvider =>
+        [
+            new("Dashboard", "What you sent to the teachers, and who opened it", "provider", "layout-dashboard"),
+            new("Course library", "Syllabus, modules, activities, quizzes and task performances to send to the teachers", "provider/library", "folder-open"),
+            new("Tracking", "Every module you sent, and whether the teacher and the students opened it", "provider/tracking", "eye"),
+            new("Users", "The teachers and the students, and what they opened", "provider/users", "users-round"),
+            new("Analytics", "How far what you send gets: teachers, students, courses", "provider/analytics", "chart-column"),
         ],
         AppRoles.Registrar =>
         [

@@ -1,0 +1,191 @@
+@page "/provider/tracking"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
+@rendermode InteractiveServer
+@inject ProviderService Provider
+@inject TimeProvider Clock
+
+<PageTitle>Tracking · SEAITT e-LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+<PageHeader Title="Tracking"
+            Subtitle="Every syllabus and module you sent, with the teacher it went to and what happened: opened, posted, and how many students opened it."
+            IconName="eye">
+    <ButtonLink Href="provider/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
+    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
+</PageHeader>
+
+<PillTabs Items="Tabs" Selected="@state" SelectedChanged="StateChangedAsync" Label="State of what was sent" />
+
+<Card>
+    <form class="filter-bar" @onsubmit="ApplyAsync">
+        <Field For="track-search" Label="Search" Class="grow">
+            <input id="track-search" type="search" class="input" maxlength="100" placeholder="A course, a teacher, a section or a module" @bind="search" @bind:event="oninput" />
+        </Field>
+        <Field For="track-kind" Label="What">
+            <select id="track-kind" class="input" @bind="kind" @bind:after="ApplyAsync">
+                <option value="">Syllabi and modules</option>
+                <option value="Syllabus">Syllabi only</option>
+                <option value="Module">Modules only</option>
+            </select>
+        </Field>
+        <Button Type="submit" IconName="search">Search</Button>
+    </form>
+
+    @if (data is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (data.Rows.Count == 0)
+    {
+        <EmptyState IconName="eye" Title="Nothing here">
+            <p>@(data.Total == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrEmpty(state) && string.IsNullOrEmpty(kind) ? "Nothing was sent to the teachers yet. Open the Course library, choose a course and press “Send to teachers”." : "Nothing matches. Change the state or the words you searched.")</p>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="data-wrap">
+            <table class="data-table tracking">
+                <thead>
+                    <tr>
+                        <th scope="col">Sent</th>
+                        <th scope="col">Teacher</th>
+                        <th scope="col">State</th>
+                        <th scope="col" class="bar-cell">Students opened it</th>
+                        <th scope="col" class="bar-cell col-more">Activities opened</th>
+                        <th scope="col"><span class="sr-only">Details</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in data.Rows)
+                    {
+                        <tr>
+                            <td class="what">
+                                <a class="name-link" href="provider/tracking/@row.DeliveryId">@(row.IsSyllabus ? "Syllabus" : row.Title)</a>
+                                <span class="muted-line">@row.SubjectName · @PhilippineTime.FormatDate(row.SentAtUtc)</span>
+                            </td>
+                            <td>
+                                <a class="name-link" href="provider/users/@row.TeacherUserId">@row.TeacherName</a>
+                                <span class="muted-line">@row.SectionLabel</span>
+                            </td>
+                            <td>
+                                <Badge Tone="@ProviderUi.StateTone(row.State)">@DeliveryStates.Display(row.State)</Badge>
+                                @if (row.State != DeliveryStates.NotOpened && row.OpenedAtUtc is { } opened)
+                                {
+                                    <span class="muted-line">@(row.State == DeliveryStates.Posted ? "posted" : "opened") @ProviderUi.Ago(row.State == DeliveryStates.Posted ? row.PostedAtUtc ?? opened : opened, nowUtc)</span>
+                                }
+                                else
+                                {
+                                    <span class="muted-line">sent @ProviderUi.Ago(row.SentAtUtc, nowUtc)</span>
+                                }
+                            </td>
+                            <td class="bar-cell">
+                                @if (row.ModulePercent is { } mp)
+                                {
+                                    <ProgressBar Percent="mp" Title="@($"{row.ModuleOpens} of {row.Audience} students opened it")" />
+                                    <span class="muted-line">@row.ModuleOpens of @row.Audience</span>
+                                }
+                                else
+                                {
+                                    <span class="na">@(row.State == DeliveryStates.Scheduled ? "Not yet: scheduled" : "Not posted yet")</span>
+                                }
+                            </td>
+                            <td class="bar-cell col-more">
+                                @if (row.ItemPercent is { } ip)
+                                {
+                                    <ProgressBar Percent="ip" Title="@($"{row.ItemOpens} of {row.ItemExpected} opens")" />
+                                    <span class="muted-line">@ProviderUi.Plural(row.Items, "activity", "activities")</span>
+                                }
+                                else
+                                {
+                                    <span class="na">@(row.IsPosted ? "No activities" : "—")</span>
+                                }
+                            </td>
+                            <td class="right"><ButtonLink Href="@($"provider/tracking/{row.DeliveryId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="arrow-right" IconAfter="true">Details</ButtonLink></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pager" aria-label="Pages of the list">
+            <span class="muted">@data.Total.ToString("N0") @(data.Total == 1 ? "line" : "lines")</span>
+            <span class="pager-buttons">
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(data.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
+                <span>Page @data.Page of @PageCount</span>
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(data.Page >= PageCount)" OnClick="NextAsync">Next</Button>
+            </span>
+        </nav>
+    }
+</Card>
+
+@code {
+    private TrackingPage? data;
+    private string state = "";
+    private string search = "";
+    private string kind = "";
+    private int pageNumber = 1;
+    private DateTime nowUtc;
+
+    [SupplyParameterFromQuery(Name = "state")] private string? StateQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "q")] private string? SearchQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "kind")] private string? KindQuery { get; set; }
+
+    private int PageCount => data is null ? 1 : Math.Max(1, (int)Math.Ceiling(data.Total / (double)data.PageSize));
+
+    private IReadOnlyList<PillTabs.Tab> Tabs => data is null
+        ? [new("", "All", "list")]
+        :
+        [
+            new("", "All", "list", data.NotOpened + data.Opened + data.Scheduled + data.Posted),
+            new(DeliveryStates.NotOpened, "Not opened", "mail", data.NotOpened),
+            new(DeliveryStates.Opened, "Opened · draft", "eye", data.Opened),
+            new(DeliveryStates.Scheduled, "Scheduled", "calendar-clock", data.Scheduled),
+            new(DeliveryStates.Posted, "Posted", "circle-check", data.Posted),
+        ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (StateQuery is { } wanted && DeliveryStates.All.Contains(wanted))
+        {
+            state = wanted;
+        }
+
+        search = SearchQuery ?? "";
+        kind = KindQuery is "Syllabus" or "Module" ? KindQuery : "";
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        nowUtc = Clock.GetUtcNow().UtcDateTime;
+        data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber));
+        pageNumber = data.Page;
+    }
+
+    private async Task StateChangedAsync(string? key)
+    {
+        state = key ?? "";
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task ApplyAsync()
+    {
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task PreviousAsync()
+    {
+        pageNumber = Math.Max(1, pageNumber - 1);
+        await ReloadAsync();
+    }
+
+    private async Task NextAsync()
+    {
+        pageNumber++;
+        await ReloadAsync();
+    }
+}

@@ -1,5 +1,5 @@
-@page "/coordinator/materials/items/{ItemId:int}/questions"
-@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@page "/provider/library/items/{ItemId:int}/questions"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject MaterialService Library
@@ -15,14 +15,14 @@ else if (info is null || info.Kind != ItemKinds.Quiz || questions is null)
     <Card>
         <EmptyState IconName="file-question" Title="Quiz not found" IsPage="true">
             <p>This quiz was deleted from the library.</p>
-            <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Secondary">Back to the courses</ButtonLink>
+            <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary">Back to the courses</ButtonLink>
         </EmptyState>
     </Card>
 }
 else
 {
     <PageHeader Title="@info.Title" Subtitle="@($"Questions · {info.SubjectName} · {info.ModuleTitle}")" IconName="file-question">
-        <ButtonLink Href="@($"coordinator/materials/{info.SubjectId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
+        <ButtonLink Href="@($"provider/library/{info.SubjectId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />

@@ -1,0 +1,242 @@
+@page "/provider/analytics"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
+@inject ProviderService Provider
+
+<PageTitle>Analytics · SEAITT e-LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+<PageHeader Title="Analytics"
+            Subtitle="How far what you send gets: do the teachers open it and post it, do the students open it, and where it gets stuck."
+            IconName="chart-column">
+    <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary" IconName="eye">Tracking</ButtonLink>
+</PageHeader>
+
+@if (data is null)
+{
+    <p class="muted">Loading…</p>
+}
+else if (data.Sent == 0)
+{
+    <Card>
+        <EmptyState IconName="chart-column" Title="Nothing was sent yet">
+            <p>The analytics start when you send a syllabus or a module to the teachers of a course.</p>
+            <ButtonLink Href="provider/library" IconName="folder-open">Go to the Course library</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="kpis five">
+        <StatCard Label="Opened by the teachers" Text="@($"{data.TeacherOpenedPercent}%")" IconName="eye" Accent="@Level(data.TeacherOpenedPercent)" Hint="@($"of {data.Sent:N0} sent")" />
+        <StatCard Label="Teachers open it in" Text="@ProviderUi.Duration(data.AverageHoursToOpen)" IconName="timer" Accent="AccentColor.Slate" Hint="On average" />
+        <StatCard Label="Posted to the students" Text="@($"{data.PostedPercent}%")" IconName="circle-check" Accent="@Level(data.PostedPercent)" Hint="@(data.AverageHoursToPost is null ? "None posted" : $"after {ProviderUi.Duration(data.AverageHoursToPost)}")" />
+        <StatCard Label="Modules opened by students" Text="@($"{data.StudentModulePercent}%")" IconName="book-open" Accent="@Level(data.StudentModulePercent)" Hint="Syllabi and modules posted" />
+        <StatCard Label="Activities opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Activities, quizzes and tasks" />
+    </div>
+
+    <div class="pcards">
+        <Card Title="Week by week" IconName="calendar-range" Class="wide">
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Week of</th>
+                            <th scope="col" class="num">Sent</th>
+                            <th scope="col" class="bar-cell">Opened by the teachers</th>
+                            <th scope="col" class="bar-cell">Posted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in Weeks)
+                        {
+                            <tr>
+                                <td>@w.WeekStart.ToString("MMM d")</td>
+                                <td class="num">@w.Sent</td>
+                                <td class="bar-cell">
+                                    @if (w.Sent == 0) { <span class="na">—</span> }
+                                    else { <ProgressBar Percent="Pct(w.OpenedByTeacher, w.Sent)" Title="@($"{w.OpenedByTeacher} of {w.Sent}")" /> }
+                                </td>
+                                <td class="bar-cell">
+                                    @if (w.Sent == 0) { <span class="na">—</span> }
+                                    else { <ProgressBar Percent="Pct(w.Posted, w.Sent)" Title="@($"{w.Posted} of {w.Sent}")" /> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+
+        <Card Title="By kind" IconName="layers">
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">What</th>
+                            <th scope="col" class="num">Sent</th>
+                            <th scope="col" class="bar-cell">Students opened</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var k in data.ByKind)
+                        {
+                            <tr>
+                                <td>@k.Kind</td>
+                                <td class="num">@k.Sent</td>
+                                <td class="bar-cell">
+                                    @if (k.Percent is { } kp) { <ProgressBar Percent="kp" Title="@($"{k.Opens:N0} of {k.Expected:N0} opens")" /> }
+                                    else { <span class="na">Not posted yet</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+
+        <Card Title="By section" IconName="users">
+            @if (data.BySection.Count == 0)
+            {
+                <p class="muted">No section has anything posted yet.</p>
+            }
+            else
+            {
+                <div class="data-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Section</th>
+                                <th scope="col" class="num">Students</th>
+                                <th scope="col" class="bar-cell">Opened what was posted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in data.BySection)
+                            {
+                                <tr>
+                                    <td>@s.SectionLabel</td>
+                                    <td class="num">@s.Students</td>
+                                    <td class="bar-cell">
+                                        @if (s.Percent is { } sp) { <ProgressBar Percent="sp" Title="@($"{s.Opens:N0} of {s.Expected:N0} opens")" /> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+
+        <Card Title="By course" IconName="book-open" Class="wide">
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Course</th>
+                            <th scope="col" class="num">Sent</th>
+                            <th scope="col" class="bar-cell">Opened by the teachers</th>
+                            <th scope="col" class="bar-cell col-more">Posted</th>
+                            <th scope="col" class="bar-cell">Modules opened</th>
+                            <th scope="col" class="bar-cell col-more">Activities opened</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in data.ByCourse)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="name-link" href="provider/tracking?q=@Uri.EscapeDataString(c.Name)">@c.Name</a>
+                                    <span class="muted-line">@ProviderUi.Plural(c.Teachers, "teacher", "teachers")</span>
+                                </td>
+                                <td class="num">@c.Sent</td>
+                                <td class="bar-cell"><ProgressBar Percent="c.TeacherOpenedPercent" Title="@($"{c.TeacherOpened} of {c.Sent}")" /></td>
+                                <td class="bar-cell col-more"><ProgressBar Percent="c.PostedPercent" Title="@($"{c.Posted} of {c.Sent}")" /></td>
+                                <td class="bar-cell">
+                                    @if (c.ModulePercent is { } mp) { <ProgressBar Percent="mp" Title="@($"{c.ModuleOpens:N0} of {c.ModuleExpected:N0}")" /> }
+                                    else { <span class="na">Not posted</span> }
+                                </td>
+                                <td class="bar-cell col-more">
+                                    @if (c.ItemPercent is { } ip) { <ProgressBar Percent="ip" Title="@($"{c.ItemOpens:N0} of {c.ItemExpected:N0}")" /> }
+                                    else { <span class="na">—</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+
+        <Card Title="Teachers who have not opened what was sent" IconName="mail">
+            @if (data.SlowestTeachers.Count == 0)
+            {
+                <EmptyState IconName="circle-check" Title="Every teacher opened everything">
+                    <p>Nothing is waiting.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var t in data.SlowestTeachers)
+                    {
+                        <li>
+                            <a href="provider/users/@t.UserId">
+                                <span class="plist-title">@t.Name</span>
+                                <span class="plist-sub">@t.Waiting waiting · the oldest @(t.LongestWaitingDays is { } d && d > 0 ? $"{d} days" : "from today")</span>
+                            </a>
+                            <Badge Tone="@(t.LongestWaitingDays >= 3 ? Tone.Danger : Tone.Warning)">@t.Waiting</Badge>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="Least opened by the students" IconName="eye-off">
+            @if (data.LeastOpened.Count == 0)
+            {
+                <EmptyState IconName="eye-off" Title="Nothing is posted yet">
+                    <p>When the teachers post what you sent, the ones the students open least show here.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var row in data.LeastOpened)
+                    {
+                        <li>
+                            <a href="provider/tracking/@row.DeliveryId">
+                                <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
+                                <span class="plist-sub">@row.TeacherName · @row.SectionLabel · @row.ModuleOpens of @row.Audience opened it</span>
+                            </a>
+                            <Badge Tone="@(row.ModulePercent >= 60 ? Tone.Success : row.ModulePercent >= 30 ? Tone.Warning : Tone.Danger)">@row.ModulePercent%</Badge>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+    </div>
+}
+
+@code {
+    private ProviderAnalytics? data;
+
+    protected override async Task OnInitializedAsync() => data = await Provider.GetAnalyticsAsync();
+
+    // The weeks before the first thing was sent are left out (but the last four always show).
+    private IEnumerable<WeekTrack> Weeks
+    {
+        get
+        {
+            if (data is null)
+            {
+                return [];
+            }
+
+            var first = data.Weekly.ToList().FindIndex(w => w.Sent > 0);
+            return data.Weekly.Skip(Math.Min(first < 0 ? 0 : first, data.Weekly.Count - 4));
+        }
+    }
+
+    private static int Pct(int part, int whole) => whole <= 0 ? 0 : (int)Math.Round(100.0 * part / whole);
+
+    private static AccentColor Level(int percent) => percent >= 75 ? AccentColor.Green : percent >= 40 ? AccentColor.Amber : AccentColor.Rose;
+}

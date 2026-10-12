@@ -30,14 +30,11 @@
         <p class="heading">Academics</p>
 
         <NavItem Href="coordinator" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
-                 Description="Course materials, evaluations and the school setup at a glance."
+                 Description="Evaluations, announcements and the school setup at a glance."
                  Contents="CoordinatorDashboard" />
         <NavItem Href="coordinator/academic-setup" Icon="school" Label="Academic setup"
                  Description="The school year, terms, tracks, strands, courses and sections."
                  Items="CoordinatorSetup" />
-        <NavItem Href="coordinator/materials" Icon="folder-open" Label="Course materials"
-                 Description="The syllabus, modules and activities you send to the teachers."
-                 Contents="CoordinatorMaterials" />
         <NavItem Href="coordinator/evaluations" Icon="clipboard-check" Label="Teacher evaluation"
                  Description="Questionnaires about the teachers, sent to the students."
                  Contents="CoordinatorEvaluations" />
@@ -47,6 +44,26 @@
         <NavItem Href="coordinator/analytics" Icon="chart-column" Label="Analytics"
                  Description="How the teachers were evaluated."
                  Contents="CoordinatorAnalytics" />
+    </AuthorizeView>
+
+    <AuthorizeView Roles="@AppRoles.AcademicProvider">
+        <p class="heading">Central Team</p>
+
+        <NavItem Href="provider" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                 Description="What you sent, and who opened it."
+                 Contents="ProviderDashboard" />
+        <NavItem Href="provider/library" Icon="folder-open" Label="Course library"
+                 Description="The syllabus, modules and activities you send to the teachers."
+                 Contents="ProviderLibrary" />
+        <NavItem Href="provider/tracking" Icon="eye" Label="Tracking"
+                 Description="Every module you sent, and whether it was opened."
+                 Items="ProviderTracking" />
+        <NavItem Href="provider/users" Icon="users-round" Label="Users"
+                 Description="The teachers and the students, and what they opened."
+                 Items="ProviderUsers" />
+        <NavItem Href="provider/analytics" Icon="chart-column" Label="Analytics"
+                 Description="How far what you send gets: teachers, students, courses."
+                 Contents="ProviderAnalytics" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Registrar">
@@ -175,6 +192,7 @@
         new("Registrars", "admin/users/registrars", "clipboard-check"),
         new("Guidance counselors", "admin/users/guidance", "heart-handshake"),
         new("Academic coordinators", "admin/users/coordinators", "clipboard-list"),
+        new("Academic providers", "admin/users/providers", "send"),
         new("Administrators", "admin/users/administrators", "shield-check"),
     ];
 
@@ -203,9 +221,27 @@
         new("Sections", "coordinator/academic-setup/sections", "users"),
     ];
 
-    private static readonly IReadOnlyList<string> CoordinatorDashboard = ["Materials sent and waiting", "Evaluations that are open", "The school setup"];
+    private static readonly IReadOnlyList<string> CoordinatorDashboard = ["Evaluations that are open", "Announcements", "The school setup"];
 
-    private static readonly IReadOnlyList<string> CoordinatorMaterials = ["A course at a time", "The syllabus first", "Modules, activities, quizzes and task performances", "Send to the teachers as drafts"];
+    private static readonly IReadOnlyList<string> ProviderDashboard = ["Sent, opened and posted", "Waiting to be opened", "What the students opened"];
+
+    private static readonly IReadOnlyList<string> ProviderLibrary = ["A course at a time", "The syllabus first", "Modules, activities, quizzes and task performances", "Send to the teachers as drafts"];
+
+    private static readonly IReadOnlyList<NavItem.Sub> ProviderTracking =
+    [
+        new("Not opened", "provider/tracking?state=NotOpened", "mail", "waiting"),
+        new("Opened · draft", "provider/tracking?state=Opened", "eye", "not posted yet"),
+        new("Scheduled", "provider/tracking?state=Scheduled", "calendar-clock"),
+        new("Posted", "provider/tracking?state=Posted", "circle-check", "students can open"),
+    ];
+
+    private static readonly IReadOnlyList<NavItem.Sub> ProviderUsers =
+    [
+        new("Teachers", "provider/users?tab=teachers", "presentation", "opened what you sent"),
+        new("Students", "provider/users?tab=students", "graduation-cap", "opened what was posted"),
+    ];
+
+    private static readonly IReadOnlyList<string> ProviderAnalytics = ["Teachers who open and post", "Students who open", "By course, kind and section", "Week by week"];
 
     private static readonly IReadOnlyList<string> CoordinatorEvaluations = ["Make a questionnaire", "Send it with a due date", "Who has not answered yet"];
 

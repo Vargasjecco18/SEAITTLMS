@@ -1,0 +1,10 @@
+.foot {
+    margin: 1.4rem 0 0;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 900px) {
+    .col-more {
+        display: none;
+    }
+}

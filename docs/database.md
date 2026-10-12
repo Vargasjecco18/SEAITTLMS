@@ -17,7 +17,8 @@ Start the app in Development (`dotnet watch`) and it creates every table, or upg
 | File | Use it when |
 |---|---|
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. |
-| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 12 teachers and 40 students**. It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. The students are named and signed in the way the registrar's enrollment does it (last name + the last 6 digits of the LRN), and have no enrollment yet. |
+| [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 2 academic providers, 13 teachers and 40 students** (easy sign-ins: `vargas@legazpi.seaitt.edu.ph` with `Teacher1`, `delacruz@legazpi.seaitt.edu.ph` with `Student1`, ...). It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. They have no enrollment yet. |
+| [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql) | You want the tables filled with practice data: run it **once**, after the sample accounts. It enrolls the 40 students in six sections, gives the 13 teachers their courses, and adds the provider's library and what it sent (some opened, some waiting, some posted), modules, activities, quizzes, who opened what, grades, attendance, announcements, messages, friends, groups, files, the security log, the settings and a teacher evaluation. It adds nothing if any of the students is enrolled already. |
 
 The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
 creates. It also records the migrations in `__EFMigrationsHistory`, which is why the app doesn't try to create the
@@ -36,6 +37,7 @@ erDiagram
     users ||--o| guidance_counselors : "user_id"
     users ||--o| administrators : "user_id"
     users ||--o| academic_coordinators : "user_id"
+    users ||--o| academic_providers : "user_id"
 
     school_years ||--|{ terms : ""
     school_years ||--o{ sections : ""
@@ -67,6 +69,21 @@ erDiagram
     students ||--o{ submissions : ""
     modules ||--o{ module_views : "opened by"
     students ||--o{ module_views : ""
+    module_items ||--o{ item_views : "opened by"
+    students ||--o{ item_views : ""
+    material_modules ||--o{ material_deliveries : "sent as"
+    teaching_assignments ||--o{ material_deliveries : "to the course"
+    modules ||--o| material_deliveries : "the teacher's copy"
+
+    users ||--o| profile_photos : "picture"
+    users ||--o{ friendships : "asks / is asked"
+    users ||--o{ study_groups : "owns"
+    study_groups ||--o{ study_group_members : ""
+    study_groups ||--o{ group_posts : ""
+    users ||--o{ stored_files : "locker"
+    stored_files ||--|| stored_file_contents : "bytes"
+    stored_files ||--o{ shared_files : "shared with a person, a group or a course"
+    users |o--o{ security_logs : "who"
 
     students ||--o{ referrals : ""
     teaching_assignments |o--o{ referrals : "subject"
@@ -94,9 +111,9 @@ erDiagram
 
 | Table | What it holds |
 |---|---|
-| `roles` | The six fixed roles: Admin (1), Teacher (2), Student (3), Registrar (4), GuidanceCounselor (5), AcademicCoordinator (6). |
+| `roles` | The seven fixed roles: Admin (1), Teacher (2), Student (3), Registrar (4), GuidanceCounselor (5), AcademicCoordinator (6), AcademicProvider (7). |
 | `users` | **Only the login account**: `email` (unique, lower-case), `password_hash`, `phone_number` (E.164, for the future two-factor feature), `role_id`, `is_active`, lockout columns, `security_stamp`. |
-| `students`, `teachers`, `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators` | Who the person is. One table per role, see below. |
+| `students`, `teachers`, `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators`, `academic_providers` | Who the person is. One table per role, see below. |
 
 Each person has **one** `users` row and **one** row in the table that matches their role (`user_id` is unique in every
 one of those tables). Accounts are created through `UserAccountService`, which inserts both rows in one transaction so
@@ -106,7 +123,7 @@ The six role tables have these columns, in this order:
 
 | Table | Columns |
 |---|---|
-| `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `phone_number`, `status`, timestamps |
+| `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators`, `academic_providers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `phone_number`, `status`, timestamps |
 | `teachers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `grade_level`, `track_id`, `strand_id`, `subject_id`, `section_id`, timestamps |
 | `students` | `id`, `user_id`, `lrn`, `first_name`, `middle_name`, `last_name`, `name_extension`, `birth_date`, `sex`, `grade_level`, `track_id`, `strand_id`, `subject_id`, `section_id`, timestamps |
 
@@ -191,7 +208,8 @@ registrar who did it.
 | `module_items` | What a student does in a module: `kind` is `Activity`, `Quiz` or `TaskPerformance`, with `max_score`, `due_at_utc`, an optional `visible_from_utc` of its own (empty = with its module) and, for quizzes, `time_limit_minutes`, `shuffle_questions`, `shuffle_options`, **`anti_cheat`**, `max_violations` and `show_result`. |
 | `quiz_questions` | The questions of a quiz: `kind` (`MultipleChoice`, `TrueFalse`, `ShortAnswer`), `text`, `options_text` (one choice per line), `correct_answer` (for a short answer several accepted answers separated by `\|`) and `points`. |
 | `submissions` | One piece of work per student and item (`unique (item_id, student_id)`): `status` (`InProgress`, `Submitted`, `Graded`), `answer_text`, `link_url`, `score`, `feedback`, `is_late`. For quizzes also the answers and the order of the questions (`answers_json`), and the anti-cheating watch: `violation_count`, `violation_log`, `is_flagged`, `auto_submit_reason` (`time` or `violations`). |
-| `module_views` | That a student has opened a module (so the dashboard can list the ones not opened yet). |
+| `module_views` | That a student has opened a module or a syllabus (so the dashboard can list the ones not opened yet, and the academic provider can see who opened it): `(module_id, student_id)`, `first_opened_at_utc`. |
+| `item_views` | That a student has opened the page of an activity, a quiz or a task performance: `(item_id, student_id)`, `first_opened_at_utc`. The academic provider reads it. |
 | `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
 | `referrals` | A student sent to the guidance counselor: `student_id`, `assignment_id` (the subject; dropped if the subject is removed), `reason` (`FailingGrades`, `AtRisk` or `LowAttendance`), `detail` (what was found, in words), `metric` (the grade or attendance in percent), `status` (`Open`, `InProgress`, `Resolved`), `intervention` (the help given), `notes`, `outcome` (`Improved` or `NoChange`, set when resolved), `resolved_at_utc`, `handled_by_user_id`. Made by the system, worked by the counselor. Deleted with the student. |
 
@@ -205,22 +223,36 @@ completed and open referrals are resolved. (The withdrawal feature and its table
 `RemoveWithdrawals`; a student who was `Withdrawn` becomes `Active` again, with the sign-in still switched off.)
 The to-do list and its table `todo_items` were removed by the migration `RemoveTodoItems` (the entries people had written are deleted with the table).
 
-### Course materials and the teacher evaluation (the academic coordinator)
+### Course materials (the academic provider) and the teacher evaluation (the academic coordinator)
 
 | Table | What it holds |
 |---|---|
-| `material_modules` | The coordinator's library, per course (`subject_id`): a module (or, with `is_syllabus = 1`, the syllabus, one per course in practice): `title`, `description`, `body`, `link_url`, `position`, `created_by_user_id`. |
+| `material_modules` | The academic provider's library, per course (`subject_id`): a module (or, with `is_syllabus = 1`, the syllabus, one per course in practice): `title`, `description`, `body`, `link_url`, `position`, `created_by_user_id`. |
 | `material_items` | An activity, quiz or task performance of a library module: the same columns as `module_items` (`kind`, `max_score`, a suggested `due_at_utc`, the quiz settings). |
 | `material_questions` | The questions of a quiz of the library (same columns as `quiz_questions`). |
-| `material_deliveries` | That a library module was sent to a teacher's course: `material_module_id`, `assignment_id` and `module_id` (the teacher's copy, a draft). Unique per library module and course. It is deleted with the teacher's copy, with the course or with the library module (the copy stays). |
+| `material_deliveries` | That a library module was sent to a teacher's course: `material_module_id`, `assignment_id` and `module_id` (the teacher's copy, a draft). Unique per library module and course. `sent_by_user_id` is the provider; `created_at_utc` is when it was sent; `opened_at_utc` is when the teacher first opened their copy (its text, one of its activities, or posting it; empty until then). The state shown in Tracking comes from it and from the copy's `visible_from_utc`. It is deleted with the teacher's copy, with the course or with the library module (the copy stays). |
 | `teacher_evaluations` | A questionnaire about the teachers: `title`, `instructions`, `sent_at_utc` (empty = draft), `due_at_utc`, `term_id`, `created_by_user_id`. |
 | `evaluation_questions` | Its questions: `position`, `text`, `kind` (`Rating` 1 to 5, or `Comment`, checked), `category` (the area, optional). |
 | `evaluation_targets` | The teachers' courses (`assignment_id`) an evaluation was sent about. |
 | `evaluation_responses` | A student's answers for one teacher's course: unique per `(evaluation_id, assignment_id, student_id)`, with `submitted_at_utc`. |
 | `evaluation_answers` | One answer: `rating` (1 to 5, checked) or `comment`, per response and question. |
 
-`modules.is_syllabus` marks the syllabus of a course (a module without activities). The coordinator can read the averages and the comments of the evaluation but the screens never show which student wrote an answer: only whether a student has answered (`evaluation_responses`).
+`modules.is_syllabus` marks the syllabus of a course (a module without activities). The academic coordinator no longer sends materials: the migration `AddAcademicProviderRoleAndOpenTracking` moved that to the provider (the rows already in the library stay). The coordinator can read the averages and the comments of the evaluation but the screens never show which student wrote an answer: only whether a student has answered (`evaluation_responses`).
 Deleting a teaching assignment deletes its targets, answers and deliveries too.
+
+### People, files and the system (round 8)
+
+| Table | What it holds |
+|---|---|
+| `profile_photos` | The picture of a person (`user_id` is the key): `content_type`, `data` (a small image, at most 256 by 256 pixels), `updated_at_utc` (also the version in the address of the picture). Deleted with the account. |
+| `friendships` | A friend request or a friendship: `requester_user_id`, `addressee_user_id`, `status` (`Pending` or `Accepted`, checked), `responded_at_utc`. One row for two people. Saying no, taking it back and unfriending delete the row. |
+| `study_groups`, `study_group_members`, `group_posts` | A group (name, description, owner), its members (`group_id`, `user_id`, `joined_at_utc`) and its wall (posts and replies: `parent_post_id`). Deleted with the owner's account. |
+| `stored_files`, `stored_file_contents`, `shared_files` | A file in a person's locker (`owner_user_id`, `name`, `content_type`, `size_bytes`); its bytes in a separate table (a list of files never reads them); and who it is shared with: one person, one group or one teacher's course (exactly one of `shared_with_user_id`, `group_id`, `assignment_id`, kept by `FileService`). |
+| `security_logs` | One line of the log: `kind`, `severity`, `user_id` and `actor_user_id` (emptied, not deleted, when the account is deleted), `email`, `actor_name`, `ip_address`, `user_agent`, `details`. |
+| `system_settings` | A setting the administrator changed: `key`, `value`, `updated_at_utc`, `updated_by_user_id`. A setting with no row uses its default. |
+
+The migrations `AddProfilePhotos` and `AddSocialFeaturesSecurityLogsAndSettings` add them. (MySQL does not allow a check constraint on a column that has a cascading foreign key, so that two people differ in
+`friendships` and that a share has one target are kept by the services, not by the database.) Backups are not in the database: they are SQL files in the `Backups/` folder.
 
 ### Messages and notifications
 
@@ -230,7 +262,7 @@ Deleting a teaching assignment deletes its targets, answers and deliveries too.
 | `announcements` | A notice: `author_user_id`, `title`, `body` (up to 2000 characters), `audience` (`Everyone`, `Students` or `Teachers`, checked), `section_id` (a teacher's announcement is for the students of one section; empty for the whole audience), `expires_on` (the last day it is shown, a Philippine date, or empty). Deleted with its author's account and with its section. |
 | `notifications` | Something the system tells a person under the bell: `user_id`, `kind` (message, module, grade, ...), `title`, `body`, `link` (the page it is about), `is_read`. |
 
-Both are deleted with the account they belong to. Messages can only be sent between 7:00 AM and 7:00 PM Philippine time
+Both are deleted with the account they belong to. Messages can only be sent between 7:00 AM and 7:00 PM Philippine time (those hours can be changed in System Settings)
 and only to the roles the sender is allowed to write to (`MessageService`): the database does not check either.
 
 ## The school data that comes with the database
@@ -273,6 +305,7 @@ Things that were decided for you, change them in the tables if they are not righ
 - USP was first put under TECH-PRO. The migration `MoveUspToAcad` moves it (with the students, teachers and enrollments that list it) to ACAD.
 - Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
 - The migration `AddSectionsAToE` adds **sections A, B, C, D and E** for the current school year (the year of the current term, else the latest), for every schedule of every strand, at the grade levels that strand has courses for (now grade 11): 5 for each strand and schedule. A section that is already there is left alone. The registrar picks the section from this list when enrolling a student. Its `Down` removes the ones nobody uses.
+- The migration `AddAcademicProviderRoleAndOpenTracking` adds the role `AcademicProvider` (7), the table `academic_providers`, the table `item_views` and `material_deliveries.opened_at_utc`.
 - The migration `AddAcademicCoordinatorRole` adds the role `AcademicCoordinator` (6) and the table `academic_coordinators`; `AddCourseMaterialsAndTeacherEvaluation` adds the tables of the previous section and `modules.is_syllabus`.
 
 ## Rules the database enforces

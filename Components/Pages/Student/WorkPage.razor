@@ -239,6 +239,7 @@ else
         item = studentId == 0 ? null : await Work.GetStudentItemAsync(studentId, ItemId);
         if (item is not null)
         {
+            await Work.RecordViewAsync(studentId, ItemId);
             answerText = item.AnswerText;
             linkUrl = item.LinkUrl;
             review = item.IsQuiz && item.Status != SubmissionStatus.InProgress && item.Status != "NotStarted" ? await Quiz.GetMyReviewAsync(studentId, ItemId) : null;

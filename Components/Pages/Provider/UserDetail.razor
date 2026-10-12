@@ -1,0 +1,168 @@
+@page "/provider/users/{UserId:int}"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
+@rendermode InteractiveServer
+@inject ProviderService Provider
+@inject TimeProvider Clock
+
+<PageTitle>@(title ?? "User") · Users · SEAITT e-LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (teacher is not null)
+{
+    var t = teacher.Summary;
+    <PageHeader Title="@t.Name" Subtitle="Teacher · what you sent them and what they did with it" IconName="presentation">
+        <ButtonLink Href="provider/users?tab=teachers" Variant="ButtonVariant.Ghost" IconName="chevron-left">All the teachers</ButtonLink>
+    </PageHeader>
+
+    <div class="kpis">
+        <StatCard Label="Received" Value="@t.Received" IconName="send" Accent="AccentColor.Blue" Hint="@ProviderUi.Plural(t.Courses, "course", "courses")" />
+        <StatCard Label="Opened" Text="@(t.OpenedPercent is { } op ? $"{op}%" : "—")" IconName="eye" Accent="@(t.OpenedPercent >= 80 ? AccentColor.Green : AccentColor.Amber)" Hint="@($"{t.Opened} of {t.Received}")" />
+        <StatCard Label="Posted" Value="@t.Posted" IconName="circle-check" Accent="AccentColor.Violet" Hint="Visible or scheduled" />
+        <StatCard Label="Opens in" Text="@ProviderUi.Duration(t.AverageHoursToOpen)" IconName="timer" Accent="AccentColor.Slate" Hint="@(t.Waiting == 0 ? "Nothing is waiting" : $"{t.Waiting} waiting")" />
+    </div>
+
+    <Card Title="Everything sent to this teacher" IconName="list">
+        @if (teacher.Rows.Count == 0)
+        {
+            <EmptyState IconName="send" Title="Nothing was sent yet">
+                <p>Send a syllabus or a module of their course from the Course library.</p>
+                <ButtonLink Href="provider/library" IconName="folder-open">Course library</ButtonLink>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Sent</th>
+                            <th scope="col">State</th>
+                            <th scope="col" class="bar-cell">Students opened it</th>
+                            <th scope="col"><span class="sr-only">Details</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in teacher.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="name-link" href="provider/tracking/@row.DeliveryId">@(row.IsSyllabus ? "Syllabus" : row.Title)</a>
+                                    <span class="muted-line">@row.SubjectName · @row.SectionLabel · @PhilippineTime.FormatDate(row.SentAtUtc)</span>
+                                </td>
+                                <td>
+                                    <Badge Tone="@ProviderUi.StateTone(row.State)">@DeliveryStates.Display(row.State)</Badge>
+                                    @if (row.State != DeliveryStates.NotOpened && row.OpenedAtUtc is { } opened)
+                                    {
+                                        <span class="muted-line">@PhilippineTime.FormatDateTime(opened)</span>
+                                    }
+                                </td>
+                                <td class="bar-cell">
+                                    @if (row.ModulePercent is { } mp)
+                                    {
+                                        <ProgressBar Percent="mp" Title="@($"{row.ModuleOpens} of {row.Audience} opened it")" />
+                                        <span class="muted-line">@row.ModuleOpens of @row.Audience</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="na">Not posted yet</span>
+                                    }
+                                </td>
+                                <td class="right"><ButtonLink Href="@($"provider/tracking/{row.DeliveryId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="arrow-right" IconAfter="true">Details</ButtonLink></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+}
+else if (student is not null)
+{
+    <PageHeader Title="@student.Name" Subtitle="@($"Student · {student.SectionLabel}".TrimEnd(' ', '·'))" IconName="graduation-cap">
+        <ButtonLink Href="provider/users?tab=students" Variant="ButtonVariant.Ghost" IconName="chevron-left">All the students</ButtonLink>
+    </PageHeader>
+
+    <div class="kpis">
+        <StatCard Label="Posted to the student" Value="@student.Rows.Count" IconName="send" Accent="AccentColor.Blue" Hint="Syllabi, modules and activities" />
+        <StatCard Label="Opened" Value="@student.Opened" IconName="eye" Accent="AccentColor.Green" Hint="@(student.OpenedPercent is { } sp ? $"{sp}% of what was posted" : "")" />
+        <StatCard Label="Not opened" Value="@(student.Rows.Count - student.Opened)" IconName="mail" Accent="@(student.Rows.Count - student.Opened == 0 ? AccentColor.Slate : AccentColor.Amber)" Hint="Still to open" />
+    </div>
+
+    <Card Title="What was posted to this student" IconName="list">
+        @if (student.Rows.Count == 0)
+        {
+            <EmptyState IconName="send" Title="Nothing was posted to this student yet">
+                <p>The list starts when a teacher posts something you sent to a course the student takes.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">What</th>
+                            <th scope="col">Course</th>
+                            <th scope="col">Posted</th>
+                            <th scope="col">Opened</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in student.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="item-title">@row.Title</span>
+                                    <span class="muted-line">@row.Kind@(row.Kind is "Syllabus" or "Module" ? "" : $" · in {row.ModuleTitle}")</span>
+                                </td>
+                                <td>@row.SubjectName</td>
+                                <td>@PhilippineTime.FormatDate(row.PostedAtUtc)</td>
+                                <td>
+                                    @if (row.OpenedAtUtc is { } at)
+                                    {
+                                        <Badge Tone="Tone.Success">Opened</Badge>
+                                        <span class="muted-line">@PhilippineTime.FormatDateTime(at)@(row.Submitted == true ? " · handed in" : "")</span>
+                                    }
+                                    else
+                                    {
+                                        <Badge Tone="Tone.Warning">Not yet</Badge>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+}
+else
+{
+    <Card>
+        <EmptyState IconName="users-round" Title="Not found" IsPage="true">
+            <p>This is not a teacher or a student of this school.</p>
+            <ButtonLink Href="provider/users" Variant="ButtonVariant.Secondary">Back to the users</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+
+@code {
+    [Parameter] public int UserId { get; set; }
+
+    private ProviderTeacherDetail? teacher;
+    private StudentDetail? student;
+    private bool loaded;
+    private string? title;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        teacher = await Provider.GetTeacherAsync(UserId);
+        student = teacher is null ? await Provider.GetStudentAsync(UserId) : null;
+        title = teacher?.Summary.Name ?? student?.Name;
+        loaded = true;
+    }
+}

@@ -9,15 +9,21 @@ What exists so far:
   **Log in** button.
 - **Custom login** with the school's picture next to the form: email + password, PBKDF2 password hashing, cookie
   sign-in, account lockout, "keep me signed in". After signing in, everybody lands on the page of their role.
-- **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor and **Academic Coordinator**, each with its own table
-  holding the person's name and details.
+- **Users and roles**: Admin, Teacher, Student (with LRN), Registrar, Guidance Counselor, **Academic Coordinator** and **Academic Provider** (of the central team),
+  each with its own table holding the person's name and details.
 - **Registrar pages** (for the registrar only): *Dashboard*, *Enrollments* (the form that enrolls a student; the
   student's email and password are made automatically) and *Student's Accounts* (a searchable list).
 - **Administrator pages** (for the administrator only): *Dashboard* (accounts, and who is **enrolled** or **not enrolled**) and *Users Management*: one list per role, with
   search, **edit**, **delete** and add (for staff).
 - **Academic coordinator pages** (for the academic coordinator only): *Dashboard*, *Academic setup* (school years, terms, tracks, strands, courses and sections),
-  *Course materials* (syllabus, modules, activities, quizzes and task performances sent to the teachers as drafts), *Teacher evaluation* (a questionnaire the students answer
-  about their teachers), *Announcements* and *Analytics* (the results of the teacher evaluation).
+  *Teacher evaluation* (a questionnaire the students answer about their teachers), *Announcements* and *Analytics* (the results of the teacher evaluation).
+- **Academic provider pages** (the central team; for the academic provider only): *Dashboard*, *Course library* (the syllabus, modules, activities, quizzes and task performances
+  that are **sent to the teachers** as drafts: only the provider sends them), *Tracking* (did the teacher open it, post it, did the students open it), *Users* (the teachers and
+  the students and what they opened) and *Analytics*.
+- **For students and teachers**: *Users* (classmates, friends and teachers / friends, students and teachers), *Groups*, *Resources* (a locker for your files and the files shared with you),
+  an *Online students* box in the dashboard, and a **profile picture** in the settings menu.
+- **More for the administrator**: *Security Logs*, *Database Backup & Restore* and *System Settings*.
+- **A Help page** for every role (the link is above the profile card in the menu), and **pop-ups in the menu**: rest the pointer on a page and a box shows what is inside it.
 - **The first page** (`/`, before signing in) lists **Our courses** by track: each track, its strands with their full names, and, when a strand is opened, the courses it studies by grade level and term.
 - **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
@@ -120,18 +126,36 @@ version has no views.)
 
 **Without running the app:** in Workbench open
 [database/seaittlms_reset_and_rebuild.sql](database/seaittlms_reset_and_rebuild.sql) (*File > Open SQL Script...*) and
-click the lightning bolt. It deletes the `seaittlms` schema and builds everything again, including the five roles and
+click the lightning bolt. It deletes the `seaittlms` schema and builds everything again, including the seven roles and
 the school setup (school year, terms, tracks, strands, schedules, subjects). Then run `dotnet watch` to create the
 administrator.
 
 Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
-**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, **2 academic coordinators**, 12 teachers and 40 students), open
+**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, **2 academic providers**, 13 teachers and 40 students), open
 [database/seaittlms_sample_accounts.sql](database/seaittlms_sample_accounts.sql) in Workbench and click the lightning bolt.
-It only adds what is missing, so running it twice is harmless. The passwords are not in the file (only their hashes): ask for the list of emails and passwords.
-The teachers and students are plain accounts: give a teacher courses in **Users Management > Teachers > Courses**, and enroll the students with the registrar's
-**Enrollments** form (type the LRN, the account is found). Until then the students are listed under *Not enrolled* (a card in the Accounts of the administrator's dashboard).
-The academic coordinators sign in with `coordinator@legazpi.seaitt.edu.ph` (password `coordinator123`) and `coordinator2@legazpi.seaitt.edu.ph` (password `coordinator456`): easy ones, to try the system.
+It only adds what is missing (and gives the sample accounts of an earlier version the new email and password), so running it twice is harmless. The sign-ins are **easy on purpose**,
+to try the system: the email is the last name (or the role) + `@legazpi.seaitt.edu.ph`, and the password is the role with a number:
+
+| Who | Email | Password |
+|---|---|---|
+| Administrator | `admin@legazpi.seaitt.edu.ph` | `Admin123` (see the note below) |
+| Registrar | `registrar@legazpi.seaitt.edu.ph` | `Registrar1` |
+| Guidance counselor | `guidance@legazpi.seaitt.edu.ph` | `Guidance1` |
+| Academic coordinators | `coordinator1@...`, `coordinator2@...` | `Coordinator1`, `Coordinator2` |
+| Academic providers | `provider1@...`, `provider2@...` | `Provider1`, `Provider2` |
+| Teachers | `vargas@...`, `villanueva@...`, `bautista@...`, ... | `Teacher1` (Vargas), `Teacher2`, `Teacher3`, ... `Teacher13` |
+| Students | `delacruz@...`, `abad@...`, `alcantara@...`, ... | `Student1` (Dela Cruz), `Student2`, ... `Student40` |
+
+The school has one administrator, so the file never adds a second one and **never changes the password of the administrator you already have** (the last lines of the file, written as a
+comment, can give that administrator `Admin123` too). The file holds only the hashes of the passwords, not the passwords. Give real people a harder password in **Users Management > Edit**.
+
+**Sample data:** the accounts have no courses or enrollments yet (the students are listed under *Not enrolled*). To fill the tables with practice data, run
+[database/seaittlms_sample_data.sql](database/seaittlms_sample_data.sql) **once**, after the accounts file (open it in Workbench, press the lightning bolt, wait a minute). It enrolls the 40 students in
+six sections, gives the 13 teachers their courses, and adds, with dates around the day you run it: the library of the academic provider and what it sent to every teacher (some opened, some
+still waiting, some posted), modules, activities and quizzes with questions, who opened what, the work handed in and graded, attendance, announcements, messages, notifications, friends,
+three groups, files in the lockers, the security log, the settings and one teacher evaluation with its answers. It adds nothing if any of these students is enrolled already (so a second run does nothing).
+To start over: run the reset file, then the accounts file, then this one.
 
 Only want to clear the Workbench error without erasing anything? Run this in Workbench (it only drops the five old views,
 and does nothing if you don't have them):
@@ -159,9 +183,9 @@ Persist the ASP.NET Core Data Protection keys if you run in a container.
 | What | How it works |
 |---|---|
 | **Search** (middle) | A box that opens a **pop-up** (there is no search page): results appear as you type, in groups: the pages you can open and, depending on your role, your courses and the people you work with. Ctrl+K (Cmd+K) opens it from anywhere, Enter opens the first result, Escape closes it. An administrator finds every account, a registrar finds students, a teacher finds the students of their courses (the hit opens the gradebook of that course) and the guidance counselor finds students (the hit opens the referrals page for that student). |
-| **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor and the registrar; a teacher also to students and the other staff. **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time**: the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
+| **Messages** (speech bubble) | A box with your conversations. Type a name to write to somebody. A student can write to teachers, the guidance counselor, the registrar and their friends; a teacher also to students and the other staff (the academic provider too). **Messages can't be sent from 7:00 PM to 7:00 AM Philippine time** (the administrator can change the hours or turn the closing off in System Settings): the box says so and the message field is switched off. Reading is always possible. The number on the icon is how many messages are unread. |
 | **Notifications** (bell) | What the system wants you to know (a new message, and later new modules, grades and deadlines). The number is how many are new. Click one to open the page it is about. |
-| **Settings** (gear) | **Light**, **Dark** (black) or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). |
+| **Settings** (gear) | Your **profile picture**, then **Light**, **Dark** (black) or **Auto** (follows the computer), and **Animations** on or off. The choice is kept in your browser **and in a cookie**, so the server draws the same look on every page (a page that is opened by a click on a link used to go back to light). |
 | **Name and role** (bottom of the menu) | Who is signed in. The arrow button signs you out. |
 
 The code: `Components/Layout/HeaderTools.razor` (the three buttons), `MessagesPanel.razor` (the Messages box),
@@ -183,12 +207,15 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | Dashboard (with **Enrolled** and **Not enrolled** under *Accounts*), **Users Management**, **Archive Accounts**, **Analytics** |
-| Academic coordinator | `/coordinator` | **Dashboard**, **Academic setup**, **Course materials**, **Teacher evaluation**, **Announcements**, **Analytics** (teacher evaluation) |
+| Admin | `/admin` | Dashboard (with **Enrolled** and **Not enrolled** under *Accounts*), **Users Management**, **Archive Accounts**, **Analytics**, **Security Logs**, **Database Backup & Restore**, **System Settings** |
+| Academic coordinator | `/coordinator` | **Dashboard**, **Academic setup**, **Teacher evaluation**, **Announcements**, **Analytics** (teacher evaluation). It no longer sends course materials. |
+| Academic provider (central team) | `/provider` | **Dashboard**, **Course library** (and sending), **Tracking**, **Users**, **Analytics** |
 | Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts** |
-| Teacher | `/teacher` | **Dashboard**, **Courses** (modules, activities, quizzes, task performances, grading), **Attendance**, **Calendar**, **Gradebook**, **Analytics** (in this order in the menu) |
-| Student | `/student` | **Dashboard**, **Courses** (modules, work, quizzes), **Grades**, **Calendar** |
+| Teacher | `/teacher` | **Dashboard**, **Courses** (modules, activities, quizzes, task performances, grading), **Attendance**, **Calendar**, **Gradebook**, **Analytics**, **Users**, **Groups**, **Resources** (in this order in the menu) |
+| Student | `/student` | **Dashboard**, **Courses** (modules, work, quizzes), **Grades**, **Calendar**, **Users**, **Groups**, **Resources** |
 | Guidance counselor | `/guidance` | **Dashboard**, **Referrals**, **Students at risk**, **Analytics** |
+
+Every role also has **Help** (`/help`, the link above the profile card in the menu): the answers to the usual questions of the role, with the steps.
 
 There is no "My account" page: people sign in, work, and sign out. Somebody whose role has no page of their own (it should not happen) is sent to *Access denied*.
 
@@ -305,6 +332,44 @@ the student again for a class). A student in the archive can't be enrolled until
 There is no withdrawal feature any more (the student page, the registrar page and the table were removed). A student who was *Withdrawn* before is
 a student at school again (status *Active*) after the update; their sign-in stays switched off until an administrator turns it on in Users Management.
 
+## The menu, profile pictures and Help
+
+- **Pop-ups in the menu.** On a computer, rest the pointer on a page of the menu (or move to it with the keyboard) and a box opens beside it showing what is inside the page: a tab, a filter or
+  a short list (for *Courses* of a student: **Enrolled** and **Completed**; for *Users*: the tabs; for *Tracking*: the states). A line with a link goes straight to that part of the page. The box closes when the
+  pointer leaves, and after you click a link. On a phone there is no box (the menu is a drawer). Code: `Components/Layout/NavItem.razor`, the lists in `NavMenu.razor`, the position in `wwwroot/app.js`.
+- **Smaller design.** The whole page is drawn about 12% smaller (`font-size: 87.5%` on the page, and every size is written in `rem`, so changing that one number scales everything).
+- **Profile picture.** In the **settings** menu (the gear) press *Change picture*, choose an image (JPEG, PNG, WebP or GIF); the browser shrinks it to at most 256 by 256 pixels (under 1 MB) and the server
+  keeps it in `profile_photos`. It shows on every avatar (menu, messages, lists, groups). *Remove* goes back to the initials. Code: `Services/ProfilePhotoService.cs`, the picture is served at `/photos/{userId}`.
+- **Help** (`/help`): the link is above the profile card at the bottom of the menu. The first part is for everybody (signing in, forgetting the password, messages, the pictures), the second for the role of the
+  person, with the steps and a button to the page. The text is in `Components/Pages/Account/HelpContent.cs`; when a page changes, change what is written there.
+
+## Users, groups and resources (students and teachers)
+
+| Page | What it does |
+|---|---|
+| **Users** (`/users`) | A **student** has the tabs *Classmates* (the students of their courses), *Friends* and *Teachers* (of their courses); a **teacher** has *Friends*, *Students* (of their courses) and *Teachers*. Search, show only who is **online**, write a message, send a **friend request** (the other accepts or declines; you can take it back; *Unfriend* asks first). Friends can write to each other even when their roles would not otherwise allow it. |
+| **Online students** | A box in the right column of the student's and the teacher's dashboard: the students who have a page open now (a page counts as open for 45 seconds after its last sign of life). Code: `Services/PresenceService.cs`. |
+| **Groups** (`/groups`) | A study group or team of students and teachers. The person who makes it is its owner and adds or removes people and can delete it; anybody can leave. A group has a **wall** (posts and replies), its **members** and the **files** shared with it. |
+| **Resources** (`/resources`) | **Locker**: your own files (upload several at once; rename, delete, **share** with people, a group or one of your courses). **Uploaded files**: what others shared with you (a teacher can share a file with a whole course); *Keep a copy in my locker*. A file is at most 10 MB and a locker 100 MB (both set in System Settings). Files are kept in the database and always **downloaded**, never run; program files (`.exe`, `.bat`, `.js`, ...) are refused. Code: `Services/FileService.cs`. |
+
+The code: `Services/PeopleService.cs`, `FriendService.cs`, `GroupService.cs`, `FileService.cs`, `Components/Pages/Account/Users.razor`, `GroupList.razor`, `GroupPage.razor`, `Resources.razor`.
+
+## Administrator: Security Logs, Database Backup & Restore, System Settings
+
+**Security Logs** (`/admin/security-logs`) lists who signed in, who typed a wrong password (and from where), locked accounts, accounts that were added, changed, switched off or deleted, new passwords, backups and changes
+of the settings, newest first, with the time, the email, who did it, the address and the browser. Filter by group (sign-ins, failed sign-ins, account changes, system), kind, dates and words; **Download CSV** gives the same list
+for Excel; **Clear old lines** deletes the older ones (the last 30 days are always kept, and the system clears by itself the lines older than the number of days in System Settings). Code: `Services/SecurityLogService.cs`.
+
+**Database Backup & Restore** (`/admin/backups`) saves a copy of **all the data** as an SQL text file in the `Backups/` folder next to the app (git ignores it), made from one consistent snapshot of the database.
+*Back up now* makes one; each backup can be **downloaded** or **deleted**; a backup file from another computer can be **uploaded**. **Restore** asks you to type `RESTORE`, first makes a safety backup of what is there now,
+checks that the file is one of ours (only our tables and plain statements are accepted), puts the data back while the system is closed to everybody except administrators, and **goes back by itself** if something fails.
+An automatic backup at an hour you choose (and how many to keep) is set in System Settings. Code: `Services/BackupService.cs`, `MaintenanceWorker.cs`.
+
+**System Settings** (`/admin/settings`) changes, without editing files: the **school** (name, short name, line under the name, address, contact email and number, shown on the sign-in page, the home page, the top of every
+page and Help), **signing in** (wrong passwords before a lock, minutes locked), **maintenance mode** (while it is on only an administrator can use the system; everybody else sees a page with your message),
+the **hours messages are closed** (7:00 PM to 7:00 AM at first), the **automatic backup** and how long the **log** is kept, and the **size** of a file and of a locker. Every change is written in the security log.
+Code: `Services/SystemSettingsService.cs`; the values are kept in the `system_settings` table and read once when the app starts.
+
 ## Academic setup (academic coordinator)
 
 **Academic coordinator > Academic setup** (`/coordinator/academic-setup`) has one tab per part of the setup, each with its number. The coordinator
@@ -338,14 +403,42 @@ dashboard). Students see the announcements meant for them in the **Announcements
 opens the whole text). Announcements that an administrator, a registrar or a teacher wrote before this rule stay in the database and are still shown to their students.
 Code: `Services/AnnouncementService.cs`.
 
-## Academic coordinator: course materials, teacher evaluation, analytics
+## Academic provider: course library, sending and tracking
 
-**Course materials** (`/coordinator/materials`) is the coordinator's library, one per course. Open a course to prepare its **syllabus** (one per course), its **modules**
+The **academic provider** belongs to the central team. They prepare what the teachers teach with and watch whether it reaches the students. (The academic coordinator used to send
+course materials; that was **taken away from the coordinator** and is only for the provider now.) An administrator adds providers in **Users Management > Providers**; there can be several.
+
+**Course library** (`/provider/library`) is the provider's library, one per course. Open a course to prepare its **syllabus** (one per course), its **modules**
 and the **activities, quizzes and task performances** in each module (a quiz has its questions and the anti-cheating settings; a suggested due date can be given).
-**Send to teachers** chooses what to send and which teachers' courses (the teachers who have the course this school year): each teacher's course gets **its own copy as a
-draft**. The students can't see a draft: the teacher changes what they want (the text, the points, the due dates, when it is posted) and posts it. The teacher is told (the bell)
-and the copy says *From the academic coordinator*. A module sent to a course is not sent to it again; when the teacher deletes the copy, it can be sent again. The syllabus
-comes first in the course and has a *Syllabus* badge for the students. Code: `Services/MaterialService.cs`, `Components/Pages/Coordinator/CourseLibrary.razor`.
+**Send to teachers** chooses what to send (the syllabus is the first thing on the list; if the course has none, the dialog says so and offers to add it) and which teachers' courses (the teachers
+who have the course this school year): each teacher's course gets **its own copy as a draft**. The students can't see a draft: the teacher changes what they want (the text, the points, the due
+dates, when it is posted) and posts it. The teacher is told (the bell) and the copy says *From the academic provider*. A module sent to a course is not sent to it again; when the teacher deletes
+the copy, it can be sent again. The syllabus comes first in the course and has a *Syllabus* badge for the students. Code: `Services/MaterialService.cs`, `Components/Pages/Provider/CourseLibrary.razor`.
+
+**Tracking** (`/provider/tracking`) has one line for each thing sent to one teacher's course, with its **state**:
+
+| State | Meaning |
+|---|---|
+| Not opened | Sent, and the teacher has not read it, edited it, opened one of its activities or posted it. (Only looking at the list of modules of the course does not count.) |
+| Opened · draft | The teacher opened it and it is still a draft. |
+| Scheduled | The teacher chose a later time for the students to see it. |
+| Posted | The students can see it. The line then shows how many of the course's students opened it, and how many opens its activities had. |
+
+The tabs count each state (the menu pop-up of *Tracking* links to them), and you can search a teacher, a course, a section or a module, and show only syllabi or only modules. **Details** of a line shows the steps
+(sent, opened by the teacher, posted, opened by the students) with their dates, each activity (opened by, handed in by) and **each student** (who opened the module and when, how many activities),
+with the students who have **not** opened it first and a switch to show only them. A student opens a module (or the syllabus) when they open its page, and an activity, quiz or task performance when they open
+its page; the first time is kept. Code: `Services/ProviderService.cs`, `ModuleService.MarkDeliveryOpenedAsync` (the teacher), `ModuleService.OpenModuleAsync` and `WorkService.RecordViewAsync` (the students);
+the data is in `material_deliveries.opened_at_utc`, `module_views` and `item_views`.
+
+**Users** (`/provider/users`): the **Teachers** tab lists each teacher who has a course this school year with what they received, opened and posted, how many are still waiting (and how old the oldest is) and
+how long they take to open on average; the **Students** tab lists the students who were given something, with how much of it they opened (the ones who opened least first). A name opens that person's page:
+for a teacher everything sent to them with its state; for a student everything posted to them with when they opened it (or *Not yet*).
+
+**Analytics** (`/provider/analytics`): the share opened by the teachers, the average time to open and to post, the share of modules and of activities the students opened, **week by week**,
+**by kind** (syllabus, module, activity, quiz, task performance), **by section** and **by course**, the teachers with the oldest unopened items, and the modules the students open least.
+The **Dashboard** (`/provider`) sums it up: sent, opened, posted, opened by students, the lines waiting longest, what was opened lately and the courses that still have no syllabus.
+
+## Academic coordinator: teacher evaluation and analytics
 
 **Teacher evaluation** (`/coordinator/evaluations`): **New evaluation** starts with the usual 12 questions about a teacher (10 to rate from 1 to 5, in areas such as *Teaching* and
 *Classroom management*, and 2 for comments); the coordinator changes, adds and removes questions while it is a draft. **Send to students** picks the teachers' courses it is about and a **due
@@ -421,8 +514,8 @@ It is shown on the registrar's dashboard (with an Enroll link for each student) 
 ## Managing users (administrator)
 
 **Administrator > Users Management** (`/admin/users`). There is one tab per role (Students, Teachers, Registrars, Guidance,
-Coordinators, Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email). The students' list has a **Courses** column (the courses of
-their enrollment) and the teachers' list a **Course · Section** column (what each teacher teaches and to which section). There can be several academic coordinators (there is only one
+Coordinators, Providers, Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email). The students' list has a **Courses** column (the courses of
+their enrollment) and the teachers' list a **Course · Section** column (what each teacher teaches and to which section). There can be several academic coordinators and academic providers (there is only one
 administrator, one registrar and one guidance counselor).
 
 - **Edit** changes the name, email, LRN (students) or employee number (staff), phone number and the **new password**
@@ -503,16 +596,18 @@ Components/Layout/         Header (with the messages, notifications and settings
 Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, ... (each with its own .razor.css)
 Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
-  Admin/                     Dashboard, UsersManagement, EnrollmentLists (+ Enrollment/: Enrolled and Not enrolled), Archive
-  Coordinator/               Dashboard, AcademicSetup (+ Setup/: one component per tab), Announcements, Materials, CourseLibrary, MaterialQuestions, Evaluations, EvaluationEditor, Analytics
+  Admin/                     Dashboard, UsersManagement, EnrollmentLists (+ Enrollment/: Enrolled and Not enrolled), Archive, SecurityLogs, DatabaseBackups, SystemSettings
+  Coordinator/               Dashboard, AcademicSetup (+ Setup/: one component per tab), Announcements, Evaluations, EvaluationEditor, Analytics
+  Provider/                  Dashboard, CourseList, CourseLibrary, MaterialQuestions (the library and sending), Tracking, TrackingDetail, Users, UserDetail, Analytics
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
   Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook
   Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades, Evaluations, EvaluateTeacher
   Guidance/                  Dashboard, Referrals, StudentsAtRisk
-  Account/                   Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers)
+  Account/                   Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers), Users, GroupList, GroupPage, Resources, Help (+ HelpContent)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
-database/                  The SQL file for starting over in MySQL Workbench and the script that generates it
+database/                  The SQL files for MySQL Workbench: start over (reset and rebuild), sample accounts, sample data, and the script that generates the first one
+Backups/                   The backups made by Database Backup & Restore (created by the app; git ignores it)
 docs/database.md           Tables, relationships and the rules the database enforces
 THIRD-PARTY-NOTICES.md     Licence of the icons (the logo and the photos are the school's own)
 ```

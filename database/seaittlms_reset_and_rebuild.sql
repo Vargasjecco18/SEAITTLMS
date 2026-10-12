@@ -1460,5 +1460,45 @@ CREATE INDEX `ix_system_settings_updated_by_user_id` ON `system_settings` (`upda
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261012031512_AddSocialFeaturesSecurityLogsAndSettings', '9.0.20');
 
+ALTER TABLE `material_deliveries` ADD `opened_at_utc` datetime(6) NULL;
+
+CREATE TABLE `academic_providers` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    CONSTRAINT `pk_academic_providers` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_academic_providers_status` CHECK (status IN ('Active', 'Inactive')),
+    CONSTRAINT `fk_academic_providers_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `item_views` (
+    `item_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `first_opened_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_item_views` PRIMARY KEY (`item_id`, `student_id`),
+    CONSTRAINT `fk_item_views_module_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `module_items` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_item_views_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `roles` (`id`, `name`)
+VALUES (7, 'AcademicProvider');
+
+CREATE UNIQUE INDEX `ix_academic_providers_employee_number` ON `academic_providers` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_academic_providers_user_id` ON `academic_providers` (`user_id`);
+
+CREATE INDEX `ix_item_views_student_id` ON `item_views` (`student_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261012045434_AddAcademicProviderRoleAndOpenTracking', '9.0.20');
+
 COMMIT;
 

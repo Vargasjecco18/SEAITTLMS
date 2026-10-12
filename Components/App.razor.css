@@ -351,3 +351,136 @@ html ::deep .sr-only {
     overflow: hidden;
     clip: rect(0 0 0 0);
 }
+
+/* ---- shared by the pages of the academic provider (dashboard, tracking, users, analytics) ---- */
+html ::deep .kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 1000px) {
+    html ::deep .kpis {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    html ::deep .kpis.five {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+html ::deep .pcards {
+    display: grid;
+    gap: 1.25rem;
+}
+
+@media (min-width: 1000px) {
+    html ::deep .pcards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+html ::deep .pcards .wide {
+    grid-column: 1 / -1;
+}
+
+html ::deep .plist {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+html ::deep .plist li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+html ::deep .plist li > a:first-child,
+html ::deep .plist-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+html ::deep .plist-title {
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+html ::deep .plist li > a:first-child:hover .plist-title {
+    color: var(--brand-strong);
+}
+
+html ::deep .plist-sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+html ::deep .more-link {
+    margin: 1rem 0 0;
+    font-size: 0.9rem;
+}
+
+html ::deep .more-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--brand-strong);
+    font-weight: 600;
+}
+
+html ::deep .name-link {
+    color: inherit;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+html ::deep .name-link:hover {
+    color: var(--brand-strong);
+}
+
+html ::deep .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin: 1.4rem 0 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+html ::deep .pager-buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+html ::deep .data-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+html ::deep .data-table .bar-cell {
+    min-width: 9rem;
+}
+
+html ::deep .bar-cell .progress {
+    display: flex;
+    width: 100%;
+}
+
+html ::deep .na {
+    color: var(--text-muted);
+}

@@ -1,12 +1,12 @@
 namespace SEAITT_LMS.Data.Entities;
 
-// What the academic coordinator keeps: course materials to send to the teachers, and the teacher evaluation.
+// What the central team keeps: the course materials the academic provider sends to the teachers, and the teacher evaluation of the academic coordinator.
 
 // ====================================================================== course materials
 
 /// <summary>
-/// A module the academic coordinator prepared for a course (a subject), or the syllabus of the course. It is not seen by
-/// students: the coordinator sends it to the teachers of the course, and each teacher gets their own copy as a draft
+/// A module the academic provider prepared for a course (a subject), or the syllabus of the course. It is not seen by
+/// students: the provider sends it to the teachers of the course, and each teacher gets their own copy as a draft
 /// (see <see cref="MaterialDelivery"/>) that they edit and post.
 /// </summary>
 public class MaterialModule : AuditableEntity
@@ -81,7 +81,7 @@ public class MaterialQuestion : AuditableEntity
 
 /// <summary>
 /// That a module of the library was sent to a teacher's course: <see cref="ModuleId"/> is the draft the teacher got. One per
-/// library module and course of a teacher. When the teacher deletes their copy this row goes too, and the coordinator can send it again.
+/// library module and course of a teacher. When the teacher deletes their copy this row goes too, and the provider can send it again.
 /// </summary>
 public class MaterialDelivery : AuditableEntity
 {
@@ -96,6 +96,12 @@ public class MaterialDelivery : AuditableEntity
     public LearningModule Module { get; set; } = null!;
 
     public int? SentByUserId { get; set; }
+
+    /// <summary>
+    /// When the teacher first opened the copy: its text (Edit), one of its activities, or when they posted or scheduled it. Empty until then.
+    /// The academic provider reads it. (When the students open it is in the module views and item views.)
+    /// </summary>
+    public DateTime? OpenedAtUtc { get; set; }
 }
 
 // ====================================================================== teacher evaluation

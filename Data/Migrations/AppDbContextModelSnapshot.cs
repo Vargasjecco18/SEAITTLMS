@@ -98,6 +98,82 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AcademicProvider", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("EmployeeNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("employee_number");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_academic_providers");
+
+                    b.HasIndex("EmployeeNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_academic_providers_employee_number");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_academic_providers_user_id");
+
+                    b.ToTable("academic_providers", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_academic_providers_status", "status IN ('Active', 'Inactive')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.Property<int>("Id")
@@ -758,6 +834,29 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ItemView", b =>
+                {
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int")
+                        .HasColumnName("item_id");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime>("FirstOpenedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("first_opened_at_utc");
+
+                    b.HasKey("ItemId", "StudentId")
+                        .HasName("pk_item_views");
+
+                    b.HasIndex("StudentId")
+                        .HasDatabaseName("ix_item_views_student_id");
+
+                    b.ToTable("item_views", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.LearningModule", b =>
                 {
                     b.Property<int>("Id")
@@ -853,6 +952,10 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Property<int>("ModuleId")
                         .HasColumnType("int")
                         .HasColumnName("module_id");
+
+                    b.Property<DateTime?>("OpenedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("opened_at_utc");
 
                     b.Property<int?>("SentByUserId")
                         .HasColumnType("int")
@@ -1642,6 +1745,11 @@ namespace SEAITT_LMS.Data.Migrations
                         {
                             Id = 6,
                             Name = "AcademicCoordinator"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Name = "AcademicProvider"
                         });
                 });
 
@@ -2921,6 +3029,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AcademicProvider", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithOne("AcademicProvider")
+                        .HasForeignKey("SEAITT_LMS.Data.Entities.AcademicProvider", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_academic_providers_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
@@ -3206,6 +3326,27 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_guidance_counselors_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ItemView", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.ModuleItem", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_item_views_module_items_item_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_item_views_students_student_id");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.LearningModule", b =>
@@ -3880,6 +4021,8 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.User", b =>
                 {
                     b.Navigation("AcademicCoordinator");
+
+                    b.Navigation("AcademicProvider");
 
                     b.Navigation("Administrator");
 

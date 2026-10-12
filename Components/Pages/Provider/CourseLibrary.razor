@@ -1,11 +1,11 @@
-@page "/coordinator/materials/{SubjectId:int}"
-@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@page "/provider/library/{SubjectId:int}"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject MaterialService Library
 @inject NavigationManager Navigation
 
-<PageTitle>@(course?.Name ?? "Course") · Course materials · SEAITT e-LMS</PageTitle>
+<PageTitle>@(course?.Name ?? "Course") · Course library · SEAITT e-LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -16,7 +16,7 @@ else if (course is null)
     <Card>
         <EmptyState IconName="folder-open" Title="Course not found" IsPage="true">
             <p>This course was removed.</p>
-            <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Secondary">Back to the courses</ButtonLink>
+            <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary">Back to the courses</ButtonLink>
         </EmptyState>
     </Card>
 }
@@ -25,8 +25,8 @@ else
     var syllabus = course.Modules.FirstOrDefault(m => m.IsSyllabus);
     var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
 
-    <PageHeader Title="@course.Name" Subtitle="@($"{course.Code} · course materials")" IconName="folder-open">
-        <ButtonLink Href="coordinator/materials" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
+    <PageHeader Title="@course.Name" Subtitle="@($"{course.Code} · course library")" IconName="folder-open">
+        <ButtonLink Href="provider/library" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
         @if (syllabus is null)
         {
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
@@ -206,7 +206,7 @@ else
                                                     <div class="item-actions">
                                                         @if (item.Kind == ItemKinds.Quiz)
                                                         {
-                                                            <ButtonLink Href="@($"coordinator/materials/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
+                                                            <ButtonLink Href="@($"provider/library/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
                                                         }
                                                         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
                                                         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
@@ -587,7 +587,7 @@ else
             itemForm = null;
             if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
             {
-                Navigation.NavigateTo($"coordinator/materials/items/{quizId}/questions");
+                Navigation.NavigateTo($"provider/library/items/{quizId}/questions");
                 return;
             }
 

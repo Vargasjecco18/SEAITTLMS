@@ -1,0 +1,175 @@
+@page "/provider/tracking/{DeliveryId:int}"
+@attribute [Authorize(Roles = AppRoles.AcademicProvider)]
+@rendermode InteractiveServer
+@inject ProviderService Provider
+@inject TimeProvider Clock
+
+<PageTitle>@(detail is null ? "Tracking" : detail.Row.Title) · Tracking · SEAITT e-LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (detail is null)
+{
+    <Card>
+        <EmptyState IconName="eye" Title="Not found" IsPage="true">
+            <p>This was not sent in this school year, or it was deleted by the teacher.</p>
+            <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary">Back to the tracking</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    var row = detail.Row;
+    <PageHeader Title="@(row.IsSyllabus ? $"Syllabus · {row.SubjectName}" : row.Title)"
+                Subtitle="@($"{row.SubjectName} · {row.SectionLabel} · sent to {row.TeacherName}")"
+                IconName="eye">
+        <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Ghost" IconName="chevron-left">All of them</ButtonLink>
+        <ButtonLink Href="@($"provider/users/{row.TeacherUserId}")" Variant="ButtonVariant.Secondary" IconName="presentation">The teacher</ButtonLink>
+    </PageHeader>
+
+    <ol class="steps" aria-label="Where it is">
+        <li class="step done">
+            <span class="step-dot"><Icon Name="send" Size="16" /></span>
+            <span class="step-title">Sent</span>
+            <span class="step-sub">@PhilippineTime.FormatDateTime(row.SentAtUtc)</span>
+        </li>
+        <li class="step @(row.State == DeliveryStates.NotOpened ? "todo" : "done")">
+            <span class="step-dot"><Icon Name="eye" Size="16" /></span>
+            <span class="step-title">Opened by the teacher</span>
+            <span class="step-sub">@(row.State == DeliveryStates.NotOpened ? $"Not yet · waiting {ProviderUi.Ago(row.SentAtUtc, nowUtc).Replace(" ago", "")}" : row.OpenedAtUtc is { } o ? PhilippineTime.FormatDateTime(o) : "Yes")</span>
+        </li>
+        <li class="step @(row.State is DeliveryStates.Posted or DeliveryStates.Scheduled ? "done" : "todo")">
+            <span class="step-dot"><Icon Name="circle-check" Size="16" /></span>
+            <span class="step-title">@(row.State == DeliveryStates.Scheduled ? "Scheduled" : "Posted")</span>
+            <span class="step-sub">@(row.State == DeliveryStates.Scheduled ? "The teacher chose a time later" : row.PostedAtUtc is { } p ? PhilippineTime.FormatDateTime(p) : "Still a draft")</span>
+        </li>
+        <li class="step @(row.ModuleOpens > 0 ? "done" : "todo")">
+            <span class="step-dot"><Icon Name="users-round" Size="16" /></span>
+            <span class="step-title">Opened by the students</span>
+            <span class="step-sub">@(row.IsPosted ? $"{row.ModuleOpens} of {row.Audience}" : "Not posted yet")</span>
+        </li>
+    </ol>
+
+    @if (row.IsPosted)
+    {
+        <div class="pcards">
+            <Card Title="@(row.IsSyllabus ? "The syllabus" : "The module")" IconName="book-open">
+                @if (row.Audience == 0)
+                {
+                    <p class="muted">No student is enrolled in this course.</p>
+                }
+                else
+                {
+                    <div class="bar-wide"><ProgressBar Percent="row.ModulePercent ?? 0" Title="@($"{row.ModuleOpens} of {row.Audience} students opened it")" /></div>
+                    <p class="muted">@row.ModuleOpens of @row.Audience @(row.Audience == 1 ? "student" : "students") opened it.</p>
+                }
+            </Card>
+
+            <Card Title="Activities, quizzes and task performances" IconName="list-checks">
+                @if (detail.Items.Count == 0)
+                {
+                    <p class="muted">@(row.IsSyllabus ? "A syllabus has no activities." : "This module has no activities the students can see yet.")</p>
+                }
+                else
+                {
+                    <ul class="plist items">
+                        @foreach (var item in detail.Items)
+                        {
+                            <li>
+                                <span class="plist-text">
+                                    <span class="plist-title"><Icon Name="@SubjectStyle.KindIcon(item.Kind)" Size="15" /> @item.Title</span>
+                                    <span class="plist-sub">@ItemKinds.Display(item.Kind) · opened by @item.Opens of @item.Audience · handed in by @item.Submitted</span>
+                                </span>
+                                <ProgressBar Percent="item.Audience == 0 ? 0 : (int)Math.Round(100.0 * item.Opens / item.Audience)" Title="@($"{item.Opens} of {item.Audience} opened it")" />
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+        </div>
+
+        <Card Title="The students" IconName="users-round">
+            @if (detail.Students.Count == 0)
+            {
+                <p class="muted">No student is enrolled in this course.</p>
+            }
+            else
+            {
+                <div class="filter-bar">
+                    <label class="check"><input type="checkbox" checked="@onlyNotOpened" @onchange="OnlyChanged" /> Show only the students who have not opened it</label>
+                </div>
+                <div class="data-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Student</th>
+                                <th scope="col">Opened the @(row.IsSyllabus ? "syllabus" : "module")</th>
+                                <th scope="col" class="num">Activities opened</th>
+                                <th scope="col" class="num">Handed in</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Students)
+                            {
+                                <tr>
+                                    <td><a class="name-link" href="provider/users/@s.UserId">@s.Name</a></td>
+                                    <td>
+                                        @if (s.ModuleOpenedAtUtc is { } at)
+                                        {
+                                            <Badge Tone="Tone.Success">Opened</Badge>
+                                            <span class="muted-line">@PhilippineTime.FormatDateTime(at)</span>
+                                        }
+                                        else
+                                        {
+                                            <Badge Tone="Tone.Warning">Not yet</Badge>
+                                        }
+                                    </td>
+                                    <td class="num">@(s.ItemsVisible == 0 ? "—" : $"{s.ItemsOpened} / {s.ItemsVisible}")</td>
+                                    <td class="num">@(s.ItemsVisible == 0 ? "—" : $"{s.Submitted} / {s.ItemsVisible}")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    }
+    else
+    {
+        <Card>
+            <EmptyState IconName="@(row.State == DeliveryStates.NotOpened ? "mail" : "eye")" Title="@(row.State == DeliveryStates.NotOpened ? "The teacher has not opened it" : row.State == DeliveryStates.Scheduled ? "It is scheduled" : "It is still a draft")">
+                <p>@Explain(row)</p>
+            </EmptyState>
+        </Card>
+    }
+}
+
+@code {
+    [Parameter] public int DeliveryId { get; set; }
+
+    private DeliveryDetail? detail;
+    private bool loaded;
+    private bool onlyNotOpened;
+    private DateTime nowUtc;
+
+    private IEnumerable<StudentTrack> Students => detail is null ? [] : onlyNotOpened ? detail.Students.Where(s => s.ModuleOpenedAtUtc is null) : detail.Students;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        nowUtc = Clock.GetUtcNow().UtcDateTime;
+        detail = await Provider.GetDeliveryAsync(DeliveryId);
+        loaded = true;
+    }
+
+    private void OnlyChanged(ChangeEventArgs e) => onlyNotOpened = e.Value is true;
+
+    private string Explain(TrackingRow row) => row.State switch
+    {
+        DeliveryStates.NotOpened => $"{row.TeacherName} has not read, edited or posted it yet. It was sent {ProviderUi.Ago(row.SentAtUtc, nowUtc)}. You can write to the teacher with the messages button in the top bar.",
+        DeliveryStates.Scheduled => "The teacher chose a time for the students to see it. The numbers about the students start then.",
+        _ => $"{row.TeacherName} opened it but has not posted it. The students cannot see it, so nobody has opened it yet.",
+    };
+}

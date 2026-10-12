@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<GuidanceCounselor> GuidanceCounselors => Set<GuidanceCounselor>();
     public DbSet<Administrator> Administrators => Set<Administrator>();
     public DbSet<AcademicCoordinator> AcademicCoordinators => Set<AcademicCoordinator>();
+    public DbSet<AcademicProvider> AcademicProviders => Set<AcademicProvider>();
 
     // Classes and enrollment
     public DbSet<SchoolYear> SchoolYears => Set<SchoolYear>();
@@ -43,6 +44,7 @@ public class AppDbContext : DbContext
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
+    public DbSet<ItemView> ItemViews => Set<ItemView>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<Referral> Referrals => Set<Referral>();
 
@@ -80,18 +82,20 @@ public class AppDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-        // The five staff tables share one configuration...
+        // The staff tables share one configuration...
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Teacher>(u => u.Teacher));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Registrar>(u => u.Registrar));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<GuidanceCounselor>(u => u.GuidanceCounselor));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Administrator>(u => u.Administrator));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<AcademicCoordinator>(u => u.AcademicCoordinator));
+        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<AcademicProvider>(u => u.AcademicProvider));
 
-        // ...and four of them also have a contact number and a status.
+        // ...and most of them also have a contact number and a status.
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Registrar>("registrars"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<GuidanceCounselor>("guidance_counselors"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Administrator>("administrators"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicCoordinator>("academic_coordinators"));
+        modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicProvider>("academic_providers"));
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

@@ -214,6 +214,12 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
             hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Academic coordinator · {s.Email}", "admin/users/coordinators", "clipboard-check"));
         }
 
+        foreach (var s in await ByName(db.AcademicProviders.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
+                     .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
+        {
+            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Academic provider · {s.Email}", "admin/users/providers", "send"));
+        }
+
         foreach (var s in await ByName(db.Administrators.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
                      .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
         {

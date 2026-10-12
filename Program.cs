@@ -72,6 +72,7 @@ builder.Services.AddScoped<ReferralService>();
 builder.Services.AddScoped<StudentLifecycleService>();
 builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<MaterialService>();
+builder.Services.AddScoped<ProviderService>();
 builder.Services.AddScoped<EvaluationService>();
 builder.Services.AddScoped<SchoolSetupService>();
 builder.Services.AddScoped<AnalyticsService>();

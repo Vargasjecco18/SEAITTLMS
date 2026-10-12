@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject WorkService Work
+@inject ModuleService Modules
 
 <PageTitle>@(data?.Title ?? "Work") · SEAITT e-LMS</PageTitle>
 
@@ -217,6 +218,11 @@ else
     protected override async Task OnParametersSetAsync()
     {
         teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        if (teacherId != 0)
+        {
+            await Modules.MarkItemOpenedAsync(teacherId, ItemId);
+        }
+
         await LoadAsync();
         loaded = true;
     }

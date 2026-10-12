@@ -36,6 +36,7 @@ public class User : AuditableEntity
     public Administrator? Administrator { get; set; }
     public GuidanceCounselor? GuidanceCounselor { get; set; }
     public AcademicCoordinator? AcademicCoordinator { get; set; }
+    public AcademicProvider? AcademicProvider { get; set; }
     public Registrar? Registrar { get; set; }
     public Teacher? Teacher { get; set; }
     public Student? Student { get; set; }
@@ -44,7 +45,7 @@ public class User : AuditableEntity
     {
         get
         {
-            PersonProfile?[] all = [Administrator, GuidanceCounselor, AcademicCoordinator, Registrar, Teacher, Student];
+            PersonProfile?[] all = [Administrator, GuidanceCounselor, AcademicCoordinator, AcademicProvider, Registrar, Teacher, Student];
             return all.FirstOrDefault(p => p is not null);
         }
     }

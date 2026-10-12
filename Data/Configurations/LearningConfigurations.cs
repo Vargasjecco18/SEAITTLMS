@@ -113,6 +113,18 @@ internal sealed class ModuleViewConfiguration : IEntityTypeConfiguration<ModuleV
     }
 }
 
+internal sealed class ItemViewConfiguration : IEntityTypeConfiguration<ItemView>
+{
+    public void Configure(EntityTypeBuilder<ItemView> b)
+    {
+        b.ToTable("item_views");
+        b.HasKey(v => new { v.ItemId, v.StudentId });
+        b.HasOne(v => v.Item).WithMany().HasForeignKey(v => v.ItemId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(v => v.Student).WithMany().HasForeignKey(v => v.StudentId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(v => v.StudentId);
+    }
+}
+
 internal sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<AttendanceRecord>
 {
     public void Configure(EntityTypeBuilder<AttendanceRecord> b)

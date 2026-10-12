@@ -28,6 +28,7 @@ public static class HelpContent
             AppRoles.Admin => [Admin()],
             AppRoles.Registrar => [Registrar()],
             AppRoles.AcademicCoordinator => [Coordinator()],
+            AppRoles.AcademicProvider => [Provider()],
             AppRoles.GuidanceCounselor => [Guidance()],
             _ => Array.Empty<HelpSection>(),
         });
@@ -42,6 +43,7 @@ public static class HelpContent
         AppRoles.Admin => "For the administrator",
         AppRoles.Registrar => "For the registrar",
         AppRoles.AcademicCoordinator => "For the academic coordinator",
+        AppRoles.AcademicProvider => "For the academic provider",
         AppRoles.GuidanceCounselor => "For the guidance counselor",
         _ => "Your pages",
     };
@@ -161,9 +163,10 @@ public static class HelpContent
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
             "Under a module add activities, quizzes and task performances, each with its points and due date.",
         ]),
-        new("What are the drafts that came from the academic coordinator?",
+        new("What are the drafts that came from the academic provider?",
         [
-            "The coordinator can send you the syllabus and modules of a course, with their activities and quizzes. They arrive in your course as drafts with a badge “From the academic coordinator”.",
+            "The academic provider (of the central team) can send you the syllabus and modules of a course, with their activities and quizzes. They arrive in your course as drafts with a badge “From the academic provider”.",
+            "The provider sees whether you opened what was sent and whether you posted it. Opening a draft to read it or to edit it is enough to count as opened.",
             "They are yours to change: edit the text, move the due dates, then post them when you are ready. The syllabus is always first.",
         ]),
         new("How do I make a quiz?",
@@ -207,10 +210,10 @@ public static class HelpContent
     [
         new("How do I add, change or switch off an account?",
         [
-            "Open Users Management and choose the tab of the role (Students, Teachers, Registrars, Guidance, Coordinators, Administrators).",
+            "Open Users Management and choose the tab of the role (Students, Teachers, Registrars, Guidance, Coordinators, Providers, Administrators).",
             "Press the Add button, or Edit on a row. In Edit you can change the name and email, set a new password, and switch the account on or off.",
             "Students are added by the registrar when enrolling them. A switched-off account can't sign in.",
-            "The school has one administrator, one registrar and one guidance counselor; it can have several academic coordinators.",
+            "The school has one administrator, one registrar and one guidance counselor; it can have several academic coordinators and academic providers.",
         ], "admin/users", "Open Users Management"),
         new("A teacher needs courses.",
         [
@@ -269,12 +272,11 @@ public static class HelpContent
             "Open Academic setup and use the tabs: School years, Terms, Tracks, Strands, Courses and Sections.",
             "The current term is the one students are enrolled in. Make the term first, then the sections.",
         ], "coordinator/academic-setup", "Open Academic setup"),
-        new("How do I send a syllabus, modules and activities to the teachers?",
+        new("Who sends the syllabus, modules and activities to the teachers?",
         [
-            "Open Course materials and choose a course. Add the syllabus first, then the modules with their activities, quizzes and task performances.",
-            "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
-            "Each teacher gets their own copy as a draft: they edit the text and the due dates and post it to their students when they are ready.",
-        ], "coordinator/materials", "Open Course materials"),
+            "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",
+            "If a course has no syllabus or a teacher did not get the modules, write to the academic provider (Messages).",
+        ]),
         new("How do I evaluate the teachers?",
         [
             "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Choose who it is about and the due date, then send it.",
@@ -289,6 +291,35 @@ public static class HelpContent
         [
             "Open Announcements, write the title and the text, choose who reads it (everybody, the students, the teachers) and, if you want, the last day it is shown.",
         ], "coordinator/announcements", "Open Announcements"),
+    ]);
+
+    private static HelpSection Provider() => new("For the academic provider", "send",
+    [
+        new("How do I send a syllabus, modules and activities to the teachers?",
+        [
+            "Open Course library and choose a course. Add the syllabus first, then the modules with their activities, quizzes and task performances.",
+            "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
+            "Each teacher gets their own copy as a draft: they edit the text and the due dates and post it to their students when they are ready.",
+        ], "provider/library", "Open Course library"),
+        new("How do I know if the teachers opened what I sent?",
+        [
+            "Open Tracking. Each line is one thing sent to one teacher's course. The state tells where it is: Not opened, Opened (a draft the teacher has seen), Scheduled or Posted.",
+            "A teacher counts as having opened it when they read or edit the module, open one of its activities, or post it. Filter by state to see what is waiting.",
+        ], "provider/tracking", "Open Tracking"),
+        new("How do I know if the students opened it?",
+        [
+            "Once a teacher posts a module, the Tracking page shows how many students opened it and its activities. Open a line to see each student, with the ones who have not opened it first.",
+            "The syllabus counts like a module. An activity, quiz or task performance counts when the student opens its page.",
+        ]),
+        new("Where do I see one teacher or one student?",
+        [
+            "Open Users and choose Teachers or Students. A teacher's line shows what they received, opened and posted, and how long they took. A student's line shows how much of what was posted to them they opened.",
+            "Press a name to see every thing sent, one by one.",
+        ], "provider/users", "Open Users"),
+        new("What do the analytics show?",
+        [
+            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, activity, quiz, task performance), by section and week by week.",
+        ], "provider/analytics", "Open Analytics"),
     ]);
 
     private static HelpSection Guidance() => new("For the guidance counselor", "heart-handshake",
