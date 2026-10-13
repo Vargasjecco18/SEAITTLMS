@@ -84,7 +84,7 @@
     <section class="section alt" id="courses" aria-labelledby="courses-title">
         <div class="container">
             <h2 id="courses-title">Our <span>Courses</span></h2>
-            <p class="courses-intro">Choose a strand to see the courses it studies.</p>
+            <p class="courses-intro">Choose a strand, then a grade level and a term, to see the courses it studies.</p>
 
             @if (tracks.Count == 0)
             {
@@ -119,15 +119,28 @@
                                         <p class="muted">The courses of this strand will be listed soon.</p>
                                     }
 
-                                    @foreach (var group in strand.Groups)
+                                    @* A strand shows its grade levels, and under each grade level its terms; a term opens to show its courses (one term at a time). *@
+                                    @foreach (var grade in strand.Groups.GroupBy(g => g.GradeLevel))
                                     {
-                                        <h4 class="group-heading">Grade @group.GradeLevel · @group.TermName</h4>
-                                        <ul class="course-list">
-                                            @foreach (var course in group.Courses)
+                                        <div class="grade-block">
+                                            <h4 class="group-heading">Grade @grade.Key</h4>
+                                            @foreach (var group in grade)
                                             {
-                                                <li>@course.Name</li>
+                                                <details class="term-card" name="@($"terms-{track.Code}-{strand.Code}")">
+                                                    <summary>
+                                                        <span class="term-name">@group.TermName</span>
+                                                        <span class="term-count">@(group.Courses.Count == 1 ? "1 course" : $"{group.Courses.Count} courses")</span>
+                                                        <Icon Name="chevron-down" Size="16" />
+                                                    </summary>
+                                                    <ul class="course-list">
+                                                        @foreach (var course in group.Courses)
+                                                        {
+                                                            <li>@course.Name</li>
+                                                        }
+                                                    </ul>
+                                                </details>
                                             }
-                                        </ul>
+                                        </div>
                                     }
                                 </div>
                             </details>

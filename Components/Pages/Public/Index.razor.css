@@ -507,6 +507,65 @@ h3 {
     text-transform: uppercase;
 }
 
+/* A term of a grade level: a row that opens to show its courses (a plain details box, no script needed). */
+.term-card {
+    margin-bottom: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.term-card[open] {
+    border-color: var(--brand);
+}
+
+.term-card summary {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    list-style: none;
+}
+
+.term-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.term-card summary:hover {
+    background: var(--surface-2);
+}
+
+.term-card summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.term-name {
+    font-weight: 600;
+}
+
+.term-count {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.term-card summary ::deep .icon {
+    flex: none;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+
+.term-card[open] summary ::deep .icon {
+    transform: rotate(180deg);
+}
+
+.term-card .course-list {
+    padding: 0.2rem 0.4rem 0.5rem;
+}
+
 .course-list {
     display: grid;
     gap: 0.1rem;

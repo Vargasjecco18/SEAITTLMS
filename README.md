@@ -588,7 +588,8 @@ sent to their own page instead. To change it:
 - The **Get in Touch** boxes come from the `Contacts` list at the bottom of the same file. **The email there,
   `your-email@example.com`, is a placeholder: replace it.**
 - The **courses** are read from the database (`Data/Queries/PublicCourses.cs`): each strand with its schedules and its
-  subjects per term. To change them, change the tables `strands`, `subjects` and `strand_subjects` (see
+  subjects per term. **Click a strand** to see its **grade levels** (Grade 11, Grade 12) and, under each, its **terms** (1st Term, 2nd Term) with
+  the number of courses; **click a term** to see its subjects (one term is open at a time; plain `<details>` boxes, no script). To change them, change the tables `strands`, `subjects` and `strand_subjects` (see
   [docs/database.md](docs/database.md)).
 - The big picture at the top is four photos that change by themselves (the dots pick one). They are the files
   `wwwroot/images/hero/hero-1.jpg` ... `hero-4.jpg`: replace a file to change a photo (keep them under about 400 KB so the
