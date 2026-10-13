@@ -4,7 +4,7 @@ MySQL schema `seaittlms`. The tables are created by the EF Core migrations in `D
 model lives in `Data/Entities` and `Data/Configurations`. Table and column names are snake_case.
 
 This version covers **users and roles** and **enrollment** for Senior High School, and it comes with
-SEAITT's school data (school year, terms, tracks, strands, schedules, subjects, see
+SEAITT's school data (school year, terms, tracks, strands, the hours of the schedules, subjects, see
 [The school data that comes with the database](#the-school-data-that-comes-with-the-database)).
 Lessons, assignments and quizzes come later.
 
@@ -43,11 +43,9 @@ erDiagram
     school_years ||--o{ sections : ""
     tracks ||--o{ strands : "track_id"
     strands ||--o{ sections : ""
-    schedules |o--o{ sections : "meets"
     sections ||--o{ course_schedules : "class times"
     subjects ||--o{ course_schedules : ""
-    strands ||--o{ strand_schedules : "runs in"
-    schedules ||--o{ strand_schedules : ""
+    schedules ||--o{ course_schedules : "AM, MID or PM"
     strands ||--o{ strand_subjects : "curriculum"
     subjects ||--o{ strand_subjects : ""
     teachers |o--o{ sections : "adviser"
@@ -189,16 +187,15 @@ WHERE st.id > 0;
 | `tracks` | The senior high school tracks SEAITT offers: **ACAD** (Academic) and **TECH-PRO** (Technical-Professional) (`code`, `name`, `is_active`). |
 | `strands` | BUSSENT, EDUC, ENG, MED, USP (ACAD) and CD1, HT1, HT2 (TECH-PRO) (`code`, `name`). Each strand belongs to one track (`track_id`). |
 | `schedules` | When classes meet: **AM** (morning), **MID** (midday), **PM** (afternoon), **with their hours**: `start_time` and `end_time` (a check keeps `end_time > start_time`). They start as AM 07:00-12:00, MID 10:00-15:00 and PM 13:00-18:00 (the academic coordinator changes them). |
-| `course_schedules` | **When a course meets for a section**: `section_id`, `subject_id`, `days` (`MWF` or `TTH`, checked), `start_time`, `end_time` (checked: `end_time > start_time`). `unique (section_id, subject_id)`: one time for a course of a section. It belongs to the section and the course, not to the teacher, so it can be set before a teacher has the course. Deleted with the section; a course can't be deleted while it has one (the setup service clears them first). `CourseScheduleService` keeps the rest: the time is inside the hours of the section's schedule, a class lasts 30 minutes to 4 hours, two courses of a section (same term) never overlap, and a teacher is never in two classes at once. The migration `AddCourseSchedules` adds the table and the two hour columns. |
-| `strand_schedules` | Which schedules each strand runs in (BUSSENT: AM and PM, HT2: PM only, ...). |
-| `subjects` | The subject catalog (`code`, `name`). |
+| `course_schedules` | **When a course meets for a section**: `section_id`, `subject_id`, `schedule_id` (**AM, MID or PM**: each course has its own, a section has none), `days` (`MWF` or `TTH`, checked), `start_time`, `end_time` (checked: `end_time > start_time`). `unique (section_id, subject_id)`: one time for a course of a section. It belongs to the section and the course, not to the teacher, so it can be set before a teacher has the course. Deleted with the section; a course can't be deleted while it has one (the setup service clears them first); a schedule can't be deleted while a class uses it. `CourseScheduleService` keeps the rest: the time is inside the hours of the course's schedule, a class lasts 30 minutes to 4 hours, two courses of a section (same term) never overlap, and a teacher is never in two classes at once. The migration `AddCourseSchedules` added the table and the two hour columns; `UnitsNameExtensionAndClassTimeSchedules` added `schedule_id`. |
+| `subjects` | The subject catalog (`code`, `name`, **`units`**: `decimal(3,1)`, from 0.5 to 12 (`ck_subjects_units`), 3 for the courses that existed when the column was added; the units are printed on the enrollment form). |
 | `strand_subjects` | **The curriculum**: the subjects a strand takes in a grade level and term (`strand_id`, `grade_level`, `term_number`, `subject_id`). The same every school year. |
-| `sections` | A section such as 11-BUSSENT-A in one school year: grade level 11 or 12, its schedule (`schedule_id`), optional adviser (teacher). |
+| `sections` | A section such as 11-BUSSENT-A in one school year: grade level 11 or 12, optional adviser (teacher). **It has no schedule**: it depends only on the school year, the strand, the grade level and the name (`unique (school_year_id, strand_id, grade_level, name)`). |
 | `enrollments` | A student placed in a section for a term, with a copy of who they were then (see below). `status`: Enrolled, Dropped, Completed. |
 | `enrollment_subjects` | The subjects a student takes in an enrollment (`enrollment_id`, `subject_id`). |
 
 An **enrollment** row reads on its own. Besides the links to the student, the term and the section, it holds
-`lrn`, `first_name`, `middle_name`, `last_name`, `grade_level`, `track_id`, `strand_id` and `subjects` (the subject names
+`lrn`, `first_name`, `middle_name`, `last_name`, `name_extension` (Jr., III, ... up to 10 characters, optional), `grade_level`, `track_id`, `strand_id` and `subjects` (the subject names
 separated by commas, for reading the table; the program uses `enrollment_subjects`). They are copied when the student is
 enrolled, so a later change (a new name, a promotion) does not rewrite what was true at the time. The Users page does keep
 a student's *name and LRN* in step in their enrollments when an administrator corrects them. `enrolled_by_user_id` is the
@@ -263,7 +260,8 @@ The migrations `AddProfilePhotos` and `AddSocialFeaturesSecurityLogsAndSettings`
 
 | Table | What it holds |
 |---|---|
-| `attachments` | A file attached to a syllabus or module of the provider's library or a teacher's module (`module_id`, `material_module_id`), or to an activity, quiz or task performance (`item_id`, `material_item_id`): `name`, `content_type`, `size_bytes`, `position`, `uploaded_by_user_id` (emptied when that account is deleted; the file stays). **Exactly one** of the four links is set (`AttachmentService` keeps that; MySQL does not allow a check constraint on columns with a cascading foreign key). Deleted with the module or item it is on. |
+| `attachments` | A file attached to a syllabus or module of the provider's library or a teacher's module (`module_id`, `material_module_id`), or to an activity, quiz or task performance (`item_id`, `material_item_id`), or **to the work of a student** (`submission_id`: the files the student sends instead of a link; deleted with the work): `name`, `content_type`, `size_bytes`, `position`, `uploaded_by_user_id` (emptied when that account is deleted; the file stays). **Exactly one** of the four links is set (`AttachmentService` keeps that; MySQL does not allow a check constraint on columns with a cascading foreign key). Deleted with the module or item it is on. |
+| `final_grades` | **The final grade the teacher gives a student in a course** (round 15): `assignment_id` (the teacher's course, deleted with it), `student_id` (deleted with the student), `grade` (`decimal(5,2)`, 0 to 100, checked). `unique (assignment_id, student_id)`: one for each student and course. The gradebook writes them (a blank takes it away) and the student sees them with the grades. |
 | `attachment_contents` | The bytes of a file, one row for each attachment (`attachment_id` is the key), apart from `attachments` so that a list of files never reads them. |
 
 When the provider **sends** a module, its files are copied to the teacher's copy (and the activities' files to the activities of the copy); the teacher's copy is then the teacher's own. A student sees the files of a module
@@ -276,7 +274,7 @@ or item they can see (the module is posted and they take the course). Files open
 | `calendar_entries` | An **event a person wrote on their own calendar** (the *Add event* button): `user_id` (the owner, deleted with the account), `title` (at most 120 characters), `day` (a date), `start_time` (a time of day in Philippine time, empty for an all-day event), `notes` (at most 500), `created_at_utc`, `updated_at_utc`. An event is private: `CalendarService` reads and changes only the rows of the signed-in person, and keeps at most 1,000 for a person. Index `(user_id, day)` for the month and week views. |
 | `achievement_awards` | **Which achievements a student earned and whether the congratulation box was shown**: `student_id` (deleted with the student), `achievement_key` (`first-step`, `perfect-score`, ... at most 40 characters, not named `key` because that is a MySQL reserved word), `earned_at_utc`, `seen_at_utc` (empty until the student closes the box in the middle of the screen). `unique (student_id, achievement_key)`: an award is written once and shown once. The achievements themselves (their text, progress and whether they are earned **now**) are not in the database: `AchievementService` works them out from the scores, the handed-in work and the opened modules every time, and only writes a row here the first time one is earned. |
 
-The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**.
+The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**; round 15 removes `strand_schedules` and adds `final_grades` (still **56**).
 
 ### Messages and notifications
 
@@ -301,16 +299,16 @@ running it on a database that already has some of it changes nothing that exists
 | `tracks` | ACAD (Academic), TECH-PRO (Technical-Professional) |
 | `schedules` | AM (Morning, 7:00 AM - 12:00 PM), MID (Midday, 10:00 AM - 3:00 PM), PM (Afternoon, 1:00 PM - 6:00 PM) |
 
-| Strand (`code`) | Full name (`name`) | Track | Schedules | 1st term subjects (grade 11) |
-|---|---|---|---|---|
-| BUSSENT | Business and Entrepreneurship | ACAD | AM, PM | BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1 |
-| EDUC | Education | ACAD | AM, PM | FILIPINO 1, CREATIVE COMPOSITION 1 |
-| ENG | Engineering | ACAD | AM, PM | FINITE MATH 1, EMPOWERMENT TECHNOLOGY |
-| MED | Medical and Health Sciences | ACAD | AM, PM | BIOLOGY 1, EMPOWERMENT TECHNOLOGY |
-| USP | University Studies Preparatory | ACAD | AM | SOCIAL SCIENCES, BIOLOGY 1 |
-| CD1 | Computer System Servicing - Video Game Development (CSS-VGD) | TECH-PRO | AM, PM | COMPUTER SYSTEM SERVICING 1 |
-| HT1 | Kitchen Operations - Food and Beverage Services (KO-FBS) | TECH-PRO | AM, MID, PM | KITCHEN OPERATION 1 |
-| HT2 | Food and Beverage Services - Kitchen Operations (FBS-KO) | TECH-PRO | PM | FOOD AND BEVERAGE OPERATIONS 1 |
+| Strand (`code`) | Full name (`name`) | Track | 1st term subjects (grade 11) |
+|---|---|---|---|
+| BUSSENT | Business and Entrepreneurship | ACAD | BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1 |
+| EDUC | Education | ACAD | FILIPINO 1, CREATIVE COMPOSITION 1 |
+| ENG | Engineering | ACAD | FINITE MATH 1, EMPOWERMENT TECHNOLOGY |
+| MED | Medical and Health Sciences | ACAD | BIOLOGY 1, EMPOWERMENT TECHNOLOGY |
+| USP | University Studies Preparatory | ACAD | SOCIAL SCIENCES, BIOLOGY 1 |
+| CD1 | Computer System Servicing - Video Game Development (CSS-VGD) | TECH-PRO | COMPUTER SYSTEM SERVICING 1 |
+| HT1 | Kitchen Operations - Food and Beverage Services (KO-FBS) | TECH-PRO | KITCHEN OPERATION 1 |
+| HT2 | Food and Beverage Services - Kitchen Operations (FBS-KO) | TECH-PRO | FOOD AND BEVERAGE OPERATIONS 1 |
 
 The **2nd term** has the same six subjects for every strand: EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON,
 GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE and PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO.
@@ -327,8 +325,8 @@ Things that were decided for you, change them in the tables if they are not righ
   (kept, with its strands and students), and SPORTS and ARTS were removed if nothing used them (switched off, not
   deleted, if something did).
 - USP was first put under TECH-PRO. The migration `MoveUspToAcad` moves it (with the students, teachers and enrollments that list it) to ACAD.
-- Sections that were made before schedules existed have an empty `schedule_id`. They keep working.
-- The migration `AddSectionsAToE` added sections A to E; **`AddGrade12CurriculumAndSectionsAToC` keeps only A, B and C**: it adds A, B and C at grade 11 and grade 12 for the current school year (the year of the current term, else the latest), for every schedule of every strand, and removes the D and E nobody uses (one with students or a teacher stays). A section that is already there is left alone. The registrar picks the section from this list when enrolling a student (`SectionNames.Choices`).
+- The migration `UnitsNameExtensionAndClassTimeSchedules` (round 15) takes the schedule away from sections: each class time keeps the schedule its section had (or the one whose hours hold it), the sections that only differed by their schedule are merged (a copy nobody uses is deleted, another one in use is kept under a name like *A-PM*), `strand_schedules` is dropped, `subjects.units` and `enrollments.name_extension` are added. `AddFinalGradesAndSubmissionFiles` adds `final_grades` and `attachments.submission_id`.
+- The migration `AddSectionsAToE` added sections A to E; **`AddGrade12CurriculumAndSectionsAToC` keeps only A, B and C**: it adds A, B and C at grade 11 and grade 12 for the current school year (the year of the current term, else the latest), for every strand, and removes the D and E nobody uses (one with students or a teacher stays). A section that is already there is left alone. The registrar picks the section from this list when enrolling a student (`SectionNames.Choices`).
 - The migration `AddAnnouncementCategoriesAndAutomaticGroups` adds `announcements.category` and `assignment_id`, and `study_groups.auto_kind` and `auto_key` (and makes `owner_user_id` optional). `AddEvaluationScales` adds `evaluation_questions.options_text` and `evaluation_answers.selection`; the old `Rating` questions become `Performance` questions (the same 1 to 5). `AddAttachments` adds the two tables `attachments` and `attachment_contents`.
 - The migration `AddAcademicProviderRoleAndOpenTracking` adds the role `AcademicProvider` (7), the table `academic_providers`, the table `item_views` and `material_deliveries.opened_at_utc`.
 - The migration `AddAcademicCoordinatorRole` adds the role `AcademicCoordinator` (6) and the table `academic_coordinators`; `AddCourseMaterialsAndTeacherEvaluation` adds the tables of the previous section and `modules.is_syllabus`.
@@ -343,9 +341,7 @@ Things that were decided for you, change them in the tables if they are not righ
 - A student has at most **one enrollment per term** (`unique (student_id, term_id)`).
 - An enrollment's strand must belong to its track, and its section must be a section of that strand and grade level
   (composite foreign keys, like the summary on students).
-- A section's schedule must be one the strand runs in (`(strand_id, schedule_id)` is a foreign key to
-  `strand_schedules`). A section name is unique per school year, strand, grade level and schedule: **A in the AM and A in
-  the PM are different sections.**
+- A section name is unique per school year, strand and grade level (the schedule is not part of it: each course has its own).
 - A subject appears at most once per strand, grade level and term in the curriculum, and at most once per enrollment.
 - An enrollment can only combine a **term and a section of the same school year**. It carries a `school_year_id` that is
   part of two composite foreign keys, to `terms (id, school_year_id)` and to `sections (id, school_year_id)`. When you
@@ -372,7 +368,7 @@ Things that were decided for you, change them in the tables if they are not righ
   that term and its `enrollment_subjects` are deleted. "Not enrolled" means an active student with no `Enrolled` enrollment in the next term (the current term
   when there is no next one), see `Data/Queries/NotEnrolled.cs` and `TermLookup`.
 - The school setup (`SchoolSetupService`) is only for administrators and refuses what would leave the records inconsistent: a term, strand or
-  section that students use can't move to another school year, track or strand; a schedule a section uses can't be taken from its strand; a school
+  section that students use can't move to another school year, track or strand; a school
   year with terms or sections, a track with strands, a subject in a curriculum or taken by students and a section with students can't be deleted; only one term is
   current. (Edits of columns that are part of a key other tables use are made with a direct update, `ExecuteUpdate`, not through a tracked entity.)
 - Announcements (`AnnouncementService`): the administrator and the registrar write for everybody, the students or the teachers; a teacher only for a

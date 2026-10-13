@@ -102,7 +102,8 @@
 <Modal Open="restoreTarget is not null" Title="Restore this backup?" OnClose="CloseRestore">
     @if (restoreTarget is { } target)
     {
-        <Notice Message="@("Everything in the system is replaced by what is in " + target.FileName + ". Work done after " + PhilippineTime.FormatDateTime(target.CreatedAtUtc) + " will be gone.")" IsError="true" />
+        @* A warning inside the box, not a pop-up (a pop-up would need its own OK on top of this box). *@
+        <FormErrors Errors="@(new[] { "Everything in the system is replaced by what is in " + target.FileName + ". Work done after " + PhilippineTime.FormatDateTime(target.CreatedAtUtc) + " will be gone." })" />
         <p class="dialog-note">A backup of what is there now is made first, so it can be undone. Type <strong>RESTORE</strong> to go on.</p>
         <Field For="restore-confirm" Label="Type RESTORE">
             <input id="restore-confirm" type="text" class="input" autocomplete="off" @bind="restoreText" @bind:event="oninput" />

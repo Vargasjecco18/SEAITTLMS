@@ -2,7 +2,7 @@
 
 @* The feedback of a page (saved, or what went wrong) as a pop-up in the middle of the screen, with an OK button. It sits over any other box that is open. *@
 <Modal Open="!string.IsNullOrEmpty(Message)" Title="@(IsError ? "Please check" : "Done")" Centered="true" Narrow="true" Top="true" OnClose="Dismiss">
-    <div class="notice-body @(IsError ? "error" : "")" role="@(IsError ? "alert" : "status")">
+    <div class="notice-message @(IsError ? "error" : "")" role="@(IsError ? "alert" : "status")">
         <span class="notice-icon"><Icon Name="@(IsError ? "circle-alert" : "circle-check")" Size="22" /></span>
         <p>@Message</p>
     </div>

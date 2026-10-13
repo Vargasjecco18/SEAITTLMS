@@ -25,7 +25,7 @@ What exists so far:
 - **More for the administrator**: *Security Logs*, *Database Backup & Restore* and *System Settings*.
 - **A Help page** for every role (the link is above the profile card in the menu), and **pop-ups in the menu**: rest the pointer on a page and a box shows what is inside it.
 - **The first page** (`/`, before signing in) lists **Our courses** by track: each track, its strands with their full names, and, when a strand is opened, the courses it studies by grade level and term.
-- **Enrollment** by school year and **term**: tracks, strands, schedules (AM, MID, PM), subjects, sections,
+- **Enrollment** by school year and **term**: tracks, strands, subjects (with their **units**), sections (a section is the school year, strand, grade level and name), the **schedule (AM, MID, PM)** of each course,
   enrollments. The database comes with the school year 2026-2027, its two terms, the ACAD and TECH-PRO tracks, their
   strands and the subjects of grade 11.
 - **A header** with a search bar in the middle and, at the right, **messages**, **notifications** and **settings**
@@ -127,12 +127,12 @@ version has no views.)
 **Without running the app:** in Workbench open
 [database/seaittlms_reset_and_rebuild.sql](database/seaittlms_reset_and_rebuild.sql) (*File > Open SQL Script...*) and
 click the lightning bolt. It deletes the `seaittlms` schema and builds everything again, including the seven roles and
-the school setup (school year, terms, tracks, strands, schedules, subjects). Then run `dotnet watch` to create the
+the school setup (school year, terms, tracks, strands, subjects, the hours of AM, MID and PM). Then run `dotnet watch` to create the
 administrator.
 
 Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
-**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, **1 academic coordinator, 1 academic provider**, 10 teachers and 20 students), open
+**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, **1 academic coordinator, 1 academic provider**, 6 teachers and 12 students), open
 [database/seaittlms_sample_accounts.sql](database/seaittlms_sample_accounts.sql) in Workbench and click the lightning bolt.
 It only adds what is missing (and gives the sample accounts of an earlier version the new email and password), so running it twice is harmless. The sign-ins are **easy on purpose**,
 to try the system: the email is the last name (or the role) + `@legazpi.seaitt.edu.ph`, and the password is the role with a number:
@@ -144,15 +144,15 @@ to try the system: the email is the last name (or the role) + `@legazpi.seaitt.e
 | Guidance counselor | `guidance@legazpi.seaitt.edu.ph` | `Guidance1` |
 | Academic coordinator | `coordinator1@...` | `Coordinator1` |
 | Academic provider | `provider1@...` | `Provider1` |
-| Teachers | `vargas@...`, `villanueva@...`, `bautista@...`, ... | `Teacher1` (Vargas), `Teacher2`, `Teacher3`, ... `Teacher10` |
-| Students | `delacruz@...`, `abad@...`, `alcantara@...`, ... | `Student1` (Dela Cruz), `Student2`, ... `Student20` |
+| Teachers | `vargas@...`, `villanueva@...`, `bautista@...`, ... | `Teacher1` (Vargas), `Teacher2`, `Teacher3`, ... `Teacher6` |
+| Students | `delacruz@...`, `abad@...`, `alcantara@...`, ... | `Student1` (Dela Cruz), `Student2`, ... `Student12` |
 
 The school has **one** administrator, registrar, guidance counselor, academic coordinator and academic provider, so the file never adds a second one and **never changes the password of the administrator you already have** (the last lines of the file, written as a
 comment, can give that administrator `Admin123` too). The file holds only the hashes of the passwords, not the passwords. Give real people a harder password in **Users Management > Edit**.
 
 **Sample data:** the accounts have no courses or enrollments yet (the students are listed under *Not enrolled*). To fill the tables with practice data, run
-[database/seaittlms_sample_data.sql](database/seaittlms_sample_data.sql) **once**, after the accounts file (open it in Workbench, press the lightning bolt, wait a minute). It enrolls the 20 students in
-**four groups of 5** (Grade 11 and Grade 12, each in the ACAD track, strand BUSSENT, and in the TECH-PRO track, strand HT1; section A, AM schedule), gives the 10 teachers their courses (30 courses), and adds, with dates around the day you run it: the library of the academic provider and what it sent to every teacher (some opened, some
+[database/seaittlms_sample_data.sql](database/seaittlms_sample_data.sql) **once**, after the accounts file (open it in Workbench, press the lightning bolt, wait a minute). It enrolls the 12 students in
+**four groups of 3** (Grade 11 and Grade 12, each in the ACAD track, strand BUSSENT, and in the TECH-PRO track, strand HT1; section A; one student has the name extension *Jr.*), gives the 6 teachers their courses (30 courses, each with its days, MWF or TTH, and its time in the AM schedule), and adds, with dates around the day you run it: the library of the academic provider and what it sent to every teacher (some opened, some
 still waiting, some posted), modules, activities and quizzes with questions, who opened what, the work handed in and graded, attendance, announcements, messages, notifications, friends,
 the automatic groups and three groups the students made, files in the lockers, the security log, the settings, a syllabus (PDF) and a notes file attached to each course of the library and to the teachers' copies, announcements of every category
 (an exam, a holiday, the semester break, a teachers' meeting, others, and two from a teacher to a class) and one teacher evaluation with every kind of question and its answers. It adds nothing if any of these students is enrolled already (so a second run does nothing).
@@ -214,7 +214,7 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 | Registrar | `/registrar` | Dashboard, **Enrollments**, **Student's Accounts** |
 | Teacher | `/teacher` | **Dashboard**, **Courses** (modules, activities, quizzes, task performances, grading), **Attendance**, **Calendar**, **Announcements** (to their classes), **Gradebook**, **Analytics**, **Users**, **Groups**, **Resources** (in this order in the menu) |
 | Student | `/student` | **Dashboard**, **Courses** (modules, work, quizzes), **Calendar**, **Grades**, **Users**, **Groups**, **Resources** (in this order in the menu) |
-| Guidance counselor | `/guidance` | **Dashboard**, **Referrals** (with the grade level and course of each student), **Analytics** |
+| Guidance counselor | `/guidance` | **Dashboard**, **Referrals** (one row for each student), **Analytics** |
 
 Every role also has **Help** (`/help`, the link above the profile card in the menu): the answers to the usual questions of the role, with the steps.
 
@@ -235,7 +235,8 @@ their track, strand, section and courses right away in the **Add teacher** form 
 **Teacher > Courses** shows one colored card per course (a teacher with more than one section also gets a chip per section to show one
 section at a time). The two buttons at the right of the chips **change the view**, like the student's page: **Cards** (with the calendar at the right) or a **List** (course, section,
 students, modules posted with a bar, what is to check). **Open** shows its modules. The **syllabus** and the modules the academic coordinator sent are drafts here too, marked
-*From the academic coordinator*. A new module is a **draft**: students
+*From the academic provider*. There is no *Add module* button and no button to move or delete a module: the academic provider sends the modules and the teacher
+changes their text and dates (**Edit**) and adds activities, quizzes and task performances. A module the provider sent is a **draft**: students
 cannot see it. **Post now** shows it to the students (they get a notification), **Schedule** picks the day and time it
 appears by itself, **Hide** takes it back. At the bottom of a module are its **Activities**, **Quizzes** and **Task
 performances**; each has a due date (and can have its own time to appear). Open an item to see who handed in, read the
@@ -253,7 +254,7 @@ checked on the server, and a quiz that was left open is handed in when its time 
 **Student > Courses** shows the courses they are enrolled in as cards (or a list). The chips are **All**, **Enrolled** (the term has not ended) and **Completed** (the term is over, or the enrollment was completed), each with its number. The **list** has the columns course, teacher, section, schedule, term, status, modules and work, **progress**, next due, grade and attendance. The **progress** (a bar and a percent, also on every card)
 is how far along the student is: the modules they opened and the work they handed in, out of everything posted so far. **Open** shows the
 posted modules; each ends with three tabs: **Activities**, **Quizzes**, **Task performance**. **Read lesson** opens the
-module's text. A module that was never opened is marked **New**.
+module: the **files of the lesson are shown right in the page, at the left** (a PDF, a text file, a picture, a sound or a video in a viewer; when there are several files, a button for each one switches the viewer, and there are links to open one in its own tab or save it; a Word or PowerPoint file can't be shown by the browser, so it only offers the download) and the lesson text at the right. There is no *Your work in this module* card on this page, so the student can focus on the lesson (the work is on the course page). A module that was never opened is marked **New**. Code: `Components/Shared/FilePreviewPane.razor`.
 
 **Your work: the editor.** An activity or a task performance is answered in **an editor like a word processor** (`Components/Shared/RichTextEditor.razor`, script `seaittEditor` in `wwwroot/app.js`).
 The bar above the box has: undo and redo, the **paragraph style** (normal, heading 1 to 3, quote), the **font** (Arial, Calibri, Cambria, Georgia, Times New Roman, Verdana, Courier New) and its **size** (8 to 48),
@@ -261,7 +262,7 @@ The bar above the box has: undo and redo, the **paragraph style** (normal, headi
 increase **indent**, the **line spacing**, a **table** (3 × 3; Tab moves between its cells and adds a row after the last one), a **link** and a **line**. The tools that are on where the cursor is look pressed, and under the box are the **word and character count**
 (at most 20,000 characters). Pasting keeps the words only (no pictures or fonts from other pages come in). The answer is saved with its formatting in `submissions.answer_html` (and the plain words in `answer_text`);
 **the server cleans it again** (`Services/RichText.cs`: only a short list of tags, links and style rules is kept; scripts, pictures, frames and event handlers are taken out), so nothing from the browser is trusted. The student sees it
-again in the editor to change it until it is graded; the teacher sees it with its formatting. Work handed in before the editor existed opens as paragraphs. **Quizzes with questions** are different: the questions are answered one by one on the quiz page and graded by the system. A **quiz that is only a file** (the provider or the teacher attached the questions as a file and added none) is answered in the same editor, in a card called *Your answers*, and the teacher reads it and gives the score by hand, like an activity.
+again in the editor to change it until it is graded; the teacher sees it with its formatting. Work handed in before the editor existed opens as paragraphs. **The student sends files, not a link.** Under the editor, *Send files* attaches up to ten files to the work (a PDF, a picture, a document; programs and scripts are refused, each file up to the size set in System Settings). A file alone is enough to hand in. Until it is graded the student can take a file off, add another and hand in again. The teacher opens the files from the student's work (and nobody else can: another student, another teacher or the registrar get nothing). The files are stored with the work (`attachments.submission_id`, bytes in `attachment_contents`) and go with it if it is deleted. **Quizzes with questions** are different: the questions are answered one by one on the quiz page and graded by the system. A **quiz that is only a file** (the provider or the teacher attached the questions as a file and added none) is answered in the same editor, in a card called *Your answers*, and the teacher reads it and gives the score by hand, like an activity.
 
 The code: `Services/TeachingService.cs`, `ModuleService.cs`, `WorkService.cs`, `QuizService.cs`, `AutomationService.cs`
 (the background job), the pages in `Components/Pages/Teacher/` and `Components/Pages/Student/`, and the anti-cheating watch in
@@ -304,10 +305,10 @@ not come yet can't be marked. Under it the **Attendance summary** shows each stu
 attendance rate (days present or late divided by days marked; under 80% is red).  Students see their rate on **Grades**, and five days all present earn the *Perfect attendance* badge.
 
 **Teacher > Gradebook** (`/teacher/gradebook`): choose the course; every student is a row, every activity, quiz and task
-performance of a posted module is a column (with its highest score), and the last column is the average. A score under 70% is
+performance of a posted module is a column (with its highest score; the headers are short: **A1, A2** for the activities, **Q1** for the quizzes and **TP1** for the task performances, in the order of the columns, and the full title shows when you point at it), then the **average** and, at its right, the **final grade**. A score under 70% is
 red, work waiting for a score says *To check* (click it to open the work). **Edit grades** turns a row into boxes; **Save**
 changes the scores (all of them are checked first, a wrong one saves nothing) and tells the student. Feedback the teacher wrote
-is kept.
+is kept. The **final grade** is a number the teacher writes for each student (0 to 100, two decimals at most; a blank takes it away) and the **Save final grades** button above the table saves all of them at once (everything is checked first). The student sees it with the grade of the course (*Grades*). Table `final_grades`, code `Services/GradebookService.cs`.
 
 ## Guidance counselor: referrals
 
@@ -321,14 +322,14 @@ the counselor opens a page):
 | **Not attending class** | attendance is **under 80%** over at least 5 marked days |
 
 Each problem becomes one referral for that student and subject (it is not repeated, and not sent again for 14 days after it was resolved) and the
-counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists them with the student, the **grade level** (a narrow column), the **section** and the **course** (the strand) in the three columns next to it, then the subject and its teacher, the problem, the **grade** and the status, with filters (status, problem, grade level) and **one search bar** that looks in all of these at once: type any of **the name or LRN, the grade level (11 or 12), the section, the course (the strand), the subject, the teacher or the problem** (failing, at risk, attending), and several words together all have to match, for example `garcia accounting 11 failing`. Press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
+counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists the students with problems, **one row for each student** (a student who has problems in several subjects is still one row): the student, the **grade level**, the **course** (the strand), the **section**, the **problem** (a badge for each kind of problem, and **View all (n)** under it), **since** when and the **status**, with filters (status, problem, grade level) and **one search bar** that looks in all of these at once: type any of **the name or LRN, the grade level (11 or 12), the section, the course (the strand), the subject, the teacher or the problem** (failing, at risk, attending), and several words together all have to match, for example `garcia accounting 11 failing`. **View all** opens the list of that student's problems with the **subject and its teacher**, the **problem**, the **grade** (or the attendance rate) and the status of each one, and a button to work on it. Press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
 called the parents, tutoring ...), notes only the counselor reads and, when resolving, how it ended (*Improved* or *No change*). A student is told
 when the counselor starts. (There is no separate "Students at risk" page: the cards of the dashboard and the menu open **Referrals** already filtered by problem.)
 
 ## Analytics
 
 **Analytics** (`/analytics`) is for the administrator and the guidance counselor (the whole school) and for a teacher (only their subjects). It shows
-the number of students, the average grade, the attendance rate, how many students are failing or at risk, the grades by band for each grade level
+the number of students, the average grade, the attendance rate, how many students are failing or at risk (a teacher's page has no *Failing* and *At risk* cards), the grades by band for each grade level
 (each subject for a teacher), the **attendance** (the rate, how many were present, late and absent, and the rate of each section, or of each course for a teacher; there is no monthly trend any more), the **primary concern categories** (referrals by problem),
 the **intervention effectiveness** (how many resolved referrals improved, by the help given) and the performance by strand. Everything is worked
 out from the scores and the attendance that are recorded. (A teacher's page has no attendance card: the teacher's own attendance page and gradebook have it.)
@@ -400,29 +401,29 @@ posted. The same rule shows a file in the browser or saves it (`/files/a/<id>`; 
 | School years | Name (like 2027-2028), first and last day. One with terms or sections can't be deleted. |
 | Terms | School year, number, name, dates (inside the school year) and **the current term** (making one current takes it away from the other: only one term is current). The term after the current one is the **next term**. A term with enrollments can't change its number or school year and can't be deleted. |
 | Tracks | Code, name, offered or not. One with strands can't be deleted. |
-| Strands | Code, name, track, **the schedules** it has classes in (at least one), offered or not, and **the courses of the strand** (the **Courses** button: pick grade level and term, add or remove courses). A strand with students can't move to another track; a schedule that a section uses can't be taken away; one that is or was in use can't be deleted (switch it off). |
-| Courses | Code, name, description, in use or not. One in a strand's courses or taken by students can't be deleted. |
+| Strands | Code, name, track, offered or not, and **the courses of the strand** (the **Courses** button: pick grade level and term, add or remove courses). A strand with students can't move to another track; one that is or was in use can't be deleted (switch it off). |
+| Courses | Code, name, **units** (0.5 to 12, one decimal, 3 by default; the list shows them in a column and they are printed on the enrollment form), description, in use or not. One in a strand's courses or taken by students can't be deleted. |
 | Class schedule | The hours of **AM, MID and PM**, and **the days and the time of each course of a section** (see below). The number on the tab is how many courses have class times. |
-| Sections | School year, grade level, strand, schedule (one of the strand's), name and adviser. One with students or teachers can only change its name and its adviser. The list shows the **schedule (AM, MID or PM) next to each section**, because *A* can exist once in each schedule of the same strand (that is not a duplicate), and can be filtered by grade level, strand and schedule. |
+| Sections | School year, grade level, strand, name and adviser. **A section depends only on the grade level and the strand** (11-BUSSENT-A): it has no schedule, because the schedule (AM, MID, PM) and the days and time belong to each **course** (see *Class schedule*). One with students or teachers can only change its name and its adviser. The list can be filtered by grade level and strand. |
 
 The courses a student takes are **not picked at enrollment**: they are the courses of the strand for that grade level and term, as set here. Changing the
 courses of a strand changes the enrollments made from then on; students already enrolled keep theirs. Code: `Services/SchoolSetupService.cs`.
 
-**Class schedule** (the *Class schedule* tab). Every section meets in a part of the day, **AM, MID or PM**, and now each of those has **hours** (they start as AM 7:00 AM – 12:00 PM, MID 10:00 AM – 3:00 PM and PM 1:00 PM – 6:00 PM). The first card of the tab changes them
-(it must end after it starts, last at least one hour and stay between 5 AM and 10 PM; a shorter day that would leave a class outside it is refused and names the class). The second card sets **when each course meets**: choose a section (the ones of the school year that is running come first,
-each with *how many of its courses have a time*) and, for each of its courses (the courses of its strand at its grade level, by term, with the teacher when there is one), choose the **days**, **MWF** (Monday, Wednesday, Friday) or **TTH** (Tuesday, Thursday), and **when the class starts and ends**, then press *Save* (*Clear* takes the time away).
+**Class schedule** (the *Class schedule* tab). The day is in three parts, **AM, MID and PM**, and each of those has **hours** (they start as AM 7:00 AM – 12:00 PM, MID 10:00 AM – 3:00 PM and PM 1:00 PM – 6:00 PM). The button *Edit the times of the day* changes them
+(it must end after it starts, last at least one hour and stay between 5 AM and 10 PM; a shorter day that would leave a class outside it is refused and names the class). The table sets **when each course meets**: choose a section (the ones of the school year that is running come first,
+each with *how many of its courses have a time*) and, for each of its courses (the courses of its strand at its grade level, by term, with the teacher when there is one), choose the **schedule** (AM, MID or PM), the **days**, **MWF** (Monday, Wednesday, Friday) or **TTH** (Tuesday, Thursday), and **when the class starts and ends**, then press the **one Save button**, at the right of the section list, which saves the whole section. A course with nothing chosen has no class time (a row you empty is cleared when you save). If any row is wrong **nothing is saved** and every problem is listed above the table.
 The rules, checked again in the database before anything is saved:
 
-* the time must be **inside the hours of the section's schedule** (the section 11-BUSSENT-A is AM, so 7:00 AM – 12:00 PM), and a class lasts from 30 minutes to 4 hours;
+* the time must be **inside the hours of the course's schedule** (a course in AM is between 7:00 AM and 12:00 PM), and a class lasts from 30 minutes to 4 hours; two courses of one section can be in different schedules;
 * **two courses of a section can't meet at the same time** on the same days **in the same term** (a 1st-term course and a 2nd-term course can use the same hours, they are never taught together; MWF and TTH never overlap);
 * **a teacher can't be in two classes at the same time** (same school year, same term, same days, overlapping hours): it is checked when the time is set and when the course is given to the teacher (Users Management > Give the course);
-* only the academic coordinator can set or clear them; a section that moves to another strand, grade level, schedule or school year starts again without class times, and deleting a course takes its class times with it.
+* only the academic coordinator can set or clear them; a section that moves to another strand, grade level or school year starts again without class times, and deleting a course takes its class times with it.
 
-The class times show as **MWF · 8:00 AM – 9:30 AM** on the teacher's *Courses* (cards and list), on the student's *Courses* (cards and list), on the registrar's enrollment receipt and on the **enrollment form to print** (a *Days and time* column next to each course). A course with no time simply shows none. Code: `Services/CourseScheduleService.cs`, `Components/Pages/Coordinator/Setup/ScheduleTab.razor` (tables `schedules`, `course_schedules`).
+The class times show as **AM · MWF · 8:00 AM – 9:30 AM** (the schedule, the days and the time) on the teacher's *Courses* (cards and list), on the student's *Courses* (cards and list), on the registrar's enrollment receipt and on the **enrollment form to print** (a *Schedule* column at the right of each course). A course with no time simply shows none. Code: `Services/CourseScheduleService.cs`, `Components/Pages/Coordinator/Setup/ScheduleTab.razor` (tables `schedules`, `course_schedules`: `section_id`, `subject_id`, `schedule_id`, `days`, `start_time`, `end_time`).
 
 **Grade 11 and grade 12, sections A to C.** Both grade levels have courses: the migration `AddGrade12CurriculumAndSectionsAToC` gives every strand the grade 12 version of its courses (the grade 11
 name with a **2**: BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, ... and six common courses in the 2nd term), and the database comes with sections **A, B and C** for the current school year, for
-every schedule of every strand, at grade 11 and grade 12 (sections D and E were removed; one that has students or a teacher would stay). The registrar **chooses** the section from a list when
+every strand, at grade 11 and grade 12 (sections D and E were removed; one that has students or a teacher would stay). The migration `UnitsNameExtensionAndClassTimeSchedules` merged the sections that only differed by their schedule (nothing was lost: a copy nobody used was deleted, another one in use was kept as for example *A-PM*). The registrar **chooses** the section from a list when
 enrolling a student (A to C, plus any other section that exists) and does not type it; the coordinator can still make a section with another name in the *Sections* tab.
 
 **Administrator > Enrolled and Not enrolled** (`/admin/enrollment/enrolled`, `/admin/enrollment/not-enrolled`) are two lists the administrator can only look at (the registrar enrolls the
@@ -511,13 +512,12 @@ Menu: **Registrar > Enrollments** (`/registrar/enrollments`). Fill in:
 | Box | What to put |
 |---|---|
 | LRN | The 12 digits of the Learner Reference Number. |
-| First name, middle name, last name | The student's name. The middle name is optional. |
+| First name, middle name, last name, name extension | The student's name. The middle name is optional. The **name extension** (Jr., Sr., III ...) is optional too, up to 10 characters; it is written after the last name on the form and in the lists, and a student who has one keeps it. |
 | Term | The term to enroll in. The current term is chosen for you. |
 | Grade level | 11 or 12. |
 | Track, strand | ACAD (BUSSENT, EDUC, ENG, MED, USP) or TECH-PRO (CD1, HT1, HT2). Pick the track first, it filters the strands. |
-| Schedule | AM, MID or PM. Only the schedules the strand runs in are listed (for example HT2 only has PM). When there is only one, it is chosen for you. |
-| Section | Pick a section that already exists for that strand and schedule, or type a new one, for example `A`. The section is made if it is new. |
-| Phone number | **Optional.** A mobile number like `0917 123 4567`, saved as `+639171234567` on the student's account. A student who already has a number keeps it. |
+| Section | Pick one of the sections that exist for that strand and grade level (A, B or C). There is no schedule to choose: each course has its own. |
+| Phone number | **Optional.** A mobile number like `0917 123 4567`, saved as `+639171234567` on the student's account. A student who already has a number keeps it. It is kept for the school but **not printed** on the enrollment form. |
 
 There is nothing to pick for the subjects: the student gets **all the subjects of the strand** for that grade level and term (the form tells which). Press
 **Enroll student**. The page then shows what was saved and, for a new student, the **sign-in details to hand over**
@@ -526,7 +526,7 @@ There is nothing to pick for the subjects: the student gets **all the subjects o
 ### The enrollment form to print
 
 The **Print** button of an enrollment prints the **enrollment form** on two A4 pages, as a clean document with **no frame and no box for a picture** (the screen shows only the receipt; `Components/Shared/EnrollmentPrintSheet.razor`).
-**Page 1** has the letterhead (the **school logo at the upper left**, the **school name** with its tagline and contact line next to it, the enrollment number and the date at the right), the title *Enrollment Form* with the school year and term, and four parts written on fine lines: **Learner information** (the name in capitals, the LRN in twelve boxes, the contact number), **Enrollment details** (the **grade level and the schedule written out as words**, then the track, strand, section and term), **Courses enrolled** (a numbered list, with a *Days and time* column when the courses have class times) and **e-LMS account of the learner** (email and the first password, only for a new account), and at the bottom the **signature lines** (learner or parent, registrar, date).
+**Page 1** has the letterhead (the **school logo at the upper left**, the **school name** with its tagline and contact line next to it, the enrollment number and the date at the right), the title *Enrollment Form* with the school year and term, and four parts written on fine lines: **Learner information** (the name in capitals, with the name extension, and the LRN in twelve boxes; there is no contact number), **Enrollment details** (the **grade level written out as words**, then the track, strand and section; the school year and the term are in the title, so there is no schedule or term here), **Courses enrolled** (a table without a number column: the **course**, its **units** and, **at its right, its schedule** (for example *AM · MWF · 8:00 AM – 9:30 AM*), and a last row with the **total units**) and **e-LMS account of the learner** (email and the first password, only for a new account), and at the bottom the **signature lines** (learner or parent, registrar, date).
 **Page 2** is the **terms and conditions in twelve parts** (correct information, enrollment and sections, attendance, grades and academic standing, honesty, the e-LMS account, proper use, conduct, data privacy, the parent or guardian, records, changes). **At the bottom of the page**, side by side, are the **student's signature over the printed name** (the name is printed in capitals over the line) and the **parent's or guardian's signature over the printed name**, each with a date line.
 
 ### The automatic email and password
@@ -552,16 +552,16 @@ Typing the LRN of a student that has an account shows their name (locked) and ad
 for the 2nd term. The account and the password do not change. Enrolling the same student twice in one term is refused.
 
 The form starts from where the student was the last time: the **grade level** (one more when the term is in a newer school year), the **track** and
-the **strand**, and the **schedule** and **section** they had. The registrar only changes what is different (usually the schedule or the section).
+the **strand**, and the **section** they had. The registrar only changes what is different (usually the section).
 The **Enroll** link of the *Next term* column opens the form this way, so a student who was never enrolled is the only one who needs track and strand picked.
 
 ### Student's Accounts
 
 **Registrar > Student's Accounts** (`/registrar/student-accounts`) lists every enrolled student, newest first, 20 per page. Search by name
-or LRN and filter by term, strand, schedule and **next term** (enrolled or not). The **Courses** button of a row (for example "8 courses") opens a small pop-up over the page with the
+or LRN and filter by term, strand and **next term** (enrolled or not). The **Courses** button of a row (for example "8 courses") opens a small pop-up over the page with the
 student's courses, so the columns do not move. The **Final grade** column, just left of *Next term*, is the average of the grades of the student's courses in that term (points
 earned divided by points possible of the graded work; courses nobody graded yet are left out; "No grades yet" when none is), with what it means (*Satisfactory*, ...). The dashboard (`/registrar`) shows how many students are enrolled this
-term, today, by strand, **by section** (every section of the school year with the students enrolled in it this term) and by schedule, and under *By schedule* the **Not enrolled** section.
+term, today, by strand and **by section** (every section of the school year with the students enrolled in it this term), and the **Not enrolled** section.
 
 **The next term and unenrolling.** The next term is the term after the current one (set in the school setup). The **Next term** column says whether the
 student is enrolled for it: *Enrolled* with an **Unenroll** button (it asks first, then removes the student's enrollment in the next term and its subjects;
@@ -601,8 +601,8 @@ sent to their own page instead. To change it:
 - The words (welcome text, mission, vision, about) are written directly in `Index.razor`.
 - The **Get in Touch** boxes come from the `Contacts` list at the bottom of the same file. **The email there,
   `your-email@example.com`, is a placeholder: replace it.**
-- The **courses** are read from the database (`Data/Queries/PublicCourses.cs`): each strand with its schedules and its
-  subjects per term. **Click a strand** to see its **grade levels** (Grade 11, Grade 12) and, under each, its **terms** (1st Term, 2nd Term) with
+- The **courses** are read from the database (`Data/Queries/PublicCourses.cs`): each strand with its
+  subjects per term (the number of courses of each grade level and term, and for a course its units). **Click a strand** to see its **grade levels** (Grade 11, Grade 12) and, under each, its **terms** (1st Term, 2nd Term) with
   the number of courses; **click a term** to see its subjects (one term is open at a time; plain `<details>` boxes, no script). To change them, change the tables `strands`, `subjects` and `strand_subjects` (see
   [docs/database.md](docs/database.md)).
 - The big picture at the top is four photos that change by themselves (the dots pick one). They are the files
@@ -623,11 +623,12 @@ affecting each other. There is no big shared stylesheet.
 |---|---|
 | `Components/App.razor.css` | The colors, sizes and dark mode, written once as variables (`--brand`, `--surface`, `--text`, ...), and the page background and font. Change a color here and it changes everywhere. |
 | `Components/Layout/` | The header (`MainLayout`), the menu on the left (`NavMenu`), the account menu (`UserMenu`), the sign-in layout (`AuthLayout`) and the bare layout of the public home page (`BlankLayout`). |
-| `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `Button`, `ButtonLink`, `Field`, `Modal`, `SearchField`, `EnrollmentTable`, `Brand` and `Icon`. |
+| `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `Button`, `ButtonLink`, `Field`, `Modal`, `Notice`, `SearchField`, `FilePreviewPane`, `EnrollmentTable`, `Brand` and `Icon`. |
 | `Components/Pages/` | The pages, one folder for each part of the system, one page and one stylesheet each (see below). |
 
 Good to know:
 
+- **Feedback is a pop-up.** What a page says after an action ("Saved", or what went wrong) is `Components/Shared/Notice.razor`: a box in the **middle of the screen** with a title (*Done* or *Please check*), the message and an **OK** button (Escape closes it too). It opens over any form that is still open.
 - **Every search bar is the same one**, `Components/Shared/SearchField.razor`: a wide box with a magnifier at the left, an **X** to clear it and a **Search** button inside, a short hint under it when it helps, and a label above. Lists put it with their other filters (labelled lists) in a `.filter-bar` row (the *Referrals*, *Tracking* and *Security logs* bars use `.filter-bar.one-row`: a **narrow search box with Status, Problem, Grade level and the other choices beside it on one single row**, no inner Search button: press Enter) (styled once in `Components/App.razor.css`): the search takes the room, the filters sit next to it, and everything wraps on a phone. Pages that look as you type use `Live`; pages that search on Enter or on the button use the default; static pages use `Static` (a plain form that reloads the page).
 - To style something another component draws (the `<a>` that `NavLink` makes, the `<input>` of `InputText`), start the
   selector part with `::deep`. `Components/Layout/NavMenu.razor.css` shows it.
