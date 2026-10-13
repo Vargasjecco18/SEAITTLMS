@@ -43,7 +43,7 @@
     </div>
 
     <div class="filter-bar">
-        <Field For="cs-section" Label="Section">
+        <Field For="cs-section" Label="Section" Class="schedule-section">
             <select id="cs-section" value="@sectionId" @onchange="SectionChanged">
                 @foreach (var s in sections ?? [])
                 {

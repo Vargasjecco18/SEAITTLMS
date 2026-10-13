@@ -413,3 +413,9 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* The section list says the section, its schedule, its school year and how many courses are set: it needs room. */
+.setup ::deep .filter-bar > .field.schedule-section {
+    flex: 1 1 26rem;
+    max-width: 36rem;
+}

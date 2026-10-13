@@ -179,7 +179,8 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         // Every word typed must match something of the referral: the student (name, LRN), the grade level, the section, the course (strand),
-        // the subject, the teacher of the subject or the problem.
+        // the subject, the teacher of the subject or the problem (the sentence that says what was found is not searched: "failing" finds the failing grades,
+        // not the at-risk ones that say "close to failing").
         var tokens = (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(6).ToList();
         if (tokens.Count > 0)
         {
@@ -196,12 +197,18 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
                 byte? level = t is "11" or "12" ? byte.Parse(t) : null;
                 var gradeWord = t.Length >= 3 && "grade".StartsWith(t, StringComparison.OrdinalIgnoreCase);
 
-                query = query.Where(r => r.Student.FirstName.Contains(t) || r.Student.LastName.Contains(t) || r.Student.Lrn.Contains(t) || r.Detail.Contains(t)
+                // "11" or "12" alone is the grade level (it would also be found inside an LRN, which is not what somebody who types 12 means).
+                if (level != null)
+                {
+                    query = query.Where(r => r.Student.GradeLevel == level);
+                    continue;
+                }
+
+                query = query.Where(r => r.Student.FirstName.Contains(t) || r.Student.LastName.Contains(t) || r.Student.Lrn.Contains(t)
                     || (r.Assignment != null && (r.Assignment.Subject.Name.Contains(t) || r.Assignment.Teacher.FirstName.Contains(t) || r.Assignment.Teacher.LastName.Contains(t)))
                     || (r.Student.StrandId != null && strandIds.Contains(r.Student.StrandId.Value))
                     || (r.Student.SectionId != null && sectionIds.Contains(r.Student.SectionId.Value))
                     || reasons.Contains(r.Reason)
-                    || (level != null && r.Student.GradeLevel == level)
                     || gradeWord);
             }
         }
