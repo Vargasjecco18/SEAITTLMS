@@ -6,9 +6,7 @@
 
 <PageTitle>System Settings · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="System Settings" IconName="settings-2">
-    <Button Type="submit" IconName="save" Disabled="@busy" form="settings-form">@(busy ? "Saving…" : "Save settings")</Button>
-</PageHeader>
+<PageHeader Title="System Settings" IconName="settings-2" />
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 <FormErrors Errors="errors" />

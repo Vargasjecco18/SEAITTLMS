@@ -2,11 +2,13 @@
 @inject TimeProvider Clock
 
 @* The paper that is printed after a student is enrolled. It is hidden on screen and is the only thing on the paper (the registrar's page hides the rest when printing).
-   The front has the school (logo at the upper left, the name in the upper center), the details of the enrollment and the sign-in of the student's account;
-   the back has the terms and conditions, with the name of the student printed over the line for the signature. *@
+   It has no frame and no box for a picture: a clean document.
+   Page 1: the letterhead (the logo at the upper left, the school next to it, the number and the date of the form at the right), the title, the numbered parts of the form
+   with every answer written out in words (the grade level and the schedule are plain text), the courses, the e-LMS account and the signatures.
+   Page 2: the terms and conditions in detail, and at the bottom of the page the lines for the student's signature over the printed name and for the parent's or guardian's. *@
 <div class="print-sheet" aria-hidden="true">
     <section class="page front">
-        <header class="sheet-head">
+        <header class="letterhead">
             <img class="sheet-logo" src="@Assets["images/logo.png"]" alt="" width="84" height="84" />
             <div class="sheet-school">
                 <h1>@school.SchoolName</h1>
@@ -20,32 +22,69 @@
                     <p class="contact">@contact</p>
                 }
             </div>
-            <div class="sheet-balance"></div>
+            <dl class="form-id">
+                <div><dt>Enrollment no.</dt><dd>@Receipt.EnrollmentId.ToString("D6")</dd></div>
+                <div><dt>Date</dt><dd>@PhilippineTime.FormatLongDate(PhilippineTime.Now(Clock))</dd></div>
+            </dl>
         </header>
-        <div class="rule"></div>
 
-        <h2 class="sheet-title">Enrollment Form</h2>
-        <p class="sheet-term">School Year @Receipt.SchoolYear · @Receipt.Term</p>
-        <p class="sheet-issued">Printed on @PhilippineTime.FormatLongDate(PhilippineTime.Now(Clock))</p>
+        <div class="title-row">
+            <h2 class="title">Enrollment Form</h2>
+            <p class="term-line">School year <strong>@Receipt.SchoolYear</strong> · <strong>@Receipt.Term</strong></p>
+        </div>
 
-        <h3 class="sheet-section">Student</h3>
-        <dl class="grid">
-            <div class="wide"><dt>Name</dt><dd class="big">@Receipt.FullName</dd></div>
-            <div><dt>LRN</dt><dd>@Receipt.Lrn</dd></div>
-            <div><dt>Contact number</dt><dd>@(Receipt.PhoneNumber ?? "Not given")</dd></div>
+        <h3 class="part">Learner information</h3>
+        <dl class="details">
+            <div class="d full">
+                <dt>Name of the learner</dt>
+                <dd class="big">@Receipt.FullName.ToUpperInvariant()</dd>
+            </div>
+            <div class="d full">
+                <dt>Learner Reference No. (LRN)</dt>
+                <dd>
+                    <span class="boxes">
+                        @foreach (var digit in Receipt.Lrn.PadRight(12).Take(12))
+                        {
+                            <i>@(digit == ' ' ? "" : digit.ToString())</i>
+                        }
+                    </span>
+                </dd>
+            </div>
+            <div class="d">
+                <dt>Contact number</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Receipt.PhoneNumber) ? "—" : Receipt.PhoneNumber)</dd>
+            </div>
         </dl>
 
-        <h3 class="sheet-section">Enrollment</h3>
-        <dl class="grid">
-            <div><dt>Grade level</dt><dd>Grade @Receipt.GradeLevel</dd></div>
-            <div><dt>Section</dt><dd>@Receipt.Section</dd></div>
-            <div><dt>Track</dt><dd>@Receipt.Track</dd></div>
-            <div><dt>Strand</dt><dd>@Receipt.Strand</dd></div>
-            <div><dt>Schedule</dt><dd>@Receipt.Schedule</dd></div>
-            <div><dt>Term</dt><dd>@Receipt.Term</dd></div>
+        <h3 class="part">Enrollment details</h3>
+        <dl class="details">
+            <div class="d">
+                <dt>Grade level</dt>
+                <dd>Grade @Receipt.GradeLevel</dd>
+            </div>
+            <div class="d">
+                <dt>Schedule</dt>
+                <dd>@Receipt.Schedule</dd>
+            </div>
+            <div class="d">
+                <dt>Track</dt>
+                <dd>@Receipt.Track</dd>
+            </div>
+            <div class="d">
+                <dt>Strand</dt>
+                <dd>@Receipt.Strand</dd>
+            </div>
+            <div class="d">
+                <dt>Section</dt>
+                <dd>@Receipt.Section</dd>
+            </div>
+            <div class="d">
+                <dt>Term</dt>
+                <dd>@Receipt.Term</dd>
+            </div>
         </dl>
 
-        <h3 class="sheet-section">Courses</h3>
+        <h3 class="part">Courses enrolled <small>@(Receipt.Subjects.Count == 1 ? "1 course" : $"{Receipt.Subjects.Count} courses")</small></h3>
         @if (Receipt.Subjects.Count == 0)
         {
             <p class="none">No courses.</p>
@@ -63,78 +102,119 @@
             </table>
         }
 
-        <h3 class="sheet-section">e-LMS account of the student</h3>
-        <div class="account">
-            <div><span class="label">Email</span><span class="value">@Receipt.Email</span></div>
-            @if (Receipt.NewAccount && Receipt.Password is { } password)
+        <h3 class="part">e-LMS account of the learner</h3>
+        <dl class="details">
+            <div class="d">
+                <dt>Email</dt>
+                <dd class="mono">@Receipt.Email</dd>
+            </div>
+            <div class="d">
+                <dt>Password</dt>
+                <dd class="mono">@(Receipt.NewAccount && Receipt.Password is { } password ? password : "(unchanged)")</dd>
+            </div>
+        </dl>
+        <p class="note">
+            @if (Receipt.NewAccount)
             {
-                <div><span class="label">Password</span><span class="value">@password</span></div>
-                <p class="note">Keep this password private. Anyone who knows it can use the account.</p>
+                <text>Keep this password private. Anyone who knows it can use the account.</text>
             }
             else
             {
-                <p class="note">The student already had an account. The sign-in did not change.</p>
+                <text>The learner already had an account. The sign-in did not change.</text>
             }
-        </div>
+        </p>
 
         <div class="signatures">
+            <div class="sign"><span class="line"></span><span class="caption">Signature of the learner or the parent / guardian over printed name</span></div>
             <div class="sign"><span class="line"></span><span class="caption">Enrolled by: Registrar's signature over printed name</span></div>
-            <div class="sign"><span class="line"></span><span class="caption">Date</span></div>
+            <div class="sign date"><span class="line"></span><span class="caption">Date</span></div>
         </div>
-        <p class="turn">Please read the terms and conditions at the back.</p>
+
+        <footer class="sheet-foot">
+            <span>@school.SchoolName · Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
+            <span>Page 1 of 2 · Please read the terms and conditions at the back.</span>
+        </footer>
     </section>
 
     <section class="page back">
         <header class="back-head">
-            <img class="back-logo" src="@Assets["images/logo.png"]" alt="" width="44" height="44" />
             <div>
                 <strong>@school.SchoolName</strong>
                 <span>@(string.IsNullOrWhiteSpace(school.Tagline) ? "" : school.Tagline + " · ")Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
             </div>
+            <span class="back-no">Enrollment no. @Receipt.EnrollmentId.ToString("D6")</span>
         </header>
-        <div class="rule thin"></div>
 
-        <h2 class="sheet-title">Terms and Conditions</h2>
-        <p class="intro">By enrolling at @school.SchoolName, the student, together with the parent or guardian, accepts the following.</p>
+        <h2 class="title">Terms and Conditions</h2>
+        <p class="intro">By enrolling at @school.SchoolName, the learner, together with the parent or guardian, accepts the following. Please read each part before signing at the bottom of this page.</p>
 
         <ol class="terms">
-            <li><strong>Correct information.</strong> The information given for this enrollment is true and complete. A false statement can cancel the enrollment.</li>
-            <li><strong>Enrollment.</strong> The enrollment is for the school year and term written on the front. A change of section or courses is made only through the Registrar.</li>
-            <li><strong>Attendance.</strong> The student comes to class every day and on time. Absences are recorded by the teachers and affect the grades. A student who is often absent or whose grades are low is referred to the Guidance Counselor, who will help.</li>
-            <li><strong>Honesty.</strong> Cheating, copying, plagiarism and the help of another person in activities, quizzes and task performances are not allowed. The quizzes of the e-LMS watch when the student leaves the quiz, and a quiz can be handed in automatically.</li>
-            <li><strong>The e-LMS account.</strong> The account is personal. The student keeps the password private, does not lend the account and changes the password if somebody else knows it. What is done with the account is the responsibility of the student.</li>
-            <li><strong>Conduct.</strong> The student respects the teachers, the staff and the classmates, in school and in messages, groups and files of the e-LMS. Bullying, offensive words and the sharing of harmful files are not allowed.</li>
-            <li><strong>Data privacy.</strong> The school keeps the personal information of the student (name, LRN, contact number, grades and attendance) only for school purposes and protects it as the Data Privacy Act of 2012 (Republic Act 10173) requires. It is shared only with the people who need it for the education of the student.</li>
-            <li><strong>Records.</strong> Grades and records of the student are released after the student has settled any obligation with the school.</li>
-            <li><strong>Changes.</strong> The school can improve these terms and the rules of the school. The students are told through the e-LMS.</li>
+            <li>
+                <strong>Correct information.</strong> The information given for this enrollment (the name, the LRN, the contact number, the grade level, the track, the strand and the section) is true and complete.
+                A false or missing statement can cancel the enrollment, and the learner must tell the Registrar at once when something changes.
+            </li>
+            <li>
+                <strong>Enrollment, section and courses.</strong> The enrollment is for the school year and the term written on the front, in the section and the schedule shown there, with the courses of the strand for that grade level and term.
+                A change of section, schedule or courses is made only through the Registrar, never between the students.
+            </li>
+            <li>
+                <strong>Attendance and punctuality.</strong> The student comes to every class and on time. The teachers record who is present, late or absent, and it is part of the student's record.
+                A student whose attendance falls below 80% is referred to the Guidance Counselor, who will talk with the student and the family.
+            </li>
+            <li>
+                <strong>Grades and academic standing.</strong> The passing grade is 70. A subject is graded from the scores of the activities, quizzes and task performances. A student whose grade falls below 70, or comes close to it, or who has several missing works, is referred to the Guidance Counselor for help such as tutoring.
+                Works are handed in on time; a late work is marked as late.
+            </li>
+            <li>
+                <strong>Honesty.</strong> Cheating, copying, plagiarism, impersonation and the help of another person in activities, quizzes and task performances are not allowed. The quizzes of the e-LMS watch when the student leaves the quiz or the screen, and a quiz can be handed in automatically after the warnings.
+                A student who is found cheating can be given no score and can be reported to the school.
+            </li>
+            <li>
+                <strong>The e-LMS account.</strong> The account is personal. The student keeps the password private, does not lend the account, signs out on a shared computer and changes the password if somebody else knows it.
+                Everything done with the account is the responsibility of the student.
+            </li>
+            <li>
+                <strong>Proper use of the e-LMS.</strong> The e-LMS is for learning. Messages, groups, announcements and files are used for school matters. The student does not upload files that are harmful, offensive or that belong to somebody else, and does not try to enter the account or the data of another person or to disturb the system.
+            </li>
+            <li>
+                <strong>Conduct.</strong> The student respects the teachers, the staff and the classmates, in school and online. Bullying, harassment, offensive words and the sharing of harmful files are not allowed, and the school can take the action its rules allow, with the parent or guardian informed.
+            </li>
+            <li>
+                <strong>Data privacy.</strong> The school collects and keeps the personal information of the student (name, LRN, contact number, grades, attendance, referrals and the work handed in) only for school purposes, protects it as the Data Privacy Act of 2012 (Republic Act 10173) requires,
+                and shares it only with the people who need it for the education of the student. The student and the parent or guardian can ask the Registrar to see or correct this information.
+            </li>
+            <li>
+                <strong>The parent or guardian.</strong> The parent or guardian supports the student's attendance and studies, answers the calls of the school and of the Guidance Counselor, and tells the school when the contact number changes.
+            </li>
+            <li>
+                <strong>Records and release.</strong> Grades and records of the student are released after the student has settled any obligation with the school, and by request through the Registrar.
+            </li>
+            <li>
+                <strong>Changes.</strong> The school can improve these terms and the rules of the school. The students are told through the e-LMS, and the new terms are followed from the day they are announced.
+            </li>
         </ol>
 
         <p class="agree">I have read and understood these terms and conditions, and I agree to follow them.</p>
 
-        <div class="signatures back-sign">
+        <div class="sign-block">
             <div class="sign">
                 <span class="signed-name">@Receipt.FullName.ToUpperInvariant()</span>
                 <span class="line"></span>
                 <span class="caption">Student's signature over printed name</span>
+                <span class="date-line"><span class="date-label">Date</span></span>
             </div>
-            <div class="sign date">
-                <span class="signed-name">&nbsp;</span>
-                <span class="line"></span>
-                <span class="caption">Date</span>
-            </div>
-        </div>
-        <div class="signatures back-sign">
             <div class="sign">
                 <span class="signed-name">&nbsp;</span>
                 <span class="line"></span>
                 <span class="caption">Parent's or guardian's signature over printed name</span>
-            </div>
-            <div class="sign date">
-                <span class="signed-name">&nbsp;</span>
-                <span class="line"></span>
-                <span class="caption">Date</span>
+                <span class="date-line"><span class="date-label">Date</span></span>
             </div>
         </div>
+
+        <footer class="sheet-foot">
+            <span>@school.SchoolName · Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
+            <span>Page 2 of 2</span>
+        </footer>
     </section>
 </div>
 

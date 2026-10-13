@@ -26,7 +26,10 @@ else
     <div class="stats">
         <StatCard Label="Students" Value="@report.Students" IconName="users" Accent="AccentColor.Blue" Hint="@report.ScopeText" />
         <StatCard Label="Average grade" Text="@(report.AverageGrade is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="AccentColor.Violet" Hint="@(report.AverageGrade is { } a2 ? GradeRules.Descriptor(a2) : "No grades yet")" />
-        <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
+        @if (Role != AppRoles.Teacher)
+        {
+            <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
+        }
         <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students" : null)" />
         <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing work" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students?kind=AtRisk" : null)" />
         <StatCard Label="Open referrals" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your courses")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
@@ -69,59 +72,49 @@ else
             }
         </Card>
 
-        <Card Title="Attendance" IconName="calendar-check">
-            @if (report.Attendance.Marks == 0)
-            {
-                <p class="muted">Attendance fills in as the teachers mark who came to class.</p>
-            }
-            else
-            {
-                var att = report.Attendance;
-                <div class="att-top">
-                    <span class="att-rate">@(att.Rate is { } r ? $"{r:0.#}%" : "—")</span>
-                    <span class="att-counts">
-                        <Badge Tone="Tone.Success">@att.Present.ToString("N0") present</Badge>
-                        <Badge Tone="Tone.Warning">@att.Late.ToString("N0") late</Badge>
-                        <Badge Tone="Tone.Danger">@att.Absent.ToString("N0") absent</Badge>
-                    </span>
-                </div>
-                <ul class="att-groups" aria-label="@(report.SchoolWide ? "Attendance by section" : "Attendance by course")">
-                    @foreach (var g in att.Groups)
-                    {
-                        <li class="@(g.Rate < AttendanceService.LowAttendancePercent ? "low" : "")">
-                            <span class="att-name" title="@g.Label">@g.Label</span>
-                            <ProgressBar Percent="(int)Math.Round(g.Rate ?? 0m)" Title="@($"{g.Present} present, {g.Late} late, {g.Absent} absent")" />
-                        </li>
-                    }
-                </ul>
-                <p class="note">Late counts as half. Below @AttendanceService.LowAttendancePercent.ToString("0") the line is marked.</p>
-            }
-        </Card>
+        @if (Role != AppRoles.Teacher)
+        {
+            <Card Title="Attendance" IconName="calendar-check">
+                @if (report.Attendance.Marks == 0)
+                {
+                    <p class="muted">Attendance fills in as the teachers mark who came to class.</p>
+                }
+                else
+                {
+                    var att = report.Attendance;
+                    <div class="att-top">
+                        <span class="att-rate">@(att.Rate is { } r ? $"{r:0.#}%" : "—")</span>
+                        <span class="att-counts">
+                            <Badge Tone="Tone.Success">@att.Present.ToString("N0") present</Badge>
+                            <Badge Tone="Tone.Warning">@att.Late.ToString("N0") late</Badge>
+                            <Badge Tone="Tone.Danger">@att.Absent.ToString("N0") absent</Badge>
+                        </span>
+                    </div>
+                    <ul class="att-groups" aria-label="@(report.SchoolWide ? "Attendance by section" : "Attendance by course")">
+                        @foreach (var g in att.Groups)
+                        {
+                            <li class="@(g.Rate < AttendanceService.LowAttendancePercent ? "low" : "")">
+                                <span class="att-name" title="@g.Label">@g.Label</span>
+                                <ProgressBar Percent="(int)Math.Round(g.Rate ?? 0m)" Title="@($"{g.Present} present, {g.Late} late, {g.Absent} absent")" />
+                            </li>
+                        }
+                    </ul>
+                    <p class="note">Late counts as half. Below @AttendanceService.LowAttendancePercent.ToString("0") the line is marked.</p>
+                }
+            </Card>
+        }
+
+        @if (Role == AppRoles.Teacher)
+        {
+            @ConcernCard(report)
+        }
     </div>
 
     <div class="grid two">
-        <Card Title="@report.ConcernTitle" IconName="flag">
-            @{
-                var maxConcern = Math.Max(1, report.Concerns.Max(c => c.Count));
-            }
-            @if (report.Concerns.All(c => c.Count == 0))
-            {
-                <p class="muted">None.</p>
-            }
-            else
-            {
-                <ul class="bars">
-                    @foreach (var c in report.Concerns)
-                    {
-                        <li>
-                            <span class="bar-name">@ReferralReasons.Display(c.Reason)</span>
-                            <span class="track"><i class="concern @c.Reason.ToLowerInvariant()" style="width: @(c.Count * 100 / maxConcern)%"></i></span>
-                            <span class="bar-value">@c.Count</span>
-                        </li>
-                    }
-                </ul>
-            }
-        </Card>
+        @if (Role != AppRoles.Teacher)
+        {
+            @ConcernCard(report)
+        }
 
         @if (report.SchoolWide)
         {
@@ -191,65 +184,6 @@ else
             </div>
         }
     </Card>
-
-    @if (Role == AppRoles.Teacher)
-    {
-        @* The students who opened each posted module and the ones who did not, for each course of the teacher. *@
-        <Card Title="Who opened the modules" IconName="eye">
-            @if (opens.Count == 0)
-            {
-                <p class="muted">No module is posted yet. When you post one, you see here who opened it and who did not.</p>
-            }
-            else
-            {
-                @foreach (var course in opens)
-                {
-                    <section class="opens-course" aria-label="@course.Course">
-                        <h3>@course.Course</h3>
-                        <ul class="opens">
-                            @foreach (var m in course.Modules)
-                            {
-                                var percent = m.Total == 0 ? 0 : (int)Math.Round(100.0 * m.Opened.Count / m.Total);
-                                <li>
-                                    <details>
-                                        <summary>
-                                            <span class="opens-title">@m.Title @if (m.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> }</span>
-                                            <span class="opens-bar"><ProgressBar Percent="percent" Title="@($"{m.Opened.Count} of {m.Total} students opened it")" /></span>
-                                            <span class="opens-count">@m.Opened.Count of @m.Total opened</span>
-                                        </summary>
-                                        <div class="opens-lists">
-                                            <div>
-                                                <h4><Icon Name="circle-check" Size="14" /> Opened (@m.Opened.Count)</h4>
-                                                @if (m.Opened.Count == 0)
-                                                {
-                                                    <p class="muted">Nobody yet.</p>
-                                                }
-                                                else
-                                                {
-                                                    <ul>@foreach (var name in m.Opened) { <li>@name</li> }</ul>
-                                                }
-                                            </div>
-                                            <div>
-                                                <h4><Icon Name="eye-off" Size="14" /> Not opened (@m.NotOpened.Count)</h4>
-                                                @if (m.NotOpened.Count == 0)
-                                                {
-                                                    <p class="muted">Everybody opened it.</p>
-                                                }
-                                                else
-                                                {
-                                                    <ul>@foreach (var name in m.NotOpened) { <li>@name</li> }</ul>
-                                                }
-                                            </div>
-                                        </div>
-                                    </details>
-                                </li>
-                            }
-                        </ul>
-                    </section>
-                }
-            }
-        </Card>
-    }
 }
 
 @code {
@@ -264,8 +198,32 @@ else
         new("failing", "Below 70", b => b.Failing),
     ];
 
+    private RenderFragment ConcernCard(AnalyticsReport report) => @<text>
+        <Card Title="@report.ConcernTitle" IconName="flag">
+            @{
+                var maxConcern = Math.Max(1, report.Concerns.Max(c => c.Count));
+            }
+            @if (report.Concerns.All(c => c.Count == 0))
+            {
+                <p class="muted">None.</p>
+            }
+            else
+            {
+                <ul class="bars">
+                    @foreach (var c in report.Concerns)
+                    {
+                        <li>
+                            <span class="bar-name">@ReferralReasons.Display(c.Reason)</span>
+                            <span class="track"><i class="concern @c.Reason.ToLowerInvariant()" style="width: @(c.Count * 100 / maxConcern)%"></i></span>
+                            <span class="bar-value">@c.Count</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+    </text>;
+
     private AnalyticsReport? report;
-    private IReadOnlyList<CourseModuleOpens> opens = [];
     private string Role { get; set; } = "";
 
     protected override async Task OnInitializedAsync()
@@ -273,10 +231,6 @@ else
         var user = await Me.GetAsync();
         Role = user?.Role ?? "";
         report = user is null ? null : await Reports.GetAsync(user);
-        if (user is { Role: AppRoles.Teacher })
-        {
-            opens = await Reports.GetModuleOpensAsync(user.UserId);
-        }
     }
 
     private static string Band(decimal? percent) => percent switch

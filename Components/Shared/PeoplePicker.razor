@@ -3,7 +3,7 @@
 @* A list of people with a box to tick each one, and a search box. The page owns what is ticked (Selected) and is told when it changes. *@
 <div class="picker">
     <div class="top">
-        <input type="search" class="input" maxlength="80" placeholder="Search people" aria-label="Search people" @bind="search" @bind:event="oninput" />
+        <SearchField @bind-Value="search" Live="true" SubmitText="" MaxLength="80" Placeholder="Search people" AriaLabel="Search people" />
         <span class="chosen" aria-live="polite">@Selected.Count chosen</span>
     </div>
 

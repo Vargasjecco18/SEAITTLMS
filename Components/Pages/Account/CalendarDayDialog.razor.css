@@ -1,0 +1,102 @@
+.none {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+.day-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.line {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+.line:hover {
+    border-color: var(--brand);
+    background: var(--surface-2);
+}
+
+.line-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.line.quiz .line-icon {
+    background: var(--info-soft);
+    color: var(--info);
+}
+
+.line.taskperformance .line-icon {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.line.module .line-icon {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.line.personal .line-icon {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.line.late .line-icon {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.line.done .line-text a {
+    text-decoration: line-through;
+}
+
+.line-text {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+}
+
+.line-text a {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.line-text a:hover {
+    color: var(--brand-strong);
+    text-decoration: underline;
+}
+
+.line-text small {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.spacer {
+    flex: 1;
+}

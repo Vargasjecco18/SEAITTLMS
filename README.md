@@ -269,23 +269,24 @@ The code: `Services/TeachingService.cs`, `ModuleService.cs`, `WorkService.cs`, `
 
 ## Dashboards, calendar and the widgets at the right
 
-**Student > Dashboard** (`/student`) shows what to do first. At the left: the **Progress** card (every course with its bar, a link to the course), the modules not opened yet, the latest scores and the **achievements** (perfect score, high grades,
-quiz ace, always on time, curious mind: earned ones are colored, the others show how far you are). At the right, in this order: the **calendar**, **Assignments and due dates** (the work to do, overdue ones in red), the **announcements**, the **online students** and the **online teachers**.
+**Student > Dashboard** (`/student`) shows what to do first. At the left: the teacher **evaluations** to answer and then **four cards in two columns and two rows**: at the top left the **Modules not opened**, at the top right the **Due dates** (the work to do, overdue ones in red), at the bottom left the **Recent grades** and at the bottom right the **Progress** (every course with its bar, a link to the course). Under them are the **achievements**: fourteen to earn (perfect score, high grades, quiz ace, always on time, curious mind, perfect attendance and first step, quiz taker, triple perfect, all-rounder, early bird, bookworm, top of the class, nothing missed): earned ones are colored, the others show how far you are. **When a student earns a new achievement, a box opens in the center of the screen** to celebrate it (several at once are shown one after the other, with *Next*); once it was shown it never opens again (the award is written in the `achievement_awards` table with the time it was seen; the achievements themselves are always worked out from the scores). At the right, in this order: the **calendar**, the **announcements**, the **online students** and the **online teachers**.
 
 **Teacher > Dashboard** (`/teacher`) shows the **unchecked activities** (work handed in that still needs a score), the
 modules students can't see yet (drafts and scheduled ones) and the number of flagged quizzes (it links to the calendar, where the flagged attempts are
 found). At its right are the calendar, the **online students** and the **online teachers**.
 
 The column at the right of some pages (`Components/Shared/AsideWidgets.razor`) holds the widgets that page needs, in this order. The **student
-dashboard** has the **calendar** first (a dot on every day with something, click a day to see it), then the assignments and due dates, the announcements, the online students and the online teachers. **Online teachers** and **online students** list the people you can reach
+dashboard** has the **calendar** first (a dot on every day with something, click a day to see it), then the announcements, the online students and the online teachers. **Online teachers** and **online students** list the people you can reach
 who have the app open right now (a student sees their friends, classmates and teachers; a teacher their friends, students and colleagues), with a link to the Users page. **Show more:** any card at the right that lists items (announcements, activities, unassigned activities, due dates, unchecked activities, the people online) shows the first 5 and, when there are 6 or more, a **Show more (N)** button at the bottom that opens the rest (and **Show less** closes it again). The
 student's **Courses** pages also have a **Due dates** list. The teacher's
 **Courses** page has the calendar and *Needs your attention*. The grades pages and the teacher's attendance page have no column. On a phone the widgets
 go under the page.
 
-**Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next. It shows the
-deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), and the
-modules posted. Done work is struck through, overdue work is red. Click a day number to open its week; in the week view the **Unchecked activities** and **Unassigned activities** cards are shown **in two columns** side by side. At the right a student has an **Activities** card (the work to do, with its due text) and then *Due dates*; the Next button has its `>` icon. A **teacher clicks** an activity, quiz or task performance to see **who handed it in** (and who did not), with the score and, for a quiz, the anti-cheating warnings: a flagged attempt is marked in red. *Open and grade* goes to the page of the work. Code: `CalendarWorkDialog.razor`.
+**Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next, and an **Add event** button. It shows the
+deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), the
+modules posted and **the events the person wrote** (violet). Done work is struck through, overdue work is red. Click a day number to open its week. **The week** has seven columns, Sunday to Saturday: a day with something on it says **what** in a few words ("2 activities", "1 quiz", "1 event") and a day with nothing says so. **Click the date (or the words) and a box opens** with everything on that day, each line a link: an activity, quiz or task performance opens its page (a teacher sees who handed it in), a module opens the course, an event opens to be changed. In the week view the **Unchecked activities** and **Unassigned activities** cards are shown **in two columns** side by side. At the right a student has an **Activities** card (the work to do, with its due text) and then *Due dates*; the Next button has its `>` icon. A **teacher clicks** an activity, quiz or task performance to see **who handed it in** (and who did not), with the score and, for a quiz, the anti-cheating warnings: a flagged attempt is marked in red. *Open and grade* goes to the page of the work. Code: `CalendarWorkDialog.razor`, `CalendarDayDialog.razor`.
+
+**Add event.** The button opens a box with a title, a day, an optional time (empty means all day) and an optional note. An event is **private to the person who wrote it**: it shows on their own calendar only (never on a classmate's or on the teacher's), can be opened to **change or delete** it, and a person can keep up to 1,000. The links are plain addresses (`/calendar?event=new`, `?event=12`, `?day=2026-10-06`), so the boxes also work after a reload. Code: `CalendarEntryDialog.razor`, `Services/CalendarService.cs` (table `calendar_entries`).
 
 **Teacher > Calendar: unassigned activities.** The card **Unassigned activities** at the right lists the teacher's activities, quizzes and task performances that have **no due date**. **Drag** one onto a day (month or week view) and a box opens with that day (5 PM Philippine time) as the due date, where the teacher can also change the title, instructions, highest score, when it appears and, for a quiz, the time limit and the **anti-cheating** settings (watch on or off, warnings before it is handed in, shuffling, showing the result). **Save** puts it on that day for the teacher and the students; **Cancel** leaves it unassigned. The **Set date** link next to an activity does the same without the mouse. Code: `Components/Pages/Account/Calendar.razor`, `ItemScheduleDialog.razor`, the drag script in `wwwroot/app.js`.
 
@@ -320,7 +321,7 @@ the counselor opens a page):
 | **Not attending class** | attendance is **under 80%** over at least 5 marked days |
 
 Each problem becomes one referral for that student and subject (it is not repeated, and not sent again for 14 days after it was resolved) and the
-counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists them with the student, the **grade level** (a narrow column), the **section** and the **course** (the strand) in the three columns next to it, then the subject and its teacher, the problem, the **grade** and the status, with filters (status, problem, grade level, name): press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
+counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists them with the student, the **grade level** (a narrow column), the **section** and the **course** (the strand) in the three columns next to it, then the subject and its teacher, the problem, the **grade** and the status, with filters (status, problem, grade level) and **one search bar** that looks in all of these at once: type any of **the name or LRN, the grade level (11 or 12), the section, the course (the strand), the subject, the teacher or the problem** (failing, at risk, attending), and several words together all have to match, for example `garcia accounting 11 failing`. Press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
 called the parents, tutoring ...), notes only the counselor reads and, when resolving, how it ended (*Improved* or *No change*). A student is told
 when the counselor starts. (There is no separate "Students at risk" page: the cards of the dashboard and the menu open **Referrals** already filtered by problem.)
 
@@ -330,7 +331,7 @@ when the counselor starts. (There is no separate "Students at risk" page: the ca
 the number of students, the average grade, the attendance rate, how many students are failing or at risk, the grades by band for each grade level
 (each subject for a teacher), the **attendance** (the rate, how many were present, late and absent, and the rate of each section, or of each course for a teacher; there is no monthly trend any more), the **primary concern categories** (referrals by problem),
 the **intervention effectiveness** (how many resolved referrals improved, by the help given) and the performance by strand. Everything is worked
-out from the scores and the attendance that are recorded. A teacher's page also has **Who opened the modules**: for every posted module (and syllabus) of every course the students who **opened** it and the ones who **did not**, by name (press the module to open its two lists).
+out from the scores and the attendance that are recorded. (A teacher's page has no attendance card: the teacher's own attendance page and gradebook have it.)
 
 ## Graduation (archive)
 
@@ -433,11 +434,11 @@ Announcements that an administrator or a registrar wrote before these rules stay
 The **academic provider** belongs to the central team. They prepare what the teachers teach with and watch whether it reaches the students. (The academic coordinator used to send
 course materials; that was **taken away from the coordinator** and is only for the provider now.) An administrator adds providers in **Users Management > Providers**; there can be several.
 
-**Course library** (`/provider/library`) is the provider's library, one per course. Open a course to prepare its **syllabus** (one per course), its **modules**
+**Course library** (`/provider/library`) is the provider's library. It opens on the **tracks** (Academic, Technical-Professional), each one a **row like a module of a course** (a numbered square, the name in bold, a line under it and an *Open* button, not a card); press a track to see its **courses** (the strands: ABM, STEM, HUMSS ...) the same way, and press a course to see its **subjects** as rows (with where it is studied, *Grade 11 · 1st Term*, a *Syllabus ready* or *No syllabus yet* badge and what is prepared: modules, activities, quizzes, task performances, teachers), one library per subject; a search bar over the tracks looks in all the subjects of the school. Open a subject to prepare its **syllabus** (one per course), its **modules**
 and the **activities, quizzes and task performances** in each module (a suggested due date can be given). Open a syllabus or a module (press its title) to see its text, its files and
 its activities, quizzes and task performances. **Files** (a PDF, pictures, a text file, a Word document ...) can be attached to the syllabus, to a module and to every activity, quiz or task performance.
 A **quiz** is **questions, a file, or both** (the provider no longer sets the quiz settings: the time limit, the anti-cheating watch and the rest are the **teacher's** to set in their copy).
-**Send to teachers** chooses what to send (the syllabus is the first thing on the list; if the course has none, the dialog says so and offers to add it) and which teachers' courses (the teachers
+**Send to teachers** chooses what to send (the syllabus is the first thing on the list; if the subject has none, the dialog says so and offers to add it) and which teachers' courses (the teachers
 who have the course this school year): each teacher's course gets **its own copy as a draft, with the files**. The students can't see a draft: the teacher changes what they want (the text, the points, the due
 dates, when it is posted) and posts it. The teacher is told (the bell) and the copy says *From the academic provider*. A module sent to a course is not sent to it again; when the teacher deletes
 the copy, it can be sent again. The syllabus comes first in the course and has a *Syllabus* badge for the students. Code: `Services/MaterialService.cs`, `Components/Pages/Provider/CourseLibrary.razor`.
@@ -511,9 +512,9 @@ There is nothing to pick for the subjects: the student gets **all the subjects o
 
 ### The enrollment form to print
 
-The **Print** button of an enrollment prints a **professional enrollment form** on two pages (the screen shows only the receipt; `Components/Shared/EnrollmentPrintSheet.razor`):
-page 1 has the **school logo at the upper left**, the **school name in the upper center** (with "Enrollment Form"), the student's details, the term, track, strand, section and schedule, the **courses** enrolled, the account details and the signature lines
-(student or parent, registrar); page 2 holds the **terms and conditions** with the **student's name printed in capitals over the signature line**.
+The **Print** button of an enrollment prints the **enrollment form** on two A4 pages, as a clean document with **no frame and no box for a picture** (the screen shows only the receipt; `Components/Shared/EnrollmentPrintSheet.razor`).
+**Page 1** has the letterhead (the **school logo at the upper left**, the **school name** with its tagline and contact line next to it, the enrollment number and the date at the right), the title *Enrollment Form* with the school year and term, and four parts written on fine lines: **Learner information** (the name in capitals, the LRN in twelve boxes, the contact number), **Enrollment details** (the **grade level and the schedule written out as words**, then the track, strand, section and term), **Courses enrolled** (a numbered list) and **e-LMS account of the learner** (email and the first password, only for a new account), and at the bottom the **signature lines** (learner or parent, registrar, date).
+**Page 2** is the **terms and conditions in twelve parts** (correct information, enrollment and sections, attendance, grades and academic standing, honesty, the e-LMS account, proper use, conduct, data privacy, the parent or guardian, records, changes). **At the bottom of the page**, side by side, are the **student's signature over the printed name** (the name is printed in capitals over the line) and the **parent's or guardian's signature over the printed name**, each with a date line.
 
 ### The automatic email and password
 
@@ -609,11 +610,12 @@ affecting each other. There is no big shared stylesheet.
 |---|---|
 | `Components/App.razor.css` | The colors, sizes and dark mode, written once as variables (`--brand`, `--surface`, `--text`, ...), and the page background and font. Change a color here and it changes everywhere. |
 | `Components/Layout/` | The header (`MainLayout`), the menu on the left (`NavMenu`), the account menu (`UserMenu`), the sign-in layout (`AuthLayout`) and the bare layout of the public home page (`BlankLayout`). |
-| `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `Button`, `ButtonLink`, `Field`, `Modal`, `EnrollmentTable`, `Brand` and `Icon`. |
+| `Components/Shared/` | Small building blocks the pages are made of: `Card`, `StatCard`, `Badge`, `Avatar`, `PageHeader`, `EmptyState`, `Button`, `ButtonLink`, `Field`, `Modal`, `SearchField`, `EnrollmentTable`, `Brand` and `Icon`. |
 | `Components/Pages/` | The pages, one folder for each part of the system, one page and one stylesheet each (see below). |
 
 Good to know:
 
+- **Every search bar is the same one**, `Components/Shared/SearchField.razor`: a wide box with a magnifier at the left, an **X** to clear it and a **Search** button inside, a short hint under it when it helps, and a label above. Lists put it with their other filters (labelled lists) in a `.filter-bar` row (the *Referrals*, *Tracking* and *Security logs* bars use `.filter-bar.one-row`: a **narrow search box with Status, Problem, Grade level and the other choices beside it on one single row**, no inner Search button: press Enter) (styled once in `Components/App.razor.css`): the search takes the room, the filters sit next to it, and everything wraps on a phone. Pages that look as you type use `Live`; pages that search on Enter or on the button use the default; static pages use `Static` (a plain form that reloads the page).
 - To style something another component draws (the `<a>` that `NavLink` makes, the `<input>` of `InputText`), start the
   selector part with `::deep`. `Components/Layout/NavMenu.razor.css` shows it.
 - **Icons** are from [Lucide](https://lucide.dev). Use them with `<Icon Name="house" />`. The available ones are listed in
@@ -640,17 +642,17 @@ Data/                      AppDbContext, entities, EF configurations, migrations
 Data/Queries/              What the pages read from the database
 Components/App.razor.css   The theme: colors, sizes, dark mode
 Components/Layout/         Header (with the messages, notifications and settings), menu, user card, sign-in layout, public layout
-Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, QuizSettings, AttachmentList and AttachmentPicker (files), AnnouncementCard, ... (each with its own .razor.css)
+Components/Shared/         Card, StatCard, Badge, Avatar, Icon, Modal, Field, SearchField, AchievementCelebration, QuizSettings, AttachmentList and AttachmentPicker (files), AnnouncementCard, ... (each with its own .razor.css)
 Components/Pages/          The pages, in one folder per part of the system:
   Public/                    Index (the home page), Login, AccessDenied, NotFound, Error
   Admin/                     Dashboard, UsersManagement, EnrollmentLists (+ Enrollment/: Enrolled and Not enrolled), Archive, SecurityLogs, DatabaseBackups, SystemSettings
   Coordinator/               Dashboard, AcademicSetup (+ Setup/: one component per tab), Announcements, Evaluations, EvaluationEditor, Analytics
-  Provider/                  Dashboard, CourseList, CourseLibrary, MaterialQuestions (the library and sending), Tracking (+ TrackingUsers: its Teachers and Students tabs), TrackingDetail, UserDetail, Analytics
+  Provider/                  Dashboard, CourseList (tracks, courses, subjects) with CourseTable, CourseLibrary, MaterialQuestions (the library and sending), Tracking (+ TrackingUsers: its Teachers and Students tabs), TrackingDetail, UserDetail, Analytics
   Registrar/                 Dashboard, Enrollments (the form), StudentAccounts (the list)
   Teacher/                   Dashboard, Subjects, Subject (modules and work), ItemSubmissions (results and grading), QuizBuilder, Attendance, Gradebook, Announcements (to their classes)
   Student/                   Dashboard, Subjects, SubjectModules, ModuleLesson, WorkPage (hand in), QuizTake, Grades, Evaluations, EvaluateTeacher
   Guidance/                  Dashboard, Referrals
-  Account/                   Calendar (students and teachers) with ItemScheduleDialog, Analytics (admin, guidance, teachers), Users, GroupList, GroupPage, Resources, Help (+ HelpContent)
+  Account/                   Calendar (students and teachers) with ItemScheduleDialog, CalendarDayDialog, CalendarEntryDialog, Analytics (admin, guidance, teachers), Users, GroupList, GroupPage, Resources, Help (+ HelpContent)
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL files for MySQL Workbench: start over (reset and rebuild), sample accounts, sample data, and the script that generates the first one

@@ -1,0 +1,51 @@
+@* The subjects of the library, one row for each (like the modules of a course): what is prepared for it, and a button to open its library. *@
+@if (Courses.Count == 0)
+{
+    <EmptyState IconName="search-x" Title="No course matches">
+        <p>Try another name or code. Courses are made in the academic setup.</p>
+    </EmptyState>
+}
+else
+{
+    <p class="count">@(Courses.Count == 1 ? "1 subject" : $"{Courses.Count:N0} subjects")</p>
+    <div class="rows">
+        @for (var i = 0; i < Courses.Count; i++)
+        {
+            var course = Courses[i];
+            <LibraryRow Href="@($"provider/library/{course.SubjectId}")" Title="@course.Name" Code="@course.Code" Number="@(i + 1)"
+                        Description="@Studied(course)" Details="@Counts(course)" ActionText="Open library">
+                <Badges>
+                    @if (course.HasSyllabus)
+                    {
+                        <Badge Tone="Tone.Success">Syllabus ready</Badge>
+                    }
+                    else
+                    {
+                        <Badge Tone="Tone.Warning">No syllabus yet</Badge>
+                    }
+                </Badges>
+            </LibraryRow>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<MaterialCourseRow> Courses { get; set; } = [];
+
+    /// <summary>Says where each subject is studied (grade level and term), for the subjects of one strand.</summary>
+    [Parameter] public bool ShowPlacement { get; set; }
+
+    private string? Studied(MaterialCourseRow course) => ShowPlacement ? course.Placement : null;
+
+    private static string Counts(MaterialCourseRow c)
+    {
+        var parts = new List<string>
+        {
+            Plural(c.Modules, "module"), Plural(c.Activities, "activity", "activities"), Plural(c.Quizzes, "quiz", "quizzes"), Plural(c.TaskPerformances, "task performance"),
+        };
+        parts.Add(c.Teachers == 0 ? "no teacher this year" : $"{Plural(c.Teachers, "teacher")}" + (c.Sent > 0 ? $", {c.Sent} sent so far" : ""));
+        return string.Join(" · ", parts);
+    }
+
+    private static string Plural(int n, string one, string? many = null) => n == 1 ? $"1 {one}" : $"{n:N0} {many ?? one + "s"}";
+}

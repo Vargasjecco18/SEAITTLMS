@@ -68,18 +68,6 @@
     margin-bottom: 0;
 }
 
-.search {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.search .input {
-    flex: 1 1 14rem;
-    width: auto;
-}
-
 .table-wrap {
     position: relative;
     margin: 0 -1.25rem -1.25rem;

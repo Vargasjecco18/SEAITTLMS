@@ -25,23 +25,18 @@ else
 <PillTabs Items="Tabs" Selected="@state" SelectedChanged="StateChangedAsync" Label="State of what was sent" />
 
 <Card>
-    <form class="filter-bar" @onsubmit="ApplyAsync">
-        <Field For="track-search" Label="Search" Class="grow">
-            <input id="track-search" type="search" class="input" maxlength="100" placeholder="A course, a teacher, a section or a module" @bind="search" @bind:event="oninput" />
-        </Field>
+    <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
+        <SearchField Id="track-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="Course, teacher, module…" AriaLabel="Search the tracking" OnClear="ApplyAsync" />
         <Field For="track-kind" Label="What">
             <select id="track-kind" class="input" @bind="kind" @bind:after="ApplyAsync">
-                <option value="">Syllabi and modules</option>
-                <option value="Syllabus">Syllabi only</option>
-                <option value="Module">Modules only</option>
+                <option value="">All</option>
+                <option value="Syllabus">Syllabi</option>
+                <option value="Module">Modules</option>
             </select>
         </Field>
-        <Button Type="submit" IconName="search">Search</Button>
-    </form>
-    <div class="filter-bar choices">
         <Field For="track-teacher" Label="Teacher">
             <select id="track-teacher" class="input" @bind="teacherId" @bind:after="ApplyAsync">
-                <option value="0">All teachers</option>
+                <option value="0">All</option>
                 @foreach (var t in options?.Teachers ?? [])
                 {
                     <option value="@t.UserId">@t.Name</option>
@@ -50,7 +45,7 @@ else
         </Field>
         <Field For="track-grade" Label="Grade level">
             <select id="track-grade" class="input" @bind="gradeLevel" @bind:after="ApplyAsync">
-                <option value="0">All grade levels</option>
+                <option value="0">All</option>
                 @foreach (var g in options?.GradeLevels ?? [])
                 {
                     <option value="@g">Grade @g</option>
@@ -59,7 +54,7 @@ else
         </Field>
         <Field For="track-section" Label="Section">
             <select id="track-section" class="input" @bind="section" @bind:after="ApplyAsync">
-                <option value="">All sections</option>
+                <option value="">All</option>
                 @foreach (var x in options?.Sections ?? [])
                 {
                     <option value="@x">@x</option>
@@ -68,7 +63,7 @@ else
         </Field>
         <Field For="track-course" Label="Course">
             <select id="track-course" class="input" @bind="subjectId" @bind:after="ApplyAsync">
-                <option value="0">All courses</option>
+                <option value="0">All</option>
                 @foreach (var c in options?.Courses ?? [])
                 {
                     <option value="@c.SubjectId">@c.Name</option>
@@ -77,9 +72,11 @@ else
         </Field>
         @if (HasChoice)
         {
-            <Button Variant="ButtonVariant.Ghost" OnClick="ClearChoicesAsync">Clear</Button>
+            <div class="filter-actions">
+                <Button Variant="ButtonVariant.Ghost" IconName="x" OnClick="ClearChoicesAsync">Clear filters</Button>
+            </div>
         }
-    </div>
+    </form>
 
     @if (data is null)
     {

@@ -60,6 +60,7 @@
 .swatch.quiz { background: var(--violet); }
 .swatch.taskperformance { background: var(--amber); }
 .swatch.module { background: var(--green); }
+.swatch.personal { background: #7c3aed; }
 .swatch.late { background: var(--danger-solid); }
 
 /* ---------- month ---------- */
@@ -163,6 +164,7 @@ a.chip:hover {
 .chip.quiz { background: var(--violet-soft); color: var(--violet); }
 .chip.taskperformance { background: var(--amber-soft); color: var(--amber); }
 .chip.module { background: var(--green-soft); color: var(--green); }
+.chip.personal { background: #ede9fe; color: #6d28d9; }
 .chip.late { background: var(--danger-soft); color: var(--danger); }
 .chip.done { opacity: 0.6; text-decoration: line-through; }
 
@@ -231,6 +233,56 @@ a.chip:hover {
     border-bottom: 1px solid var(--border);
 }
 
+/* The date of a day of the week is a link: it opens the box with everything on that day. */
+.date {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    width: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.date:hover .wn {
+    color: var(--brand-strong);
+}
+
+.date:focus-visible,
+.day-summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+/* What is on the day, said in a few words ("2 activities", "1 quiz"); the whole block is a link to the day's box. */
+.day-summary {
+    display: grid;
+    gap: 0.35rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.sum {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 8px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+.day-summary:hover .sum {
+    filter: brightness(0.96);
+}
+
+.sum.quiz { background: var(--violet-soft); color: var(--violet); }
+.sum.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.sum.module { background: var(--green-soft); color: var(--green); }
+.sum.personal { background: #ede9fe; color: #6d28d9; }
+.sum.late { background: var(--danger-soft); color: var(--danger); }
+
 .wd {
     color: var(--text-muted);
     font-size: 0.78rem;
@@ -248,64 +300,6 @@ a.chip:hover {
     margin: 0;
     color: var(--text-muted);
     font-size: 0.85rem;
-}
-
-.events {
-    display: grid;
-    gap: 0.4rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.event {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.45rem;
-    padding: 0.45rem 0.5rem;
-    border-radius: 8px;
-    background: var(--brand-soft);
-    color: var(--brand-strong);
-}
-
-.event.quiz { background: var(--violet-soft); color: var(--violet); }
-.event.taskperformance { background: var(--amber-soft); color: var(--amber); }
-.event.module { background: var(--green-soft); color: var(--green); }
-.event.late { background: var(--danger-soft); color: var(--danger); }
-.event.done { opacity: 0.65; }
-
-.event-icon {
-    flex-shrink: 0;
-    margin-top: 0.15rem;
-}
-
-.event-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.event-text a,
-.event-title {
-    color: inherit;
-    font-size: 0.88rem;
-    font-weight: 650;
-    text-decoration: none;
-    overflow-wrap: anywhere;
-}
-
-.event-text a:hover {
-    text-decoration: underline;
-}
-
-.event.done .event-text a,
-.event.done .event-title {
-    text-decoration: line-through;
-}
-
-.event small {
-    opacity: 0.85;
-    font-size: 0.76rem;
 }
 
 @keyframes fade {

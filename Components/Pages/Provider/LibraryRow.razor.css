@@ -1,0 +1,88 @@
+/* The same look as a module in a course: a white block with a square number, a bold name and a button at the right. */
+.lib-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    min-width: 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s;
+}
+
+.lib-row:hover {
+    border-color: var(--brand);
+}
+
+.lib-main {
+    display: flex;
+    flex: 1 1 18rem;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+}
+
+.lib-main:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 4px;
+    border-radius: var(--radius-sm);
+}
+
+.lib-number {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.375rem;
+    height: 2.375rem;
+    border-radius: 11px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.lib-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.lib-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.lib-main:hover .lib-name {
+    color: var(--brand-strong);
+}
+
+.lib-code {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.lib-desc,
+.lib-details {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.lib-details {
+    font-size: 0.85rem;
+}

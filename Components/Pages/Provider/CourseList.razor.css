@@ -2,103 +2,60 @@
     color: var(--text-muted);
 }
 
-.toolbar {
+/* Where you are: Course library › Academic › Business and Entrepreneurship */
+.crumbs {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.search-box {
-    position: relative;
-    flex: 1 1 16rem;
-    max-width: 26rem;
-}
-
-.search-box ::deep .search-icon {
-    position: absolute;
-    top: 50%;
-    left: 0.75rem;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    pointer-events: none;
-}
-
-.search-box input {
-    width: 100%;
-    padding-left: 2.4rem;
-}
-
-.result-count {
-    margin-left: auto;
+    gap: 0.4rem;
+    margin: 0 0 0.9rem;
     color: var(--text-muted);
     font-size: 0.9rem;
 }
 
-.table-wrap {
-    margin: 0 -1.25rem -1.25rem;
-    overflow-x: auto;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table th,
-.table td {
-    padding: 0.7rem 1rem;
-    border-top: 1px solid var(--border);
-    text-align: left;
-    vertical-align: middle;
-}
-
-.table th {
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.table tbody tr:hover {
-    background: var(--surface-2);
-}
-
-.name {
-    display: block;
-    font-weight: 650;
-    color: var(--text);
+.crumbs a {
+    color: var(--brand-strong);
+    font-weight: 600;
     text-decoration: none;
 }
 
-.name:hover {
+.crumbs a:hover {
+    text-decoration: underline;
+}
+
+.level-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 0.25rem;
+    font-size: 1.15rem;
+}
+
+.code {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
     color: var(--brand-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
 }
 
-.sub {
-    display: block;
+.level-hint {
+    margin: 0 0 1rem;
     color: var(--text-muted);
-    font-size: 0.82rem;
 }
 
-.col-actions {
-    text-align: right !important;
-    white-space: nowrap;
+.level {
+    margin-top: 1.25rem;
 }
 
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
+.rows {
+    display: grid;
+    gap: 0.9rem;
 }
 
-@media (max-width: 860px) {
-    .col-more {
-        display: none;
-    }
+/* The search box is alone in its card: no space under it. */
+.search-card ::deep .filter-bar {
+    margin-bottom: 0;
 }

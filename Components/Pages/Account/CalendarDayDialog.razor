@@ -1,0 +1,72 @@
+@rendermode InteractiveServer
+@using System.Globalization
+@inject CurrentUser Me
+@inject CalendarService Events
+@inject NavigationManager Navigation
+
+@* The box a click on a day of the week opens: everything on that day. Each line is a link: an activity, quiz or task performance (a teacher gets
+   who handed it in), a module, or an event of the person's own calendar. *@
+<Modal Open="loaded" Title="@Day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)" OnClose="Close">
+    @if (events.Count == 0)
+    {
+        <p class="none">Nothing is planned on this day.</p>
+    }
+    else
+    {
+        <ul class="day-list">
+            @foreach (var e in events)
+            {
+                <li class="line @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")">
+                    <span class="line-icon"><Icon Name="@CalendarKinds.Icon(e.Kind)" Size="18" /></span>
+                    <span class="line-text">
+                        <a href="@LinkOf(e)">@e.Title</a>
+                        <small>@CalendarKinds.Label(e.Kind)@(string.IsNullOrEmpty(e.Subtitle) ? "" : " · " + e.Subtitle)@(e.Done ? " · done" : "")@(e.Overdue ? " · overdue" : "")</small>
+                    </span>
+                    <Icon Name="chevron-right" Size="16" />
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="modal-actions">
+        <ButtonLink Href="@($"calendar?view={View}&date={Day:yyyy-MM-dd}&event=new&on={Day:yyyy-MM-dd}")" Variant="ButtonVariant.Secondary" IconName="plus">Add event</ButtonLink>
+        <span class="spacer"></span>
+        <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
+    </div>
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public DateOnly Day { get; set; }
+
+    /// <summary>"month" or "week": the view of the page behind the box.</summary>
+    [Parameter] public string View { get; set; } = "week";
+
+    /// <summary>Where the calendar is again when the box is closed.</summary>
+    [Parameter, EditorRequired] public string CloseUrl { get; set; } = "calendar";
+
+    private IReadOnlyList<CalendarEvent> events = [];
+    private bool isTeacher;
+    private bool loaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Me.GetAsync();
+        isTeacher = user?.Role == AppRoles.Teacher;
+        events = user is null ? [] : await Events.GetEventsAsync(user, Day, Day);
+        loaded = true;
+    }
+
+    private void Close() => Navigation.NavigateTo(CloseUrl);
+
+    /// <summary>A teacher's activity, quiz or task performance opens the box with who handed it in; an event opens its own box; the rest go to their page.</summary>
+    private string LinkOf(CalendarEvent e)
+    {
+        var back = $"calendar?view={View}&date={Day:yyyy-MM-dd}";
+        if (e.Key.StartsWith("entry-", StringComparison.Ordinal))
+        {
+            return $"{back}&event={e.Key["entry-".Length..]}";
+        }
+
+        return isTeacher && e.Key.StartsWith("item-", StringComparison.Ordinal) ? $"{back}&work={e.Key["item-".Length..]}" : e.Href ?? back;
+    }
+}

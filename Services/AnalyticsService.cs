@@ -36,15 +36,6 @@ public sealed record AnalyticsReport(
     int Resolved, int Improved, IReadOnlyList<InterventionStat> Interventions,
     string PerformanceTitle, IReadOnlyList<GroupPerformance> Performance);
 
-/// <summary>One posted module (or syllabus) of a course and which of the students opened it.</summary>
-public sealed record ModuleOpenRow(int ModuleId, string Title, bool IsSyllabus, DateTime PostedAtUtc, IReadOnlyList<string> Opened, IReadOnlyList<string> NotOpened)
-{
-    public int Total => Opened.Count + NotOpened.Count;
-}
-
-/// <summary>The posted modules of one course of a teacher, with who opened each.</summary>
-public sealed record CourseModuleOpens(int AssignmentId, string Course, IReadOnlyList<ModuleOpenRow> Modules);
-
 /// <summary>
 /// The analytics page. The administrator and the guidance counselor see the whole school; a teacher sees only their own subjects. Everything is
 /// worked out from the scores and attendance that are already recorded, so there is nothing to type in.
@@ -76,50 +67,6 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
     {
         var list = metrics.ToList();
         return AttendanceService.Rate(list.Sum(m => m.Present), list.Sum(m => m.Late), list.Sum(m => m.Absent));
-    }
-
-    /// <summary>
-    /// For each course of a teacher: the modules (and the syllabus) that the students can see, and for each one the students who opened it and the students who did not.
-    /// The students are the ones enrolled in the section with the course.
-    /// </summary>
-    public async Task<IReadOnlyList<CourseModuleOpens>> GetModuleOpensAsync(int teacherUserId, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var now = clock.GetUtcNow().UtcDateTime;
-
-        var courses = await db.TeachingAssignments.AsNoTracking().Where(a => a.Teacher.UserId == teacherUserId)
-            .Select(a => new { a.Id, a.SectionId, a.SubjectId, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
-            .ToListAsync(ct);
-        var result = new List<CourseModuleOpens>();
-        foreach (var course in courses.OrderBy(c => c.Subject).ThenBy(c => c.GradeLevel).ThenBy(c => c.Strand).ThenBy(c => c.Section))
-        {
-            var modules = await db.Modules.AsNoTracking()
-                .Where(m => m.AssignmentId == course.Id && m.VisibleFromUtc != null && m.VisibleFromUtc <= now)
-                .OrderByDescending(m => m.IsSyllabus).ThenBy(m => m.Position).ThenBy(m => m.Id)
-                .Select(m => new { m.Id, m.Title, m.IsSyllabus, Posted = m.VisibleFromUtc!.Value })
-                .ToListAsync(ct);
-            if (modules.Count == 0)
-            {
-                continue;
-            }
-
-            var students = await Roster.Enrollments(db, course.SectionId, course.SubjectId)
-                .Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName }).Distinct().ToListAsync(ct);
-            var moduleIds = modules.Select(m => m.Id).ToList();
-            var views = await db.ModuleViews.AsNoTracking().Where(v => moduleIds.Contains(v.ModuleId)).Select(v => new { v.ModuleId, v.StudentId }).ToListAsync(ct);
-            var opened = views.GroupBy(v => v.ModuleId).ToDictionary(g => g.Key, g => g.Select(v => v.StudentId).ToHashSet());
-
-            var rows = modules.Select(m =>
-            {
-                var done = opened.GetValueOrDefault(m.Id) ?? [];
-                var yes = students.Where(s => done.Contains(s.StudentId)).Select(s => $"{s.LastName}, {s.FirstName}").OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
-                var no = students.Where(s => !done.Contains(s.StudentId)).Select(s => $"{s.LastName}, {s.FirstName}").OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
-                return new ModuleOpenRow(m.Id, m.Title, m.IsSyllabus, m.Posted, yes, no);
-            }).ToList();
-            result.Add(new CourseModuleOpens(course.Id, $"{course.Subject} · {TeachingService.SectionLabel(course.GradeLevel, course.Strand, course.Section)}", rows));
-        }
-
-        return result;
     }
 
     public async Task<AnalyticsReport?> GetAsync(CurrentUserInfo user, CancellationToken ct = default)

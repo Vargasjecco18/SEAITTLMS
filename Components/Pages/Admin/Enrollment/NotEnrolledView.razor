@@ -19,13 +19,9 @@
         </p>
     </div>
 
-    <form class="toolbar" role="search" @onsubmit="SearchAsync">
-        <div class="search-box">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" aria-label="Search students" placeholder="Name or LRN" autocomplete="off" @bind="search" />
-        </div>
-        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
-        <span class="result-count">@(result is null ? "" : result.Total == 1 ? "1 student" : $"{result.Total:N0} students")</span>
+    <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+        <SearchField Id="ne-search" @bind-Value="search" Label="Search" Placeholder="Name or LRN" AriaLabel="Search students" OnClear="SearchAsync" />
+        <span class="filter-count">@(result is null ? "" : result.Total == 1 ? "1 student" : $"{result.Total:N0} students")</span>
     </form>
 
     @if (result is null)

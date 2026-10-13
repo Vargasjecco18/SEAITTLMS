@@ -150,62 +150,6 @@
     padding-left: 1.1rem;
 }
 
-.setup ::deep .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 1.1rem;
-}
-
-.setup ::deep .search-box {
-    position: relative;
-    flex: 1 1 260px;
-    max-width: 440px;
-}
-
-.setup ::deep .search-box .search-icon {
-    position: absolute;
-    top: 50%;
-    left: 0.75rem;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    pointer-events: none;
-}
-
-.setup ::deep .search-box input {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 0.55rem 0.8rem 0.55rem 2.4rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
-}
-
-.setup ::deep .search-box input:focus {
-    outline: none;
-    border-color: var(--brand);
-    box-shadow: 0 0 0 3px var(--brand-ring);
-}
-
-.setup ::deep .toolbar select {
-    height: 2.4rem;
-    padding: 0 0.7rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
-}
-
-.setup ::deep .result-count {
-    margin-left: auto;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
 /* ---------- the lists ---------- */
 .setup ::deep .table-wrap {
     margin: 0 -1.25rem;

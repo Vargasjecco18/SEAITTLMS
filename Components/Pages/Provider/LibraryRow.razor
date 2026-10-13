@@ -1,0 +1,43 @@
+@* One line of the course library, made like a module of a course (what a teacher or a student sees when they open a course): a square with a number or an icon,
+   the name in bold, a line under it, and a button at the right. A track, a strand and a subject all use it. *@
+<section class="lib-row" aria-label="@Title">
+    <a class="lib-main" href="@Href">
+        <span class="lib-number" aria-hidden="true">
+            @if (!string.IsNullOrEmpty(IconName))
+            {
+                <Icon Name="@IconName" Size="18" />
+            }
+            else
+            {
+                @Number
+            }
+        </span>
+        <span class="lib-text">
+            <span class="lib-name">@Title @if (!string.IsNullOrEmpty(Code)) { <span class="lib-code">@Code</span> } @Badges</span>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <span class="lib-desc">@Description</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Details))
+            {
+                <span class="lib-details">@Details</span>
+            }
+        </span>
+    </a>
+    <ButtonLink Href="@Href" Variant="ButtonVariant.Secondary" IconName="arrow-right" IconAfter="true">@ActionText</ButtonLink>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = "";
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Code { get; set; }
+
+    /// <summary>The number in the square, when there is no icon.</summary>
+    [Parameter] public int Number { get; set; }
+
+    [Parameter] public string? IconName { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? Details { get; set; }
+    [Parameter] public string ActionText { get; set; } = "Open";
+    [Parameter] public RenderFragment? Badges { get; set; }
+}

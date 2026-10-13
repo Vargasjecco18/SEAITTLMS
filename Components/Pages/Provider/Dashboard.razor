@@ -12,9 +12,7 @@
 }
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "provider"}")"
-            IconName="layout-dashboard">
-    <ButtonLink Href="provider/library" IconName="folder-open">Course library</ButtonLink>
-</PageHeader>
+            IconName="layout-dashboard" />
 
 @if (data is null)
 {
@@ -142,7 +140,6 @@ else
 
         <Card Title="Quick links" IconName="sparkles" Class="wide">
             <div class="quick">
-                <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary" IconName="folder-open">Course library</ButtonLink>
                 <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary" IconName="eye">Tracking</ButtonLink>
                 <ButtonLink Href="provider/tracking?tab=teachers" Variant="ButtonVariant.Secondary" IconName="users-round">Teachers and students</ButtonLink>
                 <ButtonLink Href="provider/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>

@@ -2,23 +2,6 @@
     color: var(--text-muted);
 }
 
-.filters {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0 1rem;
-    align-items: end;
-}
-
-@media (min-width: 820px) {
-    .filters {
-        grid-template-columns: minmax(9rem, 1fr) minmax(10rem, 1fr) minmax(0, 2fr) auto;
-    }
-}
-
-.filter-actions {
-    margin-bottom: 1rem;
-}
-
 .table-wrap {
     position: relative;
     margin: 0 -1.25rem;

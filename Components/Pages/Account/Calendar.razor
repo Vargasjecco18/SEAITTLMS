@@ -18,12 +18,13 @@
             <a class="switch-link @(view == "month" ? "on" : "")" href="@Url("month", anchor)" aria-current="@(view == "month" ? "page" : null)">Month</a>
             <a class="switch-link @(view == "week" ? "on" : "")" href="@Url("week", anchor)" aria-current="@(view == "week" ? "page" : null)">Week</a>
         </span>
+        <ButtonLink Href="@NewEventUrl" IconName="plus" Small="true">Add event</ButtonLink>
     </nav>
 </PageHeader>
 
 <PageWithAside Show="@AsideShow" Stacked="@(view == "week")">
     <ul class="legend" aria-label="Legend">
-        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module })
+        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Personal })
         {
             <li><span class="swatch @kind.ToLowerInvariant()"></span> @CalendarKinds.Label(kind)</li>
         }
@@ -66,8 +67,10 @@
                 var onDay = EventsOn(day);
                 <section class="column @(day == today ? "today" : "")" aria-label="@day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)" data-day="@day.ToString("yyyy-MM-dd")">
                     <header>
-                        <span class="wd">@day.ToString("ddd", CultureInfo.InvariantCulture)</span>
-                        <span class="wn">@day.Day</span>
+                        <a class="date" href="@DayUrl(day)" aria-label="@($"{day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)}: open the day")">
+                            <span class="wd">@day.ToString("ddd", CultureInfo.InvariantCulture)</span>
+                            <span class="wn">@day.Day</span>
+                        </a>
                     </header>
                     @if (onDay.Count == 0)
                     {
@@ -75,26 +78,13 @@
                     }
                     else
                     {
-                        <ul class="events">
-                            @foreach (var e in onDay)
+                        @* The day says what is on it (2 activities, 1 quiz ...); a click opens a box with each one as a link. *@
+                        <a class="day-summary" href="@DayUrl(day)" aria-label="@($"{onDay.Count} on this day: open the day")">
+                            @foreach (var g in Summary(onDay))
                             {
-                                <li class="event @e.Kind.ToLowerInvariant() @(e.Overdue ? "late" : "") @(e.Done ? "done" : "")">
-                                    <span class="event-icon"><Icon Name="@CalendarKinds.Icon(e.Kind)" Size="16" /></span>
-                                    <span class="event-text">
-                                        @if (e.Href is not null)
-                                        {
-                                            <a href="@LinkOf(e)">@e.Title</a>
-                                        }
-                                        else
-                                        {
-                                            <span class="event-title">@e.Title</span>
-                                        }
-
-                                        <small>@(e.Subtitle)@(e.Done ? " · done" : "")@(e.Overdue ? " · overdue" : "")</small>
-                                    </span>
-                                </li>
+                                <span class="sum @g.Kind.ToLowerInvariant() @(g.Late ? "late" : "")"><Icon Name="@CalendarKinds.Icon(g.Kind)" Size="14" /> @g.Text</span>
                             }
-                        </ul>
+                        </a>
                     }
                 </section>
             }
@@ -106,6 +96,18 @@
 @if (workItemId is { } workId)
 {
     <CalendarWorkDialog @key="workId" ItemId="workId" CloseUrl="@Url(view, anchor)" />
+}
+
+@* A click on a day of the week: everything on that day, each one a link. *@
+@if (openDay is { } dayToOpen)
+{
+    <CalendarDayDialog @key="@($"day-{dayToOpen:yyyy-MM-dd}")" Day="dayToOpen" View="@view" CloseUrl="@Url(view, anchor)" />
+}
+
+@* "Add event", or a click on an event of the person's own calendar: the box to write or change it. *@
+@if (eventMode is not null)
+{
+    <CalendarEntryDialog @key="@($"event-{eventMode}-{editDay}")" EntryId="@(eventMode == "new" ? null : int.Parse(eventMode))" Day="@(editDay ?? NewEventDay)" View="@view" CloseUrl="@Url(view, anchor)" />
 }
 
 @* A teacher dragged an unassigned activity onto a day (or pressed "Set date"): the box to give it its due date and settings. *@
@@ -126,6 +128,11 @@
 
     [SupplyParameterFromQuery(Name = "on")] private string? OnText { get; set; }
 
+    // A click on a day of the week: ?day=<date>. An event of the person: ?event=new or ?event=<id>.
+    [SupplyParameterFromQuery(Name = "day")] private string? DayText { get; set; }
+
+    [SupplyParameterFromQuery(Name = "event")] private string? EventText { get; set; }
+
     // A teacher clicked a piece of work: ?work=<item>.
     [SupplyParameterFromQuery(Name = "work")] private string? WorkText { get; set; }
 
@@ -139,6 +146,8 @@
     private int? editItemId;
     private int? workItemId;
     private DateOnly? editDay;
+    private DateOnly? openDay;
+    private string? eventMode;
 
     /// <summary>The widgets at the right: a student's activities and then their due dates, or the teacher's unchecked activities and then the ones that have no due date yet.</summary>
     private string AsideShow => isTeacher ? "unchecked,unassigned" : "activities,upnext";
@@ -175,6 +184,40 @@
         editItemId = isTeacher && int.TryParse(EditText, out var itemId) && itemId > 0 ? itemId : null;
         workItemId = isTeacher && int.TryParse(WorkText, out var workId) && workId > 0 ? workId : null;
         editDay = DateOnly.TryParseExact(OnText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var on) && on.Year is > 2000 and < 2100 ? on : null;
+        openDay = DateOnly.TryParseExact(DayText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) && day.Year is > 2000 and < 2100 ? day : null;
+        eventMode = EventText == "new" ? "new" : int.TryParse(EventText, out var entryId) && entryId > 0 ? entryId.ToString() : null;
+    }
+
+    /// <summary>The day a new event starts on: today when it is on the page, else the first day of the page.</summary>
+    private DateOnly NewEventDay => today >= rangeStart && today < rangeStart.AddDays(rangeDays) ? today : anchor;
+
+    private string NewEventUrl => $"{Url(view, anchor)}&event=new&on={NewEventDay:yyyy-MM-dd}";
+
+    private string DayUrl(DateOnly day) => $"{Url(view, anchor)}&day={day:yyyy-MM-dd}";
+
+    private sealed record DaySummary(string Kind, string Text, bool Late);
+
+    /// <summary>"2 activities", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
+    private static IEnumerable<DaySummary> Summary(IReadOnlyList<CalendarEvent> onDay)
+    {
+        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Personal })
+        {
+            var these = onDay.Where(e => e.Kind == kind).ToList();
+            if (these.Count == 0)
+            {
+                continue;
+            }
+
+            var name = kind switch
+            {
+                ItemKinds.Activity => these.Count == 1 ? "activity" : "activities",
+                ItemKinds.Quiz => these.Count == 1 ? "quiz" : "quizzes",
+                ItemKinds.TaskPerformance => these.Count == 1 ? "task performance" : "task performances",
+                CalendarKinds.Module => these.Count == 1 ? "module" : "modules",
+                _ => these.Count == 1 ? "event" : "events",
+            };
+            yield return new DaySummary(kind, $"{these.Count} {name}", these.Any(e => e.Overdue));
+        }
     }
 
     private List<CalendarEvent> EventsOn(DateOnly day) => events.Where(e => e.Day == day).ToList();
@@ -187,7 +230,8 @@
     /// those events is item-&lt;id&gt;); everything else goes to its own page.
     /// </summary>
     private string LinkOf(CalendarEvent e) =>
-        isTeacher && e.Key.StartsWith("item-", StringComparison.Ordinal) ? $"{Url(view, anchor)}&work={e.Key["item-".Length..]}" : e.Href!;
+        e.Key.StartsWith("entry-", StringComparison.Ordinal) ? $"{Url(view, anchor)}&event={e.Key["entry-".Length..]}"
+        : isTeacher && e.Key.StartsWith("item-", StringComparison.Ordinal) ? $"{Url(view, anchor)}&work={e.Key["item-".Length..]}" : e.Href!;
 
     private static string Url(string view, DateOnly date) => $"calendar?view={view}&date={date:yyyy-MM-dd}";
 

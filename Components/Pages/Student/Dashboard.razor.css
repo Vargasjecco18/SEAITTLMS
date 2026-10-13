@@ -21,6 +21,16 @@
     min-width: 0;
 }
 
+/* The "Due dates" card is a live card of its own: it fills its cell like the cards next to it. */
+.due-cell {
+    min-width: 0;
+}
+
+.due-cell ::deep .widgets,
+.due-cell ::deep .widgets > .card {
+    height: 100%;
+}
+
 @media (min-width: 900px) {
     .cards {
         grid-template-columns: repeat(2, minmax(0, 1fr));

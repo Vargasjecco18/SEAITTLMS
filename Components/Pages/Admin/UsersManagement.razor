@@ -50,25 +50,16 @@
 }
 
 <Card>
-    <form class="toolbar" role="search" @onsubmit="SearchAsync">
-        <div class="search-box">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" aria-label="Search @tab.Title.ToLowerInvariant()" placeholder="@SearchHint" autocomplete="off" @bind="searchText" />
-        </div>
-        <label class="status-filter">
-            <span class="sr-only">Show accounts that are</span>
-            <select aria-label="Status" @bind="statusFilter" @bind:after="StatusChangedAsync">
+    <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+        <SearchField Id="u-search" @bind-Value="searchText" Label="Search" Placeholder="@SearchHint" AriaLabel="@($"Search {tab.Title.ToLowerInvariant()}")" OnClear="ClearSearchAsync" />
+        <Field For="u-status" Label="Status">
+            <select id="u-status" @bind="statusFilter" @bind:after="StatusChangedAsync">
                 <option value="">All statuses</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>
-        </label>
-        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
-        @if (!string.IsNullOrEmpty(appliedSearch))
-        {
-            <Button Variant="ButtonVariant.Ghost" OnClick="ClearSearchAsync">Clear</Button>
-        }
-        <span class="result-count">@(list is null ? "" : list.Total == 1 ? "1 account" : $"{list.Total:N0} accounts")</span>
+        </Field>
+        <span class="filter-count">@(list is null ? "" : list.Total == 1 ? "1 account" : $"{list.Total:N0} accounts")</span>
     </form>
 
     @if (list is null)

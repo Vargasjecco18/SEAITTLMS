@@ -1,0 +1,52 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject AchievementService Achievements
+
+@* The box in the middle of the screen when a student has earned an achievement. One box for each new achievement; it is shown once
+   (the dashboard writes down that it was seen when the student closes it). It is its own live island, so it works on a page that is otherwise plain. *@
+<Modal Open="current is not null" Title="Achievement unlocked!" OnClose="NextAsync" Centered="true" Narrow="true">
+    @if (current is { } a)
+    {
+        <div class="celebrate @a.Color.ToString().ToLowerInvariant()">
+            <div class="confetti" aria-hidden="true">
+                @for (var i = 0; i < 16; i++)
+                {
+                    <i style="--i: @i"></i>
+                }
+            </div>
+            <span class="medal"><Icon Name="@a.Icon" Size="44" /></span>
+            <h3>@a.Title</h3>
+            <p class="what">@a.Description</p>
+            @if (queue.Count > 1)
+            {
+                <p class="count">@(shown + 1) of @queue.Count new achievements</p>
+            }
+
+            <Button IconName="@(shown + 1 < queue.Count ? "arrow-right" : "circle-check")" OnClick="NextAsync">@(shown + 1 < queue.Count ? "Next" : "Great!")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<Achievement> queue = [];
+    private int shown;
+    private int studentId;
+
+    private Achievement? current => shown < queue.Count ? queue[shown] : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        studentId = await Me.GetStudentIdAsync() ?? 0;
+        queue = studentId == 0 ? [] : await Achievements.GetUnseenAsync(studentId);
+    }
+
+    /// <summary>The student has seen this one (or closed the box): write it down and show the next, if any.</summary>
+    private async Task NextAsync()
+    {
+        if (current is { } a)
+        {
+            await Achievements.MarkSeenAsync(studentId, [a.Key]);
+            shown++;
+        }
+    }
+}

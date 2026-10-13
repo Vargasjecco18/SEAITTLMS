@@ -73,18 +73,6 @@
     text-align: center;
 }
 
-.find {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.find .input {
-    flex: 1 1 14rem;
-    width: auto;
-}
-
 .link-button {
     padding: 0;
     border: 0;

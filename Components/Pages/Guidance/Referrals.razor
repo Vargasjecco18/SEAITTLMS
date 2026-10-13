@@ -11,7 +11,9 @@
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
 <Card>
-    <form class="filters" @onsubmit="SearchAsync">
+    <form class="filter-bar one-row" role="search" @onsubmit="SearchAsync">
+        <SearchField Id="r-search" @bind-Value="searchText" Label="Search" SubmitText="" Placeholder="Name, course, subject, teacher…"
+                     AriaLabel="Search the referrals" OnClear="SearchAsync" />
         <Field For="r-status" Label="Status">
             <select id="r-status" value="@status" @onchange="StatusChanged">
                 <option value="">All</option>
@@ -37,13 +39,8 @@
                 <option value="12" selected="@(grade == "12")">Grade 12</option>
             </select>
         </Field>
-        <Field For="r-search" Label="Search" Class="grow">
-            <input id="r-search" type="search" placeholder="Name, LRN or problem" autocomplete="off" @bind="searchText" />
-        </Field>
-        <div class="filter-actions">
-            <Button Type="submit" IconName="search">Search</Button>
-        </div>
     </form>
+    <p class="search-help">Search by the student’s name or LRN, the grade level, section, course, subject, teacher or problem. Several words work together: for example <em>garcia accounting 11 failing</em>.</p>
 
     @if (result is null)
     {

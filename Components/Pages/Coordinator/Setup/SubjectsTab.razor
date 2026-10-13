@@ -8,12 +8,9 @@
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
 
-    <form class="toolbar" role="search" @onsubmit="() => { }">
-        <div class="search-box">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" aria-label="Search courses" placeholder="Code or name" autocomplete="off" @bind="search" @bind:event="oninput" />
-        </div>
-        <span class="result-count">@(Shown.Count == 1 ? "1 course" : $"{Shown.Count:N0} courses")</span>
+    <form class="filter-bar" role="search" @onsubmit="() => { }">
+        <SearchField Id="sub-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Code or name" AriaLabel="Search courses" />
+        <span class="filter-count">@(Shown.Count == 1 ? "1 course" : $"{Shown.Count:N0} courses")</span>
     </form>
 
     @if (rows is null)

@@ -174,6 +174,51 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AchievementAward", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AchievementKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("achievement_key");
+
+                    b.Property<DateTime>("AwardedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("awarded_at_utc");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("SeenAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("seen_at_utc");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_achievement_awards");
+
+                    b.HasIndex("StudentId", "AchievementKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_achievement_awards_student_id_achievement_key");
+
+                    b.ToTable("achievement_awards", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.Property<int>("Id")
@@ -479,6 +524,55 @@ namespace SEAITT_LMS.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CalendarEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("start_time");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_calendar_entries");
+
+                    b.HasIndex("UserId", "Day")
+                        .HasDatabaseName("ix_calendar_entries_user_id_day");
+
+                    b.ToTable("calendar_entries", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
@@ -3181,6 +3275,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AchievementAward", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_achievement_awards_students_student_id");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Administrator", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
@@ -3295,6 +3401,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Assignment");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CalendarEntry", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_calendar_entries_users_user_id");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

@@ -27,10 +27,8 @@
 <PillTabs Items="Tabs" Selected="@group" SelectedChanged="GroupChangedAsync" Label="What to show" />
 
 <Card>
-    <form class="filter-bar" @onsubmit="ApplyAsync">
-        <Field For="log-search" Label="Search" Class="grow">
-            <input id="log-search" type="search" class="input" maxlength="100" placeholder="An email, a name, an address or a word" @bind="search" @bind:event="oninput" />
-        </Field>
+    <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
+        <SearchField Id="log-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="An email, a name, an address or a word" AriaLabel="Search the log" OnClear="ApplyAsync" />
         <Field For="log-severity" Label="Kind">
             <select id="log-severity" class="input" @bind="severity" @bind:after="ApplyAsync">
                 <option value="">All</option>
@@ -45,7 +43,7 @@
         <Field For="log-to" Label="To">
             <input id="log-to" type="date" class="input" value="@to" @onchange="ToChangedAsync" />
         </Field>
-        <Button Type="submit" IconName="search">Search</Button>
+        <div class="filter-actions"><Button Type="submit" IconName="search">Search</Button></div>
     </form>
 
     @if (data is null)

@@ -10,6 +10,9 @@ public static class CalendarKinds
 {
     public const string Module = "Module";
 
+    /// <summary>An event the person wrote on their own calendar ("Add event").</summary>
+    public const string Personal = "Personal";
+
     // The three kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance.
 
     public static string Label(string kind) => kind switch
@@ -18,12 +21,14 @@ public static class CalendarKinds
         ItemKinds.TaskPerformance => "Task performance",
         ItemKinds.Activity => "Activity",
         Module => "Module",
+        Personal => "Event",
         _ => kind,
     };
 
     public static string Icon(string kind) => kind switch
     {
         Module => "layers",
+        Personal => "calendar-clock",
         _ => SubjectStyle.KindIcon(kind),
     };
 }
@@ -31,6 +36,9 @@ public static class CalendarKinds
 /// <param name="Day">The day in the Philippines it belongs to.</param>
 /// <param name="AtUtc">The time of day it happens (a deadline's time), or empty for something that takes the whole day.</param>
 public sealed record CalendarEvent(string Key, DateOnly Day, DateTime? AtUtc, string Title, string? Subtitle, string Kind, string? Href, bool Done, bool Overdue);
+
+/// <summary>An event of a person's own calendar, for the box where it is changed.</summary>
+public sealed record CalendarEntryView(int Id, string Title, DateOnly Day, TimeOnly? StartTime, string? Notes);
 
 /// <summary>An activity, quiz or task performance of a teacher that has no due date yet.</summary>
 public sealed record UnassignedItem(int ItemId, string Title, string Kind, string SubjectName, string SectionLabel, string ModuleTitle);
@@ -135,6 +143,84 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
             }
         }
 
+        // The events the person wrote on their own calendar.
+        var entries = await db.CalendarEntries.AsNoTracking().Where(e => e.UserId == user.UserId && e.Day >= from && e.Day <= to).ToListAsync(ct);
+        events.AddRange(entries.Select(e => new CalendarEvent($"entry-{e.Id}", e.Day, e.StartTime is { } t ? PhilippineTime.ToUtc(e.Day.ToDateTime(t)) : null, e.Title,
+            e.StartTime is { } at ? at.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture) : "All day", CalendarKinds.Personal, $"calendar?event={e.Id}", false, false)));
+
         return events.OrderBy(e => e.Day).ThenBy(e => e.AtUtc ?? DateTime.MinValue).ThenBy(e => e.Title).ToList();
+    }
+
+    // ======================================================================= the person's own events ("Add event")
+
+    public const int MaxEntries = 1000;
+
+    public async Task<CalendarEntryView?> GetEntryAsync(int userId, int entryId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.CalendarEntries.AsNoTracking().Where(e => e.Id == entryId && e.UserId == userId)
+            .Select(e => new CalendarEntryView(e.Id, e.Title, e.Day, e.StartTime, e.Notes)).FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>Adds an event to the person's calendar (<paramref name="entryId"/> empty) or changes one of theirs.</summary>
+    public async Task<ServiceResult> SaveEntryAsync(int userId, int? entryId, string? title, DateOnly? day, TimeOnly? startTime, string? notes, CancellationToken ct = default)
+    {
+        title = title?.Trim();
+        notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+
+        var errors = new List<string>();
+        if (string.IsNullOrEmpty(title))
+        {
+            errors.Add("Write what the event is.");
+        }
+        else if (title.Length > 120)
+        {
+            errors.Add("The title can have at most 120 characters.");
+        }
+
+        if (day is null || day.Value.Year is < 2000 or > 2100)
+        {
+            errors.Add("Choose the day of the event.");
+        }
+
+        if (notes is { Length: > 500 })
+        {
+            errors.Add("The note can have at most 500 characters.");
+        }
+
+        if (errors.Count > 0)
+        {
+            return ServiceResult.Fail(errors);
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        CalendarEntry? entry = null;
+        if (entryId is { } id)
+        {
+            entry = await db.CalendarEntries.FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, ct);
+            if (entry is null)
+            {
+                return ServiceResult.Fail("This event was not found. It may have been deleted.");
+            }
+        }
+        else if (await db.CalendarEntries.CountAsync(e => e.UserId == userId, ct) >= MaxEntries)
+        {
+            return ServiceResult.Fail($"You can keep at most {MaxEntries:N0} events. Delete some old ones first.");
+        }
+
+        entry ??= db.CalendarEntries.Add(new CalendarEntry { UserId = userId }).Entity;
+        entry.Title = title!;
+        entry.Day = day!.Value;
+        entry.StartTime = startTime;
+        entry.Notes = notes;
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok(entryId is null ? "The event was added." : "The event was changed.", entry.Id);
+    }
+
+    public async Task<ServiceResult> DeleteEntryAsync(int userId, int entryId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var deleted = await db.CalendarEntries.Where(e => e.Id == entryId && e.UserId == userId).ExecuteDeleteAsync(ct);
+        return deleted == 0 ? ServiceResult.Fail("This event was not found. It may have been deleted already.") : ServiceResult.Ok("The event was deleted.");
     }
 }

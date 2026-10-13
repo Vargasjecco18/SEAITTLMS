@@ -45,6 +45,8 @@ public class AppDbContext : DbContext
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
     public DbSet<ItemView> ItemViews => Set<ItemView>();
+    public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
+    public DbSet<AchievementAward> AchievementAwards => Set<AchievementAward>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<Referral> Referrals => Set<Referral>();
 

@@ -16,10 +16,6 @@ public sealed record CurrentUserInfo(int UserId, string Role, string Name, strin
 public sealed class CurrentUser(AuthenticationStateProvider authentication, IDbContextFactory<AppDbContext> dbFactory)
 {
     private CurrentUserInfo? info;
-    private int? teacherId;
-    private int? studentId;
-    private bool teacherLoaded;
-    private bool studentLoaded;
 
     public async Task<CurrentUserInfo?> GetAsync()
     {
@@ -39,35 +35,27 @@ public sealed class CurrentUser(AuthenticationStateProvider authentication, IDbC
         return info;
     }
 
-    /// <summary>The id of the signed-in student's record in the students table, or null when the signed-in person is not a student.</summary>
-    public async Task<int?> GetStudentIdAsync()
-    {
-        if (!studentLoaded)
-        {
-            studentLoaded = true;
-            if (await GetAsync() is { } me)
-            {
-                await using var db = await dbFactory.CreateDbContextAsync();
-                studentId = await db.Students.AsNoTracking().Where(s => s.UserId == me.UserId).Select(s => (int?)s.Id).FirstOrDefaultAsync();
-            }
-        }
+    // Several live parts of one page (the widgets, the boxes) ask at the same time: they all wait for the same lookup, instead of the second one
+    // being told "nobody" while the first is still asking the database.
+    private Task<int?>? studentLookup;
+    private Task<int?>? teacherLookup;
 
-        return studentId;
-    }
+    /// <summary>The id of the signed-in student's record in the students table, or null when the signed-in person is not a student.</summary>
+    public Task<int?> GetStudentIdAsync() => studentLookup ??= LoadAsync(isStudent: true);
 
     /// <summary>The id of the signed-in teacher's record in the teachers table, or null when the signed-in person is not a teacher.</summary>
-    public async Task<int?> GetTeacherIdAsync()
+    public Task<int?> GetTeacherIdAsync() => teacherLookup ??= LoadAsync(isStudent: false);
+
+    private async Task<int?> LoadAsync(bool isStudent)
     {
-        if (!teacherLoaded)
+        if (await GetAsync() is not { } me)
         {
-            teacherLoaded = true;
-            if (await GetAsync() is { } me)
-            {
-                await using var db = await dbFactory.CreateDbContextAsync();
-                teacherId = await db.Teachers.AsNoTracking().Where(t => t.UserId == me.UserId).Select(t => (int?)t.Id).FirstOrDefaultAsync();
-            }
+            return null;
         }
 
-        return teacherId;
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return isStudent
+            ? await db.Students.AsNoTracking().Where(s => s.UserId == me.UserId).Select(s => (int?)s.Id).FirstOrDefaultAsync()
+            : await db.Teachers.AsNoTracking().Where(t => t.UserId == me.UserId).Select(t => (int?)t.Id).FirstOrDefaultAsync();
     }
 }

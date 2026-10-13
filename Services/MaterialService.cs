@@ -5,8 +5,15 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>A course in the list of the course materials, with what the provider has prepared for it.</summary>
+/// <param name="Placement">In a strand's list: where the course is studied, like "Grade 11 · 1st Term, Grade 12 · 1st Term".</param>
 public sealed record MaterialCourseRow(
-    int SubjectId, string Code, string Name, bool HasSyllabus, int Modules, int Activities, int Quizzes, int TaskPerformances, int Teachers, int Sent);
+    int SubjectId, string Code, string Name, bool HasSyllabus, int Modules, int Activities, int Quizzes, int TaskPerformances, int Teachers, int Sent, string? Placement = null);
+
+/// <summary>A strand of a track in the course library, with how many courses it studies and how many of them have a syllabus.</summary>
+public sealed record LibraryStrand(int StrandId, string Code, string Name, int Courses, int WithSyllabus);
+
+/// <summary>A track of the course library: the first thing the provider sees. Its strands come next, then the courses of a strand.</summary>
+public sealed record LibraryTrack(int TrackId, string Code, string Name, int Courses, int WithSyllabus, IReadOnlyList<LibraryStrand> Strands);
 
 public sealed record MaterialItemView(
     int Id, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc, int? TimeLimitMinutes, bool ShuffleQuestions,
@@ -55,12 +62,26 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     // ======================================================================= reading
 
     /// <summary>Every active course with what is prepared for it. <paramref name="search"/> looks in the name and the code.</summary>
-    public async Task<IReadOnlyList<MaterialCourseRow>> ListCoursesAsync(string? search = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MaterialCourseRow>> ListCoursesAsync(string? search = null, CancellationToken ct = default, int? strandId = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var yearId = await CurrentYearIdAsync(db, ct);
 
         var query = db.Subjects.AsNoTracking().Where(s => s.IsActive);
+        Dictionary<int, string>? placements = null;
+        if (strandId is { } onlyStrand)
+        {
+            // Only the courses this strand studies, and where (grade level and term).
+            var rows = await db.StrandSubjects.AsNoTracking().Where(x => x.StrandId == onlyStrand)
+                .Select(x => new { x.SubjectId, x.GradeLevel, x.TermNumber }).ToListAsync(ct);
+            var termNames = await db.Terms.AsNoTracking().OrderByDescending(t => t.SchoolYear.StartDate).Select(t => new { t.TermNumber, t.Name }).ToListAsync(ct);
+            string TermName(byte number) => termNames.FirstOrDefault(t => t.TermNumber == number)?.Name ?? $"Term {number}";
+            placements = rows.GroupBy(x => x.SubjectId).ToDictionary(
+                g => g.Key,
+                g => string.Join(", ", g.OrderBy(x => x.GradeLevel).ThenBy(x => x.TermNumber).Select(x => $"Grade {x.GradeLevel} · {TermName(x.TermNumber)}")));
+            var subjectIds = placements.Keys.ToList();
+            query = query.Where(s => subjectIds.Contains(s.Id));
+        }
         foreach (var token in (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var t = token;
@@ -88,7 +109,30 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             int Items(string kind) => items.FirstOrDefault(x => x.SubjectId == s.Id && x.Kind == kind)?.Count ?? 0;
             return new MaterialCourseRow(
                 s.Id, s.Code, s.Name, (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, Items(ItemKinds.Activity), Items(ItemKinds.Quiz), Items(ItemKinds.TaskPerformance),
-                teachers.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0);
+                teachers.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0,
+                placements?.GetValueOrDefault(s.Id));
+        }).ToList();
+    }
+
+    /// <summary>The tracks of the school with their strands, and for each how many courses it studies and how many of those have a syllabus in the library.</summary>
+    public async Task<IReadOnlyList<LibraryTrack>> ListTracksAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var tracks = await db.Tracks.AsNoTracking().Where(t => t.IsActive).OrderBy(t => t.Id).Select(t => new { t.Id, t.Code, t.Name }).ToListAsync(ct);
+        var strands = await db.Strands.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.Id).Select(s => new { s.Id, s.TrackId, s.Code, s.Name }).ToListAsync(ct);
+        var curriculum = await db.StrandSubjects.AsNoTracking().Where(x => x.Subject.IsActive).Select(x => new { x.StrandId, x.SubjectId }).Distinct().ToListAsync(ct);
+        var withSyllabus = (await db.MaterialModules.AsNoTracking().Where(m => m.IsSyllabus).Select(m => m.SubjectId).Distinct().ToListAsync(ct)).ToHashSet();
+
+        return tracks.Select(t =>
+        {
+            var own = strands.Where(s => s.TrackId == t.Id).ToList();
+            var rows = own.Select(s =>
+            {
+                var subjects = curriculum.Where(c => c.StrandId == s.Id).Select(c => c.SubjectId).Distinct().ToList();
+                return new LibraryStrand(s.Id, s.Code, s.Name, subjects.Count, subjects.Count(withSyllabus.Contains));
+            }).ToList();
+            var all = own.SelectMany(s => curriculum.Where(c => c.StrandId == s.Id).Select(c => c.SubjectId)).Distinct().ToList();
+            return new LibraryTrack(t.Id, t.Code, t.Name, all.Count, all.Count(withSyllabus.Contains), rows);
         }).ToList();
     }
 

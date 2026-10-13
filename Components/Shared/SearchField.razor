@@ -1,0 +1,108 @@
+@* The search box of every list: a magnifier, the box, a button to empty it (when something is typed) and a Search button inside it.
+   Used in a plain form: pressing Enter or the Search button sends the form. Several of these sit in a ".filter-bar" (see App.razor.css),
+   next to the choices (the <Field> lists) that narrow the list.
+   Two ways to use it:
+   - on an interactive page: @bind-Value="text" (the value is sent when the box is left or Enter is pressed; Live="true" sends it at every key), OnClear runs after the X;
+   - on a plain page (a form with method="get"): Static="true", Name="q" and Value="@q". *@
+<div class="search-field @Class">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label for="@Id">@Label</label>
+    }
+
+    <div class="wrap">
+        <span class="lead" aria-hidden="true"><Icon Name="search" Size="18" /></span>
+
+        @if (Static)
+        {
+            <input id="@Id" name="@Name" type="search" value="@Value" maxlength="@MaxLength" placeholder="@Placeholder" autocomplete="off" aria-label="@Aria" />
+            @if (!string.IsNullOrEmpty(Value) && !string.IsNullOrEmpty(ClearHref))
+            {
+                <a class="clear" href="@ClearHref" title="Clear the search" aria-label="Clear the search"><Icon Name="x" Size="16" /></a>
+            }
+        }
+        else
+        {
+            @if (Live)
+            {
+                <input id="@Id" type="search" value="@Value" maxlength="@MaxLength" placeholder="@Placeholder" autocomplete="off" aria-label="@Aria" @oninput="Changed" />
+            }
+            else
+            {
+                <input id="@Id" type="search" value="@Value" maxlength="@MaxLength" placeholder="@Placeholder" autocomplete="off" aria-label="@Aria" @onchange="Changed" />
+            }
+
+            @if (!string.IsNullOrEmpty(Value))
+            {
+                <button type="button" class="clear" title="Clear the search" aria-label="Clear the search" @onclick="ClearAsync"><Icon Name="x" Size="16" /></button>
+            }
+        }
+
+        @if (!string.IsNullOrEmpty(SubmitText))
+        {
+            <button type="submit" class="go"><span>@SubmitText</span></button>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Hint))
+    {
+        <small class="hint">@Hint</small>
+    }
+</div>
+
+@code {
+    /// <summary>The id of the box (the label points to it).</summary>
+    [Parameter] public string Id { get; set; } = "search-" + Guid.NewGuid().ToString("N")[..6];
+
+    /// <summary>The name sent in the address (plain pages only).</summary>
+    [Parameter] public string? Name { get; set; }
+
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    /// <summary>What the box searches, written as an example: "Name, LRN, section or course".</summary>
+    [Parameter] public string? Placeholder { get; set; }
+
+    /// <summary>A visible label over the box (it lines up with the labels of the choices next to it). Without it, the placeholder is read aloud.</summary>
+    [Parameter] public string? Label { get; set; }
+
+    /// <summary>What a screen reader says for the box when there is no <see cref="Label"/>.</summary>
+    [Parameter] public string? AriaLabel { get; set; }
+
+    /// <summary>A line of help under the box.</summary>
+    [Parameter] public string? Hint { get; set; }
+
+    /// <summary>The text of the button inside the box. Empty: no button (the page searches by itself).</summary>
+    [Parameter] public string? SubmitText { get; set; } = "Search";
+
+    /// <summary>Tell the page at every key, not only when the box is left or Enter is pressed.</summary>
+    [Parameter] public bool Live { get; set; }
+
+    [Parameter] public int MaxLength { get; set; } = 100;
+
+    /// <summary>A plain page: a form that opens the page again with the words in the address.</summary>
+    [Parameter] public bool Static { get; set; }
+
+    /// <summary>Plain pages: where the X goes (the same page without the words).</summary>
+    [Parameter] public string? ClearHref { get; set; }
+
+    /// <summary>Runs after the X emptied the box, so the page can show the whole list again.</summary>
+    [Parameter] public EventCallback OnClear { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    private string Aria => AriaLabel ?? Label ?? Placeholder ?? "Search";
+
+    private async Task Changed(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString();
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task ClearAsync()
+    {
+        Value = "";
+        await ValueChanged.InvokeAsync(Value);
+        await OnClear.InvokeAsync();
+    }
+}

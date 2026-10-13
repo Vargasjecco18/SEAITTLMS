@@ -37,11 +37,8 @@
         </div>
 
         <Card>
-            <form class="filter-bar" @onsubmit="SearchAsync">
-                <Field For="r-search" Label="Search your files" Class="grow">
-                    <input id="r-search" type="search" class="input" maxlength="80" placeholder="Part of a file name" @bind="search" />
-                </Field>
-                <Button Type="submit" IconName="search" Variant="ButtonVariant.Secondary">Search</Button>
+            <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+                <SearchField Id="r-search" @bind-Value="search" MaxLength="80" Label="Search your files" Placeholder="Part of a file name" OnClear="SearchAsync" />
             </form>
 
             @if (locker.Count == 0)

@@ -12,10 +12,8 @@
     <div class="layout">
         <div class="main">
             <Card>
-                <label for="help-search" class="sr-only">Search the help</label>
-                <div class="search">
-                    <Icon Name="search" Size="18" />
-                    <input id="help-search" type="search" class="input" maxlength="80" placeholder="Search the help (for example: password, quiz, backup)" @bind="search" @bind:event="oninput" />
+                <div class="filter-bar">
+                    <SearchField Id="help-search" @bind-Value="search" Live="true" SubmitText="" MaxLength="80" Class="full" Placeholder="Search the help (for example: password, quiz, backup)" AriaLabel="Search the help" />
                 </div>
             </Card>
 

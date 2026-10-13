@@ -339,14 +339,6 @@ html ::deep .muted-line {
     font-size: 0.8rem;
 }
 
-html ::deep .filter-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.6rem 0.85rem;
-    margin-bottom: 1rem;
-}
-
 html ::deep .filter-bar .grow {
     flex: 1 1 14rem;
 }
@@ -598,4 +590,83 @@ html ::deep .rte-editor a {
 html ::deep .plain-answer {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+/*
+  The bar above a list: the search box (SearchField) and the choices that narrow the list (Field with a select), the same on every page.
+  A search box with the class "full" takes a row of its own, the choices go under it.
+*/
+html ::deep .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.8rem 1rem;
+    margin: 0 0 1.1rem;
+}
+
+html ::deep .filter-bar > .field {
+    flex: 0 1 12.5rem;
+    min-width: 10rem;
+    margin: 0;
+}
+
+html ::deep .filter-bar > .search-field {
+    flex: 1 1 22rem;
+    max-width: 38rem;
+}
+
+html ::deep .filter-bar > .search-field.full {
+    flex: 1 1 100%;
+    max-width: none;
+}
+
+html ::deep .filter-bar > .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+html ::deep .filter-bar > .filter-count {
+    align-self: center;
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+/* A bar whose search box shares the row with its choices (referrals, tracking, the log): the search is narrower and every choice is small, so they all sit on one row. */
+html ::deep .filter-bar.one-row {
+    gap: 0.8rem;
+}
+
+html ::deep .filter-bar.one-row > .search-field {
+    flex: 2 1 13rem;
+    min-width: 11rem;
+    max-width: 19rem;
+}
+
+html ::deep .filter-bar.one-row > .field {
+    flex: 1 1 8rem;
+    min-width: 7rem;
+    max-width: 11rem;
+}
+
+html ::deep .search-help {
+    margin: -0.5rem 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+@media (max-width: 560px) {
+    html ::deep .filter-bar > .field,
+    html ::deep .filter-bar.one-row > .field {
+        flex: 1 1 9rem;
+        max-width: none;
+    }
+
+    html ::deep .filter-bar > .search-field,
+    html ::deep .filter-bar.one-row > .search-field {
+        flex: 1 1 100%;
+        max-width: none;
+    }
 }

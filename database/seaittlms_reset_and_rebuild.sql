@@ -1595,5 +1595,37 @@ ALTER TABLE `submissions` ADD `answer_html` mediumtext CHARACTER SET utf8mb4 NUL
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261013025153_AddRichAnswers', '9.0.20');
 
+CREATE TABLE `achievement_awards` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `student_id` int NOT NULL,
+    `achievement_key` varchar(40) CHARACTER SET utf8mb4 NOT NULL,
+    `awarded_at_utc` datetime(6) NOT NULL,
+    `seen_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_achievement_awards` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_achievement_awards_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `calendar_entries` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NOT NULL,
+    `title` varchar(120) CHARACTER SET utf8mb4 NOT NULL,
+    `day` date NOT NULL,
+    `start_time` time(6) NULL,
+    `notes` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_calendar_entries` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_calendar_entries_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE UNIQUE INDEX `ix_achievement_awards_student_id_achievement_key` ON `achievement_awards` (`student_id`, `achievement_key`);
+
+CREATE INDEX `ix_calendar_entries_user_id_day` ON `calendar_entries` (`user_id`, `day`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261013065349_AddCalendarEntriesAndAwards', '9.0.20');
+
 COMMIT;
 

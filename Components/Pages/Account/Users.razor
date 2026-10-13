@@ -23,9 +23,7 @@
         <div class="filter-bar">
             @if (tab != "friends")
             {
-                <Field For="u-search" Label="Search" Class="grow">
-                    <input id="u-search" type="search" class="input" maxlength="80" placeholder="@(tab is "students" or "classmates" ? "A name or a section" : "A name")" @bind="filter" @bind:event="oninput" />
-                </Field>
+                <SearchField Id="u-search" @bind-Value="filter" Live="true" SubmitText="" MaxLength="80" Placeholder="@(tab is "students" or "classmates" ? "A name or a section" : "A name")" AriaLabel="Search people" />
             }
 
             <label class="online-only">
@@ -91,9 +89,8 @@
             }
 
             <h2 class="section">Find people</h2>
-            <form class="find" @onsubmit="FindAsync">
-                <input id="u-find" type="search" class="input" maxlength="80" placeholder="Type a name (at least 2 letters)" aria-label="Find people" @bind="findText" />
-                <Button Type="submit" Variant="ButtonVariant.Secondary" IconName="search">Search</Button>
+            <form class="filter-bar" role="search" @onsubmit="FindAsync">
+                <SearchField Id="u-find" @bind-Value="findText" MaxLength="80" Placeholder="Type a name (at least 2 letters)" AriaLabel="Find people" />
             </form>
             @if (found is not null)
             {

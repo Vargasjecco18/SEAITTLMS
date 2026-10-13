@@ -11,6 +11,14 @@
     outline: none;
 }
 
+.backdrop.centered {
+    place-items: center;
+}
+
+.dialog.narrow {
+    width: min(440px, 100%);
+}
+
 .dialog {
     width: min(620px, 100%);
     animation: pop-in var(--dur) var(--ease);

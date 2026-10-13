@@ -91,9 +91,3 @@
     color: var(--brand-strong);
     font-weight: 600;
 }
-
-.quick {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-}

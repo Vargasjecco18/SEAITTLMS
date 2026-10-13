@@ -1,0 +1,173 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject CalendarService Calendar
+@inject NavigationManager Navigation
+@inject TimeProvider Clock
+
+@* The box to add an event to the person's own calendar, or to change or delete one. Only the person who wrote an event sees it. *@
+<Modal Open="loaded" Title="@(EntryId is null ? "Add event" : "Event")" OnClose="Cancel">
+    @if (missing)
+    {
+        <p>This event was not found. It may have been deleted.</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="Cancel">Close</Button>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="form" OnSubmit="SaveAsync">
+            <FormErrors Errors="errors" />
+            <Field For="ev-title" Label="What is it?" Required="true">
+                <InputText id="ev-title" @bind-Value="form.Title" maxlength="120" autocomplete="off" placeholder="For example: Group meeting" />
+            </Field>
+            <div class="two">
+                <Field For="ev-day" Label="Day" Required="true">
+                    <input id="ev-day" type="date" min="2000-01-01" max="2100-12-31" value="@form.DayText" @onchange="SetDay" />
+                </Field>
+                <Field For="ev-time" Label="Time" Hint="Leave it empty for the whole day.">
+                    <input id="ev-time" type="time" value="@form.TimeText" @onchange="SetTime" />
+                </Field>
+            </div>
+            <Field For="ev-notes" Label="Note">
+                <InputTextArea id="ev-notes" @bind-Value="form.Notes" rows="3" maxlength="500" />
+            </Field>
+
+            <div class="modal-actions">
+                @if (EntryId is not null)
+                {
+                    @if (confirmDelete)
+                    {
+                        <span class="sure">Delete this event?</span>
+                        <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="DeleteAsync">Yes, delete</Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="StopDelete">No</Button>
+                    }
+                    else
+                    {
+                        <Button Variant="ButtonVariant.Ghost" IconName="trash-2" Class="delete" OnClick="AskDelete">Delete</Button>
+                    }
+                }
+
+                <span class="spacer"></span>
+                <Button Variant="ButtonVariant.Ghost" OnClick="Cancel">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : EntryId is null ? "Add event" : "Save")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@code {
+    private sealed class Form
+    {
+        public string Title { get; set; } = "";
+        public string DayText { get; set; } = "";
+        public string TimeText { get; set; } = "";
+        public string? Notes { get; set; }
+    }
+
+    /// <summary>The event to change. Empty: a new one.</summary>
+    [Parameter] public int? EntryId { get; set; }
+
+    /// <summary>The day a new event starts on (the day that was open).</summary>
+    [Parameter] public DateOnly? Day { get; set; }
+
+    /// <summary>"month" or "week": the view the calendar shows after a save.</summary>
+    [Parameter] public string View { get; set; } = "month";
+
+    /// <summary>Where the calendar is again when the box is closed.</summary>
+    [Parameter, EditorRequired] public string CloseUrl { get; set; } = "calendar";
+
+    private Form form = new();
+    private List<string> errors = [];
+    private bool loaded;
+    private bool missing;
+    private bool busy;
+    private bool confirmDelete;
+    private int userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        if (EntryId is { } id)
+        {
+            var entry = userId == 0 ? null : await Calendar.GetEntryAsync(userId, id);
+            if (entry is null)
+            {
+                missing = true;
+            }
+            else
+            {
+                form = new Form { Title = entry.Title, DayText = entry.Day.ToString("yyyy-MM-dd"), TimeText = entry.StartTime?.ToString("HH:mm") ?? "", Notes = entry.Notes };
+            }
+        }
+        else
+        {
+            form.DayText = (Day ?? PhilippineTime.Today(Clock)).ToString("yyyy-MM-dd");
+        }
+
+        loaded = true;
+    }
+
+    private void SetDay(ChangeEventArgs e) => form.DayText = e.Value?.ToString() ?? "";
+
+    private void SetTime(ChangeEventArgs e) => form.TimeText = e.Value?.ToString() ?? "";
+
+    private void Cancel() => Navigation.NavigateTo(CloseUrl);
+
+    private void AskDelete() => confirmDelete = true;
+
+    private void StopDelete() => confirmDelete = false;
+
+    private async Task SaveAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            DateOnly? day = DateOnly.TryParseExact(form.DayText, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d) ? d : null;
+            TimeOnly? time = TimeOnly.TryParse(form.TimeText, out var t) ? t : null;
+            var result = await Calendar.SaveEntryAsync(userId, EntryId, form.Title, day, time, form.Notes);
+            if (!result.Succeeded)
+            {
+                errors = [.. result.Errors];
+                return;
+            }
+
+            // Back to the calendar, on the day of the event, so it is seen.
+            Navigation.NavigateTo($"calendar?view={View}&date={day:yyyy-MM-dd}", forceLoad: true);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (busy || EntryId is not { } id)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Calendar.DeleteEntryAsync(userId, id);
+            if (!result.Succeeded)
+            {
+                errors = [.. result.Errors];
+                confirmDelete = false;
+                return;
+            }
+
+            Navigation.NavigateTo(CloseUrl, forceLoad: true);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

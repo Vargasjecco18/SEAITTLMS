@@ -8,97 +8,101 @@
 <PageHeader Title="Course library"
             IconName="folder-open" />
 
-<Card>
-    <form class="toolbar" role="search" method="get" action="provider/library">
-        <div class="search-box">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" name="q" aria-label="Search courses" placeholder="Course name or code" autocomplete="off" value="@Q" />
-        </div>
-        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
-        @if (!string.IsNullOrWhiteSpace(Q))
-        {
-            <ButtonLink Href="provider/library" Variant="ButtonVariant.Ghost">Clear</ButtonLink>
-        }
-        <span class="result-count">@(courses is null ? "" : courses.Count == 1 ? "1 course" : $"{courses.Count:N0} courses")</span>
+@* The library is read from the top: the tracks, then (a click on a track) its strands, then (a click on a strand) the courses of the strand,
+   and a course opens its library. Searching a course by name or code shows the matching courses of the whole school at once.
+   Every step is a plain link (/provider/library, ?track=..., ?track=...&strand=...), so the back button works. *@
+<Card Class="search-card">
+    <form method="get" action="provider/library" class="filter-bar" role="search">
+        <SearchField Id="lib-search" Name="q" Static="true" Value="@Q" Placeholder="Search a course by name or code" AriaLabel="Search the courses" ClearHref="provider/library" />
     </form>
+</Card>
 
-    @if (courses is null)
+<div class="level">
+    @if (searching)
+    {
+        <nav class="crumbs" aria-label="Where you are"><a href="provider/library">Course library</a><span aria-hidden="true">›</span><span>Search “@Q”</span></nav>
+        <CourseTable Courses="courses" ShowPlacement="false" />
+    }
+    else if (tracks is null)
     {
         <p class="muted">Loading…</p>
     }
-    else if (courses.Count == 0)
+    else if (strand is not null)
     {
-        <EmptyState IconName="search-x" Title="No course matches">
-            <p>Try another name or code. Courses are made in the academic setup.</p>
-        </EmptyState>
+        <nav class="crumbs" aria-label="Where you are">
+            <a href="provider/library">Course library</a><span aria-hidden="true">›</span>
+            <a href="@($"provider/library?track={track!.TrackId}")">@track.Name</a><span aria-hidden="true">›</span>
+            <span>@strand.Name</span>
+        </nav>
+        <h2 class="level-title">@strand.Name <span class="code">@strand.Code</span></h2>
+        <CourseTable Courses="courses" ShowPlacement="true" />
+    }
+    else if (track is not null)
+    {
+        <nav class="crumbs" aria-label="Where you are">
+            <a href="provider/library">Course library</a><span aria-hidden="true">›</span><span>@track.Name</span>
+        </nav>
+        <h2 class="level-title">@track.Name <span class="code">@track.Code</span></h2>
+        <p class="level-hint">Choose a course (strand) to see its subjects.</p>
+        @if (track.Strands.Count == 0)
+        {
+            <EmptyState IconName="layers" Title="No course in this track yet"><p>Strands are made in the academic setup.</p></EmptyState>
+        }
+        else
+        {
+            <div class="rows">
+                @for (var i = 0; i < track.Strands.Count; i++)
+                {
+                    var s = track.Strands[i];
+                    <LibraryRow Href="@($"provider/library?track={track.TrackId}&strand={s.StrandId}")" Title="@s.Name" Code="@s.Code" Number="@(i + 1)"
+                                Description="@($"{Plural(s.Courses, "subject")} · {s.WithSyllabus} with a syllabus")" ActionText="Open course" />
+                }
+            </div>
+        }
     }
     else
     {
-        <div class="table-wrap">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th scope="col">Course</th>
-                        <th scope="col">Syllabus</th>
-                        <th scope="col">Modules</th>
-                        <th scope="col" class="col-more">Activities</th>
-                        <th scope="col" class="col-more">Quizzes</th>
-                        <th scope="col" class="col-more">Task performances</th>
-                        <th scope="col" class="col-more">Teachers</th>
-                        <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var course in courses)
-                    {
-                        <tr>
-                            <td>
-                                <a class="name" href="provider/library/@course.SubjectId">@course.Name</a>
-                                <span class="sub">@course.Code</span>
-                            </td>
-                            <td>
-                                @if (course.HasSyllabus)
-                                {
-                                    <Badge Tone="Tone.Success">Ready</Badge>
-                                }
-                                else
-                                {
-                                    <span class="muted">None yet</span>
-                                }
-                            </td>
-                            <td>@course.Modules</td>
-                            <td class="col-more">@course.Activities</td>
-                            <td class="col-more">@course.Quizzes</td>
-                            <td class="col-more">@course.TaskPerformances</td>
-                            <td class="col-more">
-                                @if (course.Teachers == 0)
-                                {
-                                    <span class="muted">None this year</span>
-                                }
-                                else
-                                {
-                                    <span>@course.Teachers @(course.Teachers == 1 ? "course" : "courses")</span>
-                                    @if (course.Sent > 0)
-                                    {
-                                        <span class="sub">@course.Sent sent so far</span>
-                                    }
-                                }
-                            </td>
-                            <td class="col-actions">
-                                <ButtonLink Href="@($"provider/library/{course.SubjectId}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+        <h2 class="level-title">Tracks</h2>
+        <p class="level-hint">Choose a track to see its courses (strands).</p>
+        @if (tracks.Count == 0)
+        {
+            <EmptyState IconName="layers" Title="No track yet"><p>Tracks are made in the academic setup.</p></EmptyState>
+        }
+        else
+        {
+            <div class="rows">
+                @for (var i = 0; i < tracks.Count; i++)
+                {
+                    var t = tracks[i];
+                    <LibraryRow Href="@($"provider/library?track={t.TrackId}")" Title="@t.Name" Code="@t.Code" Number="@(i + 1)"
+                                Description="@($"{Plural(t.Strands.Count, "course")} · {Plural(t.Courses, "subject")} · {t.WithSyllabus} with a syllabus")" ActionText="Open track" />
+                }
+            </div>
+        }
     }
-</Card>
+</div>
 
 @code {
     [SupplyParameterFromQuery(Name = "q")] private string? Q { get; set; }
+    [SupplyParameterFromQuery(Name = "track")] private int? TrackId { get; set; }
+    [SupplyParameterFromQuery(Name = "strand")] private int? StrandId { get; set; }
 
-    private IReadOnlyList<MaterialCourseRow>? courses;
+    private IReadOnlyList<LibraryTrack>? tracks;
+    private IReadOnlyList<MaterialCourseRow> courses = [];
+    private LibraryTrack? track;
+    private LibraryStrand? strand;
+    private bool searching;
 
-    protected override async Task OnParametersSetAsync() => courses = await Library.ListCoursesAsync(Q);
+    private static string Plural(int n, string one) => n == 1 ? $"1 {one}" : $"{n:N0} {one}s";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        searching = !string.IsNullOrWhiteSpace(Q);
+        tracks = await Library.ListTracksAsync();
+        track = TrackId is { } t ? tracks.FirstOrDefault(x => x.TrackId == t) : null;
+        strand = track is not null && StrandId is { } sid ? track.Strands.FirstOrDefault(x => x.StrandId == sid) : null;
+        courses = searching
+            ? await Library.ListCoursesAsync(Q)
+            : strand is not null ? await Library.ListCoursesAsync(null, default, strand.StrandId) : [];
+    }
 }

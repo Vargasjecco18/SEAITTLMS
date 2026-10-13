@@ -19,10 +19,8 @@
     <div class="stack">
         <Card>
             @* A plain form that opens this same page with the choices in the address. No script needed. *@
-            <form method="get" action="registrar/student-accounts" class="filters">
-                <Field For="q" Label="Search" Class="grow">
-                    <input id="q" name="q" type="search" placeholder="Name or LRN" value="@Q" autocomplete="off" />
-                </Field>
+            <form method="get" action="registrar/student-accounts" class="filter-bar" role="search">
+                <SearchField Id="q" Name="q" Static="true" Value="@Q" Class="full" SubmitText="" Label="Search" Placeholder="Name or LRN" ClearHref="registrar/student-accounts" />
                 <Field For="term" Label="Term">
                     <select id="term" name="term">
                         <option value="">All terms</option>

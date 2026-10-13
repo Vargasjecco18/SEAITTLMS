@@ -9,20 +9,18 @@
         <p class="grow"><Icon Name="eye" Size="16" /> The students are enrolled by the registrar. You can look at who is enrolled here, but not change it.</p>
     </div>
 
-    <form class="toolbar" role="search" @onsubmit="SearchAsync">
-        <div class="search-box">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" aria-label="Search enrolled students" placeholder="Name or LRN" autocomplete="off" @bind="search" />
-        </div>
-        <select aria-label="Term" @bind="termId" @bind:after="SearchAsync">
-            <option value="0">All terms</option>
-            @foreach (var term in terms)
-            {
-                <option value="@term.Id">@term.SchoolYear · @term.Name</option>
-            }
-        </select>
-        <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
-        <span class="result-count">@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")</span>
+    <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+        <SearchField Id="en-search" @bind-Value="search" Label="Search" Placeholder="Name or LRN" AriaLabel="Search enrolled students" OnClear="SearchAsync" />
+        <Field For="en-term" Label="Term">
+            <select id="en-term" @bind="termId" @bind:after="SearchAsync">
+                <option value="0">All terms</option>
+                @foreach (var term in terms)
+                {
+                    <option value="@term.Id">@term.SchoolYear · @term.Name</option>
+                }
+            </select>
+        </Field>
+        <span class="filter-count">@(result is null ? "" : result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")</span>
     </form>
 
     @if (result is null)

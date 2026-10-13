@@ -1,36 +1,3 @@
-.filters {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0 1rem;
-    align-items: end;
-}
-
-@media (min-width: 720px) {
-    .filters {
-        grid-template-columns: minmax(0, 1.6fr) minmax(11rem, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr);
-    }
-
-    .filter-actions {
-        grid-column: 1 / -1;
-    }
-}
-
-@media (min-width: 1100px) {
-    .filters {
-        grid-template-columns: minmax(0, 1.6fr) minmax(11rem, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr) auto;
-    }
-
-    .filter-actions {
-        grid-column: auto;
-    }
-}
-
-.filter-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
 /* The cards are spaced by the stack, the table touches the edges of its card. */
 .stack {
     display: grid;

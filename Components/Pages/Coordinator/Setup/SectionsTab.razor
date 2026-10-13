@@ -8,38 +8,43 @@
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
 
-    <form class="toolbar" role="search" @onsubmit="() => { }">
-        <div class="search-box">
-            <Icon Name="search" Size="18" Class="search-icon" />
-            <input type="search" aria-label="Search sections" placeholder="Section or adviser" autocomplete="off" @bind="search" @bind:event="oninput" />
-        </div>
-        <select aria-label="School year" @bind="yearFilter">
-            <option value="0">All school years</option>
-            @foreach (var year in lookups?.Years ?? [])
-            {
-                <option value="@year.Id">@year.Name</option>
-            }
-        </select>
-        <select aria-label="Grade level" @bind="gradeFilter">
-            <option value="0">All grade levels</option>
-            <option value="11">Grade 11</option>
-            <option value="12">Grade 12</option>
-        </select>
-        <select aria-label="Strand" @bind="strandFilter">
-            <option value="0">All strands</option>
-            @foreach (var strand in lookups?.Strands ?? [])
-            {
-                <option value="@strand.Id">@strand.Code</option>
-            }
-        </select>
-        <select aria-label="Schedule" @bind="scheduleFilter">
-            <option value="0">All schedules</option>
-            @foreach (var schedule in lookups?.Schedules ?? [])
-            {
-                <option value="@schedule.Id">@schedule.Code</option>
-            }
-        </select>
-        <span class="result-count">@(Shown.Count == 1 ? "1 section" : $"{Shown.Count:N0} sections")</span>
+    <form class="filter-bar" role="search" @onsubmit="() => { }">
+        <SearchField Id="sec-search" @bind-Value="search" Live="true" Class="full" SubmitText="" Placeholder="Section or adviser" AriaLabel="Search sections" />
+        <Field For="sec-year" Label="School year">
+            <select id="sec-year" @bind="yearFilter">
+                <option value="0">All school years</option>
+                @foreach (var year in lookups?.Years ?? [])
+                {
+                    <option value="@year.Id">@year.Name</option>
+                }
+            </select>
+        </Field>
+        <Field For="sec-grade" Label="Grade level">
+            <select id="sec-grade" @bind="gradeFilter">
+                <option value="0">All grade levels</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+            </select>
+        </Field>
+        <Field For="sec-strand" Label="Strand">
+            <select id="sec-strand" @bind="strandFilter">
+                <option value="0">All strands</option>
+                @foreach (var strand in lookups?.Strands ?? [])
+                {
+                    <option value="@strand.Id">@strand.Code</option>
+                }
+            </select>
+        </Field>
+        <Field For="sec-schedule" Label="Schedule">
+            <select id="sec-schedule" @bind="scheduleFilter">
+                <option value="0">All schedules</option>
+                @foreach (var schedule in lookups?.Schedules ?? [])
+                {
+                    <option value="@schedule.Id">@schedule.Code</option>
+                }
+            </select>
+        </Field>
+        <span class="filter-count">@(Shown.Count == 1 ? "1 section" : $"{Shown.Count:N0} sections")</span>
     </form>
 
     @if (rows is null)

@@ -1,0 +1,103 @@
+.search-field {
+    min-width: 0;
+    margin: 0;
+}
+
+.search-field > label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* One rounded box: the magnifier, the words, the X and the Search button are all inside it. */
+.wrap {
+    display: flex;
+    align-items: center;
+    height: 2.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wrap:focus-within {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.lead {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.4rem;
+    color: var(--text-muted);
+}
+
+.wrap input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    padding: 0 0.4rem 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.wrap input::-webkit-search-cancel-button {
+    display: none;
+}
+
+.wrap input::placeholder {
+    color: var(--text-muted);
+}
+
+.clear {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.8rem;
+    height: 1.8rem;
+    margin-right: 0.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.clear:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.go {
+    flex: none;
+    align-self: stretch;
+    padding: 0 1rem;
+    border: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0 calc(var(--radius-sm) - 1px) calc(var(--radius-sm) - 1px) 0;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.go:hover {
+    background: var(--brand);
+    color: var(--on-brand);
+}
+
+.hint {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}

@@ -1,0 +1,10 @@
+.count {
+    margin: 0 0 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.rows {
+    display: grid;
+    gap: 0.9rem;
+}

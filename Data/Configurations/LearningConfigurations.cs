@@ -179,3 +179,30 @@ internal sealed class AttachmentContentConfiguration : IEntityTypeConfiguration<
         b.Property(c => c.Data).HasColumnType("longblob").IsRequired();
     }
 }
+
+internal sealed class CalendarEntryConfiguration : IEntityTypeConfiguration<CalendarEntry>
+{
+    public void Configure(EntityTypeBuilder<CalendarEntry> b)
+    {
+        b.ToTable("calendar_entries");
+        b.Property(e => e.Title).HasMaxLength(120).IsRequired();
+        b.Property(e => e.Notes).HasMaxLength(500);
+
+        // The events go with their owner.
+        b.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(e => new { e.UserId, e.Day });
+    }
+}
+
+internal sealed class AchievementAwardConfiguration : IEntityTypeConfiguration<AchievementAward>
+{
+    public void Configure(EntityTypeBuilder<AchievementAward> b)
+    {
+        b.ToTable("achievement_awards");
+        b.Property(a => a.AchievementKey).HasMaxLength(40).IsRequired();
+
+        // Gone with the student; each achievement is earned once.
+        b.HasOne(a => a.Student).WithMany().HasForeignKey(a => a.StudentId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(a => new { a.StudentId, a.AchievementKey }).IsUnique();
+    }
+}

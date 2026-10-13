@@ -77,7 +77,7 @@
                     </Card>
                     break;
                 case "activities":
-                    <Card Title="Assignments and due dates" IconName="clipboard-list">
+                    <Card Title="@ActivitiesTitle" IconName="clipboard-list">
                         @if (activities.Count == 0)
                         {
                             <p class="quiet">No activities waiting for you.</p>
@@ -202,6 +202,9 @@
     private string? role;
     private string[] order = [];
     private List<CalendarEvent> upNext = [];
+    /// <summary>The title of the card with the work to do (the student's dashboard calls it "Due dates").</summary>
+    [Parameter] public string ActivitiesTitle { get; set; } = "Assignments and due dates";
+
     private IReadOnlyList<Achievement> achievements = [];
     private TeacherDashboard? toCheck;
     private IReadOnlyList<AnnouncementView> notices = [];

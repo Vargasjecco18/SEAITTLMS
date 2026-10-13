@@ -5,9 +5,8 @@
     margin-bottom: 0.6rem;
 }
 
-.top .input {
+.top ::deep .search-field {
     flex: 1;
-    width: auto;
 }
 
 .chosen {

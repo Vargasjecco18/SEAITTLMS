@@ -68,9 +68,8 @@
 else
 {
     <Card>
-        <form class="search" role="search" @onsubmit="SearchAsync">
-            <input type="search" class="input" aria-label="Search the archive" placeholder="Name or LRN" autocomplete="off" @bind="searchText" />
-            <Button Type="submit" Variant="ButtonVariant.Secondary" IconName="search">Search</Button>
+        <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+            <SearchField Id="ar-search" @bind-Value="searchText" Placeholder="Name or LRN" AriaLabel="Search the archive" OnClear="SearchAsync" />
         </form>
 
         @if (archived.Count == 0)

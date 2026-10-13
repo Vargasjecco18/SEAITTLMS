@@ -178,10 +178,32 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             query = query.Where(r => r.Reason == reason);
         }
 
-        foreach (var token in (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(4))
+        // Every word typed must match something of the referral: the student (name, LRN), the grade level, the section, the course (strand),
+        // the subject, the teacher of the subject or the problem.
+        var tokens = (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(6).ToList();
+        if (tokens.Count > 0)
         {
-            var t = token;
-            query = query.Where(r => r.Student.FirstName.Contains(t) || r.Student.LastName.Contains(t) || r.Student.Lrn.Contains(t) || r.Detail.Contains(t));
+            var strands = await db.Strands.AsNoTracking().Select(x => new { x.Id, x.Code, x.Name }).ToListAsync(ct);
+            var sections = (await db.Sections.AsNoTracking().Select(x => new { x.Id, x.GradeLevel, Strand = x.Strand.Code, x.Name }).ToListAsync(ct))
+                .Select(x => new { x.Id, x.Name, Label = TeachingService.SectionLabel(x.GradeLevel, x.Strand, x.Name) }).ToList();
+
+            foreach (var token in tokens)
+            {
+                var t = token;
+                var strandIds = strands.Where(x => x.Code.Contains(t, StringComparison.OrdinalIgnoreCase) || (t.Length >= 3 && x.Name.Contains(t, StringComparison.OrdinalIgnoreCase))).Select(x => x.Id).ToList();
+                var sectionIds = sections.Where(x => string.Equals(x.Name, t, StringComparison.OrdinalIgnoreCase) || (t.Length >= 3 && x.Label.Contains(t, StringComparison.OrdinalIgnoreCase))).Select(x => x.Id).ToList();
+                var reasons = ReferralReasons.All.Where(x => t.Length >= 2 && ReferralReasons.Display(x).Contains(t, StringComparison.OrdinalIgnoreCase)).ToList();
+                byte? level = t is "11" or "12" ? byte.Parse(t) : null;
+                var gradeWord = t.Length >= 3 && "grade".StartsWith(t, StringComparison.OrdinalIgnoreCase);
+
+                query = query.Where(r => r.Student.FirstName.Contains(t) || r.Student.LastName.Contains(t) || r.Student.Lrn.Contains(t) || r.Detail.Contains(t)
+                    || (r.Assignment != null && (r.Assignment.Subject.Name.Contains(t) || r.Assignment.Teacher.FirstName.Contains(t) || r.Assignment.Teacher.LastName.Contains(t)))
+                    || (r.Student.StrandId != null && strandIds.Contains(r.Student.StrandId.Value))
+                    || (r.Student.SectionId != null && sectionIds.Contains(r.Student.SectionId.Value))
+                    || reasons.Contains(r.Reason)
+                    || (level != null && r.Student.GradeLevel == level)
+                    || gradeWord);
+            }
         }
 
         var total = await query.CountAsync(ct);

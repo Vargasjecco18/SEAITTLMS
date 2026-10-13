@@ -67,6 +67,8 @@ erDiagram
     module_items ||--o{ quiz_questions : ""
     module_items ||--o{ submissions : ""
     students ||--o{ submissions : ""
+    users ||--o{ calendar_entries : "writes"
+    students ||--o{ achievement_awards : "earns"
     modules ||--o{ module_views : "opened by"
     students ||--o{ module_views : ""
     module_items ||--o{ item_views : "opened by"
@@ -263,6 +265,15 @@ The migrations `AddProfilePhotos` and `AddSocialFeaturesSecurityLogsAndSettings`
 
 When the provider **sends** a module, its files are copied to the teacher's copy (and the activities' files to the activities of the copy); the teacher's copy is then the teacher's own. A student sees the files of a module
 or item they can see (the module is posted and they take the course). Files open in the browser when `FilePreview` allows it (PDF, pictures, text, sound, video), otherwise they download.
+
+### The calendar and the achievements (round 13)
+
+| Table | What it holds |
+|---|---|
+| `calendar_entries` | An **event a person wrote on their own calendar** (the *Add event* button): `user_id` (the owner, deleted with the account), `title` (at most 120 characters), `day` (a date), `start_time` (a time of day in Philippine time, empty for an all-day event), `notes` (at most 500), `created_at_utc`, `updated_at_utc`. An event is private: `CalendarService` reads and changes only the rows of the signed-in person, and keeps at most 1,000 for a person. Index `(user_id, day)` for the month and week views. |
+| `achievement_awards` | **Which achievements a student earned and whether the congratulation box was shown**: `student_id` (deleted with the student), `achievement_key` (`first-step`, `perfect-score`, ... at most 40 characters, not named `key` because that is a MySQL reserved word), `earned_at_utc`, `seen_at_utc` (empty until the student closes the box in the middle of the screen). `unique (student_id, achievement_key)`: an award is written once and shown once. The achievements themselves (their text, progress and whether they are earned **now**) are not in the database: `AchievementService` works them out from the scores, the handed-in work and the opened modules every time, and only writes a row here the first time one is earned. |
+
+The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That makes **55 tables**.
 
 ### Messages and notifications
 

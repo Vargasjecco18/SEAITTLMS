@@ -263,3 +263,38 @@ public class AttendanceRecord : AuditableEntity
 
     public string? Note { get; set; }
 }
+
+/// <summary>An event a person wrote on their own calendar (a student or a teacher): a title, a day, maybe a time and a note. Only its owner sees it.</summary>
+public class CalendarEntry : AuditableEntity
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+
+    public string Title { get; set; } = "";
+
+    /// <summary>The day in the Philippines.</summary>
+    public DateOnly Day { get; set; }
+
+    /// <summary>The time of day (Philippine time), or empty for an event that takes the whole day.</summary>
+    public TimeOnly? StartTime { get; set; }
+
+    public string? Notes { get; set; }
+}
+
+/// <summary>
+/// That a student earned an achievement (a badge). The achievements themselves are worked out from the student's work; this remembers that it was earned
+/// and whether the student has been shown the "you earned it" box, so the box appears once.
+/// </summary>
+public class AchievementAward : AuditableEntity
+{
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    /// <summary>The key of the achievement, like "perfect-score".</summary>
+    public string AchievementKey { get; set; } = "";
+
+    public DateTime AwardedAtUtc { get; set; }
+
+    /// <summary>When the student saw the box; empty until then.</summary>
+    public DateTime? SeenAtUtc { get; set; }
+}

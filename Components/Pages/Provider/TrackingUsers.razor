@@ -1,16 +1,11 @@
 @inject ProviderService Provider
 
 <Card>
-    <form class="filter-bar" @onsubmit="ApplyAsync">
-        <Field For="user-search" Label="Search" Class="grow">
-            <input id="user-search" type="search" class="input" maxlength="100" placeholder="@(Tab == "teachers" ? "A teacher" : "A student or a section")" @bind="search" @bind:event="oninput" />
-        </Field>
-        <Button Type="submit" IconName="search">Search</Button>
-    </form>
-    <div class="filter-bar choices">
+    <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
+        <SearchField Id="user-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="@(Tab == "teachers" ? "A teacher" : "A student or a section")" AriaLabel="@(Tab == "teachers" ? "Search the teachers" : "Search the students")" OnClear="ApplyAsync" />
         <Field For="user-grade" Label="Grade level">
             <select id="user-grade" class="input" @bind="gradeLevel" @bind:after="ApplyAsync">
-                <option value="0">All grade levels</option>
+                <option value="0">All</option>
                 @foreach (var g in options?.GradeLevels ?? [])
                 {
                     <option value="@g">Grade @g</option>
@@ -19,7 +14,7 @@
         </Field>
         <Field For="user-section" Label="Section">
             <select id="user-section" class="input" @bind="section" @bind:after="ApplyAsync">
-                <option value="">All sections</option>
+                <option value="">All</option>
                 @foreach (var x in options?.Sections ?? [])
                 {
                     <option value="@x">@x</option>
@@ -30,7 +25,7 @@
         {
             <Field For="user-course" Label="Course">
                 <select id="user-course" class="input" @bind="subjectId" @bind:after="ApplyAsync">
-                    <option value="0">All courses</option>
+                    <option value="0">All</option>
                     @foreach (var c in options?.Courses ?? [])
                     {
                         <option value="@c.SubjectId">@c.Name</option>
@@ -40,9 +35,11 @@
         }
         @if (gradeLevel != 0 || !string.IsNullOrEmpty(section) || subjectId != 0)
         {
-            <Button Variant="ButtonVariant.Ghost" OnClick="ClearChoicesAsync">Clear</Button>
+            <div class="filter-actions">
+                <Button Variant="ButtonVariant.Ghost" IconName="x" OnClick="ClearChoicesAsync">Clear filters</Button>
+            </div>
         }
-    </div>
+    </form>
 
     @if (Tab == "teachers")
     {

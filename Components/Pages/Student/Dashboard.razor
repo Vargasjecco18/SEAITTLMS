@@ -26,8 +26,8 @@
 }
 else
 {
-    @* At the right, in this order: the calendar, the assignments and due dates, the announcements, the students who are online and the teachers who are online. *@
-    <PageWithAside Show="calendar,activities,announcements,online,onlineteachers">
+    @* At the right, in this order: the calendar, the announcements, the students who are online and the teachers who are online. *@
+    <PageWithAside Show="calendar,announcements,online,onlineteachers">
         <div class="stats">
             <StatCard Label="Work to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
             <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />
@@ -62,7 +62,59 @@ else
                 </div>
             }
 
-            <div class="wide">
+            <Card Title="Modules not opened yet" IconName="layers">
+                @if (data.Unopened.Count == 0)
+                {
+                    <EmptyState IconName="book-open" Title="Nothing new">
+                        <p>You have opened every module your teachers posted.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <ul class="modules">
+                        @foreach (var m in data.Unopened)
+                        {
+                            <li>
+                                <a href="student/modules/@m.ModuleId">
+                                    <span class="module-title">@m.Title</span>
+                                    <span class="module-sub">@m.SubjectName · posted @PhilippineTime.FormatDate(m.PostedAtUtc)</span>
+                                </a>
+                                <Badge Tone="Tone.Warning">New</Badge>
+                            </li>
+                        }
+                    </ul>
+                }
+            </Card>
+
+            @* Due dates (the work still to do) is its own live card: it shows five lines and a "Show more" button. *@
+            <div class="due-cell">
+                <AsideWidgets Show="activities" ActivitiesTitle="Due dates" />
+            </div>
+
+            <Card Title="Recent grades" IconName="award">
+                @if (data.Recent.Count == 0)
+                {
+                    <EmptyState IconName="award" Title="No grades yet">
+                        <p>Scores your teachers give appear here.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <ul class="grades">
+                        @foreach (var g in data.Recent)
+                        {
+                            var percent = g.Max <= 0 ? 0 : g.Score / g.Max * 100;
+                            <li>
+                                <a href="student/items/@g.ItemId"><span class="grade-title">@g.Title</span><span class="grade-sub">@g.SubjectName</span></a>
+                                <Badge Tone="@GradeRules.ToneOf(percent)">@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</Badge>
+                            </li>
+                        }
+                    </ul>
+                }
+
+                <p class="more"><a href="student/grades">Open Grades and progress <Icon Name="arrow-right" Size="14" /></a></p>
+            </Card>
+
             <Card Title="Progress" IconName="gauge">
                 @if (courses.Count == 0)
                 {
@@ -92,61 +144,15 @@ else
                     </ul>
                 }
             </Card>
-            </div>
-
-            <Card Title="Modules not opened yet" IconName="layers">
-                @if (data.Unopened.Count == 0)
-                {
-                    <EmptyState IconName="book-open" Title="Nothing new">
-                        <p>You have opened every module your teachers posted.</p>
-                    </EmptyState>
-                }
-                else
-                {
-                    <ul class="modules">
-                        @foreach (var m in data.Unopened)
-                        {
-                            <li>
-                                <a href="student/modules/@m.ModuleId">
-                                    <span class="module-title">@m.Title</span>
-                                    <span class="module-sub">@m.SubjectName · posted @PhilippineTime.FormatDate(m.PostedAtUtc)</span>
-                                </a>
-                                <Badge Tone="Tone.Warning">New</Badge>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-
-            <Card Title="Recent grades" IconName="award">
-                @if (data.Recent.Count == 0)
-                {
-                    <EmptyState IconName="award" Title="No grades yet">
-                        <p>Scores your teachers give appear here.</p>
-                    </EmptyState>
-                }
-                else
-                {
-                    <ul class="grades">
-                        @foreach (var g in data.Recent)
-                        {
-                            var percent = g.Max <= 0 ? 0 : g.Score / g.Max * 100;
-                            <li>
-                                <a href="student/items/@g.ItemId"><span class="grade-title">@g.Title</span><span class="grade-sub">@g.SubjectName</span></a>
-                                <Badge Tone="@GradeRules.ToneOf(percent)">@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</Badge>
-                            </li>
-                        }
-                    </ul>
-                }
-
-                <p class="more"><a href="student/grades">Open Grades and progress <Icon Name="arrow-right" Size="14" /></a></p>
-            </Card>
 
             <div class="wide">
                 <AchievementsWidget Items="achievements" />
             </div>
         </div>
     </PageWithAside>
+
+    @* The box in the middle of the screen when an achievement was just earned. *@
+    <AchievementCelebration />
 }
 
 @code {
