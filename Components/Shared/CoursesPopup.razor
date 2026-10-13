@@ -1,0 +1,48 @@
+@* A small "6 courses" button that opens a pop-up over the page with the list (the columns of the table do not move). It is the same pop-up the registrar's
+   list uses; wwwroot/app.js puts it next to its button. A line like "BUSINESS ACCOUNTING · 11-BUSSENT-A" shows the section after the course. *@
+@if (Names is { Count: > 0 })
+{
+    <button type="button" class="courses-button" popovertarget="@PopupId">
+        @(Names.Count == 1 ? "1 course" : $"{Names.Count} courses")
+    </button>
+    <div id="@PopupId" popover class="courses-pop" role="group" aria-label="@($"Courses of {Who}")">
+        <div class="pop-head">
+            <div class="pop-title">
+                <strong>Courses</strong>
+                <span class="sub">@Who@(string.IsNullOrWhiteSpace(Detail) ? "" : " · " + Detail)</span>
+            </div>
+            <button type="button" class="pop-close" popovertarget="@PopupId" popovertargetaction="hide" aria-label="Close">
+                <Icon Name="x" Size="16" />
+            </button>
+        </div>
+        <ul>
+            @foreach (var name in Names)
+            {
+                var parts = name.Split(" · ", 2);
+                <li>@parts[0]@if (parts.Length > 1) { <span class="of"> · @parts[1]</span> }</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <span class="muted">@None</span>
+}
+
+@code {
+    /// <summary>Who the courses are of (shown in the pop-up).</summary>
+    [Parameter, EditorRequired] public string Who { get; set; } = "";
+
+    /// <summary>A few more words under the name, like the section or the term.</summary>
+    [Parameter] public string? Detail { get; set; }
+
+    [Parameter] public IReadOnlyList<string>? Names { get; set; }
+
+    /// <summary>What shows when there are no courses.</summary>
+    [Parameter] public string None { get; set; } = "No course yet";
+
+    /// <summary>Makes the pop-up of each person different (the user's number).</summary>
+    [Parameter, EditorRequired] public string Key { get; set; } = "";
+
+    private string PopupId => $"courses-{Key}";
+}

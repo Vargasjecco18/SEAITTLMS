@@ -22,7 +22,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem 1rem;
-    margin-bottom: 1rem;
 }
 
 .module-number {
@@ -60,4 +59,64 @@ h2 {
 @keyframes rise {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
+}
+
+/* The whole title is one big button: a click opens or closes the module, and then its activities, quizzes and task performances show. */
+.module-toggle {
+    display: flex;
+    flex: 1 1 18rem;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+    padding: 0.2rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.module-toggle:hover .module-name {
+    color: var(--brand-strong);
+}
+
+.module-toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.chevron {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.module-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.module-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.module-desc {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.module-body {
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    animation: rise 0.2s ease-out both;
 }

@@ -1,0 +1,147 @@
+@inject SystemSettingsService Settings
+@inject TimeProvider Clock
+
+@* The paper that is printed after a student is enrolled. It is hidden on screen and is the only thing on the paper (the registrar's page hides the rest when printing).
+   The front has the school (logo at the upper left, the name in the upper center), the details of the enrollment and the sign-in of the student's account;
+   the back has the terms and conditions, with the name of the student printed over the line for the signature. *@
+<div class="print-sheet" aria-hidden="true">
+    <section class="page front">
+        <header class="sheet-head">
+            <img class="sheet-logo" src="@Assets["images/logo.png"]" alt="" width="84" height="84" />
+            <div class="sheet-school">
+                <h1>@school.SchoolName</h1>
+                @if (!string.IsNullOrWhiteSpace(school.Tagline))
+                {
+                    <p class="tagline">@school.Tagline</p>
+                }
+
+                @if (ContactLine is { Length: > 0 } contact)
+                {
+                    <p class="contact">@contact</p>
+                }
+            </div>
+            <div class="sheet-balance"></div>
+        </header>
+        <div class="rule"></div>
+
+        <h2 class="sheet-title">Enrollment Form</h2>
+        <p class="sheet-term">School Year @Receipt.SchoolYear · @Receipt.Term</p>
+        <p class="sheet-issued">Printed on @PhilippineTime.FormatLongDate(PhilippineTime.Now(Clock))</p>
+
+        <h3 class="sheet-section">Student</h3>
+        <dl class="grid">
+            <div class="wide"><dt>Name</dt><dd class="big">@Receipt.FullName</dd></div>
+            <div><dt>LRN</dt><dd>@Receipt.Lrn</dd></div>
+            <div><dt>Contact number</dt><dd>@(Receipt.PhoneNumber ?? "Not given")</dd></div>
+        </dl>
+
+        <h3 class="sheet-section">Enrollment</h3>
+        <dl class="grid">
+            <div><dt>Grade level</dt><dd>Grade @Receipt.GradeLevel</dd></div>
+            <div><dt>Section</dt><dd>@Receipt.Section</dd></div>
+            <div><dt>Track</dt><dd>@Receipt.Track</dd></div>
+            <div><dt>Strand</dt><dd>@Receipt.Strand</dd></div>
+            <div><dt>Schedule</dt><dd>@Receipt.Schedule</dd></div>
+            <div><dt>Term</dt><dd>@Receipt.Term</dd></div>
+        </dl>
+
+        <h3 class="sheet-section">Courses</h3>
+        @if (Receipt.Subjects.Count == 0)
+        {
+            <p class="none">No courses.</p>
+        }
+        else
+        {
+            <table class="courses">
+                <thead><tr><th class="no">No.</th><th>Course</th></tr></thead>
+                <tbody>
+                    @for (var n = 0; n < Receipt.Subjects.Count; n++)
+                    {
+                        <tr><td class="no">@(n + 1)</td><td>@Receipt.Subjects[n]</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <h3 class="sheet-section">e-LMS account of the student</h3>
+        <div class="account">
+            <div><span class="label">Email</span><span class="value">@Receipt.Email</span></div>
+            @if (Receipt.NewAccount && Receipt.Password is { } password)
+            {
+                <div><span class="label">Password</span><span class="value">@password</span></div>
+                <p class="note">Keep this password private. Anyone who knows it can use the account.</p>
+            }
+            else
+            {
+                <p class="note">The student already had an account. The sign-in did not change.</p>
+            }
+        </div>
+
+        <div class="signatures">
+            <div class="sign"><span class="line"></span><span class="caption">Enrolled by: Registrar's signature over printed name</span></div>
+            <div class="sign"><span class="line"></span><span class="caption">Date</span></div>
+        </div>
+        <p class="turn">Please read the terms and conditions at the back.</p>
+    </section>
+
+    <section class="page back">
+        <header class="back-head">
+            <img class="back-logo" src="@Assets["images/logo.png"]" alt="" width="44" height="44" />
+            <div>
+                <strong>@school.SchoolName</strong>
+                <span>@(string.IsNullOrWhiteSpace(school.Tagline) ? "" : school.Tagline + " · ")Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
+            </div>
+        </header>
+        <div class="rule thin"></div>
+
+        <h2 class="sheet-title">Terms and Conditions</h2>
+        <p class="intro">By enrolling at @school.SchoolName, the student, together with the parent or guardian, accepts the following.</p>
+
+        <ol class="terms">
+            <li><strong>Correct information.</strong> The information given for this enrollment is true and complete. A false statement can cancel the enrollment.</li>
+            <li><strong>Enrollment.</strong> The enrollment is for the school year and term written on the front. A change of section or courses is made only through the Registrar.</li>
+            <li><strong>Attendance.</strong> The student comes to class every day and on time. Absences are recorded by the teachers and affect the grades. A student who is often absent or whose grades are low is referred to the Guidance Counselor, who will help.</li>
+            <li><strong>Honesty.</strong> Cheating, copying, plagiarism and the help of another person in activities, quizzes and task performances are not allowed. The quizzes of the e-LMS watch when the student leaves the quiz, and a quiz can be handed in automatically.</li>
+            <li><strong>The e-LMS account.</strong> The account is personal. The student keeps the password private, does not lend the account and changes the password if somebody else knows it. What is done with the account is the responsibility of the student.</li>
+            <li><strong>Conduct.</strong> The student respects the teachers, the staff and the classmates, in school and in messages, groups and files of the e-LMS. Bullying, offensive words and the sharing of harmful files are not allowed.</li>
+            <li><strong>Data privacy.</strong> The school keeps the personal information of the student (name, LRN, contact number, grades and attendance) only for school purposes and protects it as the Data Privacy Act of 2012 (Republic Act 10173) requires. It is shared only with the people who need it for the education of the student.</li>
+            <li><strong>Records.</strong> Grades and records of the student are released after the student has settled any obligation with the school.</li>
+            <li><strong>Changes.</strong> The school can improve these terms and the rules of the school. The students are told through the e-LMS.</li>
+        </ol>
+
+        <p class="agree">I have read and understood these terms and conditions, and I agree to follow them.</p>
+
+        <div class="signatures back-sign">
+            <div class="sign">
+                <span class="signed-name">@Receipt.FullName.ToUpperInvariant()</span>
+                <span class="line"></span>
+                <span class="caption">Student's signature over printed name</span>
+            </div>
+            <div class="sign date">
+                <span class="signed-name">&nbsp;</span>
+                <span class="line"></span>
+                <span class="caption">Date</span>
+            </div>
+        </div>
+        <div class="signatures back-sign">
+            <div class="sign">
+                <span class="signed-name">&nbsp;</span>
+                <span class="line"></span>
+                <span class="caption">Parent's or guardian's signature over printed name</span>
+            </div>
+            <div class="sign date">
+                <span class="signed-name">&nbsp;</span>
+                <span class="line"></span>
+                <span class="caption">Date</span>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EnrollmentReceipt Receipt { get; set; } = null!;
+
+    private SystemSettingsValues school => Settings.Current;
+
+    private string ContactLine => string.Join(" · ", new[] { school.Address, school.ContactEmail, school.ContactPhone }.Where(x => !string.IsNullOrWhiteSpace(x)));
+}

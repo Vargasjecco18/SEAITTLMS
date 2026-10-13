@@ -1,0 +1,294 @@
+/* On the screen the paper is hidden; the registrar's page shows it only when printing. */
+.print-sheet {
+    display: none;
+}
+
+@page {
+    size: A4;
+    margin: 14mm 16mm;
+}
+
+@media print {
+    .print-sheet {
+        display: block;
+        color: #111;
+        font-size: 11pt;
+        line-height: 1.4;
+    }
+
+    .page {
+        box-sizing: border-box;
+    }
+
+    .page.front {
+        break-after: page;
+    }
+
+    /* ---- the head: the logo at the upper left, the school in the upper center */
+    .sheet-head {
+        display: grid;
+        grid-template-columns: 90px 1fr 90px;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sheet-logo {
+        width: 84px;
+        height: 84px;
+        object-fit: contain;
+    }
+
+    .sheet-school {
+        text-align: center;
+    }
+
+    .sheet-school h1 {
+        margin: 0;
+        font-size: 17pt;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .sheet-school .tagline {
+        margin: 2px 0 0;
+        font-size: 11.5pt;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .sheet-school .contact {
+        margin: 3px 0 0;
+        font-size: 9.5pt;
+        color: #333;
+    }
+
+    .rule {
+        height: 4px;
+        margin: 10px 0 14px;
+        border-top: 2px solid #111;
+        border-bottom: 1px solid #111;
+    }
+
+    .rule.thin {
+        height: 0;
+        margin: 8px 0 14px;
+        border-top: 1px solid #111;
+        border-bottom: 0;
+    }
+
+    .sheet-title {
+        margin: 0;
+        font-size: 15pt;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .sheet-term {
+        margin: 2px 0 0;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .sheet-issued {
+        margin: 2px 0 14px;
+        text-align: center;
+        font-size: 9.5pt;
+        color: #444;
+    }
+
+    .sheet-section {
+        margin: 14px 0 6px;
+        padding-bottom: 2px;
+        border-bottom: 1px solid #111;
+        font-size: 10.5pt;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    /* ---- the details */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px 24px;
+        margin: 0;
+    }
+
+    .grid > div {
+        display: grid;
+        grid-template-columns: 8.5em 1fr;
+        align-items: baseline;
+        gap: 8px;
+        padding-bottom: 2px;
+        border-bottom: 1px dotted #888;
+    }
+
+    .grid > .wide {
+        grid-column: 1 / -1;
+    }
+
+    dt {
+        font-size: 9.5pt;
+        color: #333;
+    }
+
+    dd {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    dd.big {
+        font-size: 13pt;
+        text-transform: uppercase;
+    }
+
+    .courses {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .courses th,
+    .courses td {
+        padding: 4px 8px;
+        border: 1px solid #111;
+        text-align: left;
+    }
+
+    .courses th {
+        font-size: 9.5pt;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .courses .no {
+        width: 3em;
+        text-align: center;
+    }
+
+    .none {
+        margin: 0;
+    }
+
+    .account {
+        padding: 8px 12px;
+        border: 1px solid #111;
+    }
+
+    .account > div {
+        display: grid;
+        grid-template-columns: 6em 1fr;
+        gap: 8px;
+    }
+
+    .account .label {
+        color: #333;
+    }
+
+    .account .value {
+        font-family: Consolas, "Courier New", monospace;
+        font-weight: 700;
+    }
+
+    .account .note {
+        margin: 4px 0 0;
+        font-size: 9.5pt;
+        color: #333;
+    }
+
+    /* ---- the signatures */
+    .signatures {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 36px;
+        margin-top: 34px;
+    }
+
+    .sign {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .sign .line {
+        order: 2;
+        border-top: 1px solid #111;
+    }
+
+    .sign .caption {
+        order: 3;
+        margin-top: 3px;
+        font-size: 9pt;
+        color: #333;
+    }
+
+    .signed-name {
+        order: 1;
+        min-height: 1.4em;
+        padding: 0 4px 3px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+    .turn {
+        margin: 22px 0 0;
+        font-size: 9pt;
+        text-align: center;
+        color: #444;
+    }
+
+    /* ---- the back: the terms */
+    .back-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .back-logo {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+    }
+
+    .back-head strong {
+        display: block;
+        font-size: 11pt;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .back-head span {
+        font-size: 9pt;
+        color: #333;
+    }
+
+    .intro {
+        margin: 10px 0 8px;
+    }
+
+    .terms {
+        margin: 0;
+        padding-left: 1.4em;
+    }
+
+    .terms li {
+        margin: 0 0 6px;
+        text-align: justify;
+        break-inside: avoid;
+    }
+
+    .agree {
+        margin: 14px 0 0;
+        font-weight: 600;
+        break-inside: avoid;
+    }
+
+    .back-sign {
+        margin-top: 30px;
+        break-inside: avoid;
+    }
+}

@@ -191,6 +191,65 @@ else
             </div>
         }
     </Card>
+
+    @if (Role == AppRoles.Teacher)
+    {
+        @* The students who opened each posted module and the ones who did not, for each course of the teacher. *@
+        <Card Title="Who opened the modules" IconName="eye">
+            @if (opens.Count == 0)
+            {
+                <p class="muted">No module is posted yet. When you post one, you see here who opened it and who did not.</p>
+            }
+            else
+            {
+                @foreach (var course in opens)
+                {
+                    <section class="opens-course" aria-label="@course.Course">
+                        <h3>@course.Course</h3>
+                        <ul class="opens">
+                            @foreach (var m in course.Modules)
+                            {
+                                var percent = m.Total == 0 ? 0 : (int)Math.Round(100.0 * m.Opened.Count / m.Total);
+                                <li>
+                                    <details>
+                                        <summary>
+                                            <span class="opens-title">@m.Title @if (m.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> }</span>
+                                            <span class="opens-bar"><ProgressBar Percent="percent" Title="@($"{m.Opened.Count} of {m.Total} students opened it")" /></span>
+                                            <span class="opens-count">@m.Opened.Count of @m.Total opened</span>
+                                        </summary>
+                                        <div class="opens-lists">
+                                            <div>
+                                                <h4><Icon Name="circle-check" Size="14" /> Opened (@m.Opened.Count)</h4>
+                                                @if (m.Opened.Count == 0)
+                                                {
+                                                    <p class="muted">Nobody yet.</p>
+                                                }
+                                                else
+                                                {
+                                                    <ul>@foreach (var name in m.Opened) { <li>@name</li> }</ul>
+                                                }
+                                            </div>
+                                            <div>
+                                                <h4><Icon Name="eye-off" Size="14" /> Not opened (@m.NotOpened.Count)</h4>
+                                                @if (m.NotOpened.Count == 0)
+                                                {
+                                                    <p class="muted">Everybody opened it.</p>
+                                                }
+                                                else
+                                                {
+                                                    <ul>@foreach (var name in m.NotOpened) { <li>@name</li> }</ul>
+                                                }
+                                            </div>
+                                        </div>
+                                    </details>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+            }
+        </Card>
+    }
 }
 
 @code {
@@ -206,6 +265,7 @@ else
     ];
 
     private AnalyticsReport? report;
+    private IReadOnlyList<CourseModuleOpens> opens = [];
     private string Role { get; set; } = "";
 
     protected override async Task OnInitializedAsync()
@@ -213,6 +273,10 @@ else
         var user = await Me.GetAsync();
         Role = user?.Role ?? "";
         report = user is null ? null : await Reports.GetAsync(user);
+        if (user is { Role: AppRoles.Teacher })
+        {
+            opens = await Reports.GetModuleOpensAsync(user.UserId);
+        }
     }
 
     private static string Band(decimal? percent) => percent switch

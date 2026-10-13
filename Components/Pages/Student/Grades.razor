@@ -56,80 +56,79 @@ else
             <StatCard Label="Graded works" Value="@summary.GradedCount" IconName="clipboard-check" Accent="AccentColor.Violet" Hint="@($"{summary.Subjects.Sum(s => s.Missing)} missing")" />
         </div>
 
-        <div class="overview">
-            <Card Title="Progress by course" IconName="chart-column">
-                <ul class="bars">
-                    @foreach (var s in summary.Subjects)
-                    {
-                        <li>
-                            <span class="bar-name">@s.SubjectName</span>
+        @* Each subject is closed at first. A click on its name shows its progress and its graded work (a plain details box, no script needed). *@
+        <div class="subjects">
+            @foreach (var s in summary.Subjects)
+            {
+                var att = attendance?.Subjects.FirstOrDefault(a => a.AssignmentId == s.AssignmentId);
+                <details class="subject" aria-label="@s.SubjectName">
+                    <summary>
+                        <span class="chev" aria-hidden="true"><Icon Name="chevron-right" Size="18" /></span>
+                        <span class="subject-title">
+                            <span class="subject-name">@s.SubjectName</span>
+                            <span class="sub">@s.TeacherName · @s.SectionLabel</span>
+                        </span>
+                    </summary>
+
+                    <div class="subject-body">
+                        <div class="progress-row">
+                            <span class="progress-label">Progress</span>
                             <span class="track" role="progressbar" aria-label="@($"{s.SubjectName} grade")" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@((int)(s.Percent ?? 0))">
                                 <i class="@Band(s.Percent)" style="width: @Width(s.Percent)%"></i>
                                 <b class="mark" style="left: @GradeRules.PassingPercent.ToString("0")%" title="Passing: @GradeRules.PassingPercent.ToString("0")"></b>
                             </span>
-                            <span class="bar-value">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
-                        </li>
-                    }
-                </ul>
-                <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
-            </Card>
-        </div>
-
-        <div class="subjects">
-            @foreach (var s in summary.Subjects)
-            {
-                <Card>
-                    <div class="subject-head">
-                        <div>
-                            <h2><a href="student/subjects/@s.AssignmentId">@s.SubjectName</a></h2>
-                            <p class="sub">@s.TeacherName · @s.SectionLabel</p>
+                            <span class="grade">
+                                <span class="grade-number">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
+                                @if (s.Percent is { } pp)
+                                {
+                                    <Badge Tone="@GradeRules.ToneOf(pp)">@GradeRules.Descriptor(pp)</Badge>
+                                }
+                                else
+                                {
+                                    <Badge>No grade yet</Badge>
+                                }
+                            </span>
                         </div>
-                        <div class="grade">
-                            <span class="grade-number">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</span>
-                            @if (s.Percent is { } pp)
-                            {
-                                <Badge Tone="@GradeRules.ToneOf(pp)">@GradeRules.Descriptor(pp)</Badge>
-                            }
-                            else
-                            {
-                                <Badge>No grade yet</Badge>
-                            }
-                        </div>
-                    </div>
+                        <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
 
-                    <p class="counts">
-                        @{
-                            var att = attendance?.Subjects.FirstOrDefault(a => a.AssignmentId == s.AssignmentId);
-                        }
-                        @if (att is { Percent: { } attRate })
+                        <h3 class="work-title">Work</h3>
+                        <p class="counts">
+                            @if (att is { Percent: { } attRate })
+                            {
+                                <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
+                            }
+                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "work" : "works") graded
+                            @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
+                            @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
+                        </p>
+
+                        @if (s.Graded.Count > 0)
                         {
-                            <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
+                            <div class="table-wrap">
+                                <table class="table">
+                                    <thead><tr><th scope="col">Work</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var g in s.Graded)
+                                        {
+                                            <tr>
+                                                <td><a href="student/items/@g.ItemId">@g.Title</a> <span class="kind">@ItemKinds.Display(g.Kind)</span>@if (g.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
+                                                <td>@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</td>
+                                                <td><Badge Tone="@GradeRules.ToneOf(g.Percent)">@g.Percent.ToString("0.#")%</Badge></td>
+                                                <td class="col-more">@(g.GradedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
                         }
-                        @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "work" : "works") graded
-                        @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
-                        @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
-                    </p>
+                        else
+                        {
+                            <p class="muted">No work is graded yet.</p>
+                        }
 
-                    @if (s.Graded.Count > 0)
-                    {
-                        <div class="table-wrap">
-                            <table class="table">
-                                <thead><tr><th scope="col">Work</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
-                                <tbody>
-                                    @foreach (var g in s.Graded)
-                                    {
-                                        <tr>
-                                            <td><a href="student/items/@g.ItemId">@g.Title</a> <span class="kind">@ItemKinds.Display(g.Kind)</span>@if (g.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
-                                            <td>@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</td>
-                                            <td><Badge Tone="@GradeRules.ToneOf(g.Percent)">@g.Percent.ToString("0.#")%</Badge></td>
-                                            <td class="col-more">@(g.GradedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </Card>
+                        <p class="open-course"><a href="student/subjects/@s.AssignmentId">Open the course <Icon Name="arrow-right" Size="14" /></a></p>
+                    </div>
+                </details>
             }
         </div>
     }

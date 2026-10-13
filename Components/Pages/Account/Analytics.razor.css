@@ -297,3 +297,81 @@
         grid-row: 2;
     }
 }
+
+/* Who opened the modules: one line for each module; a click opens the two lists of names. */
+.opens-course + .opens-course {
+    margin-top: 1.25rem;
+}
+
+.opens-course h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+
+.opens {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.opens details {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.opens summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(8rem, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+}
+
+.opens summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.opens-title {
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.opens-count {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.opens-lists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 1rem;
+    padding: 0.2rem 0.9rem 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+.opens-lists h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.7rem 0 0.35rem;
+    font-size: 0.88rem;
+}
+
+.opens-lists ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+    .opens summary {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.3rem;
+    }
+}

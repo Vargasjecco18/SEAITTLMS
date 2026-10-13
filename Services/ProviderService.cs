@@ -53,7 +53,16 @@ public sealed record TrackingRow(
 
 public sealed record TrackingPage(IReadOnlyList<TrackingRow> Rows, int Total, int Page, int PageSize, int NotOpened, int Opened, int Scheduled, int Posted);
 
-public sealed record TrackingFilter(string? Search = null, string? State = null, string? Kind = null, int Page = 1, int PageSize = 20);
+/// <param name="TeacherUserId">Only what was sent to this teacher (0: every teacher).</param>
+/// <param name="GradeLevel">Only the courses of this grade level, 11 or 12 (0: both).</param>
+/// <param name="Section">Only this section, like "11-BUSSENT-A" (empty: every section).</param>
+/// <param name="SubjectId">Only this course (0: every course).</param>
+public sealed record TrackingFilter(string? Search = null, string? State = null, string? Kind = null, int Page = 1, int PageSize = 20,
+    int TeacherUserId = 0, int GradeLevel = 0, string? Section = null, int SubjectId = 0);
+
+/// <summary>What the filters of the tracking page offer: the teachers, grade levels, sections and courses that something was sent to.</summary>
+public sealed record TrackingOptions(
+    IReadOnlyList<(int UserId, string Name)> Teachers, IReadOnlyList<int> GradeLevels, IReadOnlyList<string> Sections, IReadOnlyList<(int SubjectId, string Name)> Courses);
 
 public sealed record ItemTrack(int ItemId, string Kind, string Title, int Opens, int Submitted, int Audience);
 
@@ -133,6 +142,9 @@ public sealed record ProviderAnalytics(
 internal static class ProviderMath
 {
     public static int Percent(int part, int whole) => whole <= 0 ? 0 : (int)Math.Round(100.0 * part / whole, MidpointRounding.AwayFromZero);
+
+    /// <summary>The grade level in a section label like "11-BUSSENT-A" (0 when there is none).</summary>
+    public static int GradeOf(string? sectionLabel) => int.TryParse((sectionLabel ?? "").Split('-')[0], out var grade) ? grade : 0;
 }
 
 /// <summary>
@@ -324,6 +336,26 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
                                    || r.TeacherName.Contains(t, StringComparison.OrdinalIgnoreCase) || r.SectionLabel.Contains(t, StringComparison.OrdinalIgnoreCase));
         }
 
+        if (filter.TeacherUserId > 0)
+        {
+            rows = rows.Where(r => r.TeacherUserId == filter.TeacherUserId);
+        }
+
+        if (filter.GradeLevel > 0)
+        {
+            rows = rows.Where(r => ProviderMath.GradeOf(r.SectionLabel) == filter.GradeLevel);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Section))
+        {
+            rows = rows.Where(r => string.Equals(r.SectionLabel, filter.Section, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (filter.SubjectId > 0)
+        {
+            rows = rows.Where(r => r.SubjectId == filter.SubjectId);
+        }
+
         if (filter.Kind == "Syllabus")
         {
             rows = rows.Where(r => r.IsSyllabus);
@@ -341,6 +373,18 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
             shown.Skip((page - 1) * size).Take(size).ToList(), shown.Count, page, size,
             counted.Count(r => r.State == DeliveryStates.NotOpened), counted.Count(r => r.State == DeliveryStates.Opened),
             counted.Count(r => r.State == DeliveryStates.Scheduled), counted.Count(r => r.State == DeliveryStates.Posted));
+    }
+
+    /// <summary>The choices of the filters of the tracking page: everything that was sent, by teacher, grade level, section and course.</summary>
+    public async Task<TrackingOptions> GetTrackingOptionsAsync(CancellationToken ct = default)
+    {
+        var snap = await LoadAsync(ct: ct);
+        var all = snap.Deliveries.Select(snap.Row).ToList();
+        return new TrackingOptions(
+            all.GroupBy(r => r.TeacherUserId).Select(g => (g.Key, g.First().TeacherName)).OrderBy(t => t.TeacherName, StringComparer.OrdinalIgnoreCase).ToList(),
+            all.Select(r => ProviderMath.GradeOf(r.SectionLabel)).Where(g => g > 0).Distinct().OrderBy(g => g).ToList(),
+            all.Select(r => r.SectionLabel).Distinct().OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList(),
+            all.GroupBy(r => r.SubjectId).Select(g => (g.Key, g.First().SubjectName)).OrderBy(c => c.SubjectName, StringComparer.OrdinalIgnoreCase).ToList());
     }
 
     public async Task<DeliveryDetail?> GetDeliveryAsync(int deliveryId, CancellationToken ct = default)
@@ -393,12 +437,33 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
     }
 
     /// <summary>Every teacher who has a course this school year, with what they were sent and what they did with it.</summary>
-    public async Task<IReadOnlyList<TeacherTrack>> ListTeachersAsync(string? search = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<TeacherTrack>> ListTeachersAsync(string? search = null, CancellationToken ct = default, int gradeLevel = 0, string? section = null, int subjectId = 0)
     {
         var snap = await LoadAsync(ct: ct);
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var yearId = await MaterialService.CurrentYearIdAsync(db, ct);
-        var teachers = await db.TeachingAssignments.AsNoTracking().Where(a => a.Section.SchoolYearId == yearId)
+        var taught = db.TeachingAssignments.AsNoTracking().Where(a => a.Section.SchoolYearId == yearId);
+        if (gradeLevel > 0)
+        {
+            taught = taught.Where(a => a.Section.GradeLevel == gradeLevel);
+        }
+
+        if (!string.IsNullOrWhiteSpace(section))
+        {
+            var label = section.Trim();
+            var sectionIds = (await db.Sections.AsNoTracking().Where(x => x.SchoolYearId == yearId)
+                    .Select(x => new { x.Id, x.GradeLevel, Strand = x.Strand.Code, x.Name }).ToListAsync(ct))
+                .Where(x => string.Equals(TeachingService.SectionLabel(x.GradeLevel, x.Strand, x.Name), label, StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.Id).ToList();
+            taught = taught.Where(a => sectionIds.Contains(a.SectionId));
+        }
+
+        if (subjectId > 0)
+        {
+            taught = taught.Where(a => a.SubjectId == subjectId);
+        }
+
+        var teachers = await taught
             .GroupBy(a => new { a.Teacher.UserId, a.Teacher.FirstName, a.Teacher.MiddleName, a.Teacher.LastName, a.Teacher.NameExtension })
             .Select(g => new { g.Key.UserId, g.Key.FirstName, g.Key.MiddleName, g.Key.LastName, g.Key.NameExtension, Courses = g.Count() })
             .ToListAsync(ct);
@@ -442,7 +507,7 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
     // ======================================================================= users: students
 
     /// <summary>Per student: of the posted materials sent by the provider (modules, syllabi, activities), how many they opened.</summary>
-    public async Task<StudentTrackPage> ListStudentsAsync(string? search = null, int page = 1, CancellationToken ct = default)
+    public async Task<StudentTrackPage> ListStudentsAsync(string? search = null, int page = 1, CancellationToken ct = default, int gradeLevel = 0, string? section = null)
     {
         var snap = await LoadAsync(ct: ct);
         var stats = new Dictionary<int, (string? Section, int Available, int Opened, DateTime? Last)>();
@@ -488,6 +553,16 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
         {
             var t = token;
             rows = rows.Where(r => r.Name.Contains(t, StringComparison.OrdinalIgnoreCase) || r.SectionLabel.Contains(t, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (gradeLevel > 0)
+        {
+            rows = rows.Where(r => ProviderMath.GradeOf(r.SectionLabel) == gradeLevel);
+        }
+
+        if (!string.IsNullOrWhiteSpace(section))
+        {
+            rows = rows.Where(r => string.Equals(r.SectionLabel, section.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         // The students who opened the least come first.

@@ -9,8 +9,10 @@
 
 <PageTitle>Enrollments · SEAITT e-LMS</PageTitle>
 
-<PageHeader Title="Enrollments"
-            IconName="user-plus" />
+<div class="screen-only">
+    <PageHeader Title="Enrollments"
+                IconName="user-plus" />
+</div>
 
 @if (lookups is null)
 {
@@ -27,6 +29,9 @@ else if (lookups.Terms.Count == 0 || lookups.Tracks.Count == 0 || lookups.Strand
 else if (receipt is not null)
 {
     @* ===== Done: what was enrolled, and the login to hand over ===== *@
+    @* On paper only the enrollment form is printed (EnrollmentPrintSheet), not this card. *@
+    <EnrollmentPrintSheet Receipt="receipt" />
+    <div class="screen-only">
     <Card Class="receipt">
         <div class="receipt-head">
             <span class="receipt-icon"><Icon Name="circle-check" Size="30" /></span>
@@ -90,6 +95,7 @@ else if (receipt is not null)
             <ButtonLink Href="registrar" Variant="ButtonVariant.Ghost">Back to the dashboard</ButtonLink>
         </div>
     </Card>
+    </div>
 }
 else
 {

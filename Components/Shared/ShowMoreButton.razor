@@ -1,0 +1,20 @@
+@* The button at the bottom of a card whose list has more lines than are shown: "Show more (3)" and, once open, "Show less". *@
+@if (Total > Shown)
+{
+    <button type="button" class="show-more" aria-expanded="@(Open ? "true" : "false")" @onclick="OnToggle">
+        <span>@(Open ? "Show less" : $"Show more ({Total - Shown})")</span>
+        <Icon Name="@(Open ? "chevron-up" : "chevron-down")" Size="14" />
+    </button>
+}
+
+@code {
+    /// <summary>How many lines the list has.</summary>
+    [Parameter, EditorRequired] public int Total { get; set; }
+
+    /// <summary>How many lines are shown before the button is needed.</summary>
+    [Parameter] public int Shown { get; set; } = 5;
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter] public EventCallback OnToggle { get; set; }
+}

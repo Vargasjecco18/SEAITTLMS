@@ -62,8 +62,10 @@
                 <thead>
                     <tr>
                         <th scope="col">Student</th>
-                        <th scope="col">Grade level</th>
-                        <th scope="col" class="col-more">Course and teacher</th>
+                        <th scope="col" class="col-level">Grade level</th>
+                        <th scope="col">Section</th>
+                        <th scope="col">Course</th>
+                        <th scope="col" class="col-more">Subject and teacher</th>
                         <th scope="col">Problem</th>
                         <th scope="col">Grade</th>
                         <th scope="col" class="col-more">Since</th>
@@ -79,10 +81,9 @@
                                 <span class="name">@r.StudentName</span>
                                 <span class="sub">@r.Lrn</span>
                             </td>
-                            <td>
-                                @(r.GradeLevel is { } level ? $"Grade {level}" : "—")
-                                <span class="sub">@(r.Strand ?? "")@(r.Placement is null ? "" : " · " + r.Placement)</span>
-                            </td>
+                            <td class="col-level">@(r.GradeLevel is { } level ? $"Grade {level}" : "—")</td>
+                            <td>@(r.Placement ?? "—")</td>
+                            <td>@(r.Strand ?? "—")</td>
                             <td class="col-more">
                                 @(r.SubjectName ?? "—")
                                 <span class="sub">@r.TeacherName</span>

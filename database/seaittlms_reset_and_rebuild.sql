@@ -1590,5 +1590,10 @@ CREATE INDEX `ix_attachments_uploaded_by_user_id` ON `attachments` (`uploaded_by
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261012151904_AddAttachments', '9.0.20');
 
+ALTER TABLE `submissions` ADD `answer_html` mediumtext CHARACTER SET utf8mb4 NULL;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261013025153_AddRichAnswers', '9.0.20');
+
 COMMIT;
 

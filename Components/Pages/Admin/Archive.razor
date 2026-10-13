@@ -10,6 +10,11 @@
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
+<p class="auto-note">
+    <Icon Name="info" Size="16" />
+    <span>Grade 12 students are <strong>archived by themselves</strong> when the last term of the school year ends. Here you can archive them earlier, or restore a student.</span>
+</p>
+
 <div class="tabs" role="tablist">
     <button type="button" role="tab" class="tab @(tab == "graduating" ? "on" : "")" aria-selected="@(tab == "graduating" ? "true" : "false")" @onclick='() => tab = "graduating"'>
         <Icon Name="graduation-cap" Size="16" /> Graduating students <span class="count">@candidates.Count</span>
@@ -25,7 +30,7 @@
         @if (candidates.Count == 0)
         {
             <EmptyState IconName="graduation-cap" Title="Nobody to graduate">
-                <p>Grade 12 students who are still at school appear here. When the school year ends, tick the ones who graduate and archive them.</p>
+                <p>Grade 12 students who are still at school appear here. When the last term of the school year ends they are archived by themselves.</p>
             </EmptyState>
         }
         else

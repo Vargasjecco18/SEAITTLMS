@@ -5,22 +5,23 @@
 @inject PresenceService Presence
 @inject MessageLauncher Launcher
 
-@* The students who are online right now: for a student their classmates and friends, for a teacher their students. Who counts is read now and then
-   (every minute); who of them is online is looked at every few seconds (the app knows it in memory, see PresenceService). *@
-<Card Title="Online students" IconName="wifi">
+@* The people who are online right now. Kind "students": for a student their classmates and friends, for a teacher their students. Kind "teachers": for a
+   student their teachers (and friends who teach), for a teacher the other teachers. Who counts is read now and then (every minute); who of them is online is
+   looked at every few seconds (the app knows it in memory, see PresenceService). With six or more online, five are shown and "Show more" opens the rest. *@
+<Card Title="@(Teachers ? "Online teachers" : "Online students")" IconName="@(Teachers ? "presentation" : "wifi")">
     @if (!loaded)
     {
         <p class="quiet">Looking…</p>
     }
     else if (online.Count == 0)
     {
-        <p class="quiet">@(students.Count == 0 ? "You don't have students to see here yet." : "Nobody is online right now.")</p>
+        <p class="quiet">@(people.Count == 0 ? (Teachers ? "You don't have teachers to see here yet." : "You don't have students to see here yet.") : "Nobody is online right now.")</p>
     }
     else
     {
         <p class="count"><span class="dot"></span> @online.Count online</p>
         <ul class="list">
-            @foreach (var s in online.Take(8))
+            @foreach (var s in showAll ? online : online.Take(ShownFirst).ToList())
             {
                 var person = s;
                 <li>
@@ -32,25 +33,28 @@
                 </li>
             }
         </ul>
-        @if (online.Count > 8)
-        {
-            <p class="more">and @(online.Count - 8) more</p>
-        }
+        <ShowMoreButton Total="online.Count" Shown="ShownFirst" Open="showAll" OnToggle="@(() => showAll = !showAll)" />
     }
 
     <a class="see-all" href="@SeeAllHref">See all users <Icon Name="arrow-right" Size="14" /></a>
 </Card>
 
 @code {
+    /// <summary>"students" (the default) or "teachers".</summary>
+    [Parameter] public string Kind { get; set; } = "students";
+
+    private const int ShownFirst = 5;
+    private bool showAll;
+    private bool Teachers => Kind == "teachers";
     private int userId;
     private string role = "";
     private bool loaded;
-    private IReadOnlyList<PersonCard> students = [];
+    private IReadOnlyList<PersonCard> people = [];
     private IReadOnlyList<PersonCard> online = [];
     private Timer? timer;
     private DateTime lastLoad;
 
-    private string SeeAllHref => role == AppRoles.Teacher ? "users?tab=students" : "users?tab=classmates";
+    private string SeeAllHref => Teachers ? "users?tab=teachers" : role == AppRoles.Teacher ? "users?tab=students" : "users?tab=classmates";
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,7 +73,7 @@
     private async Task LoadAsync()
     {
         var reachable = await People.GetReachableAsync(userId);
-        students = reachable.Where(p => p.IsStudent).ToList();
+        people = reachable.Where(p => p.IsStudent != Teachers).ToList();
         lastLoad = DateTime.UtcNow;
         loaded = true;
         Recount();
@@ -77,8 +81,8 @@
 
     private void Recount()
     {
-        var here = Presence.OnlineAmong(students.Select(s => s.UserId));
-        online = students.Where(s => here.Contains(s.UserId)).ToList();
+        var here = Presence.OnlineAmong(people.Select(s => s.UserId));
+        online = people.Where(s => here.Contains(s.UserId)).ToList();
     }
 
     private async Task TickAsync()

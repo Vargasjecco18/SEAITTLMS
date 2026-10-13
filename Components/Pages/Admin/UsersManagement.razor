@@ -55,6 +55,14 @@
             <Icon Name="search" Size="18" Class="search-icon" />
             <input type="search" aria-label="Search @tab.Title.ToLowerInvariant()" placeholder="@SearchHint" autocomplete="off" @bind="searchText" />
         </div>
+        <label class="status-filter">
+            <span class="sr-only">Show accounts that are</span>
+            <select aria-label="Status" @bind="statusFilter" @bind:after="StatusChangedAsync">
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </label>
         <Button Type="submit" Variant="ButtonVariant.Secondary">Search</Button>
         @if (!string.IsNullOrEmpty(appliedSearch))
         {
@@ -99,7 +107,8 @@
                             <th scope="col">Employee no.</th>
                             @if (tab.Role == AppRoles.Teacher)
                             {
-                                <th scope="col" class="col-more">Course · Section</th>
+                                <th scope="col" class="col-more">Section</th>
+                                <th scope="col" class="col-more">Courses</th>
                             }
                             else
                             {
@@ -128,14 +137,15 @@
                             {
                                 <td class="mono">@user.Lrn</td>
                                 <td class="col-more">@(user.Placement ?? "Not set yet")</td>
-                                <td class="col-more">@CourseList(user.Courses, 3, "Not enrolled yet")</td>
+                                <td class="col-more"><CoursesPopup Key="@($"u{user.UserId}")" Who="@user.FullName" Detail="@user.Placement" Names="user.Courses" None="Not enrolled yet" /></td>
                             }
                             else
                             {
                                 <td>@(user.EmployeeNumber ?? "—")</td>
                                 @if (tab.Role == AppRoles.Teacher)
                                 {
-                                    <td class="col-more">@CourseList(user.Courses, 3, "No course yet")</td>
+                                    <td class="col-more">@(user.Placement ?? "—")</td>
+                                    <td class="col-more"><CoursesPopup Key="@($"u{user.UserId}")" Who="@user.FullName" Detail="Teacher" Names="user.Courses" None="No course yet" /></td>
                                 }
                                 else
                                 {
@@ -157,8 +167,8 @@
                                 <div class="row-actions">
                                     @if (tab.Role == AppRoles.Teacher)
                                     {
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"Courses taught by {user.FullName}")"
-                                                OnClick="() => OpenTeachingAsync(user)">Courses</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"Give or take away the courses of {user.FullName}")"
+                                                OnClick="() => OpenTeachingAsync(user)">Assign courses</Button>
                                     }
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {user.FullName}")"
                                             OnClick="() => OpenEditAsync(user)">Edit</Button>
@@ -252,13 +262,12 @@
                 <InputText id="e-password" type="password" @bind-Value="edit.NewPassword" autocomplete="new-password" />
             </Field>
 
-            <label class="switch">
-                <InputCheckbox id="e-active" @bind-Value="edit.IsActive" disabled="@(edit.UserId == currentUserId)" />
-                <span>
-                    <strong>Account is active</strong>
-                    <small>@(edit.UserId == currentUserId ? "You can't deactivate your own account." : "An inactive account can't sign in.")</small>
-                </span>
-            </label>
+            <Field For="e-status" Label="Status" Hint="@(edit.UserId == currentUserId ? "You can't make your own account inactive." : "An inactive account can't sign in.")">
+                <select id="e-status" disabled="@(edit.UserId == currentUserId)" value="@(edit.IsActive ? "Active" : "Inactive")" @onchange="SetEditStatus"">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </Field>
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseEdit">Cancel</Button>
@@ -318,6 +327,12 @@
                     <InputText id="a-phone" @bind-Value="add.PhoneNumber" inputmode="tel" autocomplete="off" />
                 </Field>
             </div>
+            <Field For="a-status" Label="Status" Hint="An inactive account can't sign in until it is made active.">
+                <select id="a-status" value="@(add.IsActive ? "Active" : "Inactive")" @onchange="SetAddStatus"">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </Field>
             <Field For="a-password" Label="First password" Required="true" Hint="At least 8 characters. Tell it to the person; they can ask an administrator to change it later.">
                 <InputText id="a-password" type="password" @bind-Value="add.Password" autocomplete="new-password" />
                 <ValidationMessage For="() => add.Password" />
@@ -517,27 +532,6 @@
 @code {
     private const int PageSize = 15;
 
-    /// <summary>The courses of a person, a few of them on separate lines and "+ 2 more" for the rest (the whole list is in the tooltip).</summary>
-    private static RenderFragment CourseList(IReadOnlyList<string>? courses, int show, string none) => @<text>
-        @if (courses is null || courses.Count == 0)
-        {
-            <span class="muted">@none</span>
-        }
-        else
-        {
-            <ul class="course-list" title="@string.Join("\n", courses)">
-                @foreach (var course in courses.Take(show))
-                {
-                    <li>@course</li>
-                }
-                @if (courses.Count > show)
-                {
-                    <li class="more">+ @(courses.Count - show) more</li>
-                }
-            </ul>
-        }
-    </text>;
-
     /// <summary>Label is what the tab says (short, so all five fit), Title is the plural name used in the texts.</summary>
     private sealed record Tab(string Key, string Role, string Title, string Singular, string Icon, string? ShortLabel = null)
     {
@@ -580,6 +574,8 @@
         [Required(ErrorMessage = "Enter the first password."), StringLength(128)]
         public string Password { get; set; } = "";
 
+        public bool IsActive { get; set; } = true;
+
         // Teachers only: where they work (all optional).
         public int TrackId { get; set; }
         public int StrandId { get; set; }
@@ -597,6 +593,7 @@
     private int currentUserId;
     private string searchText = "";
     private string appliedSearch = "";
+    private string statusFilter = "";
     private int pageNumber = 1;
     private UserPage? list;
     private IReadOnlyDictionary<string, int> counts = new Dictionary<string, int>();
@@ -637,6 +634,7 @@
             tab = found;
             loadedKey = loading;
             searchText = appliedSearch = InitialSearch?.Trim() ?? "";
+            statusFilter = "";
             pageNumber = 1;
             message = null;
             list = null;
@@ -646,16 +644,28 @@
 
     private async Task LoadAsync()
     {
-        list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize);
+        list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize, active: ActiveFilter);
 
         // The last account of the last page was deleted: show the new last page.
         if (list.Items.Count == 0 && pageNumber > 1)
         {
             pageNumber = list.PageCount;
-            list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize);
+            list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize, active: ActiveFilter);
         }
 
         counts = await Management.CountByRoleAsync();
+    }
+
+    private void SetEditStatus(ChangeEventArgs e) => edit!.IsActive = e.Value?.ToString() != "Inactive";
+
+    private void SetAddStatus(ChangeEventArgs e) => add!.IsActive = e.Value?.ToString() != "Inactive";
+
+    private bool? ActiveFilter => statusFilter switch { "active" => true, "inactive" => false, _ => null };
+
+    private async Task StatusChangedAsync()
+    {
+        pageNumber = 1;
+        await LoadAsync();
     }
 
     private async Task SearchAsync()
@@ -811,7 +821,7 @@
         {
             var account = new NewAccount(
                 tab.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
-                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber);
+                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive);
 
             var result = tab.Role == AppRoles.Teacher
                 ? await Management.AddTeacherAsync(account, new TeacherPlacement(add.TrackId, add.StrandId, add.SectionId, add.SubjectIds.ToList()), currentUserId)

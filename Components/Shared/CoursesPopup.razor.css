@@ -1,0 +1,99 @@
+.courses-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    margin-left: -0.5rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--brand-strong);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.courses-button:hover {
+    background: var(--brand-soft);
+}
+
+.courses-button:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+}
+
+/* A popover is shown in the middle of the screen until app.js moves it next to its button. */
+.courses-pop {
+    width: min(22rem, calc(100vw - 1.5rem));
+    max-height: min(24rem, calc(100vh - 1.5rem));
+    padding: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg, 0 12px 32px rgb(0 0 0 / 0.22));
+    color: var(--text);
+}
+
+.courses-pop::backdrop {
+    background: transparent;
+}
+
+.pop-head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem 0.6rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.pop-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pop-title .sub {
+    white-space: normal;
+}
+
+.pop-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.pop-close:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.courses-pop ul {
+    margin: 0;
+    padding: 0.7rem 1rem 0.9rem 2.2rem;
+    font-size: 0.9rem;
+}
+
+.courses-pop li + li {
+    margin-top: 0.3rem;
+}
+
+.of {
+    color: var(--text-muted);
+}
+
+.muted {
+    color: var(--text-muted);
+}

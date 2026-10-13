@@ -254,3 +254,83 @@ h3 {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: none; }
 }
+
+/* The whole title is one big button: a click opens or closes the module (its text, files and activities, quizzes and task performances). */
+.module-head {
+    align-items: center;
+}
+
+.module-toggle {
+    display: flex;
+    flex: 1 1 18rem;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+    padding: 0.2rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.module-toggle:hover .module-name {
+    color: var(--brand-strong);
+}
+
+.module-toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.chevron {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.module-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.module-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.module-state {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.count-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.module-body {
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    animation: fade-in 0.2s ease-out;
+}
+
+.module-body > .module-description:first-child {
+    margin-top: 0;
+}

@@ -42,38 +42,6 @@
     }
 }
 
-.overview {
-    display: grid;
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
-}
-
-.bars {
-    display: grid;
-    gap: 0.8rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.bars li {
-    display: grid;
-    grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) 3.5rem;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.bar-name {
-    font-size: 0.88rem;
-    font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-.bar-value {
-    font-weight: 700;
-    text-align: right;
-}
-
 .track {
     position: relative;
     display: block;
@@ -122,36 +90,84 @@ i.none { background: var(--border); }
 
 .subjects {
     display: grid;
-    gap: 1.25rem;
-}
-
-.subject-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
     gap: 0.75rem;
 }
 
-h2 {
-    margin: 0;
-    font-size: 1.1rem;
+/* A subject is a closed card: its name first; a click shows the progress and the graded work. */
+.subject {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
-h2 a {
-    color: var(--text);
-    text-decoration: none;
+.subject summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--radius);
+    list-style: none;
+    cursor: pointer;
 }
 
-h2 a:hover {
+.subject summary::-webkit-details-marker {
+    display: none;
+}
+
+.subject summary:hover .subject-name {
     color: var(--brand-strong);
-    text-decoration: underline;
+}
+
+.subject summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.chev {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+}
+
+.subject[open] .chev {
+    transform: rotate(90deg);
+}
+
+.subject-title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.subject-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
 .sub {
-    margin: 0.15rem 0 0;
     color: var(--text-muted);
     font-size: 0.88rem;
+}
+
+.subject-body {
+    padding: 0.2rem 1.1rem 1.1rem;
+    border-top: 1px solid var(--border);
+}
+
+.progress-row {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+}
+
+.progress-label {
+    font-size: 0.88rem;
+    font-weight: 650;
 }
 
 .grade {
@@ -161,9 +177,24 @@ h2 a:hover {
 }
 
 .grade-number {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 750;
     line-height: 1;
+}
+
+.work-title {
+    margin: 1.1rem 0 0;
+    font-size: 0.95rem;
+}
+
+.open-course {
+    margin: 0.9rem 0 0;
+    font-size: 0.9rem;
+}
+
+.open-course a {
+    color: var(--brand-strong);
+    font-weight: 600;
 }
 
 .counts {
@@ -234,11 +265,11 @@ h2 a:hover {
         display: none;
     }
 
-    .bars li {
-        grid-template-columns: minmax(0, 1fr) 3.2rem;
+    .progress-row {
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .bars .track {
+    .progress-row .track {
         grid-column: 1 / -1;
         grid-row: 2;
     }

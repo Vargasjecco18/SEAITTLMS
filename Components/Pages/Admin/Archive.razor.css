@@ -167,3 +167,17 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
 }
+
+.auto-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.auto-note ::deep .icon {
+    flex: none;
+    margin-top: 0.15rem;
+}

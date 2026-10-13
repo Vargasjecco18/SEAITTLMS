@@ -185,7 +185,12 @@ public class Submission : AuditableEntity
     /// <summary>Handed in after the due date.</summary>
     public bool IsLate { get; set; }
 
+    /// <summary>What the student wrote, without formatting (for counting and for the screens that only need the words).</summary>
     public string? AnswerText { get; set; }
+
+    /// <summary>What the student wrote in the editor, with its formatting, already cleaned by <c>RichText.Sanitize</c>.</summary>
+    public string? AnswerHtml { get; set; }
+
     public string? LinkUrl { get; set; }
 
     /// <summary>A quiz: the answers given so far, and the order the questions were shown in, as JSON.</summary>

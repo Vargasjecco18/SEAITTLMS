@@ -237,7 +237,8 @@ dd {
 }
 
 @media print {
-    .no-print {
+    .no-print,
+    .screen-only {
         display: none !important;
     }
 }

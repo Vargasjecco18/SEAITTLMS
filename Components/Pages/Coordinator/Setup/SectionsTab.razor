@@ -2,7 +2,7 @@
 
 <Card>
     <div class="tab-head">
-        <p class="grow">The sections of a school year, like 11-BUSSENT-A. The registrar also makes a section the first time a student is enrolled in it. Teachers get a section's courses under <strong>Users Management</strong>.</p>
+        <p class="grow">The sections of a school year, like 11-BUSSENT-A. A section has a name, a grade level, a strand <strong>and a schedule</strong>, so 11-BUSSENT-A in the morning and 11-BUSSENT-A in the afternoon are two different sections. The registrar also makes a section the first time a student is enrolled in it. Teachers get a section's courses under <strong>Users Management</strong>.</p>
         <Button IconName="plus" Disabled="@(lookups is { Years.Count: 0 } or { Strands.Count: 0 })" OnClick="OpenAdd">Add section</Button>
     </div>
 
@@ -18,6 +18,25 @@
             @foreach (var year in lookups?.Years ?? [])
             {
                 <option value="@year.Id">@year.Name</option>
+            }
+        </select>
+        <select aria-label="Grade level" @bind="gradeFilter">
+            <option value="0">All grade levels</option>
+            <option value="11">Grade 11</option>
+            <option value="12">Grade 12</option>
+        </select>
+        <select aria-label="Strand" @bind="strandFilter">
+            <option value="0">All strands</option>
+            @foreach (var strand in lookups?.Strands ?? [])
+            {
+                <option value="@strand.Id">@strand.Code</option>
+            }
+        </select>
+        <select aria-label="Schedule" @bind="scheduleFilter">
+            <option value="0">All schedules</option>
+            @foreach (var schedule in lookups?.Schedules ?? [])
+            {
+                <option value="@schedule.Id">@schedule.Code</option>
             }
         </select>
         <span class="result-count">@(Shown.Count == 1 ? "1 section" : $"{Shown.Count:N0} sections")</span>
@@ -38,7 +57,6 @@
                 <thead>
                     <tr>
                         <th scope="col">Section</th>
-                        <th scope="col">Schedule</th>
                         <th scope="col" class="col-more">School year</th>
                         <th scope="col" class="col-more">Adviser</th>
                         <th scope="col">Students</th>
@@ -49,8 +67,7 @@
                     @foreach (var row in Shown)
                     {
                         <tr>
-                            <td class="name nowrap">@row.Label</td>
-                            <td>@if (row.Schedule is not null) { <Badge Tone="Tone.Info">@row.Schedule</Badge> } else { <span class="muted">—</span> }</td>
+                            <td class="name nowrap">@row.Label @if (row.Schedule is not null) { <Badge Tone="Tone.Info">@row.Schedule</Badge> }</td>
                             <td class="col-more nowrap">@row.SchoolYear</td>
                             <td class="col-more">@(row.Adviser ?? "—")</td>
                             <td>@row.Students</td>
@@ -156,12 +173,20 @@
     private int adviserId;
     private string search = "";
     private int yearFilter;
+    private int gradeFilter;
+    private int strandFilter;
+    private int scheduleFilter;
 
     private IReadOnlyList<SectionRow> Shown =>
         rows is null ? [] : rows.Where(r => (yearFilter == 0 || r.SchoolYearId == yearFilter)
+            && (gradeFilter == 0 || r.GradeLevel == gradeFilter)
+            && (strandFilter == 0 || r.StrandId == strandFilter)
+            && (scheduleFilter == 0 || r.ScheduleId == scheduleFilter)
             && (string.IsNullOrWhiteSpace(search)
                 || r.Label.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
-                || (r.Adviser?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false))).ToList();
+                || (r.Adviser?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false)))
+            .OrderByDescending(r => r.SchoolYear).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name).ThenBy(r => r.Schedule)
+            .ToList();
 
     private IEnumerable<ScheduleChoice> SchedulesOfStrand
     {

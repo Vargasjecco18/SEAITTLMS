@@ -190,6 +190,7 @@ public static class SecurityEvents
     public const string AccountActivated = "AccountActivated";
     public const string AccountDeactivated = "AccountDeactivated";
     public const string AccountDeleted = "AccountDeleted";
+    public const string StudentsArchived = "StudentsArchived";
     public const string BackupCreated = "BackupCreated";
     public const string BackupDeleted = "BackupDeleted";
     public const string BackupRestored = "BackupRestored";
@@ -211,6 +212,7 @@ public static class SecurityEvents
         AccountActivated => "Account activated",
         AccountDeactivated => "Account deactivated",
         AccountDeleted => "Account deleted",
+        StudentsArchived => "Students archived",
         BackupCreated => "Backup made",
         BackupDeleted => "Backup deleted",
         BackupRestored => "Backup restored",

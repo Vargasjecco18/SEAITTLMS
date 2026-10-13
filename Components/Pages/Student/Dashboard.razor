@@ -4,6 +4,7 @@
 @inject DashboardService Dashboards
 @inject AchievementService Achievements
 @inject EvaluationService EvaluationTasks
+@inject TeachingService Teaching
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT e-LMS</PageTitle>
@@ -25,7 +26,8 @@
 }
 else
 {
-    <PageWithAside Show="calendar,online,announcements">
+    @* At the right, in this order: the calendar, the assignments and due dates, the announcements, the students who are online and the teachers who are online. *@
+    <PageWithAside Show="calendar,activities,announcements,online,onlineteachers">
         <div class="stats">
             <StatCard Label="Work to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
             <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />
@@ -61,40 +63,29 @@ else
             }
 
             <div class="wide">
-            <Card Title="Assignments and due dates" IconName="clipboard-list">
-                @if (data.Work.Count == 0)
+            <Card Title="Progress" IconName="gauge">
+                @if (courses.Count == 0)
                 {
-                    <EmptyState IconName="circle-check" Title="You are all caught up">
-                        <p>No work is waiting for you.</p>
+                    <EmptyState IconName="book-open" Title="No courses yet">
+                        <p>Your progress in each course appears here.</p>
                     </EmptyState>
                 }
                 else
                 {
-                    <ul class="work">
-                        @foreach (var w in data.Work)
+                    <ul class="course-progress">
+                        @foreach (var c in courses)
                         {
                             <li>
-                                <a class="work-link" href="student/items/@w.ItemId">
-                                    <span class="work-icon"><Icon Name="@SubjectStyle.KindIcon(w.Kind)" Size="18" /></span>
-                                    <span class="work-text">
-                                        <span class="work-title">@w.Title</span>
-                                        <span class="work-sub">@w.SubjectName · @ItemKinds.Display(w.Kind)</span>
-                                    </span>
-                                    <span class="work-end">
-                                        @if (w.DueAtUtc is { } due)
-                                        {
-                                            <Badge Tone="@(w.IsOverdue ? Tone.Danger : due < now.UtcDateTime.AddDays(2) ? Tone.Warning : Tone.Neutral)">@PhilippineTime.DueText(due, now)</Badge>
-                                        }
-                                        else
-                                        {
-                                            <Badge>No due date</Badge>
-                                        }
-
-                                        @if (w.InProgress)
-                                        {
-                                            <Badge Tone="Tone.Info">In progress</Badge>
-                                        }
-                                    </span>
+                                <a href="@(c.AssignmentId is { } aid ? $"student/subjects/{aid}" : "student/subjects")">
+                                    <span class="progress-name">@c.SubjectName</span>
+                                    @if (c.ProgressPercent is { } pct)
+                                    {
+                                        <ProgressBar Percent="pct" Title="@c.ProgressText" />
+                                    }
+                                    else
+                                    {
+                                        <span class="progress-none">Nothing posted yet</span>
+                                    }
                                 </a>
                             </li>
                         }
@@ -162,6 +153,7 @@ else
     private StudentDashboard? data;
     private IReadOnlyList<Achievement> achievements = [];
     private IReadOnlyList<StudentEvaluationTask> pendingEvaluations = [];
+    private IReadOnlyList<StudentSubjectCard> courses = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,6 +162,7 @@ else
         if (studentId is { } sid)
         {
             achievements = await Achievements.GetAsync(sid);
+            courses = (await Teaching.GetStudentCardsAsync(sid)).Where(c => !c.IsCompleted).ToList();
             pendingEvaluations = (await EvaluationTasks.GetStudentTasksAsync(sid)).Where(e => !e.Answered && !e.Closed).ToList();
         }
     }

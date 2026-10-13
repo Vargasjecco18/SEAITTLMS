@@ -175,7 +175,7 @@ else
             {
                 @if (!string.IsNullOrWhiteSpace(detail.AnswerText))
                 {
-                    <div class="work">@detail.AnswerText</div>
+                    <div class="work"><RichView Html="@detail.AnswerHtml" Text="@detail.AnswerText" /></div>
                 }
 
                 @if (!string.IsNullOrWhiteSpace(detail.LinkUrl))

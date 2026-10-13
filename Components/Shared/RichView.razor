@@ -1,0 +1,19 @@
+@* The answer of a student, written in the editor: shown with its formatting. Work handed in as plain text is shown as it was written. *@
+@if (!string.IsNullOrWhiteSpace(Html))
+{
+    <div class="rich-content @Class">@((MarkupString)RichText.Sanitize(Html))</div>
+}
+else if (!string.IsNullOrWhiteSpace(Text))
+{
+    <div class="@Class plain-answer">@Text</div>
+}
+
+@code {
+    /// <summary>The formatted answer (cleaned again here, before it is shown).</summary>
+    [Parameter] public string? Html { get; set; }
+
+    /// <summary>The plain answer, used when there is no formatted one.</summary>
+    [Parameter] public string? Text { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+}

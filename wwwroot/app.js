@@ -380,3 +380,306 @@ document.addEventListener('keydown', function (event) {
     document.addEventListener('enhancedload', function () { last = Date.now(); });
     setInterval(tick, 2000);
 })();
+
+// The editor of a student's work (the "RichTextEditor" component draws the bar of tools, this file makes them work).
+// It is a box the browser lets the person edit ("contenteditable"), and the tools call the browser's own editing commands
+// (document.execCommand), the way a word processor on a web page does. What is written is cleaned again on the server.
+(function () {
+    var saved = null;           // the last place the cursor or selection was inside a box, kept while a list or a color box has the focus
+    var pendingSize = {};       // the size (in pt) chosen with nothing selected, for what is typed next, by box
+
+    function boxOf(node) {
+        var element = node && (node.nodeType === 1 ? node : node.parentElement);
+        return element && element.closest ? element.closest('.rte-editor') : null;
+    }
+
+    function wrapOf(editor) {
+        return editor.closest('[data-rte]');
+    }
+
+    function isEmpty(editor) {
+        return editor.innerText.trim() === '' && !editor.querySelector('table, hr');
+    }
+
+    function words(text) {
+        var found = text.trim().match(/\S+/g);
+        return found ? found.length : 0;
+    }
+
+    function updateStatus(editor) {
+        var wrap = wrapOf(editor);
+        var text = editor.innerText.replace(/ /g, ' ').trim();
+        editor.setAttribute('data-empty', isEmpty(editor) ? 'true' : 'false');
+        var counter = wrap && wrap.querySelector('[data-rte-count]');
+        if (counter) {
+            var max = parseInt(editor.getAttribute('data-max') || '0', 10);
+            var count = text.length;
+            counter.textContent = words(text) + ' ' + (words(text) === 1 ? 'word' : 'words') + ' · ' + count.toLocaleString('en-US') + (max ? ' / ' + max.toLocaleString('en-US') : '') + ' characters';
+            counter.classList.toggle('over', max > 0 && count > max);
+        }
+    }
+
+    // The browser writes a size chosen in pt as <font size="7">; turn those into a span with the size, and let the new size win over the old ones inside.
+    function applySizes(editor) {
+        var pt = pendingSize[editor.id];
+        if (!pt) { return; }
+        editor.querySelectorAll('font[size="7"]').forEach(function (font) {
+            var span = document.createElement('span');
+            span.style.fontSize = pt + 'pt';
+            while (font.firstChild) { span.appendChild(font.firstChild); }
+            span.querySelectorAll('[style]').forEach(function (inner) { inner.style.removeProperty('font-size'); });
+            font.replaceWith(span);
+            var selection = document.getSelection();
+            if (selection && selection.isCollapsed === false) {
+                var range = document.createRange();
+                range.selectNodeContents(span);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        });
+    }
+
+    function cleanUp(editor) {
+        applySizes(editor);
+        // Nothing but a lonely <br> or empty spans left behind by the commands.
+        editor.querySelectorAll('span:empty, font:empty').forEach(function (span) { span.remove(); });
+    }
+
+    function afterChange(editor) {
+        cleanUp(editor);
+        updateStatus(editor);
+        showState(wrapOf(editor));
+    }
+
+    function restore(editor) {
+        editor.focus();
+        if (saved && saved.editor === editor) {
+            var selection = document.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(saved.range);
+        }
+    }
+
+    function run(editor, command, value) {
+        restore(editor);
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand(command, false, value === undefined ? null : value);
+        afterChange(editor);
+    }
+
+    function blocksInSelection(editor) {
+        var selection = document.getSelection();
+        if (!selection || selection.rangeCount === 0) { return []; }
+        var range = selection.getRangeAt(0);
+        return Array.prototype.filter.call(editor.querySelectorAll('p, div, li, h1, h2, h3, h4, blockquote, pre, td, th'), function (block) {
+            return range.intersectsNode(block) && !block.querySelector('p, div, li, h1, h2, h3, h4, blockquote, pre, td, th');
+        });
+    }
+
+    function setLineHeight(editor, value) {
+        restore(editor);
+        var blocks = blocksInSelection(editor);
+        if (blocks.length === 0) {
+            document.execCommand('formatBlock', false, 'p');
+            blocks = blocksInSelection(editor);
+        }
+        blocks.forEach(function (block) { block.style.lineHeight = value; });
+        afterChange(editor);
+    }
+
+    function setSize(editor, pt) {
+        restore(editor);
+        pendingSize[editor.id] = pt;
+        document.execCommand('styleWithCSS', false, false);
+        document.execCommand('fontSize', false, '7');
+        document.execCommand('styleWithCSS', false, true);
+        afterChange(editor);
+    }
+
+    function insertTable(editor) {
+        var cell = '<td><br></td>';
+        var row = '<tr>' + cell + cell + cell + '</tr>';
+        run(editor, 'insertHTML', '<table><tbody>' + row + row + row + '</tbody></table><p><br></p>');
+    }
+
+    function insertLink(editor) {
+        restore(editor);
+        var selection = document.getSelection();
+        var address = window.prompt('Link address (it starts with https://)', 'https://');
+        if (!address || !/^https?:\/\//i.test(address.trim())) { return; }
+        address = address.trim();
+        restore(editor);
+        if (selection && selection.isCollapsed) {
+            var link = document.createElement('a');
+            link.href = address;
+            link.textContent = address;
+            document.execCommand('insertHTML', false, link.outerHTML);
+        } else {
+            document.execCommand('createLink', false, address);
+        }
+        afterChange(editor);
+    }
+
+    // Shows which tools are on where the cursor is (bold is pressed in bold text), and the font and size in the lists.
+    function showState(wrap) {
+        if (!wrap) { return; }
+        var editor = wrap.querySelector('.rte-editor');
+        if (document.activeElement !== editor && !(saved && saved.editor === editor)) { return; }
+        wrap.querySelectorAll('button[data-state]').forEach(function (button) {
+            var on = false;
+            try { on = document.queryCommandState(button.getAttribute('data-cmd')); } catch (error) { on = false; }
+            button.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+
+        var selection = document.getSelection();
+        var element = selection && selection.anchorNode ? (selection.anchorNode.nodeType === 1 ? selection.anchorNode : selection.anchorNode.parentElement) : null;
+        if (!element || !editor.contains(element)) { return; }
+        var style = window.getComputedStyle(element);
+
+        var sizeBox = wrap.querySelector('select[data-select="fontSizePt"]');
+        if (sizeBox && document.activeElement !== sizeBox) {
+            var pt = Math.round(parseFloat(style.fontSize) * 0.75);
+            if (Array.prototype.some.call(sizeBox.options, function (option) { return option.value === String(pt); })) { sizeBox.value = String(pt); }
+        }
+
+        var fontBox = wrap.querySelector('select[data-select="fontName"]');
+        if (fontBox && document.activeElement !== fontBox) {
+            var family = style.fontFamily.split(',')[0].replace(/["']/g, '').trim().toLowerCase();
+            Array.prototype.forEach.call(fontBox.options, function (option) { if (option.value.toLowerCase() === family) { fontBox.value = option.value; } });
+        }
+
+        var blockBox = wrap.querySelector('select[data-select="formatBlock"]');
+        if (blockBox && document.activeElement !== blockBox) {
+            var block = element.closest('h1, h2, h3, blockquote');
+            blockBox.value = block && editor.contains(block) ? block.tagName.toLowerCase() : 'p';
+        }
+    }
+
+    function tabInTable(event, editor) {
+        var selection = document.getSelection();
+        var element = selection && selection.anchorNode ? (selection.anchorNode.nodeType === 1 ? selection.anchorNode : selection.anchorNode.parentElement) : null;
+        var cell = element && element.closest('td, th');
+        if (!cell || !editor.contains(cell)) { return false; }
+        event.preventDefault();
+        var cells = Array.prototype.slice.call(cell.closest('table').querySelectorAll('td, th'));
+        var next = cells[cells.indexOf(cell) + (event.shiftKey ? -1 : 1)];
+        if (!next && !event.shiftKey) {
+            // After the last cell a new row is added, like in a word processor.
+            var row = cell.parentElement.cloneNode(true);
+            row.querySelectorAll('td, th').forEach(function (copy) { copy.innerHTML = '<br>'; });
+            cell.parentElement.after(row);
+            next = row.querySelector('td, th');
+        }
+
+        if (next) {
+            var range = document.createRange();
+            range.selectNodeContents(next);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        return true;
+    }
+
+    // ---- the tools: one listener for the whole page, so the bar keeps working when the page redraws it
+    document.addEventListener('mousedown', function (event) {
+        // A click on a tool must not take the cursor out of the text (a list or a color box needs it to take the focus).
+        var tool = event.target.closest && event.target.closest('[data-rte] .bar button');
+        if (tool) { event.preventDefault(); }
+    });
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest && event.target.closest('[data-rte] .bar button');
+        if (!button) { return; }
+        var wrap = button.closest('[data-rte]');
+        var editor = wrap.querySelector('.rte-editor');
+        var action = button.getAttribute('data-action');
+        if (action === 'table') { insertTable(editor); }
+        else if (action === 'link') { insertLink(editor); }
+        else if (button.getAttribute('data-cmd')) { run(editor, button.getAttribute('data-cmd')); }
+    });
+
+    document.addEventListener('change', function (event) {
+        var box = event.target.closest && event.target.closest('[data-rte] .bar select');
+        if (!box) { return; }
+        var editor = box.closest('[data-rte]').querySelector('.rte-editor');
+        var kind = box.getAttribute('data-select');
+        if (kind === 'fontName') { run(editor, 'fontName', box.value); }
+        else if (kind === 'fontSizePt') { setSize(editor, box.value); }
+        else if (kind === 'lineHeight') { setLineHeight(editor, box.value); }
+        else if (kind === 'formatBlock') { run(editor, 'formatBlock', box.value === 'p' ? 'p' : box.value); }
+        restore(editor);
+    });
+
+    document.addEventListener('input', function (event) {
+        var color = event.target.closest && event.target.closest('[data-rte] .bar input[type="color"]');
+        if (color) {
+            var editor = color.closest('[data-rte]').querySelector('.rte-editor');
+            color.parentElement.style.setProperty('--swatch', color.value);
+            run(editor, color.getAttribute('data-color'), color.value);
+            return;
+        }
+
+        var typed = boxOf(event.target);
+        if (typed) { afterChange(typed); }
+    });
+
+    document.addEventListener('selectionchange', function () {
+        var selection = document.getSelection();
+        if (!selection || selection.rangeCount === 0) { return; }
+        var editor = boxOf(selection.anchorNode);
+        if (editor) {
+            saved = { editor: editor, range: selection.getRangeAt(0).cloneRange() };
+            showState(wrapOf(editor));
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        var editor = boxOf(event.target);
+        if (editor && event.key === 'Tab') { tabInTable(event, editor); }
+    });
+
+    // Pasting keeps the words and the paragraphs only (what comes from another page or a document would bring its own fonts, sizes and pictures).
+    document.addEventListener('paste', function (event) {
+        var editor = boxOf(event.target);
+        if (!editor) { return; }
+        event.preventDefault();
+        var text = (event.clipboardData || window.clipboardData).getData('text/plain');
+        if (text) { document.execCommand('insertText', false, text.replace(/\r\n?/g, '\n')); }
+        afterChange(editor);
+    });
+
+    // A file or a picture dropped on the box would make the browser leave the page: only text is taken.
+    document.addEventListener('dragover', function (event) {
+        if (boxOf(event.target) && event.dataTransfer && Array.prototype.indexOf.call(event.dataTransfer.types, 'Files') >= 0) { event.preventDefault(); }
+    });
+    document.addEventListener('drop', function (event) {
+        var editor = boxOf(event.target);
+        if (editor && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) { event.preventDefault(); }
+    });
+
+    window.seaittEditor = {
+        // Called by the component when it appears: fills the box and makes new paragraphs <p>.
+        start: function (id, html) {
+            var editor = document.getElementById(id);
+            if (!editor) { return; }
+            if (html && html.trim() !== '') { editor.innerHTML = html; }
+            else if (editor.innerText.trim() === '') { editor.innerHTML = '<p><br></p>'; }
+            try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (error) { /* an old browser keeps its own */ }
+            updateStatus(editor);
+        },
+        setHtml: function (id, html) {
+            var editor = document.getElementById(id);
+            if (!editor) { return; }
+            editor.innerHTML = html && html.trim() !== '' ? html : '<p><br></p>';
+            updateStatus(editor);
+        },
+        // What was written, or "" when the box is empty.
+        getHtml: function (id) {
+            var editor = document.getElementById(id);
+            if (!editor || isEmpty(editor)) { return ''; }
+            return editor.innerHTML;
+        },
+    };
+})();

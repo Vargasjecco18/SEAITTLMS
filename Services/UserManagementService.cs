@@ -9,7 +9,7 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>One account in a role's list.</summary>
-/// <param name="Placement">For students: the section as kept on the student's row (or, when that is empty, of their latest enrollment), like 11-BUSSENT-A. Empty otherwise.</param>
+/// <param name="Placement">For students: the section as kept on the student's row (or, when that is empty, of their latest enrollment), like 11-BUSSENT-A. For teachers: the sections they teach in, like "11-BUSSENT-A, 12-HT1-A". Empty otherwise.</param>
 /// <param name="Courses">For students: the courses of their enrollment (the current term's, else the latest). For teachers: each course they teach with its section, like "BUSINESS ACCOUNTING · 11-BUSSENT-A". Empty otherwise.</param>
 public sealed record UserListItem(
     int UserId,
@@ -291,7 +291,8 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             : (new ResolvedPlacement(trackId, strandId, section?.Id, section?.GradeLevel, subjectIds), errors);
     }
 
-    public async Task<UserPage> ListAsync(string role, string? search, int page, int pageSize, CancellationToken ct = default)
+    /// <param name="active">Only the accounts that are active (true) or inactive (false); empty: all of them.</param>
+    public async Task<UserPage> ListAsync(string role, string? search, int page, int pageSize, CancellationToken ct = default, bool? active = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
@@ -303,9 +304,9 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
         {
             case AppRoles.Student:
             {
-                var query = Filter(db.Students.AsNoTracking(), tokens, t => s =>
+                var query = ByStatus(Filter(db.Students.AsNoTracking(), tokens, t => s =>
                     s.FirstName.Contains(t) || (s.MiddleName != null && s.MiddleName.Contains(t)) || s.LastName.Contains(t)
-                    || s.Lrn.Contains(t) || s.User.Email.Contains(t));
+                    || s.Lrn.Contains(t) || s.User.Email.Contains(t)), active);
 
                 var total = await query.CountAsync(ct);
                 var rows = await query.OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ThenBy(s => s.Id)
@@ -362,9 +363,9 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
 
             case AppRoles.Teacher:
             {
-                var query = Filter(db.Teachers.AsNoTracking(), tokens, t => p =>
+                var query = ByStatus(Filter(db.Teachers.AsNoTracking(), tokens, t => p =>
                     p.FirstName.Contains(t) || (p.MiddleName != null && p.MiddleName.Contains(t)) || p.LastName.Contains(t)
-                    || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t));
+                    || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t)), active);
 
                 var total = await query.CountAsync(ct);
                 var rows = await query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id)
@@ -383,27 +384,28 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                     .OrderBy(a => a.Subject.Name).ThenBy(a => a.Section.GradeLevel).ThenBy(a => a.Section.Strand.Code).ThenBy(a => a.Section.Name)
                     .Select(a => new { a.Teacher.UserId, Course = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
                     .ToListAsync(ct);
+                string SectionsOf(int userId) => string.Join(", ", taught.Where(t => t.UserId == userId).Select(t => $"{t.GradeLevel}-{t.Strand}-{t.Section}").Distinct());
 
                 return new UserPage(rows.Select(r => new UserListItem(
                     r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, r.EmployeeNumber, null,
-                    r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null,
+                    r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, SectionsOf(r.UserId) is { Length: > 0 } sections ? sections : null,
                     taught.Where(t => t.UserId == r.UserId).Select(t => $"{t.Course} · {t.GradeLevel}-{t.Strand}-{t.Section}").ToList())).ToList(), total, page, pageSize);
             }
 
             case AppRoles.Registrar:
-                return await StaffPageAsync(db.Registrars.AsNoTracking(), role, tokens, page, pageSize, ct);
+                return await StaffPageAsync(db.Registrars.AsNoTracking(), role, tokens, active, page, pageSize, ct);
 
             case AppRoles.GuidanceCounselor:
-                return await StaffPageAsync(db.GuidanceCounselors.AsNoTracking(), role, tokens, page, pageSize, ct);
+                return await StaffPageAsync(db.GuidanceCounselors.AsNoTracking(), role, tokens, active, page, pageSize, ct);
 
             case AppRoles.AcademicCoordinator:
-                return await StaffPageAsync(db.AcademicCoordinators.AsNoTracking(), role, tokens, page, pageSize, ct);
+                return await StaffPageAsync(db.AcademicCoordinators.AsNoTracking(), role, tokens, active, page, pageSize, ct);
 
             case AppRoles.AcademicProvider:
-                return await StaffPageAsync(db.AcademicProviders.AsNoTracking(), role, tokens, page, pageSize, ct);
+                return await StaffPageAsync(db.AcademicProviders.AsNoTracking(), role, tokens, active, page, pageSize, ct);
 
             case AppRoles.Admin:
-                return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, page, pageSize, ct);
+                return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, active, page, pageSize, ct);
 
             default:
                 return new UserPage([], 0, 1, pageSize);
@@ -411,12 +413,12 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
     }
 
     /// <summary>Administrators, registrars and guidance counselors have the same columns.</summary>
-    private static async Task<UserPage> StaffPageAsync<T>(IQueryable<T> source, string role, string[] tokens, int page, int pageSize, CancellationToken ct)
+    private static async Task<UserPage> StaffPageAsync<T>(IQueryable<T> source, string role, string[] tokens, bool? active, int page, int pageSize, CancellationToken ct)
         where T : StaffContactProfile
     {
-        var query = Filter(source, tokens, t => p =>
+        var query = ByStatus(Filter(source, tokens, t => p =>
             p.FirstName.Contains(t) || (p.MiddleName != null && p.MiddleName.Contains(t)) || p.LastName.Contains(t)
-            || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t));
+            || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t)), active);
 
         var total = await query.CountAsync(ct);
         var rows = await query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id)
@@ -432,6 +434,10 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, r.EmployeeNumber, null,
             r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null)).ToList(), total, page, pageSize);
     }
+
+    /// <summary>Only the active (or only the inactive) accounts; with no choice, all.</summary>
+    private static IQueryable<T> ByStatus<T>(IQueryable<T> source, bool? active) where T : PersonProfile =>
+        active is { } on ? source.Where(p => p.User.IsActive == on) : source;
 
     /// <summary>Every word of the search must match somewhere (name, email, LRN or employee number).</summary>
     private static IQueryable<T> Filter<T>(IQueryable<T> source, string[] tokens, Func<string, Expression<Func<T, bool>>> matches)

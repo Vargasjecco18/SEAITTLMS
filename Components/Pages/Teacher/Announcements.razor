@@ -81,21 +81,6 @@ else
                     }
                 </select>
             </Field>
-
-            <fieldset class="kinds">
-                <legend>What is it about?</legend>
-                <div class="kind-grid" role="radiogroup" aria-label="What the announcement is about">
-                    @foreach (var category in AnnouncementCategories.ForClass)
-                    {
-                        var c = category;
-                        <button type="button" role="radio" aria-checked="@(form.Category == c ? "true" : "false")" class="kind @c @(form.Category == c ? "on" : "")" @onclick="() => form.Category = c">
-                            <Icon Name="@AnnouncementCategories.Icon(c)" Size="18" />
-                            <span>@AnnouncementCategories.DisplayPlural(c)</span>
-                        </button>
-                    }
-                </div>
-            </fieldset>
-
             <Field For="a-title" Label="Title" Required="true">
                 <input id="a-title" maxlength="@AnnouncementService.MaxTitleLength" autocomplete="off" @bind="form.Title" />
             </Field>

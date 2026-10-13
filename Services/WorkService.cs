@@ -9,7 +9,7 @@ namespace SEAITT_LMS.Services;
 public sealed record StudentItemView(
     int ItemId, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc,
     int ModuleId, string ModuleTitle, int AssignmentId, string SubjectName,
-    string Status, string? AnswerText, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
+    string Status, string? AnswerText, string? AnswerHtml, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
     int Questions, int? TimeLimitMinutes, bool AntiCheat, int MaxViolations, bool ShowResult, int ViolationCount, string? AutoSubmitReason)
 {
     public bool IsQuiz => Kind == ItemKinds.Quiz;
@@ -30,7 +30,7 @@ public sealed record AnswerReview(string Question, string Kind, string? Given, s
 
 public sealed record SubmissionDetail(
     int StudentId, string StudentName, string Kind, string ItemTitle, decimal MaxScore, string Status,
-    string? AnswerText, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
+    string? AnswerText, string? AnswerHtml, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
     int ViolationCount, string? ViolationLog, string? AutoSubmitReason, bool IsFlagged, IReadOnlyList<AnswerReview> Answers);
 
 /// <summary>An item together with where it belongs, loaded after checking that the person is allowed to see it.</summary>
@@ -108,7 +108,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         return new StudentItemView(
             i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName,
-            s?.Status ?? "NotStarted", s?.AnswerText, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
+            s?.Status ?? "NotStarted", s?.AnswerText, s?.AnswerHtml, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
             questions, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShowResult, s?.ViolationCount ?? 0, s?.AutoSubmitReason);
     }
 
@@ -138,10 +138,33 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         }
     }
 
-    /// <summary>Hands in an activity or a task performance. It can be handed in again until the teacher has graded it. Late work is marked late.</summary>
-    public async Task<ServiceResult> SubmitAsync(int studentId, int itemId, string? answerText, string? linkUrl, CancellationToken ct = default)
+    /// <summary>
+    /// Hands in an activity or a task performance. It can be handed in again until the teacher has graded it. Late work is marked late.
+    /// The answer is either plain text (<paramref name="answerText"/>) or what the student wrote in the editor (<paramref name="answerHtml"/>,
+    /// cleaned here: only the allowed formatting is kept, and the plain words are kept next to it).
+    /// </summary>
+    public async Task<ServiceResult> SubmitAsync(int studentId, int itemId, string? answerText, string? linkUrl, CancellationToken ct = default, string? answerHtml = null)
     {
+        if (!string.IsNullOrWhiteSpace(answerHtml))
+        {
+            answerHtml = RichText.Sanitize(answerHtml);
+            answerText = RichText.ToPlainText(answerHtml);
+            if (answerHtml.Length > RichText.MaxHtmlLength)
+            {
+                return ServiceResult.Fail("Your answer is too long. Remove some of it or some of the formatting.");
+            }
+        }
+        else
+        {
+            answerHtml = null;
+        }
+
         answerText = string.IsNullOrWhiteSpace(answerText) ? null : answerText.Trim();
+        if (answerText is null)
+        {
+            answerHtml = null;
+        }
+
         linkUrl = string.IsNullOrWhiteSpace(linkUrl) ? null : linkUrl.Trim();
 
         var errors = new List<string>();
@@ -188,6 +211,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         submission ??= db.Submissions.Add(new Submission { ItemId = itemId, StudentId = studentId }).Entity;
         submission.Status = SubmissionStatus.Submitted;
         submission.AnswerText = answerText;
+        submission.AnswerHtml = answerHtml;
         submission.LinkUrl = linkUrl;
         submission.SubmittedAtUtc = now;
         submission.IsLate = context.Item.DueAtUtc is { } due && now > due;
@@ -252,7 +276,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         return new SubmissionDetail(
             studentId, student, context.Item.Kind, context.Item.Title, context.Item.MaxScore, s?.Status ?? "NotStarted",
-            s?.AnswerText, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
+            s?.AnswerText, s?.AnswerHtml, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
             s?.ViolationCount ?? 0, s?.ViolationLog, s?.AutoSubmitReason, s?.IsFlagged ?? false, answers);
     }
 

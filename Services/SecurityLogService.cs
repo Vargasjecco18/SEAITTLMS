@@ -38,7 +38,7 @@ public sealed class SecurityLogService(IDbContextFactory<AppDbContext> dbFactory
     [
         ("signins", "Sign-ins", [SecurityEvents.SignInSucceeded, SecurityEvents.SignedOut]),
         ("failed", "Failed", [SecurityEvents.SignInFailed, SecurityEvents.AccountLocked, SecurityEvents.SignInRefused]),
-        ("accounts", "Accounts", [SecurityEvents.AccountCreated, SecurityEvents.AccountChanged, SecurityEvents.PasswordReset, SecurityEvents.AccountActivated, SecurityEvents.AccountDeactivated, SecurityEvents.AccountDeleted]),
+        ("accounts", "Accounts", [SecurityEvents.AccountCreated, SecurityEvents.AccountChanged, SecurityEvents.PasswordReset, SecurityEvents.AccountActivated, SecurityEvents.AccountDeactivated, SecurityEvents.AccountDeleted, SecurityEvents.StudentsArchived]),
         ("system", "System", [SecurityEvents.BackupCreated, SecurityEvents.BackupDeleted, SecurityEvents.BackupRestored, SecurityEvents.BackupRestoreFailed, SecurityEvents.SettingsChanged, SecurityEvents.LogsCleared]),
     ];
 

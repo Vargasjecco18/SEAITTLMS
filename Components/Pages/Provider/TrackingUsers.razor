@@ -7,6 +7,42 @@
         </Field>
         <Button Type="submit" IconName="search">Search</Button>
     </form>
+    <div class="filter-bar choices">
+        <Field For="user-grade" Label="Grade level">
+            <select id="user-grade" class="input" @bind="gradeLevel" @bind:after="ApplyAsync">
+                <option value="0">All grade levels</option>
+                @foreach (var g in options?.GradeLevels ?? [])
+                {
+                    <option value="@g">Grade @g</option>
+                }
+            </select>
+        </Field>
+        <Field For="user-section" Label="Section">
+            <select id="user-section" class="input" @bind="section" @bind:after="ApplyAsync">
+                <option value="">All sections</option>
+                @foreach (var x in options?.Sections ?? [])
+                {
+                    <option value="@x">@x</option>
+                }
+            </select>
+        </Field>
+        @if (Tab == "teachers")
+        {
+            <Field For="user-course" Label="Course">
+                <select id="user-course" class="input" @bind="subjectId" @bind:after="ApplyAsync">
+                    <option value="0">All courses</option>
+                    @foreach (var c in options?.Courses ?? [])
+                    {
+                        <option value="@c.SubjectId">@c.Name</option>
+                    }
+                </select>
+            </Field>
+        }
+        @if (gradeLevel != 0 || !string.IsNullOrEmpty(section) || subjectId != 0)
+        {
+            <Button Variant="ButtonVariant.Ghost" OnClick="ClearChoicesAsync">Clear</Button>
+        }
+    </div>
 
     @if (Tab == "teachers")
     {
@@ -137,6 +173,10 @@
     private string search = "";
     private string loadedTab = "";
     private int pageNumber = 1;
+    private int gradeLevel;
+    private string section = "";
+    private int subjectId;
+    private TrackingOptions? options;
     private IReadOnlyList<TeacherTrack>? teachers;
     private StudentTrackPage? students;
 
@@ -152,6 +192,8 @@
         {
             loadedTab = Tab;
             search = "";
+            gradeLevel = subjectId = 0;
+            section = "";
             pageNumber = 1;
             teachers = null;
             students = null;
@@ -162,13 +204,14 @@
     /// <summary>Looks at the list again (the Refresh button of the page).</summary>
     public async Task ReloadAsync()
     {
+        options ??= await Provider.GetTrackingOptionsAsync();
         if (Tab == "teachers")
         {
-            teachers = await Provider.ListTeachersAsync(search);
+            teachers = await Provider.ListTeachersAsync(search, gradeLevel: gradeLevel, section: section, subjectId: subjectId);
         }
         else
         {
-            students = await Provider.ListStudentsAsync(search, pageNumber);
+            students = await Provider.ListStudentsAsync(search, pageNumber, gradeLevel: gradeLevel, section: section);
             pageNumber = students.Page;
         }
 
@@ -179,6 +222,13 @@
     {
         pageNumber = 1;
         await ReloadAsync();
+    }
+
+    private async Task ClearChoicesAsync()
+    {
+        gradeLevel = subjectId = 0;
+        section = "";
+        await ApplyAsync();
     }
 
     private async Task PreviousAsync()

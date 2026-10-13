@@ -140,7 +140,7 @@ else
                     {
                         @if (!string.IsNullOrWhiteSpace(item.AnswerText))
                         {
-                            <div class="text submitted">@item.AnswerText</div>
+                            <div class="submitted"><RichView Html="@item.AnswerHtml" Text="@item.AnswerText" /></div>
                         }
 
                         @if (!string.IsNullOrWhiteSpace(item.LinkUrl))
@@ -153,9 +153,10 @@ else
                     else
                     {
                         <FormErrors Errors="formErrors" />
-                        <Field For="w-text" Label="Your answer">
-                            <InputTextArea id="w-text" @bind-Value="answerText" rows="8" />
-                        </Field>
+                        <div class="answer">
+                            <span class="answer-label">Your answer</span>
+                            <RichTextEditor @ref="editor" Id="w-text" Html="@answerHtml" />
+                        </div>
                         <Field For="w-link" Label="Link to your work" Hint="Optional. A shared file or video, starting with https://">
                             <InputText id="w-link" @bind-Value="linkUrl" maxlength="500" autocomplete="off" />
                         </Field>
@@ -227,7 +228,8 @@ else
     private StudentItemView? item;
     private IReadOnlyList<AnswerReview>? review;
     private IReadOnlyList<AttachmentRow> files = [];
-    private string? answerText;
+    private RichTextEditor? editor;
+    private string? answerHtml;
     private string? linkUrl;
     private string? message;
     private bool messageIsError;
@@ -253,7 +255,8 @@ else
         {
             await Work.RecordViewAsync(studentId, ItemId);
             files = await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId));
-            answerText = item.AnswerText;
+            // Work handed in before the editor existed was plain text: it opens as paragraphs.
+            answerHtml = string.IsNullOrWhiteSpace(item.AnswerHtml) ? RichText.FromPlainText(item.AnswerText) : item.AnswerHtml;
             linkUrl = item.LinkUrl;
             review = item.IsQuiz && item.Status != SubmissionStatus.InProgress && item.Status != "NotStarted" ? await Quiz.GetMyReviewAsync(studentId, ItemId) : null;
         }
@@ -271,7 +274,8 @@ else
         busy = true;
         try
         {
-            var result = await Work.SubmitAsync(studentId, ItemId, answerText, linkUrl);
+            var written = editor is null ? "" : await editor.GetHtmlAsync();
+            var result = await Work.SubmitAsync(studentId, ItemId, null, linkUrl, answerHtml: written);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

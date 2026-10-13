@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEAITT_LMS.Components.Shared;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
 
@@ -11,10 +12,11 @@ public sealed record ArchivedStudent(int StudentId, string Name, string Lrn, str
 public sealed record StudentSummary(int StudentId, string Name, string Lrn, string Status, string? Placement);
 
 /// <summary>
-/// How a student's schooling ends. An administrator archives the students who graduate: the records stay, the enrollments are
-/// closed (Completed), the sign-in is switched off and open referrals are closed. An archived student can be restored.
+/// How a student's schooling ends. The students who graduate are archived: the records stay, the enrollments are closed (Completed), the
+/// sign-in is switched off and open referrals are closed. It happens by itself when the last term of a school year ends
+/// (<see cref="ArchiveFinishedAsync"/>), and an administrator can also archive students earlier. An archived student can be restored.
 /// </summary>
-public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)
+public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, SecurityLogService? securityLog = null)
 {
     // ======================================================================= the administrator: graduation
 
@@ -27,6 +29,46 @@ public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFa
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName)
             .Select(s => new { s.Id, s.FirstName, s.LastName, s.Lrn, s.SectionId }).ToListAsync(ct);
         return rows.Select(s => new GraduateCandidate(s.Id, $"{s.LastName}, {s.FirstName}", s.Lrn, s.SectionId is { } sec ? sections.GetValueOrDefault(sec) : null)).ToList();
+    }
+
+    /// <summary>
+    /// The automatic archive: when the last term of a school year has ended (its end date is before today, Philippine date), the grade 12 students
+    /// who were enrolled in it graduate. Nobody has to tick them. It is safe to run any number of times: a student is archived once.
+    /// </summary>
+    /// <returns>How many students were archived by this run.</returns>
+    public async Task<int> ArchiveFinishedAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var today = PhilippineTime.Today(clock);
+
+        // The last term of each school year (the one that ends last), when it is over.
+        var terms = await db.Terms.AsNoTracking().Select(t => new { t.Id, t.SchoolYearId, t.Name, t.EndDate }).ToListAsync(ct);
+        var finished = terms.GroupBy(t => t.SchoolYearId).Select(g => g.OrderByDescending(t => t.EndDate).First()).Where(t => t.EndDate < today).ToList();
+        var archived = 0;
+        foreach (var term in finished)
+        {
+            var termId = term.Id;
+            var students = await db.Students.Include(s => s.User)
+                .Where(s => s.Status == StudentStatus.Active && s.GradeLevel == 12
+                            && db.Enrollments.Any(e => e.StudentId == s.Id && e.TermId == termId && e.Status != EnrollmentStatus.Dropped))
+                .ToListAsync(ct);
+            foreach (var student in students)
+            {
+                await ApplyAsync(db, student, $"Graduated: {term.Name} ended (automatic)", clock, ct);
+            }
+
+            if (students.Count > 0)
+            {
+                await db.SaveChangesAsync(ct);
+                archived += students.Count;
+                if (securityLog is not null)
+                {
+                    await securityLog.AddAsync(SecurityEvents.StudentsArchived, details: $"{students.Count} grade 12 {(students.Count == 1 ? "student was" : "students were")} archived as graduated by themselves: {term.Name} ended.", actorName: "The system", ct: ct);
+                }
+            }
+        }
+
+        return archived;
     }
 
     public async Task<ServiceResult> ArchiveAsync(IReadOnlyCollection<int> studentIds, string? note, int actingUserId, CancellationToken ct = default)

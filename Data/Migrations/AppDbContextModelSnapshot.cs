@@ -2618,6 +2618,10 @@ namespace SEAITT_LMS.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AnswerHtml")
+                        .HasColumnType("mediumtext")
+                        .HasColumnName("answer_html");
+
                     b.Property<string>("AnswerText")
                         .HasColumnType("text")
                         .HasColumnName("answer_text");

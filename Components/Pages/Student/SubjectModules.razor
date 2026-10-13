@@ -57,22 +57,37 @@ else
             {
                 var module = subject.Modules[n];
                 var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus);
-                <section class="module" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                var moduleId = module.Id;
+                var isOpen = openModules.Contains(moduleId);
+                <section class="module @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                    @* A click on the title opens the module: then its activities, quizzes and task performances show. *@
                     <header class="module-head">
-                        <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
-                        <div class="module-text">
-                            <h2>@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</h2>
-                            @if (!string.IsNullOrWhiteSpace(module.Description))
-                            {
-                                <p>@module.Description</p>
-                            }
-                        </div>
+                        <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{moduleId}")" @onclick="() => ToggleModule(moduleId)">
+                            <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
+                            <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
+                            <span class="module-text">
+                                <span class="module-name">@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</span>
+                                @if (!string.IsNullOrWhiteSpace(module.Description))
+                                {
+                                    <span class="module-desc">@module.Description</span>
+                                }
+                            </span>
+                        </button>
                         <ButtonLink Href="@($"student/modules/{module.Id}")" Variant="@(module.Opened ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="book-open">@(module.IsSyllabus ? (module.Opened ? "Read again" : "Read syllabus") : module.Opened ? "Read again" : "Read lesson")</ButtonLink>
                     </header>
 
-                    @if (!module.IsSyllabus || module.Items.Count > 0)
+                    @if (isOpen)
                     {
-                        <ModuleTabs Module="module" Now="now" />
+                        <div class="module-body" id="@($"module-{moduleId}")">
+                            @if (!module.IsSyllabus || module.Items.Count > 0)
+                            {
+                                <ModuleTabs Module="module" Now="now" />
+                            }
+                            else
+                            {
+                                <p class="muted">Open the syllabus to read it.</p>
+                            }
+                        </div>
                     }
                 </section>
             }
@@ -85,6 +100,16 @@ else
     [Parameter] public int AssignmentId { get; set; }
 
     private bool loaded;
+    private readonly HashSet<int> openModules = [];
+
+    private void ToggleModule(int id)
+    {
+        if (!openModules.Remove(id))
+        {
+            openModules.Add(id);
+        }
+    }
+
     private StudentSubject? subject;
     private SubjectGrade? gradeOf;
     private SubjectAttendance? attendanceOf;

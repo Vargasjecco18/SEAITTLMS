@@ -79,6 +79,7 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
     {
         b.Property(s => s.Status).HasMaxLength(20).IsRequired();
         b.Property(s => s.AnswerText).HasColumnType("text");
+        b.Property(s => s.AnswerHtml).HasColumnType("mediumtext");
         b.Property(s => s.LinkUrl).HasMaxLength(500);
         b.Property(s => s.AnswersJson).HasColumnType("text");
         b.Property(s => s.Score).HasPrecision(6, 2);

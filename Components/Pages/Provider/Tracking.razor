@@ -38,6 +38,48 @@ else
         </Field>
         <Button Type="submit" IconName="search">Search</Button>
     </form>
+    <div class="filter-bar choices">
+        <Field For="track-teacher" Label="Teacher">
+            <select id="track-teacher" class="input" @bind="teacherId" @bind:after="ApplyAsync">
+                <option value="0">All teachers</option>
+                @foreach (var t in options?.Teachers ?? [])
+                {
+                    <option value="@t.UserId">@t.Name</option>
+                }
+            </select>
+        </Field>
+        <Field For="track-grade" Label="Grade level">
+            <select id="track-grade" class="input" @bind="gradeLevel" @bind:after="ApplyAsync">
+                <option value="0">All grade levels</option>
+                @foreach (var g in options?.GradeLevels ?? [])
+                {
+                    <option value="@g">Grade @g</option>
+                }
+            </select>
+        </Field>
+        <Field For="track-section" Label="Section">
+            <select id="track-section" class="input" @bind="section" @bind:after="ApplyAsync">
+                <option value="">All sections</option>
+                @foreach (var x in options?.Sections ?? [])
+                {
+                    <option value="@x">@x</option>
+                }
+            </select>
+        </Field>
+        <Field For="track-course" Label="Course">
+            <select id="track-course" class="input" @bind="subjectId" @bind:after="ApplyAsync">
+                <option value="0">All courses</option>
+                @foreach (var c in options?.Courses ?? [])
+                {
+                    <option value="@c.SubjectId">@c.Name</option>
+                }
+            </select>
+        </Field>
+        @if (HasChoice)
+        {
+            <Button Variant="ButtonVariant.Ghost" OnClick="ClearChoicesAsync">Clear</Button>
+        }
+    </div>
 
     @if (data is null)
     {
@@ -46,7 +88,7 @@ else
     else if (data.Rows.Count == 0)
     {
         <EmptyState IconName="eye" Title="Nothing here">
-            <p>@(data.Total == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrEmpty(state) && string.IsNullOrEmpty(kind) ? "Nothing was sent to the teachers yet. Open the Course library, choose a course and press “Send to teachers”." : "Nothing matches. Change the state or the words you searched.")</p>
+            <p>@(data.Total == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrEmpty(state) && string.IsNullOrEmpty(kind) && !HasChoice ? "Nothing was sent to the teachers yet. Open the Course library, choose a course and press “Send to teachers”." : "Nothing matches. Change the state or the words you searched.")</p>
         </EmptyState>
     }
     else
@@ -134,6 +176,11 @@ else
     private string state = "";
     private string search = "";
     private string kind = "";
+    private int teacherId;
+    private int gradeLevel;
+    private string section = "";
+    private int subjectId;
+    private TrackingOptions? options;
     private int pageNumber = 1;
     private DateTime nowUtc;
 
@@ -212,7 +259,8 @@ else
     private async Task ReloadAsync()
     {
         nowUtc = Clock.GetUtcNow().UtcDateTime;
-        data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber));
+        options ??= await Provider.GetTrackingOptionsAsync();
+        data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber, TeacherUserId: teacherId, GradeLevel: gradeLevel, Section: section, SubjectId: subjectId));
         pageNumber = data.Page;
     }
 
@@ -227,6 +275,15 @@ else
     {
         pageNumber = 1;
         await ReloadAsync();
+    }
+
+    private bool HasChoice => teacherId != 0 || gradeLevel != 0 || !string.IsNullOrEmpty(section) || subjectId != 0;
+
+    private async Task ClearChoicesAsync()
+    {
+        teacherId = gradeLevel = subjectId = 0;
+        section = "";
+        await ApplyAsync();
     }
 
     private async Task PreviousAsync()

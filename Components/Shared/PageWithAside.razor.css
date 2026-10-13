@@ -21,7 +21,14 @@
     }
 }
 
-.split.stacked .split-aside {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+/* Under the page (the week of the calendar): the widgets are in two columns side by side, one column on a narrow screen. */
+.split.stacked .split-aside ::deep .widgets {
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+}
+
+@media (min-width: 760px) {
+    .split.stacked .split-aside ::deep .widgets {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }

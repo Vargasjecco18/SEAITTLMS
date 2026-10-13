@@ -21,7 +21,8 @@ public sealed record NewAccount(
     string? Lrn = null,
     string? EmployeeNumber = null,
     DateOnly? BirthDate = null,
-    Sex? Sex = null);
+    Sex? Sex = null,
+    bool IsActive = true);
 
 public sealed record AccountResult(bool Succeeded, int? UserId, IReadOnlyList<string> Errors)
 {
@@ -142,7 +143,7 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             PasswordHash = hasher.Hash(request.Password),
             PhoneNumber = phone,
             RoleId = roleId,
-            IsActive = true,
+            IsActive = request.IsActive,
             SecurityStamp = Guid.NewGuid().ToString("N"),
         };
         db.Users.Add(user);
@@ -155,6 +156,11 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             profile.MiddleName = middleName;
             profile.LastName = lastName!;
             profile.NameExtension = nameExtension;
+            if (profile is StaffContactProfile staff && !request.IsActive)
+            {
+                staff.Status = StaffStatus.Inactive;
+            }
+
             return profile;
         }
 
