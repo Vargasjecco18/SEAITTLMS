@@ -132,7 +132,7 @@ administrator.
 
 Any other users you had are gone. Add the staff again in **Users Management**, and the students by enrolling them.
 
-**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, **1 academic coordinator, 1 academic provider**, 8 teachers and 40 students), open
+**Sample accounts:** to get sign-ins to try the app (1 administrator, 1 registrar, 1 guidance counselor, **1 academic coordinator, 1 academic provider**, 10 teachers and 20 students), open
 [database/seaittlms_sample_accounts.sql](database/seaittlms_sample_accounts.sql) in Workbench and click the lightning bolt.
 It only adds what is missing (and gives the sample accounts of an earlier version the new email and password), so running it twice is harmless. The sign-ins are **easy on purpose**,
 to try the system: the email is the last name (or the role) + `@legazpi.seaitt.edu.ph`, and the password is the role with a number:
@@ -144,15 +144,15 @@ to try the system: the email is the last name (or the role) + `@legazpi.seaitt.e
 | Guidance counselor | `guidance@legazpi.seaitt.edu.ph` | `Guidance1` |
 | Academic coordinator | `coordinator1@...` | `Coordinator1` |
 | Academic provider | `provider1@...` | `Provider1` |
-| Teachers | `vargas@...`, `villanueva@...`, `bautista@...`, ... | `Teacher1` (Vargas), `Teacher2`, `Teacher3`, ... `Teacher8` |
-| Students | `delacruz@...`, `abad@...`, `alcantara@...`, ... | `Student1` (Dela Cruz), `Student2`, ... `Student40` |
+| Teachers | `vargas@...`, `villanueva@...`, `bautista@...`, ... | `Teacher1` (Vargas), `Teacher2`, `Teacher3`, ... `Teacher10` |
+| Students | `delacruz@...`, `abad@...`, `alcantara@...`, ... | `Student1` (Dela Cruz), `Student2`, ... `Student20` |
 
 The school has **one** administrator, registrar, guidance counselor, academic coordinator and academic provider, so the file never adds a second one and **never changes the password of the administrator you already have** (the last lines of the file, written as a
 comment, can give that administrator `Admin123` too). The file holds only the hashes of the passwords, not the passwords. Give real people a harder password in **Users Management > Edit**.
 
 **Sample data:** the accounts have no courses or enrollments yet (the students are listed under *Not enrolled*). To fill the tables with practice data, run
-[database/seaittlms_sample_data.sql](database/seaittlms_sample_data.sql) **once**, after the accounts file (open it in Workbench, press the lightning bolt, wait a minute). It enrolls the 40 students in
-**four groups of 10** (Grade 11 and Grade 12, each in the ACAD track, strand BUSSENT, and in the TECH-PRO track, strand HT1; section A, AM schedule), gives the 8 teachers their courses (30 courses), and adds, with dates around the day you run it: the library of the academic provider and what it sent to every teacher (some opened, some
+[database/seaittlms_sample_data.sql](database/seaittlms_sample_data.sql) **once**, after the accounts file (open it in Workbench, press the lightning bolt, wait a minute). It enrolls the 20 students in
+**four groups of 5** (Grade 11 and Grade 12, each in the ACAD track, strand BUSSENT, and in the TECH-PRO track, strand HT1; section A, AM schedule), gives the 10 teachers their courses (30 courses), and adds, with dates around the day you run it: the library of the academic provider and what it sent to every teacher (some opened, some
 still waiting, some posted), modules, activities and quizzes with questions, who opened what, the work handed in and graded, attendance, announcements, messages, notifications, friends,
 the automatic groups and three groups the students made, files in the lockers, the security log, the settings, a syllabus (PDF) and a notes file attached to each course of the library and to the teachers' copies, announcements of every category
 (an exam, a holiday, the semester break, a teachers' meeting, others, and two from a teacher to a class) and one teacher evaluation with every kind of question and its answers. It adds nothing if any of these students is enrolled already (so a second run does nothing).
