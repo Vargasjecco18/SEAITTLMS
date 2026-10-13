@@ -75,6 +75,7 @@ builder.Services.AddScoped<MaterialService>();
 builder.Services.AddScoped<ProviderService>();
 builder.Services.AddScoped<EvaluationService>();
 builder.Services.AddScoped<SchoolSetupService>();
+builder.Services.AddScoped<CourseScheduleService>();
 builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<GradebookService>();
 builder.Services.AddScoped<GradeService>();

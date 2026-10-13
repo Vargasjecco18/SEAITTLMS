@@ -277,6 +277,12 @@ public static class HelpContent
             "Open Academic setup and use the tabs: School years, Terms, Tracks, Strands, Courses and Sections.",
             "The current term is the one students are enrolled in. Make the term first, then the sections.",
         ], "coordinator/academic-setup", "Open Academic setup"),
+        new("How do I set the days and the time of a course (MWF or TTH)?",
+        [
+            "Open Academic setup, then the Class schedule tab. The first card has the hours of AM, MID and PM; the class times of a section must be inside the hours of its schedule.",
+            "In the second card choose a section. For each of its courses choose the days, MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday), and when the class starts and ends, then press Save.",
+            "A section can't have two classes at the same time in the same term, and a teacher can't have two classes at the same time. Students and teachers see the days and the time on their courses.",
+        ], "coordinator/academic-setup/class-schedule", "Open the class schedule"),
         new("Who sends the syllabus, modules and activities to the teachers?",
         [
             "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",

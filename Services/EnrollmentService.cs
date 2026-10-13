@@ -75,7 +75,8 @@ public sealed record EnrollmentReceipt(
     bool NewAccount,
     string Email,
     string? Password,
-    string? PhoneNumber = null);
+    string? PhoneNumber = null,
+    IReadOnlyList<string?>? SubjectMeets = null);
 
 public sealed record EnrollmentResult(EnrollmentReceipt? Receipt, IReadOnlyList<string> Errors)
 {
@@ -421,12 +422,16 @@ public sealed partial class EnrollmentService(
             await transaction.CommitAsync(ct);
 
             var fullName = string.Join(' ', new[] { firstName, NullIfBlank(middleName), lastName }.Where(p => !string.IsNullOrWhiteSpace(p)));
+
+            // When each course meets (set by the academic coordinator), in the order of the courses.
+            var meetings = await db.CourseSchedules.AsNoTracking().Where(c => c.SectionId == section.Id).ToListAsync(ct);
+            var meets = subjects.Select(s => meetings.FirstOrDefault(m => m.SubjectId == s.Id) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null).ToList();
             return new EnrollmentResult(
                 new EnrollmentReceipt(
                     enrollment.Id, student.Id, fullName, lrn, term.SchoolYear.Name, term.Name, request.GradeLevel,
                     strand.Track.Name, strand.Code, schedule!.Code, $"{request.GradeLevel}-{strand.Code}-{section.Name}",
                     subjects.Select(s => s.Name).ToList(),
-                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber),
+                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, meets),
                 []);
         }
         catch (DbUpdateException ex) when (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry } duplicate)

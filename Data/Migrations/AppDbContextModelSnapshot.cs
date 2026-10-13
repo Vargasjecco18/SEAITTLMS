@@ -575,6 +575,63 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("calendar_entries", (string)null);
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CourseSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Days")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)")
+                        .HasColumnName("days");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("end_time");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("int")
+                        .HasColumnName("section_id");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("start_time");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("int")
+                        .HasColumnName("subject_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_course_schedules");
+
+                    b.HasIndex("SubjectId")
+                        .HasDatabaseName("ix_course_schedules_subject_id");
+
+                    b.HasIndex("SectionId", "SubjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_course_schedules_section_id_subject_id");
+
+                    b.ToTable("course_schedules", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_course_schedules_days", "days IN ('MWF', 'TTH')");
+
+                            t.HasCheckConstraint("ck_course_schedules_hours", "end_time > start_time");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
                 {
                     b.Property<int>("Id")
@@ -1986,11 +2043,19 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("end_time");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)")
                         .HasColumnName("name");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("start_time");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -2007,7 +2072,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_schedules_name");
 
-                    b.ToTable("schedules", (string)null);
+                    b.ToTable("schedules", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_schedules_hours", "end_time > start_time");
+                        });
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.SchoolYear", b =>
@@ -3413,6 +3481,27 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_calendar_entries_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CourseSchedule", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Section", "Section")
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_course_schedules_sections_section_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_course_schedules_subjects_subject_id");
+
+                    b.Navigation("Section");
+
+                    b.Navigation("Subject");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

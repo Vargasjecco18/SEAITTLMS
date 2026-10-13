@@ -44,6 +44,8 @@ erDiagram
     tracks ||--o{ strands : "track_id"
     strands ||--o{ sections : ""
     schedules |o--o{ sections : "meets"
+    sections ||--o{ course_schedules : "class times"
+    subjects ||--o{ course_schedules : ""
     strands ||--o{ strand_schedules : "runs in"
     schedules ||--o{ strand_schedules : ""
     strands ||--o{ strand_subjects : "curriculum"
@@ -186,7 +188,8 @@ WHERE st.id > 0;
 | `terms` | Terms inside a school year (`term_number` 1, 2, ...). SEAITT uses terms, not semesters. `is_current` marks the running term. |
 | `tracks` | The senior high school tracks SEAITT offers: **ACAD** (Academic) and **TECH-PRO** (Technical-Professional) (`code`, `name`, `is_active`). |
 | `strands` | BUSSENT, EDUC, ENG, MED, USP (ACAD) and CD1, HT1, HT2 (TECH-PRO) (`code`, `name`). Each strand belongs to one track (`track_id`). |
-| `schedules` | When classes meet: **AM** (morning), **MID** (midday), **PM** (afternoon). |
+| `schedules` | When classes meet: **AM** (morning), **MID** (midday), **PM** (afternoon), **with their hours**: `start_time` and `end_time` (a check keeps `end_time > start_time`). They start as AM 07:00-12:00, MID 10:00-15:00 and PM 13:00-18:00 (the academic coordinator changes them). |
+| `course_schedules` | **When a course meets for a section**: `section_id`, `subject_id`, `days` (`MWF` or `TTH`, checked), `start_time`, `end_time` (checked: `end_time > start_time`). `unique (section_id, subject_id)`: one time for a course of a section. It belongs to the section and the course, not to the teacher, so it can be set before a teacher has the course. Deleted with the section; a course can't be deleted while it has one (the setup service clears them first). `CourseScheduleService` keeps the rest: the time is inside the hours of the section's schedule, a class lasts 30 minutes to 4 hours, two courses of a section (same term) never overlap, and a teacher is never in two classes at once. The migration `AddCourseSchedules` adds the table and the two hour columns. |
 | `strand_schedules` | Which schedules each strand runs in (BUSSENT: AM and PM, HT2: PM only, ...). |
 | `subjects` | The subject catalog (`code`, `name`). |
 | `strand_subjects` | **The curriculum**: the subjects a strand takes in a grade level and term (`strand_id`, `grade_level`, `term_number`, `subject_id`). The same every school year. |
@@ -273,7 +276,7 @@ or item they can see (the module is posted and they take the course). Files open
 | `calendar_entries` | An **event a person wrote on their own calendar** (the *Add event* button): `user_id` (the owner, deleted with the account), `title` (at most 120 characters), `day` (a date), `start_time` (a time of day in Philippine time, empty for an all-day event), `notes` (at most 500), `created_at_utc`, `updated_at_utc`. An event is private: `CalendarService` reads and changes only the rows of the signed-in person, and keeps at most 1,000 for a person. Index `(user_id, day)` for the month and week views. |
 | `achievement_awards` | **Which achievements a student earned and whether the congratulation box was shown**: `student_id` (deleted with the student), `achievement_key` (`first-step`, `perfect-score`, ... at most 40 characters, not named `key` because that is a MySQL reserved word), `earned_at_utc`, `seen_at_utc` (empty until the student closes the box in the middle of the screen). `unique (student_id, achievement_key)`: an award is written once and shown once. The achievements themselves (their text, progress and whether they are earned **now**) are not in the database: `AchievementService` works them out from the scores, the handed-in work and the opened modules every time, and only writes a row here the first time one is earned. |
 
-The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That makes **55 tables**.
+The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**.
 
 ### Messages and notifications
 
@@ -296,7 +299,7 @@ running it on a database that already has some of it changes nothing that exists
 | `school_years` | 2026-2027 (2026-06-08 to 2027-03-31) |
 | `terms` | 1st Term (2026-06-08 to 2026-10-30), 2nd Term (2026-11-02 to 2027-03-31). The 1st Term is marked current, unless another term already was. |
 | `tracks` | ACAD (Academic), TECH-PRO (Technical-Professional) |
-| `schedules` | AM (Morning), MID (Midday), PM (Afternoon) |
+| `schedules` | AM (Morning, 7:00 AM - 12:00 PM), MID (Midday, 10:00 AM - 3:00 PM), PM (Afternoon, 1:00 PM - 6:00 PM) |
 
 | Strand (`code`) | Full name (`name`) | Track | Schedules | 1st term subjects (grade 11) |
 |---|---|---|---|---|

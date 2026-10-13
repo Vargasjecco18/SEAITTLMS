@@ -92,11 +92,18 @@
         else
         {
             <table class="courses">
-                <thead><tr><th class="no">No.</th><th>Course</th></tr></thead>
+                <thead><tr><th class="no">No.</th><th>Course</th>@if (HasMeets) { <th class="meets">Days and time</th> }</tr></thead>
                 <tbody>
                     @for (var n = 0; n < Receipt.Subjects.Count; n++)
                     {
-                        <tr><td class="no">@(n + 1)</td><td>@Receipt.Subjects[n]</td></tr>
+                        <tr>
+                            <td class="no">@(n + 1)</td>
+                            <td>@Receipt.Subjects[n]</td>
+                            @if (HasMeets)
+                            {
+                                <td class="meets">@(Receipt.SubjectMeets is { } meets && n < meets.Count && meets[n] is { } when ? when : "—")</td>
+                            }
+                        </tr>
                     }
                 </tbody>
             </table>
@@ -222,6 +229,9 @@
     [Parameter, EditorRequired] public EnrollmentReceipt Receipt { get; set; } = null!;
 
     private SystemSettingsValues school => Settings.Current;
+
+    /// <summary>The courses have class times (set by the academic coordinator): the table gets a column for them.</summary>
+    private bool HasMeets => Receipt.SubjectMeets?.Any(m => m is not null) == true;
 
     private string ContactLine => string.Join(" · ", new[] { school.Address, school.ContactEmail, school.ContactPhone }.Where(x => !string.IsNullOrWhiteSpace(x)));
 }

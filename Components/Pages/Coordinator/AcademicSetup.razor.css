@@ -366,3 +366,50 @@
 .setup ::deep .table-in-card {
     margin: 0 -1.25rem;
 }
+
+/* ---------- the class schedule: the hours of the day and the days and time of each course ---------- */
+.setup ::deep .day-parts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.setup ::deep .day-part {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 0.8rem;
+    padding: 0.8rem 0.9rem 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.setup ::deep .day-part-name {
+    grid-column: 1 / -1;
+    margin-bottom: 0.5rem;
+}
+
+.setup ::deep .day-parts-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.setup ::deep .window {
+    margin: 0 0 0.25rem;
+    align-self: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.setup ::deep .schedule-table select,
+.setup ::deep .schedule-table input[type="time"] {
+    width: 100%;
+    min-width: 6.5rem;
+}
+
+@media (max-width: 900px) {
+    .setup ::deep .day-parts {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
     public DbSet<Strand> Strands => Set<Strand>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Schedule> Schedules => Set<Schedule>();
+    public DbSet<CourseSchedule> CourseSchedules => Set<CourseSchedule>();
     public DbSet<StrandSchedule> StrandSchedules => Set<StrandSchedule>();
     public DbSet<StrandSubject> StrandSubjects => Set<StrandSubject>();
     public DbSet<Section> Sections => Set<Section>();

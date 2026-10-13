@@ -48,7 +48,7 @@ public sealed record SetupLookups(
     IReadOnlyList<int> TermNumbers);
 
 /// <summary>How many rows each tab of the school setup has (the numbers on the tabs).</summary>
-public sealed record SetupCounts(int SchoolYears, int Terms, int Tracks, int Strands, int Subjects, int Sections, int Enrollments, int NotEnrolled);
+public sealed record SetupCounts(int SchoolYears, int Terms, int Tracks, int Strands, int Subjects, int Sections, int Enrollments, int NotEnrolled, int CourseTimes = 0);
 
 // ---- what the forms send. An Id of null means "add".
 public sealed class SchoolYearInput
@@ -130,7 +130,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         var (_, notEnrolled) = await NotEnrolledList.CountAsync(db, ct);
         return new SetupCounts(
             await db.SchoolYears.CountAsync(ct), await db.Terms.CountAsync(ct), await db.Tracks.CountAsync(ct), await db.Strands.CountAsync(ct),
-            await db.Subjects.CountAsync(ct), await db.Sections.CountAsync(ct), await db.Enrollments.CountAsync(ct), notEnrolled);
+            await db.Subjects.CountAsync(ct), await db.Sections.CountAsync(ct), await db.Enrollments.CountAsync(ct), notEnrolled, await db.CourseSchedules.CountAsync(ct));
     }
 
     public async Task<SetupLookups> GetLookupsAsync(CancellationToken ct = default)
@@ -828,6 +828,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             return ServiceResult.Fail($"{subject.Name} is in use by students or teachers, so it can't be deleted. Switch it off instead.");
         }
 
+        await db.CourseSchedules.Where(c => c.SubjectId == id).ExecuteDeleteAsync(ct);
         await db.Subjects.Where(s => s.Id == id).ExecuteDeleteAsync(ct);
         return ServiceResult.Ok($"The course {subject.Name} was deleted.");
     }
@@ -923,6 +924,12 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                           || await db.Students.AnyAsync(s => s.SectionId == id, ct) || await db.Teachers.AnyAsync(t => t.SectionId == id, ct)))
             {
                 return ServiceResult.Fail("Students or teachers are in this section, so only its name and its adviser can change.");
+            }
+
+            // The class times belong to the courses of the old strand, grade level and schedule: a section that moves starts without them.
+            if (moved)
+            {
+                await db.CourseSchedules.Where(c => c.SectionId == id).ExecuteDeleteAsync(ct);
             }
 
             // The school year, strand and grade level are part of keys that enrollments use, so the row is updated directly.

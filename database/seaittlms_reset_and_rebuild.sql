@@ -1627,5 +1627,46 @@ CREATE INDEX `ix_calendar_entries_user_id_day` ON `calendar_entries` (`user_id`,
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261013065349_AddCalendarEntriesAndAwards', '9.0.20');
 
+ALTER TABLE `schedules` ADD `end_time` time(6) NOT NULL DEFAULT '00:00:00';
+
+ALTER TABLE `schedules` ADD `start_time` time(6) NOT NULL DEFAULT '00:00:00';
+
+CREATE TABLE `course_schedules` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `section_id` int NOT NULL,
+    `subject_id` int NOT NULL,
+    `days` varchar(3) CHARACTER SET utf8mb4 NOT NULL,
+    `start_time` time(6) NOT NULL,
+    `end_time` time(6) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_course_schedules` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_course_schedules_days` CHECK (days IN ('MWF', 'TTH')),
+    CONSTRAINT `ck_course_schedules_hours` CHECK (end_time > start_time),
+    CONSTRAINT `fk_course_schedules_sections_section_id` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_course_schedules_subjects_subject_id` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+UPDATE `schedules` SET `start_time` = '07:00:00', `end_time` = '12:00:00' WHERE `code` = 'AM' AND `id` > 0;
+
+UPDATE `schedules` SET `start_time` = '10:00:00', `end_time` = '15:00:00' WHERE `code` = 'MID' AND `id` > 0;
+
+UPDATE `schedules` SET `start_time` = '13:00:00', `end_time` = '18:00:00' WHERE `code` = 'PM' AND `id` > 0;
+
+UPDATE `schedules` SET `start_time` = '07:00:00', `end_time` = '17:00:00' WHERE `start_time` = `end_time` AND `id` > 0;
+
+ALTER TABLE `schedules` MODIFY COLUMN `end_time` time(6) NOT NULL;
+
+ALTER TABLE `schedules` MODIFY COLUMN `start_time` time(6) NOT NULL;
+
+ALTER TABLE `schedules` ADD CONSTRAINT `ck_schedules_hours` CHECK (end_time > start_time);
+
+CREATE UNIQUE INDEX `ix_course_schedules_section_id_subject_id` ON `course_schedules` (`section_id`, `subject_id`);
+
+CREATE INDEX `ix_course_schedules_subject_id` ON `course_schedules` (`subject_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261013081617_AddCourseSchedules', '9.0.20');
+
 COMMIT;
 

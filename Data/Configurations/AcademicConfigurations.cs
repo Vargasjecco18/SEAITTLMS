@@ -101,6 +101,29 @@ internal sealed class ScheduleConfiguration : IEntityTypeConfiguration<Schedule>
         b.HasIndex(s => s.Code).IsUnique();
         b.Property(s => s.Name).HasMaxLength(50).IsRequired();
         b.HasIndex(s => s.Name).IsUnique();
+        b.ToTable(t => t.HasCheckConstraint("ck_schedules_hours", "end_time > start_time"));
+    }
+}
+
+internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<CourseSchedule>
+{
+    public void Configure(EntityTypeBuilder<CourseSchedule> b)
+    {
+        b.ToTable("course_schedules");
+        b.Property(c => c.Days).HasMaxLength(3).IsRequired();
+
+        // Gone with the section; a course that has class times can't be deleted until they are cleared.
+        b.HasOne(c => c.Section).WithMany().HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(c => c.Subject).WithMany().HasForeignKey(c => c.SubjectId).OnDelete(DeleteBehavior.Restrict);
+
+        // A course of a section meets at one time.
+        b.HasIndex(c => new { c.SectionId, c.SubjectId }).IsUnique();
+
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint("ck_course_schedules_days", "days IN ('MWF', 'TTH')");
+            t.HasCheckConstraint("ck_course_schedules_hours", "end_time > start_time");
+        });
     }
 }
 

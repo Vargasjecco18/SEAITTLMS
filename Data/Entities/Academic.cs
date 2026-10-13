@@ -62,11 +62,63 @@ public class Subject : AuditableEntity
     public bool IsActive { get; set; } = true;
 }
 
-/// <summary>The part of the day a class meets: AM (morning), MID (midday) or PM (afternoon).</summary>
+/// <summary>The part of the day a class meets: AM (morning), MID (midday) or PM (afternoon), with the hours of that part of the day.</summary>
 public class Schedule : AuditableEntity
 {
     public string Code { get; set; } = "";
     public string Name { get; set; } = "";
+
+    /// <summary>When the part of the day starts (Philippine time). The class times of the courses of a section of this schedule must be inside it.</summary>
+    public TimeOnly StartTime { get; set; }
+
+    /// <summary>When the part of the day ends.</summary>
+    public TimeOnly EndTime { get; set; }
+}
+
+/// <summary>The days a course meets: MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday).</summary>
+public static class MeetingDays
+{
+    public const string Mwf = "MWF";
+    public const string Tth = "TTH";
+
+    public static readonly IReadOnlyList<string> All = [Mwf, Tth];
+
+    public static bool IsValid(string? days) => days is Mwf or Tth;
+
+    /// <summary>"Monday, Wednesday, Friday" for MWF.</summary>
+    public static string LongName(string days) => days switch
+    {
+        Mwf => "Monday, Wednesday, Friday",
+        Tth => "Tuesday, Thursday",
+        _ => days,
+    };
+
+    /// <summary>The days of the week (Monday = 1 ... Friday = 5) of a pattern, for the calendar.</summary>
+    public static IReadOnlyList<DayOfWeek> Days(string days) => days switch
+    {
+        Mwf => [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday],
+        Tth => [DayOfWeek.Tuesday, DayOfWeek.Thursday],
+        _ => [],
+    };
+}
+
+/// <summary>
+/// When a course meets for a section: the days (MWF or TTH) and the time, inside the hours of the section's schedule (AM, MID or PM).
+/// It belongs to the section and the course, not to the teacher, so the academic coordinator can set it before a teacher is given the course.
+/// </summary>
+public class CourseSchedule : AuditableEntity
+{
+    public int SectionId { get; set; }
+    public Section Section { get; set; } = null!;
+
+    public int SubjectId { get; set; }
+    public Subject Subject { get; set; } = null!;
+
+    /// <summary>One of <see cref="MeetingDays"/>.</summary>
+    public string Days { get; set; } = MeetingDays.Mwf;
+
+    public TimeOnly StartTime { get; set; }
+    public TimeOnly EndTime { get; set; }
 }
 
 /// <summary>A schedule a strand runs in. BUSSENT has AM and PM classes, HT2 only PM, HT1 all three.</summary>

@@ -78,7 +78,7 @@ else
                             <tr>
                                 <td>
                                     <span class="name">@card.SubjectName</span>
-                                    <span class="sub">@card.TermName@(card.Schedule is null ? "" : " · " + card.Schedule)</span>
+                                    <span class="sub">@card.TermName@(card.Schedule is null ? "" : " · " + card.Schedule)@(card.Meets is null ? "" : " · " + card.Meets)</span>
                                 </td>
                                 <td class="col-more">
                                     @(card.TeacherName ?? "—")
@@ -160,7 +160,7 @@ else
             @foreach (var card in shown)
             {
                 <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel"
-                             Subtitle="@(card.TeacherName ?? "No teacher yet")"
+                             Subtitle="@((card.TeacherName ?? "No teacher yet") + (card.Meets is null ? "" : " · " + card.Meets))"
                              Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet"
                              Progress="card.ProgressPercent" ProgressText="@card.ProgressText" />
             }

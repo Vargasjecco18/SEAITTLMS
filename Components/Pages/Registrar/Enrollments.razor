@@ -58,9 +58,9 @@ else if (receipt is not null)
                     else
                     {
                         <ul class="subject-chips">
-                            @foreach (var subject in receipt.Subjects)
+                            @for (var i = 0; i < receipt.Subjects.Count; i++)
                             {
-                                <li>@subject</li>
+                                <li>@receipt.Subjects[i]@if (receipt.SubjectMeets is { } meets && i < meets.Count && meets[i] is { } when) { <small> · @when</small> }</li>
                             }
                         </ul>
                     }

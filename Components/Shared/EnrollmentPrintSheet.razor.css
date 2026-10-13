@@ -235,6 +235,15 @@
         text-align: center;
     }
 
+    table.courses .meets {
+        width: 62mm;
+        white-space: nowrap;
+    }
+
+    table.courses td.meets {
+        font-size: 9.5pt;
+    }
+
     .none {
         margin: 0;
     }
