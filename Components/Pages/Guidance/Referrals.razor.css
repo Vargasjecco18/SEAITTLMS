@@ -123,3 +123,42 @@ th.col-level {
     white-space: normal;
     line-height: 1.25;
 }
+
+/* A student's problems are short badges; "View all" opens the list of subjects, teachers and grades. */
+.reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.view-all {
+    display: inline-block;
+    margin-top: 0.3rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--brand);
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.view-all:hover {
+    text-decoration: underline;
+}
+
+.view-all:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.filter-count {
+    margin: 0 0 0.6rem;
+    color: var(--text-muted);
+    font-size: 0.86rem;
+}
+
+.all-sub {
+    margin: 0 0 0.75rem;
+}

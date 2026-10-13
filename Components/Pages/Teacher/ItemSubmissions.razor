@@ -4,6 +4,7 @@
 @inject CurrentUser Me
 @inject WorkService Work
 @inject ModuleService Modules
+@inject AttachmentService Files
 
 <PageTitle>@(data?.Title ?? "Work") · SEAITT e-LMS</PageTitle>
 
@@ -167,7 +168,7 @@ else
         }
         else
         {
-            @if (string.IsNullOrWhiteSpace(detail.AnswerText) && string.IsNullOrWhiteSpace(detail.LinkUrl))
+            @if (string.IsNullOrWhiteSpace(detail.AnswerText) && string.IsNullOrWhiteSpace(detail.LinkUrl) && detailFiles.Count == 0)
             {
                 <p class="muted">Nothing was handed in. You can still give a score (for example for something done in class).</p>
             }
@@ -181,6 +182,12 @@ else
                 @if (!string.IsNullOrWhiteSpace(detail.LinkUrl))
                 {
                     <p><Icon Name="link" Size="16" /> <a href="@detail.LinkUrl" target="_blank" rel="noopener noreferrer">@detail.LinkUrl</a></p>
+                }
+
+                @if (detailFiles.Count > 0)
+                {
+                    <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files the student sent</h3>
+                    <AttachmentList Items="detailFiles" Label="Files the student sent" />
                 }
             }
         }
@@ -208,6 +215,7 @@ else
     private bool loaded;
     private ItemSubmissionList? data;
     private SubmissionDetail? detail;
+    private IReadOnlyList<AttachmentRow> detailFiles = [];
     private decimal? scoreInput;
     private string? feedbackInput;
     private string? message;
@@ -251,6 +259,7 @@ else
     {
         formErrors = [];
         detail = await Work.GetSubmissionAsync(teacherId, ItemId, row.StudentId);
+        detailFiles = detail?.SubmissionId is { } submissionId ? await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Submission, submissionId)) : [];
         scoreInput = detail?.Score;
         feedbackInput = detail?.Feedback;
     }

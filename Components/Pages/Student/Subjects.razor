@@ -78,7 +78,7 @@ else
                             <tr>
                                 <td>
                                     <span class="name">@card.SubjectName</span>
-                                    <span class="sub">@card.TermName@(card.Schedule is null ? "" : " · " + card.Schedule)@(card.Meets is null ? "" : " · " + card.Meets)</span>
+                                    <span class="sub">@card.TermName@(card.Meets is null ? "" : " · " + card.Meets)</span>
                                 </td>
                                 <td class="col-more">
                                     @(card.TeacherName ?? "—")

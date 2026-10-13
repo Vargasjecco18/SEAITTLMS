@@ -7,7 +7,7 @@ namespace SEAITT_LMS.Services;
 
 /// <summary>One subject a teacher teaches to one section, with the numbers shown on its card.</summary>
 public sealed record TeacherSubjectCard(
-    int AssignmentId, int SubjectId, string SubjectName, int SectionId, string SectionLabel, string? Schedule,
+    int AssignmentId, int SubjectId, string SubjectName, int SectionId, string SectionLabel,
     int Students, int ModulesPosted, int ModulesTotal, int ToGrade, string? Meets = null);
 
 /// <summary>
@@ -20,7 +20,7 @@ public sealed record TeacherSubjectCard(
 public sealed record StudentSubjectCard(
     int SubjectId, string SubjectName, string TermName, bool IsCurrentTerm, int? AssignmentId, string? TeacherName, string SectionLabel,
     int ModulesVisible, int ModulesUnopened, int ItemsOpen, int ItemsDone, decimal? AveragePercent,
-    bool IsCompleted = false, string? Schedule = null, decimal? AttendancePercent = null, DateTime? NextDueUtc = null, string? Meets = null)
+    bool IsCompleted = false, decimal? AttendancePercent = null, DateTime? NextDueUtc = null, string? Meets = null)
 {
     /// <summary>The parts of the course the student has gone through (modules opened, work handed in) and all the parts that are posted.</summary>
     public int ProgressDone => (ModulesVisible - ModulesUnopened) + ItemsDone;
@@ -34,7 +34,7 @@ public sealed record StudentSubjectCard(
 }
 
 /// <summary>A teacher's subject as the administrator sees it.</summary>
-public sealed record AssignmentRow(int Id, int SubjectId, string SubjectName, int SectionId, string SectionLabel, string? Schedule, int Students, int Modules);
+public sealed record AssignmentRow(int Id, int SubjectId, string SubjectName, int SectionId, string SectionLabel, int Students, int Modules);
 
 /// <summary>A section the administrator can give to a teacher, with the subjects its strand has at its grade level.</summary>
 public sealed record SectionChoice(int SectionId, string Label, IReadOnlyList<SubjectChoice> Subjects, int StrandId = 0);
@@ -63,7 +63,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             .Select(a => new
             {
                 a.Id, a.SubjectId, SubjectName = a.Subject.Name, a.SectionId, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code,
-                SectionName = a.Section.Name, Schedule = a.Section.Schedule != null ? a.Section.Schedule.Code : null,
+                SectionName = a.Section.Name,
                 Modules = a.Modules.Count,
             })
             .ToListAsync(ct);
@@ -72,7 +72,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         foreach (var r in rows)
         {
             var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
-            result.Add(new AssignmentRow(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), r.Schedule, students, r.Modules));
+            result.Add(new AssignmentRow(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Modules));
         }
 
         return result;
@@ -85,7 +85,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
 
         var sections = await db.Sections.AsNoTracking()
             .OrderByDescending(s => s.SchoolYear.StartDate).ThenBy(s => s.GradeLevel).ThenBy(s => s.Strand.Code).ThenBy(s => s.Name)
-            .Select(s => new { s.Id, s.StrandId, s.GradeLevel, StrandCode = s.Strand.Code, s.Name, Schedule = s.Schedule != null ? s.Schedule.Code : null, Year = s.SchoolYear.Name })
+            .Select(s => new { s.Id, s.StrandId, s.GradeLevel, StrandCode = s.Strand.Code, s.Name, Year = s.SchoolYear.Name })
             .ToListAsync(ct);
 
         var curriculum = await db.StrandSubjects.AsNoTracking()
@@ -94,7 +94,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
 
         return sections.Select(s => new SectionChoice(
             s.Id,
-            $"{SectionLabel(s.GradeLevel, s.StrandCode, s.Name)}{(s.Schedule is null ? "" : " · " + s.Schedule)} · {s.Year}",
+            $"{SectionLabel(s.GradeLevel, s.StrandCode, s.Name)} · {s.Year}",
             curriculum.Where(c => c.StrandId == s.StrandId && c.GradeLevel == s.GradeLevel)
                 .Select(c => new SubjectChoice(c.SubjectId, c.Name)).DistinctBy(c => c.SubjectId).OrderBy(c => c.Name).ToList(),
             s.StrandId))
@@ -208,7 +208,6 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             .Select(a => new
             {
                 a.Id, a.SubjectId, SubjectName = a.Subject.Name, a.SectionId, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, SectionName = a.Section.Name,
-                Schedule = a.Section.Schedule != null ? a.Section.Schedule.Code : null,
                 Total = a.Modules.Count, Posted = a.Modules.Count(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= now),
                 ToGrade = db.Submissions.Count(s => s.Item.Module.AssignmentId == a.Id && s.Status == SubmissionStatus.Submitted),
             })
@@ -222,7 +221,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         {
             var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
             var meets = meetings.FirstOrDefault(m => m.SectionId == r.SectionId && m.SubjectId == r.SubjectId);
-            cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), r.Schedule, students, r.Posted, r.Total, r.ToGrade,
+            cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
                 meets is null ? null : new MeetingInfo(meets.Days, meets.StartTime, meets.EndTime).Describe()));
         }
 
@@ -244,7 +243,6 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                 x.SubjectId, SubjectName = x.Subject.Name, x.Enrollment.SectionId, x.Enrollment.GradeLevel, StrandCode = x.Enrollment.Strand.Code,
                 SectionName = x.Enrollment.Section.Name, TermName = x.Enrollment.Term.Name, x.Enrollment.Term.IsCurrent, x.Enrollment.Term.StartDate,
                 x.Enrollment.Term.EndDate, EnrollmentStatus = x.Enrollment.Status,
-                Schedule = x.Enrollment.Section.Schedule != null ? x.Enrollment.Section.Schedule.Code : null,
             })
             .ToListAsync(ct);
 
@@ -300,7 +298,6 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                     mods.Count, mods.Count(m => !opened.Contains(m.Id)), its.Count - done, done,
                     graded.Count == 0 ? null : Math.Round(graded.Average(), 1),
                     IsCompleted: e.EnrollmentStatus == EnrollmentStatus.Completed || (!e.IsCurrent && e.EndDate < today),
-                    Schedule: e.Schedule,
                     AttendancePercent: marked.Count == 0 ? null : Math.Round(came * 100m / marked.Count, 1),
                     NextDueUtc: nextDue,
                     Meets: meetings.FirstOrDefault(m => m.SectionId == e.SectionId && m.SubjectId == e.SubjectId) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null);

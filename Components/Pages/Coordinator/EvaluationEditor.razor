@@ -312,7 +312,7 @@ else
                                         <input type="checkbox" checked="@sendTargets.Contains(id)" @onchange="e => TogglePick(id, e)" />
                                         <span>
                                             <strong>@c.SubjectName</strong>
-                                            <small>@c.SectionLabel@(c.Schedule is null ? "" : " · " + c.Schedule) · @c.Students @(c.Students == 1 ? "student" : "students")</small>
+                                            <small>@c.SectionLabel · @c.Students @(c.Students == 1 ? "student" : "students")</small>
                                         </span>
                                     </label>
                                 </li>

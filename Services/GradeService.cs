@@ -39,7 +39,7 @@ public sealed record GradedWork(int ItemId, string Title, string Kind, decimal S
 
 public sealed record SubjectGrade(
     int AssignmentId, string SubjectName, string TeacherName, string SectionLabel, decimal? Percent,
-    int GradedCount, int TotalItems, int OpenItems, int Missing, IReadOnlyList<GradedWork> Graded);
+    int GradedCount, int TotalItems, int OpenItems, int Missing, IReadOnlyList<GradedWork> Graded, decimal? FinalGrade = null);
 
 public sealed record StudentGradeSummary(IReadOnlyList<SubjectGrade> Subjects, decimal? Overall, int FailingSubjects, int GradedCount)
 {
@@ -77,6 +77,9 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
             })
             .ToListAsync(ct);
 
+        // The final grade the teacher gave in each subject, when there is one.
+        var finals = await db.FinalGrades.AsNoTracking().Where(g => g.StudentId == studentId && ids.Contains(g.AssignmentId)).ToDictionaryAsync(g => g.AssignmentId, g => g.Grade, ct);
+
         var subjects = new List<SubjectGrade>();
         foreach (var a in assignments)
         {
@@ -91,7 +94,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
             var open = mine.Count(i => i.Mine is null or { Status: SubmissionStatus.InProgress });
             var missing = mine.Count(i => (i.Mine is null or { Status: SubmissionStatus.InProgress }) && i.DueAtUtc is { } due && due < now);
 
-            subjects.Add(new SubjectGrade(a.Id, a.SubjectName, a.Teacher, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), percent, graded.Count, mine.Count, open, missing, graded));
+            subjects.Add(new SubjectGrade(a.Id, a.SubjectName, a.Teacher, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), percent, graded.Count, mine.Count, open, missing, graded, finals.TryGetValue(a.Id, out var final) ? final : null));
         }
 
         var withGrade = subjects.Where(s => s.Percent is not null).ToList();

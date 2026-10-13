@@ -87,15 +87,6 @@
             }
             <p class="more"><a href="coordinator/announcements">All the announcements <Icon Name="arrow-right" Size="14" /></a></p>
         </Card>
-
-        <Card Title="Academic setup" IconName="school">
-            <ul class="list">
-                <li><a href="coordinator/academic-setup/school-years"><span class="list-title">School years and terms</span><span class="list-sub">@counts.SchoolYears school @(counts.SchoolYears == 1 ? "year" : "years") · @counts.Terms @(counts.Terms == 1 ? "term" : "terms")</span></a></li>
-                <li><a href="coordinator/academic-setup/strands"><span class="list-title">Tracks and strands</span><span class="list-sub">@counts.Tracks @(counts.Tracks == 1 ? "track" : "tracks") · @counts.Strands @(counts.Strands == 1 ? "strand" : "strands")</span></a></li>
-                <li><a href="coordinator/academic-setup/subjects"><span class="list-title">Courses</span><span class="list-sub">@counts.Subjects courses</span></a></li>
-                <li><a href="coordinator/academic-setup/sections"><span class="list-title">Sections</span><span class="list-sub">@counts.Sections sections · @counts.Enrollments enrolled</span></a></li>
-            </ul>
-        </Card>
     </div>
 }
 

@@ -32,7 +32,6 @@ public class AppDbContext : DbContext
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Schedule> Schedules => Set<Schedule>();
     public DbSet<CourseSchedule> CourseSchedules => Set<CourseSchedule>();
-    public DbSet<StrandSchedule> StrandSchedules => Set<StrandSchedule>();
     public DbSet<StrandSubject> StrandSubjects => Set<StrandSubject>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
@@ -44,6 +43,7 @@ public class AppDbContext : DbContext
     public DbSet<ModuleItem> ModuleItems => Set<ModuleItem>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<FinalGrade> FinalGrades => Set<FinalGrade>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
     public DbSet<ItemView> ItemViews => Set<ItemView>();
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();

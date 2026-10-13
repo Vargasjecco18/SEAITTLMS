@@ -9,14 +9,15 @@ public sealed record GradebookColumn(int ItemId, string Title, string Kind, deci
 /// <param name="Status">NotStarted, InProgress, Submitted (waiting for a score) or Graded.</param>
 public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bool IsLate, bool IsFlagged);
 
-public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck);
+public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null);
 
 public sealed record SubjectGradebook(
     int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing);
 
 /// <summary>
 /// The teacher's gradebook of one subject: a row per student, a column per activity, quiz and task performance of the modules that
-/// are posted, and the average (points earned divided by points possible of the graded work). Scores are changed here too.
+/// are posted, and the average (points earned divided by points possible of the graded work). Scores are changed here too, and
+/// the teacher writes the final grade of each student next to the average.
 /// </summary>
 public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, WorkService work)
 {
@@ -45,6 +46,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct);
         var subs = await db.Submissions.AsNoTracking().Where(s => itemIds.Contains(s.ItemId)).Select(s => new { s.ItemId, s.StudentId, s.Status, s.Score, s.IsLate, s.IsFlagged }).ToListAsync(ct);
         var bySlot = subs.ToDictionary(s => (s.StudentId, s.ItemId));
+        var finals = await db.FinalGrades.AsNoTracking().Where(g => g.AssignmentId == assignmentId).ToDictionaryAsync(g => g.StudentId, g => g.Grade, ct);
 
         var rows = new List<GradebookRow>();
         foreach (var st in students)
@@ -74,12 +76,76 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
                 }
             }
 
-            rows.Add(new GradebookRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, cells, possible <= 0 ? null : Math.Round(earned / possible * 100, 1), toCheck));
+            rows.Add(new GradebookRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, cells, possible <= 0 ? null : Math.Round(earned / possible * 100, 1), toCheck, finals.TryGetValue(st.StudentId, out var final) ? final : null));
         }
 
         var graded = rows.Where(r => r.Percent is not null).ToList();
         return new SubjectGradebook(a.Id, a.Subject, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), columns, rows,
             graded.Count == 0 ? null : Math.Round(graded.Average(r => r.Percent!.Value), 1), graded.Count(r => r.Percent < GradeRules.PassingPercent));
+    }
+
+    /// <summary>
+    /// Saves the final grades of the students of the subject (a number from 0 to 100, two decimals at most). A blank (null) removes the final grade of that
+    /// student. Everything is checked first: a wrong box saves nothing at all.
+    /// </summary>
+    public async Task<ServiceResult> SetFinalGradesAsync(int teacherId, int assignmentId, IReadOnlyDictionary<int, decimal?> grades, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var a = await db.TeachingAssignments.AsNoTracking().Where(x => x.Id == assignmentId && x.TeacherId == teacherId)
+            .Select(x => new { x.Id, x.SectionId, x.SubjectId }).FirstOrDefaultAsync(ct);
+        if (a is null)
+        {
+            return ServiceResult.Fail("This is not your course.");
+        }
+
+        var roster = await Roster.Enrollments(db, a.SectionId, a.SubjectId).Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName }).Distinct().ToListAsync(ct);
+        var names = roster.ToDictionary(r => r.StudentId, r => $"{r.LastName}, {r.FirstName}");
+
+        var errors = new List<string>();
+        foreach (var (studentId, grade) in grades)
+        {
+            if (!names.TryGetValue(studentId, out var name))
+            {
+                errors.Add("One of the students is not in the course.");
+            }
+            else if (grade is { } g && (g < 0 || g > 100 || Math.Round(g, 2) != g))
+            {
+                errors.Add($"{name}: the final grade must be a number from 0 to 100, with two decimals at most.");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return ServiceResult.Fail(errors.Distinct().ToList());
+        }
+
+        var existing = await db.FinalGrades.Where(g => g.AssignmentId == assignmentId).ToDictionaryAsync(g => g.StudentId, ct);
+        var changed = 0;
+        foreach (var (studentId, grade) in grades)
+        {
+            existing.TryGetValue(studentId, out var row);
+            if (grade is null)
+            {
+                if (row is not null)
+                {
+                    db.FinalGrades.Remove(row);
+                    changed++;
+                }
+            }
+            else if (row is null)
+            {
+                db.FinalGrades.Add(new FinalGrade { AssignmentId = assignmentId, StudentId = studentId, Grade = grade.Value });
+                changed++;
+            }
+            else if (row.Grade != grade.Value)
+            {
+                row.Grade = grade.Value;
+                changed++;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok(changed == 0 ? "The final grades did not change." : changed == 1 ? "Saved the final grade of 1 student." : $"Saved the final grades of {changed} students.");
     }
 
     /// <summary>

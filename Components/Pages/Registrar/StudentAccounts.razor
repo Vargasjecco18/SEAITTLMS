@@ -39,15 +39,6 @@
                         }
                     </select>
                 </Field>
-                <Field For="schedule" Label="Schedule">
-                    <select id="schedule" name="schedule">
-                        <option value="">All</option>
-                        @foreach (var schedule in lookups.Schedules)
-                        {
-                            <option value="@schedule.Id" selected="@(Schedule == schedule.Id)">@schedule.Code</option>
-                        }
-                    </select>
-                </Field>
                 <Field For="next" Label="Next term">
                     <select id="next" name="next">
                         <option value="">All</option>
@@ -125,7 +116,6 @@
 
     [SupplyParameterFromQuery(Name = "strand")] private string? StrandText { get; set; }
 
-    [SupplyParameterFromQuery(Name = "schedule")] private string? ScheduleText { get; set; }
 
     [SupplyParameterFromQuery(Name = "next")] private string? NextText { get; set; }
 
@@ -135,21 +125,20 @@
 
     private int? Strand => ParseNumber(StrandText);
 
-    private int? Schedule => ParseNumber(ScheduleText);
 
     private static int? ParseNumber(string? text) => int.TryParse(text, out var number) && number > 0 ? number : null;
 
     private EnrollmentLookups? lookups;
     private EnrollmentPage? result;
 
-    private bool HasFilter => !string.IsNullOrWhiteSpace(Q) || Term is not null || Strand is not null || Schedule is not null || NextText is "enrolled" or "none";
+    private bool HasFilter => !string.IsNullOrWhiteSpace(Q) || Term is not null || Strand is not null || NextText is "enrolled" or "none";
 
     protected override async Task OnInitializedAsync()
     {
         lookups = await Enrollment.GetLookupsAsync();
 
         await using var db = await DbFactory.CreateDbContextAsync();
-        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, Schedule, NextText), ParseNumber(PageText) ?? 1, PageSize, withFinalGrade: true);
+        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, NextText), ParseNumber(PageText) ?? 1, PageSize, withFinalGrade: true);
     }
 
     /// <summary>This page's address with another page number (the search and filters stay).</summary>

@@ -234,3 +234,11 @@
     gap: 0.6rem;
     margin-top: 0.5rem;
 }
+
+.files-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 1rem 0 0.4rem;
+    font-size: 0.95rem;
+}

@@ -431,7 +431,7 @@
                     <li>
                         <div class="assigned-text">
                             <strong>@a.SubjectName</strong>
-                            <span>@a.SectionLabel@(a.Schedule is null ? "" : " · " + a.Schedule) · @a.Students @(a.Students == 1 ? "student" : "students") · @a.Modules @(a.Modules == 1 ? "module" : "modules")</span>
+                            <span>@a.SectionLabel · @a.Students @(a.Students == 1 ? "student" : "students") · @a.Modules @(a.Modules == 1 ? "module" : "modules")</span>
                         </div>
                         @if (removing?.Id == a.Id)
                         {

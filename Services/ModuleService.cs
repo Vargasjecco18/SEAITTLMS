@@ -77,7 +77,7 @@ public sealed record TeacherModule(
     IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false);
 
 public sealed record TeacherSubject(
-    int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string? Schedule, int Students, IReadOnlyList<TeacherModule> Modules);
+    int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, int Students, IReadOnlyList<TeacherModule> Modules);
 
 // ---------------------------------------------------------------------- what the student sees
 
@@ -111,7 +111,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .Select(x => new
             {
                 x.Id, x.SubjectId, SubjectName = x.Subject.Name, x.SectionId, x.Section.GradeLevel, StrandCode = x.Section.Strand.Code,
-                SectionName = x.Section.Name, Schedule = x.Section.Schedule != null ? x.Section.Schedule.Code : null,
+                SectionName = x.Section.Name,
             })
             .FirstOrDefaultAsync(ct);
         if (a is null)
@@ -139,7 +139,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
             m.IsSyllabus, fromProvider.Contains(m.Id))).ToList();
 
-        return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Schedule, students, result);
+        return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students, result);
     }
 
     /// <summary>

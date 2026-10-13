@@ -7,7 +7,6 @@
             <tr>
                 <th scope="col">Student</th>
                 <th scope="col">Section</th>
-                <th scope="col">Schedule</th>
                 <th scope="col">Term</th>
                 @if (ShowSubjects)
                 {
@@ -44,16 +43,6 @@
                     <td>
                         <span class="section">@row.Section</span>
                         <span class="sub">@row.Track</span>
-                    </td>
-                    <td>
-                        @if (row.Schedule is not null)
-                        {
-                            <Badge Tone="Tone.Info">@row.Schedule</Badge>
-                        }
-                        else
-                        {
-                            <span class="sub">None</span>
-                        }
                     </td>
                     <td class="col-term">
                         <span>@row.Term</span>

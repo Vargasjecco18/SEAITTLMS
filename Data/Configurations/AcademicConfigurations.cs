@@ -90,6 +90,8 @@ internal sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
         b.HasIndex(s => s.Code).IsUnique();
         b.Property(s => s.Name).HasMaxLength(150).IsRequired();
         b.Property(s => s.Description).HasMaxLength(500);
+        b.Property(s => s.Units).HasColumnType("decimal(3,1)");
+        b.ToTable(t => t.HasCheckConstraint("ck_subjects_units", "units >= 0.5 AND units <= 12"));
     }
 }
 
@@ -115,6 +117,7 @@ internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<Cou
         // Gone with the section; a course that has class times can't be deleted until they are cleared.
         b.HasOne(c => c.Section).WithMany().HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(c => c.Subject).WithMany().HasForeignKey(c => c.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(c => c.Schedule).WithMany().HasForeignKey(c => c.ScheduleId).OnDelete(DeleteBehavior.Restrict);
 
         // A course of a section meets at one time.
         b.HasIndex(c => new { c.SectionId, c.SubjectId }).IsUnique();
@@ -124,16 +127,6 @@ internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<Cou
             t.HasCheckConstraint("ck_course_schedules_days", "days IN ('MWF', 'TTH')");
             t.HasCheckConstraint("ck_course_schedules_hours", "end_time > start_time");
         });
-    }
-}
-
-internal sealed class StrandScheduleConfiguration : IEntityTypeConfiguration<StrandSchedule>
-{
-    public void Configure(EntityTypeBuilder<StrandSchedule> b)
-    {
-        b.HasKey(x => new { x.StrandId, x.ScheduleId });
-        b.HasOne(x => x.Strand).WithMany().HasForeignKey(x => x.StrandId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne(x => x.Schedule).WithMany().HasForeignKey(x => x.ScheduleId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -161,17 +154,9 @@ internal sealed class SectionConfiguration : IEntityTypeConfiguration<Section>
         b.HasOne(s => s.Strand).WithMany().HasForeignKey(s => s.StrandId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(s => s.Adviser).WithMany().HasForeignKey(s => s.AdviserTeacherId).OnDelete(DeleteBehavior.Restrict);
 
-        b.HasOne(s => s.Schedule).WithMany().HasForeignKey(s => s.ScheduleId).OnDelete(DeleteBehavior.Restrict);
-
-        // The schedule must be one the strand runs in (a section of HT2 can't be AM when HT2 is only PM).
-        b.HasOne<StrandSchedule>()
-            .WithMany()
-            .HasForeignKey(s => new { s.StrandId, s.ScheduleId })
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // Section A in the AM and section A in the PM are different sections.
+        // A section is the school year, the strand, the grade level and the name: 11-BUSSENT-A.
         b.Property(s => s.Name).HasMaxLength(50).IsRequired();
-        b.HasIndex(s => new { s.SchoolYearId, s.StrandId, s.GradeLevel, s.ScheduleId, s.Name }).IsUnique();
+        b.HasIndex(s => new { s.SchoolYearId, s.StrandId, s.GradeLevel, s.Name }).IsUnique();
 
         // Lets enrollments prove they use a section of the same school year as their term.
         b.HasAlternateKey(s => new { s.Id, s.SchoolYearId });
@@ -209,6 +194,7 @@ internal sealed class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollm
         b.Property(e => e.FirstName).HasMaxLength(100).IsRequired();
         b.Property(e => e.MiddleName).HasMaxLength(100);
         b.Property(e => e.LastName).HasMaxLength(100).IsRequired();
+        b.Property(e => e.NameExtension).HasMaxLength(10);
         b.Property(e => e.Subjects).HasMaxLength(1000);
 
         b.HasOne(e => e.Track).WithMany().HasForeignKey(e => e.TrackId).OnDelete(DeleteBehavior.Restrict);

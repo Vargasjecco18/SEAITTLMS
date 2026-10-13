@@ -64,7 +64,7 @@ else
                     {
                         var got = t.Received.Count;
                         <li>
-                            <span class="who"><strong>@t.TeacherName</strong><span>@t.SectionLabel@(t.Schedule is null ? "" : " · " + t.Schedule) · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
+                            <span class="who"><strong>@t.TeacherName</strong><span>@t.SectionLabel · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
                             @if (course.Modules.Count == 0)
                             {
                                 <span class="muted">Nothing to send yet</span>
@@ -382,7 +382,7 @@ else
                             <input type="checkbox" checked="@sendTargets.Contains(id)" @onchange="e => TogglePick(sendTargets, id, e)" />
                             <span>
                                 <strong>@t.TeacherName</strong>
-                                <small>@t.SectionLabel@(t.Schedule is null ? "" : " · " + t.Schedule) · @t.Students @(t.Students == 1 ? "student" : "students")</small>
+                                <small>@t.SectionLabel · @t.Students @(t.Students == 1 ? "student" : "students")</small>
                             </span>
                         </label>
                     </li>

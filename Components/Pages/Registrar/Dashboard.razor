@@ -63,7 +63,7 @@
                         {
                             <li>
                                 <div class="bar-label">
-                                    <span class="bar-name">@row.Label <span class="bar-sub">@(row.Schedule ?? "No schedule")</span></span>
+                                    <span class="bar-name">@row.Label</span>
                                     <strong>@row.Count</strong>
                                 </div>
                                 <div class="bar-track"><div class="bar-fill" style="width: @(Percent(row.Count, maxSection))%"></div></div>
@@ -84,26 +84,7 @@
         </div>
 
         <div class="stack">
-            <Card Title="By schedule" IconName="clock">
-                <ul class="bars">
-                    @foreach (var schedule in overview.BySchedule)
-                    {
-                        <li>
-                            <div class="bar-label">
-                                <span class="bar-name">@schedule.Code <span class="bar-sub">@schedule.Name</span></span>
-                                <strong>@schedule.Count</strong>
-                            </div>
-                            <div class="bar-track"><div class="bar-fill alt" style="width: @(Percent(schedule.Count, maxSchedule))%"></div></div>
-                        </li>
-                    }
-                </ul>
-                @if (overview.EnrolledThisTerm == 0)
-                {
-                    <p class="note">Nobody is enrolled for this term yet.</p>
-                }
-            </Card>
-
-            @* Under "By schedule": the students who still have to be enrolled (for the next term, or this one when there is no next term). *@
+            @* The students who still have to be enrolled (for the next term, or this one when there is no next term). *@
             <Card Title="Not enrolled" IconName="user-x" Class="not-enrolled">
                 @if (overview.NotEnrolled is not { Term: not null } notEnrolled)
                 {
@@ -164,7 +145,6 @@
 @code {
     private RegistrarOverview? overview;
     private int maxStrand;
-    private int maxSchedule;
     private int maxSection;
 
     private int SectionsWithStudents => overview?.BySection?.Count(s => s.Count > 0) ?? 0;
@@ -177,7 +157,6 @@
         await using var db = await DbFactory.CreateDbContextAsync();
         overview = await RegistrarOverview.LoadAsync(db, startOfToday);
         maxStrand = overview.ByStrand.Select(s => s.Count).DefaultIfEmpty(0).Max();
-        maxSchedule = overview.BySchedule.Select(s => s.Count).DefaultIfEmpty(0).Max();
         maxSection = (overview.BySection ?? []).Select(s => s.Count).DefaultIfEmpty(0).Max();
     }
 

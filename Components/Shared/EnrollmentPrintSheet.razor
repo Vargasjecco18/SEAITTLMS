@@ -4,7 +4,7 @@
 @* The paper that is printed after a student is enrolled. It is hidden on screen and is the only thing on the paper (the registrar's page hides the rest when printing).
    It has no frame and no box for a picture: a clean document.
    Page 1: the letterhead (the logo at the upper left, the school next to it, the number and the date of the form at the right), the title, the numbered parts of the form
-   with every answer written out in words (the grade level and the schedule are plain text), the courses, the e-LMS account and the signatures.
+   with every answer written out in words (the grade level is plain text), the courses (the units and the days and time of each one at its right), the e-LMS account and the signatures.
    Page 2: the terms and conditions in detail, and at the bottom of the page the lines for the student's signature over the printed name and for the parent's or guardian's. *@
 <div class="print-sheet" aria-hidden="true">
     <section class="page front">
@@ -50,10 +50,6 @@
                     </span>
                 </dd>
             </div>
-            <div class="d">
-                <dt>Contact number</dt>
-                <dd>@(string.IsNullOrWhiteSpace(Receipt.PhoneNumber) ? "—" : Receipt.PhoneNumber)</dd>
-            </div>
         </dl>
 
         <h3 class="part">Enrollment details</h3>
@@ -61,10 +57,6 @@
             <div class="d">
                 <dt>Grade level</dt>
                 <dd>Grade @Receipt.GradeLevel</dd>
-            </div>
-            <div class="d">
-                <dt>Schedule</dt>
-                <dd>@Receipt.Schedule</dd>
             </div>
             <div class="d">
                 <dt>Track</dt>
@@ -78,10 +70,6 @@
                 <dt>Section</dt>
                 <dd>@Receipt.Section</dd>
             </div>
-            <div class="d">
-                <dt>Term</dt>
-                <dd>@Receipt.Term</dd>
-            </div>
         </dl>
 
         <h3 class="part">Courses enrolled <small>@(Receipt.Subjects.Count == 1 ? "1 course" : $"{Receipt.Subjects.Count} courses")</small></h3>
@@ -92,20 +80,21 @@
         else
         {
             <table class="courses">
-                <thead><tr><th class="no">No.</th><th>Course</th>@if (HasMeets) { <th class="meets">Days and time</th> }</tr></thead>
+                <thead><tr><th>Course</th><th class="units">Units</th><th class="meets">Schedule</th></tr></thead>
                 <tbody>
                     @for (var n = 0; n < Receipt.Subjects.Count; n++)
                     {
                         <tr>
-                            <td class="no">@(n + 1)</td>
                             <td>@Receipt.Subjects[n]</td>
-                            @if (HasMeets)
-                            {
-                                <td class="meets">@(Receipt.SubjectMeets is { } meets && n < meets.Count && meets[n] is { } when ? when : "—")</td>
-                            }
+                            <td class="units">@UnitsOf(n)</td>
+                            <td class="meets">@(Receipt.SubjectMeets is { } meets && n < meets.Count && meets[n] is { } when ? when : "—")</td>
                         </tr>
                     }
                 </tbody>
+                @if (TotalUnits is { } total)
+                {
+                    <tfoot><tr><td>Total units</td><td class="units">@FormatUnits(total)</td><td class="meets"></td></tr></tfoot>
+                }
             </table>
         }
 
@@ -157,12 +146,12 @@
 
         <ol class="terms">
             <li>
-                <strong>Correct information.</strong> The information given for this enrollment (the name, the LRN, the contact number, the grade level, the track, the strand and the section) is true and complete.
+                <strong>Correct information.</strong> The information given for this enrollment (the name, the LRN, the grade level, the track, the strand and the section) is true and complete.
                 A false or missing statement can cancel the enrollment, and the learner must tell the Registrar at once when something changes.
             </li>
             <li>
-                <strong>Enrollment, section and courses.</strong> The enrollment is for the school year and the term written on the front, in the section and the schedule shown there, with the courses of the strand for that grade level and term.
-                A change of section, schedule or courses is made only through the Registrar, never between the students.
+                <strong>Enrollment, section and courses.</strong> The enrollment is for the school year and the term written on the front, in the section shown there, with the courses of the strand for that grade level and term, each with its units and its days and time.
+                A change of section, class time or courses is made only through the Registrar, never between the students.
             </li>
             <li>
                 <strong>Attendance and punctuality.</strong> The student comes to every class and on time. The teachers record who is present, late or absent, and it is part of the student's record.
@@ -187,7 +176,7 @@
                 <strong>Conduct.</strong> The student respects the teachers, the staff and the classmates, in school and online. Bullying, harassment, offensive words and the sharing of harmful files are not allowed, and the school can take the action its rules allow, with the parent or guardian informed.
             </li>
             <li>
-                <strong>Data privacy.</strong> The school collects and keeps the personal information of the student (name, LRN, contact number, grades, attendance, referrals and the work handed in) only for school purposes, protects it as the Data Privacy Act of 2012 (Republic Act 10173) requires,
+                <strong>Data privacy.</strong> The school collects and keeps the personal information of the student (name, LRN, grades, attendance, referrals and the work handed in) only for school purposes, protects it as the Data Privacy Act of 2012 (Republic Act 10173) requires,
                 and shares it only with the people who need it for the education of the student. The student and the parent or guardian can ask the Registrar to see or correct this information.
             </li>
             <li>
@@ -230,8 +219,11 @@
 
     private SystemSettingsValues school => Settings.Current;
 
-    /// <summary>The courses have class times (set by the academic coordinator): the table gets a column for them.</summary>
-    private bool HasMeets => Receipt.SubjectMeets?.Any(m => m is not null) == true;
+    private string UnitsOf(int n) => Receipt.SubjectUnits is { } units && n < units.Count ? FormatUnits(units[n]) : "—";
+
+    private decimal? TotalUnits => Receipt.SubjectUnits is { Count: > 0 } units ? units.Sum() : null;
+
+    private static string FormatUnits(decimal units) => units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
 
     private string ContactLine => string.Join(" · ", new[] { school.Address, school.ContactEmail, school.ContactPhone }.Where(x => !string.IsNullOrWhiteSpace(x)));
 }

@@ -21,30 +21,29 @@ public sealed class EnrollmentOptions
 // What the enrollment form offers to choose from.
 public sealed record TermOption(int Id, string Name, byte TermNumber, string SchoolYear, bool IsCurrent);
 public sealed record TrackOption(int Id, string Code, string Name);
-public sealed record ScheduleOption(int Id, string Code, string Name);
-public sealed record StrandOption(int Id, string Code, string Name, int TrackId, IReadOnlyList<int> ScheduleIds);
+public sealed record StrandOption(int Id, string Code, string Name, int TrackId);
 public sealed record SubjectOption(int Id, string Code, string Name);
 
 public sealed record EnrollmentLookups(
     IReadOnlyList<TermOption> Terms,
     IReadOnlyList<TrackOption> Tracks,
-    IReadOnlyList<StrandOption> Strands,
-    IReadOnlyList<ScheduleOption> Schedules);
+    IReadOnlyList<StrandOption> Strands);
 
 /// <summary>Where a student was placed the last time they were enrolled. The form starts from it when the student is enrolled again.</summary>
-public sealed record StudentPlacement(byte GradeLevel, int TrackId, int StrandId, int? ScheduleId, string SectionName, string SchoolYear);
+public sealed record StudentPlacement(byte GradeLevel, int TrackId, int StrandId, string SectionName, string SchoolYear);
 
 /// <summary>A student who already has an account (enrolled in an earlier term, for example).</summary>
 public sealed record ExistingStudent(
     int StudentId, string FullName, string FirstName, string? MiddleName, string LastName, string Email, IReadOnlyList<int> EnrolledTermIds,
-    string? PhoneNumber = null, StudentPlacement? LastPlacement = null);
+    string? PhoneNumber = null, StudentPlacement? LastPlacement = null, string? NameExtension = null);
 
 /// <summary>
 /// The subjects are not chosen: a student takes all the subjects the strand has at that grade level and term (the curriculum, set
 /// by the administrator).
 /// </summary>
-/// <param name="SectionName">One of A to C (or a section that exists already). It is created when the strand, grade level and schedule don't have it yet.</param>
+/// <param name="SectionName">One of A to C (or a section that exists already). It is created when the strand and grade level don't have it yet in the school year.</param>
 /// <param name="PhoneNumber">The student's mobile number. Optional. A student who already has a number keeps it.</param>
+/// <param name="NameExtension">Jr., Sr., III ... Optional (up to 10 characters). A student who already has one keeps it.</param>
 public sealed record EnrollmentRequest(
     string Lrn,
     string FirstName,
@@ -54,9 +53,9 @@ public sealed record EnrollmentRequest(
     int TermId,
     int TrackId,
     int StrandId,
-    int ScheduleId,
     string SectionName,
-    string? PhoneNumber = null);
+    string? PhoneNumber = null,
+    string? NameExtension = null);
 
 /// <param name="NewAccount">True when this enrollment created the student's account. The password is only filled then.</param>
 public sealed record EnrollmentReceipt(
@@ -69,14 +68,14 @@ public sealed record EnrollmentReceipt(
     byte GradeLevel,
     string Track,
     string Strand,
-    string Schedule,
     string Section,
     IReadOnlyList<string> Subjects,
     bool NewAccount,
     string Email,
     string? Password,
     string? PhoneNumber = null,
-    IReadOnlyList<string?>? SubjectMeets = null);
+    IReadOnlyList<string?>? SubjectMeets = null,
+    IReadOnlyList<decimal>? SubjectUnits = null);
 
 public sealed record EnrollmentResult(EnrollmentReceipt? Receipt, IReadOnlyList<string> Errors)
 {
@@ -117,24 +116,13 @@ public sealed partial class EnrollmentService(
             .Select(t => new TrackOption(t.Id, t.Code, t.Name))
             .ToListAsync(ct);
 
-        var schedules = await db.Schedules.AsNoTracking().OrderBy(s => s.Id)
-            .Select(s => new ScheduleOption(s.Id, s.Code, s.Name))
-            .ToListAsync(ct);
-
         var strandRows = await db.Strands.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.Id)
             .Select(s => new { s.Id, s.Code, s.Name, s.TrackId })
             .ToListAsync(ct);
-        var links = await db.StrandSchedules.AsNoTracking()
-            .Select(x => new { x.StrandId, x.ScheduleId })
-            .ToListAsync(ct);
 
-        var strands = strandRows
-            .Select(s => new StrandOption(
-                s.Id, s.Code, s.Name, s.TrackId,
-                links.Where(l => l.StrandId == s.Id).Select(l => l.ScheduleId).Order().ToList()))
-            .ToList();
+        var strands = strandRows.Select(s => new StrandOption(s.Id, s.Code, s.Name, s.TrackId)).ToList();
 
-        return new EnrollmentLookups(terms, tracks, strands, schedules);
+        return new EnrollmentLookups(terms, tracks, strands);
     }
 
     /// <summary>The subjects a strand takes in a term of a grade level (the curriculum): the subjects every student of that strand gets.</summary>
@@ -155,8 +143,8 @@ public sealed partial class EnrollmentService(
             .ToListAsync(ct);
     }
 
-    /// <summary>The sections that already exist for this strand, grade level and schedule in the term's school year.</summary>
-    public async Task<IReadOnlyList<string>> GetSectionNamesAsync(int termId, int strandId, byte gradeLevel, int scheduleId, CancellationToken ct = default)
+    /// <summary>The sections that already exist for this strand and grade level in the term's school year.</summary>
+    public async Task<IReadOnlyList<string>> GetSectionNamesAsync(int termId, int strandId, byte gradeLevel, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
@@ -167,7 +155,7 @@ public sealed partial class EnrollmentService(
         }
 
         return await db.Sections.AsNoTracking()
-            .Where(s => s.SchoolYearId == schoolYearId && s.StrandId == strandId && s.GradeLevel == gradeLevel && s.ScheduleId == scheduleId)
+            .Where(s => s.SchoolYearId == schoolYearId && s.StrandId == strandId && s.GradeLevel == gradeLevel)
             .OrderBy(s => s.Name)
             .Select(s => s.Name)
             .ToListAsync(ct);
@@ -199,11 +187,11 @@ public sealed partial class EnrollmentService(
         var last = await db.Enrollments.AsNoTracking()
             .Where(e => e.StudentId == student.Id)
             .OrderByDescending(e => e.Term.SchoolYear.StartDate).ThenByDescending(e => e.Term.TermNumber).ThenByDescending(e => e.Id)
-            .Select(e => new { e.GradeLevel, e.TrackId, e.StrandId, ScheduleId = e.Section.ScheduleId, Section = e.Section.Name, SchoolYear = e.Term.SchoolYear.Name })
+            .Select(e => new { e.GradeLevel, e.TrackId, e.StrandId, Section = e.Section.Name, SchoolYear = e.Term.SchoolYear.Name })
             .FirstOrDefaultAsync(ct);
-        var placement = last is null ? null : new StudentPlacement(last.GradeLevel, last.TrackId, last.StrandId, last.ScheduleId, last.Section, last.SchoolYear);
+        var placement = last is null ? null : new StudentPlacement(last.GradeLevel, last.TrackId, last.StrandId, last.Section, last.SchoolYear);
 
-        return new ExistingStudent(student.Id, fullName, student.FirstName, student.MiddleName, student.LastName, student.Email, termIds, student.PhoneNumber, placement);
+        return new ExistingStudent(student.Id, fullName, student.FirstName, student.MiddleName, student.LastName, student.Email, termIds, student.PhoneNumber, placement, student.NameExtension);
     }
 
     public async Task<EnrollmentResult> EnrollAsync(EnrollmentRequest request, int actingUserId, CancellationToken ct = default)
@@ -219,6 +207,7 @@ public sealed partial class EnrollmentService(
         var firstName = Clean(request.FirstName);
         var middleName = Clean(request.MiddleName);
         var lastName = Clean(request.LastName);
+        var nameExtension = Clean(request.NameExtension);
         if (firstName.Length is 0 or > 100)
         {
             errors.Add("Enter the first name (up to 100 characters).");
@@ -232,6 +221,11 @@ public sealed partial class EnrollmentService(
         if (middleName.Length > 100)
         {
             errors.Add("The middle name can have at most 100 characters.");
+        }
+
+        if (nameExtension.Length > 10)
+        {
+            errors.Add("The name extension (Jr., Sr., III ...) can have at most 10 characters.");
         }
 
         if (request.GradeLevel is not (11 or 12))
@@ -274,7 +268,6 @@ public sealed partial class EnrollmentService(
 
         var term = await db.Terms.AsNoTracking().Include(t => t.SchoolYear).FirstOrDefaultAsync(t => t.Id == request.TermId, ct);
         var strand = await db.Strands.AsNoTracking().Include(s => s.Track).FirstOrDefaultAsync(s => s.Id == request.StrandId, ct);
-        var schedule = await db.Schedules.AsNoTracking().FirstOrDefaultAsync(s => s.Id == request.ScheduleId, ct);
 
         if (term is null)
         {
@@ -284,15 +277,6 @@ public sealed partial class EnrollmentService(
         if (strand is null || !strand.IsActive || strand.TrackId != request.TrackId || !strand.Track.IsActive)
         {
             errors.Add("Pick a track and one of its strands.");
-        }
-
-        if (schedule is null)
-        {
-            errors.Add("Pick the schedule.");
-        }
-        else if (strand is not null && !await db.StrandSchedules.AnyAsync(x => x.StrandId == strand.Id && x.ScheduleId == schedule.Id, ct))
-        {
-            errors.Add($"{strand.Code} has no {schedule.Code} classes. Pick one of its schedules.");
         }
 
         if (errors.Count > 0)
@@ -332,6 +316,7 @@ public sealed partial class EnrollmentService(
                 firstName = student.FirstName;
                 middleName = student.MiddleName ?? "";
                 lastName = student.LastName;
+                nameExtension = student.NameExtension ?? "";
 
                 // A number is only filled in when the student has none; a number they have is not overwritten here.
                 if (student.User.PhoneNumber is null && phone is not null)
@@ -362,6 +347,7 @@ public sealed partial class EnrollmentService(
                     FirstName = firstName,
                     MiddleName = NullIfBlank(middleName),
                     LastName = lastName,
+                    NameExtension = NullIfBlank(nameExtension),
                 };
                 db.Students.Add(student);
             }
@@ -369,13 +355,13 @@ public sealed partial class EnrollmentService(
             // ---- the section: it is created the first time somebody is enrolled in it
             var section = await db.Sections.FirstOrDefaultAsync(s =>
                 s.SchoolYearId == term!.SchoolYearId && s.StrandId == strand!.Id && s.GradeLevel == request.GradeLevel
-                && s.ScheduleId == schedule!.Id && s.Name == sectionName, ct);
+                && s.Name == sectionName, ct);
             if (section is null)
             {
                 // The registrar chooses the section (A to C), nobody types a new name. Other names only exist when the coordinator made them.
                 if (!SectionNames.IsChoice(sectionName))
                 {
-                    return EnrollmentResult.Fail($"There is no section {sectionName} for this strand, grade level and schedule. Choose A, B or C.");
+                    return EnrollmentResult.Fail($"There is no section {sectionName} for this strand and grade level. Choose A, B or C.");
                 }
 
                 section = new Section
@@ -383,7 +369,6 @@ public sealed partial class EnrollmentService(
                     SchoolYearId = term!.SchoolYearId,
                     StrandId = strand!.Id,
                     GradeLevel = request.GradeLevel,
-                    ScheduleId = schedule!.Id,
                     Name = sectionName,
                 };
                 db.Sections.Add(section);
@@ -402,6 +387,7 @@ public sealed partial class EnrollmentService(
                 FirstName = firstName,
                 MiddleName = NullIfBlank(middleName),
                 LastName = lastName,
+                NameExtension = NullIfBlank(nameExtension),
                 GradeLevel = request.GradeLevel,
                 TrackId = strand!.TrackId,
                 StrandId = strand.Id,
@@ -421,17 +407,17 @@ public sealed partial class EnrollmentService(
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            var fullName = string.Join(' ', new[] { firstName, NullIfBlank(middleName), lastName }.Where(p => !string.IsNullOrWhiteSpace(p)));
+            var fullName = string.Join(' ', new[] { firstName, NullIfBlank(middleName), lastName, NullIfBlank(nameExtension) }.Where(p => !string.IsNullOrWhiteSpace(p)));
 
             // When each course meets (set by the academic coordinator), in the order of the courses.
-            var meetings = await db.CourseSchedules.AsNoTracking().Where(c => c.SectionId == section.Id).ToListAsync(ct);
-            var meets = subjects.Select(s => meetings.FirstOrDefault(m => m.SubjectId == s.Id) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null).ToList();
+            var meetings = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => c.SectionId == section.Id).ToListAsync(ct);
+            var meets = subjects.Select(s => meetings.FirstOrDefault(m => m.SubjectId == s.Id) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime, m.Schedule.Code).DescribeFull() : null).ToList();
             return new EnrollmentResult(
                 new EnrollmentReceipt(
                     enrollment.Id, student.Id, fullName, lrn, term.SchoolYear.Name, term.Name, request.GradeLevel,
-                    strand.Track.Name, strand.Code, schedule!.Code, $"{request.GradeLevel}-{strand.Code}-{section.Name}",
+                    strand.Track.Name, strand.Code, $"{request.GradeLevel}-{strand.Code}-{section.Name}",
                     subjects.Select(s => s.Name).ToList(),
-                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, meets),
+                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, meets, subjects.Select(x => x.Units).ToList()),
                 []);
         }
         catch (DbUpdateException ex) when (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry } duplicate)

@@ -12,6 +12,29 @@ public sealed record ReferralRow(
 
 public sealed record ReferralPage(IReadOnlyList<ReferralRow> Items, int Total, int Page, int PageCount);
 
+/// <summary>One student with all their referrals (a student can have a problem in several subjects). The list shows one row for each student.</summary>
+public sealed record ReferralStudentRow(
+    int StudentId, string StudentName, string Lrn, byte? GradeLevel, string? Strand, string? Placement, IReadOnlyList<ReferralRow> Referrals)
+{
+    /// <summary>The referral to work on first: an open one, then one in progress, the newest first.</summary>
+    public ReferralRow Primary => Referrals
+        .OrderBy(r => r.Status == ReferralStatus.Open ? 0 : r.Status == ReferralStatus.InProgress ? 1 : 2)
+        .ThenByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id).First();
+
+    /// <summary>Open when any referral is open, else in progress when any is, else resolved.</summary>
+    public string Status => Referrals.Any(r => r.Status == ReferralStatus.Open) ? ReferralStatus.Open
+        : Referrals.Any(r => r.Status == ReferralStatus.InProgress) ? ReferralStatus.InProgress : ReferralStatus.Resolved;
+
+    /// <summary>Since when the student has a problem: the first referral that is not resolved yet (else the first one).</summary>
+    public DateTime SinceUtc => (Referrals.Any(r => r.Status != ReferralStatus.Resolved) ? Referrals.Where(r => r.Status != ReferralStatus.Resolved) : Referrals).Min(r => r.CreatedAtUtc);
+
+    /// <summary>The different problems, most serious first.</summary>
+    public IReadOnlyList<string> Reasons => Referrals.Select(r => r.Reason).Distinct()
+        .OrderBy(x => x == ReferralReasons.FailingGrades ? 0 : x == ReferralReasons.AtRisk ? 1 : 2).ToList();
+}
+
+public sealed record ReferralStudentPage(IReadOnlyList<ReferralStudentRow> Items, int Total, int Referrals, int Page, int PageCount);
+
 /// <summary>A student the system found with a problem now (whether or not a referral exists yet).</summary>
 public sealed record AtRiskRow(
     int StudentId, string StudentName, string Lrn, string? Placement, int AssignmentId, string SubjectName, string TeacherName,
@@ -48,6 +71,8 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     public const int CoolDownDays = 14;
 
     private const int PageSize = 15;
+
+    private const int StudentPageSize = 10;
 
     internal sealed record Finding(int StudentId, int AssignmentId, string SubjectName, string Reason, decimal? Metric, string Detail);
 
@@ -159,9 +184,8 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             newest);
     }
 
-    public async Task<ReferralPage> ListAsync(string? status, string? reason, string? search, int page, int? gradeLevel = null, CancellationToken ct = default)
+    private static async Task<IQueryable<Referral>> FilteredAsync(AppDbContext db, string? status, string? reason, string? search, int? gradeLevel, CancellationToken ct)
     {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
         var query = db.Referrals.AsNoTracking().AsQueryable();
         if (gradeLevel is 11 or 12)
         {
@@ -213,11 +237,46 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             }
         }
 
+        return query;
+    }
+
+    public async Task<ReferralPage> ListAsync(string? status, string? reason, string? search, int page, int? gradeLevel = null, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var query = await FilteredAsync(db, status, reason, search, gradeLevel, ct);
+
         var total = await query.CountAsync(ct);
         var pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
         page = Math.Clamp(page, 1, pageCount);
         var rows = await RowsAsync(db, query.OrderBy(r => r.Status == ReferralStatus.Resolved).ThenByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id).Skip((page - 1) * PageSize).Take(PageSize), ct);
         return new ReferralPage(rows, total, page, pageCount);
+    }
+
+    /// <summary>The referrals grouped by student: one row for each student, with all their referrals inside. A page has <see cref="StudentPageSize"/> students.</summary>
+    public async Task<ReferralStudentPage> ListByStudentAsync(string? status, string? reason, string? search, int page, int? gradeLevel = null, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var query = await FilteredAsync(db, status, reason, search, gradeLevel, ct);
+
+        var total = await query.Select(r => r.StudentId).Distinct().CountAsync(ct);
+        var referralCount = await query.CountAsync(ct);
+        var pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)StudentPageSize));
+        page = Math.Clamp(page, 1, pageCount);
+
+        // The students who still need help first, then the newest.
+        var studentIds = await query.GroupBy(r => r.StudentId)
+            .Select(g => new { StudentId = g.Key, Active = g.Any(r => r.Status != ReferralStatus.Resolved), Newest = g.Max(r => r.CreatedAtUtc) })
+            .OrderByDescending(g => g.Active).ThenByDescending(g => g.Newest).ThenByDescending(g => g.StudentId)
+            .Skip((page - 1) * StudentPageSize).Take(StudentPageSize)
+            .Select(g => g.StudentId).ToListAsync(ct);
+
+        var rows = await RowsAsync(db, query.Where(r => studentIds.Contains(r.StudentId)).OrderBy(r => r.Status == ReferralStatus.Resolved).ThenByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id), ct);
+        var items = studentIds
+            .Select(id => rows.Where(r => r.StudentId == id).ToList())
+            .Where(list => list.Count > 0)
+            .Select(list => new ReferralStudentRow(list[0].StudentId, list[0].StudentName, list[0].Lrn, list[0].GradeLevel, list[0].Strand, list[0].Placement, list))
+            .ToList();
+        return new ReferralStudentPage(items, total, referralCount, page, pageCount);
     }
 
     public async Task<ReferralRow?> GetAsync(int referralId, CancellationToken ct = default)

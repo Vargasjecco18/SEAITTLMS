@@ -1,21 +1,22 @@
 @using Microsoft.AspNetCore.Components.Web
 
-@* A line of feedback at the top of a page, with a button to hide it. *@
-@if (!string.IsNullOrEmpty(Message))
-{
-    <div class="notice @(IsError ? "error" : "")" role="@(IsError ? "alert" : "status")">
-        <Icon Name="@(IsError ? "circle-alert" : "circle-check")" Size="18" />
-        <span>@Message</span>
-        <button type="button" class="dismiss" aria-label="Dismiss" @onclick="Dismiss"><Icon Name="x" Size="16" /></button>
+@* The feedback of a page (saved, or what went wrong) as a pop-up in the middle of the screen, with an OK button. It sits over any other box that is open. *@
+<Modal Open="!string.IsNullOrEmpty(Message)" Title="@(IsError ? "Please check" : "Done")" Centered="true" Narrow="true" Top="true" OnClose="Dismiss">
+    <div class="notice-body @(IsError ? "error" : "")" role="@(IsError ? "alert" : "status")">
+        <span class="notice-icon"><Icon Name="@(IsError ? "circle-alert" : "circle-check")" Size="22" /></span>
+        <p>@Message</p>
     </div>
-}
+    <div class="notice-actions">
+        <Button IconName="circle-check" OnClick="Dismiss">OK</Button>
+    </div>
+</Modal>
 
 @code {
     [Parameter] public string? Message { get; set; }
 
     [Parameter] public bool IsError { get; set; }
 
-    /// <summary>Called when the X is pressed. The page then clears the message.</summary>
+    /// <summary>Called when OK, the X or Escape is pressed. The page then clears the message.</summary>
     [Parameter] public EventCallback OnDismiss { get; set; }
 
     private Task Dismiss() => OnDismiss.InvokeAsync();

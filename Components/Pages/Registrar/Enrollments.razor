@@ -46,7 +46,6 @@ else if (receipt is not null)
             <div><dt>Phone</dt><dd>@(receipt.PhoneNumber ?? "Not given")</dd></div>
             <div><dt>Track</dt><dd>@receipt.Track</dd></div>
             <div><dt>Strand</dt><dd>@receipt.Strand</dd></div>
-            <div><dt>Schedule</dt><dd>@receipt.Schedule</dd></div>
             <div><dt>Section</dt><dd>@receipt.Section</dd></div>
             <div class="wide">
                 <dt>Courses</dt>
@@ -133,7 +132,7 @@ else
                             <span>This adds a new enrollment. The name and the sign-in details stay as they are.</span>
                             @if (existing.LastPlacement is not null)
                             {
-                                <span>The grade level, track and strand are the ones of the last enrollment. Choose the schedule and the section.</span>
+                                <span>The grade level, track and strand are the ones of the last enrollment. Choose the section.</span>
                             }
                             @if (existing.EnrolledTermIds.Contains(form.TermId))
                             {
@@ -154,6 +153,10 @@ else
                 <Field For="last-name" Label="Last name" Required="true">
                     <input id="last-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)"
                            @bind="LastNameValue" @bind:event="oninput" />
+                </Field>
+                <Field For="name-extension" Label="Name extension" Hint="Optional: Jr., Sr., III ...">
+                    <input id="name-extension" type="text" maxlength="10" autocomplete="off" placeholder="Jr."
+                           readonly="@(existing is not null)" @bind="NameExtensionValue" />
                 </Field>
                 <Field For="phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567.">
                     <input id="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="09XX XXX XXXX"
@@ -199,17 +202,7 @@ else
                     </select>
                 </Field>
 
-                <div class="two">
-                    <Field For="schedule" Label="Schedule" Required="true">
-                        <select id="schedule" required disabled="@(form.StrandId == 0)" @bind="form.ScheduleId" @bind:after="OnScheduleChangedAsync">
-                            <option value="0">@(form.StrandId == 0 ? "Strand first" : "Choose")</option>
-                            @foreach (var schedule in SchedulesOfStrand)
-                            {
-                                <option value="@schedule.Id">@schedule.Code · @schedule.Name</option>
-                            }
-                        </select>
-                    </Field>
-                    <Field For="section" Label="Section" Required="true" Hint="Choose the section, A, B or C.">
+                <Field For="section" Label="Section" Required="true" Hint="Choose the section, A, B or C.">
                         <select id="section" required @bind="form.SectionName">
                             <option value="">Choose</option>
                             @foreach (var name in SectionChoices)
@@ -217,8 +210,7 @@ else
                                 <option value="@name">@name</option>
                             }
                         </select>
-                    </Field>
-                </div>
+                </Field>
 
                 @* The subjects are not picked: the strand decides them (the academic coordinator sets them in the academic setup). *@
                 <p class="subjects-note">
@@ -275,11 +267,11 @@ else
         public string FirstName { get; set; } = "";
         public string MiddleName { get; set; } = "";
         public string LastName { get; set; } = "";
+        public string NameExtension { get; set; } = "";
         public byte GradeLevel { get; set; } = 11;
         public int TermId { get; set; }
         public int TrackId { get; set; }
         public int StrandId { get; set; }
-        public int ScheduleId { get; set; }
         public string SectionName { get; set; } = "";
         public string PhoneNumber { get; set; } = "";
     }
@@ -290,7 +282,7 @@ else
     private IReadOnlyList<SubjectOption> subjects = [];
     private IReadOnlyList<string> sectionNames = [];
 
-    /// <summary>A to C, and the sections with another name that this strand, grade level and schedule already have.</summary>
+    /// <summary>A to C, and the sections with another name that this strand and grade level already have.</summary>
     private IEnumerable<string> SectionChoices => SectionNames.Choices.Concat(sectionNames.Where(n => !SectionNames.IsChoice(n)));
     private List<string> errors = [];
     private EnrollmentReceipt? receipt;
@@ -318,6 +310,12 @@ else
         set => form.LastName = value;
     }
 
+    private string NameExtensionValue
+    {
+        get => existing?.NameExtension ?? form.NameExtension;
+        set => form.NameExtension = value;
+    }
+
     // A student who already has a number shows it (read-only); otherwise what is typed is kept and saved with the enrollment.
     private string PhoneValue
     {
@@ -326,15 +324,6 @@ else
     }
 
     private IEnumerable<StrandOption> StrandsOfTrack => lookups!.Strands.Where(s => s.TrackId == form.TrackId);
-
-    private IEnumerable<ScheduleOption> SchedulesOfStrand
-    {
-        get
-        {
-            var strand = lookups!.Strands.FirstOrDefault(s => s.Id == form.StrandId);
-            return strand is null ? [] : lookups.Schedules.Where(s => strand.ScheduleIds.Contains(s.Id));
-        }
-    }
 
     /// <summary>The login the student will get, once the LRN and the last name are typed. Not for students who already have one.</summary>
     private StudentLogin? Preview =>
@@ -367,7 +356,7 @@ else
 
     /// <summary>
     /// A student who is enrolled again starts from where they were: the grade level (one more when the term is in a newer school year),
-    /// the track and strand, and the schedule and section they had, which the registrar can change.
+    /// the track and strand, and the section they had, which the registrar can change.
     /// </summary>
     private async Task ApplyPlacementAsync()
     {
@@ -389,9 +378,6 @@ else
 
         form.TrackId = strand.TrackId;
         form.StrandId = strand.Id;
-        form.ScheduleId = last.ScheduleId is { } scheduleId && strand.ScheduleIds.Contains(scheduleId)
-            ? scheduleId
-            : strand.ScheduleIds.Count == 1 ? strand.ScheduleIds[0] : 0;
         form.SectionName = last.SectionName;
         await ReloadChoicesAsync();
     }
@@ -412,23 +398,14 @@ else
     private async Task OnTrackChangedAsync()
     {
         form.StrandId = 0;
-        form.ScheduleId = 0;
         await ReloadChoicesAsync();
     }
 
-    private async Task OnStrandChangedAsync()
-    {
-        // A strand with a single schedule needs no choosing.
-        var schedules = SchedulesOfStrand.ToList();
-        form.ScheduleId = schedules.Count == 1 ? schedules[0].Id : 0;
-        await ReloadChoicesAsync();
-    }
-
-    private async Task OnScheduleChangedAsync() => await ReloadChoicesAsync();
+    private async Task OnStrandChangedAsync() => await ReloadChoicesAsync();
 
     private async Task OnPlacementChangedAsync() => await ReloadChoicesAsync();
 
-    /// <summary>The subjects and the existing sections depend on the term, grade level, strand and schedule.</summary>
+    /// <summary>The subjects and the existing sections depend on the term, grade level and strand.</summary>
     private async Task ReloadChoicesAsync()
     {
         var version = ++reloadVersion;
@@ -441,9 +418,7 @@ else
         }
 
         var curriculum = await Enrollment.GetCurriculumAsync(form.StrandId, form.GradeLevel, form.TermId);
-        var sections = form.ScheduleId == 0
-            ? []
-            : await Enrollment.GetSectionNamesAsync(form.TermId, form.StrandId, form.GradeLevel, form.ScheduleId);
+        var sections = await Enrollment.GetSectionNamesAsync(form.TermId, form.StrandId, form.GradeLevel);
 
         // The choices changed again while this was loading: the newer load shows its own result.
         if (version != reloadVersion)
@@ -475,9 +450,10 @@ else
                 existing?.FirstName ?? form.FirstName,
                 existing?.MiddleName ?? form.MiddleName,
                 existing?.LastName ?? form.LastName,
-                form.GradeLevel, form.TermId, form.TrackId, form.StrandId, form.ScheduleId,
+                form.GradeLevel, form.TermId, form.TrackId, form.StrandId,
                 form.SectionName,
-                form.PhoneNumber);
+                form.PhoneNumber,
+                existing?.NameExtension ?? form.NameExtension);
 
             var result = await Enrollment.EnrollAsync(request, userId);
             if (result.Succeeded)
@@ -506,6 +482,7 @@ else
         form.FirstName = "";
         form.MiddleName = "";
         form.LastName = "";
+        form.NameExtension = "";
         form.PhoneNumber = "";
     }
 

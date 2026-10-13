@@ -11,6 +11,10 @@
     outline: none;
 }
 
+.backdrop.top {
+    z-index: 130;
+}
+
 .backdrop.centered {
     place-items: center;
 }

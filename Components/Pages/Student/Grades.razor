@@ -89,6 +89,10 @@ else
                                 }
                             </span>
                         </div>
+                        @if (s.FinalGrade is { } finalGrade)
+                        {
+                            <p class="final-grade">Final grade from your teacher: <strong>@finalGrade.ToString("0.##")</strong> <Badge Tone="@GradeRules.ToneOf(finalGrade)">@GradeRules.Descriptor(finalGrade)</Badge></p>
+                        }
                         <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
 
                         <h3 class="work-title">Work</h3>

@@ -25,7 +25,7 @@ public sealed record MaterialModuleView(
 
 /// <summary>One teacher's course (a teacher, a section) that the materials of the course can be sent to, and which modules it got.</summary>
 public sealed record MaterialTeacherRow(
-    int AssignmentId, int TeacherUserId, string TeacherName, string SectionLabel, string? Schedule, int Students, IReadOnlyList<int> Received);
+    int AssignmentId, int TeacherUserId, string TeacherName, string SectionLabel, int Students, IReadOnlyList<int> Received);
 
 public sealed record CourseWithoutSyllabus(int SubjectId, string Name, int Teachers);
 
@@ -169,7 +169,6 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             {
                 a.Id, a.SectionId, TeacherUserId = a.Teacher.UserId, a.Teacher.FirstName, a.Teacher.MiddleName, a.Teacher.LastName, a.Teacher.NameExtension,
                 a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, SectionName = a.Section.Name,
-                Schedule = a.Section.Schedule != null ? a.Section.Schedule.Code : null,
             })
             .ToListAsync(ct);
 
@@ -179,7 +178,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var students = await Roster.StudentIds(db, a.SectionId, subjectId).CountAsync(ct);
             teachers.Add(new MaterialTeacherRow(
                 a.Id, a.TeacherUserId, UserDirectory.FullName(a.FirstName, a.MiddleName, a.LastName, a.NameExtension),
-                TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Schedule, students,
+                TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students,
                 deliveries.Where(d => d.AssignmentId == a.Id).Select(d => d.MaterialModuleId).ToList()));
         }
 

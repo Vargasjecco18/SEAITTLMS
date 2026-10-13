@@ -106,10 +106,6 @@
                                     </span>
                                     <span class="strand-meta">
                                         <span class="strand-code">@strand.Code</span>
-                                        @foreach (var schedule in strand.Schedules)
-                                        {
-                                            <span class="schedule-pill">@schedule</span>
-                                        }
                                         <span class="course-count">@(strand.CourseCount == 1 ? "1 course" : $"{strand.CourseCount} courses")</span>
                                     </span>
                                 </summary>

@@ -60,15 +60,18 @@ public class Subject : AuditableEntity
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
+
+    /// <summary>The units of the course (credit units), 0.5 to 12. It is printed on the enrollment form.</summary>
+    public decimal Units { get; set; } = 3;
 }
 
-/// <summary>The part of the day a class meets: AM (morning), MID (midday) or PM (afternoon), with the hours of that part of the day.</summary>
+/// <summary>The part of the day a class meets: AM (morning), MID (midday) or PM (afternoon), with the hours of that part of the day. A course of a section is given one of them.</summary>
 public class Schedule : AuditableEntity
 {
     public string Code { get; set; } = "";
     public string Name { get; set; } = "";
 
-    /// <summary>When the part of the day starts (Philippine time). The class times of the courses of a section of this schedule must be inside it.</summary>
+    /// <summary>When the part of the day starts (Philippine time). The class time of a course in this part of the day must be inside it.</summary>
     public TimeOnly StartTime { get; set; }
 
     /// <summary>When the part of the day ends.</summary>
@@ -103,7 +106,7 @@ public static class MeetingDays
 }
 
 /// <summary>
-/// When a course meets for a section: the days (MWF or TTH) and the time, inside the hours of the section's schedule (AM, MID or PM).
+/// When a course meets for a section: the part of the day (AM, MID or PM), the days (MWF or TTH) and the time, inside the hours of that part of the day.
 /// It belongs to the section and the course, not to the teacher, so the academic coordinator can set it before a teacher is given the course.
 /// </summary>
 public class CourseSchedule : AuditableEntity
@@ -114,21 +117,15 @@ public class CourseSchedule : AuditableEntity
     public int SubjectId { get; set; }
     public Subject Subject { get; set; } = null!;
 
+    /// <summary>AM, MID or PM: the class time is inside its hours.</summary>
+    public int ScheduleId { get; set; }
+    public Schedule Schedule { get; set; } = null!;
+
     /// <summary>One of <see cref="MeetingDays"/>.</summary>
     public string Days { get; set; } = MeetingDays.Mwf;
 
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
-}
-
-/// <summary>A schedule a strand runs in. BUSSENT has AM and PM classes, HT2 only PM, HT1 all three.</summary>
-public class StrandSchedule
-{
-    public int StrandId { get; set; }
-    public Strand Strand { get; set; } = null!;
-
-    public int ScheduleId { get; set; }
-    public Schedule Schedule { get; set; } = null!;
 }
 
 /// <summary>
@@ -170,14 +167,7 @@ public class Section : AuditableEntity
     /// <summary>11 or 12.</summary>
     public byte GradeLevel { get; set; }
 
-    /// <summary>
-    /// When the section meets (AM, MID or PM). It must be one of the strand's schedules. Empty only for sections made
-    /// before schedules existed.
-    /// </summary>
-    public int? ScheduleId { get; set; }
-    public Schedule? Schedule { get; set; }
-
-    /// <summary>"A", "Newton", ...</summary>
+    /// <summary>"A", "Newton", ... A section is the school year, the strand, the grade level and a name (the part of the day belongs to each course, not to the section).</summary>
     public string Name { get; set; } = "";
 
     public int? AdviserTeacherId { get; set; }
@@ -216,6 +206,9 @@ public class Enrollment : AuditableEntity
     public string FirstName { get; set; } = "";
     public string? MiddleName { get; set; }
     public string LastName { get; set; } = "";
+
+    /// <summary>Jr., Sr., III ... (optional).</summary>
+    public string? NameExtension { get; set; }
 
     /// <summary>11 or 12.</summary>
     public byte GradeLevel { get; set; }

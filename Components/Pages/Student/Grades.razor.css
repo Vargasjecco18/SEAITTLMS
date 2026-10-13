@@ -274,3 +274,13 @@ i.none { background: var(--border); }
         grid-row: 2;
     }
 }
+
+.final-grade {
+    margin: 0.6rem 0 0.2rem;
+    font-weight: 600;
+}
+
+.final-grade strong {
+    margin: 0 0.3rem;
+    font-size: 1.1rem;
+}

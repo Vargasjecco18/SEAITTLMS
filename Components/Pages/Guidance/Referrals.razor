@@ -54,15 +54,75 @@
     }
     else
     {
+        <p class="filter-count">@(result.Total == 1 ? "1 student" : $"{result.Total:N0} students") · @(result.Referrals == 1 ? "1 referral" : $"{result.Referrals:N0} referrals")</p>
         <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
                         <th scope="col">Student</th>
                         <th scope="col" class="col-level">Grade level</th>
-                        <th scope="col">Section</th>
                         <th scope="col">Course</th>
-                        <th scope="col" class="col-more">Subject and teacher</th>
+                        <th scope="col">Section</th>
+                        <th scope="col">Problem</th>
+                        <th scope="col" class="col-more">Since</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var student in result.Items)
+                    {
+                        var primary = student.Primary;
+                        <tr>
+                            <td>
+                                <span class="name">@student.StudentName</span>
+                                <span class="sub">@student.Lrn</span>
+                            </td>
+                            <td class="col-level">@(student.GradeLevel is { } level ? $"Grade {level}" : "—")</td>
+                            <td>@(student.Strand ?? "—")</td>
+                            <td>@(student.Placement ?? "—")</td>
+                            <td>
+                                <span class="reasons">
+                                    @foreach (var r in student.Reasons)
+                                    {
+                                        <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r)">@ReferralReasons.Display(r)</Badge>
+                                    }
+                                </span>
+                                <button type="button" class="view-all" @onclick="() => ViewAll(student)">View all (@student.Referrals.Count)</button>
+                            </td>
+                            <td class="col-more">@PhilippineTime.FormatDate(student.SinceUtc)</td>
+                            <td>
+                                <Badge Tone="@StatusTone(student.Status)">@ReferralStatus.Display(student.Status)</Badge>
+                            </td>
+                            <td class="col-actions">
+                                <Button Small="true" Variant="@(student.Status == ReferralStatus.Resolved ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="pencil" OnClick="() => OpenAsync(primary)">@(student.Status == ReferralStatus.Resolved ? "View" : "Work on it")</Button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (result.PageCount > 1)
+        {
+            <nav class="pager" aria-label="Pages">
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(result.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
+                <span class="muted">Page @result.Page of @result.PageCount · @result.Total students</span>
+                <Button Variant="ButtonVariant.Secondary" Small="true" IconAfter="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="NextAsync">Next</Button>
+            </nav>
+        }
+    }
+</Card>
+
+<Modal Open="viewing is not null" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
+    @if (viewing is not null)
+    {
+        <p class="sub all-sub">@viewing.Lrn@(viewing.GradeLevel is { } viewLevel ? $" · Grade {viewLevel}" : "")@(viewing.Strand is null ? "" : " · " + viewing.Strand)@(viewing.Placement is null ? "" : " · " + viewing.Placement) · @(viewing.Referrals.Count == 1 ? "1 referral" : $"{viewing.Referrals.Count} referrals")</p>
+        <div class="table-wrap">
+            <table class="table all-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Subject and teacher</th>
                         <th scope="col">Problem</th>
                         <th scope="col">Grade</th>
                         <th scope="col" class="col-more">Since</th>
@@ -71,19 +131,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in result.Items)
+                    @foreach (var r in viewing.Referrals)
                     {
                         <tr>
                             <td>
-                                <span class="name">@r.StudentName</span>
-                                <span class="sub">@r.Lrn</span>
-                            </td>
-                            <td class="col-level">@(r.GradeLevel is { } level ? $"Grade {level}" : "—")</td>
-                            <td>@(r.Placement ?? "—")</td>
-                            <td>@(r.Strand ?? "—")</td>
-                            <td class="col-more">
-                                @(r.SubjectName ?? "—")
-                                <span class="sub">@r.TeacherName</span>
+                                <span class="name">@(r.SubjectName ?? "—")</span>
+                                <span class="sub">@(r.TeacherName ?? "")</span>
                             </td>
                             <td>
                                 <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
@@ -102,7 +155,7 @@
                             </td>
                             <td class="col-more">@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
                             <td>
-                                <Badge Tone="@(r.Status == ReferralStatus.Open ? Tone.Danger : r.Status == ReferralStatus.InProgress ? Tone.Info : Tone.Success)">@ReferralStatus.Display(r.Status)</Badge>
+                                <Badge Tone="@StatusTone(r.Status)">@ReferralStatus.Display(r.Status)</Badge>
                                 @if (r.Outcome is { } outcome)
                                 {
                                     <span class="sub">@ReferralOutcomes.Display(outcome)</span>
@@ -116,17 +169,11 @@
                 </tbody>
             </table>
         </div>
-
-        @if (result.PageCount > 1)
-        {
-            <nav class="pager" aria-label="Pages">
-                <Button Variant="ButtonVariant.Secondary" Small="true" IconName="chevron-left" Disabled="@(result.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
-                <span class="muted">Page @result.Page of @result.PageCount · @result.Total referrals</span>
-                <Button Variant="ButtonVariant.Secondary" Small="true" IconAfter="true" IconName="chevron-right" Disabled="@(result.Page >= result.PageCount)" OnClick="NextAsync">Next</Button>
-            </nav>
-        }
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseViewAll">Close</Button>
+        </div>
     }
-</Card>
+</Modal>
 
 <Modal Open="current is not null" Title="@(current?.StudentName ?? "")" OnClose="Close" Large="true">
     @if (current is not null)
@@ -197,7 +244,8 @@
     private string searchText = "";
     private string appliedSearch = "";
     private int pageNumber = 1;
-    private ReferralPage? result;
+    private ReferralStudentPage? result;
+    private ReferralStudentRow? viewing;
     private ReferralRow? current;
     private string editStatus = ReferralStatus.Open;
     private string editIntervention = "";
@@ -220,7 +268,22 @@
 
     private void ClearMessage() => message = null;
 
-    private async Task LoadAsync() => result = await Desk.ListAsync(status == "" ? null : status, reason == "" ? null : reason, appliedSearch, pageNumber, grade == "" ? null : int.Parse(grade));
+    private async Task LoadAsync()
+    {
+        result = await Desk.ListByStudentAsync(status == "" ? null : status, reason == "" ? null : reason, appliedSearch, pageNumber, grade == "" ? null : int.Parse(grade));
+
+        // The list of a student that is open stays up to date after a referral is saved.
+        if (viewing is not null)
+        {
+            viewing = result.Items.FirstOrDefault(x => x.StudentId == viewing.StudentId);
+        }
+    }
+
+    private static Tone StatusTone(string status) => status == ReferralStatus.Open ? Tone.Danger : status == ReferralStatus.InProgress ? Tone.Info : Tone.Success;
+
+    private void ViewAll(ReferralStudentRow student) => viewing = student;
+
+    private void CloseViewAll() => viewing = null;
 
     private async Task StatusChanged(ChangeEventArgs e)
     {

@@ -419,3 +419,24 @@
     flex: 1 1 26rem;
     max-width: 36rem;
 }
+
+/* The class schedule: the hours of the day in a line, one Save at the right of the section list. */
+.setup ::deep .part-hours {
+    display: inline-block;
+    margin: 0 0.9rem 0 0.3rem;
+    white-space: nowrap;
+}
+
+.setup ::deep .filter-actions.save-all {
+    margin-left: auto;
+}
+
+.setup ::deep .how {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+}
+
+.setup ::deep .table .num {
+    text-align: center;
+    white-space: nowrap;
+}

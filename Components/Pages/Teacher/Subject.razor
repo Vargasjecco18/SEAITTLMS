@@ -28,22 +28,20 @@ else
     <PageHeader Title="@($"{subject.SubjectName} · {subject.SectionLabel}")"
                 IconName="book-open">
         <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
-        <Button IconName="plus" OnClick="OpenNewModule">Add module</Button>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     <p class="hint-line">
         <Icon Name="eye-off" Size="16" />
-        <span>A new module is a <strong>draft</strong>: students can't see it until you post it. Post it now, or schedule the time it appears. Materials the academic provider sent you are drafts too: change the text and the due dates, then post them.</span>
+        <span>The modules the academic provider sends you are <strong>drafts</strong>: students can't see them until you post them. Change the text and the due dates, then post a module now, or schedule the time it appears.</span>
     </p>
 
     @if (subject.Modules.Count == 0)
     {
         <Card>
             <EmptyState IconName="layers" Title="No modules yet">
-                <p>A module is a lesson with its activities, quizzes and task performances.</p>
-                <Button IconName="plus" OnClick="OpenNewModule">Add the first module</Button>
+                <p>A module is a lesson with its activities, quizzes and task performances. The academic provider sends the modules of this course.</p>
             </EmptyState>
         </Card>
     }
@@ -106,9 +104,6 @@ else
                             }
 
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
-                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-up" Title="Move up" Disabled="@(n == 0)" OnClick="() => MoveAsync(module, -1)" />
-                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="arrow-down" Title="Move down" Disabled="@(n == subject.Modules.Count - 1)" OnClick="() => MoveAsync(module, 1)" />
-                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete module" OnClick="() => AskDeleteModule(module)" />
                         </div>
                     </header>
 
@@ -224,7 +219,7 @@ else
 }
 
 @* ===== Module: add or edit ===== *@
-<Modal Open="moduleForm is not null" Title="@(editingModuleId is null ? "Add module" : "Edit module")" OnClose="CloseModuleForm">
+<Modal Open="moduleForm is not null" Title="Edit module" OnClose="CloseModuleForm">
     @if (moduleForm is not null)
     {
         <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
@@ -349,7 +344,7 @@ else
         public bool ShowResult { get; set; } = true;
     }
 
-    private sealed record DeleteTarget(string Title, string Text, bool IsModule, int Id);
+    private sealed record DeleteTarget(string Title, string Text, int Id);
 
     [Parameter] public int AssignmentId { get; set; }
 
@@ -436,14 +431,6 @@ else
 
     // ---------------------------------------------------------------- modules
 
-    private void OpenNewModule()
-    {
-        formErrors = [];
-        editingModuleId = null;
-        moduleFormKey++;
-        moduleForm = new ModuleInput();
-    }
-
     private async Task OpenEditModule(TeacherModule module)
     {
         if (module.FromProvider)
@@ -469,22 +456,19 @@ else
         busy = true;
         try
         {
-            var result = editingModuleId is { } id
-                ? await Modules.UpdateModuleAsync(teacherId, id, moduleForm)
-                : await Modules.CreateModuleAsync(teacherId, AssignmentId, moduleForm);
+            if (editingModuleId is not { } id)
+            {
+                return;
+            }
+
+            var result = await Modules.UpdateModuleAsync(teacherId, id, moduleForm);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];
                 return;
             }
 
-            var fileProblems = await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.Module, result.Id ?? editingModuleId ?? 0));
-            if (editingModuleId is null && result.Id is { } newModuleId)
-            {
-                // A module that was just made opens, so its activities, quizzes and task performances can be added right away.
-                openModules.Add(newModuleId);
-            }
-
+            var fileProblems = await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.Module, id));
             moduleForm = null;
             Say(result);
             if (fileProblems.Count > 0)
@@ -510,12 +494,6 @@ else
     private async Task HideAsync(TeacherModule module)
     {
         Say(await Modules.HideModuleAsync(teacherId, module.Id));
-        await LoadAsync();
-    }
-
-    private async Task MoveAsync(TeacherModule module, int direction)
-    {
-        await Modules.MoveModuleAsync(teacherId, module.Id, direction);
         await LoadAsync();
     }
 
@@ -682,14 +660,6 @@ else
 
     // ---------------------------------------------------------------- delete
 
-    private void AskDeleteModule(TeacherModule module)
-    {
-        var count = module.Items.Count;
-        deleteTarget = new DeleteTarget("Delete this module?",
-            $"\"{module.Title}\" will be deleted with its {count} {(count == 1 ? "activity, quiz or task performance" : "activities, quizzes and task performances")} and everything the students handed in.",
-            true, module.Id);
-    }
-
     private void AskDeleteItem(TeacherItem item)
     {
         var handed = item.Submitted;
@@ -697,7 +667,7 @@ else
             handed == 0
                 ? $"\"{item.Title}\" will be deleted."
                 : $"\"{item.Title}\" will be deleted with the {handed} {(handed == 1 ? "piece of work" : "pieces of work")} the students handed in and their scores.",
-            false, item.Id);
+            item.Id);
     }
 
     private void CloseDelete() => deleteTarget = null;
@@ -712,9 +682,7 @@ else
         busy = true;
         try
         {
-            var result = deleteTarget.IsModule
-                ? await Modules.DeleteModuleAsync(teacherId, deleteTarget.Id)
-                : await Modules.DeleteItemAsync(teacherId, deleteTarget.Id);
+            var result = await Modules.DeleteItemAsync(teacherId, deleteTarget.Id);
             deleteTarget = null;
             Say(result);
             await LoadAsync();

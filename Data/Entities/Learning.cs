@@ -211,6 +211,24 @@ public class Submission : AuditableEntity
 
     /// <summary>Why a quiz was handed in by the system: "time" or "violations".</summary>
     public string? AutoSubmitReason { get; set; }
+
+    /// <summary>The files the student sent with the work (the work is sent as files, not as a link).</summary>
+    public List<Attachment> Attachments { get; set; } = [];
+}
+
+/// <summary>
+/// The final grade the teacher gives a student in a subject (a number from 0 to 100), next to the average the gradebook computes.
+/// One per student and subject; the student sees it with the grades.
+/// </summary>
+public class FinalGrade : AuditableEntity
+{
+    public int AssignmentId { get; set; }
+    public TeachingAssignment Assignment { get; set; } = null!;
+
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    public decimal Grade { get; set; }
 }
 
 /// <summary>That a student has opened a module (so the dashboard can list the ones they have not opened yet).</summary>

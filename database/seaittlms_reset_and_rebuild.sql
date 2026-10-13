@@ -1668,5 +1668,92 @@ CREATE INDEX `ix_course_schedules_subject_id` ON `course_schedules` (`subject_id
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261013081617_AddCourseSchedules', '9.0.20');
 
+ALTER TABLE `subjects` ADD `units` decimal(3,1) NOT NULL DEFAULT 3.0;
+
+ALTER TABLE `subjects` MODIFY COLUMN `units` decimal(3,1) NOT NULL;
+
+ALTER TABLE `subjects` ADD CONSTRAINT `ck_subjects_units` CHECK (units >= 0.5 AND units <= 12);
+
+ALTER TABLE `enrollments` ADD `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `course_schedules` ADD `schedule_id` int NULL;
+
+UPDATE `course_schedules` c JOIN `sections` s ON s.`id` = c.`section_id` SET c.`schedule_id` = s.`schedule_id` WHERE s.`schedule_id` IS NOT NULL AND c.`id` > 0;
+
+UPDATE `course_schedules` c SET c.`schedule_id` = (SELECT sc.`id` FROM `schedules` sc WHERE c.`start_time` >= sc.`start_time` AND c.`end_time` <= sc.`end_time` ORDER BY sc.`id` LIMIT 1) WHERE c.`schedule_id` IS NULL AND c.`id` > 0;
+
+UPDATE `course_schedules` c SET c.`schedule_id` = (SELECT MIN(sc.`id`) FROM `schedules` sc) WHERE c.`schedule_id` IS NULL AND c.`id` > 0;
+
+ALTER TABLE `course_schedules` MODIFY COLUMN `schedule_id` int NOT NULL;
+
+CREATE INDEX `ix_course_schedules_schedule_id` ON `course_schedules` (`schedule_id`);
+
+ALTER TABLE `course_schedules` ADD CONSTRAINT `fk_course_schedules_schedules_schedule_id` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `sections` DROP FOREIGN KEY `fk_sections_schedules_schedule_id`;
+
+ALTER TABLE `sections` DROP FOREIGN KEY `fk_sections_strand_schedules_strand_id_schedule_id`;
+
+CREATE TEMPORARY TABLE `tmp_section_rank` AS
+SELECT u.`id`, u.`used`,
+       ROW_NUMBER() OVER (PARTITION BY u.`school_year_id`, u.`strand_id`, u.`grade_level`, u.`name` ORDER BY u.`used` DESC, u.`id`) AS `place`
+FROM (SELECT s.`id`, s.`school_year_id`, s.`strand_id`, s.`grade_level`, s.`name`,
+             (EXISTS (SELECT 1 FROM `students` x WHERE x.`section_id` = s.`id`)
+              OR EXISTS (SELECT 1 FROM `teachers` x WHERE x.`section_id` = s.`id`)
+              OR EXISTS (SELECT 1 FROM `enrollments` x WHERE x.`section_id` = s.`id`)
+              OR EXISTS (SELECT 1 FROM `teaching_assignments` x WHERE x.`section_id` = s.`id`)
+              OR EXISTS (SELECT 1 FROM `announcements` x WHERE x.`section_id` = s.`id`)) AS `used`
+      FROM `sections` s) u;
+
+DELETE FROM `sections` WHERE `id` IN (SELECT `id` FROM `tmp_section_rank` WHERE `place` > 1 AND `used` = 0) AND `id` > 0 LIMIT 100000;
+
+UPDATE `sections` SET `name` = CONCAT(LEFT(`name`, 44), '-', COALESCE((SELECT sc.`code` FROM `schedules` sc WHERE sc.`id` = `sections`.`schedule_id`), CAST(`id` AS CHAR)))
+WHERE `id` IN (SELECT `id` FROM `tmp_section_rank` WHERE `place` > 1 AND `used` = 1) AND `id` > 0 LIMIT 100000;
+
+DROP TEMPORARY TABLE `tmp_section_rank`;
+
+DROP TABLE `strand_schedules`;
+
+CREATE UNIQUE INDEX `ix_sections_school_year_id_strand_id_grade_level_name` ON `sections` (`school_year_id`, `strand_id`, `grade_level`, `name`);
+
+CREATE INDEX `ix_sections_strand_id` ON `sections` (`strand_id`);
+
+ALTER TABLE `sections` DROP INDEX `ix_sections_schedule_id`;
+
+ALTER TABLE `sections` DROP INDEX `ix_sections_school_year_id_strand_id_grade_level_schedule_id_na`;
+
+ALTER TABLE `sections` DROP INDEX `ix_sections_strand_id_schedule_id`;
+
+ALTER TABLE `sections` DROP COLUMN `schedule_id`;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261013161231_UnitsNameExtensionAndClassTimeSchedules', '9.0.20');
+
+ALTER TABLE `attachments` ADD `submission_id` int NULL;
+
+CREATE TABLE `final_grades` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `assignment_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `grade` decimal(5,2) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_final_grades` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_final_grades_grade` CHECK (grade >= 0 AND grade <= 100),
+    CONSTRAINT `fk_final_grades_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_final_grades_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_attachments_submission_id` ON `attachments` (`submission_id`);
+
+CREATE UNIQUE INDEX `ix_final_grades_assignment_id_student_id` ON `final_grades` (`assignment_id`, `student_id`);
+
+CREATE INDEX `ix_final_grades_student_id` ON `final_grades` (`student_id`);
+
+ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_submissions_submission_id` FOREIGN KEY (`submission_id`) REFERENCES `submissions` (`id`) ON DELETE CASCADE;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261013162615_AddFinalGradesAndSubmissionFiles', '9.0.20');
+
 COMMIT;
 

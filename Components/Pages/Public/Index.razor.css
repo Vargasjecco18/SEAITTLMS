@@ -468,8 +468,7 @@ h3 {
     margin-top: 0.6rem;
 }
 
-.strand-code,
-.schedule-pill {
+.strand-code {
     padding: 0.1rem 0.6rem;
     border-radius: 999px;
     font-size: 0.72rem;
@@ -480,11 +479,6 @@ h3 {
 .strand-code {
     background: var(--brand-soft);
     color: var(--brand-strong);
-}
-
-.schedule-pill {
-    background: var(--success-soft);
-    color: var(--success);
 }
 
 .course-count {

@@ -5,7 +5,7 @@
     @* A box over the page. It closes with the X, with the Cancel button of the form in it, or with Escape.
        Clicking next to it does not close it, so a half-filled form is not lost by accident. The key handler sits on the
        whole overlay (which can take the focus too), so Escape still works after a click next to the box. *@
-    <div class="backdrop @(Centered ? "centered" : "")" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "")" tabindex="-1" @onkeydown="OnKeyDown">
         <div class="dialog @(Large ? "large" : "") @(Narrow ? "narrow" : "")" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
             <header class="dialog-head">
                 <h2 id="@titleId">@Title</h2>
@@ -32,6 +32,9 @@
 
     /// <summary>Shown in the middle of the screen instead of near the top (for a short message, like a celebration).</summary>
     [Parameter] public bool Centered { get; set; }
+
+    /// <summary>Over every other box (for the notice of a page, which can open while a form is still open).</summary>
+    [Parameter] public bool Top { get; set; }
 
     /// <summary>A narrower box.</summary>
     [Parameter] public bool Narrow { get; set; }

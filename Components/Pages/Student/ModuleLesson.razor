@@ -4,7 +4,6 @@
 @inject CurrentUser Me
 @inject ModuleService Modules
 @inject AttachmentService Files
-@inject TimeProvider Clock
 
 <PageTitle>@(module?.Title ?? "Module") · SEAITT e-LMS</PageTitle>
 
@@ -27,37 +26,39 @@ else
         <ButtonLink Href="@($"student/subjects/{module.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @module.SubjectName</ButtonLink>
     </PageHeader>
 
-    <div class="layout">
-        <Card Title="Lesson" IconName="book-open">
-            @if (!string.IsNullOrWhiteSpace(module.Description))
-            {
-                <p class="lead">@module.Description</p>
-            }
+    @* The lesson, and its files shown right here (a PDF, a picture ...) at the left, so the student reads without leaving the page. *@
+    var hasText = !string.IsNullOrWhiteSpace(module.Description) || !string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl);
+    <div class="layout @(files.Count > 0 && hasText ? "two" : "")">
+        @if (files.Count > 0)
+        {
+            <Card Title="@(files.Count == 1 ? "File" : "Files")" IconName="paperclip">
+                <FilePreviewPane Items="files" Label="Files of this module" />
+            </Card>
+        }
 
-            @if (!string.IsNullOrWhiteSpace(module.Body))
-            {
-                <div class="lesson">@module.Body</div>
-            }
-            else if (string.IsNullOrWhiteSpace(module.Description) && string.IsNullOrWhiteSpace(module.LinkUrl))
-            {
-                <p class="muted">This module has no lesson text. Look at the work below.</p>
-            }
+        @if (hasText || files.Count == 0)
+        {
+            <Card Title="Lesson" IconName="book-open">
+                @if (!string.IsNullOrWhiteSpace(module.Description))
+                {
+                    <p class="lead">@module.Description</p>
+                }
 
-            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
-            {
-                <p class="link"><Icon Name="link" Size="16" /> <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">@module.LinkUrl <Icon Name="external-link" Size="14" /></a></p>
-            }
+                @if (!string.IsNullOrWhiteSpace(module.Body))
+                {
+                    <div class="lesson">@module.Body</div>
+                }
+                else if (!hasText)
+                {
+                    <p class="muted">This module has no lesson text.</p>
+                }
 
-            @if (files.Count > 0)
-            {
-                <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
-                <AttachmentList Items="files" Label="Files of this module" />
-            }
-        </Card>
-
-        <Card Title="Your work in this module" IconName="clipboard-list">
-            <ModuleTabs Module="module" Now="PhilippineTime.Now(Clock)" />
-        </Card>
+                @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
+                {
+                    <p class="link"><Icon Name="link" Size="16" /> <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">@module.LinkUrl <Icon Name="external-link" Size="14" /></a></p>
+                }
+            </Card>
+        }
     </div>
 }
 

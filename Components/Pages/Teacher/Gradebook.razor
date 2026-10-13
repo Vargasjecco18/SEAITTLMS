@@ -63,6 +63,10 @@ else
             else
             {
                 <FormErrors Errors="formErrors" />
+                <div class="table-tools">
+                    <p class="muted">Write the final grade of each student in the last column, then press Save.</p>
+                    <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
+                </div>
                 <div class="scroll">
                     <table class="grid">
                         <thead>
@@ -71,11 +75,12 @@ else
                                 @foreach (var c in book.Columns)
                                 {
                                     <th scope="col" class="col">
-                                        <a href="teacher/items/@c.ItemId" title="@c.ModuleTitle · @ItemKinds.Display(c.Kind)"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @c.Title</a>
+                                        <a href="teacher/items/@c.ItemId" title="@c.Title · @c.ModuleTitle · @ItemKinds.Display(c.Kind)" aria-label="@($"{c.Title}, {ItemKinds.Display(c.Kind)}")"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @codes[c.ItemId]</a>
                                         <span class="max">out of @c.Max.ToString("0.##")</span>
                                     </th>
                                 }
                                 <th scope="col" class="avg">Average</th>
+                                <th scope="col" class="final">Final grade</th>
                                 <th scope="col" class="edit"><span class="sr-only">Edit</span></th>
                             </tr>
                         </thead>
@@ -128,6 +133,11 @@ else
                                             <span class="dash">—</span>
                                         }
                                     </td>
+                                    <td class="final">
+                                        <input type="number" inputmode="decimal" step="0.01" min="0" max="100" class="input final-input" placeholder="—"
+                                               aria-label="@($"Final grade of {row.Name}")" value="@finalInputs.GetValueOrDefault(row.StudentId)"
+                                               @onchange="e => finalInputs[row.StudentId] = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
                                     <td class="edit">
                                         @if (editing)
                                         {
@@ -146,7 +156,7 @@ else
                         </tbody>
                     </table>
                 </div>
-                <p class="legend"><span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
+                <p class="legend"><strong>A</strong> activity &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
             }
         </Card>
     }
@@ -162,6 +172,8 @@ else
     private SubjectGradebook? book;
     private int? editingStudent;
     private readonly Dictionary<int, string> inputs = [];
+    private readonly Dictionary<int, string> finalInputs = [];
+    private readonly Dictionary<int, string> codes = [];
     private string? message;
     private bool messageIsError;
     private bool busy;
@@ -183,7 +195,40 @@ else
         editingStudent = null;
         formErrors = [];
         book = subjectId == 0 ? null : await Books.GetAsync(teacherId, subjectId);
+        ReadBook();
     }
+
+    /// <summary>The short names of the columns (A1, A2, Q1, TP1 ...: the kind and its number in the order of the columns) and the final grades that are saved.</summary>
+    private void ReadBook()
+    {
+        codes.Clear();
+        finalInputs.Clear();
+        if (book is null)
+        {
+            return;
+        }
+
+        foreach (var kind in book.Columns.GroupBy(c => c.Kind))
+        {
+            var n = 0;
+            foreach (var c in kind)
+            {
+                codes[c.ItemId] = $"{ShortKind(c.Kind)}{++n}";
+            }
+        }
+
+        foreach (var row in book.Rows)
+        {
+            finalInputs[row.StudentId] = row.FinalGrade is { } g ? g.ToString("0.##", CultureInfo.InvariantCulture) : "";
+        }
+    }
+
+    private static string ShortKind(string kind) => kind switch
+    {
+        ItemKinds.Quiz => "Q",
+        ItemKinds.TaskPerformance => "TP",
+        _ => "A",
+    };
 
     private async Task SubjectChanged(ChangeEventArgs e)
     {
@@ -198,6 +243,54 @@ else
     /// <summary>The look of a score: red under the passing mark, a color for work waiting to be checked.</summary>
     private static string CellClass(GradebookCell cell, GradebookColumn column) =>
         cell.Status == SubmissionStatus.Graded && cell.Score is { } s && column.Max > 0 && s / column.Max * 100 < GradeRules.PassingPercent ? "failing" : "";
+
+    private async Task SaveFinalGradesAsync()
+    {
+        if (busy || book is null)
+        {
+            return;
+        }
+
+        var grades = new Dictionary<int, decimal?>();
+        foreach (var row in book.Rows)
+        {
+            var text = finalInputs.GetValueOrDefault(row.StudentId);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                grades[row.StudentId] = null;
+            }
+            else if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
+            {
+                grades[row.StudentId] = value;
+            }
+            else
+            {
+                formErrors = [$"{row.Name}: the final grade must be a number."];
+                return;
+            }
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Books.SetFinalGradesAsync(teacherId, subjectId, grades);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            formErrors = [];
+            messageIsError = false;
+            message = result.Message;
+            book = await Books.GetAsync(teacherId, subjectId);
+            ReadBook();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     private void StartEdit(GradebookRow row)
     {

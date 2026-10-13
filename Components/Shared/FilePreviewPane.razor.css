@@ -1,0 +1,135 @@
+.pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 16rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip:hover {
+    background: var(--surface-2);
+}
+
+.chip.on {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.chip:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+    font-size: 0.9rem;
+}
+
+.file-title {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.size {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.bar-links {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+}
+
+.bar-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--brand-strong);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.bar-links a:hover {
+    text-decoration: underline;
+}
+
+.viewer {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.viewer iframe {
+    display: block;
+    width: 100%;
+    height: min(78vh, 56rem);
+    min-height: 26rem;
+    border: 0;
+    background: #fff;
+}
+
+.viewer img {
+    display: block;
+    max-width: 100%;
+    max-height: 78vh;
+    margin: 0 auto;
+}
+
+.viewer video {
+    display: block;
+    width: 100%;
+    max-height: 78vh;
+}
+
+.viewer audio {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+}
+
+.none {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 2rem 1.25rem;
+    color: var(--text-muted);
+}

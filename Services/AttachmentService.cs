@@ -18,6 +18,9 @@ public enum AttachmentOwnerKind
 
     /// <summary>An activity, quiz or task performance of a teacher's course.</summary>
     Item,
+
+    /// <summary>The work a student sends for an activity, quiz or task performance (the work is sent as files).</summary>
+    Submission,
 }
 
 public readonly record struct AttachmentOwner(AttachmentOwnerKind Kind, int Id);
@@ -33,7 +36,8 @@ public sealed record AttachmentDownload(string Name, string ContentType, bool In
 /// <summary>
 /// The files that go with a syllabus, a module, or an activity, quiz or task performance. The academic provider attaches files to the library and they
 /// are copied to each teacher's draft when the library is sent (see <see cref="MaterialService"/>); a teacher can add and remove files in their own
-/// copy and in what they write. The students of a course open them once the module is posted. A file opens in the browser (PDF, pictures, text, sound
+/// copy and in what they write. The students of a course open them once the module is posted, and send their own work as files (the teacher of the course opens
+/// those). A file opens in the browser (PDF, pictures, text, sound
 /// and video; see <see cref="FilePreview"/>) or is saved. Programs and scripts are not accepted. Every change checks again, in the database, who is asking.
 /// </summary>
 public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory, SystemSettingsService settings, TimeProvider clock)
@@ -72,6 +76,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             AttachmentOwnerKind.MaterialModule => all.Where(a => a.MaterialModuleId != null && ids.Contains(a.MaterialModuleId.Value)).Select(a => new { Owner = a.MaterialModuleId!.Value, a }),
             AttachmentOwnerKind.MaterialItem => all.Where(a => a.MaterialItemId != null && ids.Contains(a.MaterialItemId.Value)).Select(a => new { Owner = a.MaterialItemId!.Value, a }),
             AttachmentOwnerKind.Module => all.Where(a => a.ModuleId != null && ids.Contains(a.ModuleId.Value)).Select(a => new { Owner = a.ModuleId!.Value, a }),
+            AttachmentOwnerKind.Submission => all.Where(a => a.SubmissionId != null && ids.Contains(a.SubmissionId.Value)).Select(a => new { Owner = a.SubmissionId!.Value, a }),
             _ => all.Where(a => a.ItemId != null && ids.Contains(a.ItemId.Value)).Select(a => new { Owner = a.ItemId!.Value, a }),
         };
 
@@ -148,6 +153,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
                 case AttachmentOwnerKind.MaterialModule: attachment.MaterialModuleId = owner.Id; break;
                 case AttachmentOwnerKind.MaterialItem: attachment.MaterialItemId = owner.Id; break;
                 case AttachmentOwnerKind.Module: attachment.ModuleId = owner.Id; break;
+                case AttachmentOwnerKind.Submission: attachment.SubmissionId = owner.Id; break;
                 default: attachment.ItemId = owner.Id; break;
             }
 
@@ -167,7 +173,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.Attachments.Where(a => attachmentIds.Contains(a.Id))
-            .Select(a => new { a.Id, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId }).ToListAsync(ct);
+            .Select(a => new { a.Id, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, a.SubmissionId }).ToListAsync(ct);
 
         var removable = new List<int>();
         foreach (var row in rows)
@@ -175,6 +181,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             var owner = row.MaterialModuleId is { } mm ? new AttachmentOwner(AttachmentOwnerKind.MaterialModule, mm)
                 : row.MaterialItemId is { } mi ? new AttachmentOwner(AttachmentOwnerKind.MaterialItem, mi)
                 : row.ModuleId is { } m ? new AttachmentOwner(AttachmentOwnerKind.Module, m)
+                : row.SubmissionId is { } sub ? new AttachmentOwner(AttachmentOwnerKind.Submission, sub)
                 : new AttachmentOwner(AttachmentOwnerKind.Item, row.ItemId ?? 0);
             if (await CanManageAsync(db, userId, owner, ct))
             {
@@ -195,14 +202,15 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
     /// <summary>
     /// The file, when the person may open it: the provider opens the files of the library; a teacher opens the files of their own courses; a student
-    /// opens the files of a module that is posted (and of an item that appears) in a course they take.
+    /// opens the files of a module that is posted (and of an item that appears) in a course they take. The files of a student's work are opened by the student
+    /// and by the teacher of the course.
     /// </summary>
     public async Task<AttachmentDownload?> OpenAsync(int userId, int attachmentId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var a = await db.Attachments.AsNoTracking().Where(x => x.Id == attachmentId)
-            .Select(x => new { x.Id, x.Name, x.MaterialModuleId, x.MaterialItemId, x.ModuleId, x.ItemId, Data = x.Content!.Data }).FirstOrDefaultAsync(ct);
-        if (a is null || !await CanReadAsync(db, userId, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, ct))
+            .Select(x => new { x.Id, x.Name, x.MaterialModuleId, x.MaterialItemId, x.ModuleId, x.ItemId, x.SubmissionId, Data = x.Content!.Data }).FirstOrDefaultAsync(ct);
+        if (a is null || !await CanReadAsync(db, userId, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, a.SubmissionId, ct))
         {
             return null;
         }
@@ -224,7 +232,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
     // ======================================================================= who may
 
-    private async Task<bool> CanReadAsync(AppDbContext db, int userId, int? materialModuleId, int? materialItemId, int? moduleId, int? itemId, CancellationToken ct)
+    private async Task<bool> CanReadAsync(AppDbContext db, int userId, int? materialModuleId, int? materialItemId, int? moduleId, int? itemId, int? submissionId, CancellationToken ct)
     {
         var role = await db.Users.AsNoTracking().Where(u => u.Id == userId && u.IsActive).Select(u => (int?)u.RoleId).FirstOrDefaultAsync(ct);
         if (role is null)
@@ -235,6 +243,20 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         if (materialModuleId is not null || materialItemId is not null)
         {
             return role == AppRoles.AcademicProviderId;
+        }
+
+        // The work of a student: the student who sent it and the teacher of the course.
+        if (submissionId is { } sid)
+        {
+            var work = await db.Submissions.AsNoTracking().Where(x => x.Id == sid).Select(x => new { StudentUserId = x.Student.UserId, x.Item.Module.AssignmentId }).FirstOrDefaultAsync(ct);
+            if (work is null)
+            {
+                return false;
+            }
+
+            return role == AppRoles.StudentId
+                ? work.StudentUserId == userId
+                : role == AppRoles.TeacherId && await db.TeachingAssignments.AsNoTracking().AnyAsync(x => x.Id == work.AssignmentId && x.Teacher.UserId == userId, ct);
         }
 
         // A teacher's copy: find the course (teaching assignment) and when it appears.
@@ -301,6 +323,9 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
                 return role == AppRoles.AcademicProviderId && await db.MaterialItems.AsNoTracking().AnyAsync(i => i.Id == owner.Id, ct);
             case AttachmentOwnerKind.Module:
                 return role == AppRoles.TeacherId && await db.Modules.AsNoTracking().AnyAsync(m => m.Id == owner.Id && m.Assignment.Teacher.UserId == userId, ct);
+            case AttachmentOwnerKind.Submission:
+                // The student changes the files of their own work until it is graded.
+                return role == AppRoles.StudentId && await db.Submissions.AsNoTracking().AnyAsync(s => s.Id == owner.Id && s.Student.UserId == userId && s.Status != SubmissionStatus.Graded, ct);
             default:
                 return role == AppRoles.TeacherId && await db.ModuleItems.AsNoTracking().AnyAsync(i => i.Id == owner.Id && i.Module.Assignment.Teacher.UserId == userId, ct);
         }
@@ -311,6 +336,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         AttachmentOwnerKind.MaterialModule => await db.Attachments.CountAsync(a => a.MaterialModuleId == owner.Id, ct),
         AttachmentOwnerKind.MaterialItem => await db.Attachments.CountAsync(a => a.MaterialItemId == owner.Id, ct),
         AttachmentOwnerKind.Module => await db.Attachments.CountAsync(a => a.ModuleId == owner.Id, ct),
+        AttachmentOwnerKind.Submission => await db.Attachments.CountAsync(a => a.SubmissionId == owner.Id, ct),
         _ => await db.Attachments.CountAsync(a => a.ItemId == owner.Id, ct),
     };
 

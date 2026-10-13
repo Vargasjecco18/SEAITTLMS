@@ -103,6 +103,24 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
     }
 }
 
+internal sealed class FinalGradeConfiguration : IEntityTypeConfiguration<FinalGrade>
+{
+    public void Configure(EntityTypeBuilder<FinalGrade> b)
+    {
+        b.Property(g => g.Grade).HasPrecision(5, 2);
+
+        // The grade goes with the subject of the teacher and with the student.
+        b.HasOne(g => g.Assignment).WithMany().HasForeignKey(g => g.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(g => g.Student).WithMany().HasForeignKey(g => g.StudentId).OnDelete(DeleteBehavior.Cascade);
+
+        // One final grade per student and subject.
+        b.HasIndex(g => new { g.AssignmentId, g.StudentId }).IsUnique();
+        b.HasIndex(g => g.StudentId);
+
+        b.ToTable(t => t.HasCheckConstraint("ck_final_grades_grade", "grade >= 0 AND grade <= 100"));
+    }
+}
+
 internal sealed class ModuleViewConfiguration : IEntityTypeConfiguration<ModuleView>
 {
     public void Configure(EntityTypeBuilder<ModuleView> b)
@@ -158,14 +176,16 @@ internal sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachm
         b.HasOne(a => a.MaterialItem).WithMany(i => i.Attachments).HasForeignKey(a => a.MaterialItemId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Module).WithMany(m => m.Attachments).HasForeignKey(a => a.ModuleId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Item).WithMany(i => i.Attachments).HasForeignKey(a => a.ItemId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.Submission).WithMany(s => s.Attachments).HasForeignKey(a => a.SubmissionId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.UploadedBy).WithMany().HasForeignKey(a => a.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(a => a.Content).WithOne(c => c.Attachment).HasForeignKey<AttachmentContent>(c => c.AttachmentId).OnDelete(DeleteBehavior.Cascade);
 
-        // (Exactly one of the four owners is set; MySQL does not allow a check on columns with a cascading foreign key, so AttachmentService makes sure.)
+        // (Exactly one of the five owners is set; MySQL does not allow a check on columns with a cascading foreign key, so AttachmentService makes sure.)
         b.HasIndex(a => a.MaterialModuleId);
         b.HasIndex(a => a.MaterialItemId);
         b.HasIndex(a => a.ModuleId);
         b.HasIndex(a => a.ItemId);
+        b.HasIndex(a => a.SubmissionId);
         b.ToTable(t => t.HasCheckConstraint("ck_attachments_size", "size_bytes >= 0"));
     }
 }

@@ -54,7 +54,7 @@ public sealed record EvaluationDetail(
     IReadOnlyList<EvaluationQuestionView> Questions, IReadOnlyList<EvaluationCourseRow> Courses);
 
 /// <summary>A course of a teacher that the coordinator can send an evaluation about.</summary>
-public sealed record EvaluationChoice(int AssignmentId, int TeacherId, string TeacherName, string SubjectName, string SectionLabel, string? Schedule, int Students);
+public sealed record EvaluationChoice(int AssignmentId, int TeacherId, string TeacherName, string SubjectName, string SectionLabel, int Students);
 
 // ---------------------------------------------------------------------- what the student does
 
@@ -212,7 +212,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .Select(a => new
             {
                 a.Id, a.TeacherId, a.Teacher.FirstName, a.Teacher.MiddleName, a.Teacher.LastName, a.Teacher.NameExtension, SubjectName = a.Subject.Name, a.SectionId, a.SubjectId,
-                a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, SectionName = a.Section.Name, Schedule = a.Section.Schedule != null ? a.Section.Schedule.Code : null,
+                a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, SectionName = a.Section.Name,
             })
             .ToListAsync(ct);
 
@@ -224,7 +224,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             {
                 result.Add(new EvaluationChoice(
                     r.Id, r.TeacherId, UserDirectory.FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.SubjectName,
-                    TeachingService.SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), r.Schedule, students));
+                    TeachingService.SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students));
             }
         }
 

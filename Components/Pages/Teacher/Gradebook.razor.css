@@ -226,3 +226,28 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
 }
+
+/* The last column: the final grade the teacher writes, and the button that saves them. */
+.table-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.table-tools p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.final {
+    min-width: 7rem;
+}
+
+.final-input {
+    width: 5.6rem;
+    padding: 0.3rem 0.4rem;
+    text-align: center;
+}

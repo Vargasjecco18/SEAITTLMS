@@ -146,6 +146,12 @@ else
                             <p><Icon Name="link" Size="16" /> <a href="@item.LinkUrl" target="_blank" rel="noopener noreferrer">@item.LinkUrl</a></p>
                         }
 
+                        @if (myFiles.Count > 0)
+                        {
+                            <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files you sent</h3>
+                            <AttachmentList Items="myFiles" Label="Files you sent" />
+                        }
+
                         <p class="muted">This was graded, so it can't be handed in again.</p>
                     }
                     else
@@ -155,9 +161,7 @@ else
                             <span class="answer-label">@(item.IsQuiz ? "Your answers" : "Your answer")</span>
                             <RichTextEditor @ref="editor" Id="w-text" Html="@answerHtml" />
                         </div>
-                        <Field For="w-link" Label="Link to your work" Hint="Optional. A shared file or video, starting with https://">
-                            <InputText id="w-link" @bind-Value="linkUrl" maxlength="500" autocomplete="off" />
-                        </Field>
+                        <AttachmentPicker @ref="picker" @key="pickerKey" Title="Send files" Existing="myFiles" />
                         @if (overdue)
                         {
                             <p class="warn"><Icon Name="triangle-alert" Size="16" /> The due date has passed. You can still hand it in, but it is marked late.</p>
@@ -228,7 +232,9 @@ else
     private IReadOnlyList<AttachmentRow> files = [];
     private RichTextEditor? editor;
     private string? answerHtml;
-    private string? linkUrl;
+    private IReadOnlyList<AttachmentRow> myFiles = [];
+    private AttachmentPicker? picker;
+    private int pickerKey;
     private string? message;
     private bool messageIsError;
     private bool busy;
@@ -255,7 +261,8 @@ else
             files = await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId));
             // Work handed in before the editor existed was plain text: it opens as paragraphs.
             answerHtml = string.IsNullOrWhiteSpace(item.AnswerHtml) ? RichText.FromPlainText(item.AnswerText) : item.AnswerHtml;
-            linkUrl = item.LinkUrl;
+            myFiles = item.SubmissionId is { } submissionId ? await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Submission, submissionId)) : [];
+            pickerKey++;
             review = item.IsQuiz && item.Status != SubmissionStatus.InProgress && item.Status != "NotStarted" ? await Quiz.GetMyReviewAsync(studentId, ItemId) : null;
         }
     }
@@ -273,7 +280,39 @@ else
         try
         {
             var written = editor is null ? "" : await editor.GetHtmlAsync();
-            var result = await Work.SubmitAsync(studentId, ItemId, null, linkUrl, answerHtml: written);
+
+            // The files are sent first (they need the piece of work to exist), then the work is handed in.
+            if (picker is { } chosen && (chosen.Pending.Count > 0 || chosen.Removed.Count > 0))
+            {
+                var draftId = await Work.EnsureDraftAsync(studentId, ItemId);
+                if (draftId is not { } id)
+                {
+                    formErrors = ["Your work can't be changed now."];
+                    return;
+                }
+
+                var userId = (await Me.GetAsync())?.UserId ?? 0;
+                var problems = new List<string>();
+                var removed = await Files.RemoveAsync(userId, [.. chosen.Removed]);
+                if (!removed.Succeeded)
+                {
+                    problems.AddRange(removed.Errors);
+                }
+
+                var added = await Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.Submission, id), chosen.Pending);
+                if (!added.Succeeded)
+                {
+                    problems.AddRange(added.Errors);
+                }
+
+                if (problems.Count > 0)
+                {
+                    formErrors = problems;
+                    return;
+                }
+            }
+
+            var result = await Work.SubmitAsync(studentId, ItemId, null, null, answerHtml: written);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

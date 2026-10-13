@@ -1,0 +1,74 @@
+@* The files of a lesson shown right in the page: a PDF or a text file in a viewer, a picture, a sound or a video in its player. When there are several files, a button for each
+   one switches the viewer. A file the browser can't show (a Word or PowerPoint file, for example) says so and offers the download. The browser's own PDF viewer has the print
+   and download buttons; the links above the viewer open the file in its own tab or save it. *@
+@if (Items.Count > 0)
+{
+    var current = Current;
+    <div class="pane">
+        @if (Items.Count > 1)
+        {
+            <div class="chips" role="group" aria-label="@Label">
+                @foreach (var f in Items)
+                {
+                    var id = f.Id;
+                    <button type="button" class="chip @(id == current.Id ? "on" : "")" aria-pressed="@(id == current.Id ? "true" : "false")" @onclick="() => selectedId = id">
+                        <Icon Name="@AttachmentList.IconOf(f.Name)" Size="15" /> <span>@f.Name</span>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="bar">
+            <span class="file-title"><Icon Name="@AttachmentList.IconOf(current.Name)" Size="16" /> <strong>@current.Name</strong> <span class="size">@FileSize.Text(current.SizeBytes)</span></span>
+            <span class="bar-links">
+                @if (current.CanPreview)
+                {
+                    <a href="files/a/@current.Id" target="_blank" rel="noopener noreferrer"><Icon Name="external-link" Size="14" /> Open in a new tab</a>
+                }
+
+                <a href="files/a/@current.Id?download=1" download="@current.Name"><Icon Name="download" Size="14" /> Download</a>
+            </span>
+        </div>
+
+        <div class="viewer">
+            @switch (KindOf(current.Name))
+            {
+                case "frame":
+                    <iframe title="@current.Name" src="files/a/@current.Id" loading="lazy"></iframe>
+                    break;
+                case "image":
+                    <img src="files/a/@current.Id" alt="@current.Name" />
+                    break;
+                case "audio":
+                    <audio controls src="files/a/@current.Id" aria-label="@current.Name"></audio>
+                    break;
+                case "video":
+                    <video controls src="files/a/@current.Id" aria-label="@current.Name"></video>
+                    break;
+                default:
+                    <p class="none"><Icon Name="file" Size="20" /> This kind of file can't be shown here. Download it to read it.</p>
+                    break;
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private int? selectedId;
+
+    [Parameter, EditorRequired] public IReadOnlyList<AttachmentRow> Items { get; set; } = [];
+
+    /// <summary>What the buttons are, for screen readers.</summary>
+    [Parameter] public string Label { get; set; } = "Files of the lesson";
+
+    private AttachmentRow Current => Items.FirstOrDefault(f => f.Id == selectedId) ?? Items.FirstOrDefault(f => f.CanPreview) ?? Items[0];
+
+    private static string KindOf(string name) => Path.GetExtension(name).ToLowerInvariant() switch
+    {
+        ".pdf" or ".txt" or ".csv" or ".md" or ".log" => "frame",
+        ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" => "image",
+        ".mp3" or ".wav" or ".ogg" => "audio",
+        ".mp4" or ".webm" => "video",
+        _ => "none",
+    };
+}

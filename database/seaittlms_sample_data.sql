@@ -1,8 +1,8 @@
 -- Practice data for SEAITT e-LMS: fills the tables so every page has something to show.
 --
 -- The people are the sample accounts of seaittlms_sample_accounts.sql (run that file first). This file then adds, for those people:
---   * the enrollment of the 20 students in four groups of 5 (grade 11 and grade 12, ACAD and TECH-PRO) and their courses;
---   * the courses of the 10 teachers, and for each course: modules (posted, one scheduled), activities, a quiz with questions and a task performance;
+--   * the enrollment of the 12 students in four groups of 3 (grade 11 and grade 12, ACAD and TECH-PRO) and their courses;
+--   * the courses of the 6 teachers, and for each course: modules (posted, one scheduled), activities, a quiz with questions and a task performance;
 --   * who opened what, the work handed in, the scores, the attendance of the last weeks (a few students are failing, so the guidance counselor has referrals);
 --   * announcements, messages, notifications, friends, three groups with posts, files in the lockers, the security log, the system settings;
 --   * the library of the academic provider (syllabus, modules, quizzes, sent to the teachers as drafts) and one teacher evaluation with its answers.
@@ -40,62 +40,38 @@ SET @t_4 = (SELECT id FROM teachers WHERE employee_number = 'T-004' LIMIT 1);
 SET @tu_4 = (SELECT user_id FROM teachers WHERE id = @t_4);
 SET @t_5 = (SELECT id FROM teachers WHERE employee_number = 'T-005' LIMIT 1);
 SET @tu_5 = (SELECT user_id FROM teachers WHERE id = @t_5);
-SET @t_6 = (SELECT id FROM teachers WHERE employee_number = 'T-006' LIMIT 1);
-SET @tu_6 = (SELECT user_id FROM teachers WHERE id = @t_6);
-SET @t_7 = (SELECT id FROM teachers WHERE employee_number = 'T-007' LIMIT 1);
-SET @tu_7 = (SELECT user_id FROM teachers WHERE id = @t_7);
-SET @t_8 = (SELECT id FROM teachers WHERE employee_number = 'T-008' LIMIT 1);
-SET @tu_8 = (SELECT user_id FROM teachers WHERE id = @t_8);
-SET @t_9 = (SELECT id FROM teachers WHERE employee_number = 'T-009' LIMIT 1);
-SET @tu_9 = (SELECT user_id FROM teachers WHERE id = @t_9);
 SET @s_1 = (SELECT id FROM students WHERE lrn = '123456789012' LIMIT 1);
 SET @su_1 = (SELECT user_id FROM students WHERE id = @s_1);
 SET @s_2 = (SELECT id FROM students WHERE lrn = '105202600001' LIMIT 1);
 SET @su_2 = (SELECT user_id FROM students WHERE id = @s_2);
 SET @s_3 = (SELECT id FROM students WHERE lrn = '105202600002' LIMIT 1);
 SET @su_3 = (SELECT user_id FROM students WHERE id = @s_3);
-SET @s_4 = (SELECT id FROM students WHERE lrn = '105202600003' LIMIT 1);
+SET @s_4 = (SELECT id FROM students WHERE lrn = '105202600005' LIMIT 1);
 SET @su_4 = (SELECT user_id FROM students WHERE id = @s_4);
-SET @s_5 = (SELECT id FROM students WHERE lrn = '105202600004' LIMIT 1);
+SET @s_5 = (SELECT id FROM students WHERE lrn = '105202600006' LIMIT 1);
 SET @su_5 = (SELECT user_id FROM students WHERE id = @s_5);
-SET @s_6 = (SELECT id FROM students WHERE lrn = '105202600005' LIMIT 1);
+SET @s_6 = (SELECT id FROM students WHERE lrn = '105202600007' LIMIT 1);
 SET @su_6 = (SELECT user_id FROM students WHERE id = @s_6);
-SET @s_7 = (SELECT id FROM students WHERE lrn = '105202600006' LIMIT 1);
+SET @s_7 = (SELECT id FROM students WHERE lrn = '105202600010' LIMIT 1);
 SET @su_7 = (SELECT user_id FROM students WHERE id = @s_7);
-SET @s_8 = (SELECT id FROM students WHERE lrn = '105202600007' LIMIT 1);
+SET @s_8 = (SELECT id FROM students WHERE lrn = '105202600011' LIMIT 1);
 SET @su_8 = (SELECT user_id FROM students WHERE id = @s_8);
-SET @s_9 = (SELECT id FROM students WHERE lrn = '105202600008' LIMIT 1);
+SET @s_9 = (SELECT id FROM students WHERE lrn = '105202600012' LIMIT 1);
 SET @su_9 = (SELECT user_id FROM students WHERE id = @s_9);
-SET @s_10 = (SELECT id FROM students WHERE lrn = '105202600009' LIMIT 1);
+SET @s_10 = (SELECT id FROM students WHERE lrn = '105202600015' LIMIT 1);
 SET @su_10 = (SELECT user_id FROM students WHERE id = @s_10);
-SET @s_11 = (SELECT id FROM students WHERE lrn = '105202600010' LIMIT 1);
+SET @s_11 = (SELECT id FROM students WHERE lrn = '105202600016' LIMIT 1);
 SET @su_11 = (SELECT user_id FROM students WHERE id = @s_11);
-SET @s_12 = (SELECT id FROM students WHERE lrn = '105202600011' LIMIT 1);
+SET @s_12 = (SELECT id FROM students WHERE lrn = '105202600017' LIMIT 1);
 SET @su_12 = (SELECT user_id FROM students WHERE id = @s_12);
-SET @s_13 = (SELECT id FROM students WHERE lrn = '105202600012' LIMIT 1);
-SET @su_13 = (SELECT user_id FROM students WHERE id = @s_13);
-SET @s_14 = (SELECT id FROM students WHERE lrn = '105202600013' LIMIT 1);
-SET @su_14 = (SELECT user_id FROM students WHERE id = @s_14);
-SET @s_15 = (SELECT id FROM students WHERE lrn = '105202600014' LIMIT 1);
-SET @su_15 = (SELECT user_id FROM students WHERE id = @s_15);
-SET @s_16 = (SELECT id FROM students WHERE lrn = '105202600015' LIMIT 1);
-SET @su_16 = (SELECT user_id FROM students WHERE id = @s_16);
-SET @s_17 = (SELECT id FROM students WHERE lrn = '105202600016' LIMIT 1);
-SET @su_17 = (SELECT user_id FROM students WHERE id = @s_17);
-SET @s_18 = (SELECT id FROM students WHERE lrn = '105202600017' LIMIT 1);
-SET @su_18 = (SELECT user_id FROM students WHERE id = @s_18);
-SET @s_19 = (SELECT id FROM students WHERE lrn = '105202600018' LIMIT 1);
-SET @su_19 = (SELECT user_id FROM students WHERE id = @s_19);
-SET @s_20 = (SELECT id FROM students WHERE lrn = '105202600019' LIMIT 1);
-SET @su_20 = (SELECT user_id FROM students WHERE id = @s_20);
 
 -- ---- the school: tracks, strands, sections and courses
 SET @strand_BUSSENT = (SELECT id FROM strands WHERE code = 'BUSSENT'); SET @track_BUSSENT = (SELECT track_id FROM strands WHERE id = @strand_BUSSENT);
 SET @strand_HT1 = (SELECT id FROM strands WHERE code = 'HT1'); SET @track_HT1 = (SELECT track_id FROM strands WHERE id = @strand_HT1);
-SET @sec_BUSSENT_11_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id JOIN schedules sc ON sc.id = s.schedule_id WHERE st.code = 'BUSSENT' AND sc.code = 'AM' AND s.name = 'A' AND s.grade_level = 11 AND s.school_year_id = @year LIMIT 1);
-SET @sec_HT1_11_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id JOIN schedules sc ON sc.id = s.schedule_id WHERE st.code = 'HT1' AND sc.code = 'AM' AND s.name = 'A' AND s.grade_level = 11 AND s.school_year_id = @year LIMIT 1);
-SET @sec_BUSSENT_12_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id JOIN schedules sc ON sc.id = s.schedule_id WHERE st.code = 'BUSSENT' AND sc.code = 'AM' AND s.name = 'A' AND s.grade_level = 12 AND s.school_year_id = @year LIMIT 1);
-SET @sec_HT1_12_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id JOIN schedules sc ON sc.id = s.schedule_id WHERE st.code = 'HT1' AND sc.code = 'AM' AND s.name = 'A' AND s.grade_level = 12 AND s.school_year_id = @year LIMIT 1);
+SET @sec_BUSSENT_11_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id WHERE st.code = 'BUSSENT' AND s.name = 'A' AND s.grade_level = 11 AND s.school_year_id = @year LIMIT 1);
+SET @sec_HT1_11_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id WHERE st.code = 'HT1' AND s.name = 'A' AND s.grade_level = 11 AND s.school_year_id = @year LIMIT 1);
+SET @sec_BUSSENT_12_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id WHERE st.code = 'BUSSENT' AND s.name = 'A' AND s.grade_level = 12 AND s.school_year_id = @year LIMIT 1);
+SET @sec_HT1_12_A = (SELECT s.id FROM sections s JOIN strands st ON st.id = s.strand_id WHERE st.code = 'HT1' AND s.name = 'A' AND s.grade_level = 12 AND s.school_year_id = @year LIMIT 1);
 SET @sub_0 = (SELECT id FROM subjects WHERE name = 'BUSINESS ACCOUNTING' LIMIT 1);
 SET @sub_1 = (SELECT id FROM subjects WHERE name = 'ADVANCE MATHEMATICS 1' LIMIT 1);
 SET @sub_2 = (SELECT id FROM subjects WHERE name = 'EFFECTIVE COMMUNICATION' LIMIT 1);
@@ -115,10 +91,15 @@ SET @sub_15 = (SELECT id FROM subjects WHERE name = 'GENERAL SCIENCE 2' LIMIT 1)
 SET @sub_16 = (SELECT id FROM subjects WHERE name = 'PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2' LIMIT 1);
 SET @sub_17 = (SELECT id FROM subjects WHERE name = 'KITCHEN OPERATION 2' LIMIT 1);
 
--- ---- nothing is added unless every person and place is found and none of the 20 students is enrolled yet
-SET @found = IF(@term IS NOT NULL AND @u_registrar IS NOT NULL AND @u_coord IS NOT NULL AND @u_prov IS NOT NULL AND @u_admin IS NOT NULL AND @t_0 IS NOT NULL AND @t_1 IS NOT NULL AND @t_2 IS NOT NULL AND @t_3 IS NOT NULL AND @t_4 IS NOT NULL AND @t_5 IS NOT NULL AND @t_6 IS NOT NULL AND @t_7 IS NOT NULL AND @t_8 IS NOT NULL AND @t_9 IS NOT NULL AND @s_1 IS NOT NULL AND @s_2 IS NOT NULL AND @s_3 IS NOT NULL AND @s_4 IS NOT NULL AND @s_5 IS NOT NULL AND @s_6 IS NOT NULL AND @s_7 IS NOT NULL AND @s_8 IS NOT NULL AND @s_9 IS NOT NULL AND @s_10 IS NOT NULL AND @s_11 IS NOT NULL AND @s_12 IS NOT NULL AND @s_13 IS NOT NULL AND @s_14 IS NOT NULL AND @s_15 IS NOT NULL AND @s_16 IS NOT NULL AND @s_17 IS NOT NULL AND @s_18 IS NOT NULL AND @s_19 IS NOT NULL AND @s_20 IS NOT NULL AND @sec_BUSSENT_11_A IS NOT NULL AND @sec_HT1_11_A IS NOT NULL AND @sec_BUSSENT_12_A IS NOT NULL AND @sec_HT1_12_A IS NOT NULL AND @sub_0 IS NOT NULL AND @sub_1 IS NOT NULL AND @sub_2 IS NOT NULL AND @sub_3 IS NOT NULL AND @sub_4 IS NOT NULL AND @sub_5 IS NOT NULL AND @sub_6 IS NOT NULL AND @sub_7 IS NOT NULL AND @sub_8 IS NOT NULL AND @sub_9 IS NOT NULL AND @sub_10 IS NOT NULL AND @sub_11 IS NOT NULL AND @sub_12 IS NOT NULL AND @sub_13 IS NOT NULL AND @sub_14 IS NOT NULL AND @sub_15 IS NOT NULL AND @sub_16 IS NOT NULL AND @sub_17 IS NOT NULL, 1, 0);
-SET @enrolled = (SELECT COUNT(*) FROM enrollments WHERE student_id IN (@s_1, @s_2, @s_3, @s_4, @s_5, @s_6, @s_7, @s_8, @s_9, @s_10, @s_11, @s_12, @s_13, @s_14, @s_15, @s_16, @s_17, @s_18, @s_19, @s_20));
+-- ---- nothing is added unless every person and place is found and none of the 12 students is enrolled yet
+SET @found = IF(@term IS NOT NULL AND @u_registrar IS NOT NULL AND @u_coord IS NOT NULL AND @u_prov IS NOT NULL AND @u_admin IS NOT NULL AND @t_0 IS NOT NULL AND @t_1 IS NOT NULL AND @t_2 IS NOT NULL AND @t_3 IS NOT NULL AND @t_4 IS NOT NULL AND @t_5 IS NOT NULL AND @s_1 IS NOT NULL AND @s_2 IS NOT NULL AND @s_3 IS NOT NULL AND @s_4 IS NOT NULL AND @s_5 IS NOT NULL AND @s_6 IS NOT NULL AND @s_7 IS NOT NULL AND @s_8 IS NOT NULL AND @s_9 IS NOT NULL AND @s_10 IS NOT NULL AND @s_11 IS NOT NULL AND @s_12 IS NOT NULL AND @sec_BUSSENT_11_A IS NOT NULL AND @sec_HT1_11_A IS NOT NULL AND @sec_BUSSENT_12_A IS NOT NULL AND @sec_HT1_12_A IS NOT NULL AND @sub_0 IS NOT NULL AND @sub_1 IS NOT NULL AND @sub_2 IS NOT NULL AND @sub_3 IS NOT NULL AND @sub_4 IS NOT NULL AND @sub_5 IS NOT NULL AND @sub_6 IS NOT NULL AND @sub_7 IS NOT NULL AND @sub_8 IS NOT NULL AND @sub_9 IS NOT NULL AND @sub_10 IS NOT NULL AND @sub_11 IS NOT NULL AND @sub_12 IS NOT NULL AND @sub_13 IS NOT NULL AND @sub_14 IS NOT NULL AND @sub_15 IS NOT NULL AND @sub_16 IS NOT NULL AND @sub_17 IS NOT NULL, 1, 0);
+SET @enrolled = (SELECT COUNT(*) FROM enrollments WHERE student_id IN (@s_1, @s_2, @s_3, @s_4, @s_5, @s_6, @s_7, @s_8, @s_9, @s_10, @s_11, @s_12));
 SET @go = IF(@found = 1 AND @enrolled = 0, 1, 0);
+
+-- ---- the units of the courses of the sample school
+UPDATE subjects SET units = 4 WHERE name = 'KITCHEN OPERATION 1' AND id > 0 AND @go = 1;
+UPDATE subjects SET units = 4 WHERE name = 'KITCHEN OPERATION 2' AND id > 0 AND @go = 1;
+UPDATE subjects SET units = 2 WHERE name = 'LIFE AND CAREER SKILLS' AND id > 0 AND @go = 1;
 
 -- ---- where the new rows start (a new row gets the number after the biggest one that is there)
 SET @e0 = (SELECT COALESCE(MAX(id), 0) FROM enrollments);
@@ -138,36 +119,28 @@ SET @eq0 = (SELECT COALESCE(MAX(id), 0) FROM evaluation_questions);
 SET @er0 = (SELECT COALESCE(MAX(id), 0) FROM evaluation_responses);
 
 -- ================================================================ 1) The enrollment of the students
-INSERT INTO enrollments (id, school_year_id, term_id, section_id, student_id, lrn, first_name, middle_name, last_name, grade_level, track_id, strand_id, subjects, status, enrolled_by_user_id, created_at_utc, updated_at_utc)
+INSERT INTO enrollments (id, school_year_id, term_id, section_id, student_id, lrn, first_name, middle_name, last_name, name_extension, grade_level, track_id, strand_id, subjects, status, enrolled_by_user_id, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @e0 + 1 AS id, @year AS school_year_id, @term AS term_id, @sec_BUSSENT_11_A AS section_id, @s_1 AS student_id, '123456789012' AS lrn, 'Juan' AS first_name, 'Santos' AS middle_name, 'Dela Cruz' AS last_name, 11 AS grade_level, @track_BUSSENT AS track_id, @strand_BUSSENT AS strand_id, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO' AS subjects, 'Enrolled' AS status, @u_registrar AS enrolled_by_user_id, (@day0 + INTERVAL -39 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -39 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @e0 + 2, @year, @term, @sec_BUSSENT_11_A, @s_2, '105202600001', 'Mariel', 'Aguilar', 'Abad', 11, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 3, @year, @term, @sec_BUSSENT_11_A, @s_3, '105202600002', 'Carlo', 'Bautista', 'Alcantara', 11, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -37 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -37 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 4, @year, @term, @sec_BUSSENT_11_A, @s_4, '105202600003', 'Jasmine', 'Cruz', 'Andrada', 11, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -36 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -36 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 5, @year, @term, @sec_BUSSENT_11_A, @s_5, '105202600004', 'Miguel', 'Diaz', 'Arellano', 11, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -35 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -35 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 6, @year, @term, @sec_HT1_11_A, @s_6, '105202600005', 'Hannah', 'Estrada', 'Balagtas', 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -34 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -34 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 7, @year, @term, @sec_HT1_11_A, @s_7, '105202600006', 'Paolo', 'Flores', 'Barrientos', 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -33 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -33 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 8, @year, @term, @sec_HT1_11_A, @s_8, '105202600007', 'Kristine', 'Gomez', 'Buenaventura', 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -32 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -32 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 9, @year, @term, @sec_HT1_11_A, @s_9, '105202600008', 'Joshua', 'Hernandez', 'Cabrera', 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -31 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -31 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 10, @year, @term, @sec_HT1_11_A, @s_10, '105202600009', 'Angel', 'Ibarra', 'Calderon', 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -30 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -30 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 11, @year, @term, @sec_BUSSENT_12_A, @s_11, '105202600010', 'Nathan', 'Jimenez', 'Dacillo', 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -29 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -29 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 12, @year, @term, @sec_BUSSENT_12_A, @s_12, '105202600011', 'Bea', 'Katigbak', 'Dumalag', 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -28 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -28 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 13, @year, @term, @sec_BUSSENT_12_A, @s_13, '105202600012', 'Ryan', 'Lacson', 'Escalante', 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -27 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -27 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 14, @year, @term, @sec_BUSSENT_12_A, @s_14, '105202600013', 'Camille', 'Manalo', 'Espinosa', 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -26 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -26 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 15, @year, @term, @sec_BUSSENT_12_A, @s_15, '105202600014', 'Daniel', 'Natividad', 'Fajardo', 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -25 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -25 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 16, @year, @term, @sec_HT1_12_A, @s_16, '105202600015', 'Trisha', 'Ong', 'Gonzales', 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -24 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -24 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 17, @year, @term, @sec_HT1_12_A, @s_17, '105202600016', 'Kevin', 'Pineda', 'Guevarra', 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -23 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -23 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 18, @year, @term, @sec_HT1_12_A, @s_18, '105202600017', 'Alyssa', 'Quizon', 'Ibanez', 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -22 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -22 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 19, @year, @term, @sec_HT1_12_A, @s_19, '105202600018', 'Jerome', 'Robles', 'Jacinto', 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -21 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -21 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @e0 + 20, @year, @term, @sec_HT1_12_A, @s_20, '105202600019', 'Patricia', 'Sarmiento', 'Lagman', 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -20 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -20 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  SELECT @e0 + 1 AS id, @year AS school_year_id, @term AS term_id, @sec_BUSSENT_11_A AS section_id, @s_1 AS student_id, '123456789012' AS lrn, 'Juan' AS first_name, 'Santos' AS middle_name, 'Dela Cruz' AS last_name, NULL AS name_extension, 11 AS grade_level, @track_BUSSENT AS track_id, @strand_BUSSENT AS strand_id, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO' AS subjects, 'Enrolled' AS status, @u_registrar AS enrolled_by_user_id, (@day0 + INTERVAL -39 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -39 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @e0 + 2, @year, @term, @sec_BUSSENT_11_A, @s_2, '105202600001', 'Mariel', 'Aguilar', 'Abad', NULL, 11, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 3, @year, @term, @sec_BUSSENT_11_A, @s_3, '105202600002', 'Carlo', 'Bautista', 'Alcantara', NULL, 11, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING, ADVANCE MATHEMATICS 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -37 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -37 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 4, @year, @term, @sec_HT1_11_A, @s_4, '105202600005', 'Hannah', 'Estrada', 'Balagtas', NULL, 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -36 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -36 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 5, @year, @term, @sec_HT1_11_A, @s_5, '105202600006', 'Paolo', 'Flores', 'Barrientos', 'Jr.', 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -35 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -35 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 6, @year, @term, @sec_HT1_11_A, @s_6, '105202600007', 'Kristine', 'Gomez', 'Buenaventura', NULL, 11, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 1, EFFECTIVE COMMUNICATION, MABISANG KOMUNIKASYON, GENERAL MATHEMATICS, LIFE AND CAREER SKILLS, GENERAL SCIENCE, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO', 'Enrolled', @u_registrar, (@day0 + INTERVAL -34 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -34 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 7, @year, @term, @sec_BUSSENT_12_A, @s_7, '105202600010', 'Nathan', 'Jimenez', 'Dacillo', NULL, 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -33 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -33 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 8, @year, @term, @sec_BUSSENT_12_A, @s_8, '105202600011', 'Bea', 'Katigbak', 'Dumalag', NULL, 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -32 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -32 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 9, @year, @term, @sec_BUSSENT_12_A, @s_9, '105202600012', 'Ryan', 'Lacson', 'Escalante', NULL, 12, @track_BUSSENT, @strand_BUSSENT, 'BUSINESS ACCOUNTING 2, ADVANCE MATHEMATICS 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -31 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -31 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 10, @year, @term, @sec_HT1_12_A, @s_10, '105202600015', 'Trisha', 'Ong', 'Gonzales', NULL, 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -30 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -30 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 11, @year, @term, @sec_HT1_12_A, @s_11, '105202600016', 'Kevin', 'Pineda', 'Guevarra', NULL, 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -29 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -29 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @e0 + 12, @year, @term, @sec_HT1_12_A, @s_12, '105202600017', 'Alyssa', 'Quizon', 'Ibanez', NULL, 12, @track_HT1, @strand_HT1, 'KITCHEN OPERATION 2, EFFECTIVE COMMUNICATION 2, MABISANG KOMUNIKASYON 2, GENERAL MATHEMATICS 2, LIFE AND CAREER SKILLS 2, GENERAL SCIENCE 2, PAG-AARAL NG KASAYSAYAN AT LIPUNANG PILIPINO 2', 'Enrolled', @u_registrar, (@day0 + INTERVAL -28 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -28 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
 INSERT INTO enrollment_subjects (enrollment_id, subject_id)
 SELECT e.id, x.subject_id FROM enrollments e JOIN strand_subjects x ON x.strand_id = e.strand_id AND x.grade_level = e.grade_level
-WHERE e.id > @e0 AND e.id <= @e0 + 20 AND @go = 1;
+WHERE e.id > @e0 AND e.id <= @e0 + 12 AND @go = 1;
 
 -- where each student is now (the summary kept on the student's row)
-UPDATE students s JOIN enrollments e ON e.student_id = s.id AND e.id > @e0 AND e.id <= @e0 + 20
+UPDATE students s JOIN enrollments e ON e.student_id = s.id AND e.id > @e0 AND e.id <= @e0 + 12
 SET s.grade_level = e.grade_level, s.track_id = e.track_id, s.strand_id = e.strand_id, s.section_id = e.section_id, s.updated_at_utc = @now
 WHERE s.id > 0 AND @go = 1;
 
@@ -178,68 +151,68 @@ SELECT * FROM (
   UNION ALL SELECT @ta0 + 2, @t_1, @sec_BUSSENT_11_A, @sub_1, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 3, @t_3, @sec_BUSSENT_11_A, @sub_2, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 4, @t_4, @sec_BUSSENT_11_A, @sub_3, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 5, @t_8, @sec_BUSSENT_11_A, @sub_4, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 6, @t_5, @sec_BUSSENT_11_A, @sub_5, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 7, @t_6, @sec_BUSSENT_11_A, @sub_6, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 8, @t_7, @sec_BUSSENT_11_A, @sub_7, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 5, @t_5, @sec_BUSSENT_11_A, @sub_4, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 6, @t_1, @sec_BUSSENT_11_A, @sub_5, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 7, @t_2, @sec_BUSSENT_11_A, @sub_6, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 8, @t_4, @sec_BUSSENT_11_A, @sub_7, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 9, @t_2, @sec_HT1_11_A, @sub_8, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 10, @t_3, @sec_HT1_11_A, @sub_2, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 11, @t_4, @sec_HT1_11_A, @sub_3, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 12, @t_8, @sec_HT1_11_A, @sub_4, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 13, @t_5, @sec_HT1_11_A, @sub_5, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 14, @t_6, @sec_HT1_11_A, @sub_6, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 15, @t_7, @sec_HT1_11_A, @sub_7, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 16, @t_9, @sec_BUSSENT_12_A, @sub_9, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 12, @t_5, @sec_HT1_11_A, @sub_4, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 13, @t_1, @sec_HT1_11_A, @sub_5, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 14, @t_2, @sec_HT1_11_A, @sub_6, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 15, @t_4, @sec_HT1_11_A, @sub_7, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 16, @t_5, @sec_BUSSENT_12_A, @sub_9, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 17, @t_1, @sec_BUSSENT_12_A, @sub_10, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 18, @t_3, @sec_BUSSENT_12_A, @sub_11, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 19, @t_4, @sec_BUSSENT_12_A, @sub_12, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 20, @t_8, @sec_BUSSENT_12_A, @sub_13, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 21, @t_5, @sec_BUSSENT_12_A, @sub_14, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 22, @t_6, @sec_BUSSENT_12_A, @sub_15, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 23, @t_7, @sec_BUSSENT_12_A, @sub_16, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 24, @t_9, @sec_HT1_12_A, @sub_17, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 20, @t_5, @sec_BUSSENT_12_A, @sub_13, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 21, @t_1, @sec_BUSSENT_12_A, @sub_14, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 22, @t_2, @sec_BUSSENT_12_A, @sub_15, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 23, @t_4, @sec_BUSSENT_12_A, @sub_16, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 24, @t_5, @sec_HT1_12_A, @sub_17, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 25, @t_3, @sec_HT1_12_A, @sub_11, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @ta0 + 26, @t_4, @sec_HT1_12_A, @sub_12, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 27, @t_8, @sec_HT1_12_A, @sub_13, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 28, @t_5, @sec_HT1_12_A, @sub_14, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 29, @t_6, @sec_HT1_12_A, @sub_15, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @ta0 + 30, @t_7, @sec_HT1_12_A, @sub_16, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 27, @t_5, @sec_HT1_12_A, @sub_13, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 28, @t_1, @sec_HT1_12_A, @sub_14, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 29, @t_2, @sec_HT1_12_A, @sub_15, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @ta0 + 30, @t_4, @sec_HT1_12_A, @sub_16, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
--- ================================================================ 2b) When each course meets: MWF or TTH, a time inside the AM hours (7:00 AM to 12:00 PM)
+-- ================================================================ 2b) When each course meets: in the AM schedule, MWF or TTH, a time inside the AM hours (7:00 AM to 12:00 PM)
 -- (a teacher is never in two classes at the same time, and a section never has two classes at the same time in a term)
-INSERT INTO course_schedules (section_id, subject_id, days, start_time, end_time, created_at_utc, updated_at_utc)
+INSERT INTO course_schedules (section_id, subject_id, schedule_id, days, start_time, end_time, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @sec_BUSSENT_11_A AS section_id, @sub_0 AS subject_id, 'TTH' AS days, '08:15:00' AS start_time, '09:30:00' AS end_time, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_1, 'MWF', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_2, 'TTH', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_3, 'MWF', '09:30:00', '10:45:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_4, 'TTH', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_5, 'MWF', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_6, 'TTH', '09:30:00', '10:45:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_7, 'MWF', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_8, 'TTH', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_2, 'MWF', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_3, 'TTH', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_4, 'MWF', '09:30:00', '10:45:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_5, 'TTH', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_6, 'MWF', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_11_A, @sub_7, 'TTH', '09:30:00', '10:45:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_9, 'MWF', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_10, 'TTH', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_11, 'TTH', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_12, 'MWF', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_13, 'TTH', '09:30:00', '10:45:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_14, 'MWF', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_15, 'TTH', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_16, 'MWF', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_17, 'TTH', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_11, 'TTH', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_12, 'MWF', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_13, 'TTH', '07:00:00', '08:15:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_14, 'MWF', '09:30:00', '10:45:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_15, 'TTH', '10:45:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @sec_HT1_12_A, @sub_16, 'MWF', '08:15:00', '09:30:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  SELECT @sec_BUSSENT_11_A AS section_id, @sub_0 AS subject_id, (SELECT id FROM schedules WHERE code = 'AM') AS schedule_id, 'TTH' AS days, '08:00:00' AS start_time, '09:00:00' AS end_time, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_1, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '10:00:00', '11:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_2, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '11:00:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_3, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '08:00:00', '09:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_4, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '09:00:00', '10:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_5, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '11:00:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_6, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '07:00:00', '08:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_11_A, @sub_7, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '09:00:00', '10:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_8, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '10:00:00', '11:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_2, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '07:00:00', '08:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_3, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '08:00:00', '09:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_4, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '10:00:00', '11:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_5, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '11:00:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_6, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '08:00:00', '09:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_11_A, @sub_7, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '09:00:00', '10:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_9, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '11:00:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_10, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '07:00:00', '08:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_11, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '09:00:00', '10:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_12, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '10:00:00', '11:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_13, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '07:00:00', '08:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_14, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '08:00:00', '09:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_15, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '10:00:00', '11:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_BUSSENT_12_A, @sub_16, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '11:00:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_17, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '08:00:00', '09:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_11, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '09:00:00', '10:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_12, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '11:00:00', '12:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_13, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '07:00:00', '08:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_14, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '09:00:00', '10:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_15, (SELECT id FROM schedules WHERE code = 'AM'), 'TTH', '10:00:00', '11:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @sec_HT1_12_A, @sub_16, (SELECT id FROM schedules WHERE code = 'AM'), 'MWF', '07:00:00', '08:00:00', (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
 -- each teacher's summary row (what they mainly teach)
@@ -1838,1436 +1811,874 @@ SELECT * FROM (
 -- ================================================================ 4) Modules opened, work handed in (some graded, some waiting for the teacher)
 INSERT INTO module_views (module_id, student_id, first_opened_at_utc)
 SELECT * FROM (
-  SELECT @mo0 + 2 AS module_id, @s_1 AS student_id, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE) AS first_opened_at_utc
-  UNION ALL SELECT @mo0 + 2, @s_2, (@day0 + INTERVAL -21 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 2, @s_3, (@day0 + INTERVAL -20 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 2, @s_4, (@day0 + INTERVAL -21 DAY + INTERVAL 13 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 2, @s_5, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 3, @s_1, (@day0 + INTERVAL -11 DAY + INTERVAL 4 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 3, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 3, @s_3, (@day0 + INTERVAL -13 DAY + INTERVAL 13 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 3, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 3, @s_5, (@day0 + INTERVAL -11 DAY + INTERVAL 10 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 4, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @mo0 + 4, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 4, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @mo0 + 4, @s_4, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 4, @s_5, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 7, @s_1, (@day0 + INTERVAL -25 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 7, @s_2, (@day0 + INTERVAL -26 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @mo0 + 7, @s_3, (@day0 + INTERVAL -29 DAY + INTERVAL 7 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 7, @s_4, (@day0 + INTERVAL -28 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 7, @s_5, (@day0 + INTERVAL -30 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 8, @s_1, (@day0 + INTERVAL -21 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 8, @s_2, (@day0 + INTERVAL -22 DAY + INTERVAL 8 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @mo0 + 8, @s_3, (@day0 + INTERVAL -21 DAY + INTERVAL 5 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 8, @s_4, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @mo0 + 8, @s_5, (@day0 + INTERVAL -17 DAY + INTERVAL 9 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 9, @s_1, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 9, @s_2, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @mo0 + 9, @s_3, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 9, @s_4, (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @mo0 + 9, @s_5, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 10, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @mo0 + 10, @s_3, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 10, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @mo0 + 10, @s_5, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 12, @s_1, (@day0 + INTERVAL 2 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 12, @s_2, (@day0 + INTERVAL 2 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 12, @s_3, (@day0 + INTERVAL 2 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 12, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 13, @s_1, (@day0 + INTERVAL -28 DAY + INTERVAL 10 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 13, @s_2, (@day0 + INTERVAL -25 DAY + INTERVAL 3 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 13, @s_3, (@day0 + INTERVAL -28 DAY + INTERVAL 13 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 13, @s_4, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 14, @s_1, (@day0 + INTERVAL -20 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 14, @s_2, (@day0 + INTERVAL -21 DAY + INTERVAL 5 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 14, @s_4, (@day0 + INTERVAL -17 DAY + INTERVAL 12 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 15, @s_1, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 15, @s_2, (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 15, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 15, @s_5, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 16, @s_1, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 16, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 16, @s_3, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 16, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 16, @s_5, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 19, @s_1, (@day0 + INTERVAL -28 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 19, @s_2, (@day0 + INTERVAL -28 DAY + INTERVAL 7 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 19, @s_3, (@day0 + INTERVAL -27 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 19, @s_4, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @mo0 + 19, @s_5, (@day0 + INTERVAL -30 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 20, @s_2, (@day0 + INTERVAL -21 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 20, @s_3, (@day0 + INTERVAL -21 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @mo0 + 20, @s_4, (@day0 + INTERVAL -22 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 21, @s_1, (@day0 + INTERVAL -12 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 21, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 21, @s_3, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 21, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 22, @s_1, (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 22, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 22, @s_3, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 22, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @mo0 + 25, @s_1, (@day0 + INTERVAL -27 DAY + INTERVAL 7 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 25, @s_2, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 25, @s_3, (@day0 + INTERVAL -27 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 25, @s_4, (@day0 + INTERVAL -26 DAY + INTERVAL 3 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 25, @s_5, (@day0 + INTERVAL -26 DAY + INTERVAL 2 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @mo0 + 26, @s_1, (@day0 + INTERVAL -19 DAY + INTERVAL 6 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 26, @s_2, (@day0 + INTERVAL -17 DAY + INTERVAL 2 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 26, @s_4, (@day0 + INTERVAL -22 DAY + INTERVAL 11 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 26, @s_5, (@day0 + INTERVAL -17 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 27, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 27, @s_2, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 27, @s_3, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 27, @s_4, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 27, @s_5, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 28, @s_1, (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 28, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 28, @s_3, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 28, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 28, @s_5, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 31, @s_1, (@day0 + INTERVAL -27 DAY + INTERVAL 6 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 31, @s_2, (@day0 + INTERVAL -27 DAY + INTERVAL 10 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 31, @s_3, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 31, @s_5, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 32, @s_1, (@day0 + INTERVAL -17 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 32, @s_3, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 32, @s_4, (@day0 + INTERVAL -20 DAY + INTERVAL 12 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 32, @s_5, (@day0 + INTERVAL -17 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 33, @s_1, (@day0 + INTERVAL -10 DAY + INTERVAL 6 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 33, @s_2, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 33, @s_3, (@day0 + INTERVAL -11 DAY + INTERVAL 7 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 33, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 33, @s_5, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 34, @s_1, (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 34, @s_2, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 34, @s_3, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 34, @s_4, (@day0 + INTERVAL -3 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 36, @s_3, (@day0 + INTERVAL 2 DAY + INTERVAL 4 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 36, @s_5, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 37, @s_1, (@day0 + INTERVAL -26 DAY + INTERVAL 4 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @mo0 + 37, @s_2, (@day0 + INTERVAL -28 DAY + INTERVAL 13 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @mo0 + 37, @s_3, (@day0 + INTERVAL -27 DAY + INTERVAL 3 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 37, @s_4, (@day0 + INTERVAL -29 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 38, @s_1, (@day0 + INTERVAL -21 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @mo0 + 38, @s_2, (@day0 + INTERVAL -20 DAY + INTERVAL 4 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 38, @s_3, (@day0 + INTERVAL -22 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 38, @s_4, (@day0 + INTERVAL -19 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 38, @s_5, (@day0 + INTERVAL -19 DAY + INTERVAL 4 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 39, @s_1, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 39, @s_2, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 39, @s_3, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @mo0 + 39, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 40, @s_1, (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 40, @s_2, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 40, @s_3, (@day0 + INTERVAL -6 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 40, @s_4, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 43, @s_1, (@day0 + INTERVAL -26 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @mo0 + 43, @s_2, (@day0 + INTERVAL -25 DAY + INTERVAL 5 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 43, @s_3, (@day0 + INTERVAL -29 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 43, @s_4, (@day0 + INTERVAL -27 DAY + INTERVAL 5 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 43, @s_5, (@day0 + INTERVAL -29 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 44, @s_1, (@day0 + INTERVAL -22 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 44, @s_3, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @mo0 + 44, @s_4, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @mo0 + 44, @s_5, (@day0 + INTERVAL -17 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 45, @s_1, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 45, @s_2, (@day0 + INTERVAL -10 DAY + INTERVAL 5 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 45, @s_3, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 45, @s_4, (@day0 + INTERVAL -11 DAY + INTERVAL 8 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 46, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 46, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 46, @s_4, (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 49, @s_6, (@day0 + INTERVAL -26 DAY + INTERVAL 13 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 49, @s_7, (@day0 + INTERVAL -29 DAY + INTERVAL 8 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 49, @s_8, (@day0 + INTERVAL -28 DAY + INTERVAL 4 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 49, @s_10, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 50, @s_6, (@day0 + INTERVAL -17 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 50, @s_7, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 50, @s_8, (@day0 + INTERVAL -17 DAY + INTERVAL 2 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 50, @s_9, (@day0 + INTERVAL -21 DAY + INTERVAL 3 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @mo0 + 50, @s_10, (@day0 + INTERVAL -21 DAY + INTERVAL 2 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 51, @s_6, (@day0 + INTERVAL -11 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @mo0 + 51, @s_10, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 52, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 52, @s_7, (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 52, @s_8, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 52, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @mo0 + 52, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 55, @s_6, (@day0 + INTERVAL -29 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 55, @s_8, (@day0 + INTERVAL -29 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 55, @s_9, (@day0 + INTERVAL -30 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 55, @s_10, (@day0 + INTERVAL -29 DAY + INTERVAL 11 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 56, @s_6, (@day0 + INTERVAL -18 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 56, @s_7, (@day0 + INTERVAL -19 DAY + INTERVAL 6 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 56, @s_8, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 56, @s_9, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 56, @s_10, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 57, @s_6, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 57, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 57, @s_10, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 58, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 58, @s_7, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 58, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 58, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 58, @s_10, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 60, @s_6, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 60, @s_7, (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 60, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 60, @s_9, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 61, @s_6, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 61, @s_7, (@day0 + INTERVAL -26 DAY + INTERVAL 12 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 61, @s_8, (@day0 + INTERVAL -29 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @mo0 + 61, @s_9, (@day0 + INTERVAL -28 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 61, @s_10, (@day0 + INTERVAL -27 DAY + INTERVAL 11 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 62, @s_6, (@day0 + INTERVAL -22 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 62, @s_7, (@day0 + INTERVAL -19 DAY + INTERVAL 2 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 62, @s_8, (@day0 + INTERVAL -22 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 62, @s_9, (@day0 + INTERVAL -22 DAY + INTERVAL 8 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 63, @s_6, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 63, @s_7, (@day0 + INTERVAL -11 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 63, @s_8, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 63, @s_9, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 63, @s_10, (@day0 + INTERVAL -11 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 64, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 64, @s_7, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @mo0 + 64, @s_8, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @mo0 + 64, @s_10, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 67, @s_6, (@day0 + INTERVAL -27 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 67, @s_7, (@day0 + INTERVAL -27 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 67, @s_8, (@day0 + INTERVAL -28 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 67, @s_9, (@day0 + INTERVAL -27 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE)
+  SELECT @mo0 + 2 AS module_id, @s_1 AS student_id, (@day0 + INTERVAL -18 DAY + INTERVAL 6 HOUR + INTERVAL 24 MINUTE) AS first_opened_at_utc
+  UNION ALL SELECT @mo0 + 2, @s_2, (@day0 + INTERVAL -18 DAY + INTERVAL 3 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 2, @s_3, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 3, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 3, @s_2, (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 4, @s_1, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 4, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @mo0 + 7, @s_1, (@day0 + INTERVAL -28 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @mo0 + 7, @s_2, (@day0 + INTERVAL -28 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 8, @s_1, (@day0 + INTERVAL -19 DAY + INTERVAL 12 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 8, @s_2, (@day0 + INTERVAL -20 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @mo0 + 9, @s_1, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @mo0 + 9, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @mo0 + 10, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @mo0 + 10, @s_2, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 10, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @mo0 + 12, @s_2, (@day0 + INTERVAL 2 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 13, @s_2, (@day0 + INTERVAL -29 DAY + INTERVAL 7 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 13, @s_3, (@day0 + INTERVAL -28 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 14, @s_1, (@day0 + INTERVAL -22 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 14, @s_2, (@day0 + INTERVAL -21 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @mo0 + 14, @s_3, (@day0 + INTERVAL -22 DAY + INTERVAL 8 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @mo0 + 15, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @mo0 + 15, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @mo0 + 15, @s_3, (@day0 + INTERVAL -10 DAY + INTERVAL 9 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @mo0 + 16, @s_1, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @mo0 + 16, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @mo0 + 16, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 19, @s_1, (@day0 + INTERVAL -28 DAY + INTERVAL 11 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @mo0 + 19, @s_2, (@day0 + INTERVAL -28 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @mo0 + 19, @s_3, (@day0 + INTERVAL -30 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @mo0 + 20, @s_2, (@day0 + INTERVAL -20 DAY + INTERVAL 4 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 20, @s_3, (@day0 + INTERVAL -19 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @mo0 + 21, @s_1, (@day0 + INTERVAL -11 DAY + INTERVAL 4 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 21, @s_2, (@day0 + INTERVAL -10 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 21, @s_3, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 22, @s_1, (@day0 + INTERVAL -3 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 22, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @mo0 + 22, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @mo0 + 25, @s_1, (@day0 + INTERVAL -27 DAY + INTERVAL 13 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 25, @s_2, (@day0 + INTERVAL -28 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @mo0 + 25, @s_3, (@day0 + INTERVAL -26 DAY + INTERVAL 12 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 26, @s_1, (@day0 + INTERVAL -17 DAY + INTERVAL 5 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @mo0 + 27, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @mo0 + 27, @s_3, (@day0 + INTERVAL -10 DAY + INTERVAL 12 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 28, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @mo0 + 28, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 31, @s_2, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @mo0 + 31, @s_3, (@day0 + INTERVAL -28 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @mo0 + 32, @s_1, (@day0 + INTERVAL -18 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @mo0 + 32, @s_2, (@day0 + INTERVAL -21 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @mo0 + 32, @s_3, (@day0 + INTERVAL -20 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 33, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @mo0 + 33, @s_2, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 33, @s_3, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @mo0 + 34, @s_1, (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 34, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @mo0 + 36, @s_1, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @mo0 + 36, @s_2, (@day0 + INTERVAL 2 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @mo0 + 37, @s_1, (@day0 + INTERVAL -29 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @mo0 + 37, @s_2, (@day0 + INTERVAL -29 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @mo0 + 37, @s_3, (@day0 + INTERVAL -30 DAY + INTERVAL 3 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @mo0 + 38, @s_1, (@day0 + INTERVAL -19 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 38, @s_2, (@day0 + INTERVAL -21 DAY + INTERVAL 11 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @mo0 + 38, @s_3, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 39, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 39, @s_3, (@day0 + INTERVAL -10 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 40, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 40, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @mo0 + 40, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @mo0 + 43, @s_2, (@day0 + INTERVAL -27 DAY + INTERVAL 7 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @mo0 + 43, @s_3, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 44, @s_1, (@day0 + INTERVAL -19 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 44, @s_2, (@day0 + INTERVAL -18 DAY + INTERVAL 3 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 44, @s_3, (@day0 + INTERVAL -18 DAY + INTERVAL 2 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @mo0 + 45, @s_1, (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @mo0 + 45, @s_2, (@day0 + INTERVAL -10 DAY + INTERVAL 2 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 46, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @mo0 + 46, @s_2, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 49, @s_4, (@day0 + INTERVAL -27 DAY + INTERVAL 7 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @mo0 + 49, @s_5, (@day0 + INTERVAL -27 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 49, @s_6, (@day0 + INTERVAL -27 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @mo0 + 50, @s_4, (@day0 + INTERVAL -18 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @mo0 + 50, @s_5, (@day0 + INTERVAL -17 DAY + INTERVAL 4 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @mo0 + 50, @s_6, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 51, @s_4, (@day0 + INTERVAL -11 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 51, @s_5, (@day0 + INTERVAL -11 DAY + INTERVAL 11 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @mo0 + 51, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 52, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @mo0 + 52, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 52, @s_6, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 55, @s_4, (@day0 + INTERVAL -27 DAY + INTERVAL 5 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @mo0 + 55, @s_5, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @mo0 + 55, @s_6, (@day0 + INTERVAL -25 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @mo0 + 56, @s_5, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @mo0 + 56, @s_6, (@day0 + INTERVAL -20 DAY + INTERVAL 12 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 57, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @mo0 + 57, @s_5, (@day0 + INTERVAL -10 DAY + INTERVAL 6 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @mo0 + 57, @s_6, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 58, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 7 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @mo0 + 58, @s_5, (@day0 + INTERVAL -3 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 58, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 60, @s_4, (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @mo0 + 60, @s_5, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 60, @s_6, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 61, @s_4, (@day0 + INTERVAL -25 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 61, @s_5, (@day0 + INTERVAL -25 DAY + INTERVAL 9 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 61, @s_6, (@day0 + INTERVAL -29 DAY + INTERVAL 9 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @mo0 + 62, @s_4, (@day0 + INTERVAL -22 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 62, @s_5, (@day0 + INTERVAL -18 DAY + INTERVAL 4 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @mo0 + 62, @s_6, (@day0 + INTERVAL -20 DAY + INTERVAL 13 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @mo0 + 63, @s_4, (@day0 + INTERVAL -12 DAY + INTERVAL 3 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @mo0 + 63, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @mo0 + 63, @s_6, (@day0 + INTERVAL -10 DAY + INTERVAL 4 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @mo0 + 64, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 64, @s_5, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @mo0 + 64, @s_6, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @mo0 + 67, @s_4, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 67, @s_5, (@day0 + INTERVAL -26 DAY + INTERVAL 2 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @mo0 + 67, @s_6, (@day0 + INTERVAL -28 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @mo0 + 68, @s_4, (@day0 + INTERVAL -18 DAY + INTERVAL 2 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @mo0 + 68, @s_5, (@day0 + INTERVAL -22 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @mo0 + 68, @s_6, (@day0 + INTERVAL -17 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @mo0 + 69, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 10 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @mo0 + 69, @s_5, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 69, @s_6, (@day0 + INTERVAL -10 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @mo0 + 70, @s_4, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 70, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 12 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 70, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 73, @s_4, (@day0 + INTERVAL -25 DAY + INTERVAL 6 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 73, @s_5, (@day0 + INTERVAL -29 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @mo0 + 73, @s_6, (@day0 + INTERVAL -25 DAY + INTERVAL 11 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 74, @s_4, (@day0 + INTERVAL -19 DAY + INTERVAL 9 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 74, @s_5, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 52 MINUTE)
+  UNION ALL SELECT @mo0 + 74, @s_6, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @mo0 + 75, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 75, @s_5, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @mo0 + 75, @s_6, (@day0 + INTERVAL -10 DAY + INTERVAL 5 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @mo0 + 76, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @mo0 + 76, @s_5, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @mo0 + 76, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 79, @s_4, (@day0 + INTERVAL -25 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @mo0 + 79, @s_5, (@day0 + INTERVAL -27 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 79, @s_6, (@day0 + INTERVAL -28 DAY + INTERVAL 10 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 80, @s_4, (@day0 + INTERVAL -17 DAY + INTERVAL 3 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 80, @s_5, (@day0 + INTERVAL -19 DAY + INTERVAL 3 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @mo0 + 80, @s_6, (@day0 + INTERVAL -21 DAY + INTERVAL 6 HOUR + INTERVAL 55 MINUTE)
+  UNION ALL SELECT @mo0 + 81, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 81, @s_5, (@day0 + INTERVAL -10 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @mo0 + 81, @s_6, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 82, @s_4, (@day0 + INTERVAL -3 DAY + INTERVAL 2 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @mo0 + 82, @s_5, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @mo0 + 82, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 84, @s_6, (@day0 + INTERVAL -3 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 85, @s_5, (@day0 + INTERVAL -27 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 85, @s_6, (@day0 + INTERVAL -29 DAY + INTERVAL 11 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 86, @s_4, (@day0 + INTERVAL -17 DAY + INTERVAL 6 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 86, @s_5, (@day0 + INTERVAL -21 DAY + INTERVAL 2 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @mo0 + 86, @s_6, (@day0 + INTERVAL -19 DAY + INTERVAL 3 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @mo0 + 87, @s_4, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @mo0 + 87, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @mo0 + 88, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 88, @s_5, (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @mo0 + 88, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 92, @s_7, (@day0 + INTERVAL -18 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 92, @s_8, (@day0 + INTERVAL -19 DAY + INTERVAL 6 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 92, @s_9, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 93, @s_7, (@day0 + INTERVAL -11 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 93, @s_8, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @mo0 + 93, @s_9, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 94, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 97, @s_7, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 97, @s_8, (@day0 + INTERVAL -29 DAY + INTERVAL 10 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 97, @s_9, (@day0 + INTERVAL -26 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @mo0 + 98, @s_7, (@day0 + INTERVAL -22 DAY + INTERVAL 9 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @mo0 + 98, @s_8, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @mo0 + 98, @s_9, (@day0 + INTERVAL -17 DAY + INTERVAL 10 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @mo0 + 99, @s_7, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 99, @s_8, (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @mo0 + 99, @s_9, (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 100, @s_7, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 100, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @mo0 + 100, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @mo0 + 103, @s_7, (@day0 + INTERVAL -28 DAY + INTERVAL 4 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @mo0 + 103, @s_8, (@day0 + INTERVAL -27 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 103, @s_9, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 104, @s_7, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @mo0 + 104, @s_8, (@day0 + INTERVAL -22 DAY + INTERVAL 9 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @mo0 + 105, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 105, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 106, @s_7, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 106, @s_8, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @mo0 + 106, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 108, @s_8, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 109, @s_7, (@day0 + INTERVAL -26 DAY + INTERVAL 7 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 110, @s_7, (@day0 + INTERVAL -18 DAY + INTERVAL 5 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @mo0 + 110, @s_8, (@day0 + INTERVAL -21 DAY + INTERVAL 7 HOUR + INTERVAL 52 MINUTE)
+  UNION ALL SELECT @mo0 + 111, @s_7, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @mo0 + 111, @s_8, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 111, @s_9, (@day0 + INTERVAL -12 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE)
 ) AS r WHERE @go = 1;
 INSERT INTO module_views (module_id, student_id, first_opened_at_utc)
 SELECT * FROM (
-  SELECT @mo0 + 67 AS module_id, @s_10 AS student_id, (@day0 + INTERVAL -27 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE) AS first_opened_at_utc
-  UNION ALL SELECT @mo0 + 68, @s_7, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 68, @s_8, (@day0 + INTERVAL -21 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 68, @s_9, (@day0 + INTERVAL -21 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 68, @s_10, (@day0 + INTERVAL -17 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 69, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 69, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @mo0 + 69, @s_9, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 69, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @mo0 + 70, @s_6, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 70, @s_7, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 70, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 70, @s_9, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 70, @s_10, (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @mo0 + 73, @s_6, (@day0 + INTERVAL -25 DAY + INTERVAL 2 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 73, @s_7, (@day0 + INTERVAL -29 DAY + INTERVAL 4 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 73, @s_8, (@day0 + INTERVAL -27 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 73, @s_9, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 73, @s_10, (@day0 + INTERVAL -28 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @mo0 + 74, @s_6, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 74, @s_7, (@day0 + INTERVAL -18 DAY + INTERVAL 10 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 74, @s_8, (@day0 + INTERVAL -19 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 74, @s_9, (@day0 + INTERVAL -18 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 75, @s_6, (@day0 + INTERVAL -11 DAY + INTERVAL 9 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 75, @s_7, (@day0 + INTERVAL -10 DAY + INTERVAL 12 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 75, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 75, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 75, @s_10, (@day0 + INTERVAL -13 DAY + INTERVAL 13 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 76, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @mo0 + 76, @s_7, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 76, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 76, @s_10, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 79, @s_6, (@day0 + INTERVAL -26 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 79, @s_7, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 79, @s_8, (@day0 + INTERVAL -28 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 79, @s_9, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 79, @s_10, (@day0 + INTERVAL -28 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 80, @s_6, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 80, @s_7, (@day0 + INTERVAL -17 DAY + INTERVAL 6 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 80, @s_8, (@day0 + INTERVAL -19 DAY + INTERVAL 8 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 80, @s_9, (@day0 + INTERVAL -20 DAY + INTERVAL 12 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 80, @s_10, (@day0 + INTERVAL -17 DAY + INTERVAL 5 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 81, @s_6, (@day0 + INTERVAL -11 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 81, @s_7, (@day0 + INTERVAL -12 DAY + INTERVAL 13 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 81, @s_8, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 81, @s_9, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 81, @s_10, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 82, @s_6, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 82, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 82, @s_9, (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 84, @s_7, (@day0 + INTERVAL 1 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 84, @s_10, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 85, @s_6, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 85, @s_7, (@day0 + INTERVAL -29 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 85, @s_9, (@day0 + INTERVAL -25 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 85, @s_10, (@day0 + INTERVAL -28 DAY + INTERVAL 7 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 86, @s_7, (@day0 + INTERVAL -18 DAY + INTERVAL 2 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 86, @s_8, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 86, @s_9, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 86, @s_10, (@day0 + INTERVAL -19 DAY + INTERVAL 4 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 87, @s_6, (@day0 + INTERVAL -11 DAY + INTERVAL 9 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 87, @s_7, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 87, @s_8, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 87, @s_10, (@day0 + INTERVAL -11 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 88, @s_6, (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 88, @s_7, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 88, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @mo0 + 88, @s_9, (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 88, @s_10, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 92, @s_11, (@day0 + INTERVAL -21 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 92, @s_12, (@day0 + INTERVAL -20 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 92, @s_13, (@day0 + INTERVAL -19 DAY + INTERVAL 13 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 92, @s_14, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 92, @s_15, (@day0 + INTERVAL -17 DAY + INTERVAL 12 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @mo0 + 93, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 93, @s_12, (@day0 + INTERVAL -12 DAY + INTERVAL 9 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 93, @s_15, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 94, @s_11, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @mo0 + 94, @s_12, (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 94, @s_13, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 94, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 94, @s_15, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 97, @s_11, (@day0 + INTERVAL -26 DAY + INTERVAL 8 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 97, @s_12, (@day0 + INTERVAL -29 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 97, @s_13, (@day0 + INTERVAL -26 DAY + INTERVAL 3 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 97, @s_14, (@day0 + INTERVAL -25 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 97, @s_15, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 98, @s_11, (@day0 + INTERVAL -21 DAY + INTERVAL 4 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 98, @s_12, (@day0 + INTERVAL -22 DAY + INTERVAL 9 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 98, @s_14, (@day0 + INTERVAL -19 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 98, @s_15, (@day0 + INTERVAL -21 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 99, @s_11, (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 99, @s_12, (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 99, @s_13, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 99, @s_14, (@day0 + INTERVAL -10 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 100, @s_11, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 100, @s_12, (@day0 + INTERVAL -3 DAY + INTERVAL 8 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 100, @s_14, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 100, @s_15, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @mo0 + 103, @s_11, (@day0 + INTERVAL -25 DAY + INTERVAL 13 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 103, @s_12, (@day0 + INTERVAL -27 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @mo0 + 103, @s_13, (@day0 + INTERVAL -26 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 103, @s_14, (@day0 + INTERVAL -26 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 103, @s_15, (@day0 + INTERVAL -29 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 104, @s_11, (@day0 + INTERVAL -18 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 104, @s_12, (@day0 + INTERVAL -17 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 104, @s_14, (@day0 + INTERVAL -19 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 105, @s_11, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 105, @s_12, (@day0 + INTERVAL -11 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 105, @s_13, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @mo0 + 105, @s_14, (@day0 + INTERVAL -10 DAY + INTERVAL 10 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 105, @s_15, (@day0 + INTERVAL -12 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 106, @s_11, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 106, @s_12, (@day0 + INTERVAL -3 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 106, @s_14, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 106, @s_15, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 108, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 108, @s_13, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 109, @s_11, (@day0 + INTERVAL -25 DAY + INTERVAL 13 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 109, @s_12, (@day0 + INTERVAL -26 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 109, @s_13, (@day0 + INTERVAL -29 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 109, @s_14, (@day0 + INTERVAL -30 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 109, @s_15, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 110, @s_11, (@day0 + INTERVAL -20 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 110, @s_12, (@day0 + INTERVAL -17 DAY + INTERVAL 5 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 110, @s_13, (@day0 + INTERVAL -20 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 110, @s_14, (@day0 + INTERVAL -18 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 110, @s_15, (@day0 + INTERVAL -22 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @mo0 + 111, @s_11, (@day0 + INTERVAL -12 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 112, @s_11, (@day0 + INTERVAL -3 DAY + INTERVAL 2 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 112, @s_12, (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 112, @s_14, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @mo0 + 112, @s_15, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 115, @s_11, (@day0 + INTERVAL -25 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @mo0 + 115, @s_12, (@day0 + INTERVAL -29 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @mo0 + 115, @s_13, (@day0 + INTERVAL -26 DAY + INTERVAL 3 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 115, @s_14, (@day0 + INTERVAL -25 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 115, @s_15, (@day0 + INTERVAL -29 DAY + INTERVAL 9 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 116, @s_11, (@day0 + INTERVAL -22 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 116, @s_12, (@day0 + INTERVAL -17 DAY + INTERVAL 3 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @mo0 + 116, @s_13, (@day0 + INTERVAL -22 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 116, @s_14, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 116, @s_15, (@day0 + INTERVAL -17 DAY + INTERVAL 4 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @mo0 + 117, @s_12, (@day0 + INTERVAL -12 DAY + INTERVAL 12 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 117, @s_13, (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @mo0 + 117, @s_14, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @mo0 + 117, @s_15, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 118, @s_11, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 118, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 118, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 118, @s_15, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 121, @s_11, (@day0 + INTERVAL -25 DAY + INTERVAL 6 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 121, @s_12, (@day0 + INTERVAL -30 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 121, @s_14, (@day0 + INTERVAL -25 DAY + INTERVAL 4 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 121, @s_15, (@day0 + INTERVAL -30 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 122, @s_11, (@day0 + INTERVAL -21 DAY + INTERVAL 3 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 122, @s_12, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 122, @s_13, (@day0 + INTERVAL -18 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 122, @s_14, (@day0 + INTERVAL -21 DAY + INTERVAL 10 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 122, @s_15, (@day0 + INTERVAL -20 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @mo0 + 123, @s_11, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 123, @s_12, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @mo0 + 123, @s_14, (@day0 + INTERVAL -11 DAY + INTERVAL 4 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 123, @s_15, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 124, @s_11, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 124, @s_12, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 124, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 124, @s_15, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @mo0 + 127, @s_11, (@day0 + INTERVAL -29 DAY + INTERVAL 9 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @mo0 + 127, @s_12, (@day0 + INTERVAL -26 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 127, @s_14, (@day0 + INTERVAL -25 DAY + INTERVAL 3 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 127, @s_15, (@day0 + INTERVAL -28 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 128, @s_11, (@day0 + INTERVAL -20 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 128, @s_12, (@day0 + INTERVAL -21 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 128, @s_13, (@day0 + INTERVAL -20 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 128, @s_15, (@day0 + INTERVAL -19 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 129, @s_11, (@day0 + INTERVAL -12 DAY + INTERVAL 7 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 129, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 129, @s_13, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 129, @s_15, (@day0 + INTERVAL -10 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 130, @s_11, (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 130, @s_12, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @mo0 + 130, @s_13, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 130, @s_14, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 130, @s_15, (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 132, @s_12, (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @mo0 + 132, @s_13, (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 132, @s_14, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 132, @s_15, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 133, @s_11, (@day0 + INTERVAL -27 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 133, @s_12, (@day0 + INTERVAL -25 DAY + INTERVAL 12 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 133, @s_14, (@day0 + INTERVAL -30 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @mo0 + 133, @s_15, (@day0 + INTERVAL -28 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 134, @s_11, (@day0 + INTERVAL -19 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 134, @s_12, (@day0 + INTERVAL -18 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 134, @s_13, (@day0 + INTERVAL -19 DAY + INTERVAL 4 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 134, @s_14, (@day0 + INTERVAL -19 DAY + INTERVAL 9 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @mo0 + 134, @s_15, (@day0 + INTERVAL -22 DAY + INTERVAL 4 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 135, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 135, @s_12, (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE)
-) AS r WHERE @go = 1;
-INSERT INTO module_views (module_id, student_id, first_opened_at_utc)
-SELECT * FROM (
-  SELECT @mo0 + 135 AS module_id, @s_13 AS student_id, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 52 MINUTE) AS first_opened_at_utc
-  UNION ALL SELECT @mo0 + 135, @s_14, (@day0 + INTERVAL -10 DAY + INTERVAL 3 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @mo0 + 135, @s_15, (@day0 + INTERVAL -10 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 136, @s_11, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 136, @s_12, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 136, @s_13, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 136, @s_14, (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @mo0 + 136, @s_15, (@day0 + INTERVAL -5 DAY + INTERVAL 12 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 139, @s_16, (@day0 + INTERVAL -26 DAY + INTERVAL 4 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 139, @s_17, (@day0 + INTERVAL -29 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 139, @s_18, (@day0 + INTERVAL -26 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 139, @s_20, (@day0 + INTERVAL -28 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 140, @s_17, (@day0 + INTERVAL -22 DAY + INTERVAL 12 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @mo0 + 140, @s_18, (@day0 + INTERVAL -19 DAY + INTERVAL 10 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 140, @s_19, (@day0 + INTERVAL -21 DAY + INTERVAL 7 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 140, @s_20, (@day0 + INTERVAL -19 DAY + INTERVAL 2 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 141, @s_16, (@day0 + INTERVAL -10 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 141, @s_17, (@day0 + INTERVAL -13 DAY + INTERVAL 13 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @mo0 + 141, @s_18, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 141, @s_19, (@day0 + INTERVAL -11 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 141, @s_20, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 142, @s_16, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 142, @s_17, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 142, @s_18, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @mo0 + 142, @s_19, (@day0 + INTERVAL -5 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @mo0 + 142, @s_20, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 145, @s_16, (@day0 + INTERVAL -26 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @mo0 + 145, @s_17, (@day0 + INTERVAL -30 DAY + INTERVAL 9 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 145, @s_18, (@day0 + INTERVAL -30 DAY + INTERVAL 13 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 145, @s_19, (@day0 + INTERVAL -29 DAY + INTERVAL 8 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 145, @s_20, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @mo0 + 146, @s_16, (@day0 + INTERVAL -19 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @mo0 + 146, @s_17, (@day0 + INTERVAL -21 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 146, @s_18, (@day0 + INTERVAL -17 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 146, @s_20, (@day0 + INTERVAL -18 DAY + INTERVAL 3 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 147, @s_16, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 147, @s_17, (@day0 + INTERVAL -12 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @mo0 + 147, @s_18, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 147, @s_19, (@day0 + INTERVAL -11 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 147, @s_20, (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @mo0 + 148, @s_16, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @mo0 + 148, @s_17, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 148, @s_18, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @mo0 + 148, @s_19, (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 148, @s_20, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 151, @s_16, (@day0 + INTERVAL -30 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 151, @s_17, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 151, @s_18, (@day0 + INTERVAL -26 DAY + INTERVAL 6 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 151, @s_19, (@day0 + INTERVAL -28 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 151, @s_20, (@day0 + INTERVAL -27 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @mo0 + 152, @s_16, (@day0 + INTERVAL -20 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @mo0 + 152, @s_17, (@day0 + INTERVAL -17 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 152, @s_18, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 152, @s_19, (@day0 + INTERVAL -19 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 152, @s_20, (@day0 + INTERVAL -21 DAY + INTERVAL 7 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 153, @s_16, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 153, @s_17, (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @mo0 + 153, @s_18, (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @mo0 + 153, @s_19, (@day0 + INTERVAL -11 DAY + INTERVAL 2 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 153, @s_20, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 154, @s_16, (@day0 + INTERVAL -6 DAY + INTERVAL 12 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 154, @s_17, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @mo0 + 154, @s_18, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 154, @s_19, (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 154, @s_20, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 156, @s_16, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @mo0 + 156, @s_19, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 157, @s_16, (@day0 + INTERVAL -26 DAY + INTERVAL 11 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 157, @s_18, (@day0 + INTERVAL -29 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 157, @s_19, (@day0 + INTERVAL -25 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 157, @s_20, (@day0 + INTERVAL -28 DAY + INTERVAL 8 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 158, @s_16, (@day0 + INTERVAL -18 DAY + INTERVAL 10 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 158, @s_17, (@day0 + INTERVAL -21 DAY + INTERVAL 5 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 158, @s_20, (@day0 + INTERVAL -18 DAY + INTERVAL 6 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 159, @s_17, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 159, @s_18, (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 159, @s_19, (@day0 + INTERVAL -10 DAY + INTERVAL 13 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 159, @s_20, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @mo0 + 160, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @mo0 + 160, @s_17, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 160, @s_18, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @mo0 + 160, @s_19, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @mo0 + 160, @s_20, (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @mo0 + 163, @s_16, (@day0 + INTERVAL -29 DAY + INTERVAL 4 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @mo0 + 163, @s_17, (@day0 + INTERVAL -30 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @mo0 + 163, @s_18, (@day0 + INTERVAL -29 DAY + INTERVAL 12 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 163, @s_19, (@day0 + INTERVAL -30 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @mo0 + 163, @s_20, (@day0 + INTERVAL -25 DAY + INTERVAL 4 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 164, @s_17, (@day0 + INTERVAL -19 DAY + INTERVAL 12 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 165, @s_16, (@day0 + INTERVAL -10 DAY + INTERVAL 6 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @mo0 + 165, @s_17, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @mo0 + 165, @s_18, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @mo0 + 165, @s_19, (@day0 + INTERVAL -11 DAY + INTERVAL 9 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @mo0 + 165, @s_20, (@day0 + INTERVAL -11 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 166, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 166, @s_17, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @mo0 + 166, @s_18, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 166, @s_19, (@day0 + INTERVAL -3 DAY + INTERVAL 13 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @mo0 + 166, @s_20, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 169, @s_16, (@day0 + INTERVAL -26 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @mo0 + 169, @s_17, (@day0 + INTERVAL -27 DAY + INTERVAL 10 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @mo0 + 169, @s_18, (@day0 + INTERVAL -29 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @mo0 + 169, @s_19, (@day0 + INTERVAL -29 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @mo0 + 169, @s_20, (@day0 + INTERVAL -26 DAY + INTERVAL 10 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 170, @s_16, (@day0 + INTERVAL -17 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @mo0 + 170, @s_17, (@day0 + INTERVAL -21 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @mo0 + 170, @s_18, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @mo0 + 170, @s_19, (@day0 + INTERVAL -17 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @mo0 + 170, @s_20, (@day0 + INTERVAL -17 DAY + INTERVAL 13 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @mo0 + 171, @s_17, (@day0 + INTERVAL -10 DAY + INTERVAL 6 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @mo0 + 171, @s_18, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @mo0 + 171, @s_20, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @mo0 + 172, @s_17, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @mo0 + 172, @s_18, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @mo0 + 172, @s_19, (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @mo0 + 172, @s_20, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @mo0 + 175, @s_16, (@day0 + INTERVAL -26 DAY + INTERVAL 7 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @mo0 + 175, @s_17, (@day0 + INTERVAL -25 DAY + INTERVAL 3 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @mo0 + 175, @s_18, (@day0 + INTERVAL -27 DAY + INTERVAL 7 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 175, @s_19, (@day0 + INTERVAL -28 DAY + INTERVAL 7 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 175, @s_20, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @mo0 + 176, @s_17, (@day0 + INTERVAL -20 DAY + INTERVAL 3 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @mo0 + 176, @s_18, (@day0 + INTERVAL -17 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @mo0 + 176, @s_19, (@day0 + INTERVAL -20 DAY + INTERVAL 13 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @mo0 + 176, @s_20, (@day0 + INTERVAL -20 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @mo0 + 177, @s_17, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @mo0 + 177, @s_18, (@day0 + INTERVAL -10 DAY + INTERVAL 10 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @mo0 + 177, @s_19, (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @mo0 + 177, @s_20, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 178, @s_16, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @mo0 + 178, @s_17, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @mo0 + 178, @s_19, (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @mo0 + 178, @s_20, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @mo0 + 180, @s_16, (@day0 + INTERVAL 4 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @mo0 + 180, @s_18, (@day0 + INTERVAL 1 DAY + INTERVAL 7 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @mo0 + 180, @s_19, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 57 MINUTE)
+  SELECT @mo0 + 112 AS module_id, @s_7 AS student_id, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE) AS first_opened_at_utc
+  UNION ALL SELECT @mo0 + 112, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 112, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @mo0 + 115, @s_8, (@day0 + INTERVAL -26 DAY + INTERVAL 8 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 115, @s_9, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @mo0 + 116, @s_7, (@day0 + INTERVAL -21 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @mo0 + 116, @s_8, (@day0 + INTERVAL -17 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 117, @s_7, (@day0 + INTERVAL -11 DAY + INTERVAL 11 HOUR + INTERVAL 55 MINUTE)
+  UNION ALL SELECT @mo0 + 117, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @mo0 + 117, @s_9, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @mo0 + 118, @s_7, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @mo0 + 118, @s_8, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @mo0 + 121, @s_8, (@day0 + INTERVAL -30 DAY + INTERVAL 6 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @mo0 + 121, @s_9, (@day0 + INTERVAL -26 DAY + INTERVAL 4 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @mo0 + 122, @s_7, (@day0 + INTERVAL -20 DAY + INTERVAL 11 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 122, @s_8, (@day0 + INTERVAL -17 DAY + INTERVAL 10 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 122, @s_9, (@day0 + INTERVAL -20 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 123, @s_7, (@day0 + INTERVAL -12 DAY + INTERVAL 3 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @mo0 + 123, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @mo0 + 123, @s_9, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 124, @s_8, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @mo0 + 124, @s_9, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 127, @s_7, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @mo0 + 127, @s_8, (@day0 + INTERVAL -27 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @mo0 + 127, @s_9, (@day0 + INTERVAL -25 DAY + INTERVAL 8 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @mo0 + 128, @s_7, (@day0 + INTERVAL -18 DAY + INTERVAL 10 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 128, @s_9, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @mo0 + 129, @s_7, (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @mo0 + 129, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 129, @s_9, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @mo0 + 130, @s_7, (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @mo0 + 130, @s_8, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 130, @s_9, (@day0 + INTERVAL -3 DAY + INTERVAL 3 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @mo0 + 132, @s_8, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 133, @s_7, (@day0 + INTERVAL -30 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 133, @s_8, (@day0 + INTERVAL -28 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 133, @s_9, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @mo0 + 134, @s_7, (@day0 + INTERVAL -20 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @mo0 + 134, @s_8, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @mo0 + 134, @s_9, (@day0 + INTERVAL -17 DAY + INTERVAL 6 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 135, @s_7, (@day0 + INTERVAL -12 DAY + INTERVAL 8 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @mo0 + 135, @s_8, (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 135, @s_9, (@day0 + INTERVAL -10 DAY + INTERVAL 5 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 136, @s_7, (@day0 + INTERVAL -4 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 136, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 13 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 136, @s_9, (@day0 + INTERVAL -6 DAY + INTERVAL 2 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @mo0 + 139, @s_10, (@day0 + INTERVAL -30 DAY + INTERVAL 3 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 139, @s_11, (@day0 + INTERVAL -29 DAY + INTERVAL 3 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @mo0 + 139, @s_12, (@day0 + INTERVAL -25 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 140, @s_11, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 140, @s_12, (@day0 + INTERVAL -18 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 141, @s_11, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @mo0 + 141, @s_12, (@day0 + INTERVAL -10 DAY + INTERVAL 12 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @mo0 + 142, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 142, @s_11, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 142, @s_12, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 145, @s_10, (@day0 + INTERVAL -25 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @mo0 + 145, @s_11, (@day0 + INTERVAL -28 DAY + INTERVAL 7 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @mo0 + 146, @s_10, (@day0 + INTERVAL -18 DAY + INTERVAL 2 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @mo0 + 146, @s_11, (@day0 + INTERVAL -21 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 146, @s_12, (@day0 + INTERVAL -22 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @mo0 + 147, @s_10, (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 147, @s_11, (@day0 + INTERVAL -11 DAY + INTERVAL 9 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @mo0 + 147, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 148, @s_10, (@day0 + INTERVAL -6 DAY + INTERVAL 2 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 148, @s_12, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 151, @s_10, (@day0 + INTERVAL -28 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 151, @s_11, (@day0 + INTERVAL -27 DAY + INTERVAL 5 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @mo0 + 151, @s_12, (@day0 + INTERVAL -30 DAY + INTERVAL 12 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @mo0 + 152, @s_10, (@day0 + INTERVAL -17 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @mo0 + 152, @s_11, (@day0 + INTERVAL -17 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @mo0 + 152, @s_12, (@day0 + INTERVAL -21 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @mo0 + 153, @s_10, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 153, @s_11, (@day0 + INTERVAL -12 DAY + INTERVAL 13 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @mo0 + 153, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 154, @s_10, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @mo0 + 154, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @mo0 + 154, @s_12, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 156, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @mo0 + 157, @s_10, (@day0 + INTERVAL -26 DAY + INTERVAL 13 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @mo0 + 157, @s_11, (@day0 + INTERVAL -25 DAY + INTERVAL 7 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 157, @s_12, (@day0 + INTERVAL -27 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 158, @s_10, (@day0 + INTERVAL -21 DAY + INTERVAL 6 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 158, @s_11, (@day0 + INTERVAL -18 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @mo0 + 158, @s_12, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 159, @s_10, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @mo0 + 159, @s_11, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @mo0 + 159, @s_12, (@day0 + INTERVAL -10 DAY + INTERVAL 5 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @mo0 + 160, @s_10, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @mo0 + 160, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @mo0 + 160, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @mo0 + 163, @s_11, (@day0 + INTERVAL -27 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @mo0 + 163, @s_12, (@day0 + INTERVAL -29 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @mo0 + 164, @s_10, (@day0 + INTERVAL -20 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @mo0 + 164, @s_11, (@day0 + INTERVAL -19 DAY + INTERVAL 6 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @mo0 + 164, @s_12, (@day0 + INTERVAL -20 DAY + INTERVAL 3 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @mo0 + 165, @s_10, (@day0 + INTERVAL -10 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @mo0 + 165, @s_12, (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @mo0 + 166, @s_10, (@day0 + INTERVAL -3 DAY + INTERVAL 8 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @mo0 + 166, @s_11, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @mo0 + 166, @s_12, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 169, @s_10, (@day0 + INTERVAL -28 DAY + INTERVAL 13 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 169, @s_12, (@day0 + INTERVAL -27 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @mo0 + 170, @s_10, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 170, @s_11, (@day0 + INTERVAL -18 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @mo0 + 170, @s_12, (@day0 + INTERVAL -21 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 171, @s_10, (@day0 + INTERVAL -11 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @mo0 + 171, @s_11, (@day0 + INTERVAL -10 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @mo0 + 172, @s_10, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @mo0 + 172, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @mo0 + 175, @s_10, (@day0 + INTERVAL -26 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @mo0 + 175, @s_11, (@day0 + INTERVAL -29 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @mo0 + 175, @s_12, (@day0 + INTERVAL -25 DAY + INTERVAL 10 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @mo0 + 176, @s_10, (@day0 + INTERVAL -19 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @mo0 + 176, @s_11, (@day0 + INTERVAL -18 DAY + INTERVAL 8 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @mo0 + 176, @s_12, (@day0 + INTERVAL -17 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @mo0 + 177, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @mo0 + 177, @s_11, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @mo0 + 178, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @mo0 + 178, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @mo0 + 178, @s_12, (@day0 + INTERVAL -5 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @mo0 + 180, @s_12, (@day0 + INTERVAL 1 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE)
 ) AS r WHERE @go = 1;
 
 INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 1 AS item_id, @s_1 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE) AS started_at_utc, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, 41 AS score, 'Clear and complete.' AS feedback, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE) AS created_at_utc, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 1, @s_2, 'Submitted', (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 47 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 1, @s_3, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 32 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 1, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_1, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_2, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_3, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_4, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"True"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 7, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_1, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_3, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_5, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 4, @s_1, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 38 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/1-4', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_1, 'Submitted', (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_2, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 47 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48.5, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_3, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_4, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 44 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_5, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 21, 'Some parts are missing. See me if you need help.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_1, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"10"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"5"', '}}'), 6, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_2, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_3, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_4, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 8, @s_1, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 8, @s_2, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 8, @s_3, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 48 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 9, @s_1, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/1-9', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 9, @s_3, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/3-9', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 10, @s_2, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 10, @s_4, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_1, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 4 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_2, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_3, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 23 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_1, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Sender"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_2, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Sender"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_3, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Battery"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"receiver"', '}}'), 6, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_4, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Sender"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Battery"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"I don''t know"', '}}'), 3, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 13, @s_1, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @it0 + 13, @s_3, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 14, @s_4, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/4-14', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_1, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_2, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_3, 'Submitted', (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 50 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_4, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_5, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 23, 'Some parts are missing. See me if you need help.', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_1, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 11, '":"False"', ',', '"', @qq0 + 12, '":"filipino"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_2, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 49 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 11, '":"True"', ',', '"', @qq0 + 12, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 49 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_3, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 11, '":"True"', ',', '"', @qq0 + 12, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_4, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 11, '":"True"', ',', '"', @qq0 + 12, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_1, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_3, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_4, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 19, @s_3, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/3-19', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_1, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_2, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_3, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_4, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_5, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 21.5, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
+  SELECT @it0 + 1 AS item_id, @s_1 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE) AS started_at_utc, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, 42 AS score, 'Excellent!' AS feedback, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE) AS created_at_utc, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @it0 + 1, @s_2, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 2, @s_1, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE), 2, 'Left the page 2 times.', 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 2, @s_2, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 2, @s_3, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 1, ',', @qq0 + 2, ',', @qq0 + 3, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 1, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 2, '":"False"', ',', '"', @qq0 + 3, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 6, @s_1, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 36 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @it0 + 6, @s_2, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 34 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @it0 + 6, @s_3, 'Submitted', (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 46 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 7, @s_1, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 7, @s_2, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"True"', ',', '"', @qq0 + 6, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 7, @s_3, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 4, ',', @qq0 + 5, ',', @qq0 + 6, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 4, '":"32"', ',', '"', @qq0 + 5, '":"False"', ',', '"', @qq0 + 6, '":"5"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 10, @s_1, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 11, @s_1, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 11, @s_2, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 11, @s_3, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 27.5, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 12, @s_1, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Sender"', ',', '"', @qq0 + 8, '":"False"', ',', '"', @qq0 + 9, '":"receiver"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 12, @s_2, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Sender"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 12, @s_3, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 7, ',', @qq0 + 8, ',', @qq0 + 9, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 7, '":"Sender"', ',', '"', @qq0 + 8, '":"True"', ',', '"', @qq0 + 9, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 16, @s_1, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 16, @s_2, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 45 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 17, @s_1, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Ang bahay"', ',', '"', @qq0 + 11, '":"True"', ',', '"', @qq0 + 12, '":"filipino"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 17, @s_2, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 11, '":"True"', ',', '"', @qq0 + 12, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 1, 'Left the page 1 time.', 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 17, @s_3, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 10, ',', @qq0 + 11, ',', @qq0 + 12, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 10, '":"Ang bahay"', ',', '"', @qq0 + 11, '":"True"', ',', '"', @qq0 + 12, '":"filipino"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @it0 + 18, @s_2, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 21, @s_1, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 21, @s_2, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 21, @s_3, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 24 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 25, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 22, @s_1, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 5 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"5"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"3"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 5 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 22, @s_2, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"7"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @it0 + 22, @s_3, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"5"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"I don''t know"', '}}'), 3, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 23, @s_2, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 26, @s_1, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 30 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @it0 + 26, @s_2, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 26, @s_3, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 6 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 28.5, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 27, @s_1, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Make a schedule"', ',', '"', @qq0 + 17, '":"True"', ',', '"', @qq0 + 18, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 27, @s_2, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Make a schedule"', ',', '"', @qq0 + 17, '":"True"', ',', '"', @qq0 + 18, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @it0 + 29, @s_1, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 31, @s_1, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 31, @s_2, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @it0 + 31, @s_3, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 35 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 29, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 32, @s_1, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"True"', ',', '"', @qq0 + 21, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 32, @s_2, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 38 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"True"', ',', '"', @qq0 + 21, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 38 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 32, @s_3, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"False"', ',', '"', @qq0 + 21, '":"gravity"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 34, @s_1, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 36, @s_1, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @it0 + 36, @s_2, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @it0 + 37, @s_1, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 22, ',', @qq0 + 23, ',', @qq0 + 24, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 22, '":"Jose Rizal"', ',', '"', @qq0 + 23, '":"True"', ',', '"', @qq0 + 24, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @it0 + 37, @s_2, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 43 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 22, ',', @qq0 + 23, ',', @qq0 + 24, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 22, '":"Jose Rizal"', ',', '"', @qq0 + 23, '":"True"', ',', '"', @qq0 + 24, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 43 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @it0 + 37, @s_3, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 22, ',', @qq0 + 23, ',', @qq0 + 24, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 22, '":"Jose Rizal"', ',', '"', @qq0 + 23, '":"True"', ',', '"', @qq0 + 24, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @it0 + 38, @s_2, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @it0 + 41, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 41, @s_5, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 41, @s_6, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 51 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 42, @s_4, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 38 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Serrated knife"', ',', '"', @qq0 + 26, '":"True"', ',', '"', @qq0 + 27, '":"100"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 38 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 42, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Paring knife"', ',', '"', @qq0 + 26, '":"False"', ',', '"', @qq0 + 27, '":"100"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 42, @s_6, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 47 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Serrated knife"', ',', '"', @qq0 + 26, '":"False"', ',', '"', @qq0 + 27, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 47 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @it0 + 43, @s_4, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 44, @s_5, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 46, @s_4, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 46, @s_5, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 57 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 57 MINUTE)
 ) AS r WHERE @go = 1;
 INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 22 AS item_id, @s_1 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE) AS started_at_utc, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE) AS submitted_at_utc, 0 AS is_late, NULL AS answer_text, NULL AS link_url, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"7"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"I don''t know"', '}}') AS answers_json, 7 AS score, NULL AS feedback, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE) AS created_at_utc, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 22, @s_2, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"7"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_3, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"7"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_4, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 31 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"5"', ',', '"', @qq0 + 14, '":"True"', ',', '"', @qq0 + 15, '":"3"', '}}'), 6, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 31 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_5, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 13, ',', @qq0 + 14, ',', @qq0 + 15, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 13, '":"5"', ',', '"', @qq0 + 14, '":"False"', ',', '"', @qq0 + 15, '":"I don''t know"', '}}'), 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_1, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_2, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_5, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_1, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 22 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_2, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_3, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_5, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 17 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 20.5, 'Some parts are missing. See me if you need help.', (@day0 + INTERVAL -12 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_1, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Make a schedule"', ',', '"', @qq0 + 17, '":"True"', ',', '"', @qq0 + 18, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_2, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Make a schedule"', ',', '"', @qq0 + 17, '":"True"', ',', '"', @qq0 + 18, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_3, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Make a schedule"', ',', '"', @qq0 + 17, '":"True"', ',', '"', @qq0 + 18, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_4, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Make a schedule"', ',', '"', @qq0 + 17, '":"True"', ',', '"', @qq0 + 18, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 16, ',', @qq0 + 17, ',', @qq0 + 18, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 16, '":"Wait until the deadline"', ',', '"', @qq0 + 17, '":"False"', ',', '"', @qq0 + 18, '":"interview"', '}}'), 3, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 28, @s_5, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 29, @s_3, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 42 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/3-29', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_2, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_3, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_4, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_5, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_1, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_2, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_4, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_5, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 21, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_1, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"True"', ',', '"', @qq0 + 21, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), 3, 'Left the page 3 times.', 1, 'violations', (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_2, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"True"', ',', '"', @qq0 + 21, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_4, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"True"', ',', '"', @qq0 + 21, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 19, ',', @qq0 + 20, ',', @qq0 + 21, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 19, '":"Water"', ',', '"', @qq0 + 20, '":"True"', ',', '"', @qq0 + 21, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 33, @s_2, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 33, @s_3, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_1, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 44 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_2, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 22 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Well done, keep it up.', (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_3, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_5, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 19.5, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_1, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 22, ',', @qq0 + 23, ',', @qq0 + 24, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 22, '":"Jose Rizal"', ',', '"', @qq0 + 23, '":"True"', ',', '"', @qq0 + 24, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_3, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 22, ',', @qq0 + 23, ',', @qq0 + 24, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 22, '":"Jose Rizal"', ',', '"', @qq0 + 23, '":"True"', ',', '"', @qq0 + 24, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_4, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 30 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 22, ',', @qq0 + 23, ',', @qq0 + 24, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 22, '":"Lapu-Lapu"', ',', '"', @qq0 + 23, '":"True"', ',', '"', @qq0 + 24, '":"1986"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 30 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 38, @s_2, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 23 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_6, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_7, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 29 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 37, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -12 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_8, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_9, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 55 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_10, 'Submitted', (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_7, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Serrated knife"', ',', '"', @qq0 + 26, '":"False"', ',', '"', @qq0 + 27, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Serrated knife"', ',', '"', @qq0 + 26, '":"False"', ',', '"', @qq0 + 27, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_9, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Serrated knife"', ',', '"', @qq0 + 26, '":"False"', ',', '"', @qq0 + 27, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_10, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 25, ',', @qq0 + 26, ',', @qq0 + 27, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 25, '":"Serrated knife"', ',', '"', @qq0 + 26, '":"False"', ',', '"', @qq0 + 27, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_6, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 47 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_8, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 1 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_10, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_6, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_7, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_8, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_9, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_10, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 52 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 52 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 52 MINUTE)
+  SELECT @it0 + 46 AS item_id, @s_6 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 4 MINUTE) AS started_at_utc, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, 47.5 AS score, 'Nice effort. Check the second item again.' AS feedback, (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE) AS created_at_utc, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @it0 + 47, @s_4, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 47, @s_5, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Battery"', ',', '"', @qq0 + 29, '":"False"', ',', '"', @qq0 + 30, '":"I don''t know"', '}}'), 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 47, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 48, @s_5, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 51, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 51, @s_5, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 51, @s_6, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 52, @s_4, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE), 2, 'Left the page 2 times.', 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 52, @s_5, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Ang bahay"', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 6, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 52, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Ang bahay"', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 6, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 53, @s_5, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 40 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 56, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 56, @s_5, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 56, @s_6, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 57, @s_4, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 57, @s_5, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @it0 + 57, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @it0 + 61, @s_4, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 61, @s_5, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 61, @s_6, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 62, @s_4, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 62, @s_5, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 62, @s_6, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 63, @s_6, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 29 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @it0 + 66, @s_4, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 66, @s_5, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 50 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 42, 'Clear and complete.', (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @it0 + 66, @s_6, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 67, @s_4, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Salt"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 6, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 67, @s_5, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Water"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @it0 + 67, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Salt"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 6, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 69, @s_5, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 70, @s_5, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 71, @s_4, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 71, @s_5, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 42, 'Excellent!', (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 71, @s_6, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 39 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 72, @s_4, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 72, @s_5, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 72, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 73, @s_4, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 73, @s_5, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 1 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @it0 + 73, @s_6, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 76, @s_7, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 76, @s_8, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 76, @s_9, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 11 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 22, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @it0 + 77, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"False"', ',', '"', @qq0 + 48, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 77, @s_8, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"False"', ',', '"', @qq0 + 48, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 77, @s_9, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"False"', ',', '"', @qq0 + 48, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 79, @s_7, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @it0 + 81, @s_7, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 81, @s_8, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 3 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 81, @s_9, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 29, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 82, @s_7, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"32"', ',', '"', @qq0 + 50, '":"True"', ',', '"', @qq0 + 51, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE), 2, 'Left the page 2 times.', 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @it0 + 82, @s_8, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"32"', ',', '"', @qq0 + 50, '":"True"', ',', '"', @qq0 + 51, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 83, @s_7, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 83, @s_9, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 86, @s_7, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 86, @s_8, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 87, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Sender"', ',', '"', @qq0 + 53, '":"False"', ',', '"', @qq0 + 54, '":"receiver"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @it0 + 87, @s_8, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 20 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Sender"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 20 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 20 MINUTE)
 ) AS r WHERE @go = 1;
 INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 47 AS item_id, @s_7 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE) AS started_at_utc, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE) AS submitted_at_utc, 0 AS is_late, NULL AS answer_text, NULL AS link_url, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"receiver"', '}}') AS answers_json, 10 AS score, NULL AS feedback, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE) AS graded_at_utc, 2 AS violation_count, 'Left the page 2 times.' AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE) AS created_at_utc, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 47, @s_8, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_9, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 28, ',', @qq0 + 29, ',', @qq0 + 30, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 28, '":"Sender"', ',', '"', @qq0 + 29, '":"True"', ',', '"', @qq0 + 30, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), 3, 'Left the page 3 times.', 1, 'violations', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 48, @s_9, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 50 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 49, @s_9, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/9-49', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_6, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_7, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_8, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 28 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_10, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_6, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 33 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_7, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 51 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 40, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_8, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 6 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 40.5, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_9, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_10, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_6, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_7, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_9, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 32, '":"False"', ',', '"', @qq0 + 33, '":"I don''t know"', '}}'), 4, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 31, ',', @qq0 + 32, ',', @qq0 + 33, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 31, '":"Ang bahay"', ',', '"', @qq0 + 32, '":"True"', ',', '"', @qq0 + 33, '":"filipino"', '}}'), 6, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 53, @s_7, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 3 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 53, @s_10, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 20 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 54, @s_6, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 27 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/6-54', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_6, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 30 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_7, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_8, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_9, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_10, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_6, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_9, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 34, ',', @qq0 + 35, ',', @qq0 + 36, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 34, '":"7"', ',', '"', @qq0 + 35, '":"True"', ',', '"', @qq0 + 36, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 58, @s_9, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 3 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 58, @s_10, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 59, @s_7, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/7-59', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_6, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_7, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_8, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_9, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_10, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_6, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Wait until the deadline"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"False"', ',', '"', @qq0 + 39, '":"I don''t know"', '}}'), 4, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE), 2, 'Left the page 2 times.', 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_9, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_10, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 37, ',', @qq0 + 38, ',', @qq0 + 39, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 37, '":"Make a schedule"', ',', '"', @qq0 + 38, '":"True"', ',', '"', @qq0 + 39, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_6, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 51 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_7, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_9, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_10, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_6, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 1 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_7, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 40, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_8, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_9, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_10, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Excellent!', (@day0 + INTERVAL -12 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_6, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Water"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_7, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Salt"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 6, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 24 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Water"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 24 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_9, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Water"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE), 1, 'Left the page 1 time.', 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 40, ',', @qq0 + 41, ',', @qq0 + 42, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 40, '":"Water"', ',', '"', @qq0 + 41, '":"True"', ',', '"', @qq0 + 42, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE)
+  SELECT @it0 + 87 AS item_id, @s_9 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 2 MINUTE) AS started_at_utc, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE) AS submitted_at_utc, 0 AS is_late, NULL AS answer_text, NULL AS link_url, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Sender"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"receiver"', '}}') AS answers_json, 10 AS score, NULL AS feedback, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE) AS created_at_utc, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @it0 + 90, @s_7, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @it0 + 91, @s_7, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 91, @s_8, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 41 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 40, 'Good work.', (@day0 + INTERVAL -12 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 91, @s_9, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 22, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 92, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 56, '":"True"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 92, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 56, '":"True"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 92, @s_9, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Ang bahay"', ',', '"', @qq0 + 56, '":"False"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 3, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 96, @s_7, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @it0 + 96, @s_8, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 97, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"True"', ',', '"', @qq0 + 60, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @it0 + 97, @s_9, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 1 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"False"', ',', '"', @qq0 + 60, '":"I don''t know"', '}}'), 4, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE)
+  UNION ALL SELECT @it0 + 98, @s_7, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @it0 + 101, @s_7, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 22 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 101, @s_8, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @it0 + 101, @s_9, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 45 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 22, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 102, @s_7, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 16 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"True"', ',', '"', @qq0 + 63, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 16 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @it0 + 102, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"True"', ',', '"', @qq0 + 63, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 102, @s_9, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"True"', ',', '"', @qq0 + 63, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @it0 + 103, @s_7, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 106, @s_7, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @it0 + 106, @s_8, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 106, @s_9, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 15 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 24.5, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -12 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 107, @s_7, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Water"', ',', '"', @qq0 + 65, '":"True"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @it0 + 107, @s_8, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 2 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Water"', ',', '"', @qq0 + 65, '":"True"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 2 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 108, @s_8, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 0 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 49 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 111, @s_7, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 111, @s_8, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 40, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 111, @s_9, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 26, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 112, @s_7, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 14 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Jose Rizal"', ',', '"', @qq0 + 68, '":"True"', ',', '"', @qq0 + 69, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 14 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 112, @s_8, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Jose Rizal"', ',', '"', @qq0 + 68, '":"True"', ',', '"', @qq0 + 69, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @it0 + 112, @s_9, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Lapu-Lapu"', ',', '"', @qq0 + 68, '":"True"', ',', '"', @qq0 + 69, '":"1986"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @it0 + 113, @s_7, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 113, @s_8, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 24 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 113, @s_9, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 116, @s_10, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 116, @s_11, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 116, @s_12, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 37, 'Excellent!', (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 117, @s_10, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @it0 + 117, @s_11, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 117, @s_12, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 118, @s_12, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 121, @s_10, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 121, @s_11, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 121, @s_12, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 122, @s_10, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE)
+  UNION ALL SELECT @it0 + 122, @s_11, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"False"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @it0 + 122, @s_12, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @it0 + 123, @s_10, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 124, @s_10, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @it0 + 126, @s_10, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 126, @s_11, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @it0 + 126, @s_12, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 37 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 127, @s_10, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 127, @s_11, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @it0 + 127, @s_12, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 35 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 35 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 128, @s_12, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 130, @s_10, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 37 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 131, @s_10, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 131, @s_11, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE)
 ) AS r WHERE @go = 1;
 INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 68 AS item_id, @s_9 AS student_id, 'Submitted' AS status, (@day0 + INTERVAL -1 DAY + INTERVAL 0 HOUR + INTERVAL 51 MINUTE) AS started_at_utc, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, NULL AS score, NULL AS feedback, NULL AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE) AS created_at_utc, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 70, @s_10, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 9 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_6, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_7, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 39.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_8, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_9, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_10, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_6, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 40 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 40 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_7, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 56 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 56 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_8, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"False"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_9, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 43, ',', @qq0 + 44, ',', @qq0 + 45, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 43, '":"Jose Rizal"', ',', '"', @qq0 + 44, '":"True"', ',', '"', @qq0 + 45, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 73, @s_6, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 4 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 73, @s_8, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_11, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Well done, keep it up.', (@day0 + INTERVAL -12 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_12, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_14, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 23 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_15, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_11, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"False"', ',', '"', @qq0 + 48, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_12, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"False"', ',', '"', @qq0 + 48, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_14, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"True"', ',', '"', @qq0 + 48, '":"journal"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_15, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 46, ',', @qq0 + 47, ',', @qq0 + 48, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 46, '":"Assets = Liabilities + Equity"', ',', '"', @qq0 + 47, '":"False"', ',', '"', @qq0 + 48, '":"journal"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 78, @s_15, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 79, @s_15, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/15-79', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_11, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 4 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_12, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_13, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 27.5, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_14, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 51 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 50, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_15, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_11, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 12 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"10"', ',', '"', @qq0 + 50, '":"True"', ',', '"', @qq0 + 51, '":"5"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 12 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_12, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"32"', ',', '"', @qq0 + 50, '":"True"', ',', '"', @qq0 + 51, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_13, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"32"', ',', '"', @qq0 + 50, '":"False"', ',', '"', @qq0 + 51, '":"I don''t know"', '}}'), 4, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_14, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"32"', ',', '"', @qq0 + 50, '":"False"', ',', '"', @qq0 + 51, '":"5"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_15, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 19 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 49, ',', @qq0 + 50, ',', @qq0 + 51, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 49, '":"32"', ',', '"', @qq0 + 50, '":"True"', ',', '"', @qq0 + 51, '":"5"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 19 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 83, @s_15, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 9 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_11, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_12, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 55 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_13, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 18 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 23.5, 'Please review the lesson and try the practice again.', (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_14, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Excellent!', (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_15, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Well done, keep it up.', (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_11, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Sender"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_12, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Sender"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_13, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 7 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Battery"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"I don''t know"', '}}'), 3, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 7 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_14, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Sender"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_15, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 52, ',', @qq0 + 53, ',', @qq0 + 54, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 52, '":"Battery"', ',', '"', @qq0 + 53, '":"True"', ',', '"', @qq0 + 54, '":"receiver"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 89, @s_11, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/11-89', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 89, @s_13, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/13-89', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 90, @s_11, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 90, @s_12, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_11, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 50 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_12, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 19 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 36.5, 'Clear and complete.', (@day0 + INTERVAL -12 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_14, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_15, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_11, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 56, '":"True"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_12, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 56, '":"True"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_13, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 29 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Ang bahay"', ',', '"', @qq0 + 56, '":"False"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 3, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 29 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_14, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 56, '":"True"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_15, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 55, ',', @qq0 + 56, ',', @qq0 + 57, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 55, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 56, '":"True"', ',', '"', @qq0 + 57, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 93, @s_12, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 93, @s_14, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 7 MINUTE)
+  SELECT @it0 + 131 AS item_id, @s_12 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE) AS started_at_utc, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, 46.5 AS score, 'Excellent!' AS feedback, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE) AS created_at_utc, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 49 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @it0 + 132, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 132, @s_11, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 26 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 26 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 132, @s_12, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 133, @s_12, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 20 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @it0 + 136, @s_10, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 136, @s_11, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 35 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 136, @s_12, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 43 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @it0 + 137, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Make a schedule"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 137, @s_11, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Make a schedule"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 137, @s_12, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 40 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Make a schedule"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 40 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 138, @s_11, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 138, @s_12, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @it0 + 139, @s_10, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 141, @s_10, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @it0 + 141, @s_11, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 141, @s_12, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 48 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 142, @s_10, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 6 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 6 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 142, @s_11, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 142, @s_12, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 144, @s_11, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 144, @s_12, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 37 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 146, @s_10, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 146, @s_11, 'Submitted', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 146, @s_12, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 147, @s_10, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE), 1, 'Left the page 1 time.', 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 147, @s_11, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE), 1, 'Left the page 1 time.', 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 147, @s_12, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 3 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 3 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 148, @s_10, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 148, @s_12, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 149, @s_11, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE), 0, 'I made the output and explained how I did it. My file is attached.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE)
 ) AS r WHERE @go = 1;
-INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
+
+-- the files the students sent with their task performances (the output); they belong to the submission of that student for that task
+INSERT INTO attachments (id, name, content_type, size_bytes, uploaded_by_user_id, submission_id, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 96 AS item_id, @s_11 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 27 MINUTE) AS started_at_utc, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, 43 AS score, 'Well done, keep it up.' AS feedback, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE) AS created_at_utc, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 96, @s_12, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_13, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 17 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 25, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_14, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_15, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 25 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_11, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"True"', ',', '"', @qq0 + 60, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_12, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"True"', ',', '"', @qq0 + 60, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_13, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"True"', ',', '"', @qq0 + 60, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_14, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"True"', ',', '"', @qq0 + 60, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_15, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 3 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 58, ',', @qq0 + 59, ',', @qq0 + 60, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 58, '":"7"', ',', '"', @qq0 + 59, '":"True"', ',', '"', @qq0 + 60, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 3 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 98, @s_11, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_11, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_12, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 48, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_13, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 24, 'Late or incomplete work lowers the score.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_14, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 0 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Excellent!', (@day0 + INTERVAL -12 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_15, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 38 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_11, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 25 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"True"', ',', '"', @qq0 + 63, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_12, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"True"', ',', '"', @qq0 + 63, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_14, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"True"', ',', '"', @qq0 + 63, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_15, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 61, ',', @qq0 + 62, ',', @qq0 + 63, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 61, '":"Make a schedule"', ',', '"', @qq0 + 62, '":"False"', ',', '"', @qq0 + 63, '":"interview"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 103, @s_14, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 103, @s_15, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 104, @s_11, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/11-104', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 104, @s_15, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/15-104', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_11, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 20 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 13 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_12, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 55 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_14, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_15, 'Submitted', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_11, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Water"', ',', '"', @qq0 + 65, '":"True"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_12, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Salt"', ',', '"', @qq0 + 65, '":"True"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_13, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Salt"', ',', '"', @qq0 + 65, '":"False"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 3, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_14, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 22 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Water"', ',', '"', @qq0 + 65, '":"True"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 22 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_15, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 64, ',', @qq0 + 65, ',', @qq0 + 66, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 64, '":"Salt"', ',', '"', @qq0 + 65, '":"True"', ',', '"', @qq0 + 66, '":"gravity"', '}}'), 6, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 108, @s_12, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 108, @s_15, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 45 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 109, @s_15, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 1 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/15-109', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 110, @s_11, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 19 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 110, @s_15, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 34 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_11, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_12, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_14, 'Submitted', (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_15, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_11, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 55 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Jose Rizal"', ',', '"', @qq0 + 68, '":"True"', ',', '"', @qq0 + 69, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 55 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_12, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 29 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Jose Rizal"', ',', '"', @qq0 + 68, '":"True"', ',', '"', @qq0 + 69, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 29 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_13, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 12 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Jose Rizal"', ',', '"', @qq0 + 68, '":"False"', ',', '"', @qq0 + 69, '":"I don''t know"', '}}'), 4, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 12 MINUTE), 3, 'Left the page 3 times.', 1, 'violations', (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 12 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_14, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 67, ',', @qq0 + 68, ',', @qq0 + 69, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 67, '":"Jose Rizal"', ',', '"', @qq0 + 68, '":"True"', ',', '"', @qq0 + 69, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 113, @s_11, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 17 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 114, @s_12, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/12-114', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_16, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_17, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_18, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Well done, keep it up.', (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_19, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 32 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_20, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_16, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_17, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_18, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_19, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_20, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 2 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 70, ',', @qq0 + 71, ',', @qq0 + 72, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 70, '":"Serrated knife"', ',', '"', @qq0 + 71, '":"False"', ',', '"', @qq0 + 72, '":"100"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 2 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_16, 'Submitted', (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_17, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
+  SELECT @at0 + 97 AS id, 'Output - Juan.txt' AS name, 'text/plain' AS content_type, 94 AS size_bytes, @su_1 AS uploaded_by_user_id, (SELECT id FROM submissions WHERE item_id = @it0 + 29 AND student_id = @s_1) AS submission_id, (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @at0 + 98, 'Output - Juan.txt', 'text/plain', 94, @su_1, (SELECT id FROM submissions WHERE item_id = @it0 + 34 AND student_id = @s_1), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 99, 'Output - Paolo.txt', 'text/plain', 95, @su_5, (SELECT id FROM submissions WHERE item_id = @it0 + 44 AND student_id = @s_5), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 100, 'Output - Paolo.txt', 'text/plain', 95, @su_5, (SELECT id FROM submissions WHERE item_id = @it0 + 69 AND student_id = @s_5), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 101, 'Output - Nathan.txt', 'text/plain', 96, @su_7, (SELECT id FROM submissions WHERE item_id = @it0 + 79 AND student_id = @s_7), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 102, 'Output - Trisha.txt', 'text/plain', 96, @su_10, (SELECT id FROM submissions WHERE item_id = @it0 + 124 AND student_id = @s_10), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 103, 'Output - Trisha.txt', 'text/plain', 96, @su_10, (SELECT id FROM submissions WHERE item_id = @it0 + 139 AND student_id = @s_10), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 104, 'Output - Kevin.txt', 'text/plain', 95, @su_11, (SELECT id FROM submissions WHERE item_id = @it0 + 144 AND student_id = @s_11), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 105, 'Output - Alyssa.txt', 'text/plain', 96, @su_12, (SELECT id FROM submissions WHERE item_id = @it0 + 144 AND student_id = @s_12), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @at0 + 106, 'Output - Kevin.txt', 'text/plain', 95, @su_11, (SELECT id FROM submissions WHERE item_id = @it0 + 149 AND student_id = @s_11), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
-INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
+
+INSERT INTO attachment_contents (attachment_id, data)
 SELECT * FROM (
-  SELECT @it0 + 121 AS item_id, @s_18 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE) AS started_at_utc, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 37 MINUTE) AS submitted_at_utc, 0 AS is_late, 'Here are my answers to the exercises.' AS answer_text, NULL AS link_url, NULL AS answers_json, 46.5 AS score, 'Good work.' AS feedback, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE) AS graded_at_utc, 0 AS violation_count, NULL AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 37 MINUTE) AS created_at_utc, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 37 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 121, @s_19, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_20, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_16, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_17, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_18, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_19, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 3 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Battery"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"receiver"', '}}'), 6, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_20, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 17 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 73, ',', @qq0 + 74, ',', @qq0 + 75, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 73, '":"Sender"', ',', '"', @qq0 + 74, '":"True"', ',', '"', @qq0 + 75, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 17 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 123, @s_20, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 0 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_16, 'Submitted', (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_17, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_18, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44, 'Good work.', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_19, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Well done, keep it up.', (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_20, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_16, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_17, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_18, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"filipino"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_19, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Si Ana ay nagbabasa."', ',', '"', @qq0 + 77, '":"False"', ',', '"', @qq0 + 78, '":"filipino"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_20, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 52 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 76, ',', @qq0 + 77, ',', @qq0 + 78, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 76, '":"Ang bahay"', ',', '"', @qq0 + 77, '":"True"', ',', '"', @qq0 + 78, '":"filipino"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 52 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 128, @s_16, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 52 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 128, @s_20, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 130, @s_18, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @it0 + 130, @s_19, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_16, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 34 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 38, 'Good work.', (@day0 + INTERVAL -12 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_17, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 9 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 37.5, 'Well done, keep it up.', (@day0 + INTERVAL -12 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_18, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 43 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 46.5, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_19, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 44.5, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_20, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 1 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_16, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"5"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 6, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_17, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_18, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_19, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"True"', ',', '"', @qq0 + 81, '":"3"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_20, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 79, ',', @qq0 + 80, ',', @qq0 + 81, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 79, '":"7"', ',', '"', @qq0 + 80, '":"False"', ',', '"', @qq0 + 81, '":"3"', '}}'), 7, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 133, @s_19, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @it0 + 133, @s_20, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 134, @s_20, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 20 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/20-134', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_16, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Good work.', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_17, 'Submitted', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 46 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_18, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 45, 'Good work.', (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_19, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 45.5, 'Good work.', (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_20, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41.5, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_16, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 27 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Make a schedule"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 27 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_17, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Make a schedule"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_18, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Wait until the deadline"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"interview"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_19, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Make a schedule"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"interview"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_20, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 33 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 82, ',', @qq0 + 83, ',', @qq0 + 84, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 82, '":"Wait until the deadline"', ',', '"', @qq0 + 83, '":"True"', ',', '"', @qq0 + 84, '":"I don''t know"', '}}'), 3, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_17, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 11 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_18, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_19, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_20, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 139, @s_19, 'Submitted', (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 4 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/19-139', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 4 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_16, 'Graded', (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE), 1, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Excellent!', (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_17, 'Graded', (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Clear and complete.', (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_18, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 49, 'Excellent!', (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_19, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 42.5, 'Nice effort. Check the second item again.', (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_20, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 43.5, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_16, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 46 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 46 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_17, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 22 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 22 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_18, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_19, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE)
-) AS r WHERE @go = 1;
-INSERT INTO submissions (item_id, student_id, status, started_at_utc, submitted_at_utc, is_late, answer_text, link_url, answers_json, score, feedback, graded_at_utc, violation_count, violation_log, is_flagged, auto_submit_reason, created_at_utc, updated_at_utc)
-SELECT * FROM (
-  SELECT @it0 + 142 AS item_id, @s_20 AS student_id, 'Graded' AS status, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE) AS started_at_utc, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE) AS submitted_at_utc, 0 AS is_late, NULL AS answer_text, NULL AS link_url, CONCAT('{"Order":[', @qq0 + 85, ',', @qq0 + 86, ',', @qq0 + 87, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 85, '":"Water"', ',', '"', @qq0 + 86, '":"True"', ',', '"', @qq0 + 87, '":"gravity"', '}}') AS answers_json, 10 AS score, NULL AS feedback, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE) AS graded_at_utc, 2 AS violation_count, 'Left the page 2 times.' AS violation_log, 0 AS is_flagged, NULL AS auto_submit_reason, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE) AS created_at_utc, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @it0 + 143, @s_17, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 144, @s_20, 'Submitted', (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 16 MINUTE), 0, 'I made the output and explained how I did it. The link is below.', 'https://example.com/student-work/20-144', NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 13 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_16, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 47.5, 'Well done, keep it up.', (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_17, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 52 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 41, 'Clear and complete.', (@day0 + INTERVAL -13 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_18, 'Submitted', (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 52 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_19, 'Graded', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 40.5, 'Excellent!', (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_20, 'Graded', (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, 40.5, 'Clear and complete.', (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_16, 'Graded', (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE), (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_17, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_18, 'Graded', (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"I don''t know"', '}}'), 7, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_19, 'Graded', (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 51 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Lapu-Lapu"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"1986"', '}}'), 6, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 51 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_20, 'Graded', (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE), 0, NULL, NULL, CONCAT('{"Order":[', @qq0 + 88, ',', @qq0 + 89, ',', @qq0 + 90, '],"OptionOrder":{},"Answers":{', '"', @qq0 + 88, '":"Jose Rizal"', ',', '"', @qq0 + 89, '":"True"', ',', '"', @qq0 + 90, '":"1986"', '}}'), 10, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE), 0, NULL, 0, NULL, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 148, @s_18, 'Submitted', (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 7 MINUTE), 0, 'Here are my answers to the exercises.', NULL, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 7 MINUTE)
+  SELECT @at0 + 97 AS attachment_id, X'4F7574707574206F66204A75616E20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A' AS data
+  UNION ALL SELECT @at0 + 98, X'4F7574707574206F66204A75616E20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 99, X'4F7574707574206F662050616F6C6F20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 100, X'4F7574707574206F662050616F6C6F20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 101, X'4F7574707574206F66204E617468616E20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 102, X'4F7574707574206F662054726973686120666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 103, X'4F7574707574206F662054726973686120666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 104, X'4F7574707574206F66204B6576696E20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 105, X'4F7574707574206F6620416C7973736120666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
+  UNION ALL SELECT @at0 + 106, X'4F7574707574206F66204B6576696E20666F7220746865207461736B20706572666F726D616E63650A0A312E20576861742049206D6164652E0A322E20486F772049206D6164652069742E0A332E20576861742049206C6561726E65642E0A'
 ) AS r WHERE @go = 1;
 
 INSERT INTO item_views (item_id, student_id, first_opened_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 1 AS item_id, @s_1 AS student_id, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE) AS first_opened_at_utc
-  UNION ALL SELECT @it0 + 1, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 1, @s_3, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 1, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_2, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_3, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_4, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 2, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_1, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_3, (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_4, (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 3, @s_5, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 4, @s_1, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 4, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 4, @s_3, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_1, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_2, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_3, (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 6, @s_5, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_1, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_2, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_3, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 7, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 8, @s_1, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 8, @s_2, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 8, @s_3, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 9, @s_1, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 9, @s_3, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 10, @s_2, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 10, @s_4, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_3, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 11, @s_5, (@day0 + INTERVAL -18 DAY + INTERVAL 4 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_2, (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_3, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_4, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 12, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 13, @s_1, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @it0 + 13, @s_2, (@day0 + INTERVAL -12 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 13, @s_3, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 13, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 14, @s_4, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_2, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_3, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @it0 + 16, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_3, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 17, @s_4, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_1, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_3, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 18, @s_4, (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 19, @s_3, (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_3, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 21, @s_5, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_1, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_3, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_4, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 22, @s_5, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_1, (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_2, (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 23, @s_5, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 24, @s_1, (@day0 + INTERVAL -3 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 24, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_3, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 26, @s_5, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_3, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_4, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 27, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 28, @s_1, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 28, @s_4, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 28, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 29, @s_1, (@day0 + INTERVAL -3 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 29, @s_3, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 29, @s_4, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_2, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_3, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_4, (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 30, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_1, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_3, (@day0 + INTERVAL -22 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_4, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 31, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_3, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 32, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 33, @s_2, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 33, @s_3, (@day0 + INTERVAL -1 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 34, @s_2, (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 34, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_1, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_2, (@day0 + INTERVAL -13 DAY + INTERVAL 3 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_3, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 36, @s_5, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_1, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_2, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_3, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 37, @s_4, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 38, @s_2, (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 38, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 39, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 39, @s_4, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_7, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 41, @s_10, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_7, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 42, @s_10, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_6, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_7, (@day0 + INTERVAL -10 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 43, @s_10, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 44, @s_6, (@day0 + INTERVAL -5 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 44, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 44, @s_9, (@day0 + INTERVAL -6 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_6, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_8, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_9, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 46, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_8, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_9, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 47, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 48, @s_6, (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 48, @s_9, (@day0 + INTERVAL 0 DAY + INTERVAL 2 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 48, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 49, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE)
-  UNION ALL SELECT @it0 + 49, @s_8, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 49, @s_9, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 49, @s_10, (@day0 + INTERVAL -5 DAY + INTERVAL 13 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_6, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_7, (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_8, (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_9, (@day0 + INTERVAL -4 DAY + INTERVAL 6 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 50, @s_10, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_6, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_7, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_9, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 51, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_7, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_9, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 52, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 53, @s_7, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 53, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 53, @s_9, (@day0 + INTERVAL -11 DAY + INTERVAL 8 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 53, @s_10, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 54, @s_6, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 54, @s_7, (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 54, @s_8, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_6, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_9, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 56, @s_10, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_9, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 57, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 58, @s_7, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 58, @s_8, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 58, @s_9, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 58, @s_10, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 59, @s_6, (@day0 + INTERVAL -6 DAY + INTERVAL 7 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 59, @s_7, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_7, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_8, (@day0 + INTERVAL -16 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_9, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 61, @s_10, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
+  SELECT @it0 + 1 AS item_id, @s_1 AS student_id, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 18 MINUTE) AS first_opened_at_utc
+  UNION ALL SELECT @it0 + 1, @s_2, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 2, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 7 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 2, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 2, @s_3, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 3, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 3, @s_3, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 6, @s_1, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @it0 + 6, @s_2, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @it0 + 6, @s_3, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 7, @s_1, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 7, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 7, @s_3, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 8, @s_1, (@day0 + INTERVAL -10 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 8, @s_3, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @it0 + 9, @s_3, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 10, @s_1, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 10, @s_2, (@day0 + INTERVAL 1 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 11, @s_1, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 11, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 11, @s_3, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 12, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 12, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 12, @s_3, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 13, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 14, @s_1, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 16, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 16, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 17, @s_1, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @it0 + 17, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 17, @s_3, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 18, @s_1, (@day0 + INTERVAL -14 DAY + INTERVAL 13 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 18, @s_2, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 21, @s_1, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 21, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 21, @s_3, (@day0 + INTERVAL -13 DAY + INTERVAL 6 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 22, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 22, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 22, @s_3, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 23, @s_2, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 26, @s_1, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @it0 + 26, @s_2, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 26, @s_3, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 27, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 27, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 28, @s_1, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 29, @s_1, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 31, @s_1, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 31, @s_2, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 54 MINUTE)
+  UNION ALL SELECT @it0 + 31, @s_3, (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 32, @s_1, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @it0 + 32, @s_2, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 32, @s_3, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 34, @s_1, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 36, @s_1, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @it0 + 36, @s_2, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @it0 + 37, @s_1, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @it0 + 37, @s_2, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 37, @s_3, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @it0 + 38, @s_1, (@day0 + INTERVAL -11 DAY + INTERVAL 2 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @it0 + 38, @s_2, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @it0 + 41, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 41, @s_5, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 41, @s_6, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 42, @s_4, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 42, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 9 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 42, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 43, @s_4, (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 43, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 44, @s_5, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 44, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 46, @s_4, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 46, @s_5, (@day0 + INTERVAL -16 DAY + INTERVAL 2 HOUR + INTERVAL 57 MINUTE)
+  UNION ALL SELECT @it0 + 46, @s_6, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @it0 + 47, @s_4, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 47, @s_5, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 47, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @it0 + 48, @s_4, (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 48, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 48, @s_6, (@day0 + INTERVAL -10 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 49, @s_4, (@day0 + INTERVAL -6 DAY + INTERVAL 2 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @it0 + 50, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 50, @s_5, (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @it0 + 51, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 51, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 51, @s_6, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 52, @s_4, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 52 MINUTE)
+  UNION ALL SELECT @it0 + 52, @s_5, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 52, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 53, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 2 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @it0 + 53, @s_5, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 54, @s_5, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @it0 + 54, @s_6, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 56, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 56, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 56, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 57, @s_4, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 57, @s_5, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 57, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 58, @s_5, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 36 MINUTE)
+  UNION ALL SELECT @it0 + 61, @s_4, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 61, @s_5, (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 61, @s_6, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 62, @s_4, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 62, @s_5, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @it0 + 62, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 63, @s_5, (@day0 + INTERVAL -12 DAY + INTERVAL 2 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 63, @s_6, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @it0 + 64, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 66, @s_4, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 66, @s_5, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 50 MINUTE)
+  UNION ALL SELECT @it0 + 66, @s_6, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 67, @s_4, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 67, @s_5, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 67, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @it0 + 68, @s_4, (@day0 + INTERVAL -10 DAY + INTERVAL 3 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 68, @s_6, (@day0 + INTERVAL -12 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @it0 + 69, @s_5, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 70, @s_5, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 70, @s_6, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 71, @s_4, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 71, @s_5, (@day0 + INTERVAL -13 DAY + INTERVAL 12 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 71, @s_6, (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 72, @s_4, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 72, @s_5, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 72, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 73, @s_4, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 73, @s_5, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @it0 + 73, @s_6, (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 74, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 6 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @it0 + 76, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 76, @s_8, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 76, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @it0 + 77, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 77, @s_8, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 77, @s_9, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 78, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 79, @s_7, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @it0 + 79, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 81, @s_7, (@day0 + INTERVAL -16 DAY + INTERVAL 10 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 81, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 81, @s_9, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 82, @s_7, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 82, @s_8, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 83, @s_7, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 83, @s_8, (@day0 + INTERVAL -10 DAY + INTERVAL 9 HOUR + INTERVAL 27 MINUTE)
+  UNION ALL SELECT @it0 + 83, @s_9, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 84, @s_7, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @it0 + 86, @s_7, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 86, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 87, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 87, @s_8, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 87, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 88, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 89, @s_8, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 90, @s_7, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @it0 + 90, @s_8, (@day0 + INTERVAL 1 DAY + INTERVAL 11 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 91, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 91, @s_8, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 91, @s_9, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 92, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 3 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @it0 + 92, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 92, @s_9, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 93, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @it0 + 94, @s_8, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 96, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @it0 + 96, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 14 MINUTE)
+  UNION ALL SELECT @it0 + 97, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @it0 + 97, @s_8, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 97, @s_9, (@day0 + INTERVAL -6 DAY + INTERVAL 1 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @it0 + 98, @s_7, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @it0 + 98, @s_8, (@day0 + INTERVAL -10 DAY + INTERVAL 9 HOUR + INTERVAL 46 MINUTE)
+  UNION ALL SELECT @it0 + 99, @s_8, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 101, @s_7, (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 101, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @it0 + 101, @s_9, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 102, @s_7, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 102, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 102, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @it0 + 103, @s_7, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 103, @s_8, (@day0 + INTERVAL -13 DAY + INTERVAL 10 HOUR + INTERVAL 38 MINUTE)
+  UNION ALL SELECT @it0 + 103, @s_9, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 55 MINUTE)
+  UNION ALL SELECT @it0 + 104, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE)
+  UNION ALL SELECT @it0 + 106, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 21 MINUTE)
+  UNION ALL SELECT @it0 + 106, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 106, @s_9, (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 107, @s_7, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 4 MINUTE)
+  UNION ALL SELECT @it0 + 107, @s_8, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 108, @s_8, (@day0 + INTERVAL -1 DAY + INTERVAL 0 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 109, @s_7, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 111, @s_7, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 53 MINUTE)
+  UNION ALL SELECT @it0 + 111, @s_8, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 111, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 112, @s_7, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 3 MINUTE)
+  UNION ALL SELECT @it0 + 112, @s_8, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 112, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 113, @s_7, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 113, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 113, @s_9, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 114, @s_8, (@day0 + INTERVAL -7 DAY + INTERVAL 11 HOUR + INTERVAL 34 MINUTE)
 ) AS r WHERE @go = 1;
 INSERT INTO item_views (item_id, student_id, first_opened_at_utc)
 SELECT * FROM (
-  SELECT @it0 + 62 AS item_id, @s_6 AS student_id, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 34 MINUTE) AS first_opened_at_utc
-  UNION ALL SELECT @it0 + 62, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 62, @s_10, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_6, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_7, (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_9, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 63, @s_10, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 64, @s_6, (@day0 + INTERVAL -3 DAY + INTERVAL 2 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 64, @s_10, (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_6, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_7, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_8, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 66, @s_10, (@day0 + INTERVAL -13 DAY + INTERVAL 2 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_7, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 67, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 68, @s_9, (@day0 + INTERVAL -1 DAY + INTERVAL 0 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 69, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 69, @s_7, (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 69, @s_10, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 70, @s_8, (@day0 + INTERVAL 1 DAY + INTERVAL 9 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 70, @s_9, (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 70, @s_10, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_6, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_7, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_8, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_9, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @it0 + 71, @s_10, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_6, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_7, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_8, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_9, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 72, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 73, @s_6, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 73, @s_8, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 74, @s_6, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 74, @s_7, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 74, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_11, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_14, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 76, @s_15, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_12, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 77, @s_15, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @it0 + 78, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 78, @s_15, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 79, @s_15, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 24 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_12, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_13, (@day0 + INTERVAL -16 DAY + INTERVAL 1 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_14, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 81, @s_15, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 5 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_13, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 82, @s_15, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 83, @s_11, (@day0 + INTERVAL -11 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 83, @s_14, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 83, @s_15, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 84, @s_14, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 84, @s_15, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_11, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_12, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_13, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_14, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 86, @s_15, (@day0 + INTERVAL -16 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_11, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_12, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_13, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_14, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @it0 + 87, @s_15, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 88, @s_13, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 89, @s_11, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 89, @s_13, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 89, @s_15, (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 90, @s_11, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 90, @s_12, (@day0 + INTERVAL -2 DAY + INTERVAL 12 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 90, @s_14, (@day0 + INTERVAL 1 DAY + INTERVAL 3 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 90, @s_15, (@day0 + INTERVAL 2 DAY + INTERVAL 11 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_11, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_12, (@day0 + INTERVAL -13 DAY + INTERVAL 8 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_13, (@day0 + INTERVAL -19 DAY + INTERVAL 4 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_14, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 91, @s_15, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 12 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_11, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_12, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_13, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_14, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 92, @s_15, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT @it0 + 93, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 9 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @it0 + 93, @s_14, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 93, @s_15, (@day0 + INTERVAL -12 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 94, @s_11, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 94, @s_14, (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 94, @s_15, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_11, (@day0 + INTERVAL -16 DAY + INTERVAL 5 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_12, (@day0 + INTERVAL -15 DAY + INTERVAL 11 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_13, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_14, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 96, @s_15, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_11, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_12, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_13, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_14, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 97, @s_15, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 98, @s_11, (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 99, @s_12, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 99, @s_14, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 99, @s_15, (@day0 + INTERVAL -3 DAY + INTERVAL 10 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_11, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_12, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_13, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 42 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_14, (@day0 + INTERVAL -13 DAY + INTERVAL 0 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 101, @s_15, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_11, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_13, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_14, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 102, @s_15, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 103, @s_14, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 103, @s_15, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 104, @s_11, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 104, @s_13, (@day0 + INTERVAL -4 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 104, @s_15, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_11, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_13, (@day0 + INTERVAL -19 DAY + INTERVAL 7 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_14, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 106, @s_15, (@day0 + INTERVAL -14 DAY + INTERVAL 9 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_12, (@day0 + INTERVAL -6 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_13, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 107, @s_15, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 108, @s_11, (@day0 + INTERVAL -10 DAY + INTERVAL 13 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 108, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 108, @s_15, (@day0 + INTERVAL 0 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 109, @s_14, (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 109, @s_15, (@day0 + INTERVAL -1 DAY + INTERVAL 11 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 110, @s_11, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 19 MINUTE)
-  UNION ALL SELECT @it0 + 110, @s_14, (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 110, @s_15, (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 4 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_14, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 111, @s_15, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_11, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_13, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 112, @s_14, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 113, @s_11, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE)
-  UNION ALL SELECT @it0 + 113, @s_12, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 114, @s_12, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 114, @s_13, (@day0 + INTERVAL -8 DAY + INTERVAL 10 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 114, @s_14, (@day0 + INTERVAL -6 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_16, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_17, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_18, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_19, (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 116, @s_20, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 9 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_17, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_18, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_19, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 117, @s_20, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 118, @s_17, (@day0 + INTERVAL -10 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 118, @s_20, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 119, @s_19, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_16, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_17, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_18, (@day0 + INTERVAL -15 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_19, (@day0 + INTERVAL -16 DAY + INTERVAL 4 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 121, @s_20, (@day0 + INTERVAL -14 DAY + INTERVAL 7 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_16, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_17, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_18, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_19, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 3 MINUTE)
-  UNION ALL SELECT @it0 + 122, @s_20, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @it0 + 123, @s_16, (@day0 + INTERVAL -11 DAY + INTERVAL 7 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 123, @s_18, (@day0 + INTERVAL -11 DAY + INTERVAL 3 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 123, @s_20, (@day0 + INTERVAL -1 DAY + INTERVAL 0 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @it0 + 124, @s_19, (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @it0 + 124, @s_20, (@day0 + INTERVAL -7 DAY + INTERVAL 5 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_16, (@day0 + INTERVAL -14 DAY + INTERVAL 10 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_17, (@day0 + INTERVAL -16 DAY + INTERVAL 11 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_18, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_19, (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 126, @s_20, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_16, (@day0 + INTERVAL -9 DAY + INTERVAL 10 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_17, (@day0 + INTERVAL -8 DAY + INTERVAL 2 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_18, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 127, @s_19, (@day0 + INTERVAL -9 DAY + INTERVAL 5 HOUR + INTERVAL 42 MINUTE)
-) AS r WHERE @go = 1;
-INSERT INTO item_views (item_id, student_id, first_opened_at_utc)
-SELECT * FROM (
-  SELECT @it0 + 127 AS item_id, @s_20 AS student_id, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 41 MINUTE) AS first_opened_at_utc
-  UNION ALL SELECT @it0 + 128, @s_16, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 128, @s_18, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @it0 + 128, @s_20, (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 129, @s_17, (@day0 + INTERVAL -4 DAY + INTERVAL 7 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @it0 + 130, @s_17, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 130, @s_18, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 59 MINUTE)
-  UNION ALL SELECT @it0 + 130, @s_19, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @it0 + 130, @s_20, (@day0 + INTERVAL 0 DAY + INTERVAL 13 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_16, (@day0 + INTERVAL -13 DAY + INTERVAL 4 HOUR + INTERVAL 34 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_17, (@day0 + INTERVAL -13 DAY + INTERVAL 1 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_18, (@day0 + INTERVAL -14 DAY + INTERVAL 0 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_19, (@day0 + INTERVAL -15 DAY + INTERVAL 12 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 131, @s_20, (@day0 + INTERVAL -15 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_17, (@day0 + INTERVAL -8 DAY + INTERVAL 3 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_18, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_19, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 132, @s_20, (@day0 + INTERVAL -9 DAY + INTERVAL 8 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 133, @s_17, (@day0 + INTERVAL -10 DAY + INTERVAL 13 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 133, @s_18, (@day0 + INTERVAL -12 DAY + INTERVAL 3 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @it0 + 133, @s_19, (@day0 + INTERVAL 0 DAY + INTERVAL 4 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @it0 + 133, @s_20, (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 54 MINUTE)
-  UNION ALL SELECT @it0 + 134, @s_16, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 9 MINUTE)
-  UNION ALL SELECT @it0 + 134, @s_20, (@day0 + INTERVAL 0 DAY + INTERVAL 12 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_16, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_17, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_18, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_19, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 136, @s_20, (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 2 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_17, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_18, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_19, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 137, @s_20, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 33 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_17, (@day0 + INTERVAL 0 DAY + INTERVAL 6 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_18, (@day0 + INTERVAL 0 DAY + INTERVAL 11 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_19, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 138, @s_20, (@day0 + INTERVAL 0 DAY + INTERVAL 7 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @it0 + 139, @s_16, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 139, @s_18, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 139, @s_19, (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 4 MINUTE)
-  UNION ALL SELECT @it0 + 139, @s_20, (@day0 + INTERVAL -3 DAY + INTERVAL 9 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_16, (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 20 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_17, (@day0 + INTERVAL -16 DAY + INTERVAL 0 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_18, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_19, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 57 MINUTE)
-  UNION ALL SELECT @it0 + 141, @s_20, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 51 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_17, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_18, (@day0 + INTERVAL -7 DAY + INTERVAL 7 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_19, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @it0 + 142, @s_20, (@day0 + INTERVAL -7 DAY + INTERVAL 8 HOUR + INTERVAL 26 MINUTE)
-  UNION ALL SELECT @it0 + 143, @s_17, (@day0 + INTERVAL -1 DAY + INTERVAL 10 HOUR + INTERVAL 43 MINUTE)
-  UNION ALL SELECT @it0 + 143, @s_19, (@day0 + INTERVAL -15 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT @it0 + 144, @s_19, (@day0 + INTERVAL -6 DAY + INTERVAL 4 HOUR + INTERVAL 30 MINUTE)
-  UNION ALL SELECT @it0 + 144, @s_20, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 16 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_16, (@day0 + INTERVAL -15 DAY + INTERVAL 6 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_17, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_18, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_19, (@day0 + INTERVAL -14 DAY + INTERVAL 3 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @it0 + 146, @s_20, (@day0 + INTERVAL -15 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_16, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_17, (@day0 + INTERVAL -9 DAY + INTERVAL 13 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_18, (@day0 + INTERVAL -8 DAY + INTERVAL 13 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_19, (@day0 + INTERVAL -6 DAY + INTERVAL 13 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @it0 + 147, @s_20, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @it0 + 148, @s_16, (@day0 + INTERVAL -15 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE)
-  UNION ALL SELECT @it0 + 148, @s_18, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @it0 + 149, @s_20, (@day0 + INTERVAL -3 DAY + INTERVAL 11 HOUR + INTERVAL 39 MINUTE)
-  UNION ALL SELECT @it0 + 150, @s_16, (@day0 + INTERVAL 0 DAY + INTERVAL 3 HOUR + INTERVAL 25 MINUTE)
-  UNION ALL SELECT @it0 + 150, @s_20, (@day0 + INTERVAL 1 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE)
+  SELECT @it0 + 116 AS item_id, @s_10 AS student_id, (@day0 + INTERVAL -16 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE) AS first_opened_at_utc
+  UNION ALL SELECT @it0 + 116, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 116, @s_12, (@day0 + INTERVAL -13 DAY + INTERVAL 9 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @it0 + 117, @s_10, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @it0 + 117, @s_11, (@day0 + INTERVAL -9 DAY + INTERVAL 1 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 117, @s_12, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @it0 + 118, @s_10, (@day0 + INTERVAL -11 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 118, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE)
+  UNION ALL SELECT @it0 + 119, @s_10, (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 119, @s_12, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 121, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 121, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 1 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 121, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 6 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT @it0 + 122, @s_10, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @it0 + 122, @s_11, (@day0 + INTERVAL -8 DAY + INTERVAL 9 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 122, @s_12, (@day0 + INTERVAL -9 DAY + INTERVAL 6 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT @it0 + 123, @s_10, (@day0 + INTERVAL -2 DAY + INTERVAL 4 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 123, @s_11, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 123, @s_12, (@day0 + INTERVAL -13 DAY + INTERVAL 5 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 124, @s_10, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 47 MINUTE)
+  UNION ALL SELECT @it0 + 124, @s_11, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @it0 + 126, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 4 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 126, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @it0 + 126, @s_12, (@day0 + INTERVAL -16 DAY + INTERVAL 12 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 127, @s_10, (@day0 + INTERVAL -9 DAY + INTERVAL 9 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 127, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 4 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT @it0 + 127, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 25 MINUTE)
+  UNION ALL SELECT @it0 + 128, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 8 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 128, @s_12, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 129, @s_12, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @it0 + 130, @s_10, (@day0 + INTERVAL -2 DAY + INTERVAL 0 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 131, @s_10, (@day0 + INTERVAL -16 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 131, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 131, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 132, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 4 HOUR + INTERVAL 49 MINUTE)
+  UNION ALL SELECT @it0 + 132, @s_11, (@day0 + INTERVAL -9 DAY + INTERVAL 11 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @it0 + 132, @s_12, (@day0 + INTERVAL -9 DAY + INTERVAL 12 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @it0 + 133, @s_10, (@day0 + INTERVAL -13 DAY + INTERVAL 11 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @it0 + 133, @s_12, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @it0 + 134, @s_10, (@day0 + INTERVAL -7 DAY + INTERVAL 6 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 134, @s_11, (@day0 + INTERVAL -6 DAY + INTERVAL 11 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @it0 + 136, @s_10, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 136, @s_11, (@day0 + INTERVAL -15 DAY + INTERVAL 8 HOUR + INTERVAL 35 MINUTE)
+  UNION ALL SELECT @it0 + 136, @s_12, (@day0 + INTERVAL -15 DAY + INTERVAL 0 HOUR + INTERVAL 43 MINUTE)
+  UNION ALL SELECT @it0 + 137, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 12 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 137, @s_11, (@day0 + INTERVAL -9 DAY + INTERVAL 4 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @it0 + 137, @s_12, (@day0 + INTERVAL -6 DAY + INTERVAL 8 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @it0 + 138, @s_10, (@day0 + INTERVAL -11 DAY + INTERVAL 13 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @it0 + 138, @s_11, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 12 MINUTE)
+  UNION ALL SELECT @it0 + 138, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 12 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @it0 + 139, @s_10, (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @it0 + 139, @s_11, (@day0 + INTERVAL -6 DAY + INTERVAL 5 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @it0 + 139, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 6 HOUR + INTERVAL 28 MINUTE)
+  UNION ALL SELECT @it0 + 141, @s_10, (@day0 + INTERVAL -14 DAY + INTERVAL 2 HOUR + INTERVAL 20 MINUTE)
+  UNION ALL SELECT @it0 + 141, @s_11, (@day0 + INTERVAL -16 DAY + INTERVAL 8 HOUR + INTERVAL 59 MINUTE)
+  UNION ALL SELECT @it0 + 141, @s_12, (@day0 + INTERVAL -14 DAY + INTERVAL 12 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 142, @s_10, (@day0 + INTERVAL -9 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 142, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 13 HOUR + INTERVAL 19 MINUTE)
+  UNION ALL SELECT @it0 + 142, @s_12, (@day0 + INTERVAL -7 DAY + INTERVAL 12 HOUR + INTERVAL 24 MINUTE)
+  UNION ALL SELECT @it0 + 143, @s_11, (@day0 + INTERVAL -10 DAY + INTERVAL 9 HOUR + INTERVAL 39 MINUTE)
+  UNION ALL SELECT @it0 + 144, @s_11, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @it0 + 144, @s_12, (@day0 + INTERVAL 0 DAY + INTERVAL 5 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @it0 + 146, @s_10, (@day0 + INTERVAL -15 DAY + INTERVAL 3 HOUR + INTERVAL 33 MINUTE)
+  UNION ALL SELECT @it0 + 146, @s_11, (@day0 + INTERVAL -14 DAY + INTERVAL 11 HOUR + INTERVAL 7 MINUTE)
+  UNION ALL SELECT @it0 + 146, @s_12, (@day0 + INTERVAL -15 DAY + INTERVAL 7 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 147, @s_10, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 48 MINUTE)
+  UNION ALL SELECT @it0 + 147, @s_11, (@day0 + INTERVAL -7 DAY + INTERVAL 10 HOUR + INTERVAL 30 MINUTE)
+  UNION ALL SELECT @it0 + 147, @s_12, (@day0 + INTERVAL -8 DAY + INTERVAL 11 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @it0 + 148, @s_10, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @it0 + 148, @s_12, (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 40 MINUTE)
+  UNION ALL SELECT @it0 + 149, @s_11, (@day0 + INTERVAL 0 DAY + INTERVAL 8 HOUR + INTERVAL 15 MINUTE)
+  UNION ALL SELECT @it0 + 150, @s_10, (@day0 + INTERVAL 0 DAY + INTERVAL 10 HOUR + INTERVAL 5 MINUTE)
+  UNION ALL SELECT @it0 + 150, @s_12, (@day0 + INTERVAL 2 DAY + INTERVAL 13 HOUR + INTERVAL 9 MINUTE)
 ) AS r WHERE @go = 1;
 
 -- ================================================================ 5) Attendance of the last two weeks (school days only)
 INSERT INTO attendance_records (assignment_id, student_id, attended_on, status, note, created_at_utc, updated_at_utc)
 SELECT a.id, e.student_id, d.day,
-  CASE WHEN e.student_id IN (@s_5) THEN CASE WHEN MOD(CRC32(CONCAT(a.id, '-', e.student_id, '-', d.day)), 100) < 45 THEN 'Absent' WHEN MOD(CRC32(CONCAT(a.id, '-', e.student_id, '-', d.day)), 100) < 60 THEN 'Late' ELSE 'Present' END
+  CASE WHEN e.student_id IN (@s_3) THEN CASE WHEN MOD(CRC32(CONCAT(a.id, '-', e.student_id, '-', d.day)), 100) < 45 THEN 'Absent' WHEN MOD(CRC32(CONCAT(a.id, '-', e.student_id, '-', d.day)), 100) < 60 THEN 'Late' ELSE 'Present' END
        ELSE CASE WHEN MOD(CRC32(CONCAT(a.id, '-', e.student_id, '-', d.day)), 100) < 3 THEN 'Absent' WHEN MOD(CRC32(CONCAT(a.id, '-', e.student_id, '-', d.day)), 100) < 9 THEN 'Late' ELSE 'Present' END END,
   NULL, TIMESTAMP(d.day, '17:00:00'), TIMESTAMP(d.day, '17:00:00')
 FROM teaching_assignments a
-JOIN enrollments e ON e.section_id = a.section_id AND e.id > @e0 AND e.id <= @e0 + 20
+JOIN enrollments e ON e.section_id = a.section_id AND e.id > @e0 AND e.id <= @e0 + 12
 JOIN (SELECT DATE_SUB(CURDATE(), INTERVAL n DAY) AS day FROM (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14) nn) d ON WEEKDAY(d.day) < 5
 WHERE a.id > @ta0 AND a.id <= @ta0 + 30 AND @go = 1;
 
@@ -3292,8 +2703,8 @@ SELECT * FROM (
   UNION ALL SELECT @u_prov, @tu_0, 'Please check the syllabus I sent you for Business Accounting. It is a draft: change what you need and post it.', (@day0 + INTERVAL -1 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, @u_prov, 'Received, thank you. I will post it on Monday.', NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 7 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @u_prov, @tu_3, 'Good morning sir. Did you see Module 5 I sent for Effective Communication? It is a draft waiting for you.', NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @su_5, @tu_1, 'Sir, I was absent last week. May I take the quiz again?', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @u_guidance, @su_5, 'Hello Miguel. Let us talk about how school is going. You can come to the guidance office any afternoon.', NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @su_3, @tu_1, 'Sir, I was absent last week. May I take the quiz again?', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @u_guidance, @su_3, 'Hello Carlo. Let us talk about how school is going. You can come to the guidance office any afternoon.', NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_1, @tu_2, 'Are you free after the meeting? I want to share the review materials.', (@day0 + INTERVAL -3 DAY + INTERVAL 6 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
@@ -3304,8 +2715,8 @@ SELECT * FROM (
   UNION ALL SELECT @su_1, 'announcement', 'Quiz week starts next Monday', 'Quizzes of all courses are open from Monday to Friday.', NULL, 0, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @su_1, 'due', 'Due soon: Activity 2: Worksheet', 'Business Accounting', 'student/subjects', 0, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @su_2, 'module', 'New module in Business Accounting', 'Module 3: Business Accounting in practice', NULL, 0, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @su_5, 'referral', 'A message from the guidance counselor', 'Let us talk about how school is going.', NULL, 0, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @su_19, 'module', 'New module in Effective Communication', 'Module 2: Key ideas of Effective Communication', NULL, 1, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @su_3, 'referral', 'A message from the guidance counselor', 'Let us talk about how school is going.', NULL, 0, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @su_11, 'module', 'New module in Effective Communication', 'Module 2: Key ideas of Effective Communication', NULL, 1, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, 'activity', 'Work waiting for a score', 'Activity 2: Worksheet has new answers.', 'teacher/subjects', 0, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, 'materials', 'Course materials from the academic provider', 'Business Accounting: Syllabus. They are drafts: set when to post them and the due dates.', 'teacher/subjects', 0, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, 'announcement', 'Faculty meeting on Friday, 3:00 PM', 'We will talk about the grades of the first term.', NULL, 1, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
@@ -3315,12 +2726,10 @@ SELECT * FROM (
   UNION ALL SELECT @su_1, 'friend', 'Mariel Abad accepted your friend request', NULL, 'users?tab=friends', 0, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @su_1, 'group', 'You were added to the group Accounting reviewers', NULL, 'groups', 1, (@day0 + INTERVAL -6 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_4, 'materials', 'Course materials from the academic provider', 'Mabisang Komunikasyon: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @tu_7, 'materials', 'Course materials from the academic provider', 'Pag-aaral ng Kasaysayan at Lipunang Pilipino: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @tu_8, 'materials', 'Course materials from the academic provider', 'General Mathematics: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @tu_8, 'materials', 'Course materials from the academic provider', 'General Mathematics 2: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @tu_9, 'materials', 'Course materials from the academic provider', 'Business Accounting 2: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @tu_9, 'materials', 'Course materials from the academic provider', 'Kitchen Operation 2: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @tu_5, 'materials', 'Course materials from the academic provider', 'Life and Career Skills 2: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @tu_4, 'materials', 'Course materials from the academic provider', 'Pag-aaral ng Kasaysayan at Lipunang Pilipino: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @tu_5, 'materials', 'Course materials from the academic provider', 'General Mathematics: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @tu_5, 'materials', 'Course materials from the academic provider', 'Business Accounting 2: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @tu_1, 'materials', 'Course materials from the academic provider', 'Life and Career Skills 2: Module 5. It is a draft: set when to post it and the due date.', 'teacher/subjects', 0, (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -6 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
 -- ================================================================ 7) Friends, groups and files
@@ -3332,7 +2741,7 @@ SELECT * FROM (
   UNION ALL SELECT @su_4, @su_5, 'Pending', NULL, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @su_6, @su_1, 'Pending', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, @tu_1, 'Accepted', (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -10 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -9 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @su_19, @su_20, 'Accepted', (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
+  UNION ALL SELECT @su_11, @su_12, 'Accepted', (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
 INSERT INTO study_groups (id, name, description, owner_user_id, created_at_utc, updated_at_utc)
@@ -3372,22 +2781,22 @@ SELECT * FROM (
 ) AS r WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
-SELECT @sg0 + 4, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 20) m WHERE @go = 1;
+SELECT @sg0 + 4, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 12) m WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
-SELECT @sg0 + 5, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 20 AND e.grade_level = 11) m WHERE @go = 1;
+SELECT @sg0 + 5, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 12 AND e.grade_level = 11) m WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
-SELECT @sg0 + 6, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 20 AND e.grade_level = 12) m WHERE @go = 1;
+SELECT @sg0 + 6, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 12 AND e.grade_level = 12) m WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
-SELECT @sg0 + 7, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 20 AND e.strand_id = @strand_BUSSENT) m WHERE @go = 1;
+SELECT @sg0 + 7, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 12 AND e.strand_id = @strand_BUSSENT) m WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
-SELECT @sg0 + 8, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 20 AND e.strand_id = @strand_HT1) m WHERE @go = 1;
+SELECT @sg0 + 8, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT s.user_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.id > @e0 AND e.id <= @e0 + 12 AND e.strand_id = @strand_HT1) m WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
-SELECT @sg0 + 9, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT t.user_id FROM teachers t WHERE t.id IN (@t_0, @t_1, @t_2, @t_3, @t_4, @t_5, @t_6, @t_7, @t_8, @t_9)) m WHERE @go = 1;
+SELECT @sg0 + 9, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT t.user_id FROM teachers t WHERE t.id IN (@t_0, @t_1, @t_2, @t_3, @t_4, @t_5)) m WHERE @go = 1;
 
 INSERT INTO study_group_members (group_id, user_id, joined_at_utc, added_by_user_id)
 SELECT @sg0 + 10, m.user_id, (@day0 + INTERVAL -40 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE), NULL FROM (SELECT DISTINCT t.user_id FROM teaching_assignments a JOIN teachers t ON t.id = a.teacher_id JOIN sections sc ON sc.id = a.section_id WHERE a.id > @ta0 AND a.id <= @ta0 + 30 AND sc.grade_level = 11) m WHERE @go = 1;
@@ -3463,9 +2872,9 @@ SELECT * FROM (
   UNION ALL SELECT 'SignInSucceeded', 'Info', @tu_0, 'vargas@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL -5 DAY + INTERVAL 0 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 0 HOUR + INTERVAL 40 MINUTE)
   UNION ALL SELECT 'SignInSucceeded', 'Info', @su_1, 'delacruz@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.55', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', NULL, (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 2 MINUTE)
   UNION ALL SELECT 'SignInSucceeded', 'Info', @su_2, 'abad@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.56', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL -4 DAY + INTERVAL 0 HOUR + INTERVAL 50 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 0 HOUR + INTERVAL 50 MINUTE)
-  UNION ALL SELECT 'SignInFailed', 'Warning', @su_5, 'arellano@legazpi.seaitt.edu.ph', NULL, NULL, '203.0.113.45', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', 'Wrong password.', (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT 'SignInFailed', 'Warning', @su_5, 'arellano@legazpi.seaitt.edu.ph', NULL, NULL, '203.0.113.45', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', 'Wrong password.', (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE)
-  UNION ALL SELECT 'SignInSucceeded', 'Info', @su_5, 'arellano@legazpi.seaitt.edu.ph', NULL, NULL, '203.0.113.45', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', NULL, (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
+  UNION ALL SELECT 'SignInFailed', 'Warning', @su_3, 'alcantara@legazpi.seaitt.edu.ph', NULL, NULL, '203.0.113.45', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', 'Wrong password.', (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT 'SignInFailed', 'Warning', @su_3, 'alcantara@legazpi.seaitt.edu.ph', NULL, NULL, '203.0.113.45', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', 'Wrong password.', (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 11 MINUTE)
+  UNION ALL SELECT 'SignInSucceeded', 'Info', @su_3, 'alcantara@legazpi.seaitt.edu.ph', NULL, NULL, '203.0.113.45', 'Mozilla/5.0 (Linux; Android 13; SM-A546E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', NULL, (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 2 HOUR + INTERVAL 13 MINUTE)
   UNION ALL SELECT 'SignInFailed', 'Warning', NULL, 'admin@legazpi.seaitt.edu.ph.ph', NULL, NULL, '198.51.100.7', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', 'There is no account with this email.', (@day0 + INTERVAL -3 DAY + INTERVAL 14 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 14 HOUR + INTERVAL 31 MINUTE)
   UNION ALL SELECT 'SignInSucceeded', 'Info', @tu_1, 'villanueva@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.33', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL -3 DAY + INTERVAL 0 HOUR + INTERVAL 20 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 0 HOUR + INTERVAL 20 MINUTE)
   UNION ALL SELECT 'SignInSucceeded', 'Info', @u_registrar, 'registrar@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.12', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL -3 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
@@ -3479,7 +2888,7 @@ SELECT * FROM (
   UNION ALL SELECT 'SignInSucceeded', 'Info', @tu_0, 'vargas@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 30 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 30 MINUTE)
   UNION ALL SELECT 'SignInSucceeded', 'Info', @u_coord, 'coordinator1@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.21', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 0 HOUR + INTERVAL 55 MINUTE)
   UNION ALL SELECT 'SignInSucceeded', 'Info', @u_prov, 'provider1@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.23', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 5 MINUTE)
-  UNION ALL SELECT 'SignInSucceeded', 'Info', @su_13, 'escalante@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.58', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE)
+  UNION ALL SELECT 'SignInSucceeded', 'Info', @su_9, 'escalante@legazpi.seaitt.edu.ph', NULL, NULL, '192.168.1.58', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', NULL, (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL 0 DAY + INTERVAL 1 HOUR + INTERVAL 10 MINUTE)
 ) AS r WHERE @go = 1;
 
 INSERT INTO system_settings (`key`, `value`, updated_at_utc, updated_by_user_id)
@@ -3558,595 +2967,324 @@ SELECT * FROM (
 
 INSERT INTO evaluation_responses (id, evaluation_id, assignment_id, student_id, submitted_at_utc, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @er0 + 1 AS id, @ev0 + 1 AS evaluation_id, @ta0 + 1 AS assignment_id, @s_3 AS student_id, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE) AS submitted_at_utc, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE) AS created_at_utc, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 2 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @er0 + 2, @ev0 + 1, @ta0 + 1, @s_4, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 56 MINUTE)
-  UNION ALL SELECT @er0 + 3, @ev0 + 1, @ta0 + 2, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 7 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @er0 + 4, @ev0 + 1, @ta0 + 2, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 49 MINUTE)
-  UNION ALL SELECT @er0 + 5, @ev0 + 1, @ta0 + 3, @s_3, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @er0 + 6, @ev0 + 1, @ta0 + 4, @s_2, (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 27 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 27 MINUTE)
-  UNION ALL SELECT @er0 + 7, @ev0 + 1, @ta0 + 4, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 37 MINUTE)
-  UNION ALL SELECT @er0 + 8, @ev0 + 1, @ta0 + 4, @s_4, (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 8 HOUR + INTERVAL 38 MINUTE)
-  UNION ALL SELECT @er0 + 9, @ev0 + 1, @ta0 + 4, @s_5, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 41 MINUTE)
-  UNION ALL SELECT @er0 + 10, @ev0 + 1, @ta0 + 5, @s_2, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @er0 + 11, @ev0 + 1, @ta0 + 5, @s_3, (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 55 MINUTE)
-  UNION ALL SELECT @er0 + 12, @ev0 + 1, @ta0 + 6, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @er0 + 13, @ev0 + 1, @ta0 + 6, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 35 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 35 MINUTE)
-  UNION ALL SELECT @er0 + 14, @ev0 + 1, @ta0 + 6, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 11 HOUR + INTERVAL 32 MINUTE)
-  UNION ALL SELECT @er0 + 15, @ev0 + 1, @ta0 + 6, @s_5, (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @er0 + 16, @ev0 + 1, @ta0 + 7, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @er0 + 17, @ev0 + 1, @ta0 + 7, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @er0 + 18, @ev0 + 1, @ta0 + 7, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 8 MINUTE)
-  UNION ALL SELECT @er0 + 19, @ev0 + 1, @ta0 + 8, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @er0 + 20, @ev0 + 1, @ta0 + 8, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @er0 + 21, @ev0 + 1, @ta0 + 8, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 52 MINUTE)
-  UNION ALL SELECT @er0 + 22, @ev0 + 1, @ta0 + 8, @s_5, (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 10 HOUR + INTERVAL 6 MINUTE)
-  UNION ALL SELECT @er0 + 23, @ev0 + 1, @ta0 + 9, @s_7, (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 7 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 7 MINUTE)
-  UNION ALL SELECT @er0 + 24, @ev0 + 1, @ta0 + 9, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 46 MINUTE)
-  UNION ALL SELECT @er0 + 25, @ev0 + 1, @ta0 + 9, @s_9, (@day0 + INTERVAL -3 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 9 HOUR + INTERVAL 36 MINUTE)
-  UNION ALL SELECT @er0 + 26, @ev0 + 1, @ta0 + 9, @s_10, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @er0 + 27, @ev0 + 1, @ta0 + 10, @s_6, (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 18 MINUTE)
-  UNION ALL SELECT @er0 + 28, @ev0 + 1, @ta0 + 10, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 31 MINUTE)
-  UNION ALL SELECT @er0 + 29, @ev0 + 1, @ta0 + 10, @s_9, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @er0 + 30, @ev0 + 1, @ta0 + 10, @s_10, (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 1 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @er0 + 31, @ev0 + 1, @ta0 + 11, @s_6, (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 44 MINUTE)
-  UNION ALL SELECT @er0 + 32, @ev0 + 1, @ta0 + 11, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 9 HOUR + INTERVAL 23 MINUTE)
-  UNION ALL SELECT @er0 + 33, @ev0 + 1, @ta0 + 11, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 14 MINUTE)
-  UNION ALL SELECT @er0 + 34, @ev0 + 1, @ta0 + 12, @s_7, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 58 MINUTE)
-  UNION ALL SELECT @er0 + 35, @ev0 + 1, @ta0 + 12, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @er0 + 36, @ev0 + 1, @ta0 + 12, @s_9, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @er0 + 37, @ev0 + 1, @ta0 + 12, @s_10, (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 3 HOUR + INTERVAL 47 MINUTE)
-  UNION ALL SELECT @er0 + 38, @ev0 + 1, @ta0 + 13, @s_6, (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 40 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 4 HOUR + INTERVAL 40 MINUTE)
-  UNION ALL SELECT @er0 + 39, @ev0 + 1, @ta0 + 13, @s_7, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 21 MINUTE)
-  UNION ALL SELECT @er0 + 40, @ev0 + 1, @ta0 + 13, @s_9, (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 53 MINUTE)
-  UNION ALL SELECT @er0 + 41, @ev0 + 1, @ta0 + 14, @s_6, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 2 MINUTE)
-  UNION ALL SELECT @er0 + 42, @ev0 + 1, @ta0 + 14, @s_7, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 45 MINUTE)
-  UNION ALL SELECT @er0 + 43, @ev0 + 1, @ta0 + 14, @s_8, (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 10 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 11 HOUR + INTERVAL 10 MINUTE)
-  UNION ALL SELECT @er0 + 44, @ev0 + 1, @ta0 + 14, @s_9, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 15 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 15 MINUTE)
-  UNION ALL SELECT @er0 + 45, @ev0 + 1, @ta0 + 15, @s_6, (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 28 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 28 MINUTE)
-  UNION ALL SELECT @er0 + 46, @ev0 + 1, @ta0 + 15, @s_7, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @er0 + 47, @ev0 + 1, @ta0 + 15, @s_8, (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 48 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 2 HOUR + INTERVAL 48 MINUTE)
-  UNION ALL SELECT @er0 + 48, @ev0 + 1, @ta0 + 15, @s_9, (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 58 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 5 HOUR + INTERVAL 58 MINUTE)
+  SELECT @er0 + 1 AS id, @ev0 + 1 AS evaluation_id, @ta0 + 1 AS assignment_id, @s_2 AS student_id, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE) AS submitted_at_utc, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE) AS created_at_utc, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 23 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @er0 + 2, @ev0 + 1, @ta0 + 1, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 8 HOUR + INTERVAL 41 MINUTE)
+  UNION ALL SELECT @er0 + 3, @ev0 + 1, @ta0 + 2, @s_2, (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 34 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 7 HOUR + INTERVAL 34 MINUTE)
+  UNION ALL SELECT @er0 + 4, @ev0 + 1, @ta0 + 2, @s_3, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @er0 + 5, @ev0 + 1, @ta0 + 3, @s_2, (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 1 HOUR + INTERVAL 1 MINUTE)
+  UNION ALL SELECT @er0 + 6, @ev0 + 1, @ta0 + 3, @s_3, (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 29 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 3 HOUR + INTERVAL 29 MINUTE)
+  UNION ALL SELECT @er0 + 7, @ev0 + 1, @ta0 + 4, @s_2, (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 9 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @er0 + 8, @ev0 + 1, @ta0 + 4, @s_3, (@day0 + INTERVAL -3 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 3 HOUR + INTERVAL 45 MINUTE)
+  UNION ALL SELECT @er0 + 9, @ev0 + 1, @ta0 + 5, @s_2, (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @er0 + 10, @ev0 + 1, @ta0 + 6, @s_2, (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 56 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 4 HOUR + INTERVAL 56 MINUTE)
+  UNION ALL SELECT @er0 + 11, @ev0 + 1, @ta0 + 7, @s_2, (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 8 HOUR + INTERVAL 17 MINUTE)
+  UNION ALL SELECT @er0 + 12, @ev0 + 1, @ta0 + 7, @s_3, (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 5 HOUR + INTERVAL 44 MINUTE)
+  UNION ALL SELECT @er0 + 13, @ev0 + 1, @ta0 + 8, @s_2, (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE), (@day0 + INTERVAL -3 DAY + INTERVAL 7 HOUR + INTERVAL 32 MINUTE)
+  UNION ALL SELECT @er0 + 14, @ev0 + 1, @ta0 + 8, @s_3, (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 6 HOUR + INTERVAL 2 MINUTE)
+  UNION ALL SELECT @er0 + 15, @ev0 + 1, @ta0 + 9, @s_4, (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 5 HOUR + INTERVAL 6 MINUTE)
+  UNION ALL SELECT @er0 + 16, @ev0 + 1, @ta0 + 9, @s_6, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 51 MINUTE)
+  UNION ALL SELECT @er0 + 17, @ev0 + 1, @ta0 + 10, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 22 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 10 HOUR + INTERVAL 22 MINUTE)
+  UNION ALL SELECT @er0 + 18, @ev0 + 1, @ta0 + 10, @s_5, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 42 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 42 MINUTE)
+  UNION ALL SELECT @er0 + 19, @ev0 + 1, @ta0 + 10, @s_6, (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 37 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 10 HOUR + INTERVAL 37 MINUTE)
+  UNION ALL SELECT @er0 + 20, @ev0 + 1, @ta0 + 11, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 4 HOUR + INTERVAL 26 MINUTE)
+  UNION ALL SELECT @er0 + 21, @ev0 + 1, @ta0 + 11, @s_6, (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 5 HOUR + INTERVAL 18 MINUTE)
+  UNION ALL SELECT @er0 + 22, @ev0 + 1, @ta0 + 13, @s_4, (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 16 MINUTE)
+  UNION ALL SELECT @er0 + 23, @ev0 + 1, @ta0 + 13, @s_6, (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 23 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 11 HOUR + INTERVAL 23 MINUTE)
+  UNION ALL SELECT @er0 + 24, @ev0 + 1, @ta0 + 14, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 6 HOUR + INTERVAL 31 MINUTE)
+  UNION ALL SELECT @er0 + 25, @ev0 + 1, @ta0 + 14, @s_5, (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 9 MINUTE), (@day0 + INTERVAL -4 DAY + INTERVAL 1 HOUR + INTERVAL 9 MINUTE)
+  UNION ALL SELECT @er0 + 26, @ev0 + 1, @ta0 + 15, @s_4, (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE), (@day0 + INTERVAL -5 DAY + INTERVAL 9 HOUR + INTERVAL 54 MINUTE)
 ) AS r WHERE @go = 1;
 
 INSERT INTO evaluation_answers (response_id, question_id, rating, comment, selection)
 SELECT * FROM (
-  SELECT @er0 + 1 AS response_id, @eq0 + 1 AS question_id, 5 AS rating, NULL AS comment, NULL AS selection
-  UNION ALL SELECT @er0 + 1, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 1, @eq0 + 3, 4, NULL, NULL
+  SELECT @er0 + 1 AS response_id, @eq0 + 1 AS question_id, 4 AS rating, NULL AS comment, NULL AS selection
+  UNION ALL SELECT @er0 + 1, @eq0 + 2, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 1, @eq0 + 3, 5, NULL, NULL
   UNION ALL SELECT @er0 + 1, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 1, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 1, @eq0 + 5, 5, NULL, NULL
   UNION ALL SELECT @er0 + 1, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 1, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 1, @eq0 + 8, NULL, NULL, '2,0,3,1'
-  UNION ALL SELECT @er0 + 1, @eq0 + 9, NULL, NULL, '0,1,2'
-  UNION ALL SELECT @er0 + 1, @eq0 + 10, NULL, 'Makes the class fun and easy to follow.', NULL
-  UNION ALL SELECT @er0 + 1, @eq0 + 11, NULL, 'Return the graded work sooner.', NULL
+  UNION ALL SELECT @er0 + 1, @eq0 + 8, NULL, NULL, '3,2,1,0'
+  UNION ALL SELECT @er0 + 1, @eq0 + 9, NULL, NULL, '1,2,3,4,5'
+  UNION ALL SELECT @er0 + 1, @eq0 + 10, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 1, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 2, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 2, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 2, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 2, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 2, @eq0 + 5, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 2, @eq0 + 2, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 2, @eq0 + 3, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 2, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 2, @eq0 + 5, 4, NULL, NULL
   UNION ALL SELECT @er0 + 2, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 2, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 2, @eq0 + 8, NULL, NULL, '0,1,3,2'
-  UNION ALL SELECT @er0 + 2, @eq0 + 9, NULL, NULL, '0,1,2,3,4,5'
+  UNION ALL SELECT @er0 + 2, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 2, @eq0 + 8, NULL, NULL, '1,0,3,2'
+  UNION ALL SELECT @er0 + 2, @eq0 + 9, NULL, NULL, '0,1,2,4,5'
   UNION ALL SELECT @er0 + 2, @eq0 + 10, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 2, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 3, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 3, @eq0 + 1, 5, NULL, NULL
   UNION ALL SELECT @er0 + 3, @eq0 + 2, 5, NULL, NULL
   UNION ALL SELECT @er0 + 3, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 3, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 3, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 3, @eq0 + 6, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 3, @eq0 + 4, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 3, @eq0 + 5, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 3, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 3, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 3, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 3, @eq0 + 9, NULL, NULL, '0,2,3,5'
+  UNION ALL SELECT @er0 + 3, @eq0 + 8, NULL, NULL, '1,3,0,2'
+  UNION ALL SELECT @er0 + 3, @eq0 + 9, NULL, NULL, '0,1,2,4,5'
   UNION ALL SELECT @er0 + 3, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 3, @eq0 + 11, NULL, 'Nothing to add, keep it up.', NULL
+  UNION ALL SELECT @er0 + 3, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 4, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 4, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 4, @eq0 + 2, 5, NULL, NULL
   UNION ALL SELECT @er0 + 4, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 4, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 4, @eq0 + 4, 5, NULL, NULL
   UNION ALL SELECT @er0 + 4, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 4, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 4, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 4, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 4, @eq0 + 8, NULL, NULL, '2,3,0,1'
-  UNION ALL SELECT @er0 + 4, @eq0 + 9, NULL, NULL, '1,2,3,4,5'
-  UNION ALL SELECT @er0 + 4, @eq0 + 10, NULL, 'Patient and approachable.', NULL
+  UNION ALL SELECT @er0 + 4, @eq0 + 8, NULL, NULL, '0,3,1,2'
+  UNION ALL SELECT @er0 + 4, @eq0 + 9, NULL, NULL, '1,5'
+  UNION ALL SELECT @er0 + 4, @eq0 + 10, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 4, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 5, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 5, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 5, @eq0 + 2, 3, NULL, NULL
   UNION ALL SELECT @er0 + 5, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 5, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 5, @eq0 + 5, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 5, @eq0 + 4, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 5, @eq0 + 5, 4, NULL, NULL
   UNION ALL SELECT @er0 + 5, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 5, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 5, @eq0 + 8, NULL, NULL, '2,3,1,0'
-  UNION ALL SELECT @er0 + 5, @eq0 + 9, NULL, NULL, '0'
+  UNION ALL SELECT @er0 + 5, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 5, @eq0 + 8, NULL, NULL, '3,2,1,0'
+  UNION ALL SELECT @er0 + 5, @eq0 + 9, NULL, NULL, '0,2'
   UNION ALL SELECT @er0 + 5, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 5, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 6, @eq0 + 1, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 5, @eq0 + 11, NULL, 'Speak a little slower when the topic is new.', NULL
+  UNION ALL SELECT @er0 + 6, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 6, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 6, @eq0 + 3, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 6, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 6, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 6, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 6, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 6, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 6, @eq0 + 5, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 6, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 6, @eq0 + 7, NULL, NULL, 'No'
   UNION ALL SELECT @er0 + 6, @eq0 + 8, NULL, NULL, '2,0,3,1'
-  UNION ALL SELECT @er0 + 6, @eq0 + 9, NULL, NULL, '0,3'
+  UNION ALL SELECT @er0 + 6, @eq0 + 9, NULL, NULL, '4'
   UNION ALL SELECT @er0 + 6, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 6, @eq0 + 11, NULL, 'Return the graded work sooner.', NULL
-  UNION ALL SELECT @er0 + 7, @eq0 + 1, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 6, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 7, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 7, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 7, @eq0 + 3, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 7, @eq0 + 3, 4, NULL, NULL
   UNION ALL SELECT @er0 + 7, @eq0 + 4, 5, NULL, NULL
   UNION ALL SELECT @er0 + 7, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 7, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 7, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 7, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 7, @eq0 + 8, NULL, NULL, '2,3,1,0'
-  UNION ALL SELECT @er0 + 7, @eq0 + 9, NULL, NULL, '1,2'
+  UNION ALL SELECT @er0 + 7, @eq0 + 8, NULL, NULL, '3,0,1,2'
+  UNION ALL SELECT @er0 + 7, @eq0 + 9, NULL, NULL, '0,4'
   UNION ALL SELECT @er0 + 7, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 7, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 7, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
   UNION ALL SELECT @er0 + 8, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 8, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 8, @eq0 + 2, 5, NULL, NULL
   UNION ALL SELECT @er0 + 8, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 8, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 8, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 8, @eq0 + 4, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 8, @eq0 + 5, 5, NULL, NULL
   UNION ALL SELECT @er0 + 8, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 8, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 8, @eq0 + 8, NULL, NULL, '1,0,2,3'
-  UNION ALL SELECT @er0 + 8, @eq0 + 9, NULL, NULL, '1,5'
-  UNION ALL SELECT @er0 + 8, @eq0 + 10, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 8, @eq0 + 8, NULL, NULL, '2,0,3,1'
+  UNION ALL SELECT @er0 + 8, @eq0 + 9, NULL, NULL, '0,3,4,5'
+  UNION ALL SELECT @er0 + 8, @eq0 + 10, NULL, 'Patient and approachable.', NULL
   UNION ALL SELECT @er0 + 8, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 9, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 9, @eq0 + 2, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 9, @eq0 + 2, 3, NULL, NULL
   UNION ALL SELECT @er0 + 9, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 9, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 9, @eq0 + 5, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 9, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 9, @eq0 + 5, 3, NULL, NULL
   UNION ALL SELECT @er0 + 9, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 9, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 9, @eq0 + 8, NULL, NULL, '2,0,1,3'
-  UNION ALL SELECT @er0 + 9, @eq0 + 9, NULL, NULL, '0,3,4,5'
+  UNION ALL SELECT @er0 + 9, @eq0 + 8, NULL, NULL, '3,1,2,0'
+  UNION ALL SELECT @er0 + 9, @eq0 + 9, NULL, NULL, '5'
   UNION ALL SELECT @er0 + 9, @eq0 + 10, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 9, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 10, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 10, @eq0 + 2, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 10, @eq0 + 3, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 10, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 10, @eq0 + 3, 5, NULL, NULL
   UNION ALL SELECT @er0 + 10, @eq0 + 4, 4, NULL, NULL
   UNION ALL SELECT @er0 + 10, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 10, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 10, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 10, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 10, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 10, @eq0 + 9, NULL, NULL, '1,2,5'
+  UNION ALL SELECT @er0 + 10, @eq0 + 8, NULL, NULL, '3,0,2,1'
+  UNION ALL SELECT @er0 + 10, @eq0 + 9, NULL, NULL, '1,3,4'
   UNION ALL SELECT @er0 + 10, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 10, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
-  UNION ALL SELECT @er0 + 11, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 11, @eq0 + 2, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 11, @eq0 + 3, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 10, @eq0 + 11, NULL, 'Speak a little slower when the topic is new.', NULL
+  UNION ALL SELECT @er0 + 11, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 11, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 11, @eq0 + 3, 5, NULL, NULL
   UNION ALL SELECT @er0 + 11, @eq0 + 4, 4, NULL, NULL
   UNION ALL SELECT @er0 + 11, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 11, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 11, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 11, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 11, @eq0 + 8, NULL, NULL, '1,2,0,3'
-  UNION ALL SELECT @er0 + 11, @eq0 + 9, NULL, NULL, '1,2,3,4'
-  UNION ALL SELECT @er0 + 11, @eq0 + 10, NULL, 'Makes the class fun and easy to follow.', NULL
+  UNION ALL SELECT @er0 + 11, @eq0 + 8, NULL, NULL, '1,2,3,0'
+  UNION ALL SELECT @er0 + 11, @eq0 + 9, NULL, NULL, '1,2,4'
+  UNION ALL SELECT @er0 + 11, @eq0 + 10, NULL, 'Always prepared and on time.', NULL
   UNION ALL SELECT @er0 + 11, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 12, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 12, @eq0 + 2, 3, NULL, NULL
   UNION ALL SELECT @er0 + 12, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 12, @eq0 + 4, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 12, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 12, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 12, @eq0 + 5, 5, NULL, NULL
   UNION ALL SELECT @er0 + 12, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 12, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 12, @eq0 + 8, NULL, NULL, '3,2,1,0'
-  UNION ALL SELECT @er0 + 12, @eq0 + 9, NULL, NULL, '2,3'
+  UNION ALL SELECT @er0 + 12, @eq0 + 8, NULL, NULL, '1,3,2,0'
+  UNION ALL SELECT @er0 + 12, @eq0 + 9, NULL, NULL, '0,1,5'
   UNION ALL SELECT @er0 + 12, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 12, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 12, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 13, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 13, @eq0 + 2, 5, NULL, NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 3, 4, NULL, NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 4, 4, NULL, NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 5, 4, NULL, NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 13, @eq0 + 8, NULL, NULL, '3,2,0,1'
-  UNION ALL SELECT @er0 + 13, @eq0 + 9, NULL, NULL, '3,4,5'
-  UNION ALL SELECT @er0 + 13, @eq0 + 10, NULL, 'Explains the lesson very well.', NULL
+  UNION ALL SELECT @er0 + 13, @eq0 + 8, NULL, NULL, '3,1,0,2'
+  UNION ALL SELECT @er0 + 13, @eq0 + 9, NULL, NULL, '0,2,3,5'
+  UNION ALL SELECT @er0 + 13, @eq0 + 10, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 13, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 14, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 14, @eq0 + 2, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 14, @eq0 + 3, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 14, @eq0 + 4, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 14, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 14, @eq0 + 1, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 14, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 14, @eq0 + 3, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 14, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 14, @eq0 + 5, 5, NULL, NULL
   UNION ALL SELECT @er0 + 14, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 14, @eq0 + 7, NULL, NULL, 'Yes'
 ) AS r WHERE @go = 1;
 INSERT INTO evaluation_answers (response_id, question_id, rating, comment, selection)
 SELECT * FROM (
-  SELECT @er0 + 14 AS response_id, @eq0 + 8 AS question_id, NULL AS rating, NULL AS comment, '3,0,2,1' AS selection
-  UNION ALL SELECT @er0 + 14, @eq0 + 9, NULL, NULL, '1,3,5'
-  UNION ALL SELECT @er0 + 14, @eq0 + 10, NULL, 'Patient and approachable.', NULL
-  UNION ALL SELECT @er0 + 14, @eq0 + 11, NULL, 'Nothing to add, keep it up.', NULL
-  UNION ALL SELECT @er0 + 15, @eq0 + 1, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 15, @eq0 + 2, 3, NULL, NULL
+  SELECT @er0 + 14 AS response_id, @eq0 + 8 AS question_id, NULL AS rating, NULL AS comment, '1,0,2,3' AS selection
+  UNION ALL SELECT @er0 + 14, @eq0 + 9, NULL, NULL, '0,2,3,4'
+  UNION ALL SELECT @er0 + 14, @eq0 + 10, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 14, @eq0 + 11, NULL, 'Please give us more time for the activities.', NULL
+  UNION ALL SELECT @er0 + 15, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 15, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 15, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 15, @eq0 + 4, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 15, @eq0 + 5, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 15, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 15, @eq0 + 5, 4, NULL, NULL
   UNION ALL SELECT @er0 + 15, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 15, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 15, @eq0 + 8, NULL, NULL, '2,3,0,1'
-  UNION ALL SELECT @er0 + 15, @eq0 + 9, NULL, NULL, '2,3,4,5'
-  UNION ALL SELECT @er0 + 15, @eq0 + 10, NULL, 'Patient and approachable.', NULL
-  UNION ALL SELECT @er0 + 15, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 15, @eq0 + 8, NULL, NULL, '1,3,0,2'
+  UNION ALL SELECT @er0 + 15, @eq0 + 9, NULL, NULL, '1,2,3,4'
+  UNION ALL SELECT @er0 + 15, @eq0 + 10, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 15, @eq0 + 11, NULL, 'Return the graded work sooner.', NULL
   UNION ALL SELECT @er0 + 16, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 16, @eq0 + 2, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 16, @eq0 + 3, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 16, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 16, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 16, @eq0 + 6, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 2, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 3, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 16, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 16, @eq0 + 8, NULL, NULL, '3,1,2,0'
-  UNION ALL SELECT @er0 + 16, @eq0 + 9, NULL, NULL, '0,2,4,5'
-  UNION ALL SELECT @er0 + 16, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 16, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
-  UNION ALL SELECT @er0 + 17, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 17, @eq0 + 2, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 8, NULL, NULL, '0,1,3,2'
+  UNION ALL SELECT @er0 + 16, @eq0 + 9, NULL, NULL, '1,4,5'
+  UNION ALL SELECT @er0 + 16, @eq0 + 10, NULL, 'Always prepared and on time.', NULL
+  UNION ALL SELECT @er0 + 16, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 17, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 17, @eq0 + 2, 3, NULL, NULL
   UNION ALL SELECT @er0 + 17, @eq0 + 3, 4, NULL, NULL
   UNION ALL SELECT @er0 + 17, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 17, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 17, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 17, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 17, @eq0 + 6, 3, NULL, NULL
   UNION ALL SELECT @er0 + 17, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 17, @eq0 + 8, NULL, NULL, '3,0,2,1'
-  UNION ALL SELECT @er0 + 17, @eq0 + 9, NULL, NULL, '3,4,5'
+  UNION ALL SELECT @er0 + 17, @eq0 + 8, NULL, NULL, '2,0,1,3'
+  UNION ALL SELECT @er0 + 17, @eq0 + 9, NULL, NULL, '2,4'
   UNION ALL SELECT @er0 + 17, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 17, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 18, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 17, @eq0 + 11, NULL, 'Speak a little slower when the topic is new.', NULL
+  UNION ALL SELECT @er0 + 18, @eq0 + 1, 3, NULL, NULL
   UNION ALL SELECT @er0 + 18, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 18, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 18, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 18, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 18, @eq0 + 4, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 18, @eq0 + 5, 3, NULL, NULL
   UNION ALL SELECT @er0 + 18, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 18, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 18, @eq0 + 8, NULL, NULL, '3,1,2,0'
-  UNION ALL SELECT @er0 + 18, @eq0 + 9, NULL, NULL, '3,4,5'
+  UNION ALL SELECT @er0 + 18, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 18, @eq0 + 8, NULL, NULL, '3,2,0,1'
+  UNION ALL SELECT @er0 + 18, @eq0 + 9, NULL, NULL, '0,3,5'
   UNION ALL SELECT @er0 + 18, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 18, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 19, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 19, @eq0 + 2, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 18, @eq0 + 11, NULL, 'Nothing to add, keep it up.', NULL
+  UNION ALL SELECT @er0 + 19, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 19, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 19, @eq0 + 3, 4, NULL, NULL
   UNION ALL SELECT @er0 + 19, @eq0 + 4, 3, NULL, NULL
   UNION ALL SELECT @er0 + 19, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 19, @eq0 + 6, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 19, @eq0 + 6, 4, NULL, NULL
   UNION ALL SELECT @er0 + 19, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 19, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 19, @eq0 + 9, NULL, NULL, '2,4,5'
-  UNION ALL SELECT @er0 + 19, @eq0 + 10, NULL, 'Always prepared and on time.', NULL
+  UNION ALL SELECT @er0 + 19, @eq0 + 8, NULL, NULL, '2,0,1,3'
+  UNION ALL SELECT @er0 + 19, @eq0 + 9, NULL, NULL, '0,1,3,4'
+  UNION ALL SELECT @er0 + 19, @eq0 + 10, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 19, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 20, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 20, @eq0 + 1, 5, NULL, NULL
   UNION ALL SELECT @er0 + 20, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 20, @eq0 + 3, 4, NULL, NULL
   UNION ALL SELECT @er0 + 20, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 20, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 20, @eq0 + 5, 5, NULL, NULL
   UNION ALL SELECT @er0 + 20, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 20, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 20, @eq0 + 8, NULL, NULL, '0,3,2,1'
-  UNION ALL SELECT @er0 + 20, @eq0 + 9, NULL, NULL, '1,2,3,5'
-  UNION ALL SELECT @er0 + 20, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 20, @eq0 + 11, NULL, 'Speak a little slower when the topic is new.', NULL
+  UNION ALL SELECT @er0 + 20, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 20, @eq0 + 8, NULL, NULL, '3,2,1,0'
+  UNION ALL SELECT @er0 + 20, @eq0 + 9, NULL, NULL, '1,2,3,4,5'
+  UNION ALL SELECT @er0 + 20, @eq0 + 10, NULL, 'Explains the lesson very well.', NULL
+  UNION ALL SELECT @er0 + 20, @eq0 + 11, NULL, NULL, NULL
   UNION ALL SELECT @er0 + 21, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 21, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 21, @eq0 + 3, 5, NULL, NULL
   UNION ALL SELECT @er0 + 21, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 21, @eq0 + 5, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 21, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 21, @eq0 + 5, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 21, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 21, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 21, @eq0 + 8, NULL, NULL, '1,2,0,3'
-  UNION ALL SELECT @er0 + 21, @eq0 + 9, NULL, NULL, '0'
-  UNION ALL SELECT @er0 + 21, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 21, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 21, @eq0 + 8, NULL, NULL, '0,1,3,2'
+  UNION ALL SELECT @er0 + 21, @eq0 + 9, NULL, NULL, '1,2,3,5'
+  UNION ALL SELECT @er0 + 21, @eq0 + 10, NULL, 'Makes the class fun and easy to follow.', NULL
+  UNION ALL SELECT @er0 + 21, @eq0 + 11, NULL, 'Please give us more time for the activities.', NULL
   UNION ALL SELECT @er0 + 22, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 22, @eq0 + 2, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 22, @eq0 + 3, 3, NULL, NULL
+  UNION ALL SELECT @er0 + 22, @eq0 + 3, 5, NULL, NULL
   UNION ALL SELECT @er0 + 22, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 22, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 22, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 22, @eq0 + 5, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 22, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 22, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 22, @eq0 + 8, NULL, NULL, '1,2,3,0'
-  UNION ALL SELECT @er0 + 22, @eq0 + 9, NULL, NULL, '0,2,3,5'
+  UNION ALL SELECT @er0 + 22, @eq0 + 8, NULL, NULL, '3,2,0,1'
+  UNION ALL SELECT @er0 + 22, @eq0 + 9, NULL, NULL, '3,4'
   UNION ALL SELECT @er0 + 22, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 22, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
-  UNION ALL SELECT @er0 + 23, @eq0 + 1, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 22, @eq0 + 11, NULL, 'Nothing to add, keep it up.', NULL
+  UNION ALL SELECT @er0 + 23, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 23, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 23, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 23, @eq0 + 4, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 23, @eq0 + 3, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 23, @eq0 + 4, 4, NULL, NULL
   UNION ALL SELECT @er0 + 23, @eq0 + 5, 4, NULL, NULL
   UNION ALL SELECT @er0 + 23, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 23, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 23, @eq0 + 8, NULL, NULL, '2,1,0,3'
-  UNION ALL SELECT @er0 + 23, @eq0 + 9, NULL, NULL, '0,2,3,4,5'
+  UNION ALL SELECT @er0 + 23, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 23, @eq0 + 8, NULL, NULL, '1,3,0,2'
+  UNION ALL SELECT @er0 + 23, @eq0 + 9, NULL, NULL, '0,1,3,4,5'
   UNION ALL SELECT @er0 + 23, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 23, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 23, @eq0 + 11, NULL, 'Please give us more time for the activities.', NULL
   UNION ALL SELECT @er0 + 24, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 24, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 24, @eq0 + 3, 4, NULL, NULL
   UNION ALL SELECT @er0 + 24, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 24, @eq0 + 5, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 24, @eq0 + 5, 4, NULL, NULL
   UNION ALL SELECT @er0 + 24, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 24, @eq0 + 7, NULL, NULL, 'Yes'
+  UNION ALL SELECT @er0 + 24, @eq0 + 7, NULL, NULL, 'No'
   UNION ALL SELECT @er0 + 24, @eq0 + 8, NULL, NULL, '0,3,1,2'
-  UNION ALL SELECT @er0 + 24, @eq0 + 9, NULL, NULL, '1,2,3,4'
-  UNION ALL SELECT @er0 + 24, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 24, @eq0 + 11, NULL, 'Speak a little slower when the topic is new.', NULL
-  UNION ALL SELECT @er0 + 25, @eq0 + 1, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 24, @eq0 + 10, NULL, 'Always prepared and on time.', NULL
+  UNION ALL SELECT @er0 + 24, @eq0 + 11, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 25, @eq0 + 1, 5, NULL, NULL
   UNION ALL SELECT @er0 + 25, @eq0 + 2, 5, NULL, NULL
   UNION ALL SELECT @er0 + 25, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 25, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 25, @eq0 + 5, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 25, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 25, @eq0 + 4, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 25, @eq0 + 5, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 25, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 25, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 25, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 25, @eq0 + 9, NULL, NULL, '0,3,4,5'
-  UNION ALL SELECT @er0 + 25, @eq0 + 10, NULL, NULL, NULL
+  UNION ALL SELECT @er0 + 25, @eq0 + 8, NULL, NULL, '2,0,1,3'
+  UNION ALL SELECT @er0 + 25, @eq0 + 9, NULL, NULL, '3'
+  UNION ALL SELECT @er0 + 25, @eq0 + 10, NULL, 'Patient and approachable.', NULL
   UNION ALL SELECT @er0 + 25, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 26, @eq0 + 1, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 26, @eq0 + 1, 4, NULL, NULL
   UNION ALL SELECT @er0 + 26, @eq0 + 2, 4, NULL, NULL
   UNION ALL SELECT @er0 + 26, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 26, @eq0 + 4, 5, NULL, NULL
+  UNION ALL SELECT @er0 + 26, @eq0 + 4, 4, NULL, NULL
   UNION ALL SELECT @er0 + 26, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 26, @eq0 + 6, 4, NULL, NULL
+  UNION ALL SELECT @er0 + 26, @eq0 + 6, 5, NULL, NULL
   UNION ALL SELECT @er0 + 26, @eq0 + 7, NULL, NULL, 'Yes'
   UNION ALL SELECT @er0 + 26, @eq0 + 8, NULL, NULL, '0,1,3,2'
   UNION ALL SELECT @er0 + 26, @eq0 + 9, NULL, NULL, '0,1,2,4'
-  UNION ALL SELECT @er0 + 26, @eq0 + 10, NULL, 'Patient and approachable.', NULL
+  UNION ALL SELECT @er0 + 26, @eq0 + 10, NULL, 'Makes the class fun and easy to follow.', NULL
   UNION ALL SELECT @er0 + 26, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 3, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 27, @eq0 + 8, NULL, NULL, '0,3,1,2'
-  UNION ALL SELECT @er0 + 27, @eq0 + 9, NULL, NULL, '0,2,5'
-  UNION ALL SELECT @er0 + 27, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 27, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
-  UNION ALL SELECT @er0 + 28, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 28, @eq0 + 2, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 28, @eq0 + 3, 4, NULL, NULL
-) AS r WHERE @go = 1;
-INSERT INTO evaluation_answers (response_id, question_id, rating, comment, selection)
-SELECT * FROM (
-  SELECT @er0 + 28 AS response_id, @eq0 + 4 AS question_id, 4 AS rating, NULL AS comment, NULL AS selection
-  UNION ALL SELECT @er0 + 28, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 28, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 28, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 28, @eq0 + 8, NULL, NULL, '1,0,2,3'
-  UNION ALL SELECT @er0 + 28, @eq0 + 9, NULL, NULL, '0,1,2,4,5'
-  UNION ALL SELECT @er0 + 28, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 28, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 29, @eq0 + 8, NULL, NULL, '2,1,0,3'
-  UNION ALL SELECT @er0 + 29, @eq0 + 9, NULL, NULL, '5'
-  UNION ALL SELECT @er0 + 29, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 29, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 3, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 4, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 30, @eq0 + 8, NULL, NULL, '1,0,3,2'
-  UNION ALL SELECT @er0 + 30, @eq0 + 9, NULL, NULL, '0,1,2,4,5'
-  UNION ALL SELECT @er0 + 30, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 30, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 3, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 31, @eq0 + 8, NULL, NULL, '3,1,0,2'
-  UNION ALL SELECT @er0 + 31, @eq0 + 9, NULL, NULL, '0,1,2,3,4,5'
-  UNION ALL SELECT @er0 + 31, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 31, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 3, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 32, @eq0 + 8, NULL, NULL, '1,0,2,3'
-  UNION ALL SELECT @er0 + 32, @eq0 + 9, NULL, NULL, '0,2,5'
-  UNION ALL SELECT @er0 + 32, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 32, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 2, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 3, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 33, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 33, @eq0 + 9, NULL, NULL, '0,1,3,5'
-  UNION ALL SELECT @er0 + 33, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 33, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 1, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 34, @eq0 + 8, NULL, NULL, '1,2,3,0'
-  UNION ALL SELECT @er0 + 34, @eq0 + 9, NULL, NULL, '2,3'
-  UNION ALL SELECT @er0 + 34, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 34, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 1, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 35, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 35, @eq0 + 9, NULL, NULL, '0,1,4,5'
-  UNION ALL SELECT @er0 + 35, @eq0 + 10, NULL, 'Gives clear examples and useful feedback.', NULL
-  UNION ALL SELECT @er0 + 35, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 2, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 36, @eq0 + 8, NULL, NULL, '2,1,0,3'
-  UNION ALL SELECT @er0 + 36, @eq0 + 9, NULL, NULL, '1,2'
-  UNION ALL SELECT @er0 + 36, @eq0 + 10, NULL, 'Gives clear examples and useful feedback.', NULL
-  UNION ALL SELECT @er0 + 36, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 3, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 37, @eq0 + 8, NULL, NULL, '1,0,2,3'
-  UNION ALL SELECT @er0 + 37, @eq0 + 9, NULL, NULL, '0,1,2,3,5'
-  UNION ALL SELECT @er0 + 37, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 37, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 1, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 3, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 5, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 38, @eq0 + 8, NULL, NULL, '0,1,3,2'
-  UNION ALL SELECT @er0 + 38, @eq0 + 9, NULL, NULL, '0,1,2,3,5'
-  UNION ALL SELECT @er0 + 38, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 38, @eq0 + 11, NULL, 'Return the graded work sooner.', NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 1, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 2, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 4, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 39, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 39, @eq0 + 9, NULL, NULL, '1'
-  UNION ALL SELECT @er0 + 39, @eq0 + 10, NULL, 'Gives clear examples and useful feedback.', NULL
-  UNION ALL SELECT @er0 + 39, @eq0 + 11, NULL, 'Nothing to add, keep it up.', NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 7, NULL, NULL, 'No'
-  UNION ALL SELECT @er0 + 40, @eq0 + 8, NULL, NULL, '3,0,1,2'
-  UNION ALL SELECT @er0 + 40, @eq0 + 9, NULL, NULL, '0'
-  UNION ALL SELECT @er0 + 40, @eq0 + 10, NULL, 'Gives clear examples and useful feedback.', NULL
-  UNION ALL SELECT @er0 + 40, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 2, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 41, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 41, @eq0 + 8, NULL, NULL, '2,3,0,1'
-  UNION ALL SELECT @er0 + 41, @eq0 + 9, NULL, NULL, '1,2,3,5'
-  UNION ALL SELECT @er0 + 41, @eq0 + 10, NULL, NULL, NULL
-) AS r WHERE @go = 1;
-INSERT INTO evaluation_answers (response_id, question_id, rating, comment, selection)
-SELECT * FROM (
-  SELECT @er0 + 41 AS response_id, @eq0 + 11 AS question_id, NULL AS rating, NULL AS comment, NULL AS selection
-  UNION ALL SELECT @er0 + 42, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 42, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 42, @eq0 + 9, NULL, NULL, '2'
-  UNION ALL SELECT @er0 + 42, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 42, @eq0 + 11, NULL, 'Nothing to add, keep it up.', NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 43, @eq0 + 8, NULL, NULL, '1,3,2,0'
-  UNION ALL SELECT @er0 + 43, @eq0 + 9, NULL, NULL, '0,2,3,5'
-  UNION ALL SELECT @er0 + 43, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 43, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 4, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 44, @eq0 + 8, NULL, NULL, '0,2,3,1'
-  UNION ALL SELECT @er0 + 44, @eq0 + 9, NULL, NULL, '2,3,4,5'
-  UNION ALL SELECT @er0 + 44, @eq0 + 10, NULL, 'Always prepared and on time.', NULL
-  UNION ALL SELECT @er0 + 44, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 1, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 45, @eq0 + 8, NULL, NULL, '1,3,0,2'
-  UNION ALL SELECT @er0 + 45, @eq0 + 9, NULL, NULL, '0,3,4'
-  UNION ALL SELECT @er0 + 45, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 45, @eq0 + 11, NULL, 'More practice problems before the quiz, please.', NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 2, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 6, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 46, @eq0 + 8, NULL, NULL, '0,1,2,3'
-  UNION ALL SELECT @er0 + 46, @eq0 + 9, NULL, NULL, '1,2,3'
-  UNION ALL SELECT @er0 + 46, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 46, @eq0 + 11, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 5, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 6, 3, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 47, @eq0 + 8, NULL, NULL, '2,0,1,3'
-  UNION ALL SELECT @er0 + 47, @eq0 + 9, NULL, NULL, '0,1'
-  UNION ALL SELECT @er0 + 47, @eq0 + 10, NULL, NULL, NULL
-  UNION ALL SELECT @er0 + 47, @eq0 + 11, NULL, 'Please give us more time for the activities.', NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 1, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 2, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 3, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 4, 4, NULL, NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 5, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 6, 5, NULL, NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 7, NULL, NULL, 'Yes'
-  UNION ALL SELECT @er0 + 48, @eq0 + 8, NULL, NULL, '1,2,0,3'
-  UNION ALL SELECT @er0 + 48, @eq0 + 9, NULL, NULL, '0,1,3'
-  UNION ALL SELECT @er0 + 48, @eq0 + 10, NULL, 'Patient and approachable.', NULL
-  UNION ALL SELECT @er0 + 48, @eq0 + 11, NULL, NULL, NULL
 ) AS r WHERE @go = 1;
 
 INSERT INTO notifications (user_id, kind, title, body, link, is_read, created_at_utc, updated_at_utc)
@@ -4158,8 +3296,8 @@ SELECT * FROM (
 -- ================================================================ 11) Guidance referrals (the system makes the other ones by itself from the grades and the attendance)
 INSERT INTO referrals (student_id, assignment_id, reason, detail, metric, status, intervention, notes, outcome, resolved_at_utc, handled_by_user_id, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @s_5 AS student_id, @ta0 + 1 AS assignment_id, 'FailingGrades' AS reason, 'BUSINESS ACCOUNTING: 58% (passing is 70)' AS detail, 58.00 AS metric, 'InProgress' AS status, 'Talked with the student' AS intervention, 'Miguel has been absent a lot. We agreed on tutoring after class and a call to the parents.' AS notes, NULL AS outcome, NULL AS resolved_at_utc, @u_guidance AS handled_by_user_id, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @s_10, NULL, 'LowAttendance', 'Absent in 4 of the last 10 classes', 60.00, 'Resolved', 'Parents called', 'Angel was sick; the family sent a medical certificate. Attendance is normal again.', 'Improved', (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), @u_guidance, (@day0 + INTERVAL -30 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
+  SELECT @s_3 AS student_id, @ta0 + 1 AS assignment_id, 'FailingGrades' AS reason, 'BUSINESS ACCOUNTING: 58% (passing is 70)' AS detail, 58.00 AS metric, 'InProgress' AS status, 'Talked with the student' AS intervention, 'Carlo has been absent a lot. We agreed on tutoring after class and a call to the parents.' AS notes, NULL AS outcome, NULL AS resolved_at_utc, @u_guidance AS handled_by_user_id, (@day0 + INTERVAL -9 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
+  UNION ALL SELECT @s_6, NULL, 'LowAttendance', 'Absent in 4 of the last 10 classes', 60.00, 'Resolved', 'Parents called', 'Kristine was sick; the family sent a medical certificate. Attendance is normal again.', 'Improved', (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), @u_guidance, (@day0 + INTERVAL -30 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
 -- ================================================================ What was added

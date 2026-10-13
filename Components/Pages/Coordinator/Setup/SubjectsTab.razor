@@ -29,6 +29,7 @@
                     <tr>
                         <th scope="col">Course</th>
                         <th scope="col">Code</th>
+                        <th scope="col" class="num">Units</th>
                         <th scope="col" class="col-more">Strands</th>
                         <th scope="col">Status</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
@@ -46,6 +47,7 @@
                                 }
                             </td>
                             <td class="nowrap mono">@row.Code</td>
+                            <td class="num">@row.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
                             <td class="col-more">@row.Strands</td>
                             <td><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Active" : "Switched off")</Badge></td>
                             <td class="col-actions">
@@ -75,6 +77,9 @@
                     <input id="j-name" maxlength="150" autocomplete="off" @bind="form.Name" />
                 </Field>
             </div>
+            <Field For="j-units" Label="Units" Required="true" Hint="How many units the course is worth, from 0.5 to 12 (for example 3). It is printed on the enrollment form.">
+                <input id="j-units" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" autocomplete="off" @bind="form.Units" @bind:culture="System.Globalization.CultureInfo.InvariantCulture" />
+            </Field>
             <Field For="j-description" Label="Description" Hint="Optional. Up to 500 characters.">
                 <textarea id="j-description" rows="3" maxlength="500" @bind="form.Description"></textarea>
             </Field>
@@ -127,7 +132,7 @@
     private void OpenEdit(SubjectRow row)
     {
         Errors = [];
-        form = new SubjectInput { Id = row.Id, Code = row.Code, Name = row.Name, Description = row.Description, IsActive = row.IsActive };
+        form = new SubjectInput { Id = row.Id, Code = row.Code, Name = row.Name, Description = row.Description, IsActive = row.IsActive, Units = row.Units };
     }
 
     private void CloseForm() => form = null;

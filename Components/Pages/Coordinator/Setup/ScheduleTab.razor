@@ -1,46 +1,21 @@
 @inherits SetupTabBase
 @inject CourseScheduleService Times
 
-@* The class schedule: the hours of AM, MID and PM, and the days (MWF or TTH) and the time of each course of a section. *@
+@* The class schedule: the hours of AM, MID and PM, and for each course of a section the schedule it is in, the days (MWF or TTH) and the time. One Save for the whole section. *@
 <Card>
     <div class="tab-head">
-        <p class="grow">The hours of each part of the day. The class times of a section's courses must be <strong>inside the hours of its schedule</strong> (AM, MID or PM).</p>
+        <p class="grow">
+            The hours of the day:
+            @foreach (var part in parts ?? [])
+            {
+                <span class="part-hours"><strong>@part.Code</strong> @part.Hours</span>
+            }
+            A class must be inside the hours of its schedule.
+        </p>
+        <Button Variant="ButtonVariant.Secondary" IconName="clock" Disabled="parts is null" OnClick="OpenHours">Edit the times of the day</Button>
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
-
-    @if (parts is null)
-    {
-        <p class="muted">Loading…</p>
-    }
-    else
-    {
-        <form class="day-parts" @onsubmit="SaveDayPartsAsync">
-            @foreach (var part in parts)
-            {
-                var edit = partEdits[part.ScheduleId];
-                <div class="day-part">
-                    <div class="day-part-name"><strong>@part.Code</strong> <span class="muted">@part.Name</span></div>
-                    <Field For="@($"part-start-{part.ScheduleId}")" Label="Starts">
-                        <input id="@($"part-start-{part.ScheduleId}")" type="time" step="300" value="@edit.Start" @onchange="e => SetStart(edit, e)" />
-                    </Field>
-                    <Field For="@($"part-end-{part.ScheduleId}")" Label="Ends">
-                        <input id="@($"part-end-{part.ScheduleId}")" type="time" step="300" value="@edit.End" @onchange="e => SetEnd(edit, e)" />
-                    </Field>
-                </div>
-            }
-            <div class="day-parts-actions">
-                <Button Type="submit" IconName="circle-check" Disabled="Busy">Save the times of the day</Button>
-            </div>
-        </form>
-    }
-</Card>
-
-<Card>
-    <div class="tab-head">
-        <p class="grow">The days and the time of each course of a section: <strong>MWF</strong> is Monday, Wednesday and Friday, <strong>TTH</strong> is Tuesday and Thursday. Students and teachers see it on their courses.
-        Two courses of a section can't meet at the same time in the same term, and a teacher can't have two classes at the same time.</p>
-    </div>
 
     <div class="filter-bar">
         <Field For="cs-section" Label="Section" Class="schedule-section">
@@ -51,11 +26,12 @@
                 }
             </select>
         </Field>
-        @if (CurrentPart is { } part)
-        {
-            <p class="window">The <strong>@part.Code</strong> schedule runs <strong>@part.Hours</strong>.</p>
-        }
+        <div class="filter-actions save-all">
+            <Button IconName="circle-check" Disabled="@(Busy || courses is null || courses.Count == 0)" OnClick="SaveAllAsync">@(Busy ? "Saving…" : "Save")</Button>
+        </div>
     </div>
+
+    <p class="muted how">Choose, for each course, the <strong>schedule</strong> (AM, MID or PM), the <strong>days</strong> (<strong>MWF</strong> is Monday, Wednesday, Friday; <strong>TTH</strong> is Tuesday, Thursday) and when the class <strong>starts and ends</strong>, then press <strong>Save</strong>. A course with nothing chosen has no class time. Two courses of a section can't meet at the same time in the same term, and a teacher can't have two classes at the same time.</p>
 
     <FormErrors Errors="Errors" />
 
@@ -84,10 +60,10 @@
                         <th scope="col">Course</th>
                         <th scope="col" class="col-more">Term</th>
                         <th scope="col" class="col-more">Teacher</th>
+                        <th scope="col">Schedule</th>
                         <th scope="col">Days</th>
                         <th scope="col">Starts</th>
                         <th scope="col">Ends</th>
-                        <th scope="col" class="col-actions"><span class="sr-only">Save</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,7 +75,7 @@
                                 <span class="name">@row.Name</span>
                                 @if (row.Meeting is { } m)
                                 {
-                                    <span class="sub">Now: @m.Describe()</span>
+                                    <span class="sub">Now: @m.DescribeFull()</span>
                                 }
                                 else
                                 {
@@ -109,6 +85,15 @@
                             <td class="col-more nowrap">@row.TermName</td>
                             <td class="col-more">@(row.TeacherName ?? "—")</td>
                             <td>
+                                <select aria-label="@($"Schedule of {row.Name}")" @onchange="e => SetPart(edit, e)">
+                                    <option value="" selected="@(edit.PartId == "")">Choose</option>
+                                    @foreach (var part in parts ?? [])
+                                    {
+                                        <option value="@part.ScheduleId" selected="@(edit.PartId == part.ScheduleId.ToString())">@part.Code</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
                                 <select aria-label="@($"Days of {row.Name}")" @onchange="e => SetDays(edit, e)">
                                     <option value="" selected="@(edit.Days == "")">Choose</option>
                                     <option value="MWF" selected="@(edit.Days == "MWF")">MWF</option>
@@ -117,15 +102,6 @@
                             </td>
                             <td><input type="time" step="300" aria-label="@($"Start of {row.Name}")" value="@edit.Start" @onchange="e => SetStart(edit, e)" /></td>
                             <td><input type="time" step="300" aria-label="@($"End of {row.Name}")" value="@edit.End" @onchange="e => SetEnd(edit, e)" /></td>
-                            <td class="col-actions">
-                                <div class="row-actions">
-                                    <Button Small="true" IconName="circle-check" Disabled="Busy" OnClick="() => SaveCourseAsync(row)">Save</Button>
-                                    @if (row.Meeting is not null)
-                                    {
-                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="x" Disabled="Busy" OnClick="() => ClearCourseAsync(row)">Clear</Button>
-                                    }
-                                </div>
-                            </td>
                         </tr>
                     }
                 </tbody>
@@ -134,39 +110,57 @@
     }
 </Card>
 
+<Modal Open="hours is not null" Title="The times of the day" OnClose="CloseHours">
+    @if (hours is not null && parts is not null)
+    {
+        <form @onsubmit="SaveHoursAsync">
+            <FormErrors Errors="Errors" />
+            <p class="muted">A class must start and end inside the hours of its schedule. A shorter day that would leave a class outside it is refused.</p>
+            <div class="day-parts">
+                @foreach (var part in parts)
+                {
+                    var edit = hours[part.ScheduleId];
+                    <div class="day-part">
+                        <div class="day-part-name"><strong>@part.Code</strong> <span class="muted">@part.Name</span></div>
+                        <Field For="@($"part-start-{part.ScheduleId}")" Label="Starts">
+                            <input id="@($"part-start-{part.ScheduleId}")" type="time" step="300" value="@edit.Start" @onchange="e => SetStart(edit, e)" />
+                        </Field>
+                        <Field For="@($"part-end-{part.ScheduleId}")" Label="Ends">
+                            <input id="@($"part-end-{part.ScheduleId}")" type="time" step="300" value="@edit.End" @onchange="e => SetEnd(edit, e)" />
+                        </Field>
+                    </div>
+                }
+            </div>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseHours">Cancel</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save the times of the day")</Button>
+            </div>
+        </form>
+    }
+</Modal>
+
 @code {
     private sealed class TimeEdit
     {
+        public string PartId { get; set; } = "";
         public string Days { get; set; } = "";
         public string Start { get; set; } = "";
         public string End { get; set; } = "";
     }
 
     private IReadOnlyList<DayPart>? parts;
-    private readonly Dictionary<int, TimeEdit> partEdits = [];
+    private Dictionary<int, TimeEdit>? hours;
     private IReadOnlyList<ScheduleSection>? sections;
     private IReadOnlyList<CourseTimeRow>? courses;
     private readonly Dictionary<int, TimeEdit> courseEdits = [];
     private int sectionId;
 
-    private DayPart? CurrentPart => parts?.FirstOrDefault(p => p.Code == sections?.FirstOrDefault(s => s.SectionId == sectionId)?.PartCode);
-
     protected override async Task OnInitializedAsync()
     {
-        await LoadPartsAsync();
+        parts = await Times.GetDayPartsAsync();
         sections = await Times.ListSectionsAsync();
         sectionId = sections.FirstOrDefault()?.SectionId ?? 0;
         await LoadCoursesAsync();
-    }
-
-    private async Task LoadPartsAsync()
-    {
-        parts = await Times.GetDayPartsAsync();
-        partEdits.Clear();
-        foreach (var p in parts)
-        {
-            partEdits[p.ScheduleId] = new TimeEdit { Start = ClassTime.Box(p.Start), End = ClassTime.Box(p.End) };
-        }
     }
 
     private async Task LoadCoursesAsync()
@@ -176,7 +170,7 @@
         foreach (var c in courses)
         {
             courseEdits[c.SubjectId] = c.Meeting is { } m
-                ? new TimeEdit { Days = m.Days, Start = ClassTime.Box(m.Start), End = ClassTime.Box(m.End) }
+                ? new TimeEdit { PartId = c.ScheduleId?.ToString() ?? "", Days = m.Days, Start = ClassTime.Box(m.Start), End = ClassTime.Box(m.End) }
                 : new TimeEdit();
         }
     }
@@ -189,22 +183,65 @@
         await LoadCoursesAsync();
     }
 
+    // Choosing the schedule of a course that has no time yet starts the class at the beginning of that part of the day (an hour and a half long).
+    private void SetPart(TimeEdit edit, ChangeEventArgs e)
+    {
+        edit.PartId = e.Value?.ToString() ?? "";
+        if (edit.Start == "" && edit.End == "" && parts?.FirstOrDefault(p => p.ScheduleId.ToString() == edit.PartId) is { } part)
+        {
+            edit.Start = ClassTime.Box(part.Start);
+            edit.End = ClassTime.Box(part.Start.AddHours(1.5));
+        }
+    }
+
     private static void SetDays(TimeEdit edit, ChangeEventArgs e) => edit.Days = e.Value?.ToString() ?? "";
 
     private static void SetStart(TimeEdit edit, ChangeEventArgs e) => edit.Start = e.Value?.ToString() ?? "";
 
     private static void SetEnd(TimeEdit edit, ChangeEventArgs e) => edit.End = e.Value?.ToString() ?? "";
 
-    private async Task SaveDayPartsAsync()
+    private async Task SaveAllAsync()
+    {
+        var inputs = (courses ?? []).Select(c =>
+        {
+            var edit = courseEdits[c.SubjectId];
+            return new CourseTimeInput(
+                c.SubjectId, int.TryParse(edit.PartId, out var part) ? part : null, string.IsNullOrEmpty(edit.Days) ? null : edit.Days,
+                ClassTime.Parse(edit.Start), ClassTime.Parse(edit.End));
+        }).ToList();
+
+        var result = await RunAsync(userId => Times.SaveSectionAsync(userId, sectionId, inputs));
+        if (result.Succeeded)
+        {
+            Errors = [];
+            await LoadCoursesAsync();
+            sections = await Times.ListSectionsAsync();
+        }
+        else
+        {
+            // The problems are listed above the table, and a pop-up says so too.
+            Message = result.Errors.Count == 1 ? result.Errors[0] : $"{result.Errors.Count} problems: nothing was saved. They are listed above the table.";
+            MessageIsError = true;
+        }
+    }
+
+    private void OpenHours()
+    {
+        Errors = [];
+        hours = (parts ?? []).ToDictionary(p => p.ScheduleId, p => new TimeEdit { Start = ClassTime.Box(p.Start), End = ClassTime.Box(p.End) });
+    }
+
+    private void CloseHours() => hours = null;
+
+    private async Task SaveHoursAsync()
     {
         var inputs = new List<DayPartInput>();
         foreach (var p in parts ?? [])
         {
-            var edit = partEdits[p.ScheduleId];
+            var edit = hours![p.ScheduleId];
             if (ClassTime.Parse(edit.Start) is not { } start || ClassTime.Parse(edit.End) is not { } end)
             {
                 Errors = [$"Choose when {p.Code} starts and when it ends."];
-                Message = null;
                 return;
             }
 
@@ -214,36 +251,9 @@
         var result = await RunAsync(userId => Times.SaveDayPartsAsync(userId, inputs));
         if (result.Succeeded)
         {
-            await LoadPartsAsync();
-            sections = await Times.ListSectionsAsync();
-        }
-        else
-        {
-            Message = string.Join(" ", result.Errors);
-            MessageIsError = true;
-        }
-    }
-
-    private async Task SaveCourseAsync(CourseTimeRow row)
-    {
-        var edit = courseEdits[row.SubjectId];
-        var days = string.IsNullOrEmpty(edit.Days) ? null : edit.Days;
-        var result = await RunAsync(userId => Times.SaveAsync(userId, sectionId, row.SubjectId, days, ClassTime.Parse(edit.Start), ClassTime.Parse(edit.End)));
-        if (result.Succeeded)
-        {
-            Errors = [];
+            hours = null;
+            parts = await Times.GetDayPartsAsync();
             await LoadCoursesAsync();
-            sections = await Times.ListSectionsAsync();
-        }
-    }
-
-    private async Task ClearCourseAsync(CourseTimeRow row)
-    {
-        var result = await RunAsync(userId => Times.ClearAsync(userId, sectionId, row.SubjectId));
-        if (result.Succeeded)
-        {
-            await LoadCoursesAsync();
-            sections = await Times.ListSectionsAsync();
         }
     }
 }

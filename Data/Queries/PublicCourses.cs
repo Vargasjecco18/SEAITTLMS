@@ -9,7 +9,7 @@ public sealed record PublicCourseGroup(byte GradeLevel, byte TermNumber, string 
 
 /// <param name="Name">The strand's full name. Same as the code when the school only gave a code.</param>
 /// <param name="CourseCount">How many different courses the strand has (a course that is taught in two terms counts once).</param>
-public sealed record PublicStrand(string Code, string Name, IReadOnlyList<string> Schedules, int CourseCount, IReadOnlyList<PublicCourseGroup> Groups);
+public sealed record PublicStrand(string Code, string Name, int CourseCount, IReadOnlyList<PublicCourseGroup> Groups);
 
 public sealed record PublicTrack(string Code, string Name, IReadOnlyList<PublicStrand> Strands);
 
@@ -37,11 +37,6 @@ public static class PublicCourses
             .Select(x => new { x.StrandId, x.GradeLevel, x.TermNumber, x.Subject.Code, x.Subject.Name })
             .ToListAsync(ct);
 
-        var schedules = await db.StrandSchedules.AsNoTracking()
-            .OrderBy(x => x.ScheduleId)
-            .Select(x => new { x.StrandId, x.Schedule.Code })
-            .ToListAsync(ct);
-
         // "1st Term", "2nd Term": the names the newest school year uses for its terms.
         var termNames = await db.Terms.AsNoTracking()
             .OrderByDescending(t => t.SchoolYear.StartDate)
@@ -63,7 +58,6 @@ public static class PublicCourses
                 .ToList();
             return new PublicStrand(
                 code, name,
-                schedules.Where(s => s.StrandId == strandId).Select(s => s.Code).ToList(),
                 own.Select(c => c.Code).Distinct().Count(),
                 groups);
         }

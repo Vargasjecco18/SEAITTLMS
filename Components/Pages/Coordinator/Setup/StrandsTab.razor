@@ -2,7 +2,7 @@
 
 <Card>
     <div class="tab-head">
-        <p class="grow">The strands of each track, the schedules they have classes in, and <strong>their courses</strong>. When a student is enrolled the courses are not chosen: the student gets all the courses of the strand for that grade level and term.</p>
+        <p class="grow">The strands of each track and <strong>their courses</strong>. When a student is enrolled the courses are not chosen: the student gets all the courses of the strand for that grade level and term.</p>
         <Button IconName="plus" Disabled="@(lookups is { Tracks.Count: 0 })" OnClick="OpenAdd">Add strand</Button>
     </div>
 
@@ -24,7 +24,6 @@
                     <tr>
                         <th scope="col">Strand</th>
                         <th scope="col">Track</th>
-                        <th scope="col" class="col-more">Schedules</th>
                         <th scope="col" class="col-more">Courses</th>
                         <th scope="col" class="col-more">Sections</th>
                         <th scope="col">Status</th>
@@ -43,7 +42,6 @@
                                 }
                             </td>
                             <td class="nowrap">@row.Track</td>
-                            <td class="col-more"><span class="chips">@foreach (var s in row.Schedules) { <Badge Tone="Tone.Info">@s</Badge> }</span></td>
                             <td class="col-more">@row.Subjects</td>
                             <td class="col-more">@row.Sections</td>
                             <td><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Offered" : "Not offered")</Badge></td>
@@ -84,17 +82,6 @@
             <Field For="s-name" Label="Name" Required="true">
                 <input id="s-name" maxlength="150" autocomplete="off" @bind="form.Name" />
             </Field>
-
-            <p class="field-label">Classes meet in</p>
-            <div class="checks" role="group" aria-label="Schedules">
-                @foreach (var schedule in lookups.Schedules)
-                {
-                    <label class="check">
-                        <input type="checkbox" checked="@form.ScheduleIds.Contains(schedule.Id)" @onchange="e => ToggleSchedule(schedule.Id, e.Value is true)" />
-                        <span>@schedule.Code · @schedule.Name</span>
-                    </label>
-                }
-            </div>
 
             <label class="switch">
                 <input id="s-active" type="checkbox" @bind="form.IsActive" />
@@ -228,22 +215,10 @@
     private void OpenEdit(StrandRow row)
     {
         Errors = [];
-        form = new StrandInput { Id = row.Id, Code = row.Code, Name = row.Name, TrackId = row.TrackId, IsActive = row.IsActive, ScheduleIds = [.. row.ScheduleIds] };
+        form = new StrandInput { Id = row.Id, Code = row.Code, Name = row.Name, TrackId = row.TrackId, IsActive = row.IsActive };
     }
 
     private void CloseForm() => form = null;
-
-    private void ToggleSchedule(int id, bool on)
-    {
-        if (on)
-        {
-            form!.ScheduleIds.Add(id);
-        }
-        else
-        {
-            form!.ScheduleIds.Remove(id);
-        }
-    }
 
     private async Task SaveAsync()
     {

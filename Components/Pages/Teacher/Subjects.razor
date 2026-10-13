@@ -74,7 +74,6 @@ else
                                 <td>
                                     <span class="name">@card.SubjectName</span>
                                     @if (card.Meets is not null) { <span class="sub">@card.Meets</span> }
-                                    @if (card.Schedule is not null) { <span class="sub">@card.Schedule schedule</span> }
                                 </td>
                                 <td>@card.SectionLabel</td>
                                 <td class="col-more">@card.Students</td>
@@ -114,7 +113,7 @@ else
         <div class="grid">
             @foreach (var card in shown)
             {
-                <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@(card.Meets is null ? (card.Schedule is null ? null : card.Schedule + " schedule") : card.Meets + (card.Schedule is null ? "" : " (" + card.Schedule + ")"))" Href="@($"teacher/subjects/{card.AssignmentId}")">
+                <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@card.Meets" Href="@($"teacher/subjects/{card.AssignmentId}")">
                     <Badge Tone="@(card.ModulesTotal == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesPosted of @card.ModulesTotal @(card.ModulesTotal == 1 ? "module" : "modules") posted</Badge>
                     @if (card.ToGrade > 0)
                     {

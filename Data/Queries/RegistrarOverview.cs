@@ -5,10 +5,8 @@ namespace SEAITT_LMS.Data.Queries;
 
 public sealed record StrandCount(string Code, string Track, int Count);
 
-public sealed record ScheduleCount(string Code, string Name, int Count);
-
 /// <summary>How many students are enrolled in one section for the current term. <paramref name="Label"/> is like 11-BUSSENT-A.</summary>
-public sealed record SectionCount(string Label, string? Schedule, int Count);
+public sealed record SectionCount(string Label, int Count);
 
 public sealed record EnrollmentRow(
     int Id,
@@ -17,7 +15,6 @@ public sealed record EnrollmentRow(
     byte GradeLevel,
     string Track,
     string Strand,
-    string? Schedule,
     string Section,
     string Term,
     string SchoolYear,
@@ -38,7 +35,6 @@ public sealed record RegistrarOverview(
     int StudentsTotal,
     int SectionsThisYear,
     IReadOnlyList<StrandCount> ByStrand,
-    IReadOnlyList<ScheduleCount> BySchedule,
     IReadOnlyList<EnrollmentRow> Recent,
     NotEnrolledPage? NotEnrolled = null,
     IReadOnlyList<SectionCount>? BySection = null)
@@ -53,12 +49,12 @@ public sealed record RegistrarOverview(
 
         var studentsTotal = await db.Students.CountAsync(ct);
         var enrolledToday = await db.Enrollments.CountAsync(e => e.CreatedAtUtc >= startOfTodayUtc, ct);
-        var latest = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(null, null, null, null), 1, recent, ct);
+        var latest = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(null, null, null), 1, recent, ct);
         var notEnrolled = await NotEnrolledList.LoadAsync(db, null, 1, 6, ct);
 
         if (term is null)
         {
-            return new RegistrarOverview(null, 0, enrolledToday, studentsTotal, 0, [], [], latest.Items, notEnrolled);
+            return new RegistrarOverview(null, 0, enrolledToday, studentsTotal, 0, [], latest.Items, notEnrolled);
         }
 
         var enrolledThisTerm = await db.Enrollments.CountAsync(e => e.TermId == term.Id, ct);
@@ -77,16 +73,6 @@ public sealed record RegistrarOverview(
             .Select(s => new StrandCount(s.Code, s.Track, perStrand.FirstOrDefault(p => p.StrandId == s.Id)?.Count ?? 0))
             .ToList();
 
-        var perSchedule = await db.Enrollments.AsNoTracking()
-            .Where(e => e.TermId == term.Id && e.Section.ScheduleId != null)
-            .GroupBy(e => e.Section.ScheduleId)
-            .Select(g => new { ScheduleId = g.Key, Count = g.Count() })
-            .ToListAsync(ct);
-        var schedules = await db.Schedules.AsNoTracking().OrderBy(s => s.Id).Select(s => new { s.Id, s.Code, s.Name }).ToListAsync(ct);
-        var bySchedule = schedules
-            .Select(s => new ScheduleCount(s.Code, s.Name, perSchedule.FirstOrDefault(p => p.ScheduleId == s.Id)?.Count ?? 0))
-            .ToList();
-
         // Every section of this school year with how many students of it are enrolled for the current term.
         var perSection = await db.Enrollments.AsNoTracking()
             .Where(e => e.TermId == term.Id)
@@ -95,19 +81,19 @@ public sealed record RegistrarOverview(
             .ToListAsync(ct);
         var sectionRows = await db.Sections.AsNoTracking()
             .Where(s => s.SchoolYearId == term.SchoolYearId)
-            .OrderBy(s => s.GradeLevel).ThenBy(s => s.Strand.Code).ThenBy(s => s.Name).ThenBy(s => s.ScheduleId)
-            .Select(s => new { s.Id, s.GradeLevel, Strand = s.Strand.Code, s.Name, Schedule = s.Schedule == null ? null : s.Schedule.Code })
+            .OrderBy(s => s.GradeLevel).ThenBy(s => s.Strand.Code).ThenBy(s => s.Name)
+            .Select(s => new { s.Id, s.GradeLevel, Strand = s.Strand.Code, s.Name })
             .ToListAsync(ct);
         var bySection = sectionRows
-            .Select(s => new SectionCount($"{s.GradeLevel}-{s.Strand}-{s.Name}", s.Schedule, perSection.FirstOrDefault(p => p.SectionId == s.Id)?.Count ?? 0))
+            .Select(s => new SectionCount($"{s.GradeLevel}-{s.Strand}-{s.Name}", perSection.FirstOrDefault(p => p.SectionId == s.Id)?.Count ?? 0))
             .ToList();
 
-        return new RegistrarOverview($"{term.Name} · {term.SchoolYear}", enrolledThisTerm, enrolledToday, studentsTotal, sections, byStrand, bySchedule, latest.Items, notEnrolled, bySection);
+        return new RegistrarOverview($"{term.Name} · {term.SchoolYear}", enrolledThisTerm, enrolledToday, studentsTotal, sections, byStrand, latest.Items, notEnrolled, bySection);
     }
 }
 
 /// <param name="NextTerm">"enrolled" or "none": only students who are (or are not) enrolled for the next term. Empty for all.</param>
-public sealed record EnrollmentFilter(string? Search, int? TermId, int? StrandId, int? ScheduleId, string? NextTerm = null);
+public sealed record EnrollmentFilter(string? Search, int? TermId, int? StrandId, string? NextTerm = null);
 
 /// <param name="NextTerm">The term after the current one, or null when there is none.</param>
 public sealed record EnrollmentPage(IReadOnlyList<EnrollmentRow> Items, int Total, int Page, int PageSize, TermRef? NextTerm = null)
@@ -144,11 +130,6 @@ public static class EnrollmentList
             query = query.Where(e => e.StrandId == strandId);
         }
 
-        if (filter.ScheduleId is { } scheduleId)
-        {
-            query = query.Where(e => e.Section.ScheduleId == scheduleId);
-        }
-
         // Who is enrolled for the next term (the registrar can unenroll them) and who still has to be enrolled.
         if (next is not null && filter.NextTerm is "enrolled" or "none")
         {
@@ -169,8 +150,7 @@ public static class EnrollmentList
             .Select(e => new
             {
                 e.Id, e.StudentId, e.FirstName, e.MiddleName, e.LastName, e.Lrn, e.GradeLevel,
-                Track = e.Track.Code, Strand = e.Strand.Code,
-                Schedule = e.Section.Schedule == null ? null : e.Section.Schedule.Code,
+                Track = e.Track.Code, Strand = e.Strand.Code, e.NameExtension,
                 Section = e.Section.Name, Term = e.Term.Name, SchoolYear = e.Term.SchoolYear.Name,
                 e.Subjects, e.Status, e.CreatedAtUtc, Phone = e.Student.User.PhoneNumber,
             })
@@ -191,8 +171,8 @@ public static class EnrollmentList
 
         var items = rows.Select(r => new EnrollmentRow(
             r.Id,
-            string.Join(' ', new[] { r.FirstName, r.MiddleName, r.LastName }.Where(p => !string.IsNullOrWhiteSpace(p))),
-            r.Lrn, r.GradeLevel, r.Track, r.Strand, r.Schedule,
+            string.Join(' ', new[] { r.FirstName, r.MiddleName, r.LastName, r.NameExtension }.Where(p => !string.IsNullOrWhiteSpace(p))),
+            r.Lrn, r.GradeLevel, r.Track, r.Strand,
             $"{r.GradeLevel}-{r.Strand}-{r.Section}", r.Term, r.SchoolYear, r.Subjects, r.Status.ToString(), r.CreatedAtUtc,
             r.StudentId, nextEnrollments.TryGetValue(r.StudentId, out var nextId) ? nextId : null, r.Phone,
             finalGrades.TryGetValue(r.Id, out var finalGrade) ? finalGrade : null)).ToList();

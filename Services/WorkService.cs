@@ -10,7 +10,7 @@ public sealed record StudentItemView(
     int ItemId, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc,
     int ModuleId, string ModuleTitle, int AssignmentId, string SubjectName,
     string Status, string? AnswerText, string? AnswerHtml, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
-    int Questions, int? TimeLimitMinutes, bool AntiCheat, int MaxViolations, bool ShowResult, int ViolationCount, string? AutoSubmitReason)
+    int Questions, int? TimeLimitMinutes, bool AntiCheat, int MaxViolations, bool ShowResult, int ViolationCount, string? AutoSubmitReason, int? SubmissionId = null)
 {
     public bool IsQuiz => Kind == ItemKinds.Quiz;
 
@@ -31,7 +31,7 @@ public sealed record AnswerReview(string Question, string Kind, string? Given, s
 public sealed record SubmissionDetail(
     int StudentId, string StudentName, string Kind, string ItemTitle, decimal MaxScore, string Status,
     string? AnswerText, string? AnswerHtml, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
-    int ViolationCount, string? ViolationLog, string? AutoSubmitReason, bool IsFlagged, IReadOnlyList<AnswerReview> Answers);
+    int ViolationCount, string? ViolationLog, string? AutoSubmitReason, bool IsFlagged, IReadOnlyList<AnswerReview> Answers, int? SubmissionId = null);
 
 /// <summary>An item together with where it belongs, loaded after checking that the person is allowed to see it.</summary>
 internal sealed record ItemContext(
@@ -84,7 +84,7 @@ internal static class ItemAccess
 }
 
 /// <summary>
-/// Handing in work and grading it: students hand in activities and task performances (text and/or a link); the teacher of the subject
+/// Handing in work and grading it: students hand in activities and task performances (text and/or files); the teacher of the subject
 /// gives a score and feedback. Quizzes are handed in and graded by <see cref="QuizService"/>, the teacher can still change the score here.
 /// </summary>
 public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, NotificationService notifications)
@@ -109,7 +109,39 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         return new StudentItemView(
             i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName,
             s?.Status ?? "NotStarted", s?.AnswerText, s?.AnswerHtml, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
-            questions, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShowResult, s?.ViolationCount ?? 0, s?.AutoSubmitReason);
+            questions, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShowResult, s?.ViolationCount ?? 0, s?.AutoSubmitReason, s?.Id);
+    }
+
+    /// <summary>
+    /// The id of the student's piece of work for an item, made (as "in progress") when there is none yet, so the student can attach files to it before handing in.
+    /// Null when the student can't work on it here: it was not found, it is a quiz with questions, or it was graded already.
+    /// </summary>
+    public async Task<int?> EnsureDraftAsync(int studentId, int itemId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var context = await ItemAccess.ForStudentAsync(db, studentId, itemId, Now, tracking: false, ct);
+        if (context is null || (context.Item.Kind == ItemKinds.Quiz && await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct)))
+        {
+            return null;
+        }
+
+        var submission = await db.Submissions.AsNoTracking().Where(s => s.ItemId == itemId && s.StudentId == studentId).Select(s => new { s.Id, s.Status }).FirstOrDefaultAsync(ct);
+        if (submission is not null)
+        {
+            return submission.Status == SubmissionStatus.Graded ? null : submission.Id;
+        }
+
+        var created = db.Submissions.Add(new Submission { ItemId = itemId, StudentId = studentId, Status = SubmissionStatus.InProgress });
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return created.Entity.Id;
+        }
+        catch (DbUpdateException)
+        {
+            // Made at the same moment by another request: use that one.
+            return await db.Submissions.AsNoTracking().Where(s => s.ItemId == itemId && s.StudentId == studentId && s.Status != SubmissionStatus.Graded).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+        }
     }
 
     /// <summary>Remembers that the student opened the page of an activity, a quiz or a task performance (the first time only).</summary>
@@ -168,11 +200,6 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         linkUrl = string.IsNullOrWhiteSpace(linkUrl) ? null : linkUrl.Trim();
 
         var errors = new List<string>();
-        if (answerText is null && linkUrl is null)
-        {
-            errors.Add("Write your answer or add a link to your work.");
-        }
-
         if (answerText is { Length: > 20000 })
         {
             errors.Add("Your answer can have at most 20,000 characters.");
@@ -206,6 +233,13 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         if (submission is { Status: SubmissionStatus.Graded })
         {
             return ServiceResult.Fail("This work was already graded, so it can't be handed in again.");
+        }
+
+        // The work is the written answer, the files the student sent with it, or both.
+        var hasFiles = submission is not null && await db.Attachments.AnyAsync(a => a.SubmissionId == submission.Id, ct);
+        if (answerText is null && linkUrl is null && !hasFiles)
+        {
+            return ServiceResult.Fail("Write your answer or send a file.");
         }
 
         var isNew = submission is null;
@@ -278,7 +312,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         return new SubmissionDetail(
             studentId, student, context.Item.Kind, context.Item.Title, context.Item.MaxScore, s?.Status ?? "NotStarted",
             s?.AnswerText, s?.AnswerHtml, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
-            s?.ViolationCount ?? 0, s?.ViolationLog, s?.AutoSubmitReason, s?.IsFlagged ?? false, answers);
+            s?.ViolationCount ?? 0, s?.ViolationLog, s?.AutoSubmitReason, s?.IsFlagged ?? false, answers, s?.Id);
     }
 
     /// <summary>Gives a score and feedback. Works also when the student handed nothing in (a task performance done in class). The student is told.</summary>

@@ -2,7 +2,7 @@
 
 <Card>
     <div class="tab-head">
-        <p class="grow">The sections of a school year, like 11-BUSSENT-A. A section has a name, a grade level, a strand <strong>and a schedule</strong>, so 11-BUSSENT-A in the morning and 11-BUSSENT-A in the afternoon are two different sections. The registrar also makes a section the first time a student is enrolled in it. Teachers get a section's courses under <strong>Users Management</strong>.</p>
+        <p class="grow">The sections of a school year, like 11-BUSSENT-A. A section has a name, a grade level and a strand: <strong>the schedule (AM, MID or PM) is not part of it</strong>, it belongs to each course (see the Class schedule tab). The registrar also makes a section the first time a student is enrolled in it. Teachers get a section's courses under <strong>Users Management</strong>.</p>
         <Button IconName="plus" Disabled="@(lookups is { Years.Count: 0 } or { Strands.Count: 0 })" OnClick="OpenAdd">Add section</Button>
     </div>
 
@@ -35,15 +35,6 @@
                 }
             </select>
         </Field>
-        <Field For="sec-schedule" Label="Schedule">
-            <select id="sec-schedule" @bind="scheduleFilter">
-                <option value="0">All schedules</option>
-                @foreach (var schedule in lookups?.Schedules ?? [])
-                {
-                    <option value="@schedule.Id">@schedule.Code</option>
-                }
-            </select>
-        </Field>
         <span class="filter-count">@(Shown.Count == 1 ? "1 section" : $"{Shown.Count:N0} sections")</span>
     </form>
 
@@ -72,7 +63,7 @@
                     @foreach (var row in Shown)
                     {
                         <tr>
-                            <td class="name nowrap">@row.Label @if (row.Schedule is not null) { <Badge Tone="Tone.Info">@row.Schedule</Badge> }</td>
+                            <td class="name nowrap">@row.Label</td>
                             <td class="col-more nowrap">@row.SchoolYear</td>
                             <td class="col-more">@(row.Adviser ?? "—")</td>
                             <td>@row.Students</td>
@@ -117,7 +108,7 @@
                     </select>
                 </Field>
                 <Field For="n-strand" Label="Strand" Required="true">
-                    <select id="n-strand" disabled="@locked" @bind="form.StrandId" @bind:after="StrandChanged">
+                    <select id="n-strand" disabled="@locked" @bind="form.StrandId">
                         <option value="0">Choose a strand</option>
                         @foreach (var strand in lookups.Strands)
                         {
@@ -127,15 +118,6 @@
                 </Field>
             </div>
             <div class="two">
-                <Field For="n-schedule" Label="Meets in" Required="true">
-                    <select id="n-schedule" disabled="@(locked || form.StrandId == 0)" @bind="form.ScheduleId">
-                        <option value="0">@(form.StrandId == 0 ? "Choose the strand first" : "Choose")</option>
-                        @foreach (var schedule in SchedulesOfStrand)
-                        {
-                            <option value="@schedule.Id">@schedule.Code · @schedule.Name</option>
-                        }
-                    </select>
-                </Field>
                 <Field For="n-name" Label="Section name" Required="true" Hint="Like A.">
                     <input id="n-name" maxlength="50" autocomplete="off" @bind="form.Name" />
                 </Field>
@@ -180,27 +162,16 @@
     private int yearFilter;
     private int gradeFilter;
     private int strandFilter;
-    private int scheduleFilter;
 
     private IReadOnlyList<SectionRow> Shown =>
         rows is null ? [] : rows.Where(r => (yearFilter == 0 || r.SchoolYearId == yearFilter)
             && (gradeFilter == 0 || r.GradeLevel == gradeFilter)
             && (strandFilter == 0 || r.StrandId == strandFilter)
-            && (scheduleFilter == 0 || r.ScheduleId == scheduleFilter)
             && (string.IsNullOrWhiteSpace(search)
                 || r.Label.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
                 || (r.Adviser?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false)))
-            .OrderByDescending(r => r.SchoolYear).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name).ThenBy(r => r.Schedule)
+            .OrderByDescending(r => r.SchoolYear).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name)
             .ToList();
-
-    private IEnumerable<ScheduleChoice> SchedulesOfStrand
-    {
-        get
-        {
-            var strand = lookups?.Strands.FirstOrDefault(s => s.Id == form?.StrandId);
-            return strand is null ? [] : lookups!.Schedules.Where(s => strand.ScheduleIds.Contains(s.Id));
-        }
-    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -225,19 +196,12 @@
         adviserId = row.AdviserTeacherId ?? 0;
         form = new SectionInput
         {
-            Id = row.Id, SchoolYearId = row.SchoolYearId, StrandId = row.StrandId, GradeLevel = row.GradeLevel, ScheduleId = row.ScheduleId ?? 0,
+            Id = row.Id, SchoolYearId = row.SchoolYearId, StrandId = row.StrandId, GradeLevel = row.GradeLevel,
             Name = row.Name, AdviserTeacherId = row.AdviserTeacherId,
         };
     }
 
     private void CloseForm() => form = null;
-
-    // A strand with a single schedule needs no choosing.
-    private void StrandChanged()
-    {
-        var schedules = SchedulesOfStrand.ToList();
-        form!.ScheduleId = schedules.Count == 1 ? schedules[0].Id : 0;
-    }
 
     private async Task SaveAsync()
     {

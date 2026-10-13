@@ -16,13 +16,13 @@ public sealed record TermRow(int Id, int SchoolYearId, string SchoolYear, int Te
 public sealed record TrackRow(int Id, string Code, string Name, bool IsActive, int Strands);
 
 public sealed record StrandRow(
-    int Id, string Code, string Name, int TrackId, string Track, bool IsActive, IReadOnlyList<int> ScheduleIds, IReadOnlyList<string> Schedules,
+    int Id, string Code, string Name, int TrackId, string Track, bool IsActive,
     int Subjects, int Sections);
 
-public sealed record SubjectRow(int Id, string Code, string Name, string? Description, bool IsActive, int Strands);
+public sealed record SubjectRow(int Id, string Code, string Name, string? Description, bool IsActive, int Strands, decimal Units = 3);
 
 public sealed record SectionRow(
-    int Id, int SchoolYearId, string SchoolYear, int StrandId, string StrandCode, int GradeLevel, int? ScheduleId, string? Schedule, string Name,
+    int Id, int SchoolYearId, string SchoolYear, int StrandId, string StrandCode, int GradeLevel, string Name,
     int? AdviserTeacherId, string? Adviser, int Students, int Teachers)
 {
     public string Label => TeachingService.SectionLabel((byte)GradeLevel, StrandCode, Name);
@@ -33,8 +33,7 @@ public sealed record CurriculumEntry(int GradeLevel, int TermNumber, int Subject
 
 // ---- the choices the forms offer
 public sealed record YearOption(int Id, string Name, DateOnly StartDate, DateOnly EndDate);
-public sealed record StrandChoice(int Id, string Code, string Name, string Track, IReadOnlyList<int> ScheduleIds);
-public sealed record ScheduleChoice(int Id, string Code, string Name);
+public sealed record StrandChoice(int Id, string Code, string Name, string Track);
 public sealed record TeacherChoice(int Id, string Name);
 public sealed record SubjectPick(int Id, string Code, string Name, bool IsActive);
 
@@ -42,7 +41,6 @@ public sealed record SetupLookups(
     IReadOnlyList<YearOption> Years,
     IReadOnlyList<TrackRow> Tracks,
     IReadOnlyList<StrandChoice> Strands,
-    IReadOnlyList<ScheduleChoice> Schedules,
     IReadOnlyList<TeacherChoice> Teachers,
     IReadOnlyList<SubjectPick> Subjects,
     IReadOnlyList<int> TermNumbers);
@@ -85,7 +83,6 @@ public sealed class StrandInput
     public string Name { get; set; } = "";
     public int TrackId { get; set; }
     public bool IsActive { get; set; } = true;
-    public HashSet<int> ScheduleIds { get; set; } = [];
 }
 
 public sealed class SubjectInput
@@ -95,6 +92,9 @@ public sealed class SubjectInput
     public string Name { get; set; } = "";
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
+
+    /// <summary>The units of the course, 0.5 to 12 (it is printed on the enrollment form).</summary>
+    public decimal Units { get; set; } = 3;
 }
 
 public sealed class SectionInput
@@ -103,7 +103,6 @@ public sealed class SectionInput
     public int SchoolYearId { get; set; }
     public int StrandId { get; set; }
     public int GradeLevel { get; set; } = 11;
-    public int ScheduleId { get; set; }
     public string Name { get; set; } = "";
     public int? AdviserTeacherId { get; set; }
 }
@@ -141,12 +140,9 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             .Select(y => new YearOption(y.Id, y.Name, y.StartDate, y.EndDate)).ToListAsync(ct);
         var tracks = await db.Tracks.AsNoTracking().OrderBy(t => t.Id)
             .Select(t => new TrackRow(t.Id, t.Code, t.Name, t.IsActive, 0)).ToListAsync(ct);
-        var schedules = await db.Schedules.AsNoTracking().OrderBy(s => s.Id)
-            .Select(s => new ScheduleChoice(s.Id, s.Code, s.Name)).ToListAsync(ct);
-        var links = await db.StrandSchedules.AsNoTracking().Select(x => new { x.StrandId, x.ScheduleId }).ToListAsync(ct);
         var strands = (await db.Strands.AsNoTracking().OrderBy(s => s.Track.Id).ThenBy(s => s.Id)
                 .Select(s => new { s.Id, s.Code, s.Name, Track = s.Track.Code }).ToListAsync(ct))
-            .Select(s => new StrandChoice(s.Id, s.Code, s.Name, s.Track, links.Where(l => l.StrandId == s.Id).Select(l => l.ScheduleId).Order().ToList()))
+            .Select(s => new StrandChoice(s.Id, s.Code, s.Name, s.Track))
             .ToList();
         var teachers = (await db.Teachers.AsNoTracking().OrderBy(t => t.LastName).ThenBy(t => t.FirstName)
                 .Select(t => new { t.Id, t.FirstName, t.MiddleName, t.LastName }).ToListAsync(ct))
@@ -156,7 +152,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         // 1st term, 2nd term ... as many as the terms of any school year, and at least two.
         var maxTerm = Math.Max(2, (int)(await db.Terms.AsNoTracking().Select(t => (int?)t.TermNumber).MaxAsync(ct) ?? 2));
-        return new SetupLookups(years, tracks, strands, schedules, teachers, subjects, Enumerable.Range(1, maxTerm).ToList());
+        return new SetupLookups(years, tracks, strands, teachers, subjects, Enumerable.Range(1, maxTerm).ToList());
     }
 
     // ======================================================================= school years
@@ -495,7 +491,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<IReadOnlyList<StrandRow>> ListStrandsAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var links = await db.StrandSchedules.AsNoTracking().Select(x => new { x.StrandId, x.ScheduleId, x.Schedule.Code }).ToListAsync(ct);
         var rows = await db.Strands.AsNoTracking().OrderBy(s => s.TrackId).ThenBy(s => s.Id)
             .Select(s => new
             {
@@ -506,8 +501,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             .ToListAsync(ct);
         return rows.Select(s => new StrandRow(
             s.Id, s.Code, s.Name, s.TrackId, s.Track, s.IsActive,
-            links.Where(l => l.StrandId == s.Id).Select(l => l.ScheduleId).Order().ToList(),
-            links.Where(l => l.StrandId == s.Id).OrderBy(l => l.ScheduleId).Select(l => l.Code).ToList(),
             s.Subjects, s.Sections)).ToList();
     }
 
@@ -526,11 +519,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             errors.Add("Enter the name of the strand (up to 150 characters).");
         }
 
-        if (input.ScheduleIds.Count == 0)
-        {
-            errors.Add("Pick at least one schedule the strand has classes in.");
-        }
-
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);
@@ -545,12 +533,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         if (!await db.Tracks.AnyAsync(t => t.Id == input.TrackId, ct))
         {
             return ServiceResult.Fail("Pick the track of the strand.");
-        }
-
-        var wanted = input.ScheduleIds.ToList();
-        if (await db.Schedules.CountAsync(s => wanted.Contains(s.Id), ct) != wanted.Count)
-        {
-            return ServiceResult.Fail("One of the schedules does not exist.");
         }
 
         if (await db.Strands.AnyAsync(s => s.Code == code && s.Id != input.Id, ct))
@@ -573,20 +555,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                 && (await db.Enrollments.AnyAsync(e => e.StrandId == id, ct) || await db.Students.AnyAsync(s => s.StrandId == id, ct) || await db.Teachers.AnyAsync(t => t.StrandId == id, ct)))
             {
                 return ServiceResult.Fail("Students or teachers belong to this strand, so it can't move to another track.");
-            }
-
-            // A section runs in one of the strand's schedules, so a schedule in use can't be taken away.
-            var dropped = await db.StrandSchedules.Where(x => x.StrandId == id && !wanted.Contains(x.ScheduleId)).Select(x => x.ScheduleId).ToListAsync(ct);
-            if (dropped.Count > 0)
-            {
-                var inUse = await db.Sections.Where(s => s.StrandId == id && s.ScheduleId != null && dropped.Contains(s.ScheduleId.Value))
-                    .Select(s => new { s.GradeLevel, s.Name, Schedule = s.Schedule!.Code }).FirstOrDefaultAsync(ct);
-                if (inUse is not null)
-                {
-                    return ServiceResult.Fail($"Section {inUse.GradeLevel}-{code}-{inUse.Name} meets in the {inUse.Schedule} schedule, so {code} must keep it.");
-                }
-
-                await db.StrandSchedules.Where(x => x.StrandId == id && dropped.Contains(x.ScheduleId)).ExecuteDeleteAsync(ct);
             }
 
             // The track is part of a key that enrollments use, so the row is updated directly (not through a tracked entity).
@@ -616,13 +584,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             strandId = strand.Id;
         }
 
-        var have = await db.StrandSchedules.Where(x => x.StrandId == strandId).Select(x => x.ScheduleId).ToListAsync(ct);
-        foreach (var scheduleId in wanted.Except(have))
-        {
-            db.StrandSchedules.Add(new StrandSchedule { StrandId = strandId, ScheduleId = scheduleId });
-        }
-
-        await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return ServiceResult.Ok(input.Id is null ? $"The strand {code} was added. Give it its courses with the Courses button." : $"The strand {code} was saved.", strandId);
     }
@@ -654,7 +615,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         await db.StrandSubjects.Where(x => x.StrandId == id).ExecuteDeleteAsync(ct);
-        await db.StrandSchedules.Where(x => x.StrandId == id).ExecuteDeleteAsync(ct);
         await db.Strands.Where(s => s.Id == id).ExecuteDeleteAsync(ct);
         await transaction.CommitAsync(ct);
         return ServiceResult.Ok($"The strand {strand.Code} was deleted.");
@@ -732,7 +692,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Subjects.AsNoTracking().OrderBy(s => s.Name)
-            .Select(s => new SubjectRow(s.Id, s.Code, s.Name, s.Description, s.IsActive, db.StrandSubjects.Where(x => x.SubjectId == s.Id).Select(x => x.StrandId).Distinct().Count()))
+            .Select(s => new SubjectRow(s.Id, s.Code, s.Name, s.Description, s.IsActive, db.StrandSubjects.Where(x => x.SubjectId == s.Id).Select(x => x.StrandId).Distinct().Count(), s.Units))
             .ToListAsync(ct);
     }
 
@@ -755,6 +715,11 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         if (description is { Length: > 500 })
         {
             errors.Add("The description can have at most 500 characters.");
+        }
+
+        if (input.Units < 0.5m || input.Units > 12 || decimal.Round(input.Units, 1) != input.Units)
+        {
+            errors.Add("The units are from 0.5 to 12 (one decimal at most, like 1.5 or 3).");
         }
 
         if (errors.Count > 0)
@@ -794,6 +759,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         subject.Name = name;
         subject.Description = description;
         subject.IsActive = input.IsActive;
+        subject.Units = input.Units;
         return await SaveAsync(db, input.Id is null ? $"The course {name} was added. Put it in a strand's courses to use it." : $"The course {name} was saved.", ct);
     }
 
@@ -839,17 +805,16 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.Sections.AsNoTracking()
-            .OrderByDescending(s => s.SchoolYear.StartDate).ThenBy(s => s.GradeLevel).ThenBy(s => s.Strand.Code).ThenBy(s => s.ScheduleId).ThenBy(s => s.Name)
+            .OrderByDescending(s => s.SchoolYear.StartDate).ThenBy(s => s.GradeLevel).ThenBy(s => s.Strand.Code).ThenBy(s => s.Name)
             .Select(s => new
             {
-                s.Id, s.SchoolYearId, Year = s.SchoolYear.Name, s.StrandId, StrandCode = s.Strand.Code, s.GradeLevel, s.ScheduleId,
-                Schedule = s.Schedule != null ? s.Schedule.Code : null, s.Name, s.AdviserTeacherId,
+                s.Id, s.SchoolYearId, Year = s.SchoolYear.Name, s.StrandId, StrandCode = s.Strand.Code, s.GradeLevel, s.Name, s.AdviserTeacherId,
                 Adviser = s.Adviser != null ? s.Adviser.LastName + ", " + s.Adviser.FirstName : null,
                 Students = db.Enrollments.Where(e => e.SectionId == s.Id).Select(e => e.StudentId).Distinct().Count(),
                 Teachers = db.TeachingAssignments.Count(a => a.SectionId == s.Id),
             })
             .ToListAsync(ct);
-        return rows.Select(r => new SectionRow(r.Id, r.SchoolYearId, r.Year, r.StrandId, r.StrandCode, r.GradeLevel, r.ScheduleId, r.Schedule, r.Name, r.AdviserTeacherId, r.Adviser, r.Students, r.Teachers)).ToList();
+        return rows.Select(r => new SectionRow(r.Id, r.SchoolYearId, r.Year, r.StrandId, r.StrandCode, r.GradeLevel, r.Name, r.AdviserTeacherId, r.Adviser, r.Students, r.Teachers)).ToList();
     }
 
     public async Task<ServiceResult> SaveSectionAsync(SectionInput input, int actingUserId, CancellationToken ct = default)
@@ -888,25 +853,14 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             return ServiceResult.Fail("Pick the school year of the section.");
         }
 
-        var schedule = await db.Schedules.AsNoTracking().Where(s => s.Id == input.ScheduleId).Select(s => new { s.Id, s.Code }).FirstOrDefaultAsync(ct);
-        if (schedule is null)
-        {
-            return ServiceResult.Fail("Pick when the section meets.");
-        }
-
-        if (!await db.StrandSchedules.AnyAsync(x => x.StrandId == strand.Id && x.ScheduleId == schedule.Id, ct))
-        {
-            return ServiceResult.Fail($"{strand.Code} has no {schedule.Code} classes. Pick one of its schedules.");
-        }
-
         if (input.AdviserTeacherId is { } adviserId && !await db.Teachers.AnyAsync(t => t.Id == adviserId, ct))
         {
             return ServiceResult.Fail("The adviser was not found.");
         }
 
-        if (await db.Sections.AnyAsync(s => s.SchoolYearId == input.SchoolYearId && s.StrandId == strand.Id && s.GradeLevel == input.GradeLevel && s.ScheduleId == schedule.Id && s.Name == name && s.Id != input.Id, ct))
+        if (await db.Sections.AnyAsync(s => s.SchoolYearId == input.SchoolYearId && s.StrandId == strand.Id && s.GradeLevel == input.GradeLevel && s.Name == name && s.Id != input.Id, ct))
         {
-            return ServiceResult.Fail($"There is already a section {input.GradeLevel}-{strand.Code}-{name} in the {schedule.Code} schedule of that school year.");
+            return ServiceResult.Fail($"There is already a section {input.GradeLevel}-{strand.Code}-{name} in that school year.");
         }
 
         var label = TeachingService.SectionLabel((byte)input.GradeLevel, strand.Code, name);
@@ -918,15 +872,15 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                 return ServiceResult.Fail("This section no longer exists.");
             }
 
-            // Students and teachers are tied to the school year, strand, grade level and schedule of the section.
-            var moved = found.SchoolYearId != input.SchoolYearId || found.StrandId != strand.Id || found.GradeLevel != input.GradeLevel || found.ScheduleId != schedule.Id;
+            // Students and teachers are tied to the school year, strand and grade level of the section.
+            var moved = found.SchoolYearId != input.SchoolYearId || found.StrandId != strand.Id || found.GradeLevel != input.GradeLevel;
             if (moved && (await db.Enrollments.AnyAsync(e => e.SectionId == id, ct) || await db.TeachingAssignments.AnyAsync(a => a.SectionId == id, ct)
                           || await db.Students.AnyAsync(s => s.SectionId == id, ct) || await db.Teachers.AnyAsync(t => t.SectionId == id, ct)))
             {
                 return ServiceResult.Fail("Students or teachers are in this section, so only its name and its adviser can change.");
             }
 
-            // The class times belong to the courses of the old strand, grade level and schedule: a section that moves starts without them.
+            // The class times belong to the courses of the old strand and grade level: a section that moves starts without them.
             if (moved)
             {
                 await db.CourseSchedules.Where(c => c.SectionId == id).ExecuteDeleteAsync(ct);
@@ -938,7 +892,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                 .SetProperty(s => s.SchoolYearId, input.SchoolYearId)
                 .SetProperty(s => s.StrandId, strand.Id)
                 .SetProperty(s => s.GradeLevel, (byte)input.GradeLevel)
-                .SetProperty(s => s.ScheduleId, schedule.Id)
                 .SetProperty(s => s.Name, name)
                 .SetProperty(s => s.AdviserTeacherId, adviser)
                 .SetProperty(s => s.UpdatedAtUtc, DateTime.UtcNow), ct));
@@ -947,7 +900,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         db.Sections.Add(new Section
         {
-            SchoolYearId = input.SchoolYearId, StrandId = strand.Id, GradeLevel = (byte)input.GradeLevel, ScheduleId = schedule.Id, Name = name, AdviserTeacherId = input.AdviserTeacherId,
+            SchoolYearId = input.SchoolYearId, StrandId = strand.Id, GradeLevel = (byte)input.GradeLevel, Name = name, AdviserTeacherId = input.AdviserTeacherId,
         });
         return await SaveAsync(db, $"The section {label} was added.", ct);
     }
