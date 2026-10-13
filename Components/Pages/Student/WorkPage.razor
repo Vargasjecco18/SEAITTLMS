@@ -27,7 +27,9 @@ else
 {
     var now = PhilippineTime.Now(Clock);
     var overdue = item.DueAtUtc is { } dueAt && dueAt < now.UtcDateTime;
-    var closedQuiz = item.IsQuiz && overdue && item.Status == "NotStarted";
+    // A quiz that is only a file (no questions) is answered in the editor like an activity.
+    var fileQuiz = item.IsQuiz && item.Questions == 0 && files.Count > 0;
+    var closedQuiz = item.IsQuiz && !fileQuiz && overdue && item.Status == "NotStarted";
 
     <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
         <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the module</ButtonLink>
@@ -70,7 +72,7 @@ else
                 }
             </Card>
 
-            @if (item.IsQuiz)
+            @if (item.IsQuiz && !fileQuiz)
             {
                 <Card Title="Your attempt" IconName="clipboard-check">
                     @if (item.Status == SubmissionStatus.Graded || item.Status == SubmissionStatus.Submitted)
@@ -118,10 +120,6 @@ else
                     {
                         <p class="warn"><Icon Name="lock-keyhole" Size="16" /> This quiz is closed. It was due @PhilippineTime.FormatDateTime(item.DueAtUtc!.Value).</p>
                     }
-                    else if (item.Questions == 0 && files.Count > 0)
-                    {
-                        <p class="muted">This quiz is in the file above. Your teacher tells you how to answer it.</p>
-                    }
                     else if (item.Questions == 0)
                     {
                         <p class="muted">Your teacher has not added the questions yet.</p>
@@ -135,7 +133,7 @@ else
             }
             else
             {
-                <Card Title="Your work" IconName="notebook-pen">
+                <Card Title="@(item.IsQuiz ? "Your answers" : "Your work")" IconName="notebook-pen">
                     @if (item.Status == SubmissionStatus.Graded)
                     {
                         @if (!string.IsNullOrWhiteSpace(item.AnswerText))
@@ -154,7 +152,7 @@ else
                     {
                         <FormErrors Errors="formErrors" />
                         <div class="answer">
-                            <span class="answer-label">Your answer</span>
+                            <span class="answer-label">@(item.IsQuiz ? "Your answers" : "Your answer")</span>
                             <RichTextEditor @ref="editor" Id="w-text" Html="@answerHtml" />
                         </div>
                         <Field For="w-link" Label="Link to your work" Hint="Optional. A shared file or video, starting with https://">

@@ -196,7 +196,8 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             return ServiceResult.Fail("This work was not found.");
         }
 
-        if (context.Item.Kind == ItemKinds.Quiz)
+        // A quiz with questions is taken on its own page. A quiz that is only a file (no questions) is answered here, like an activity, and the teacher gives the score.
+        if (context.Item.Kind == ItemKinds.Quiz && await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct))
         {
             return ServiceResult.Fail("A quiz is taken on its own page.");
         }

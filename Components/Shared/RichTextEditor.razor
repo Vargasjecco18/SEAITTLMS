@@ -101,7 +101,15 @@
     {
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("seaittEditor.start", Id, Html);
+            try
+            {
+                // Cleaned again here: the box is filled with markup, so only markup that passed the cleaning goes in.
+                await JS.InvokeVoidAsync("seaittEditor.start", Id, RichText.Sanitize(Html));
+            }
+            catch (JSDisconnectedException)
+            {
+                // The page was closed while it was starting: nothing to start.
+            }
         }
     }
 

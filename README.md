@@ -239,7 +239,10 @@ students, modules posted with a bar, what is to check). **Open** shows its modul
 cannot see it. **Post now** shows it to the students (they get a notification), **Schedule** picks the day and time it
 appears by itself, **Hide** takes it back. At the bottom of a module are its **Activities**, **Quizzes** and **Task
 performances**; each has a due date (and can have its own time to appear). Open an item to see who handed in, read the
-work, give a score and feedback (the student is told).
+work (with the formatting the student gave it), give a score and feedback (the student is told).
+
+**Modules are closed lists.** On a course page (the teacher's and the student's) every module is a line with its name: **press the name** to open it and see its activities, quizzes and task
+performance (and its buttons); press it again to close it. Several can be open at once. Code: `Teacher/Subject.razor`, `Student/SubjectModules.razor`.
 
 **Quizzes** have questions (multiple choice, true or false, short answer) that are graded by themselves, an optional time
 limit, shuffled questions and choices, and the **anti-cheating watch**: while a student takes the quiz the page tells the
@@ -252,35 +255,43 @@ is how far along the student is: the modules they opened and the work they hande
 posted modules; each ends with three tabs: **Activities**, **Quizzes**, **Task performance**. **Read lesson** opens the
 module's text. A module that was never opened is marked **New**.
 
+**Your work: the editor.** An activity or a task performance is answered in **an editor like a word processor** (`Components/Shared/RichTextEditor.razor`, script `seaittEditor` in `wwwroot/app.js`).
+The bar above the box has: undo and redo, the **paragraph style** (normal, heading 1 to 3, quote), the **font** (Arial, Calibri, Cambria, Georgia, Times New Roman, Verdana, Courier New) and its **size** (8 to 48),
+**bold, italic, underline, strikethrough, subscript, superscript**, the **text color** and the **highlight color**, clear formatting, **alignment** (left, center, right, justify), **bullets and numbering**, decrease and
+increase **indent**, the **line spacing**, a **table** (3 × 3; Tab moves between its cells and adds a row after the last one), a **link** and a **line**. The tools that are on where the cursor is look pressed, and under the box are the **word and character count**
+(at most 20,000 characters). Pasting keeps the words only (no pictures or fonts from other pages come in). The answer is saved with its formatting in `submissions.answer_html` (and the plain words in `answer_text`);
+**the server cleans it again** (`Services/RichText.cs`: only a short list of tags, links and style rules is kept; scripts, pictures, frames and event handlers are taken out), so nothing from the browser is trusted. The student sees it
+again in the editor to change it until it is graded; the teacher sees it with its formatting. Work handed in before the editor existed opens as paragraphs. **Quizzes with questions** are different: the questions are answered one by one on the quiz page and graded by the system. A **quiz that is only a file** (the provider or the teacher attached the questions as a file and added none) is answered in the same editor, in a card called *Your answers*, and the teacher reads it and gives the score by hand, like an activity.
+
 The code: `Services/TeachingService.cs`, `ModuleService.cs`, `WorkService.cs`, `QuizService.cs`, `AutomationService.cs`
 (the background job), the pages in `Components/Pages/Teacher/` and `Components/Pages/Student/`, and the anti-cheating watch in
 `wwwroot/app.js` (`seaitt.startQuizGuard`).
 
 ## Dashboards, calendar and the widgets at the right
 
-**Student > Dashboard** (`/student`) shows what to do first: the work still to do with its due dates (overdue ones in red), the
-modules not opened yet, the latest scores and the **achievements** (perfect score, high grades,
-quiz ace, always on time, curious mind: earned ones are colored, the others show how far you are).
+**Student > Dashboard** (`/student`) shows what to do first. At the left: the **Progress** card (every course with its bar, a link to the course), the modules not opened yet, the latest scores and the **achievements** (perfect score, high grades,
+quiz ace, always on time, curious mind: earned ones are colored, the others show how far you are). At the right, in this order: the **calendar**, **Assignments and due dates** (the work to do, overdue ones in red), the **announcements**, the **online students** and the **online teachers**.
 
 **Teacher > Dashboard** (`/teacher`) shows the **unchecked activities** (work handed in that still needs a score), the
 modules students can't see yet (drafts and scheduled ones) and the number of flagged quizzes (it links to the calendar, where the flagged attempts are
-found). At its right is the calendar (nothing else).
+found). At its right are the calendar, the **online students** and the **online teachers**.
 
 The column at the right of some pages (`Components/Shared/AsideWidgets.razor`) holds the widgets that page needs, in this order. The **student
-dashboard** has the **calendar** first (a dot on every day with something, click a day to see it) and the **announcements** second. The
+dashboard** has the **calendar** first (a dot on every day with something, click a day to see it), then the assignments and due dates, the announcements, the online students and the online teachers. **Online teachers** and **online students** list the people you can reach
+who have the app open right now (a student sees their friends, classmates and teachers; a teacher their friends, students and colleagues), with a link to the Users page. **Show more:** any card at the right that lists items (announcements, activities, unassigned activities, due dates, unchecked activities, the people online) shows the first 5 and, when there are 6 or more, a **Show more (N)** button at the bottom that opens the rest (and **Show less** closes it again). The
 student's **Courses** pages also have a **Due dates** list. The teacher's
 **Courses** page has the calendar and *Needs your attention*. The grades pages and the teacher's attendance page have no column. On a phone the widgets
 go under the page.
 
 **Calendar** (`/calendar`, students and teachers): a **Month** and a **Week** view with Previous, Today and Next. It shows the
 deadlines of the work (activity, quiz, task performance), the modules that appeared (for a teacher also the ones scheduled), and the
-modules posted. Done work is struck through, overdue work is red. Click a day number to open its week. At the right a student has an **Activities** card (the work to do, with its due text) and then *Due dates*; the Next button has its `>` icon. A **teacher clicks** an activity, quiz or task performance to see **who handed it in** (and who did not), with the score and, for a quiz, the anti-cheating warnings: a flagged attempt is marked in red. *Open and grade* goes to the page of the work. Code: `CalendarWorkDialog.razor`.
+modules posted. Done work is struck through, overdue work is red. Click a day number to open its week; in the week view the **Unchecked activities** and **Unassigned activities** cards are shown **in two columns** side by side. At the right a student has an **Activities** card (the work to do, with its due text) and then *Due dates*; the Next button has its `>` icon. A **teacher clicks** an activity, quiz or task performance to see **who handed it in** (and who did not), with the score and, for a quiz, the anti-cheating warnings: a flagged attempt is marked in red. *Open and grade* goes to the page of the work. Code: `CalendarWorkDialog.razor`.
 
 **Teacher > Calendar: unassigned activities.** The card **Unassigned activities** at the right lists the teacher's activities, quizzes and task performances that have **no due date**. **Drag** one onto a day (month or week view) and a box opens with that day (5 PM Philippine time) as the due date, where the teacher can also change the title, instructions, highest score, when it appears and, for a quiz, the time limit and the **anti-cheating** settings (watch on or off, warnings before it is handed in, shuffling, showing the result). **Save** puts it on that day for the teacher and the students; **Cancel** leaves it unassigned. The **Set date** link next to an activity does the same without the mouse. Code: `Components/Pages/Account/Calendar.razor`, `ItemScheduleDialog.razor`, the drag script in `wwwroot/app.js`.
 
-**Student > Grades** (`/student/grades`) is the grade and progress page: the average of every subject (points earned divided by
-points possible of the graded work), the passing mark of 70 drawn on the bars, the latest scores, and the graded works of
-each subject. A grade under 70 is shown in red with a warning; a quiz whose result the teacher hides is not counted yet.
+**Student > Grades** (`/student/grades`) is the grade and progress page: one **card per subject**, closed at first, showing the subject, its average (points earned divided by
+points possible of the graded work) and the grade. **Press the subject** to open its progress (a bar with the passing mark of 70 drawn on it, the number of works handed in and graded) and its graded work, with a link to the course. A grade under 70 is shown in red with a warning; a quiz whose result the teacher hides is not counted yet.
+(The separate "Progress by course" section is gone: the progress lives in the subject's card.)
 
 The code: `Services/DashboardService.cs`, `CalendarService.cs`, `GradeService.cs`, `AchievementService.cs`.
 
@@ -309,8 +320,7 @@ the counselor opens a page):
 | **Not attending class** | attendance is **under 80%** over at least 5 marked days |
 
 Each problem becomes one referral for that student and subject (it is not repeated, and not sent again for 14 days after it was resolved) and the
-counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists them with the student, the **grade level** (and strand and
-section), the **course** and its teacher, the problem, the **grade** and the status, with filters (status, problem, grade level, name): press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
+counselor gets a notification. **Guidance > Dashboard** shows the new referrals and the students below 70. **Referrals** lists them with the student, the **grade level** (a narrow column), the **section** and the **course** (the strand) in the three columns next to it, then the subject and its teacher, the problem, the **grade** and the status, with filters (status, problem, grade level, name): press **Work on it** to set the status (*Open*, *In progress*, *Resolved*), the help given (talked with the student,
 called the parents, tutoring ...), notes only the counselor reads and, when resolving, how it ended (*Improved* or *No change*). A student is told
 when the counselor starts. (There is no separate "Students at risk" page: the cards of the dashboard and the menu open **Referrals** already filtered by problem.)
 
@@ -320,9 +330,13 @@ when the counselor starts. (There is no separate "Students at risk" page: the ca
 the number of students, the average grade, the attendance rate, how many students are failing or at risk, the grades by band for each grade level
 (each subject for a teacher), the **attendance** (the rate, how many were present, late and absent, and the rate of each section, or of each course for a teacher; there is no monthly trend any more), the **primary concern categories** (referrals by problem),
 the **intervention effectiveness** (how many resolved referrals improved, by the help given) and the performance by strand. Everything is worked
-out from the scores and the attendance that are recorded.
+out from the scores and the attendance that are recorded. A teacher's page also has **Who opened the modules**: for every posted module (and syllabus) of every course the students who **opened** it and the ones who **did not**, by name (press the module to open its two lists).
 
 ## Graduation (archive)
+
+**The archive is automatic.** When the **last term of a school year has ended** (the day after its last day, Philippine date), the system archives, by itself, every grade 12 student who was enrolled in that term: they are marked *Graduated*
+with the note "Graduated: <term> ended (automatic)", their enrollments are completed, referrals end and their sign-in is switched off. It runs in the background job every minute, is safe to repeat, and writes one line in the Security Logs
+(*Students archived*). Code: `StudentLifecycleService.ArchiveFinishedAsync`. The page below is still there to archive somebody earlier, and to restore.
 
 **Administrator > Archive Accounts**: the grade 12 students who are still at school are listed. Tick the ones who graduate (or **Select all**), add a note
 ("Class of 2027") and **Archive selected**: they are marked *Graduated*, their enrollments are completed and their **sign-in is switched off**; their
@@ -387,7 +401,7 @@ posted. The same rule shows a file in the browser or saves it (`/files/a/<id>`; 
 | Tracks | Code, name, offered or not. One with strands can't be deleted. |
 | Strands | Code, name, track, **the schedules** it has classes in (at least one), offered or not, and **the courses of the strand** (the **Courses** button: pick grade level and term, add or remove courses). A strand with students can't move to another track; a schedule that a section uses can't be taken away; one that is or was in use can't be deleted (switch it off). |
 | Courses | Code, name, description, in use or not. One in a strand's courses or taken by students can't be deleted. |
-| Sections | School year, grade level, strand, schedule (one of the strand's), name and adviser. One with students or teachers can only change its name and its adviser. |
+| Sections | School year, grade level, strand, schedule (one of the strand's), name and adviser. One with students or teachers can only change its name and its adviser. The list shows the **schedule (AM, MID or PM) next to each section**, because *A* can exist once in each schedule of the same strand (that is not a duplicate), and can be filtered by grade level, strand and schedule. |
 
 The courses a student takes are **not picked at enrollment**: they are the courses of the strand for that grade level and term, as set here. Changing the
 courses of a strand changes the enrollments made from then on; students already enrolled keep theirs. Code: `Services/SchoolSetupService.cs`.
@@ -409,7 +423,7 @@ students). They are the **Enrolled** and **Not enrolled** cards under *Accounts*
   edits and deletes them. The people it is for get a notification when it is posted (editing does not notify again).
 * A **teacher** (`/teacher/announcements`, after *Calendar* in the menu) writes to **one of their own classes**: choose the course (subject and section), *Exam* or *Other*, and write it. Only the **students of that
   course** see it and are told. The page has two tabs: **To my classes** (the teacher edits and deletes their own) and **From the school** (the notices of the coordinator for the teachers).
-* Everybody sees the latest ones in the **megaphone button** at the top, next to *Messages*; students also have the **Announcements** card at the right of their dashboard (the title opens the whole text).
+* There is no announcements button in the header any more: students see them in the **Announcements** card at the right of their dashboard (the title opens the whole text); the teacher's and coordinator's pages list them. A teacher's announcement form no longer asks "What is it about?": a class announcement is just a title and text (its kind is *Other*; the coordinator's announcements keep their kinds).
 
 Announcements that an administrator or a registrar wrote before these rules stay in the database; the coordinator can still edit and delete them. Code: `Services/AnnouncementService.cs`
 (`announcements.category` and `announcements.assignment_id`).
@@ -437,7 +451,7 @@ the copy, it can be sent again. The syllabus comes first in the course and has a
 | Scheduled | The teacher chose a later time for the students to see it. |
 | Posted | The students can see it. The line then shows how many of the course's students opened it, and how many opens its activities had. |
 
-The tabs count each state (the menu pop-up of *Tracking* links to them), and you can search a teacher, a course, a section or a module, and show only syllabi or only modules. **Details** of a line shows the steps
+The tabs count each state (the menu pop-up of *Tracking* links to them), and you can search a teacher, a course, a section or a module, narrow the lines with the lists **Teacher**, **Grade level**, **Section** and **Course** (they offer what was sent) and show only syllabi or only modules. The Teachers tab narrows by grade level, section and course, and the Students tab by grade level and section. **Details** of a line shows the steps
 (sent, opened by the teacher, posted, opened by the students) with their dates, each activity (opened by, handed in by) and **each student** (who opened the module and when, how many activities),
 with the students who have **not** opened it first and a switch to show only them. A student opens a module (or the syllabus) when they open its page, and an activity, quiz or task performance when they open
 its page; the first time is kept. Code: `Services/ProviderService.cs`, `ModuleService.MarkDeliveryOpenedAsync` (the teacher), `ModuleService.OpenModuleAsync` and `WorkService.RecordViewAsync` (the students);
@@ -495,6 +509,12 @@ There is nothing to pick for the subjects: the student gets **all the subjects o
 **Enroll student**. The page then shows what was saved and, for a new student, the **sign-in details to hand over**
 (with *Copy the login* and *Print*).
 
+### The enrollment form to print
+
+The **Print** button of an enrollment prints a **professional enrollment form** on two pages (the screen shows only the receipt; `Components/Shared/EnrollmentPrintSheet.razor`):
+page 1 has the **school logo at the upper left**, the **school name in the upper center** (with "Enrollment Form"), the student's details, the term, track, strand, section and schedule, the **courses** enrolled, the account details and the signature lines
+(student or parent, registrar); page 2 holds the **terms and conditions** with the **student's name printed in capitals over the signature line**.
+
 ### The automatic email and password
 
 A student who is not in the system yet gets an account made from the last name and the **last 6 digits of the LRN**:
@@ -541,11 +561,11 @@ It is shown on the registrar's dashboard (with an Enroll link for each student) 
 
 **Administrator > Users Management** (`/admin/users`). There is one tab per role (Students, Teachers, Registrars, Guidance,
 Coordinators, Providers, Administrators), each with its number of accounts, and a search box (name, LRN or employee number, email). The students' list has a **Courses** column (the courses of
-their enrollment) and the teachers' list a **Course · Section** column (what each teacher teaches and to which section). There can be several academic coordinators and academic providers (there is only one
+their enrollment) and the teachers' list a **Section** column (the sections a teacher teaches in) and, **separately, a Courses column** (the courses with their section). The Courses column is a small **"6 courses" button**: press it and a pop-up lists them (the same pop-up as the registrar's list; for teachers each line is the course and its section, like *BUSINESS ACCOUNTING · 11-BUSSENT-A*). A **Status filter** (all, active, inactive) sits next to the search box. There can be several academic coordinators and academic providers (there is only one
 administrator, one registrar and one guidance counselor).
 
 - **Edit** changes the name, email, LRN (students) or employee number (staff), phone number and the **new password**
-  (leave it empty to keep the old one). The **Account is active** switch decides whether the person can sign in.
+  (leave it empty to keep the old one). The **Status** choice (**Active** or **Inactive**) decides whether the person can sign in (the Add form has it too, so an account can start inactive).
   Changing the email or the password, or switching an account off, signs that person out.
   Changing a student's name or LRN also updates it in their enrollments.
 - **Add** (teachers, registrars, guidance counselors, administrators) makes an account with the password you type.

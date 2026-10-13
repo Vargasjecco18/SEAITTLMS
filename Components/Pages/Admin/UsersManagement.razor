@@ -263,7 +263,7 @@
             </Field>
 
             <Field For="e-status" Label="Status" Hint="@(edit.UserId == currentUserId ? "You can't make your own account inactive." : "An inactive account can't sign in.")">
-                <select id="e-status" disabled="@(edit.UserId == currentUserId)" value="@(edit.IsActive ? "Active" : "Inactive")" @onchange="SetEditStatus"">
+                <select id="e-status" disabled="@(edit.UserId == currentUserId)" value="@(edit.IsActive ? "Active" : "Inactive")" @onchange="SetEditStatus">
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                 </select>
@@ -328,7 +328,7 @@
                 </Field>
             </div>
             <Field For="a-status" Label="Status" Hint="An inactive account can't sign in until it is made active.">
-                <select id="a-status" value="@(add.IsActive ? "Active" : "Inactive")" @onchange="SetAddStatus"">
+                <select id="a-status" value="@(add.IsActive ? "Active" : "Inactive")" @onchange="SetAddStatus">
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                 </select>

@@ -128,7 +128,15 @@
 }
 
 /* The grade level is short ("Grade 11"), so its column is narrow. */
+/* The grade level is only "Grade 11" or "Grade 12": a narrow column (its title wraps into two lines). */
 .col-level {
     width: 1%;
     white-space: nowrap;
+}
+
+th.col-level {
+    width: 4.5rem;
+    max-width: 4.5rem;
+    white-space: normal;
+    line-height: 1.25;
 }

@@ -420,23 +420,45 @@ document.addEventListener('keydown', function (event) {
     }
 
     // The browser writes a size chosen in pt as <font size="7">; turn those into a span with the size, and let the new size win over the old ones inside.
+    // Taking a node out of the page empties the selection, so the selection (or the cursor) is put back on the new span.
     function applySizes(editor) {
         var pt = pendingSize[editor.id];
-        if (!pt) { return; }
-        editor.querySelectorAll('font[size="7"]').forEach(function (font) {
+        var fonts = editor.querySelectorAll('font[size="7"]');
+        if (!pt || fonts.length === 0) { return; }
+
+        var selection = document.getSelection();
+        var inside = selection && selection.rangeCount > 0 && editor.contains(selection.anchorNode);
+        var hadRange = inside && !selection.isCollapsed;
+        var anchor = inside ? (selection.anchorNode.nodeType === 1 ? selection.anchorNode : selection.anchorNode.parentElement) : null;
+        var anchorFont = anchor && anchor.closest ? anchor.closest('font[size="7"]') : null;
+
+        var spans = [];
+        var anchorSpan = null;
+        fonts.forEach(function (font) {
             var span = document.createElement('span');
             span.style.fontSize = pt + 'pt';
             while (font.firstChild) { span.appendChild(font.firstChild); }
             span.querySelectorAll('[style]').forEach(function (inner) { inner.style.removeProperty('font-size'); });
             font.replaceWith(span);
-            var selection = document.getSelection();
-            if (selection && selection.isCollapsed === false) {
-                var range = document.createRange();
-                range.selectNodeContents(span);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }
+            spans.push(span);
+            if (font === anchorFont) { anchorSpan = span; }
         });
+
+        if (inside && spans.length > 0) {
+            var range = document.createRange();
+            if (hadRange) {
+                range.setStartBefore(spans[0]);
+                range.setEndAfter(spans[spans.length - 1]);
+            } else if (anchorSpan) {
+                range.selectNodeContents(anchorSpan);
+                range.collapse(false);
+            } else {
+                return;
+            }
+
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
     }
 
     function cleanUp(editor) {
@@ -445,8 +467,17 @@ document.addEventListener('keydown', function (event) {
         editor.querySelectorAll('span:empty, font:empty').forEach(function (span) { span.remove(); });
     }
 
+    // The selection changed by a command is remembered right away (the browser reports it a little later, and the next tool must not use the old one).
+    function remember(editor) {
+        var selection = document.getSelection();
+        if (selection && selection.rangeCount > 0 && editor.contains(selection.anchorNode)) {
+            saved = { editor: editor, range: selection.getRangeAt(0).cloneRange() };
+        }
+    }
+
     function afterChange(editor) {
         cleanUp(editor);
+        remember(editor);
         updateStatus(editor);
         showState(wrapOf(editor));
     }
@@ -609,7 +640,6 @@ document.addEventListener('keydown', function (event) {
         else if (kind === 'fontSizePt') { setSize(editor, box.value); }
         else if (kind === 'lineHeight') { setLineHeight(editor, box.value); }
         else if (kind === 'formatBlock') { run(editor, 'formatBlock', box.value === 'p' ? 'p' : box.value); }
-        restore(editor);
     });
 
     document.addEventListener('input', function (event) {

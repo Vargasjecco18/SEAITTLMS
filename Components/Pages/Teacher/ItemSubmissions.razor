@@ -142,7 +142,7 @@ else
             </div>
         }
 
-        @if (data.Kind == ItemKinds.Quiz)
+        @if (data.Kind == ItemKinds.Quiz && data.Questions > 0)
         {
             @if (detail.Answers.Count == 0)
             {

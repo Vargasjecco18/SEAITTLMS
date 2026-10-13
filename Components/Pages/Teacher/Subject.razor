@@ -479,6 +479,12 @@ else
             }
 
             var fileProblems = await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.Module, result.Id ?? editingModuleId ?? 0));
+            if (editingModuleId is null && result.Id is { } newModuleId)
+            {
+                // A module that was just made opens, so its activities, quizzes and task performances can be added right away.
+                openModules.Add(newModuleId);
+            }
+
             moduleForm = null;
             Say(result);
             if (fileProblems.Count > 0)
