@@ -2,7 +2,8 @@
    It has a close button where the page is live; nothing is shown when there are none. A new problem shows the box again. *@
 @if (Errors.Count > 0 && !hidden)
 {
-    <div class="alert alert-top" role="alert">
+    @* Where the page is not live there is no close button, so the box goes away by itself after a while. *@
+    <div class="alert alert-top @(RendererInfo.IsInteractive ? "" : "timed")" role="alert">
         <Icon Name="circle-alert" Size="20" />
         <div class="alert-text">
             <strong>@(Errors.Count == 1 ? "Please check this:" : "Please check these:")</strong>

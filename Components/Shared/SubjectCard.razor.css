@@ -196,7 +196,7 @@ a.open:focus-visible {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin: 0.2rem 0 0.9rem;
+    margin: 0.7rem 0 0.9rem;
 }
 
 .progress-label {

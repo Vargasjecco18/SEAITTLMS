@@ -9,6 +9,7 @@
 @inject ProfilePhotoService Photos
 @inject PresenceService Presence
 @inject MessageLauncher Launcher
+@inject PopupGate Gate
 @inject IJSRuntime JS
 
 @* The buttons at the right of the header: messages, notifications and settings. It is a live component, so the
@@ -119,7 +120,7 @@
     </div>
 
     @* The counselor saved something about the student: a box in the middle of the screen, like an achievement, until the student presses OK. *@
-    <Modal Open="@(guidance is not null)" Title="Your guidance counselor" Centered="true" Narrow="true" Top="true" OnClose="CloseGuidanceAsync">
+    <Modal Open="@(guidance is not null && !Gate.Busy)" Title="Your guidance counselor" Centered="true" Narrow="true" Top="true" OnClose="CloseGuidanceAsync">
         @if (guidance is { } note)
         {
             <div class="guidance-box">
@@ -183,6 +184,7 @@
         // This person has a page open: that is what "online" is (see PresenceService). It is said again at every look below.
         Presence.Touch(user.UserId);
         Launcher.Requested += OnMessageRequested;
+        Gate.Changed += OnGateChanged;
 
         await RefreshCountsAsync();
         await LoadNotificationsAsync();
@@ -410,5 +412,9 @@
         timer?.Dispose();
         subscription?.Dispose();
         Launcher.Requested -= OnMessageRequested;
+        Gate.Changed -= OnGateChanged;
     }
+
+    // An achievement box opened or closed: the box of the guidance counselor hides or shows again.
+    private void OnGateChanged() => _ = InvokeAsync(StateHasChanged);
 }

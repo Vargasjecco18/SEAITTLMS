@@ -80,6 +80,7 @@ builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<GradebookService>();
 builder.Services.AddScoped<GradeService>();
 builder.Services.AddScoped<AchievementService>();
+builder.Services.AddScoped<PopupGate>();
 builder.Services.AddScoped<CalendarService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddSingleton<ProfilePhotoService>();

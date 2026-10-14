@@ -1,6 +1,8 @@
 @rendermode InteractiveServer
+@implements IDisposable
 @inject CurrentUser Me
 @inject AchievementService Achievements
+@inject PopupGate Gate
 
 @* The box in the middle of the screen when a student has earned an achievement. One box for each new achievement; it is shown once
    (the dashboard writes down that it was seen when the student closes it). It is its own live island, so it works on a page that is otherwise plain. *@
@@ -38,6 +40,25 @@
     {
         studentId = await Me.GetStudentIdAsync() ?? 0;
         queue = studentId == 0 ? [] : await Achievements.GetUnseenAsync(studentId);
+        if (queue.Count > 0)
+        {
+            // The box of the guidance counselor waits until this one is closed.
+            holding = true;
+            Gate.Enter();
+        }
+    }
+
+    private bool holding;
+
+    public void Dispose() => Release();
+
+    private void Release()
+    {
+        if (holding)
+        {
+            holding = false;
+            Gate.Leave();
+        }
     }
 
     /// <summary>The student has seen this one (or closed the box): write it down and show the next, if any.</summary>
@@ -47,6 +68,10 @@
         {
             await Achievements.MarkSeenAsync(studentId, [a.Key]);
             shown++;
+            if (current is null)
+            {
+                Release();
+            }
         }
     }
 }
