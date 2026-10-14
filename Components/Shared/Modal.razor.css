@@ -20,12 +20,12 @@
 }
 
 /* The notice of a page: the top center of the screen, a lighter backdrop, dropping in from above. */
-.backdrop.banner {
+.backdrop.at-top {
     padding-top: 1rem;
     background: rgba(8, 15, 30, 0.38);
 }
 
-.backdrop.banner .dialog {
+.backdrop.at-top .dialog {
     animation: drop-in 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) both;
 }
 

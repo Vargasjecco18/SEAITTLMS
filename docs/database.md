@@ -68,6 +68,8 @@ erDiagram
     module_items ||--o{ submissions : ""
     students ||--o{ submissions : ""
     users ||--o{ calendar_entries : "writes"
+    calendar_entries ||--o{ calendar_entry_invites : "shared with"
+    users ||--o{ calendar_entry_invites : "sees"
     students ||--o{ achievement_awards : "earns"
     modules ||--o{ module_views : "opened by"
     students ||--o{ module_views : ""
@@ -272,9 +274,10 @@ or item they can see (the module is posted and they take the course). Files open
 | Table | What it holds |
 |---|---|
 | `calendar_entries` | An **event a person wrote on their own calendar** (the *Add event* button): `user_id` (the owner, deleted with the account), `title` (at most 120 characters), `day` (a date), `start_time` (a time of day in Philippine time, empty for an all-day event), `notes` (at most 500), `created_at_utc`, `updated_at_utc`. An event is private: `CalendarService` reads and changes only the rows of the signed-in person, and keeps at most 1,000 for a person. Index `(user_id, day)` for the month and week views. |
+| `calendar_entry_invites` | **Who an event is shared with** (round 16): `entry_id` (deleted with the event), `user_id` (the person who sees it on their own calendar; deleted with the account), `created_at_utc`. The primary key is `(entry_id, user_id)`, so a person is invited once; an index on `user_id` finds the events shared with a person. Only the owner changes the list; the invited person can take the event off their own calendar (`CalendarService.LeaveEntryAsync` removes their row only). `CalendarService.CanShareWithAsync` allows only friends, the members of the person's groups and classmates (for a teacher the students of their classes), at most 100 per event. |
 | `achievement_awards` | **Which achievements a student earned and whether the congratulation box was shown**: `student_id` (deleted with the student), `achievement_key` (`first-step`, `perfect-score`, ... at most 40 characters, not named `key` because that is a MySQL reserved word), `earned_at_utc`, `seen_at_utc` (empty until the student closes the box in the middle of the screen). `unique (student_id, achievement_key)`: an award is written once and shown once. The achievements themselves (their text, progress and whether they are earned **now**) are not in the database: `AchievementService` works them out from the scores, the handed-in work and the opened modules every time, and only writes a row here the first time one is earned. |
 
-The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**; round 15 removes `strand_schedules` and adds `final_grades` (still **56**).
+The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**; round 15 removes `strand_schedules` and adds `final_grades` (still **56**); round 16 adds `calendar_entry_invites` (**57** tables). The same round-16 migration, `ClassTimesForSeededSectionsAndSharedEvents`, also **fills `course_schedules`** (see *The school data that comes with the database*).
 
 ### Messages and notifications
 
@@ -298,6 +301,7 @@ running it on a database that already has some of it changes nothing that exists
 | `terms` | 1st Term (2026-06-08 to 2026-10-30), 2nd Term (2026-11-02 to 2027-03-31). The 1st Term is marked current, unless another term already was. |
 | `tracks` | ACAD (Academic), TECH-PRO (Technical-Professional) |
 | `schedules` | AM (Morning, 7:00 AM - 12:00 PM), MID (Midday, 10:00 AM - 3:00 PM), PM (Afternoon, 1:00 PM - 6:00 PM) |
+| `course_schedules` | Added by `ClassTimesForSeededSectionsAndSharedEvents`: the **class time of every course of every seeded section** that has no class time and no teaching assignment yet (a section the coordinator or a teacher already works on is left alone). Section **A** uses AM, **B** MID and **C** PM; a course meets **MWF or TTH** for **one hour** inside the hours of its part of the day; the courses of a section in one term take turns (MWF and TTH alternate and an hour is used by one course of each day group), and the start moves from one section to the next so the same course is not at the same time in two sections. The academic coordinator changes any of them in *Academic setup > Class schedule*. |
 
 | Strand (`code`) | Full name (`name`) | Track | 1st term subjects (grade 11) |
 |---|---|---|---|

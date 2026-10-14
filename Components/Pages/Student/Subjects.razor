@@ -117,7 +117,7 @@ else
                                         {
                                             <Badge Tone="Tone.Success">All done</Badge>
                                         }
-                                        <span class="sub">@WorkSummary(card)</span>
+                                        <span class="sub" title="@WorkTitle(card)">@WorkSummary(card)</span>
                                     }
                                 </td>
                                 <td class="progress-cell">
@@ -217,7 +217,17 @@ else
         shown = cards.Where(c => filter is null || (filter == "completed") == c.IsCompleted).ToList();
     }
 
+    /// <summary>"2 A · 1 Q · 1 TP": the activities, quizzes and task performances (the short names the gradebook uses); the full words are in the title.</summary>
     private static string WorkSummary(StudentSubjectCard card)
+    {
+        var parts = new List<string>();
+        if (card.Activities > 0) { parts.Add($"{card.Activities} A"); }
+        if (card.Quizzes > 0) { parts.Add($"{card.Quizzes} Q"); }
+        if (card.TaskPerformances > 0) { parts.Add($"{card.TaskPerformances} TP"); }
+        return string.Join(" · ", parts);
+    }
+
+    private static string WorkTitle(StudentSubjectCard card)
     {
         var parts = new List<string>();
         if (card.Activities > 0) { parts.Add(card.Activities == 1 ? "1 activity" : $"{card.Activities} activities"); }

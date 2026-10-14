@@ -95,43 +95,6 @@
     flex: 1 1 320px;
 }
 
-.setup ::deep .banner {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 1.1rem;
-    padding: 0.7rem 0.9rem;
-    border-radius: var(--radius-sm);
-    background: var(--success-soft);
-    color: var(--success);
-    font-weight: 600;
-}
-
-.setup ::deep .banner.error {
-    background: var(--danger-soft);
-    color: var(--danger);
-}
-
-.setup ::deep .banner span {
-    flex: 1;
-}
-
-.setup ::deep .dismiss {
-    display: grid;
-    place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-}
-
-.setup ::deep .dismiss:hover {
-    background: rgba(0, 0, 0, 0.08);
-}
-
 /* ---------- the lists ---------- */
 .setup ::deep .table-wrap {
     margin: 0 -1.25rem;

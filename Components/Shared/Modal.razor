@@ -5,7 +5,7 @@
     @* A box over the page. It closes with the X, with the Cancel button of the form in it, or with Escape.
        Clicking next to it does not close it, so a half-filled form is not lost by accident. The key handler sits on the
        whole overlay (which can take the focus too), so Escape still works after a click next to the box. *@
-    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "") @(Banner ? "banner" : "")" tabindex="-1" @onkeydown="OnKeyDown">
+    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "") @(Banner ? "at-top" : "")" tabindex="-1" @onkeydown="OnKeyDown">
         <div class="dialog @(Large ? "large" : "") @(Narrow ? "narrow" : "") @DialogClass" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
             <header class="dialog-head">
                 <h2 id="@titleId">@Title</h2>
