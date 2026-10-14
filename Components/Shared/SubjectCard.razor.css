@@ -48,6 +48,14 @@
     white-space: nowrap;
 }
 
+.cover {
+    display: block;
+    width: 100%;
+    aspect-ratio: 720 / 414;
+    object-fit: cover;
+    background: var(--surface-2);
+}
+
 .tone-0 { --from: #6366f1; --to: #8b5cf6; }
 .tone-1 { --from: #0ea5e9; --to: #2563eb; }
 .tone-2 { --from: #10b981; --to: #0d9488; }
@@ -77,6 +85,60 @@ h3 {
     margin: 0;
     color: var(--text-muted);
     font-size: 0.88rem;
+}
+
+/* The teacher, the section, the schedule and the counts: icon and words, one line each, at the left, all the same. */
+.details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    margin: 0.3rem 0 0;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+}
+
+.details li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.35;
+}
+
+.details ::deep .icon {
+    flex: none;
+    color: var(--text-muted);
+}
+
+.details .txt {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.details .teacher .txt {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.details .n {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.details .note {
+    color: var(--text-muted);
+}
+
+.details.counts {
+    width: 100%;
+    margin-top: 0.4rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--border);
 }
 
 .facts {

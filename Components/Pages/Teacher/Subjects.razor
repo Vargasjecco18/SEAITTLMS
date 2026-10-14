@@ -125,13 +125,14 @@ else
         <div class="grid">
             @foreach (var card in shown)
             {
-                <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel" Subtitle="@card.Meets" Href="@($"teacher/subjects/{card.AssignmentId}")">
-                    <Badge Tone="@(card.ModulesTotal == 0 ? Tone.Neutral : Tone.Info)">@card.ModulesPosted of @card.ModulesTotal @(card.ModulesTotal == 1 ? "module" : "modules") posted</Badge>
+                <SubjectCard Name="@card.SubjectName" Cover="@StrandArt.For(card.StrandCode, card.StrandName)" CoverLabel="@card.StrandName"
+                             Section="@card.SectionLabel" Meets="@card.Meets"
+                             Modules="card.ModulesTotal" ModulesNote="@($"{card.ModulesPosted} posted")" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances"
+                             Href="@($"teacher/subjects/{card.AssignmentId}")">
                     @if (card.ToGrade > 0)
                     {
                         <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
                     }
-                    <CourseCounts Modules="card.ModulesTotal" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances" />
                 </SubjectCard>
             }
         </div>

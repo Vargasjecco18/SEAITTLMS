@@ -182,15 +182,11 @@ else
         <div class="grid">
             @foreach (var card in shown)
             {
-                <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel"
-                             Subtitle="@((card.TeacherName ?? "No teacher yet") + (card.Meets is null ? "" : " · " + card.Meets))"
+                <SubjectCard Name="@card.SubjectName" Cover="@StrandArt.For(card.StrandCode, card.StrandName)" CoverLabel="@card.StrandName"
+                             Teacher="@(card.TeacherName ?? "No teacher yet")" Section="@card.SectionLabel" Meets="@card.Meets"
+                             Modules="@(card.AssignmentId is null ? null : card.ModulesVisible)" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances"
                              Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet"
-                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText">
-                    @if (card.AssignmentId is not null)
-                    {
-                        <CourseCounts Modules="card.ModulesVisible" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances" />
-                    }
-                </SubjectCard>
+                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText" />
             }
         </div>
     }

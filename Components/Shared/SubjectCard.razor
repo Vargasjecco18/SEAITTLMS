@@ -1,22 +1,55 @@
-@* A subject as a card with a colored banner: the same card for a teacher's subject and a student's subject.
-   The color depends on the subject's name, so a subject always looks the same. *@
+@* A subject as a card with a banner on top (the picture of its strand, or a color that depends on the subject's name): the same card for a teacher's subject
+   and a student's subject. *@
 <article class="subject tone-@SubjectStyle.ColorIndex(Name)">
-    <div class="banner">
-        <span class="book"><Icon Name="book-open" Size="26" /></span>
-        @if (Tag is not null)
-        {
-            <span class="tag">@Tag</span>
-        }
-    </div>
+    @if (Cover is not null)
+    {
+        @* The photo of the strand of the course (it already has the strand's icon, its number and its color on it). *@
+        <img class="cover" src="@Cover" alt="@CoverLabel" loading="lazy" />
+    }
+    else
+    {
+        <div class="banner">
+            <span class="book"><Icon Name="book-open" Size="26" /></span>
+        </div>
+    }
 
     <div class="body">
         <h3 title="@Name">@Name</h3>
-        @if (!string.IsNullOrEmpty(Subtitle))
+
+        @* The teacher, the section and the schedule, one under the other at the left, all in the same style. *@
+        @if (Teacher is not null || Section is not null || Meets is not null)
         {
-            <p class="sub">@Subtitle</p>
+            <ul class="details" aria-label="The course">
+                @if (Teacher is not null)
+                {
+                    <li class="teacher"><Icon Name="user-round" Size="16" /><span class="txt">@Teacher</span></li>
+                }
+                @if (Section is not null)
+                {
+                    <li class="section"><Icon Name="layers" Size="16" /><span class="txt">@Section</span></li>
+                }
+                @if (Meets is not null)
+                {
+                    <li class="meets"><Icon Name="clock" Size="16" /><span class="txt">@Meets</span></li>
+                }
+            </ul>
         }
 
-        <div class="facts">@ChildContent</div>
+        @* What the course holds, in the same style: modules, activities, quizzes and task performances. *@
+        @if (Modules is { } modules)
+        {
+            <ul class="details counts" aria-label="What is in the course">
+                <li><Icon Name="book-open" Size="16" /><span class="txt"><b class="n">@modules</b> @(modules == 1 ? "Module" : "Modules")@if (ModulesNote is not null) { <span class="note"> · @ModulesNote</span> }</span></li>
+                <li><Icon Name="notebook-pen" Size="16" /><span class="txt"><b class="n">@Activities</b> @(Activities == 1 ? "Activity" : "Activities")</span></li>
+                <li><Icon Name="file-question" Size="16" /><span class="txt"><b class="n">@Quizzes</b> @(Quizzes == 1 ? "Quiz" : "Quizzes")</span></li>
+                <li><Icon Name="clipboard-check" Size="16" /><span class="txt"><b class="n">@TaskPerformances</b> Task performance</span></li>
+            </ul>
+        }
+
+        @if (ChildContent is not null)
+        {
+            <div class="facts">@ChildContent</div>
+        }
 
         @if (Progress is { } percent)
         {
@@ -42,11 +75,32 @@
 @code {
     [Parameter, EditorRequired] public string Name { get; set; } = "";
 
-    /// <summary>A small label on the banner, like the section or the term.</summary>
-    [Parameter] public string? Tag { get; set; }
+    /// <summary>The photo on the top of the card (the strand's photo). Empty: a colored banner with a book.</summary>
+    [Parameter] public string? Cover { get; set; }
 
-    /// <summary>The line under the name, like the teacher.</summary>
-    [Parameter] public string? Subtitle { get; set; }
+    /// <summary>What the picture is, for a screen reader (the strand's name).</summary>
+    [Parameter] public string? CoverLabel { get; set; }
+
+    /// <summary>The teacher of the course (a student's card). Empty: no line.</summary>
+    [Parameter] public string? Teacher { get; set; }
+
+    /// <summary>The section, like "11-BUSSENT-A".</summary>
+    [Parameter] public string? Section { get; set; }
+
+    /// <summary>When the class meets, like "AM · MWF · 8:00 AM – 9:00 AM". Empty: no line.</summary>
+    [Parameter] public string? Meets { get; set; }
+
+    /// <summary>How many modules the course has. Empty: the card shows no counts at all (a course with no teacher yet).</summary>
+    [Parameter] public int? Modules { get; set; }
+
+    /// <summary>A few words after the modules, like "2 posted".</summary>
+    [Parameter] public string? ModulesNote { get; set; }
+
+    [Parameter] public int Activities { get; set; }
+
+    [Parameter] public int Quizzes { get; set; }
+
+    [Parameter] public int TaskPerformances { get; set; }
 
     /// <summary>Where "Open" goes. Empty means the subject can't be opened yet.</summary>
     [Parameter] public string? Href { get; set; }
