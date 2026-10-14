@@ -3,12 +3,15 @@
 <div class="split @(Stacked ? "stacked" : "")">
     <div class="split-main">@ChildContent</div>
     <aside class="split-aside" aria-label="Calendar and other widgets">
-        <AsideWidgets Show="@Show" />
+        <AsideWidgets Show="@Show" ActivitiesTitle="@ActivitiesTitle" />
     </aside>
 </div>
 
 @code {
     [Parameter] public string Show { get; set; } = "calendar,upnext";
+
+    /// <summary>The title of the card with the student's work to do (when "activities" is shown).</summary>
+    [Parameter] public string ActivitiesTitle { get; set; } = "Assignments and due dates";
 
     /// <summary>The widgets go under the page, side by side, instead of in a column at the right (for a page that needs the whole width, like the week of the calendar).</summary>
     [Parameter] public bool Stacked { get; set; }

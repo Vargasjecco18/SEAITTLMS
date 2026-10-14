@@ -1,0 +1,239 @@
+@inject ProviderService Provider
+@inject TimeProvider Clock
+
+@* The tracking of the activities, the quizzes or the task performances (Kind) that were sent to the teachers: one line for each, with the teacher and the section that have it,
+   where it is (not opened, a draft, scheduled or posted) and how many of the students opened it and handed it in. The same filters as the modules have. *@
+<PillTabs Items="Tabs" Selected="@state" SelectedChanged="StateChangedAsync" Label="@($"State of the {Plural}")" />
+
+<Card>
+    <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
+        <SearchField Id="@($"items-search-{Kind}")" @bind-Value="search" Label="Search" SubmitText="" Placeholder="@($"A {Singular}, a course, a teacher…")" AriaLabel="@($"Search the {Plural}")" OnClear="ApplyAsync" />
+        <Field For="@($"items-teacher-{Kind}")" Label="Teacher">
+            <select id="@($"items-teacher-{Kind}")" class="input" @bind="teacherId" @bind:after="ApplyAsync">
+                <option value="0">All</option>
+                @foreach (var t in options?.Teachers ?? [])
+                {
+                    <option value="@t.UserId">@t.Name</option>
+                }
+            </select>
+        </Field>
+        <Field For="@($"items-grade-{Kind}")" Label="Grade level">
+            <select id="@($"items-grade-{Kind}")" class="input" @bind="gradeLevel" @bind:after="ApplyAsync">
+                <option value="0">All</option>
+                @foreach (var g in options?.GradeLevels ?? [])
+                {
+                    <option value="@g">Grade @g</option>
+                }
+            </select>
+        </Field>
+        <Field For="@($"items-section-{Kind}")" Label="Section">
+            <select id="@($"items-section-{Kind}")" class="input" @bind="section" @bind:after="ApplyAsync">
+                <option value="">All</option>
+                @foreach (var x in options?.Sections ?? [])
+                {
+                    <option value="@x">@x</option>
+                }
+            </select>
+        </Field>
+        <Field For="@($"items-course-{Kind}")" Label="Course">
+            <select id="@($"items-course-{Kind}")" class="input" @bind="subjectId" @bind:after="ApplyAsync">
+                <option value="0">All</option>
+                @foreach (var c in options?.Courses ?? [])
+                {
+                    <option value="@c.SubjectId">@c.Name</option>
+                }
+            </select>
+        </Field>
+        @if (HasChoice)
+        {
+            <div class="filter-actions">
+                <Button Variant="ButtonVariant.Ghost" IconName="x" OnClick="ClearChoicesAsync">Clear filters</Button>
+            </div>
+        }
+    </form>
+
+    @if (data is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (data.Rows.Count == 0)
+    {
+        <EmptyState IconName="@SubjectStyle.KindIcon(Kind)" Title="@($"No {Singular} here")">
+            <p>@(data.Total == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrEmpty(state) && !HasChoice ? $"No {Singular} was sent to the teachers yet. Add it to a module in the Course library, then send the module." : "Nothing matches. Change the state or the words you searched.")</p>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="data-wrap">
+            <table class="data-table tracking" aria-label="@($"The {Plural} that were sent")">
+                <thead>
+                    <tr>
+                        <th scope="col">@ItemKinds.Display(Kind)</th>
+                        <th scope="col">Teacher</th>
+                        <th scope="col">State</th>
+                        <th scope="col" class="col-more">Due</th>
+                        <th scope="col" class="bar-cell">Students opened it</th>
+                        <th scope="col" class="bar-cell col-more">Handed in</th>
+                        <th scope="col"><span class="sr-only">Details</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in data.Rows)
+                    {
+                        <tr>
+                            <td class="what">
+                                <a class="name-link" href="provider/tracking/@row.DeliveryId">@row.Title</a>
+                                <span class="muted-line">@row.SubjectName · @row.ModuleTitle</span>
+                            </td>
+                            <td>
+                                <a class="name-link" href="provider/tracking/users/@row.TeacherUserId">@row.TeacherName</a>
+                                <span class="muted-line">@row.SectionLabel</span>
+                            </td>
+                            <td>
+                                <Badge Tone="@ProviderUi.StateTone(row.State)">@DeliveryStates.Display(row.State)</Badge>
+                                <span class="muted-line">sent @ProviderUi.Ago(row.SentAtUtc, nowUtc)</span>
+                            </td>
+                            <td class="col-more">
+                                @if (row.DueAtUtc is { } due)
+                                {
+                                    <span>@PhilippineTime.FormatDateTime(due)</span>
+                                }
+                                else
+                                {
+                                    <span class="na">No due date</span>
+                                }
+                            </td>
+                            <td class="bar-cell">
+                                @if (row.OpenedPercent is { } op)
+                                {
+                                    <ProgressBar Percent="op" Title="@($"{row.Opens} of {row.Audience} students opened it")" />
+                                    <span class="muted-line">@row.Opens of @row.Audience</span>
+                                }
+                                else
+                                {
+                                    <span class="na">@(row.IsPosted ? "No student" : row.State == DeliveryStates.Scheduled ? "Not yet: scheduled" : "Not posted yet")</span>
+                                }
+                            </td>
+                            <td class="bar-cell col-more">
+                                @if (row.SubmittedPercent is { } sp)
+                                {
+                                    <ProgressBar Percent="sp" Title="@($"{row.Submitted} of {row.Audience} students handed it in")" />
+                                    <span class="muted-line">@row.Submitted of @row.Audience</span>
+                                }
+                                else
+                                {
+                                    <span class="na">—</span>
+                                }
+                            </td>
+                            <td class="right"><ButtonLink Href="@($"provider/tracking/{row.DeliveryId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="arrow-right" IconAfter="true">Details</ButtonLink></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pager" aria-label="Pages of the list">
+            <span class="muted">@data.Total.ToString("N0") @(data.Total == 1 ? "line" : "lines")</span>
+            <span class="pager-buttons">
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(data.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
+                <span>Page @data.Page of @PageCount</span>
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(data.Page >= PageCount)" OnClick="NextAsync">Next</Button>
+            </span>
+        </nav>
+    }
+</Card>
+
+@code {
+    /// <summary>One of <see cref="ItemKinds"/>: Activity, Quiz or TaskPerformance.</summary>
+    [Parameter, EditorRequired] public string Kind { get; set; } = ItemKinds.Activity;
+
+    private ItemTrackingPage? data;
+    private TrackingOptions? options;
+    private string state = "";
+    private string search = "";
+    private int teacherId;
+    private int gradeLevel;
+    private string section = "";
+    private int subjectId;
+    private int pageNumber = 1;
+    private DateTime nowUtc;
+    private string? loadedKind;
+
+    private string Singular => Kind switch
+    {
+        ItemKinds.Quiz => "quiz",
+        ItemKinds.TaskPerformance => "task performance",
+        _ => "activity",
+    };
+
+    private string Plural => ItemKinds.Plural(Kind).ToLowerInvariant();
+
+    private int PageCount => data is null ? 1 : Math.Max(1, (int)Math.Ceiling(data.Total / (double)data.PageSize));
+
+    private bool HasChoice => teacherId != 0 || gradeLevel != 0 || !string.IsNullOrEmpty(section) || subjectId != 0;
+
+    private IReadOnlyList<PillTabs.Tab> Tabs => data is null
+        ? [new("", "All", "list")]
+        :
+        [
+            new("", "All", "list", data.NotOpened + data.Opened + data.Scheduled + data.Posted),
+            new(DeliveryStates.NotOpened, "Not opened", "mail", data.NotOpened),
+            new(DeliveryStates.Opened, "Opened · draft", "eye", data.Opened),
+            new(DeliveryStates.Scheduled, "Scheduled", "calendar-clock", data.Scheduled),
+            new(DeliveryStates.Posted, "Posted", "circle-check", data.Posted),
+        ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // The tab changed to another kind: start again for it.
+        if (loadedKind != Kind)
+        {
+            loadedKind = Kind;
+            state = search = section = "";
+            teacherId = gradeLevel = subjectId = 0;
+            pageNumber = 1;
+            data = null;
+            await ReloadAsync();
+        }
+    }
+
+    public async Task ReloadAsync()
+    {
+        nowUtc = Clock.GetUtcNow().UtcDateTime;
+        options ??= await Provider.GetTrackingOptionsAsync();
+        data = await Provider.ListItemTrackingAsync(Kind, new TrackingFilter(search, state, null, pageNumber, TeacherUserId: teacherId, GradeLevel: gradeLevel, Section: section, SubjectId: subjectId));
+        pageNumber = data.Page;
+    }
+
+    private async Task StateChangedAsync(string? key)
+    {
+        state = key ?? "";
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task ApplyAsync()
+    {
+        pageNumber = 1;
+        await ReloadAsync();
+    }
+
+    private async Task ClearChoicesAsync()
+    {
+        teacherId = gradeLevel = subjectId = 0;
+        section = "";
+        await ApplyAsync();
+    }
+
+    private async Task PreviousAsync()
+    {
+        pageNumber = Math.Max(1, pageNumber - 1);
+        await ReloadAsync();
+    }
+
+    private async Task NextAsync()
+    {
+        pageNumber++;
+        await ReloadAsync();
+    }
+}

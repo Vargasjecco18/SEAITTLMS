@@ -62,7 +62,8 @@ else
                             <th scope="col">Course</th>
                             <th scope="col">Section</th>
                             <th scope="col" class="col-more">Students</th>
-                            <th scope="col">Modules posted</th>
+                            <th scope="col">Modules</th>
+                            <th scope="col">Work</th>
                             <th scope="col">To check</th>
                             <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
                         </tr>
@@ -89,9 +90,20 @@ else
                                     }
                                 </td>
                                 <td>
+                                    @if (card.Activities + card.Quizzes + card.TaskPerformances == 0)
+                                    {
+                                        <span class="muted">No work yet</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@WorkSummary(card)</span>
+                                    }
+                                </td>
+                                <td>
                                     @if (card.ToGrade > 0)
                                     {
-                                        <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
+                                        @* The number is a button: it opens the activities, quizzes and task performances to check, each one a link. *@
+                                        <CourseWorkButton AssignmentId="card.AssignmentId" CourseName="@card.SubjectName" Text="@($"{card.ToGrade} to check")" Student="false" />
                                     }
                                     else
                                     {
@@ -119,6 +131,7 @@ else
                     {
                         <Badge Tone="Tone.Warning">@card.ToGrade to check</Badge>
                     }
+                    <CourseCounts Modules="card.ModulesTotal" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances" />
                 </SubjectCard>
             }
         </div>
@@ -142,6 +155,15 @@ else
         cards = teacherId is { } id ? await Teaching.GetTeacherCardsAsync(id) : [];
         sections = cards.Select(c => c.SectionLabel).Distinct().ToList();
         shown = cards.Where(c => Section is null || c.SectionLabel == Section).ToList();
+    }
+
+    private static string WorkSummary(TeacherSubjectCard card)
+    {
+        var parts = new List<string>();
+        if (card.Activities > 0) { parts.Add(card.Activities == 1 ? "1 activity" : $"{card.Activities} activities"); }
+        if (card.Quizzes > 0) { parts.Add(card.Quizzes == 1 ? "1 quiz" : $"{card.Quizzes} quizzes"); }
+        if (card.TaskPerformances > 0) { parts.Add(card.TaskPerformances == 1 ? "1 task performance" : $"{card.TaskPerformances} task performances"); }
+        return string.Join(" · ", parts);
     }
 
     private static string Url(string? section, string view)

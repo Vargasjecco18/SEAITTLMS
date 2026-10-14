@@ -24,13 +24,7 @@
         <h1>@SystemSettings.Current.SchoolShortName eLMS</h1>
         <p class="subtitle">Log-in to access your courses</p>
 
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert" role="alert">
-                <Icon Name="circle-alert" Size="18" />
-                <span>@errorMessage</span>
-            </div>
-        }
+        <FormErrors Errors="@(string.IsNullOrEmpty(errorMessage) ? Array.Empty<string>() : new[] { errorMessage })" />
 
         <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
             <DataAnnotationsValidator />

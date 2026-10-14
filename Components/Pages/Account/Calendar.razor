@@ -22,7 +22,7 @@
     </nav>
 </PageHeader>
 
-<PageWithAside Show="@AsideShow" Stacked="@(view == "week")">
+<PageWithAside Show="@AsideShow" Stacked="@(view == "week")" ActivitiesTitle="Assignments">
     <ul class="legend" aria-label="Legend">
         @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Personal })
         {
@@ -149,8 +149,8 @@
     private DateOnly? openDay;
     private string? eventMode;
 
-    /// <summary>The widgets at the right: a student's activities and then their due dates, or the teacher's unchecked activities and then the ones that have no due date yet.</summary>
-    private string AsideShow => isTeacher ? "unchecked,unassigned" : "activities,upnext";
+    /// <summary>The widgets at the right: a student's assignments (no separate due dates card), or the teacher's unchecked activities and then the ones that have no due date yet.</summary>
+    private string AsideShow => isTeacher ? "unchecked,unassigned" : "activities";
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
 

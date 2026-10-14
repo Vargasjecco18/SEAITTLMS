@@ -1,17 +1,47 @@
-@* The problems with a form, in a red box. Nothing is shown when there are none. *@
-@if (Errors.Count > 0)
+@* The problems with a form, in a red box at the top center of the screen (the achievements' place), so they are seen at once even when the form is long.
+   It has a close button where the page is live; nothing is shown when there are none. A new problem shows the box again. *@
+@if (Errors.Count > 0 && !hidden)
 {
-    <div class="alert" role="alert">
-        <Icon Name="circle-alert" Size="18" />
-        <ul>
-            @foreach (var error in Errors)
-            {
-                <li>@error</li>
-            }
-        </ul>
+    <div class="alert alert-top" role="alert">
+        <Icon Name="circle-alert" Size="20" />
+        <div class="alert-text">
+            <strong>@(Errors.Count == 1 ? "Please check this:" : "Please check these:")</strong>
+            <ul>
+                @foreach (var error in Errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+        @if (RendererInfo.IsInteractive)
+        {
+            <button type="button" class="alert-close" aria-label="Close this message" title="Close" @onclick="Hide"><Icon Name="x" Size="16" /></button>
+        }
     </div>
 }
 
 @code {
+    private bool hidden;
+    private string? shownKey;
+
     [Parameter] public IReadOnlyList<string> Errors { get; set; } = [];
+
+    protected override void OnParametersSet()
+    {
+        if (Errors.Count == 0)
+        {
+            hidden = false;
+            shownKey = null;
+            return;
+        }
+
+        var key = string.Join('\u001f', Errors);
+        if (key != shownKey)
+        {
+            hidden = false;
+            shownKey = key;
+        }
+    }
+
+    private void Hide() => hidden = true;
 }

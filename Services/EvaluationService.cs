@@ -283,6 +283,42 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         return ServiceResult.Ok("The evaluation was made with the usual questions. Change them, then send it.", evaluation.Id);
     }
 
+    /// <summary>
+    /// A copy of an evaluation, as a new draft: the same title (with "Copy of" in front), instructions and questions, ready to be changed and sent again.
+    /// Who it was sent to, the due date and the answers are not copied.
+    /// </summary>
+    public async Task<ServiceResult> CopyAsync(int userId, int id, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        var original = await db.TeacherEvaluations.AsNoTracking().Include(e => e.Questions).FirstOrDefaultAsync(e => e.Id == id, ct);
+        if (original is null)
+        {
+            return ServiceResult.Fail("This evaluation was deleted.");
+        }
+
+        const string prefix = "Copy of ";
+        var title = original.Title.StartsWith(prefix, StringComparison.Ordinal) ? original.Title : prefix + original.Title;
+        var copy = new TeacherEvaluation
+        {
+            Title = title.Length > 200 ? title[..200] : title,
+            Instructions = original.Instructions,
+            CreatedByUserId = userId,
+        };
+        foreach (var q in original.Questions.OrderBy(q => q.Position))
+        {
+            copy.Questions.Add(new EvaluationQuestion { Position = q.Position, Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, Category = q.Category });
+        }
+
+        db.TeacherEvaluations.Add(copy);
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok($"A copy of the evaluation was made as a draft ({copy.Questions.Count} {(copy.Questions.Count == 1 ? "question" : "questions")}). Change it, then send it.", copy.Id);
+    }
+
     public async Task<ServiceResult> SaveAsync(int userId, int id, EvaluationInput input, CancellationToken ct = default)
     {
         var errors = new List<string>();

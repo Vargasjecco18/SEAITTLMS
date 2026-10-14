@@ -26,6 +26,15 @@
                 }
             </select>
         </Field>
+        <Field For="cs-term" Label="Term" Class="schedule-term">
+            <select id="cs-term" value="@termFilter" @onchange="TermChanged">
+                @foreach (var term in TermsOfSection)
+                {
+                    <option value="@term.Number" selected="@(term.Number == termFilter)">@term.Name</option>
+                }
+                <option value="0" selected="@(termFilter == 0)">All terms</option>
+            </select>
+        </Field>
         <div class="filter-actions save-all">
             <Button IconName="circle-check" Disabled="@(Busy || courses is null || courses.Count == 0)" OnClick="SaveAllAsync">@(Busy ? "Saving…" : "Save")</Button>
         </div>
@@ -67,7 +76,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var row in courses)
+                    @foreach (var row in ShownCourses)
                     {
                         var edit = courseEdits[row.SubjectId];
                         <tr>
@@ -154,6 +163,14 @@
     private IReadOnlyList<CourseTimeRow>? courses;
     private readonly Dictionary<int, TimeEdit> courseEdits = [];
     private int sectionId;
+    private int termFilter;
+
+    /// <summary>The terms of the chosen section's courses (1st Term, 2nd Term ...), for the Term box.</summary>
+    private IEnumerable<(int Number, string Name)> TermsOfSection =>
+        (courses ?? []).GroupBy(c => (int)c.TermNumber).OrderBy(g => g.Key).Select(g => (g.Key, g.First().TermName));
+
+    /// <summary>The courses of the chosen term (or all of them).</summary>
+    private IEnumerable<CourseTimeRow> ShownCourses => (courses ?? []).Where(c => termFilter == 0 || c.TermNumber == termFilter);
 
     protected override async Task OnInitializedAsync()
     {
@@ -166,6 +183,14 @@
     private async Task LoadCoursesAsync()
     {
         courses = sectionId == 0 ? [] : await Times.ListCoursesAsync(sectionId);
+
+        // The Term box starts on the first term; it stays where it was when the section has that term too.
+        var numbers = courses.Select(c => (int)c.TermNumber).Distinct().Order().ToList();
+        if (termFilter != 0 && !numbers.Contains(termFilter) || (termFilter == 0 && !termTouched))
+        {
+            termFilter = numbers.FirstOrDefault();
+        }
+
         courseEdits.Clear();
         foreach (var c in courses)
         {
@@ -173,6 +198,14 @@
                 ? new TimeEdit { PartId = c.ScheduleId?.ToString() ?? "", Days = m.Days, Start = ClassTime.Box(m.Start), End = ClassTime.Box(m.End) }
                 : new TimeEdit();
         }
+    }
+
+    private bool termTouched;
+
+    private void TermChanged(ChangeEventArgs e)
+    {
+        termTouched = true;
+        termFilter = int.TryParse(e.Value?.ToString(), out var number) ? number : 0;
     }
 
     private async Task SectionChanged(ChangeEventArgs e)

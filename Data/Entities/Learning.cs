@@ -282,7 +282,7 @@ public class AttendanceRecord : AuditableEntity
     public string? Note { get; set; }
 }
 
-/// <summary>An event a person wrote on their own calendar (a student or a teacher): a title, a day, maybe a time and a note. Only its owner sees it.</summary>
+/// <summary>An event a person wrote on their own calendar (a student or a teacher): a title, a day, maybe a time and a note. Its owner sees it, and so do the people it was shared with.</summary>
 public class CalendarEntry : AuditableEntity
 {
     public int UserId { get; set; }
@@ -297,6 +297,21 @@ public class CalendarEntry : AuditableEntity
     public TimeOnly? StartTime { get; set; }
 
     public string? Notes { get; set; }
+
+    /// <summary>The people the event was shared with (a group, friends, classmates). They see it on their own calendar; only the owner changes it.</summary>
+    public List<CalendarEntryInvite> Invites { get; set; } = [];
+}
+
+/// <summary>A person an event of someone else's calendar was shared with.</summary>
+public class CalendarEntryInvite
+{
+    public int EntryId { get; set; }
+    public CalendarEntry Entry { get; set; } = null!;
+
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+
+    public DateTime CreatedAtUtc { get; set; }
 }
 
 /// <summary>

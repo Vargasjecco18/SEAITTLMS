@@ -1,0 +1,102 @@
+.work-button {
+    padding: 0.2rem 0.65rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.15s;
+}
+
+.work-button.todo {
+    background: var(--info-soft);
+    color: var(--info);
+}
+
+.work-button.check {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.work-button:hover {
+    filter: brightness(0.95);
+    text-decoration: underline;
+}
+
+.work-button:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.muted {
+    color: var(--text-muted);
+}
+
+.work-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.work-list a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.work-list a:hover {
+    border-color: var(--brand);
+    background: var(--surface-2);
+}
+
+.work-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.work-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.work-title {
+    overflow: hidden;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.work-sub {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.work-note {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.work-actions {
+    display: flex;
+    justify-content: flex-end;
+}

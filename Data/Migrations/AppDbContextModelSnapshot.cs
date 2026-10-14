@@ -582,6 +582,29 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("calendar_entries", (string)null);
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CalendarEntryInvite", b =>
+                {
+                    b.Property<int>("EntryId")
+                        .HasColumnType("int")
+                        .HasColumnName("entry_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.HasKey("EntryId", "UserId")
+                        .HasName("pk_calendar_entry_invites");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_calendar_entry_invites_user_id");
+
+                    b.ToTable("calendar_entry_invites", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.CourseSchedule", b =>
                 {
                     b.Property<int>("Id")
@@ -3537,6 +3560,27 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CalendarEntryInvite", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.CalendarEntry", "Entry")
+                        .WithMany("Invites")
+                        .HasForeignKey("EntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_calendar_entry_invites_calendar_entries_entry_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_calendar_entry_invites_users_user_id");
+
+                    b.Navigation("Entry");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.CourseSchedule", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.Schedule", "Schedule")
@@ -4412,6 +4456,11 @@ namespace SEAITT_LMS.Data.Migrations
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>
                 {
                     b.Navigation("Content");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CalendarEntry", b =>
+                {
+                    b.Navigation("Invites");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>

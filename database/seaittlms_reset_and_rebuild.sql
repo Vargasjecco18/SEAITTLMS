@@ -1755,5 +1755,43 @@ ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_submissions_submission_
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261013162615_AddFinalGradesAndSubmissionFiles', '9.0.20');
 
+CREATE TABLE `calendar_entry_invites` (
+    `entry_id` int NOT NULL,
+    `user_id` int NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_calendar_entry_invites` PRIMARY KEY (`entry_id`, `user_id`),
+    CONSTRAINT `fk_calendar_entry_invites_calendar_entries_entry_id` FOREIGN KEY (`entry_id`) REFERENCES `calendar_entries` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_calendar_entry_invites_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_calendar_entry_invites_user_id` ON `calendar_entry_invites` (`user_id`);
+
+INSERT INTO `course_schedules` (`section_id`, `subject_id`, `schedule_id`, `days`, `start_time`, `end_time`, `created_at_utc`, `updated_at_utc`)
+SELECT r.`section_id`, r.`subject_id`, r.`schedule_id`,
+       IF(MOD(r.`place` + r.`k`, 2) = 1, 'MWF', 'TTH'),
+       ADDTIME(r.`window_start`, SEC_TO_TIME(MOD(FLOOR((r.`place` - 1) / 2) + r.`k`, r.`hours`) * 3600)),
+       ADDTIME(r.`window_start`, SEC_TO_TIME((MOD(FLOOR((r.`place` - 1) / 2) + r.`k`, r.`hours`) + 1) * 3600)),
+       UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)
+FROM (
+    SELECT c.`section_id`, c.`subject_id`, c.`place`, c.`k`, sc.`id` AS `schedule_id`, sc.`start_time` AS `window_start`,
+           GREATEST(1, FLOOR(TIME_TO_SEC(TIMEDIFF(sc.`end_time`, sc.`start_time`)) / 3600)) AS `hours`
+    FROM (
+        SELECT s.`id` AS `section_id`, ss.`subject_id`,
+               ROW_NUMBER() OVER (PARTITION BY s.`id`, ss.`term_number` ORDER BY ss.`subject_id`) AS `place`,
+               DENSE_RANK() OVER (ORDER BY s.`id`) AS `k`,
+               CASE LEFT(s.`name`, 1) WHEN 'B' THEN 'MID' WHEN 'C' THEN 'PM' ELSE 'AM' END AS `part`
+        FROM `sections` s
+        JOIN (SELECT `strand_id`, `grade_level`, `subject_id`, MIN(`term_number`) AS `term_number` FROM `strand_subjects` GROUP BY `strand_id`, `grade_level`, `subject_id`) ss ON ss.`strand_id` = s.`strand_id` AND ss.`grade_level` = s.`grade_level`
+        WHERE NOT EXISTS (SELECT 1 FROM `course_schedules` x WHERE x.`section_id` = s.`id`)
+          AND NOT EXISTS (SELECT 1 FROM `teaching_assignments` t WHERE t.`section_id` = s.`id`)
+    ) c
+    JOIN `schedules` sc ON sc.`code` = c.`part`
+) r
+WHERE r.`place` <= 2 * r.`hours`
+  AND r.`window_start` IS NOT NULL;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261014032339_ClassTimesForSeededSectionsAndSharedEvents', '9.0.20');
+
 COMMIT;
 

@@ -64,7 +64,8 @@ else
                             <th scope="col">Course</th>
                             <th scope="col" class="col-more">Teacher</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Modules and work</th>
+                            <th scope="col">Modules</th>
+                            <th scope="col">Work</th>
                             <th scope="col">Progress</th>
                             <th scope="col">Next due</th>
                             <th scope="col" class="col-more">Grade</th>
@@ -94,7 +95,29 @@ else
                                     {
                                         <span>@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</span>
                                         @if (card.ModulesUnopened > 0) { <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge> }
-                                        @if (card.ItemsOpen > 0) { <Badge Tone="Tone.Info">@card.ItemsOpen to do</Badge> }
+                                    }
+                                </td>
+                                <td>
+                                    @if (card.AssignmentId is not { } workId)
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                    else if (card.Activities + card.Quizzes + card.TaskPerformances == 0)
+                                    {
+                                        <span class="muted">No work yet</span>
+                                    }
+                                    else
+                                    {
+                                        @if (card.ItemsOpen > 0)
+                                        {
+                                            @* The number is a button: it opens the activities, quizzes and task performances still to do, each one a link. *@
+                                            <CourseWorkButton AssignmentId="workId" CourseName="@card.SubjectName" Text="@($"{card.ItemsOpen} to do")" Student="true" />
+                                        }
+                                        else
+                                        {
+                                            <Badge Tone="Tone.Success">All done</Badge>
+                                        }
+                                        <span class="sub">@WorkSummary(card)</span>
                                     }
                                 </td>
                                 <td class="progress-cell">
@@ -162,7 +185,12 @@ else
                 <SubjectCard Name="@card.SubjectName" Tag="@card.SectionLabel"
                              Subtitle="@((card.TeacherName ?? "No teacher yet") + (card.Meets is null ? "" : " · " + card.Meets))"
                              Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet"
-                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText" />
+                             Progress="card.ProgressPercent" ProgressText="@card.ProgressText">
+                    @if (card.AssignmentId is not null)
+                    {
+                        <CourseCounts Modules="card.ModulesVisible" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances" />
+                    }
+                </SubjectCard>
             }
         </div>
     }
@@ -187,6 +215,15 @@ else
         var studentId = await Me.GetStudentIdAsync();
         cards = studentId is { } id ? await Teaching.GetStudentCardsAsync(id) : [];
         shown = cards.Where(c => filter is null || (filter == "completed") == c.IsCompleted).ToList();
+    }
+
+    private static string WorkSummary(StudentSubjectCard card)
+    {
+        var parts = new List<string>();
+        if (card.Activities > 0) { parts.Add(card.Activities == 1 ? "1 activity" : $"{card.Activities} activities"); }
+        if (card.Quizzes > 0) { parts.Add(card.Quizzes == 1 ? "1 quiz" : $"{card.Quizzes} quizzes"); }
+        if (card.TaskPerformances > 0) { parts.Add(card.TaskPerformances == 1 ? "1 task performance" : $"{card.TaskPerformances} task performances"); }
+        return string.Join(" · ", parts);
     }
 
     private static string Url(string? show, string view)

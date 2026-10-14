@@ -382,3 +382,51 @@ html[data-motion="off"] .thumb {
         width: auto;
     }
 }
+
+/* The counselor's message: a box in the middle of the screen, like the one for an achievement. */
+.guidance-box {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.25rem;
+    text-align: center;
+}
+
+.guidance-medal {
+    display: grid;
+    place-items: center;
+    width: 5rem;
+    height: 5rem;
+    margin-top: 0.4rem;
+    border-radius: 50%;
+    background: var(--rose-soft);
+    color: var(--rose);
+    box-shadow: 0 0 0 6px var(--rose-soft), 0 0 0 7px var(--rose);
+    animation: guidance-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.guidance-box h3 {
+    margin: 0.7rem 0 0;
+    font-size: 1.3rem;
+}
+
+.guidance-text {
+    max-width: 24rem;
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.guidance-count {
+    margin: 0.2rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.guidance-box ::deep .button {
+    margin-top: 0.8rem;
+}
+
+@keyframes guidance-in {
+    from { transform: scale(0.2) rotate(-30deg); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}

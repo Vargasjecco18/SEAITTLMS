@@ -13,12 +13,17 @@
     <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="RefreshAsync">Refresh</Button>
 </PageHeader>
 
-@* What was sent (modules), the teachers who got it and the students who see it. *@
+@* What was sent, one tab for each kind (the syllabi and modules, the activities, the quizzes, the task performances), then the teachers who got it and the students who see it. *@
 <PillTabs Items="PartTabs" Selected="@part" SelectedChanged="PartChangedAsync" Label="Part of the tracking" />
+<p class="part-hint">@PartHint</p>
 
-@if (part != "modules")
+@if (part is "teachers" or "students")
 {
     <TrackingUsers @ref="usersPanel" Tab="@part" />
+}
+else if (part is "activities" or "quizzes" or "tasks")
+{
+    <TrackingItems @ref="itemsPanel" Kind="@KindOfPart" />
 }
 else
 {
@@ -168,6 +173,8 @@ else
 
 @code {
     private TrackingUsers? usersPanel;
+    private TrackingItems? itemsPanel;
+    private IReadOnlyDictionary<string, int> itemCounts = new Dictionary<string, int>();
     private string part = "modules";
     private TrackingPage? data;
     private string state = "";
@@ -191,12 +198,35 @@ else
 
     private int PageCount => data is null ? 1 : Math.Max(1, (int)Math.Ceiling(data.Total / (double)data.PageSize));
 
-    private static readonly IReadOnlyList<PillTabs.Tab> PartTabs =
+    private static readonly string[] Parts = ["modules", "activities", "quizzes", "tasks", "teachers", "students"];
+
+    private IReadOnlyList<PillTabs.Tab> PartTabs =>
     [
         new("modules", "Modules", "eye"),
+        new("activities", "Activities", SubjectStyle.KindIcon(ItemKinds.Activity), itemCounts.GetValueOrDefault(ItemKinds.Activity)),
+        new("quizzes", "Quizzes", SubjectStyle.KindIcon(ItemKinds.Quiz), itemCounts.GetValueOrDefault(ItemKinds.Quiz)),
+        new("tasks", "Task performance", SubjectStyle.KindIcon(ItemKinds.TaskPerformance), itemCounts.GetValueOrDefault(ItemKinds.TaskPerformance)),
         new("teachers", "Teachers", "presentation"),
         new("students", "Students", "graduation-cap"),
     ];
+
+    /// <summary>The kind of work the chosen tab is about (when it is one of the three).</summary>
+    private string KindOfPart => part switch
+    {
+        "quizzes" => ItemKinds.Quiz,
+        "tasks" => ItemKinds.TaskPerformance,
+        _ => ItemKinds.Activity,
+    };
+
+    private string PartHint => part switch
+    {
+        "activities" => "The activities that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
+        "quizzes" => "The quizzes that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
+        "tasks" => "The task performances that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
+        "teachers" => "Each teacher who has a course this school year: what they were sent and what they did with it.",
+        "students" => "Each student: what was posted to them and how much of it they opened.",
+        _ => "The syllabi and the modules that were sent: did the teacher open it, post it, and did the students open it.",
+    };
 
     private IReadOnlyList<PillTabs.Tab> Tabs => data is null
         ? [new("", "All", "list")]
@@ -212,7 +242,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         // The links in the menu change the address of this same page (?tab=teachers), so the address is read every time it changes.
-        var wantedPart = TabQuery is "teachers" or "students" ? TabQuery : "modules";
+        var wantedPart = TabQuery is not null && Parts.Contains(TabQuery) ? TabQuery : "modules";
         if (data is not null && wantedPart == part && StateQuery == lastStateQuery)
         {
             return;
@@ -234,7 +264,7 @@ else
 
     private async Task PartChangedAsync(string? key)
     {
-        part = key is "teachers" or "students" ? key : "modules";
+        part = key is not null && Parts.Contains(key) ? key : "modules";
         if (part == "modules")
         {
             await ReloadAsync();
@@ -243,9 +273,17 @@ else
 
     private async Task RefreshAsync()
     {
+        itemCounts = await Provider.CountItemsSentAsync();
         if (part == "modules")
         {
             await ReloadAsync();
+        }
+        else if (part is "activities" or "quizzes" or "tasks")
+        {
+            if (itemsPanel is not null)
+            {
+                await itemsPanel.ReloadAsync();
+            }
         }
         else if (usersPanel is not null)
         {
@@ -257,6 +295,7 @@ else
     {
         nowUtc = Clock.GetUtcNow().UtcDateTime;
         options ??= await Provider.GetTrackingOptionsAsync();
+        itemCounts = await Provider.CountItemsSentAsync();
         data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber, TeacherUserId: teacherId, GradeLevel: gradeLevel, Section: section, SubjectId: subjectId));
         pageNumber = data.Page;
     }

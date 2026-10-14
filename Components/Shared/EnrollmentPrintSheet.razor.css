@@ -3,9 +3,11 @@
     display: none;
 }
 
+/* No margin on the paper: the browser prints its own header (the date and the title of the page) and footer (the address of the page) in the margin, and with none
+   there is nothing to print there. The margin of the form is the padding of each page below. */
 @page {
     size: A4;
-    margin: 10mm 14mm;
+    margin: 0;
 }
 
 @media print {
@@ -17,12 +19,13 @@
         line-height: 1.35;
     }
 
-    /* No frame and no box for a picture: the paper is a clean document. Each page fills the sheet, so what is at the bottom (the signatures and the footer) stays at the bottom. */
+    /* No frame and no box for a picture: the paper is a clean document. Each page fills the sheet, so what is at the bottom (the footer) stays at the bottom. */
     .page {
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
-        min-height: 266mm;
+        min-height: 296mm;
+        padding: 10mm 14mm;
     }
 
     .page.back {
@@ -262,15 +265,7 @@
         font-style: italic;
     }
 
-    /* ---- the lines for the signatures */
-    .signatures {
-        display: grid;
-        grid-template-columns: 1.4fr 1.2fr 0.6fr;
-        gap: 9mm;
-        margin-top: auto;
-        padding-top: 12mm;
-    }
-
+    /* ---- the lines for the signatures (on the back) */
     .sign {
         display: flex;
         flex-direction: column;
@@ -303,7 +298,7 @@
         display: flex;
         justify-content: space-between;
         gap: 6mm;
-        margin-top: 6mm;
+        margin-top: auto;
         padding-top: 1.5mm;
         border-top: 0.5pt solid #999;
         color: #555;

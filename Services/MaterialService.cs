@@ -12,6 +12,9 @@ public sealed record MaterialCourseRow(
 /// <summary>A strand of a track in the course library, with how many courses it studies and how many of them have a syllabus.</summary>
 public sealed record LibraryStrand(int StrandId, string Code, string Name, int Courses, int WithSyllabus);
 
+/// <summary>A term of a strand in the course library (1st Term, 2nd Term): how many subjects the strand studies in it and how many of them have a syllabus.</summary>
+public sealed record LibraryTerm(int TermNumber, string Name, int Courses, int WithSyllabus);
+
 /// <summary>A track of the course library: the first thing the provider sees. Its strands come next, then the courses of a strand.</summary>
 public sealed record LibraryTrack(int TrackId, string Code, string Name, int Courses, int WithSyllabus, IReadOnlyList<LibraryStrand> Strands);
 
@@ -62,7 +65,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     // ======================================================================= reading
 
     /// <summary>Every active course with what is prepared for it. <paramref name="search"/> looks in the name and the code.</summary>
-    public async Task<IReadOnlyList<MaterialCourseRow>> ListCoursesAsync(string? search = null, CancellationToken ct = default, int? strandId = null)
+    public async Task<IReadOnlyList<MaterialCourseRow>> ListCoursesAsync(string? search = null, CancellationToken ct = default, int? strandId = null, int? termNumber = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var yearId = await CurrentYearIdAsync(db, ct);
@@ -72,7 +75,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         if (strandId is { } onlyStrand)
         {
             // Only the courses this strand studies, and where (grade level and term).
-            var rows = await db.StrandSubjects.AsNoTracking().Where(x => x.StrandId == onlyStrand)
+            var rows = await db.StrandSubjects.AsNoTracking().Where(x => x.StrandId == onlyStrand && (termNumber == null || x.TermNumber == termNumber))
                 .Select(x => new { x.SubjectId, x.GradeLevel, x.TermNumber }).ToListAsync(ct);
             var termNames = await db.Terms.AsNoTracking().OrderByDescending(t => t.SchoolYear.StartDate).Select(t => new { t.TermNumber, t.Name }).ToListAsync(ct);
             string TermName(byte number) => termNames.FirstOrDefault(t => t.TermNumber == number)?.Name ?? $"Term {number}";
@@ -111,6 +114,25 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                 s.Id, s.Code, s.Name, (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, Items(ItemKinds.Activity), Items(ItemKinds.Quiz), Items(ItemKinds.TaskPerformance),
                 teachers.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0,
                 placements?.GetValueOrDefault(s.Id));
+        }).ToList();
+    }
+
+    /// <summary>The terms a strand studies in (1st Term, 2nd Term ...), for the provider to choose from after choosing a strand.</summary>
+    public async Task<IReadOnlyList<LibraryTerm>> ListStrandTermsAsync(int strandId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.StrandSubjects.AsNoTracking().Where(x => x.StrandId == strandId && x.Subject.IsActive)
+            .Select(x => new { x.TermNumber, x.SubjectId }).Distinct().ToListAsync(ct);
+        var withSyllabus = (await db.MaterialModules.AsNoTracking().Where(m => m.IsSyllabus).Select(m => m.SubjectId).Distinct().ToListAsync(ct)).ToHashSet();
+        var termNames = await db.Terms.AsNoTracking().OrderByDescending(t => t.SchoolYear.StartDate).Select(t => new { t.TermNumber, t.Name }).ToListAsync(ct);
+        string NameOf(int number) => termNames.FirstOrDefault(t => t.TermNumber == number)?.Name ?? $"Term {number}";
+
+        // The terms the school has, even one the strand has no subject in yet, so the choice is the same for every strand.
+        var numbers = rows.Select(r => (int)r.TermNumber).Concat(termNames.Select(t => (int)t.TermNumber)).Distinct().Order().ToList();
+        return numbers.Select(n =>
+        {
+            var subjects = rows.Where(r => r.TermNumber == n).Select(r => r.SubjectId).Distinct().ToList();
+            return new LibraryTerm(n, NameOf(n), subjects.Count, subjects.Count(withSyllabus.Contains));
         }).ToList();
     }
 

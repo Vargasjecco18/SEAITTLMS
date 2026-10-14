@@ -1,16 +1,38 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject CalendarService Calendar
+@inject GroupService Groups
+@inject PeopleService People
 @inject NavigationManager Navigation
 @inject TimeProvider Clock
 
-@* The box to add an event to the person's own calendar, or to change or delete one. Only the person who wrote an event sees it. *@
+@* The box to add an event to the person's own calendar, or to change or delete one. The person says who it is for: only them (the default), a group, or friends and
+   classmates they choose; telling those people with a notification is optional. An event somebody shared is only looked at here. *@
 <Modal Open="loaded" Title="@(EntryId is null ? "Add event" : "Event")" OnClose="Cancel">
     @if (missing)
     {
         <p>This event was not found. It may have been deleted.</p>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="Cancel">Close</Button>
+        </div>
+    }
+    else if (readOnly)
+    {
+        <FormErrors Errors="errors" />
+        <dl class="shared-event">
+            <div><dt>What</dt><dd>@form.Title</dd></div>
+            <div><dt>Day</dt><dd>@DayLabel</dd></div>
+            <div><dt>Time</dt><dd>@TimeLabel</dd></div>
+            @if (!string.IsNullOrWhiteSpace(form.Notes))
+            {
+                <div><dt>Note</dt><dd>@form.Notes</dd></div>
+            }
+            <div><dt>Shared by</dt><dd>@(ownerName ?? "a friend")</dd></div>
+        </dl>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" IconName="trash-2" Class="delete" Disabled="busy" OnClick="LeaveAsync">Take it off my calendar</Button>
+            <span class="spacer"></span>
+            <Button OnClick="Cancel">Close</Button>
         </div>
     }
     else
@@ -31,6 +53,44 @@
             <Field For="ev-notes" Label="Note">
                 <InputTextArea id="ev-notes" @bind-Value="form.Notes" rows="3" maxlength="500" />
             </Field>
+
+            <fieldset class="audience">
+                <legend>Who is it for?</legend>
+                <div class="aud-choices" role="radiogroup" aria-label="Who is it for?">
+                    <label class="aud @(audience == "me" ? "on" : "")"><input type="radio" name="audience" value="me" checked="@(audience == "me")" @onchange="ChooseMe" /><Icon Name="user" Size="16" /> Only me</label>
+                    <label class="aud @(audience == "group" ? "on" : "")"><input type="radio" name="audience" value="group" checked="@(audience == "group")" @onchange="ChooseGroup" /><Icon Name="users" Size="16" /> A group</label>
+                    <label class="aud @(audience == "people" ? "on" : "")"><input type="radio" name="audience" value="people" checked="@(audience == "people")" @onchange="ChoosePeople" /><Icon Name="user-round-check" Size="16" /> Friends or classmates</label>
+                </div>
+
+                @if (audience == "group")
+                {
+                    <Field For="ev-group" Label="Group" Hint="Everybody in the group sees the event on their calendar.">
+                        <select id="ev-group" @onchange="ChooseGroupAsync">
+                            <option value="0" selected="@(groupId == 0)">Choose a group</option>
+                            @foreach (var g in groups)
+                            {
+                                <option value="@g.Id" selected="@(groupId == g.Id)">@g.Name (@g.Members)</option>
+                            }
+                        </select>
+                    </Field>
+                    @if (groups.Count == 0)
+                    {
+                        <p class="muted">You are not in a group yet.</p>
+                    }
+                }
+                else if (audience == "people")
+                {
+                    <PeoplePicker People="reachable" Selected="selected" EmptyText="You have no friends or classmates to choose from yet." />
+                }
+
+                @if (audience != "me")
+                {
+                    <label class="notify">
+                        <input id="ev-notify" type="checkbox" @bind="notify" />
+                        <span><strong>Tell them</strong> <small>Optional: send them a notification. Without it they still see the event on their calendar.</small></span>
+                    </label>
+                }
+            </fieldset>
 
             <div class="modal-actions">
                 @if (EntryId is not null)
@@ -77,6 +137,14 @@
     [Parameter, EditorRequired] public string CloseUrl { get; set; } = "calendar";
 
     private Form form = new();
+    private bool readOnly;
+    private string? ownerName;
+    private string audience = "me";
+    private int groupId;
+    private bool notify;
+    private readonly HashSet<int> selected = [];
+    private IReadOnlyList<GroupSummary> groups = [];
+    private IReadOnlyList<PersonCard> reachable = [];
     private List<string> errors = [];
     private bool loaded;
     private bool missing;
@@ -86,7 +154,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        userId = (await Me.GetAsync())?.UserId ?? 0;
+        var me = await Me.GetAsync();
+        userId = me?.UserId ?? 0;
         if (EntryId is { } id)
         {
             var entry = userId == 0 ? null : await Calendar.GetEntryAsync(userId, id);
@@ -97,6 +166,14 @@
             else
             {
                 form = new Form { Title = entry.Title, DayText = entry.Day.ToString("yyyy-MM-dd"), TimeText = entry.StartTime?.ToString("HH:mm") ?? "", Notes = entry.Notes };
+                readOnly = !entry.IsOwner;
+                ownerName = entry.OwnerName;
+                if (entry.IsOwner && entry.SharedWith is { Count: > 0 } sharedWith)
+                {
+                    // The people the event was shared with are shown again, ticked.
+                    audience = "people";
+                    selected.UnionWith(sharedWith);
+                }
             }
         }
         else
@@ -104,7 +181,87 @@
             form.DayText = (Day ?? PhilippineTime.Today(Clock)).ToString("yyyy-MM-dd");
         }
 
+        // Who the event can be shared with (only when it is the person's own).
+        if (userId != 0 && !readOnly && !missing)
+        {
+            groups = await Groups.ListMineAsync(userId);
+            var friends = await People.GetFriendsAsync(userId);
+            var others = me?.Role == AppRoles.Teacher ? await People.GetMyStudentsAsync(userId) : await People.GetClassmatesAsync(userId);
+            var list = friends.Concat(others).GroupBy(p => p.UserId).Select(g => g.First()).OrderBy(p => p.Name).ToList();
+
+            // People the event was shared with before stay in the list even when they are not friends or classmates any more.
+            reachable = list;
+        }
+
         loaded = true;
+    }
+
+    private string DayLabel => DateOnly.TryParseExact(form.DayText, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d)
+        ? d.ToString("dddd, MMMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture) : form.DayText;
+
+    private string TimeLabel => string.IsNullOrEmpty(form.TimeText) ? "All day"
+        : TimeOnly.TryParse(form.TimeText, out var t) ? t.ToString("h:mm tt", System.Globalization.CultureInfo.InvariantCulture) : form.TimeText;
+
+    private void ChooseMe() => ChooseAudience("me");
+
+    private void ChooseGroup() => ChooseAudience("group");
+
+    private void ChoosePeople() => ChooseAudience("people");
+
+    private void ChooseAudience(string choice)
+    {
+        audience = choice;
+        errors = [];
+        if (choice == "me")
+        {
+            selected.Clear();
+            groupId = 0;
+            notify = false;
+        }
+        else if (choice == "group")
+        {
+            selected.Clear();
+        }
+        else
+        {
+            groupId = 0;
+        }
+    }
+
+    /// <summary>A group is chosen: its members (except the person) are the people the event is shared with.</summary>
+    private async Task ChooseGroupAsync(ChangeEventArgs e)
+    {
+        groupId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0;
+        selected.Clear();
+        if (groupId != 0 && await Groups.GetAsync(userId, groupId, takePosts: 0) is { } group)
+        {
+            selected.UnionWith(group.Members.Select(m => m.UserId).Where(u => u != userId));
+        }
+    }
+
+    private async Task LeaveAsync()
+    {
+        if (busy || EntryId is not { } id)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Calendar.LeaveEntryAsync(userId, id);
+            if (!result.Succeeded)
+            {
+                errors = [.. result.Errors];
+                return;
+            }
+
+            Navigation.NavigateTo(CloseUrl, forceLoad: true);
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private void SetDay(ChangeEventArgs e) => form.DayText = e.Value?.ToString() ?? "";
@@ -129,7 +286,20 @@
         {
             DateOnly? day = DateOnly.TryParseExact(form.DayText, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d) ? d : null;
             TimeOnly? time = TimeOnly.TryParse(form.TimeText, out var t) ? t : null;
-            var result = await Calendar.SaveEntryAsync(userId, EntryId, form.Title, day, time, form.Notes);
+            if (audience == "group" && groupId == 0)
+            {
+                errors = ["Choose the group, or choose Only me."];
+                return;
+            }
+
+            if (audience == "people" && selected.Count == 0)
+            {
+                errors = ["Tick the friends or classmates it is for, or choose Only me."];
+                return;
+            }
+
+            var shareWith = audience == "me" ? [] : selected.ToList();
+            var result = await Calendar.SaveEntryAsync(userId, EntryId, form.Title, day, time, form.Notes, shareWith, notify && shareWith.Count > 0);
             if (!result.Succeeded)
             {
                 errors = [.. result.Errors];

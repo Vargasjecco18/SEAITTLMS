@@ -132,24 +132,6 @@
     background: rgba(0, 0, 0, 0.08);
 }
 
-.setup ::deep .alert {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    margin-bottom: 1.1rem;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid var(--danger);
-    border-radius: var(--radius-sm);
-    background: var(--danger-soft);
-    color: var(--danger);
-    font-size: 0.92rem;
-}
-
-.setup ::deep .alert ul {
-    margin: 0;
-    padding-left: 1.1rem;
-}
-
 /* ---------- the lists ---------- */
 .setup ::deep .table-wrap {
     margin: 0 -1.25rem;
@@ -420,6 +402,11 @@
     max-width: 36rem;
 }
 
+/* The Term box is at the right of the section list. */
+.setup ::deep .filter-bar > .field.schedule-term {
+    flex: 0 1 11rem;
+}
+
 /* The class schedule: the hours of the day in a line, one Save at the right of the section list. */
 .setup ::deep .part-hours {
     display: inline-block;
@@ -439,4 +426,155 @@
 .setup ::deep .table .num {
     text-align: center;
     white-space: nowrap;
+}
+
+/* ---------- the strands of a course (Courses tab) ---------- */
+.setup ::deep .strand-chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.setup ::deep .strand-chip {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.setup ::deep .strand-more {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.setup ::deep .strand-more:hover {
+    text-decoration: underline;
+}
+
+.setup ::deep .strand-more:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.setup ::deep .strand-more .plus {
+    margin-left: 0.2rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.setup ::deep .strand-intro {
+    margin: 0 0 0.75rem;
+}
+
+.setup ::deep .strand-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.setup ::deep .strand-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.setup ::deep .strand-list li:first-child {
+    border-top: 0;
+}
+
+.setup ::deep .strand-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.setup ::deep .strand-track {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ---------- choosing the adviser of a section ---------- */
+.setup ::deep .adviser-picker {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.setup ::deep .adviser-table-wrap {
+    max-height: 17rem;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.setup ::deep .adviser-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.setup ::deep .adviser-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.45rem 0.6rem;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.setup ::deep .adviser-table td {
+    padding: 0.5rem 0.6rem;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+}
+
+.setup ::deep .adviser-table tbody tr {
+    cursor: pointer;
+}
+
+.setup ::deep .adviser-table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.setup ::deep .adviser-table tbody tr.picked {
+    background: var(--brand-soft);
+}
+
+.setup ::deep .adviser-table .a-name {
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.setup ::deep .adviser-table .a-courses {
+    color: var(--text-muted);
+    font-size: 0.84rem;
+}
+
+.setup ::deep .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
 }

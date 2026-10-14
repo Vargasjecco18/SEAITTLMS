@@ -6,9 +6,15 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>One subject a teacher teaches to one section, with the numbers shown on its card.</summary>
+/// <param name="Activities">How many activities, quizzes and task performances the course has (in all its modules).</param>
 public sealed record TeacherSubjectCard(
     int AssignmentId, int SubjectId, string SubjectName, int SectionId, string SectionLabel,
-    int Students, int ModulesPosted, int ModulesTotal, int ToGrade, string? Meets = null);
+    int Students, int ModulesPosted, int ModulesTotal, int ToGrade, string? Meets = null,
+    int Activities = 0, int Quizzes = 0, int TaskPerformances = 0);
+
+/// <summary>One activity, quiz or task performance in the list a card opens: what a student still has to do, or what a teacher still has to check.</summary>
+/// <param name="Note">"Due Oct 9, 2026, 5:00 PM", or "3 to check".</param>
+public sealed record CourseWorkItem(int ItemId, string Kind, string Title, string ModuleTitle, DateTime? DueAtUtc, int ToCheck = 0);
 
 /// <summary>
 /// One subject a student takes (from their enrollment), with the numbers shown on its card and in the list.
@@ -20,7 +26,8 @@ public sealed record TeacherSubjectCard(
 public sealed record StudentSubjectCard(
     int SubjectId, string SubjectName, string TermName, bool IsCurrentTerm, int? AssignmentId, string? TeacherName, string SectionLabel,
     int ModulesVisible, int ModulesUnopened, int ItemsOpen, int ItemsDone, decimal? AveragePercent,
-    bool IsCompleted = false, decimal? AttendancePercent = null, DateTime? NextDueUtc = null, string? Meets = null)
+    bool IsCompleted = false, decimal? AttendancePercent = null, DateTime? NextDueUtc = null, string? Meets = null,
+    int Activities = 0, int Quizzes = 0, int TaskPerformances = 0)
 {
     /// <summary>The parts of the course the student has gone through (modules opened, work handed in) and all the parts that are posted.</summary>
     public int ProgressDone => (ModulesVisible - ModulesUnopened) + ItemsDone;
@@ -216,16 +223,68 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         var sectionIds = rows.Select(r => r.SectionId).Distinct().ToList();
         var meetings = await db.CourseSchedules.AsNoTracking().Where(c => sectionIds.Contains(c.SectionId)).ToListAsync(ct);
 
+        // What each course holds: the activities, quizzes and task performances of all its modules.
+        var assignmentIds = rows.Select(r => r.Id).ToList();
+        var kinds = await db.ModuleItems.AsNoTracking()
+            .Where(i => assignmentIds.Contains(i.Module.AssignmentId))
+            .GroupBy(i => new { i.Module.AssignmentId, i.Kind })
+            .Select(g => new { g.Key.AssignmentId, g.Key.Kind, Count = g.Count() })
+            .ToListAsync(ct);
+        int KindCount(int assignmentId, string kind) => kinds.FirstOrDefault(k => k.AssignmentId == assignmentId && k.Kind == kind)?.Count ?? 0;
+
         var cards = new List<TeacherSubjectCard>();
         foreach (var r in rows)
         {
             var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
             var meets = meetings.FirstOrDefault(m => m.SectionId == r.SectionId && m.SubjectId == r.SubjectId);
             cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
-                meets is null ? null : new MeetingInfo(meets.Days, meets.StartTime, meets.EndTime).Describe()));
+                meets is null ? null : new MeetingInfo(meets.Days, meets.StartTime, meets.EndTime).Describe(),
+                KindCount(r.Id, ItemKinds.Activity), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance)));
         }
 
         return cards;
+    }
+
+    /// <summary>What a teacher still has to check in a course: the work handed in and not graded yet, one line for each activity, quiz or task performance.</summary>
+    public async Task<IReadOnlyList<CourseWorkItem>> GetTeacherToCheckAsync(int teacherId, int assignmentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.TeachingAssignments.AsNoTracking().AnyAsync(a => a.Id == assignmentId && a.TeacherId == teacherId, ct))
+        {
+            return [];
+        }
+
+        var rows = await db.Submissions.AsNoTracking()
+            .Where(s => s.Item.Module.AssignmentId == assignmentId && s.Status == SubmissionStatus.Submitted)
+            .GroupBy(s => new { s.ItemId, s.Item.Kind, s.Item.Title, ModuleTitle = s.Item.Module.Title, s.Item.DueAtUtc, s.Item.Position })
+            .Select(g => new { g.Key.ItemId, g.Key.Kind, g.Key.Title, g.Key.ModuleTitle, g.Key.DueAtUtc, Count = g.Count() })
+            .ToListAsync(ct);
+        return rows.OrderBy(r => r.ModuleTitle).ThenBy(r => r.Title)
+            .Select(r => new CourseWorkItem(r.ItemId, r.Kind, r.Title, r.ModuleTitle, r.DueAtUtc, r.Count))
+            .ToList();
+    }
+
+    /// <summary>What a student still has to do in a course: the posted activities, quizzes and task performances that are not handed in yet (nearest deadline first).</summary>
+    public async Task<IReadOnlyList<CourseWorkItem>> GetStudentToDoAsync(int studentId, int assignmentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+
+        // Only a course the student is enrolled in.
+        if (!await Roster.AssignmentsOf(db, studentId).AnyAsync(a => a.Id == assignmentId, ct))
+        {
+            return [];
+        }
+
+        var items = await db.ModuleItems.AsNoTracking()
+            .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
+                        && (i.VisibleFromUtc == null || i.VisibleFromUtc <= now)
+                        && !db.Submissions.Any(s => s.ItemId == i.Id && s.StudentId == studentId && s.Status != SubmissionStatus.InProgress))
+            .Select(i => new { i.Id, i.Kind, i.Title, ModuleTitle = i.Module.Title, i.DueAtUtc })
+            .ToListAsync(ct);
+        return items.OrderBy(i => i.DueAtUtc == null).ThenBy(i => i.DueAtUtc).ThenBy(i => i.Title)
+            .Select(i => new CourseWorkItem(i.Id, i.Kind, i.Title, i.ModuleTitle, i.DueAtUtc))
+            .ToList();
     }
 
     // ------------------------------------------------------------------ the student
@@ -262,7 +321,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         var items = await db.ModuleItems.AsNoTracking()
             .Where(i => assignmentIds.Contains(i.Module.AssignmentId) && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
                         && (i.VisibleFromUtc == null || i.VisibleFromUtc <= now))
-            .Select(i => new { i.Id, i.Module.AssignmentId, i.MaxScore, i.DueAtUtc })
+            .Select(i => new { i.Id, i.Module.AssignmentId, i.MaxScore, i.DueAtUtc, i.Kind })
             .ToListAsync(ct);
         var attendance = await db.AttendanceRecords.AsNoTracking()
             .Where(r => r.StudentId == studentId && assignmentIds.Contains(r.AssignmentId))
@@ -300,7 +359,8 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                     IsCompleted: e.EnrollmentStatus == EnrollmentStatus.Completed || (!e.IsCurrent && e.EndDate < today),
                     AttendancePercent: marked.Count == 0 ? null : Math.Round(came * 100m / marked.Count, 1),
                     NextDueUtc: nextDue,
-                    Meets: meetings.FirstOrDefault(m => m.SectionId == e.SectionId && m.SubjectId == e.SubjectId) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null);
+                    Meets: meetings.FirstOrDefault(m => m.SectionId == e.SectionId && m.SubjectId == e.SubjectId) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null,
+                    Activities: its.Count(i => i.Kind == ItemKinds.Activity), Quizzes: its.Count(i => i.Kind == ItemKinds.Quiz), TaskPerformances: its.Count(i => i.Kind == ItemKinds.TaskPerformance));
             })
             .ToList();
     }

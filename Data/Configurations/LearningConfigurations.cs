@@ -214,6 +214,20 @@ internal sealed class CalendarEntryConfiguration : IEntityTypeConfiguration<Cale
     }
 }
 
+internal sealed class CalendarEntryInviteConfiguration : IEntityTypeConfiguration<CalendarEntryInvite>
+{
+    public void Configure(EntityTypeBuilder<CalendarEntryInvite> b)
+    {
+        b.ToTable("calendar_entry_invites");
+        b.HasKey(i => new { i.EntryId, i.UserId });
+
+        // The invitation goes with the event and with the person.
+        b.HasOne(i => i.Entry).WithMany(e => e.Invites).HasForeignKey(i => i.EntryId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(i => i.User).WithMany().HasForeignKey(i => i.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(i => i.UserId);
+    }
+}
+
 internal sealed class AchievementAwardConfiguration : IEntityTypeConfiguration<AchievementAward>
 {
     public void Configure(EntityTypeBuilder<AchievementAward> b)

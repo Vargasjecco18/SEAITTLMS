@@ -27,6 +27,18 @@
     {
         <p class="muted">Loading…</p>
     }
+    else if (strand is not null && TermNumber is { } chosenTerm)
+    {
+        var termName = strandTerms.FirstOrDefault(x => x.TermNumber == chosenTerm)?.Name ?? $"Term {chosenTerm}";
+        <nav class="crumbs" aria-label="Where you are">
+            <a href="provider/library">Course library</a><span aria-hidden="true">›</span>
+            <a href="@($"provider/library?track={track!.TrackId}")">@track.Name</a><span aria-hidden="true">›</span>
+            <a href="@($"provider/library?track={track.TrackId}&strand={strand.StrandId}")">@strand.Name</a><span aria-hidden="true">›</span>
+            <span>@termName</span>
+        </nav>
+        <h2 class="level-title">@strand.Name <span class="code">@strand.Code</span> <span class="code">@termName</span></h2>
+        <CourseTable Courses="courses" ShowPlacement="true" />
+    }
     else if (strand is not null)
     {
         <nav class="crumbs" aria-label="Where you are">
@@ -35,7 +47,15 @@
             <span>@strand.Name</span>
         </nav>
         <h2 class="level-title">@strand.Name <span class="code">@strand.Code</span></h2>
-        <CourseTable Courses="courses" ShowPlacement="true" />
+        <p class="level-hint">Choose a term to see its subjects.</p>
+        <div class="rows">
+            @for (var i = 0; i < strandTerms.Count; i++)
+            {
+                var term = strandTerms[i];
+                <LibraryRow Href="@($"provider/library?track={track.TrackId}&strand={strand.StrandId}&term={term.TermNumber}")" Title="@term.Name" Number="@term.TermNumber"
+                            Description="@($"{Plural(term.Courses, "subject")} · {term.WithSyllabus} with a syllabus")" ActionText="Open term" />
+            }
+        </div>
     }
     else if (track is not null)
     {
@@ -86,11 +106,13 @@
     [SupplyParameterFromQuery(Name = "q")] private string? Q { get; set; }
     [SupplyParameterFromQuery(Name = "track")] private int? TrackId { get; set; }
     [SupplyParameterFromQuery(Name = "strand")] private int? StrandId { get; set; }
+    [SupplyParameterFromQuery(Name = "term")] private int? TermNumber { get; set; }
 
     private IReadOnlyList<LibraryTrack>? tracks;
     private IReadOnlyList<MaterialCourseRow> courses = [];
     private LibraryTrack? track;
     private LibraryStrand? strand;
+    private IReadOnlyList<LibraryTerm> strandTerms = [];
     private bool searching;
 
     private static string Plural(int n, string one) => n == 1 ? $"1 {one}" : $"{n:N0} {one}s";
@@ -101,8 +123,9 @@
         tracks = await Library.ListTracksAsync();
         track = TrackId is { } t ? tracks.FirstOrDefault(x => x.TrackId == t) : null;
         strand = track is not null && StrandId is { } sid ? track.Strands.FirstOrDefault(x => x.StrandId == sid) : null;
+        strandTerms = strand is null || searching ? [] : await Library.ListStrandTermsAsync(strand.StrandId);
         courses = searching
             ? await Library.ListCoursesAsync(Q)
-            : strand is not null ? await Library.ListCoursesAsync(null, default, strand.StrandId) : [];
+            : strand is not null && TermNumber is { } term ? await Library.ListCoursesAsync(null, default, strand.StrandId, term) : [];
     }
 }

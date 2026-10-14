@@ -30,28 +30,6 @@
 }
 
 /* ---------- messages ---------- */
-.alert {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
-    margin: 0 0 1.25rem;
-    padding: 0.8rem 1rem;
-    border: 1px solid var(--danger);
-    border-radius: var(--radius-sm);
-    background: var(--danger-soft);
-    color: var(--danger);
-    font-size: 0.92rem;
-}
-
-.alert ul {
-    margin: 0.25rem 0 0;
-    padding-left: 1.1rem;
-}
-
-.alert ::deep .icon {
-    margin-top: 0.15rem;
-}
-
 .notice {
     display: flex;
     align-items: flex-start;
@@ -241,4 +219,48 @@ dd {
     .screen-only {
         display: none !important;
     }
+}
+
+/* ---------- the courses at the bottom of the form ---------- */
+.courses-card {
+    margin-bottom: 1.25rem;
+}
+
+.plan-table-wrap,
+.table-wrap {
+    overflow-x: auto;
+}
+
+.plan {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.plan th,
+.plan td {
+    padding: 0.55rem 0.75rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+}
+
+.plan thead th {
+    border-top: 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.plan .num {
+    text-align: right;
+}
+
+.plan tfoot td {
+    font-weight: 700;
+}
+
+.plan .mono {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
 }

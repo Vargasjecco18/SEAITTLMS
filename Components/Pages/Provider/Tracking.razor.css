@@ -11,3 +11,10 @@
         display: none;
     }
 }
+
+/* One line under the tabs that says what the tab shows. */
+.part-hint {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

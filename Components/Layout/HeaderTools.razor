@@ -118,6 +118,28 @@
         </details>
     </div>
 
+    @* The counselor saved something about the student: a box in the middle of the screen, like an achievement, until the student presses OK. *@
+    <Modal Open="@(guidance is not null)" Title="Your guidance counselor" Centered="true" Narrow="true" Top="true" OnClose="CloseGuidanceAsync">
+        @if (guidance is { } note)
+        {
+            <div class="guidance-box">
+                <span class="guidance-medal"><Icon Name="heart-handshake" Size="40" /></span>
+                <h3>@note.Title</h3>
+                @if (!string.IsNullOrWhiteSpace(note.Body))
+                {
+                    <p class="guidance-text">@note.Body</p>
+                }
+
+                @if (guidanceQueue.Count > 1)
+                {
+                    <p class="guidance-count">@guidanceQueue.Count messages waiting</p>
+                }
+
+                <Button IconName="@(guidanceQueue.Count > 1 ? "arrow-right" : "circle-check")" OnClick="CloseGuidanceAsync">@(guidanceQueue.Count > 1 ? "Next" : "OK")</Button>
+            </div>
+        }
+    </Modal>
+
     <Modal Open="messagesOpen" Title="Messages" Large="true" OnClose="CloseMessages">
         @if (messagesOpen)
         {
@@ -135,6 +157,10 @@
     private int? startWith;
     private Timer? timer;
     private IDisposable? subscription;
+
+    // What the guidance counselor wrote to this student and the student has not seen yet (a box in the middle of the screen shows the first).
+    private List<NotificationItem> guidanceQueue = [];
+    private NotificationItem? guidance => guidanceQueue.Count > 0 ? guidanceQueue[0] : null;
 
     private bool photoBusy;
     private bool photoFailed;
@@ -160,6 +186,7 @@
 
         await RefreshCountsAsync();
         await LoadNotificationsAsync();
+        await LoadGuidanceAsync();
 
         // New messages and notifications show up by themselves: at once when they are sent (LiveUpdates), and the numbers are looked at
         // again every 10 seconds while the page is open, in case the news came from somewhere else.
@@ -182,10 +209,37 @@
                 await LoadNotificationsAsync();
             }
 
+            await LoadGuidanceAsync();
             StateHasChanged();
         }
         catch (ObjectDisposedException)
         {
+        }
+    }
+
+    /// <summary>A student looks for what the guidance counselor wrote (kept, in order, while one box is open).</summary>
+    private async Task LoadGuidanceAsync()
+    {
+        if (user?.Role != AppRoles.Student)
+        {
+            return;
+        }
+
+        var unread = await Notifications.GetUnreadOfKindAsync(user.UserId, "referral");
+        foreach (var item in unread.Where(n => guidanceQueue.All(q => q.Id != n.Id)))
+        {
+            guidanceQueue.Add(item);
+        }
+    }
+
+    /// <summary>The student pressed OK: this message is read (it stays in the bell) and the next one, if any, shows.</summary>
+    private async Task CloseGuidanceAsync()
+    {
+        if (guidance is { } shown && user is not null)
+        {
+            guidanceQueue.RemoveAt(0);
+            await Notifications.MarkReadAsync(user.UserId, shown.Id);
+            await RefreshCountsAsync();
         }
     }
 
@@ -347,6 +401,7 @@
         "announcement" => "megaphone",
         "materials" => "folder-open",
         "evaluation" => "clipboard-check",
+        "calendar" => "calendar-days",
         _ => "bell",
     };
 

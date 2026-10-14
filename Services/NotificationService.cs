@@ -59,6 +59,18 @@ public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactor
         return new NotificationList(items, unread);
     }
 
+    /// <summary>The notifications of one kind that the person has not read yet, oldest first (for the box in the middle of the screen, like a guidance message).</summary>
+    public async Task<IReadOnlyList<NotificationItem>> GetUnreadOfKindAsync(int userId, string kind, int take = 5, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Notifications.AsNoTracking()
+            .Where(n => n.UserId == userId && n.Kind == kind && !n.IsRead)
+            .OrderBy(n => n.CreatedAtUtc).ThenBy(n => n.Id)
+            .Take(Math.Clamp(take, 1, 20))
+            .Select(n => new NotificationItem(n.Id, n.Kind, n.Title, n.Body, n.Link, n.IsRead, n.CreatedAtUtc))
+            .ToListAsync(ct);
+    }
+
     public async Task<int> UnreadCountAsync(int userId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);

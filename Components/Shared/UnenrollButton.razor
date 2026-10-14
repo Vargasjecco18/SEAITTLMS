@@ -11,10 +11,7 @@
     <p>Unenroll <strong>@StudentName</strong> for the <strong>@TermLabel</strong>?</p>
     <p class="quiet">The student stays in the current term. They will not be enrolled next term, and show in the "Not enrolled" list until you enroll them again.</p>
 
-    @if (error is not null)
-    {
-        <div class="alert" role="alert">@error</div>
-    }
+    <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
 
     <div class="actions">
         <Button Variant="ButtonVariant.Danger" IconName="user-x" Disabled="busy" OnClick="ConfirmAsync">@(busy ? "Unenrolling…" : "Unenroll")</Button>

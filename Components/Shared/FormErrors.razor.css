@@ -1,22 +1,73 @@
+/* The top center of the screen, over every box (a form opens in a box), dropping in from above. */
 .alert {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    z-index: 140;
     display: flex;
     align-items: flex-start;
-    gap: 0.6rem;
-    margin-bottom: 1.1rem;
-    padding: 0.7rem 0.9rem;
+    gap: 0.7rem;
+    width: min(34rem, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    margin: 0;
+    padding: 0.85rem 1rem;
+    overflow-y: auto;
     border: 1px solid var(--danger);
-    border-radius: var(--radius-sm);
-    background: var(--danger-soft);
+    border-top-width: 4px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
     color: var(--danger);
     font-size: 0.92rem;
+    transform: translateX(-50%);
+    animation: alert-in 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.alert-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert strong {
+    display: block;
+    margin-bottom: 0.2rem;
 }
 
 .alert ul {
     margin: 0;
     padding-left: 1.1rem;
+    color: var(--text);
 }
 
 .alert ::deep .icon {
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
     flex-shrink: 0;
+}
+
+.alert-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.alert-close:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.alert-close:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+@keyframes alert-in {
+    from { transform: translate(-50%, -2.5rem); opacity: 0; }
+    to { transform: translateX(-50%); opacity: 1; }
 }

@@ -19,7 +19,14 @@ public sealed record StrandRow(
     int Id, string Code, string Name, int TrackId, string Track, bool IsActive,
     int Subjects, int Sections);
 
-public sealed record SubjectRow(int Id, string Code, string Name, string? Description, bool IsActive, int Strands, decimal Units = 3);
+/// <summary>A strand that takes a course, as the Courses tab names it.</summary>
+public sealed record SubjectStrand(string Code, string Name, string Track);
+
+public sealed record SubjectRow(int Id, string Code, string Name, string? Description, bool IsActive, IReadOnlyList<SubjectStrand> StrandList, decimal Units = 3)
+{
+    /// <summary>How many strands take the course.</summary>
+    public int Strands => StrandList.Count;
+}
 
 public sealed record SectionRow(
     int Id, int SchoolYearId, string SchoolYear, int StrandId, string StrandCode, int GradeLevel, string Name,
@@ -34,7 +41,12 @@ public sealed record CurriculumEntry(int GradeLevel, int TermNumber, int Subject
 // ---- the choices the forms offer
 public sealed record YearOption(int Id, string Name, DateOnly StartDate, DateOnly EndDate);
 public sealed record StrandChoice(int Id, string Code, string Name, string Track);
-public sealed record TeacherChoice(int Id, string Name);
+/// <summary>A teacher the adviser of a section can be chosen from: the name, the grade level, the track and the courses the teacher teaches.</summary>
+public sealed record TeacherChoice(int Id, string Name, string? GradeLevel = null, string? Track = null, IReadOnlyList<string>? Courses = null)
+{
+    /// <summary>Everything the picker searches in.</summary>
+    public string SearchText => $"{Name} {GradeLevel} {Track} {string.Join(' ', Courses ?? [])}";
+}
 public sealed record SubjectPick(int Id, string Code, string Name, bool IsActive);
 
 public sealed record SetupLookups(
@@ -144,9 +156,25 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                 .Select(s => new { s.Id, s.Code, s.Name, Track = s.Track.Code }).ToListAsync(ct))
             .Select(s => new StrandChoice(s.Id, s.Code, s.Name, s.Track))
             .ToList();
-        var teachers = (await db.Teachers.AsNoTracking().OrderBy(t => t.LastName).ThenBy(t => t.FirstName)
-                .Select(t => new { t.Id, t.FirstName, t.MiddleName, t.LastName }).ToListAsync(ct))
-            .Select(t => new TeacherChoice(t.Id, $"{t.LastName}, {t.FirstName}")).ToList();
+        // The adviser is chosen by looking at the teacher: the grade level, the track and the courses (the ones of the teacher's classes).
+        var teacherRows = await db.Teachers.AsNoTracking().OrderBy(t => t.LastName).ThenBy(t => t.FirstName)
+            .Select(t => new { t.Id, t.FirstName, t.MiddleName, t.LastName, t.GradeLevel, TrackCode = t.TrackId == null ? null : db.Tracks.Where(x => x.Id == t.TrackId).Select(x => x.Code).FirstOrDefault() })
+            .ToListAsync(ct);
+        var classes = await db.TeachingAssignments.AsNoTracking()
+            .Select(a => new { a.TeacherId, Course = a.Subject.Name, Grade = a.Section.GradeLevel, Track = a.Section.Strand.Track.Code })
+            .Distinct()
+            .ToListAsync(ct);
+        var teachers = teacherRows.Select(t =>
+        {
+            var mine = classes.Where(c => c.TeacherId == t.Id).ToList();
+            var grades = t.GradeLevel is { } g ? [(int)g] : mine.Select(c => (int)c.Grade).Distinct().Order().ToList();
+            var track = t.TrackCode ?? string.Join(", ", mine.Select(c => c.Track).Distinct().Order());
+            return new TeacherChoice(
+                t.Id, $"{t.LastName}, {t.FirstName}",
+                grades.Count == 0 ? null : "Grade " + string.Join(" and ", grades),
+                string.IsNullOrEmpty(track) ? null : track,
+                mine.Select(c => c.Course).Distinct().Order().ToList());
+        }).ToList();
         var subjects = await db.Subjects.AsNoTracking().OrderBy(s => s.Name)
             .Select(s => new SubjectPick(s.Id, s.Code, s.Name, s.IsActive)).ToListAsync(ct);
 
@@ -691,9 +719,24 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     public async Task<IReadOnlyList<SubjectRow>> ListSubjectsAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Subjects.AsNoTracking().OrderBy(s => s.Name)
-            .Select(s => new SubjectRow(s.Id, s.Code, s.Name, s.Description, s.IsActive, db.StrandSubjects.Where(x => x.SubjectId == s.Id).Select(x => x.StrandId).Distinct().Count(), s.Units))
+        var subjects = await db.Subjects.AsNoTracking().OrderBy(s => s.Name)
+            .Select(s => new { s.Id, s.Code, s.Name, s.Description, s.IsActive, s.Units })
             .ToListAsync(ct);
+
+        // The strands that take each course (named, in the order of the tracks and strands).
+        var taken = await db.StrandSubjects.AsNoTracking()
+            .Select(x => new { x.SubjectId, StrandId = x.StrandId, x.Strand.Code, x.Strand.Name, Track = x.Strand.Track.Code, TrackId = x.Strand.TrackId })
+            .Distinct()
+            .ToListAsync(ct);
+        var strandsOf = taken
+            .GroupBy(x => x.SubjectId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<SubjectStrand>)g.OrderBy(x => x.TrackId).ThenBy(x => x.StrandId).Select(x => new SubjectStrand(x.Code, x.Name, x.Track)).ToList());
+
+        return subjects
+            .Select(s => new SubjectRow(s.Id, s.Code, s.Name, s.Description, s.IsActive, strandsOf.TryGetValue(s.Id, out var list) ? list : [], s.Units))
+            .ToList();
     }
 
     public async Task<ServiceResult> SaveSubjectAsync(SubjectInput input, int actingUserId, CancellationToken ct = default)

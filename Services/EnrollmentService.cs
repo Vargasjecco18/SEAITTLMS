@@ -24,6 +24,9 @@ public sealed record TrackOption(int Id, string Code, string Name);
 public sealed record StrandOption(int Id, string Code, string Name, int TrackId);
 public sealed record SubjectOption(int Id, string Code, string Name);
 
+/// <summary>A course the student will get, as the enrollment form lists it at the bottom: its units and, when the section is chosen and the coordinator set it, when it meets.</summary>
+public sealed record CoursePlanRow(int SubjectId, string Code, string Name, decimal Units, string? Meets);
+
 public sealed record EnrollmentLookups(
     IReadOnlyList<TermOption> Terms,
     IReadOnlyList<TrackOption> Tracks,
@@ -141,6 +144,47 @@ public sealed partial class EnrollmentService(
             .OrderBy(x => x.Subject.Name)
             .Select(x => new SubjectOption(x.Subject.Id, x.Subject.Code, x.Subject.Name))
             .ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// The courses a student of this strand gets in the term of a grade level, each with its units and, for the chosen section (when it exists
+    /// and the coordinator set the class times), "AM · MWF · 8:00 AM – 9:30 AM". It is what the form shows at the bottom before enrolling.
+    /// </summary>
+    public async Task<IReadOnlyList<CoursePlanRow>> GetCoursePlanAsync(int termId, int strandId, byte gradeLevel, string? sectionName, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+
+        var term = await db.Terms.AsNoTracking().Where(t => t.Id == termId).Select(t => new { t.SchoolYearId, t.TermNumber }).FirstOrDefaultAsync(ct);
+        if (term is null)
+        {
+            return [];
+        }
+
+        var courses = await db.StrandSubjects.AsNoTracking()
+            .Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == term.TermNumber)
+            .OrderBy(x => x.Subject.Name)
+            .Select(x => new { x.Subject.Id, x.Subject.Code, x.Subject.Name, x.Subject.Units })
+            .ToListAsync(ct);
+
+        var meetings = new List<CourseSchedule>();
+        if (!string.IsNullOrWhiteSpace(sectionName))
+        {
+            var name = sectionName.Trim();
+            var sectionId = await db.Sections.AsNoTracking()
+                .Where(s => s.SchoolYearId == term.SchoolYearId && s.StrandId == strandId && s.GradeLevel == gradeLevel && s.Name == name)
+                .Select(s => (int?)s.Id)
+                .FirstOrDefaultAsync(ct);
+            if (sectionId is { } id)
+            {
+                meetings = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => c.SectionId == id).ToListAsync(ct);
+            }
+        }
+
+        return courses
+            .Select(c => new CoursePlanRow(
+                c.Id, c.Code, c.Name, c.Units,
+                meetings.FirstOrDefault(m => m.SubjectId == c.Id) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime, m.Schedule.Code).DescribeFull() : null))
+            .ToList();
     }
 
     /// <summary>The sections that already exist for this strand and grade level in the term's school year.</summary>

@@ -29,8 +29,8 @@
                     <tr>
                         <th scope="col">Course</th>
                         <th scope="col">Code</th>
-                        <th scope="col" class="num">Units</th>
                         <th scope="col" class="col-more">Strands</th>
+                        <th scope="col" class="num">Units</th>
                         <th scope="col">Status</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
                     </tr>
@@ -47,8 +47,29 @@
                                 }
                             </td>
                             <td class="nowrap mono">@row.Code</td>
+                            <td class="col-more">
+                                @if (row.StrandList.Count == 0)
+                                {
+                                    <span class="muted">None</span>
+                                }
+                                else if (row.StrandList.Count <= MaxStrandsShown)
+                                {
+                                    <span class="strand-chips">
+                                        @foreach (var strand in row.StrandList)
+                                        {
+                                            <span class="strand-chip" title="@strand.Name">@strand.Code</span>
+                                        }
+                                    </span>
+                                }
+                                else
+                                {
+                                    @* Many strands: the first ones, and a button that opens the whole list. *@
+                                    <button type="button" class="strand-more" title="@($"All the strands of {row.Name}")" @onclick="() => OpenStrands(row)">
+                                        @string.Join(", ", row.StrandList.Take(MaxStrandsShown).Select(x => x.Code)) <span class="plus">+@(row.StrandList.Count - MaxStrandsShown) more</span>
+                                    </button>
+                                }
+                            </td>
                             <td class="num">@row.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
-                            <td class="col-more">@row.Strands</td>
                             <td><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Active" : "Switched off")</Badge></td>
                             <td class="col-actions">
                                 <div class="row-actions">
@@ -98,6 +119,26 @@
     }
 </Modal>
 
+<Modal Open="strandsOf is not null" Title="@($"Strands of {strandsOf?.Name}")" OnClose="CloseStrands">
+    @if (strandsOf is not null)
+    {
+        <p class="strand-intro"><strong>@strandsOf.Name</strong> (@strandsOf.Code) is taken by @(strandsOf.StrandList.Count == 1 ? "1 strand" : $"{strandsOf.StrandList.Count} strands"):</p>
+        <ul class="strand-list">
+            @foreach (var strand in strandsOf.StrandList)
+            {
+                <li>
+                    <span class="strand-chip">@strand.Code</span>
+                    <span class="strand-name">@strand.Name</span>
+                    <span class="strand-track">@strand.Track</span>
+                </li>
+            }
+        </ul>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseStrands">Close</Button>
+        </div>
+    }
+</Modal>
+
 <Modal Open="deleting is not null" Title="Delete this course?" OnClose="CloseDelete">
     @if (deleting is not null)
     {
@@ -114,6 +155,10 @@
     private IReadOnlyList<SubjectRow>? rows;
     private SubjectInput? form;
     private SubjectRow? deleting;
+    private SubjectRow? strandsOf;
+
+    /// <summary>Up to this many strands are written in the row; more than that, a button opens the list.</summary>
+    private const int MaxStrandsShown = 2;
     private string search = "";
 
     private IReadOnlyList<SubjectRow> Shown =>
@@ -136,6 +181,10 @@
     }
 
     private void CloseForm() => form = null;
+
+    private void OpenStrands(SubjectRow row) => strandsOf = row;
+
+    private void CloseStrands() => strandsOf = null;
 
     private async Task SaveAsync()
     {

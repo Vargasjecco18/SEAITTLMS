@@ -356,6 +356,8 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         var wasOpen = referral.Status == ReferralStatus.Open;
+        var changed = wasOpen || referral.Status != status || referral.Intervention != intervention || referral.Notes != notes
+                      || (status == ReferralStatus.Resolved && referral.Outcome != outcome);
         referral.Status = status;
         referral.Intervention = intervention;
         referral.Notes = notes;
@@ -364,10 +366,21 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         referral.HandledByUserId = actingUserId;
         await db.SaveChangesAsync(ct);
 
-        if (wasOpen && status == ReferralStatus.InProgress)
+        // The student is told every time the counselor saves something new about them: a box in the middle of their screen (like an achievement) says it.
+        if (changed)
         {
-            await notifications.AddAsync(referral.Student.UserId, "referral", "Your guidance counselor wants to help",
-                referral.Assignment is null ? "They will talk with you soon." : $"About {referral.Assignment.Subject.Name}. They will talk with you soon.", null, ct);
+            var about = referral.Assignment is null ? "" : $"About {referral.Assignment.Subject.Name}. ";
+            if (status == ReferralStatus.Resolved)
+            {
+                await notifications.AddAsync(referral.Student.UserId, "referral", "Your guidance counselor closed your case",
+                    about + "They think things are better now. You can always go to them again.", null, ct);
+            }
+            else if (status == ReferralStatus.InProgress)
+            {
+                var help = string.IsNullOrWhiteSpace(intervention) ? "They will talk with you soon." : $"They plan this for you: {intervention.ToLowerInvariant()}.";
+                await notifications.AddAsync(referral.Student.UserId, "referral", wasOpen ? "Your guidance counselor wants to help" : "News from your guidance counselor",
+                    about + help, null, ct);
+            }
         }
 
         return ServiceResult.Ok(status == ReferralStatus.Resolved ? "The referral is resolved." : "Saved.");

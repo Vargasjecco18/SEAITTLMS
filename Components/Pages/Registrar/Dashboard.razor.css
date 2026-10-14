@@ -12,7 +12,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
-    margin-bottom: 1.75rem;
+    margin-bottom: 1rem;
 }
 
 @media (min-width: 1100px) {
@@ -22,17 +22,57 @@
     }
 }
 
-.columns {
+/* The four cards after "At a glance": two by two (one under the other on a phone). */
+.quad {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 1.25rem;
     margin-bottom: 1.25rem;
 }
 
+.quad > * {
+    min-width: 0;
+}
+
 @media (min-width: 900px) {
-    .columns {
-        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    .quad {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
     }
+}
+
+/* By track: a slim card under the numbers. */
+.by-track {
+    margin-bottom: 1.5rem;
+}
+
+.track-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.track-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.track-name {
+    font-weight: 700;
+}
+
+.track-count {
+    font-size: 1.4rem;
+    letter-spacing: -0.01em;
+}
+
+.track-sub {
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
 /* The little bar charts */
@@ -115,7 +155,7 @@
     }
 }
 
-/* The columns of cards: By strand and By section on the left, By schedule and Not enrolled on the right. */
+/* A stack of cards (kept for the dashboards that still use it). */
 .stack {
     display: flex;
     flex-direction: column;

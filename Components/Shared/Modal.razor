@@ -5,8 +5,8 @@
     @* A box over the page. It closes with the X, with the Cancel button of the form in it, or with Escape.
        Clicking next to it does not close it, so a half-filled form is not lost by accident. The key handler sits on the
        whole overlay (which can take the focus too), so Escape still works after a click next to the box. *@
-    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "")" tabindex="-1" @onkeydown="OnKeyDown">
-        <div class="dialog @(Large ? "large" : "") @(Narrow ? "narrow" : "")" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
+    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "") @(Banner ? "banner" : "")" tabindex="-1" @onkeydown="OnKeyDown">
+        <div class="dialog @(Large ? "large" : "") @(Narrow ? "narrow" : "") @DialogClass" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
             <header class="dialog-head">
                 <h2 id="@titleId">@Title</h2>
                 <button type="button" class="close" aria-label="Close" title="Close" @onclick="Close"><Icon Name="x" Size="20" /></button>
@@ -35,6 +35,12 @@
 
     /// <summary>Over every other box (for the notice of a page, which can open while a form is still open).</summary>
     [Parameter] public bool Top { get; set; }
+
+    /// <summary>At the top center of the screen, dropping in from above with a lighter backdrop (for the notice of a page, which has to be seen at once).</summary>
+    [Parameter] public bool Banner { get; set; }
+
+    /// <summary>An extra style for the box: "success" or "error" (a colored edge).</summary>
+    [Parameter] public string? DialogClass { get; set; }
 
     /// <summary>A narrower box.</summary>
     [Parameter] public bool Narrow { get; set; }

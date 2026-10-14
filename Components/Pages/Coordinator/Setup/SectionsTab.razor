@@ -81,7 +81,7 @@
     }
 </Card>
 
-<Modal Open="form is not null" Title="@(form?.Id is null ? "Add section" : "Edit section")" OnClose="CloseForm">
+<Modal Open="form is not null" Title="@(form?.Id is null ? "Add section" : "Edit section")" OnClose="CloseForm" Large="true">
     @if (form is not null && lookups is not null)
     {
         <EditForm Model="form" OnSubmit="SaveAsync">
@@ -122,14 +122,45 @@
                     <input id="n-name" maxlength="50" autocomplete="off" @bind="form.Name" />
                 </Field>
             </div>
-            <Field For="n-adviser" Label="Adviser" Hint="Optional.">
-                <select id="n-adviser" @bind="adviserId">
-                    <option value="0">No adviser</option>
-                    @foreach (var teacher in lookups.Teachers)
-                    {
-                        <option value="@teacher.Id">@teacher.Name</option>
-                    }
-                </select>
+            <Field For="n-adviser-search" Label="Adviser" Hint="Optional. Look at the grade level, the track and the courses of each teacher, and choose one.">
+                <div class="adviser-picker">
+                    <input id="n-adviser-search" type="search" class="adviser-search" form="no-form" autocomplete="off" placeholder="Search a teacher, a grade level, a track or a course"
+                           @bind="adviserSearch" @bind:event="oninput" />
+                    <div class="adviser-table-wrap">
+                        <table class="adviser-table" id="n-adviser">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><span class="sr-only">Choose</span></th>
+                                    <th scope="col">Teacher</th>
+                                    <th scope="col">Grade level</th>
+                                    <th scope="col">Track</th>
+                                    <th scope="col">Courses</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="@(adviserId == 0 ? "picked" : "")" @onclick="() => adviserId = 0">
+                                    <td><input type="radio" name="adviser" aria-label="No adviser" checked="@(adviserId == 0)" @onchange="() => adviserId = 0" /></td>
+                                    <td colspan="4" class="muted">No adviser</td>
+                                </tr>
+                                @foreach (var teacher in AdviserChoices)
+                                {
+                                    var id = teacher.Id;
+                                    <tr class="@(adviserId == id ? "picked" : "")" @onclick="() => adviserId = id">
+                                        <td><input type="radio" name="adviser" aria-label="@($"Choose {teacher.Name}")" checked="@(adviserId == id)" @onchange="() => adviserId = id" /></td>
+                                        <td class="a-name">@teacher.Name</td>
+                                        <td class="nowrap">@(teacher.GradeLevel ?? "—")</td>
+                                        <td class="nowrap">@(teacher.Track ?? "—")</td>
+                                        <td class="a-courses">@(teacher.Courses is { Count: > 0 } courses ? string.Join(", ", courses) : "No course yet")</td>
+                                    </tr>
+                                }
+                                @if (!AdviserChoices.Any())
+                                {
+                                    <tr><td></td><td colspan="4" class="muted">No teacher matches.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </Field>
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
@@ -158,6 +189,13 @@
     private SectionRow? deleting;
     private bool locked;
     private int adviserId;
+    private string adviserSearch = "";
+
+    /// <summary>The teachers the adviser can be chosen from, narrowed by what is typed (the name, the grade level, the track or a course); the chosen one always stays in the list.</summary>
+    private IEnumerable<TeacherChoice> AdviserChoices => (lookups?.Teachers ?? [])
+        .Where(t => t.Id == adviserId
+            || string.IsNullOrWhiteSpace(adviserSearch)
+            || adviserSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).All(w => t.SearchText.Contains(w, StringComparison.OrdinalIgnoreCase)));
     private string search = "";
     private int yearFilter;
     private int gradeFilter;
@@ -186,6 +224,7 @@
         Errors = [];
         locked = false;
         adviserId = 0;
+        adviserSearch = "";
         form = new SectionInput { SchoolYearId = lookups?.Years.FirstOrDefault()?.Id ?? 0 };
     }
 
@@ -194,6 +233,7 @@
         Errors = [];
         locked = row.Students > 0 || row.Teachers > 0;
         adviserId = row.AdviserTeacherId ?? 0;
+        adviserSearch = "";
         form = new SectionInput
         {
             Id = row.Id, SchoolYearId = row.SchoolYearId, StrandId = row.StrandId, GradeLevel = row.GradeLevel,

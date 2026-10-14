@@ -192,18 +192,7 @@
         <EditForm Model="edit" OnValidSubmit="SaveEditAsync">
             <DataAnnotationsValidator />
 
-            @if (formErrors.Count > 0)
-            {
-                <div class="alert" role="alert">
-                    <Icon Name="circle-alert" Size="18" />
-                    <ul>
-                        @foreach (var error in formErrors)
-                        {
-                            <li>@error</li>
-                        }
-                    </ul>
-                </div>
-            }
+            <FormErrors Errors="formErrors" />
 
             <div class="two">
                 <Field For="e-first" Label="First name" Required="true">
@@ -275,18 +264,7 @@
         <EditForm Model="add" OnValidSubmit="SaveAddAsync">
             <DataAnnotationsValidator />
 
-            @if (formErrors.Count > 0)
-            {
-                <div class="alert" role="alert">
-                    <Icon Name="circle-alert" Size="18" />
-                    <ul>
-                        @foreach (var error in formErrors)
-                        {
-                            <li>@error</li>
-                        }
-                    </ul>
-                </div>
-            }
+            <FormErrors Errors="formErrors" />
 
             <div class="two">
                 <Field For="a-first" Label="First name" Required="true">
@@ -406,18 +384,7 @@
             <div class="banner" role="status"><Icon Name="circle-check" Size="18" /><span>@teachingMessage</span></div>
         }
 
-        @if (formErrors.Count > 0)
-        {
-            <div class="alert" role="alert">
-                <Icon Name="circle-alert" Size="18" />
-                <ul>
-                    @foreach (var error in formErrors)
-                    {
-                        <li>@error</li>
-                    }
-                </ul>
-            </div>
-        }
+        <FormErrors Errors="formErrors" />
 
         @if (assignments is { Count: 0 })
         {
@@ -500,18 +467,7 @@
             </ul>
         }
 
-        @if (formErrors.Count > 0)
-        {
-            <div class="alert" role="alert">
-                <Icon Name="circle-alert" Size="18" />
-                <ul>
-                    @foreach (var error in formErrors)
-                    {
-                        <li>@error</li>
-                    }
-                </ul>
-            </div>
-        }
+        <FormErrors Errors="formErrors" />
 
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep the account</Button>

@@ -1,0 +1,17 @@
+@* What a course holds, on its card under the teacher's name: how many modules, activities, quizzes and task performances. *@
+<ul class="counts" aria-label="What is in the course">
+    <li><span class="n">@Modules</span><span class="what">@(Modules == 1 ? "Module" : "Modules")</span></li>
+    <li><span class="n">@Activities</span><span class="what">@(Activities == 1 ? "Activity" : "Activities")</span></li>
+    <li><span class="n">@Quizzes</span><span class="what">@(Quizzes == 1 ? "Quiz" : "Quizzes")</span></li>
+    <li><span class="n">@TaskPerformances</span><span class="what">Task performance</span></li>
+</ul>
+
+@code {
+    [Parameter] public int Modules { get; set; }
+
+    [Parameter] public int Activities { get; set; }
+
+    [Parameter] public int Quizzes { get; set; }
+
+    [Parameter] public int TaskPerformances { get; set; }
+}

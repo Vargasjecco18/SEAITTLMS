@@ -4,7 +4,7 @@
 @* The paper that is printed after a student is enrolled. It is hidden on screen and is the only thing on the paper (the registrar's page hides the rest when printing).
    It has no frame and no box for a picture: a clean document.
    Page 1: the letterhead (the logo at the upper left, the school next to it, the number and the date of the form at the right), the title, the numbered parts of the form
-   with every answer written out in words (the grade level is plain text), the courses (the units and the days and time of each one at its right), the e-LMS account and the signatures.
+   with every answer written out in words (the grade level is plain text), the courses (the units and the days and time of each one at its right) and the e-LMS account.
    Page 2: the terms and conditions in detail, and at the bottom of the page the lines for the student's signature over the printed name and for the parent's or guardian's. *@
 <div class="print-sheet" aria-hidden="true">
     <section class="page front">
@@ -119,12 +119,6 @@
                 <text>The learner already had an account. The sign-in did not change.</text>
             }
         </p>
-
-        <div class="signatures">
-            <div class="sign"><span class="line"></span><span class="caption">Signature of the learner or the parent / guardian over printed name</span></div>
-            <div class="sign"><span class="line"></span><span class="caption">Enrolled by: Registrar's signature over printed name</span></div>
-            <div class="sign date"><span class="line"></span><span class="caption">Date</span></div>
-        </div>
 
         <footer class="sheet-foot">
             <span>@school.SchoolName · Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>

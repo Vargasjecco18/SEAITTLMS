@@ -1,0 +1,77 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject TeachingService Teaching
+@inject TimeProvider Clock
+
+@* The count of work in a row of the list of courses ("3 to do" for a student, "2 to check" for a teacher). It is a button: it opens a box with the activities, quizzes and
+   task performances behind the number, and each one is a link to open it. It is its own live island, so it works in a list that is otherwise plain. *@
+<button type="button" class="work-button @(Student ? "todo" : "check")" aria-haspopup="dialog" @onclick="OpenAsync">@Text</button>
+
+<Modal Open="open" Title="@Title" OnClose="Close">
+    @if (items is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (items.Count == 0)
+    {
+        <p class="muted">@(Student ? "Nothing to do in this course right now." : "Nothing to check in this course right now.")</p>
+    }
+    else
+    {
+        <ul class="work-list">
+            @foreach (var item in items)
+            {
+                <li>
+                    <a href="@LinkOf(item)">
+                        <span class="work-icon"><Icon Name="@SubjectStyle.KindIcon(item.Kind)" Size="18" /></span>
+                        <span class="work-text">
+                            <span class="work-title">@item.Title</span>
+                            <span class="work-sub">@ItemKinds.Display(item.Kind) · @item.ModuleTitle</span>
+                        </span>
+                        <span class="work-note">@Note(item)</span>
+                        <Icon Name="arrow-right" Size="16" />
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+
+    <div class="work-actions">
+        <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
+    </div>
+</Modal>
+
+@code {
+    /// <summary>The course (the teaching assignment).</summary>
+    [Parameter, EditorRequired] public int AssignmentId { get; set; }
+
+    [Parameter, EditorRequired] public string CourseName { get; set; } = "";
+
+    /// <summary>The text of the button, like "3 to do".</summary>
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+
+    /// <summary>True for a student's list (what is left to do); false for a teacher's (what is left to check).</summary>
+    [Parameter] public bool Student { get; set; } = true;
+
+    private bool open;
+    private IReadOnlyList<CourseWorkItem>? items;
+
+    private string Title => Student ? $"To do in {CourseName}" : $"To check in {CourseName}";
+
+    private string LinkOf(CourseWorkItem item) => Student ? $"student/items/{item.ItemId}" : $"teacher/items/{item.ItemId}";
+
+    private string Note(CourseWorkItem item) =>
+        !Student ? $"{item.ToCheck} to check"
+        : item.DueAtUtc is { } due ? PhilippineTime.DueText(due, PhilippineTime.Now(Clock)) : "No due date";
+
+    private async Task OpenAsync()
+    {
+        open = true;
+        items = null;
+        items = Student
+            ? await Me.GetStudentIdAsync() is { } studentId ? await Teaching.GetStudentToDoAsync(studentId, AssignmentId) : []
+            : await Me.GetTeacherIdAsync() is { } teacherId ? await Teaching.GetTeacherToCheckAsync(teacherId, AssignmentId) : [];
+    }
+
+    private void Close() => open = false;
+}

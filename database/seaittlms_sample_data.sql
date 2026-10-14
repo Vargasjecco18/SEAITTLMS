@@ -181,6 +181,7 @@ SELECT * FROM (
 
 -- ================================================================ 2b) When each course meets: in the AM schedule, MWF or TTH, a time inside the AM hours (7:00 AM to 12:00 PM)
 -- (a teacher is never in two classes at the same time, and a section never has two classes at the same time in a term)
+DELETE FROM course_schedules WHERE section_id IN (@sec_BUSSENT_11_A, @sec_HT1_11_A, @sec_BUSSENT_12_A, @sec_HT1_12_A) AND id > 0 AND @go = 1;
 INSERT INTO course_schedules (section_id, subject_id, schedule_id, days, start_time, end_time, created_at_utc, updated_at_utc)
 SELECT * FROM (
   SELECT @sec_BUSSENT_11_A AS section_id, @sub_0 AS subject_id, (SELECT id FROM schedules WHERE code = 'AM') AS schedule_id, 'TTH' AS days, '08:00:00' AS start_time, '09:00:00' AS end_time, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -38 DAY + INTERVAL 0 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc

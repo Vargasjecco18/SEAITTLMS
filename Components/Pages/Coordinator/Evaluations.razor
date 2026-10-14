@@ -75,7 +75,10 @@
                                 }
                             </td>
                             <td class="col-actions">
-                                <ButtonLink Href="@($"coordinator/evaluations/{row.Id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
+                                <div class="row-actions">
+                                    <ButtonLink Href="@($"coordinator/evaluations/{row.Id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="busy" Title="@($"Make a copy of {row.Title}")" OnClick="() => CopyAsync(row.Id)">Copy</Button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -100,6 +103,33 @@
         EvaluationStates.Closed => Tone.Neutral,
         _ => Tone.Warning,
     };
+
+    private async Task CopyAsync(int id)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Service.CopyAsync(me.UserId, id);
+            if (!result.Succeeded || result.Id is not { } copyId)
+            {
+                message = string.Join(" ", result.Errors);
+                return;
+            }
+
+            // The copy opens as a draft, ready to be changed and sent.
+            Navigation.NavigateTo($"coordinator/evaluations/{copyId}");
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     private async Task CreateAsync()
     {
