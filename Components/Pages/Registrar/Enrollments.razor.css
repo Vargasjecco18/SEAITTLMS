@@ -222,10 +222,6 @@ dd {
 }
 
 /* ---------- the courses at the bottom of the form ---------- */
-.courses-card {
-    margin-bottom: 1.25rem;
-}
-
 .plan-table-wrap,
 .table-wrap {
     overflow-x: auto;

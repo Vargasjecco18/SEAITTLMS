@@ -23,26 +23,6 @@
             <StatCard Label="Students in the system" Value="@overview.StudentsTotal" IconName="graduation-cap" Accent="AccentColor.Violet" />
             <StatCard Label="Sections with students" Value="@SectionsWithStudents" IconName="users" Accent="AccentColor.Amber" Hint="@($"of {overview.SectionsThisYear:N0} sections this school year")" />
         </div>
-
-        <Card Title="By track" IconName="layers" Class="by-track">
-            @if (overview.ByTrack.Count == 0)
-            {
-                <p class="empty-note">No tracks yet.</p>
-            }
-            else
-            {
-                <ul class="track-list">
-                    @foreach (var track in overview.ByTrack)
-                    {
-                        <li>
-                            <span class="track-name">@track.Track</span>
-                            <strong class="track-count">@track.Count.ToString("N0")</strong>
-                            <span class="track-sub">@(track.Count == 1 ? "student" : "students") this term</span>
-                        </li>
-                    }
-                </ul>
-            }
-        </Card>
     </section>
 
     @* The four cards after "At a glance": Not enrolled and the latest enrollments on top, the students by strand and by section below. *@

@@ -66,8 +66,8 @@
     position: relative;
     display: flex;
     align-items: center;
-    min-height: min(82vh, 720px);
-    padding: 4rem 0 5rem;
+    min-height: min(62vh, 540px);
+    padding: 2.5rem 0 3rem;
     overflow: hidden;
     color: #ffffff;
     isolation: isolate;
@@ -173,8 +173,8 @@
 
 h1 {
     max-width: 24ch;
-    margin: 1rem 0 0.6rem;
-    font-size: clamp(2.2rem, 6vw, 4rem);
+    margin: 0.6rem 0 0.4rem;
+    font-size: clamp(2rem, 5.2vw, 3.4rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.08;
@@ -189,7 +189,7 @@ h1:focus {
 }
 
 .hero-subtitle {
-    margin: 0 0 1rem;
+    margin: 0 0 0.7rem;
     font-size: clamp(1rem, 2.2vw, 1.3rem);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.92);
@@ -197,8 +197,8 @@ h1:focus {
 
 .hero-description {
     max-width: 60ch;
-    margin: 0 0 2rem;
-    font-size: 1.05rem;
+    margin: 0 0 1.3rem;
+    font-size: 1rem;
     color: rgba(255, 255, 255, 0.82);
 }
 
@@ -292,7 +292,7 @@ h1:focus {
 
 /* ---------- sections ---------- */
 .section {
-    padding: 4.5rem 0;
+    padding: 2.5rem 0;
     background: var(--bg);
 }
 
@@ -301,7 +301,7 @@ h1:focus {
 }
 
 h2 {
-    margin: 0 0 2rem;
+    margin: 0 0 1.1rem;
     font-size: clamp(1.6rem, 3.5vw, 2.2rem);
     font-weight: 750;
     letter-spacing: -0.01em;
@@ -318,7 +318,7 @@ h2 span {
 .cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .cards.two {
@@ -326,7 +326,7 @@ h2 span {
 }
 
 .info-card {
-    padding: 1.75rem;
+    padding: 1.25rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
@@ -336,10 +336,10 @@ h2 span {
 .info-icon {
     display: grid;
     place-items: center;
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 1rem;
-    border-radius: 14px;
+    width: 2.6rem;
+    height: 2.6rem;
+    margin-bottom: 0.7rem;
+    border-radius: 12px;
     background: var(--brand-soft);
     color: var(--brand-strong);
 }
@@ -357,12 +357,12 @@ h3 {
 
 /* ---------- courses ---------- */
 .courses-intro {
-    margin: -0.25rem 0 1.75rem;
+    margin: -0.4rem 0 1.1rem;
     color: var(--text-muted);
 }
 
 .track-block + .track-block {
-    margin-top: 2.5rem;
+    margin-top: 1.5rem;
 }
 
 .track-heading {
@@ -582,7 +582,7 @@ h3 {
 .about {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 2rem;
+    gap: 1.25rem;
     align-items: center;
 }
 
@@ -595,16 +595,16 @@ h3 {
 
 .about-logo {
     display: block;
-    width: 200px;
-    height: 200px;
+    width: 150px;
+    height: 150px;
     margin: 0 auto;
     object-fit: contain;
 }
 
 @media (min-width: 800px) {
     .about {
-        grid-template-columns: minmax(0, 1fr) 240px;
-        gap: 4rem;
+        grid-template-columns: minmax(0, 1fr) 180px;
+        gap: 2.5rem;
     }
 }
 
@@ -612,15 +612,15 @@ h3 {
 .contact-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .contact-item {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.35rem;
-    padding: 1.5rem;
+    gap: 0.25rem;
+    padding: 1.1rem 1.25rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
@@ -630,9 +630,9 @@ h3 {
 .contact-icon {
     display: grid;
     place-items: center;
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 0.5rem;
+    width: 2.6rem;
+    height: 2.6rem;
+    margin-bottom: 0.3rem;
     border-radius: 14px;
     background: var(--brand-soft);
     color: var(--brand-strong);
@@ -660,7 +660,7 @@ h3 {
 
 /* ---------- footer ---------- */
 .guest-footer {
-    padding: 1.5rem 0;
+    padding: 1rem 0;
     border-top: 1px solid var(--border);
     background: var(--bg);
     color: var(--text-muted);
@@ -690,11 +690,11 @@ h3 {
     }
 
     .hero {
-        padding: 3rem 0 4.5rem;
+        padding: 2rem 0 2.5rem;
     }
 
     .section {
-        padding: 3rem 0;
+        padding: 2rem 0;
     }
 }
 

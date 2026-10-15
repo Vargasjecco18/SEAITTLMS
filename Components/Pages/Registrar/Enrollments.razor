@@ -237,52 +237,52 @@ else
                     <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
                 }
             </Card>
-        </div>
 
-        @* The courses at the bottom of the form: what the student gets, with the units and, once the section is chosen, when each one meets. *@
-        <Card Title="Courses" IconName="book-open" Class="courses-card">
-            @if (form.StrandId == 0)
-            {
-                <p class="muted" id="plan-empty">Choose a strand to see the courses of the student.</p>
-            }
-            else if (plan.Count == 0)
-            {
-                <p class="muted" id="plan-empty">No courses are set for this strand, grade level and term yet. The student is enrolled without courses.</p>
-            }
-            else
-            {
-                <div class="table-wrap">
-                    <table class="plan" id="plan">
-                        <thead>
-                            <tr>
-                                <th scope="col">Course</th>
-                                <th scope="col">Code</th>
-                                <th scope="col" class="num">Units</th>
-                                <th scope="col">Schedule</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var course in plan)
-                            {
+            @* The courses, at the right of the sign-in details: what the student gets, with the units and, once the section is chosen, when each one meets. *@
+            <Card Title="Courses" IconName="book-open" Class="courses-card">
+                @if (form.StrandId == 0)
+                {
+                    <p class="muted" id="plan-empty">Choose a strand to see the courses of the student.</p>
+                }
+                else if (plan.Count == 0)
+                {
+                    <p class="muted" id="plan-empty">No courses are set for this strand, grade level and term yet. The student is enrolled without courses.</p>
+                }
+                else
+                {
+                    <div class="table-wrap">
+                        <table class="plan" id="plan">
+                            <thead>
                                 <tr>
-                                    <td>@course.Name</td>
-                                    <td class="mono">@course.Code</td>
-                                    <td class="num">@course.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
-                                    <td>@(course.Meets ?? (string.IsNullOrWhiteSpace(form.SectionName) ? "Choose the section to see it" : "Not set yet"))</td>
+                                    <th scope="col">Course</th>
+                                    <th scope="col">Code</th>
+                                    <th scope="col" class="num">Units</th>
+                                    <th scope="col">Schedule</th>
                                 </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="2">Total: @(plan.Count == 1 ? "1 course" : $"{plan.Count} courses")</td>
-                                <td class="num">@plan.Sum(c => c.Units).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            }
-        </Card>
+                            </thead>
+                            <tbody>
+                                @foreach (var course in plan)
+                                {
+                                    <tr>
+                                        <td>@course.Name</td>
+                                        <td class="mono">@course.Code</td>
+                                        <td class="num">@course.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                        <td>@(course.Meets ?? (string.IsNullOrWhiteSpace(form.SectionName) ? "Choose the section to see it" : "Not set yet"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2">Total: @(plan.Count == 1 ? "1 course" : $"{plan.Count} courses")</td>
+                                    <td class="num">@plan.Sum(c => c.Units).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                }
+            </Card>
+        </div>
 
         <div class="submit-row">
             <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>

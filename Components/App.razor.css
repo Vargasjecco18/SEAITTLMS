@@ -593,8 +593,9 @@ html ::deep .plain-answer {
 }
 
 /*
-  The bar above a list: the search box (SearchField) and the choices that narrow the list (Field with a select), the same on every page.
-  A search box with the class "full" takes a row of its own, the choices go under it.
+  The bar above a list, the same on every page: the search box (SearchField) is always the FIRST thing at the left (names are searched there), and the
+  choices that narrow the list (Field with a select) are at its right, on the same row. On a narrow screen they wrap under it.
+  A search box with the class "full" (a bar with no choices, like the help) takes the whole row.
 */
 html ::deep .filter-bar {
     display: flex;
@@ -611,13 +612,20 @@ html ::deep .filter-bar > .field {
 }
 
 html ::deep .filter-bar > .search-field {
-    flex: 1 1 22rem;
-    max-width: 38rem;
+    order: -1;
+    flex: 1 1 18rem;
+    min-width: 12rem;
+    max-width: 28rem;
 }
 
 html ::deep .filter-bar > .search-field.full {
     flex: 1 1 100%;
     max-width: none;
+}
+
+/* A search box that is alone in its bar (no choices at its right) may be wide. */
+html ::deep .filter-bar > .search-field:only-child {
+    max-width: 38rem;
 }
 
 html ::deep .filter-bar > .filter-actions {

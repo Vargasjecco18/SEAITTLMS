@@ -5,8 +5,6 @@ namespace SEAITT_LMS.Data.Queries;
 
 public sealed record StrandCount(string Code, string Track, int Count);
 
-public sealed record TrackCount(string Track, int Count);
-
 /// <summary>How many students are enrolled in one section for the current term. <paramref name="Label"/> is like 11-BUSSENT-A.</summary>
 public sealed record SectionCount(string Label, int Count);
 
@@ -41,12 +39,6 @@ public sealed record RegistrarOverview(
     NotEnrolledPage? NotEnrolled = null,
     IReadOnlyList<SectionCount>? BySection = null)
 {
-    /// <summary>The students enrolled this term in each track (the sum of its strands).</summary>
-    public IReadOnlyList<TrackCount> ByTrack => ByStrand
-        .GroupBy(s => s.Track)
-        .Select(g => new TrackCount(g.Key, g.Sum(s => s.Count)))
-        .ToList();
-
     /// <param name="startOfTodayUtc">When today began (in Philippine time), as a UTC moment.</param>
     public static async Task<RegistrarOverview> LoadAsync(AppDbContext db, DateTime startOfTodayUtc, int recent = 8, CancellationToken ct = default)
     {
