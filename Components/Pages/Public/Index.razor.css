@@ -315,6 +315,11 @@ h2 span {
     color: var(--brand);
 }
 
+/* The title of a section that is in the middle of the page ("Why SEAITT Legazpi LMS"). */
+h2.center {
+    text-align: center;
+}
+
 .muted {
     color: var(--text-muted);
 }
