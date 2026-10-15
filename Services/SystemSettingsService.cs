@@ -12,7 +12,7 @@ public sealed record SystemSettingsValues
 {
     // ---- the school (shown on the sign-in page, the home page, the top of every page and the help page)
     public string SchoolName { get; init; } = "South East-Asia Institute of Trade and Technology";
-    public string SchoolShortName { get; init; } = "SEAITT";
+    public string SchoolShortName { get; init; } = "SEAITT Legazpi";
     public string Tagline { get; init; } = "Senior High School";
     public string Address { get; init; } = "";
     public string ContactEmail { get; init; } = "";
@@ -20,7 +20,7 @@ public sealed record SystemSettingsValues
 
     // ---- signing in
     public int MaxFailedAttempts { get; init; } = 5;
-    public int LockoutMinutes { get; init; } = 15;
+    public int LockoutMinutes { get; init; } = 10;
 
     // ---- maintenance: while it is on only an administrator can use the system
     public bool MaintenanceOn { get; init; }
@@ -42,7 +42,7 @@ public sealed record SystemSettingsValues
     public int MaxFileMegabytes { get; init; } = 10;
     public int LockerMegabytes { get; init; } = 100;
 
-    public string SchoolTitle => string.IsNullOrWhiteSpace(SchoolShortName) ? "e-LMS" : $"{SchoolShortName} e-LMS";
+    public string SchoolTitle => string.IsNullOrWhiteSpace(SchoolShortName) ? "LMS" : $"{SchoolShortName} LMS";
 }
 
 /// <summary>
@@ -145,7 +145,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
 
         if (string.IsNullOrWhiteSpace(v.SchoolShortName) || v.SchoolShortName.Trim().Length > 20)
         {
-            errors.Add("Enter the short name of the school, like SEAITT (up to 20 characters).");
+            errors.Add("Enter the short name of the school, like SEAITT Legazpi (up to 20 characters).");
         }
 
         if ((v.Tagline ?? "").Trim().Length > 80)

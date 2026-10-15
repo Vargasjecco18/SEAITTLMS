@@ -1,4 +1,4 @@
--- Sample sign-ins for SEAITT e-LMS: 1 administrator, 1 registrar, 1 guidance counselor, 1 academic coordinator, 1 academic provider (central team), 6 teachers and 12 students.
+-- Sample sign-ins for SEAITT Legazpi LMS: 1 administrator, 1 registrar, 1 guidance counselor, 1 academic coordinator, 1 academic provider (central team), 6 teachers and 12 students.
 --
 -- The sign-ins are easy on purpose, to try the system: the email is the last name (or the role) + @legazpi.seaitt.edu.ph and the password is
 -- Teacher1, Teacher2, ... for the teachers, Student1, Student2, ... for the students, and Registrar1, Guidance1, Coordinator1, Provider1, Admin123.

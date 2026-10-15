@@ -713,3 +713,41 @@ document.addEventListener('keydown', function (event) {
         },
     };
 })();
+
+// The timer of a locked account on the sign-in page. The server writes how many seconds are left in "data-lock-seconds" (it is the server that keeps
+// the lock); this counts them down on the screen and says when the time is over. It starts again when the page is patched after a wrong try.
+(function () {
+    var timer = null;
+
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+    function start() {
+        if (timer) { clearInterval(timer); timer = null; }
+        var box = document.querySelector('.lock-timer[data-lock-seconds]');
+        if (!box) { return; }
+        var clock = box.querySelector('.lock-clock');
+        var end = performance.now() + parseInt(box.getAttribute('data-lock-seconds'), 10) * 1000;
+
+        function tick() {
+            var left = Math.max(0, Math.ceil((end - performance.now()) / 1000));
+            if (clock) { clock.textContent = pad(Math.floor(left / 60)) + ':' + pad(left % 60); }
+            if (left <= 0) {
+                clearInterval(timer);
+                timer = null;
+                box.classList.add('done');
+                var title = box.querySelector('strong');
+                if (title) { title.textContent = 'The lock is over'; }
+                var wait = box.querySelector('.lock-wait');
+                var done = box.querySelector('.lock-done');
+                if (wait) { wait.hidden = true; }
+                if (done) { done.hidden = false; }
+            }
+        }
+
+        tick();
+        if (!timer && !box.classList.contains('done')) { timer = setInterval(tick, 1000); }
+    }
+
+    document.addEventListener('enhancedload', start);
+    start();
+})();

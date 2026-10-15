@@ -5,7 +5,7 @@
 @inject BackupService Backups
 @inject SystemSettingsService Settings
 
-<PageTitle>Database Backup &amp; Restore · SEAITT e-LMS</PageTitle>
+<PageTitle>Database Backup &amp; Restore · SEAITT Legazpi LMS</PageTitle>
 
 <PageHeader Title="Database Backup &amp; Restore" IconName="database-backup">
     <Button IconName="database-backup" Disabled="@busy" OnClick="BackUpNowAsync">@(working == "backup" ? "Making the backup…" : "Back up now")</Button>

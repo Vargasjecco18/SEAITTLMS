@@ -1,4 +1,4 @@
-# SEAITT e-LMS database
+# SEAITT Legazpi LMS database
 
 MySQL schema `seaittlms`. The tables are created by the EF Core migrations in `Data/Migrations`, the
 model lives in `Data/Entities` and `Data/Configurations`. Table and column names are snake_case.

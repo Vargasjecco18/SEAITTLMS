@@ -66,7 +66,11 @@
     position: relative;
     display: flex;
     align-items: center;
-    min-height: min(62vh, 540px);
+    /* As tall as the first screen, minus the room of the title of the next section ("Why SEAITT Legazpi LMS"), so when the site opens that title shows
+       at the bottom of the screen and invites to scroll. (10rem = the top bar, the space over the title and the title itself.) */
+    min-height: 26rem;
+    min-height: max(26rem, calc(100vh - 10rem));
+    min-height: max(26rem, calc(100svh - 10rem));
     padding: 2.5rem 0 3rem;
     overflow: hidden;
     color: #ffffff;
@@ -172,7 +176,7 @@
 }
 
 h1 {
-    max-width: 24ch;
+    max-width: 34ch;
     margin: 0.6rem 0 0.4rem;
     font-size: clamp(2rem, 5.2vw, 3.4rem);
     font-weight: 800;

@@ -13,21 +13,34 @@
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
-<PageTitle>Log-in · SEAITT e-LMS</PageTitle>
+<PageTitle>Log-in · SEAITT Legazpi LMS</PageTitle>
 
 <div class="login">
     <section class="panel">
-        <a class="logo-link" href="/" aria-label="@(SystemSettings.Current.SchoolShortName) eLMS, home page">
+        <a class="logo-link" href="/" aria-label="@(SystemSettings.Current.SchoolTitle), home page">
             <img class="logo" src="@Assets["images/logo.png"]" alt="" width="72" height="72" />
         </a>
 
-        <h1>@SystemSettings.Current.SchoolShortName eLMS</h1>
+        <h1>@SystemSettings.Current.SchoolShortName LMS</h1>
         <p class="subtitle">Log-in to access your courses</p>
 
         <FormErrors Errors="@(string.IsNullOrEmpty(errorMessage) ? Array.Empty<string>() : new[] { errorMessage })" />
 
         <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
             <DataAnnotationsValidator />
+
+            @* The time that is left while the account is locked, over the email. It counts down by itself (wwwroot/app.js, "data-lock-seconds"). *@
+            @if (SecondsLeft > 0)
+            {
+                <div class="lock-timer" role="status" data-lock-seconds="@SecondsLeft">
+                    <span class="lock-icon"><Icon Name="lock" Size="20" /></span>
+                    <div class="lock-text">
+                        <strong>@(string.IsNullOrEmpty(lockedEmail) ? "This account is locked" : $"{lockedEmail} is locked")</strong>
+                        <span class="lock-wait">Too many wrong attempts. Try again in <b class="lock-clock">@Mmss(SecondsLeft)</b></span>
+                        <span class="lock-done" hidden>The time is over. You can try to login again.</span>
+                    </div>
+                </div>
+            }
 
             <div class="field">
                 <label for="email">Email</label>
@@ -61,6 +74,16 @@
 @code {
     private string? errorMessage;
 
+    /// <summary>The moment the account that was tried is unlocked (a lock this browser saw: the answer of the sign-in, or the cookie of an earlier try).</summary>
+    private DateTime? lockedUntil;
+    private string? lockedEmail;
+
+    private const string LockCookie = "seaitt_login_lock";
+
+    private int SecondsLeft => lockedUntil is { } until ? Math.Max(0, (int)Math.Ceiling((until - Clock.GetUtcNow().UtcDateTime).TotalSeconds)) : 0;
+
+    private static string Mmss(int seconds) => $"{seconds / 60:00}:{seconds % 60:00}";
+
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
@@ -72,6 +95,15 @@
         if (HttpContext.User.Identity?.IsAuthenticated == true)
         {
             Navigation.NavigateTo(LocalUrl.Sanitize(ReturnUrl), forceLoad: true);
+            return;
+        }
+
+        // The page is opened again while an account that was tried here is still locked: the timer is still there. (The server keeps the real lock; this is only to show it.)
+        if (HttpContext.Request.Cookies.TryGetValue(LockCookie, out var saved) && saved.Split('|') is [var email, var unix]
+            && long.TryParse(unix, out var seconds) && DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime is var until && until > Clock.GetUtcNow().UtcDateTime)
+        {
+            lockedUntil = until;
+            lockedEmail = Uri.UnescapeDataString(email);
         }
     }
 
@@ -81,7 +113,17 @@
 
         if (!result.Succeeded)
         {
-            if (result.Failure == LoginFailure.Maintenance)
+            if (result.Failure == LoginFailure.LockedOut && result.LockedUntilUtc is { } until)
+            {
+                // Said the same way for an email with an account and for one without, after the same number of tries (see LoginLockouts).
+                lockedUntil = until;
+                lockedEmail = Input.Email?.Trim();
+                errorMessage = null;   // the box with the timer over the email says it all
+                // It lasts as long as the lock (counted from now, not from a date, so a wrong clock of the computer does not matter).
+                HttpContext.Response.Cookies.Append(LockCookie, Uri.EscapeDataString(lockedEmail ?? "") + "|" + new DateTimeOffset(DateTime.SpecifyKind(until, DateTimeKind.Utc)).ToUnixTimeSeconds(),
+                    new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps, Path = "/login", MaxAge = TimeSpan.FromSeconds(Math.Max(1, SecondsLeft)) });
+            }
+            else if (result.Failure == LoginFailure.Maintenance)
             {
                 // Only said to somebody who knew the password, so it doesn't reveal which emails have accounts.
                 errorMessage = SystemSettings.ClosedMessage;
@@ -98,6 +140,7 @@
             return;
         }
 
+        HttpContext.Response.Cookies.Delete(LockCookie, new CookieOptions { Path = "/login" });
         var properties = new AuthenticationProperties { IsPersistent = Input.RememberMe };
         if (Input.RememberMe)
         {

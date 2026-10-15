@@ -1,5 +1,5 @@
 -- =============================================================================
--- SEAITT e-LMS - RESET AND REBUILD the seaittlms database (MySQL Workbench friendly)
+-- SEAITT Legazpi LMS - RESET AND REBUILD the seaittlms database (MySQL Workbench friendly)
 --
 --   !!!  WARNING: THIS ERASES EVERYTHING IN THE seaittlms SCHEMA  !!!
 --   Every table, view and row (users, students, teachers, ...) is deleted and the
@@ -1792,6 +1792,16 @@ WHERE r.`place` <= 2 * r.`hours`
 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261014032339_ClassTimesForSeededSectionsAndSharedEvents', '9.0.20');
+
+UPDATE `system_settings` SET `value` = 'SEAITT Legazpi' WHERE `key` = 'school.short_name' AND `value` = 'SEAITT';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261015055658_SchoolNameSeaittLegazpi', '9.0.20');
+
+UPDATE `system_settings` SET `value` = '10' WHERE `key` = 'signin.lockout_minutes' AND `value` = '15';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261015060110_LockoutTenMinutes', '9.0.20');
 
 COMMIT;
 

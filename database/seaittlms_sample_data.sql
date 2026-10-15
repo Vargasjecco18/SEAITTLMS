@@ -1,4 +1,4 @@
--- Practice data for SEAITT e-LMS: fills the tables so every page has something to show.
+-- Practice data for SEAITT Legazpi LMS: fills the tables so every page has something to show.
 --
 -- The people are the sample accounts of seaittlms_sample_accounts.sql (run that file first). This file then adds, for those people:
 --   * the enrollment of the 12 students in four groups of 3 (grade 11 and grade 12, ACAD and TECH-PRO) and their courses;
@@ -2895,13 +2895,13 @@ SELECT * FROM (
 INSERT INTO system_settings (`key`, `value`, updated_at_utc, updated_by_user_id)
 SELECT r.k, r.v, @now, @u_admin FROM (
   SELECT 'school.name' AS k, 'South East-Asia Institute of Trade and Technology' AS v
-  UNION ALL SELECT 'school.short_name', 'SEAITT'
+  UNION ALL SELECT 'school.short_name', 'SEAITT Legazpi'
   UNION ALL SELECT 'school.tagline', 'Senior High School'
   UNION ALL SELECT 'school.address', 'Legazpi City, Albay'
   UNION ALL SELECT 'school.contact_email', 'admin@legazpi.seaitt.edu.ph'
   UNION ALL SELECT 'school.contact_phone', ''
   UNION ALL SELECT 'signin.max_failed_attempts', '5'
-  UNION ALL SELECT 'signin.lockout_minutes', '15'
+  UNION ALL SELECT 'signin.lockout_minutes', '10'
   UNION ALL SELECT 'maintenance.on', '0'
   UNION ALL SELECT 'maintenance.message', 'The system is being maintained. Please try again later.'
   UNION ALL SELECT 'messages.closing_hours', '1'

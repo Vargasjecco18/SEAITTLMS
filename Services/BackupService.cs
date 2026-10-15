@@ -260,7 +260,7 @@ public sealed class BackupService(
                 await writer.WriteLineAsync($"-- Server: {version}");
                 await writer.WriteLineAsync($"-- Migration: {migration}");
                 await writer.WriteLineAsync($"-- Tables: {tables.Count}");
-                await writer.WriteLineAsync("-- A backup of the SEAITT e-LMS database. Restore it from System > Database Backup & Restore.");
+                await writer.WriteLineAsync("-- A backup of the SEAITT Legazpi LMS database. Restore it from System > Database Backup & Restore.");
                 await writer.WriteLineAsync();
                 await writer.WriteLineAsync("SET NAMES utf8mb4;");
                 await writer.WriteLineAsync("SET FOREIGN_KEY_CHECKS = 0;");

@@ -12,12 +12,12 @@
 
 @if (!loaded)
 {
-    <PageTitle>Group · SEAITT e-LMS</PageTitle>
+    <PageTitle>Group · SEAITT Legazpi LMS</PageTitle>
     <p class="muted">Loading…</p>
 }
 else if (group is null)
 {
-    <PageTitle>Group · SEAITT e-LMS</PageTitle>
+    <PageTitle>Group · SEAITT Legazpi LMS</PageTitle>
     <Card>
         <EmptyState IconName="users" Title="This group is not here">
             <p>It was deleted, or you are not a member of it.</p>
@@ -27,7 +27,7 @@ else if (group is null)
 }
 else
 {
-    <PageTitle>@group.Name · SEAITT e-LMS</PageTitle>
+    <PageTitle>@group.Name · SEAITT Legazpi LMS</PageTitle>
 
     <PageHeader Title="@group.Name" IconName="users">
         <ButtonLink Href="groups" Variant="ButtonVariant.Ghost" IconName="chevron-left">All groups</ButtonLink>

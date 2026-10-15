@@ -8,7 +8,8 @@ public class AuthOptions
     /// <summary>Wrong passwords in a row before the account is locked.</summary>
     public int MaxFailedAttempts { get; set; } = 5;
 
-    public int LockoutMinutes { get; set; } = 15;
+    /// <summary>How long an account stays locked after too many wrong passwords.</summary>
+    public int LockoutMinutes { get; set; } = 10;
 
     /// <summary>How long a normal sign-in lasts (sliding).</summary>
     public int SessionHours { get; set; } = 8;

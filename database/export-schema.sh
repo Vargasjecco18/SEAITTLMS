@@ -38,7 +38,7 @@ clean() { sed -e "1s/^${bom}//" -e 's/\r$//' "$1"; }
 full_header() {
   cat <<'HEADER'
 -- =============================================================================
--- SEAITT e-LMS - database schema for MySQL 8 (MySQL Workbench friendly)
+-- SEAITT Legazpi LMS - database schema for MySQL 8 (MySQL Workbench friendly)
 --
 -- This file is GENERATED from the Entity Framework migrations in Data/Migrations.
 -- Do not edit it by hand. To regenerate it: bash database/export-schema.sh
@@ -74,7 +74,7 @@ HEADER
 reset_header() {
   cat <<'HEADER'
 -- =============================================================================
--- SEAITT e-LMS - RESET AND REBUILD the seaittlms database (MySQL Workbench friendly)
+-- SEAITT Legazpi LMS - RESET AND REBUILD the seaittlms database (MySQL Workbench friendly)
 --
 --   !!!  WARNING: THIS ERASES EVERYTHING IN THE seaittlms SCHEMA  !!!
 --   Every table, view and row (users, students, teachers, ...) is deleted and the
@@ -107,7 +107,7 @@ HEADER
 upgrade_header() {
   cat <<'HEADER' | sed -e "s/@PREV@/$1/g" -e "s/@CUR@/$2/g"
 -- =============================================================================
--- SEAITT e-LMS - UPGRADE script for MySQL 8 (MySQL Workbench friendly)
+-- SEAITT Legazpi LMS - UPGRADE script for MySQL 8 (MySQL Workbench friendly)
 --
 -- Brings a database that already has the migration
 --     @PREV@

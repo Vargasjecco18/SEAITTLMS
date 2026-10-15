@@ -21,9 +21,12 @@ public enum LoginFailure
 }
 
 /// <param name="Principal">The identity to put in the sign-in cookie, only set when the login succeeded.</param>
-public sealed record LoginResult(bool Succeeded, ClaimsPrincipal? Principal, LoginFailure Failure)
+/// <param name="LockedUntilUtc">When the account is locked (the sign-in was refused because of it, or the wrong try that just locked it): the moment the lock ends.</param>
+public sealed record LoginResult(bool Succeeded, ClaimsPrincipal? Principal, LoginFailure Failure, DateTime? LockedUntilUtc = null)
 {
     public static LoginResult Fail(LoginFailure failure) => new(false, null, failure);
+
+    public static LoginResult Locked(DateTime until) => new(false, null, LoginFailure.LockedOut, until);
 }
 
 /// <summary>
@@ -38,7 +41,8 @@ public sealed class AuthService(
     TimeProvider clock,
     ILogger<AuthService> logger,
     SystemSettingsService? systemSettings = null,
-    SecurityLogService? securityLog = null)
+    SecurityLogService? securityLog = null,
+    LoginLockouts? lockouts = null)
 {
     /// <param name="client">Where the sign-in came from (for the security log). Empty when it is not known.</param>
     public async Task<LoginResult> LoginAsync(string? email, string? password, ClientInfo? client = null, CancellationToken ct = default)
@@ -72,30 +76,43 @@ public sealed class AuthService(
             .Include(u => u.Student)
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail, ct);
 
+        var now = clock.GetUtcNow().UtcDateTime;
+
         if (user is null)
         {
             hasher.BurnTime(password);
+            // An email with no account is counted and locked like a real one, so the lock does not tell which emails have an account.
+            if (lockouts?.LockedUntil(normalizedEmail, now) is { } stillLocked)
+            {
+                await LogAsync(SecurityEvents.SignInRefused, null, normalizedEmail, "There is no account with this email (and too many tries).", client, ct);
+                return LoginResult.Locked(stillLocked);
+            }
+
             await LogAsync(SecurityEvents.SignInFailed, null, normalizedEmail, "There is no account with this email.", client, ct);
+            if (lockouts?.RegisterFailure(normalizedEmail, maxFailed, lockoutMinutes, now) is { } lockedUntilUnknown)
+            {
+                return LoginResult.Locked(lockedUntilUnknown);
+            }
+
             return LoginResult.Fail(LoginFailure.InvalidCredentials);
         }
-
-        var now = clock.GetUtcNow().UtcDateTime;
 
         if (user.LockoutEndUtc is { } lockoutEnd && lockoutEnd > now)
         {
             hasher.BurnTime(password);
             logger.LogWarning("Sign-in refused for user {UserId}: account is locked until {LockoutEnd:u}.", user.Id, lockoutEnd);
             await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is locked.", client, ct);
-            return LoginResult.Fail(LoginFailure.LockedOut);
+            return LoginResult.Locked(lockoutEnd);
         }
 
         if (!hasher.Verify(password, user.PasswordHash))
         {
-            var lockedNow = await RegisterFailedAttemptAsync(db, user.Id, maxFailed, lockoutMinutes, now, ct);
+            var lockedUntil = await RegisterFailedAttemptAsync(db, user.Id, maxFailed, lockoutMinutes, now, ct);
             await LogAsync(SecurityEvents.SignInFailed, user.Id, user.Email, "Wrong password.", client, ct);
-            if (lockedNow)
+            if (lockedUntil is { } until)
             {
                 await LogAsync(SecurityEvents.AccountLocked, user.Id, user.Email, $"Locked for {lockoutMinutes} minutes after {maxFailed} wrong passwords.", client, ct);
+                return LoginResult.Locked(until);
             }
 
             return LoginResult.Fail(LoginFailure.InvalidCredentials);
@@ -147,8 +164,8 @@ public sealed class AuthService(
         return new ClaimsPrincipal(identity);
     }
 
-    /// <summary>Counts a wrong password. Gives back true when this one locked the account.</summary>
-    private async Task<bool> RegisterFailedAttemptAsync(AppDbContext db, int userId, int maxFailedAttempts, int lockoutMinutes, DateTime now, CancellationToken ct)
+    /// <summary>Counts a wrong password. Gives back the moment the lock ends when this one locked the account, otherwise null.</summary>
+    private async Task<DateTime?> RegisterFailedAttemptAsync(AppDbContext db, int userId, int maxFailedAttempts, int lockoutMinutes, DateTime now, CancellationToken ct)
     {
         // Counted in the database so several simultaneous guesses can't overwrite each other's count.
         await db.Users
@@ -167,6 +184,6 @@ public sealed class AuthService(
             logger.LogWarning("User {UserId} locked until {LockoutEnd:u} after {Attempts} failed sign-ins.", userId, lockoutEnd, maxFailedAttempts);
         }
 
-        return locked > 0;
+        return locked > 0 ? lockoutEnd : null;
     }
 }
