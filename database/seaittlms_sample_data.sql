@@ -2901,7 +2901,7 @@ SELECT r.k, r.v, @now, @u_admin FROM (
   UNION ALL SELECT 'school.contact_email', 'admin@legazpi.seaitt.edu.ph'
   UNION ALL SELECT 'school.contact_phone', ''
   UNION ALL SELECT 'signin.max_failed_attempts', '5'
-  UNION ALL SELECT 'signin.lockout_minutes', '10'
+  UNION ALL SELECT 'signin.lockout_minutes', '5'
   UNION ALL SELECT 'maintenance.on', '0'
   UNION ALL SELECT 'maintenance.message', 'The system is being maintained. Please try again later.'
   UNION ALL SELECT 'messages.closing_hours', '1'

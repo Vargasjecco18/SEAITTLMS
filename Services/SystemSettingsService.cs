@@ -20,7 +20,7 @@ public sealed record SystemSettingsValues
 
     // ---- signing in
     public int MaxFailedAttempts { get; init; } = 5;
-    public int LockoutMinutes { get; init; } = 10;
+    public int LockoutMinutes { get; init; } = 5;
 
     // ---- maintenance: while it is on only an administrator can use the system
     public bool MaintenanceOn { get; init; }

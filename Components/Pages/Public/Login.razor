@@ -36,7 +36,7 @@
                     <span class="lock-icon"><Icon Name="lock" Size="20" /></span>
                     <div class="lock-text">
                         <strong>@(string.IsNullOrEmpty(lockedEmail) ? "This account is locked" : $"{lockedEmail} is locked")</strong>
-                        <span class="lock-wait">Too many wrong attempts. Try again in <b class="lock-clock">@Mmss(SecondsLeft)</b></span>
+                        <span class="lock-wait">Too many wrong attempts. Nobody can login here until the time is over: <b class="lock-clock">@Mmss(SecondsLeft)</b></span>
                         <span class="lock-done" hidden>The time is over. You can try to login again.</span>
                     </div>
                 </div>
@@ -98,17 +98,41 @@
             return;
         }
 
-        // The page is opened again while an account that was tried here is still locked: the timer is still there. (The server keeps the real lock; this is only to show it.)
+        // The page is opened again while the timer of this browser still runs: it is still there.
+        if (LockOfThisBrowser() is { } browserLock)
+        {
+            lockedUntil = browserLock.Until;
+            lockedEmail = browserLock.Email;
+        }
+    }
+
+    /// <summary>
+    /// The lock of this browser: set when an account is locked by the tries made here (or the account tried here was locked already), it lasts as long as the timer.
+    /// It is what the timer on the page shows, so while it runs no sign-in is accepted from this browser, for any email. (The account has its own lock in the database too.)
+    /// </summary>
+    private (DateTime Until, string Email)? LockOfThisBrowser()
+    {
         if (HttpContext.Request.Cookies.TryGetValue(LockCookie, out var saved) && saved.Split('|') is [var email, var unix]
             && long.TryParse(unix, out var seconds) && DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime is var until && until > Clock.GetUtcNow().UtcDateTime)
         {
-            lockedUntil = until;
-            lockedEmail = Uri.UnescapeDataString(email);
+            return (until, Uri.UnescapeDataString(email));
         }
+
+        return null;
     }
 
     private async Task SignInAsync()
     {
+        // While the timer of this browser runs nobody signs in from it, with any email and any password (even the right one): the password is not even looked at.
+        if (LockOfThisBrowser() is { } browserLock)
+        {
+            lockedUntil = browserLock.Until;
+            lockedEmail = browserLock.Email;
+            errorMessage = null;
+            Input.Password = "";
+            return;
+        }
+
         var result = await Auth.LoginAsync(Input.Email, Input.Password, ClientInfo.From(HttpContext), HttpContext.RequestAborted);
 
         if (!result.Succeeded)

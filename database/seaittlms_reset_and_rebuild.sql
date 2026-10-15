@@ -1803,5 +1803,10 @@ UPDATE `system_settings` SET `value` = '10' WHERE `key` = 'signin.lockout_minute
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261015060110_LockoutTenMinutes', '9.0.20');
 
+UPDATE `system_settings` SET `value` = '5' WHERE `key` = 'signin.lockout_minutes' AND `value` IN ('10', '15');
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261015063534_LockoutFiveMinutes', '9.0.20');
+
 COMMIT;
 
