@@ -407,6 +407,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("material_module_id");
 
+                    b.Property<int?>("MessageId")
+                        .HasColumnType("int")
+                        .HasColumnName("message_id");
+
                     b.Property<int?>("ModuleId")
                         .HasColumnType("int")
                         .HasColumnName("module_id");
@@ -444,6 +448,9 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.HasIndex("MaterialModuleId")
                         .HasDatabaseName("ix_attachments_material_module_id");
+
+                    b.HasIndex("MessageId")
+                        .HasDatabaseName("ix_attachments_message_id");
 
                     b.HasIndex("ModuleId")
                         .HasDatabaseName("ix_attachments_module_id");
@@ -3484,6 +3491,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_attachments_material_modules_material_module_id");
 
+                    b.HasOne("SEAITT_LMS.Data.Entities.Message", "Message")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_attachments_messages_message_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.LearningModule", "Module")
                         .WithMany("Attachments")
                         .HasForeignKey("ModuleId")
@@ -3507,6 +3520,8 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("MaterialItem");
 
                     b.Navigation("MaterialModule");
+
+                    b.Navigation("Message");
 
                     b.Navigation("Module");
 
@@ -4494,6 +4509,11 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Deliveries");
 
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Message", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.ModuleItem", b =>

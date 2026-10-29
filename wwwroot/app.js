@@ -26,9 +26,16 @@
             }
         });
 
-        // Choosing a page in the phone menu closes it.
+        // Choosing a page in the menu closes the phone menu at once, and the box that opens beside the page (the flyout) too: it stays hidden until the pointer
+        // leaves that page of the menu, so it does not stay over the page that was just opened.
         if (target.closest('.sidebar a')) {
             closeMenus();
+            const item = target.closest('.item');
+            if (item) {
+                item.classList.add('fly-hidden');
+                if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+                item.addEventListener('mouseleave', function () { item.classList.remove('fly-hidden'); }, { once: true });
+            }
         }
     });
 
@@ -750,4 +757,21 @@ document.addEventListener('keydown', function (event) {
 
     document.addEventListener('enhancedload', start);
     start();
+})();
+
+// The boxes of the first page (a strand opens one): a button with data-open-dialog="id" opens the <dialog> with that id; a click outside the box closes it.
+(function () {
+    document.addEventListener('click', function (e) {
+        var opener = e.target.closest && e.target.closest('[data-open-dialog]');
+        if (opener) {
+            var dialog = document.getElementById(opener.getAttribute('data-open-dialog'));
+            if (dialog && dialog.showModal) { dialog.showModal(); }
+            return;
+        }
+        var target = e.target;
+        if (target && target.tagName === 'DIALOG' && target.classList.contains('strand-dialog')) {
+            var r = target.getBoundingClientRect();
+            if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { target.close(); }
+        }
+    });
 })();

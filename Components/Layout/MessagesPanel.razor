@@ -1,6 +1,8 @@
 @implements IDisposable
+@using Microsoft.AspNetCore.Components.Forms
 @inject MessageService Messages
 @inject LiveUpdates Live
+@inject SystemSettingsService Settings
 
 @* The inside of the Messages box: the conversations at the left, the open conversation at the right. On a phone one of the
    two shows at a time. *@
@@ -91,7 +93,16 @@
                 @foreach (var message in thread)
                 {
                     <div class="bubble @(message.Mine ? "mine" : "theirs")">
-                        <p>@message.Body</p>
+                        @if (!string.IsNullOrEmpty(message.Body))
+                        {
+                            <p>@message.Body</p>
+                        }
+
+                        @if (message.Files is { Count: > 0 })
+                        {
+                            <AttachmentList Items="message.Files" Label="Files of this message" />
+                        }
+
                         <span class="time">@PhilippineTime.FormatDate(message.SentAtUtc) · @PhilippineTime.FormatTime(message.SentAtUtc)</span>
                     </div>
                 }
@@ -110,10 +121,27 @@
                 <p class="error" role="alert">@error</p>
             }
 
+            @if (pending.Count > 0)
+            {
+                <ul class="pending" aria-label="Files to send">
+                    @foreach (var file in pending)
+                    {
+                        var chosen = file;
+                        <li><Icon Name="file" Size="14" /><span class="pname">@chosen.Name</span><span class="psize">@FileSize.Text(chosen.Data.Length)</span>
+                            <button type="button" aria-label="@($"Do not send {chosen.Name}")" title="Do not send" @onclick="() => pending.Remove(chosen)"><Icon Name="x" Size="12" /></button></li>
+                    }
+                </ul>
+            }
+
             <form class="composer" @onsubmit="SendAsync">
+                @* The paper clip, at the left of Send: choose files to send with the message. *@
+                <label class="attach @(closed || sending || reading ? "off" : "")" title="Send files" aria-label="Send files">
+                    <InputFile OnChange="ChooseFilesAsync" multiple disabled="@(closed || sending || reading)" />
+                    <Icon Name="@(reading ? "loader" : "paperclip")" Size="18" />
+                </label>
                 <input type="text" placeholder="@(closed ? "Messages are closed until 7:00 AM" : "Write a message")" aria-label="Message" maxlength="@MessageService.MaxLength"
                        autocomplete="off" disabled="@closed" @bind="draft" @bind:event="oninput" />
-                <button type="submit" class="send" aria-label="Send" disabled="@(closed || sending || string.IsNullOrWhiteSpace(draft))"><Icon Name="send" Size="18" /></button>
+                <button type="submit" class="send" aria-label="Send" disabled="@(closed || sending || reading || (string.IsNullOrWhiteSpace(draft) && pending.Count == 0))"><Icon Name="send" Size="18" /></button>
             </form>
         }
     </section>
@@ -137,7 +165,9 @@
     private string? error;
     private bool closed;
     private bool sending;
+    private bool reading;
     private bool scrollDown;
+    private readonly List<NewAttachment> pending = [];
     private ElementReference bubblesElement;
     private Timer? timer;
     private IDisposable? subscription;
@@ -205,6 +235,7 @@
         selected = contact;
         error = null;
         draft = "";
+        pending.Clear();
         thread = await Messages.GetThreadAsync(UserId, contact.UserId);
         conversations = await Messages.GetConversationsAsync(UserId);
         scrollDown = true;
@@ -212,6 +243,64 @@
     }
 
     private void Back() => selected = null;
+
+    /// <summary>The files chosen with the paper clip are read now and sent with the next message.</summary>
+    private async Task ChooseFilesAsync(InputFileChangeEventArgs e)
+    {
+        reading = true;
+        error = null;
+        try
+        {
+            var maxBytes = Settings.Current.MaxFileMegabytes * 1024L * 1024;
+            IReadOnlyList<IBrowserFile> chosen;
+            try
+            {
+                chosen = e.GetMultipleFiles(AttachmentService.MaxPerOwner);
+            }
+            catch (InvalidOperationException)
+            {
+                error = $"Choose at most {AttachmentService.MaxPerOwner} files at a time.";
+                return;
+            }
+
+            foreach (var file in chosen)
+            {
+                if (pending.Count >= AttachmentService.MaxPerOwner)
+                {
+                    error = $"At most {AttachmentService.MaxPerOwner} files in a message.";
+                    break;
+                }
+
+                if (FileService.IsBlocked(file.Name))
+                {
+                    error = $"{file.Name}: programs and scripts can't be sent.";
+                    continue;
+                }
+
+                if (file.Size > maxBytes)
+                {
+                    error = $"{file.Name} is bigger than {Settings.Current.MaxFileMegabytes} MB.";
+                    continue;
+                }
+
+                try
+                {
+                    await using var stream = file.OpenReadStream(maxBytes);
+                    using var buffer = new MemoryStream();
+                    await stream.CopyToAsync(buffer);
+                    pending.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
+                }
+                catch (IOException)
+                {
+                    error = $"{file.Name} could not be read.";
+                }
+            }
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
 
     private async Task SendAsync()
     {
@@ -224,11 +313,12 @@
         error = null;
         try
         {
-            var result = await Messages.SendAsync(UserId, selected.UserId, draft);
+            var result = await Messages.SendAsync(UserId, selected.UserId, draft, pending.ToList());
             closed = Messages.IsClosed;
             if (result.Succeeded)
             {
                 draft = "";
+                pending.Clear();
                 thread = await Messages.GetThreadAsync(UserId, selected.UserId);
                 conversations = await Messages.GetConversationsAsync(UserId);
                 scrollDown = true;

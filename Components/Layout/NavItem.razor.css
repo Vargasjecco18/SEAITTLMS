@@ -122,3 +122,11 @@
     padding-top: 0.4rem;
     border-top: 1px solid var(--border);
 }
+
+/* After a page of the menu was chosen, the box beside it is hidden until the pointer goes away from that page. */
+.item.fly-hidden .flyout,
+.item[data-rest].fly-hidden .flyout {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}

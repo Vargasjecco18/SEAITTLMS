@@ -49,15 +49,15 @@ public sealed record Contact(int UserId, string Name, string Role, string? Detai
 
 public sealed record Conversation(Contact With, string LastBody, DateTime LastAtUtc, bool LastFromMe, int Unread);
 
-public sealed record ChatMessage(int Id, bool Mine, string Body, DateTime SentAtUtc);
+public sealed record ChatMessage(int Id, bool Mine, string Body, DateTime SentAtUtc, IReadOnlyList<AttachmentRow>? Files = null);
 
-public sealed record SendResult(bool Succeeded, string? Error = null);
+public sealed record SendResult(bool Succeeded, string? Error = null, int MessageId = 0);
 
 /// <summary>
 /// One-to-one messages between people of the school. Who may write to whom depends on the role (a student writes to
 /// the staff of the school, a teacher also to students, ...), and nobody can send a message at night.
 /// </summary>
-public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, NotificationService notifications)
+public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, NotificationService notifications, LiveUpdates? live = null, AttachmentService? attachments = null)
 {
     public const int MaxLength = 2000;
 
@@ -171,7 +171,7 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
                 var p = people[g.Key];
                 return new Conversation(
                     new Contact(p.UserId, p.Name, p.Role, AppRoles.DisplayName(p.Role)),
-                    last.Body, last.CreatedAtUtc, last.SenderUserId == userId,
+                    string.IsNullOrEmpty(last.Body) ? "Sent a file" : last.Body, last.CreatedAtUtc, last.SenderUserId == userId,
                     g.Count(m => m.RecipientUserId == userId && m.ReadAtUtc == null));
             })
             .OrderByDescending(c => c.LastAtUtc)
@@ -187,8 +187,15 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
             .Where(m => (m.SenderUserId == userId && m.RecipientUserId == otherUserId) || (m.SenderUserId == otherUserId && m.RecipientUserId == userId))
             .OrderByDescending(m => m.CreatedAtUtc).ThenByDescending(m => m.Id)
             .Take(Math.Clamp(take, 1, 200))
-            .Select(m => new ChatMessage(m.Id, m.SenderUserId == userId, m.Body, m.CreatedAtUtc))
+            .Select(m => new ChatMessage(m.Id, m.SenderUserId == userId, m.Body, m.CreatedAtUtc, null))
             .ToListAsync(ct);
+
+        // The files that were sent with the messages.
+        if (attachments is not null && rows.Count > 0)
+        {
+            var files = await attachments.ListForAsync(AttachmentOwnerKind.Message, rows.Select(r => r.Id).ToList(), ct);
+            rows = rows.Select(r => files.TryGetValue(r.Id, out var list) ? r with { Files = list } : r).ToList();
+        }
 
         var now = clock.GetUtcNow().UtcDateTime;
         await db.Messages.Where(m => m.SenderUserId == otherUserId && m.RecipientUserId == userId && m.ReadAtUtc == null)
@@ -204,7 +211,7 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
         return await db.Messages.CountAsync(m => m.RecipientUserId == userId && m.ReadAtUtc == null, ct);
     }
 
-    public async Task<SendResult> SendAsync(int fromUserId, int toUserId, string? body, CancellationToken ct = default)
+    public async Task<SendResult> SendAsync(int fromUserId, int toUserId, string? body, IReadOnlyList<NewAttachment>? files = null, CancellationToken ct = default)
     {
         if (IsClosed)
         {
@@ -212,9 +219,15 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
         }
 
         var text = (body ?? "").Trim();
-        if (text.Length == 0)
+        var hasFiles = files is { Count: > 0 } && attachments is not null;
+        if (text.Length == 0 && !hasFiles)
         {
-            return new SendResult(false, "Write a message first.");
+            return new SendResult(false, "Write a message or choose a file first.");
+        }
+
+        if (hasFiles && attachments!.Check(files!) is { Count: > 0 } fileProblems)
+        {
+            return new SendResult(false, string.Join(" ", fileProblems));
         }
 
         if (text.Length > MaxLength)
@@ -227,21 +240,29 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
             return new SendResult(false, "You can't send a message to this person.");
         }
 
+        int messageId;
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
         {
-            db.Messages.Add(new Message { SenderUserId = fromUserId, RecipientUserId = toUserId, Body = text });
+            var message = new Message { SenderUserId = fromUserId, RecipientUserId = toUserId, Body = text };
+            db.Messages.Add(message);
             await db.SaveChangesAsync(ct);
+            messageId = message.Id;
         }
 
-        // The recipient is told by the bell and by the number on the messages icon.
-        string senderName;
-        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        if (hasFiles)
         {
-            senderName = (await UserDirectory.LoadAsync(db, [fromUserId], ct)).GetValueOrDefault(fromUserId)?.Name ?? "Someone";
+            var saved = await attachments!.AddAsync(fromUserId, new AttachmentOwner(AttachmentOwnerKind.Message, messageId), files!, ct);
+            if (!saved.Succeeded)
+            {
+                await using var db = await dbFactory.CreateDbContextAsync(ct);
+                await db.Messages.Where(m => m.Id == messageId).ExecuteDeleteAsync(ct);
+                return new SendResult(false, string.Join(" ", saved.Errors));
+            }
         }
 
-        await notifications.AddAsync(toUserId, "message", $"New message from {senderName}", text.Length > 120 ? text[..119] + "…" : text, null, ct);
-        return new SendResult(true);
+        // The recipient sees it on the messages icon (the number on it): a message is not a notification, so the bell does not ring for it.
+        live?.Publish([toUserId]);
+        return new SendResult(true, null, messageId);
     }
 }
 

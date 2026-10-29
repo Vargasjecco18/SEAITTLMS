@@ -24,18 +24,16 @@
         </div>
     </nav>
 
-    @* ===== The big picture at the top. The four photos (wwwroot/images/hero/hero-1.jpg ... hero-4.jpg) change by themselves (CSS only); the dots pick one. ===== *@
+    @* ===== The big picture at the top. The three photos (wwwroot/images/hero/hero-1.jpg, hero-2.jpg, hero-4.jpg) change by themselves (CSS only); the dots pick one. ===== *@
     <section class="hero" id="top">
         <input class="slide-radio" type="radio" name="slide" id="slide-1" aria-label="Show slide 1" />
         <input class="slide-radio" type="radio" name="slide" id="slide-2" aria-label="Show slide 2" />
         <input class="slide-radio" type="radio" name="slide" id="slide-3" aria-label="Show slide 3" />
-        <input class="slide-radio" type="radio" name="slide" id="slide-4" aria-label="Show slide 4" />
 
         <div class="slides" aria-hidden="true">
             <div class="slide slide-1"></div>
             <div class="slide slide-2"></div>
             <div class="slide slide-3"></div>
-            <div class="slide slide-4"></div>
         </div>
         <div class="hero-scrim" aria-hidden="true"></div>
 
@@ -57,12 +55,11 @@
             <label class="hero-dot" for="slide-1" title="Slide 1"></label>
             <label class="hero-dot" for="slide-2" title="Slide 2"></label>
             <label class="hero-dot" for="slide-3" title="Slide 3"></label>
-            <label class="hero-dot" for="slide-4" title="Slide 4"></label>
         </div>
     </section>
 
     @* ===== Mission and vision ===== *@
-    <section class="section" id="mission" aria-labelledby="mission-title">
+    <section class="section tight" id="mission" aria-labelledby="mission-title">
         <div class="container">
             <h2 id="mission-title" class="center">Why <span>SEAITT Legazpi LMS</span></h2>
             <div class="cards two">
@@ -84,7 +81,7 @@
     <section class="section alt" id="courses" aria-labelledby="courses-title">
         <div class="container">
             <h2 id="courses-title">Our <span>Courses</span></h2>
-            <p class="courses-intro">Choose a strand, then a grade level and a term, to see the courses it studies.</p>
+            <p class="courses-intro">Press a strand to see the courses it studies, by grade level and term.</p>
 
             @if (tracks.Count == 0)
             {
@@ -98,48 +95,54 @@
                     <div class="strand-grid">
                         @foreach (var strand in track.Strands)
                         {
-                            <details class="strand-card">
-                                <summary>
-                                    <span class="strand-top">
-                                        <span class="strand-title">@strand.Name</span>
-                                        <Icon Name="chevron-down" Size="18" />
-                                    </span>
-                                    <span class="strand-meta">
+                            @* A strand is a button: it opens a box (a plain <dialog>, opened by wwwroot/app.js) with its grade levels, its terms and their courses. *@
+                            <button type="button" class="strand-card" data-open-dialog="@DialogId(track.Code, strand.Code)" aria-haspopup="dialog">
+                                <span class="strand-top">
+                                    <span class="strand-title">@strand.Name</span>
+                                    <Icon Name="chevron-right" Size="18" />
+                                </span>
+                                <span class="strand-meta">
+                                    <span class="strand-code">@strand.Code</span>
+                                    <span class="course-count">@(strand.CourseCount == 1 ? "1 course" : $"{strand.CourseCount} courses")</span>
+                                </span>
+                            </button>
+                            <dialog class="strand-dialog" id="@DialogId(track.Code, strand.Code)" aria-labelledby="@($"{DialogId(track.Code, strand.Code)}-title")">
+                                <div class="dialog-head">
+                                    <div>
+                                        <h3 id="@($"{DialogId(track.Code, strand.Code)}-title")">@strand.Name</h3>
                                         <span class="strand-code">@strand.Code</span>
                                         <span class="course-count">@(strand.CourseCount == 1 ? "1 course" : $"{strand.CourseCount} courses")</span>
-                                    </span>
-                                </summary>
-                                <div class="strand-courses">
+                                    </div>
+                                    <form method="dialog"><button class="dialog-close" aria-label="Close"><Icon Name="x" Size="18" /></button></form>
+                                </div>
+                                <div class="dialog-body">
                                     @if (strand.Groups.Count == 0)
                                     {
                                         <p class="muted">The courses of this strand will be listed soon.</p>
                                     }
 
-                                    @* A strand shows its grade levels, and under each grade level its terms; a term opens to show its courses (one term at a time). *@
                                     @foreach (var grade in strand.Groups.GroupBy(g => g.GradeLevel))
                                     {
                                         <div class="grade-block">
                                             <h4 class="group-heading">Grade @grade.Key</h4>
-                                            @foreach (var group in grade)
-                                            {
-                                                <details class="term-card" name="@($"terms-{track.Code}-{strand.Code}")">
-                                                    <summary>
-                                                        <span class="term-name">@group.TermName</span>
-                                                        <span class="term-count">@(group.Courses.Count == 1 ? "1 course" : $"{group.Courses.Count} courses")</span>
-                                                        <Icon Name="chevron-down" Size="16" />
-                                                    </summary>
-                                                    <ul class="course-list">
-                                                        @foreach (var course in group.Courses)
-                                                        {
-                                                            <li>@course.Name</li>
-                                                        }
-                                                    </ul>
-                                                </details>
-                                            }
+                                            <div class="term-grid">
+                                                @foreach (var group in grade)
+                                                {
+                                                    <section class="modal-term">
+                                                        <h5>@group.TermName <span class="term-count">@(group.Courses.Count == 1 ? "1 course" : $"{group.Courses.Count} courses")</span></h5>
+                                                        <ul class="course-list">
+                                                            @foreach (var course in group.Courses)
+                                                            {
+                                                                <li>@course.Name</li>
+                                                            }
+                                                        </ul>
+                                                    </section>
+                                                }
+                                            </div>
                                         </div>
                                     }
                                 </div>
-                            </details>
+                            </dialog>
                         }
                     </div>
                 </div>
@@ -197,6 +200,8 @@
 </div>
 
 @code {
+    private static string DialogId(string trackCode, string strandCode) => "strand-" + new string((trackCode + "-" + strandCode).Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+
     [CascadingParameter] private Task<AuthenticationState> AuthState { get; set; } = default!;
 
     private IReadOnlyList<PublicTrack> tracks = [];

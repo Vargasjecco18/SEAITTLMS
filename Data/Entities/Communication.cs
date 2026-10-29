@@ -13,6 +13,9 @@ public class Message : AuditableEntity
 
     /// <summary>When the recipient opened it; empty while it is unread.</summary>
     public DateTime? ReadAtUtc { get; set; }
+
+    /// <summary>The files sent with the message.</summary>
+    public ICollection<Attachment> Attachments { get; set; } = [];
 }
 
 /// <summary>

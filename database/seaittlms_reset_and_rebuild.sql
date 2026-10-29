@@ -1808,5 +1808,14 @@ UPDATE `system_settings` SET `value` = '5' WHERE `key` = 'signin.lockout_minutes
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261015063534_LockoutFiveMinutes', '9.0.20');
 
+ALTER TABLE `attachments` ADD `message_id` int NULL;
+
+CREATE INDEX `ix_attachments_message_id` ON `attachments` (`message_id`);
+
+ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_messages_message_id` FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`) ON DELETE CASCADE;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261029032734_MessageAttachments', '9.0.20');
+
 COMMIT;
 

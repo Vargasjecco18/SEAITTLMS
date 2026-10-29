@@ -21,6 +21,9 @@ public enum AttachmentOwnerKind
 
     /// <summary>The work a student sends for an activity, quiz or task performance (the work is sent as files).</summary>
     Submission,
+
+    /// <summary>A file sent in a message (the sender and the person it is for open it).</summary>
+    Message,
 }
 
 public readonly record struct AttachmentOwner(AttachmentOwnerKind Kind, int Id);
@@ -77,6 +80,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             AttachmentOwnerKind.MaterialItem => all.Where(a => a.MaterialItemId != null && ids.Contains(a.MaterialItemId.Value)).Select(a => new { Owner = a.MaterialItemId!.Value, a }),
             AttachmentOwnerKind.Module => all.Where(a => a.ModuleId != null && ids.Contains(a.ModuleId.Value)).Select(a => new { Owner = a.ModuleId!.Value, a }),
             AttachmentOwnerKind.Submission => all.Where(a => a.SubmissionId != null && ids.Contains(a.SubmissionId.Value)).Select(a => new { Owner = a.SubmissionId!.Value, a }),
+            AttachmentOwnerKind.Message => all.Where(a => a.MessageId != null && ids.Contains(a.MessageId.Value)).Select(a => new { Owner = a.MessageId!.Value, a }),
             _ => all.Where(a => a.ItemId != null && ids.Contains(a.ItemId.Value)).Select(a => new { Owner = a.ItemId!.Value, a }),
         };
 
@@ -89,16 +93,11 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
     // ======================================================================= adding and removing
 
-    public async Task<ServiceResult> AddAsync(int userId, AttachmentOwner owner, IReadOnlyList<NewAttachment> files, CancellationToken ct = default)
+    /// <summary>Checks the files chosen in a form (names, programs, empty, too big, too many) before anything is saved. Gives the problems, or none.</summary>
+    public IReadOnlyList<string> Check(IReadOnlyList<NewAttachment> files, int alreadyThere = 0)
     {
-        if (files.Count == 0)
-        {
-            return ServiceResult.Ok("No file.");
-        }
-
         var maxBytes = settings.Current.MaxFileMegabytes * 1024L * 1024;
         var errors = new List<string>();
-        var clean = new List<(string Name, NewAttachment File)>();
         foreach (var file in files)
         {
             var name = FileService.CleanName(file.Name);
@@ -118,16 +117,30 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             {
                 errors.Add($"{name} is bigger than {settings.Current.MaxFileMegabytes} MB.");
             }
-            else
-            {
-                clean.Add((name, file));
-            }
         }
 
+        if (alreadyThere + files.Count > MaxPerOwner)
+        {
+            errors.Add($"At most {MaxPerOwner} files can be attached here (there are {alreadyThere} already).");
+        }
+
+        return errors;
+    }
+
+    public async Task<ServiceResult> AddAsync(int userId, AttachmentOwner owner, IReadOnlyList<NewAttachment> files, CancellationToken ct = default)
+    {
+        if (files.Count == 0)
+        {
+            return ServiceResult.Ok("No file.");
+        }
+
+        var errors = Check(files).Where(e => !e.StartsWith("At most", StringComparison.Ordinal)).ToList();
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);
         }
+
+        var clean = files.Select(f => (Name: FileService.CleanName(f.Name)!, File: f)).ToList();
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         if (!await CanManageAsync(db, userId, owner, ct))
@@ -154,6 +167,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
                 case AttachmentOwnerKind.MaterialItem: attachment.MaterialItemId = owner.Id; break;
                 case AttachmentOwnerKind.Module: attachment.ModuleId = owner.Id; break;
                 case AttachmentOwnerKind.Submission: attachment.SubmissionId = owner.Id; break;
+                case AttachmentOwnerKind.Message: attachment.MessageId = owner.Id; break;
                 default: attachment.ItemId = owner.Id; break;
             }
 
@@ -173,11 +187,16 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.Attachments.Where(a => attachmentIds.Contains(a.Id))
-            .Select(a => new { a.Id, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, a.SubmissionId }).ToListAsync(ct);
+            .Select(a => new { a.Id, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, a.SubmissionId, a.MessageId }).ToListAsync(ct);
 
         var removable = new List<int>();
         foreach (var row in rows)
         {
+            if (row.MessageId is not null)
+            {
+                continue; // A message stays as it was sent: its files are not taken away afterwards.
+            }
+
             var owner = row.MaterialModuleId is { } mm ? new AttachmentOwner(AttachmentOwnerKind.MaterialModule, mm)
                 : row.MaterialItemId is { } mi ? new AttachmentOwner(AttachmentOwnerKind.MaterialItem, mi)
                 : row.ModuleId is { } m ? new AttachmentOwner(AttachmentOwnerKind.Module, m)
@@ -209,8 +228,8 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var a = await db.Attachments.AsNoTracking().Where(x => x.Id == attachmentId)
-            .Select(x => new { x.Id, x.Name, x.MaterialModuleId, x.MaterialItemId, x.ModuleId, x.ItemId, x.SubmissionId, Data = x.Content!.Data }).FirstOrDefaultAsync(ct);
-        if (a is null || !await CanReadAsync(db, userId, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, a.SubmissionId, ct))
+            .Select(x => new { x.Id, x.Name, x.MaterialModuleId, x.MaterialItemId, x.ModuleId, x.ItemId, x.SubmissionId, x.MessageId, Data = x.Content!.Data }).FirstOrDefaultAsync(ct);
+        if (a is null || !await CanReadAsync(db, userId, a.MaterialModuleId, a.MaterialItemId, a.ModuleId, a.ItemId, a.SubmissionId, a.MessageId, ct))
         {
             return null;
         }
@@ -232,7 +251,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
     // ======================================================================= who may
 
-    private async Task<bool> CanReadAsync(AppDbContext db, int userId, int? materialModuleId, int? materialItemId, int? moduleId, int? itemId, int? submissionId, CancellationToken ct)
+    private async Task<bool> CanReadAsync(AppDbContext db, int userId, int? materialModuleId, int? materialItemId, int? moduleId, int? itemId, int? submissionId, int? messageId, CancellationToken ct)
     {
         var role = await db.Users.AsNoTracking().Where(u => u.Id == userId && u.IsActive).Select(u => (int?)u.RoleId).FirstOrDefaultAsync(ct);
         if (role is null)
@@ -243,6 +262,12 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         if (materialModuleId is not null || materialItemId is not null)
         {
             return role == AppRoles.AcademicProviderId;
+        }
+
+        // A file of a message: the person who sent it and the person it was sent to.
+        if (messageId is { } mid2)
+        {
+            return await db.Messages.AsNoTracking().AnyAsync(m => m.Id == mid2 && (m.SenderUserId == userId || m.RecipientUserId == userId), ct);
         }
 
         // The work of a student: the student who sent it and the teacher of the course.
@@ -323,6 +348,9 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
                 return role == AppRoles.AcademicProviderId && await db.MaterialItems.AsNoTracking().AnyAsync(i => i.Id == owner.Id, ct);
             case AttachmentOwnerKind.Module:
                 return role == AppRoles.TeacherId && await db.Modules.AsNoTracking().AnyAsync(m => m.Id == owner.Id && m.Assignment.Teacher.UserId == userId, ct);
+            case AttachmentOwnerKind.Message:
+                // The files of a message are added by the person who sent it (and are not changed afterwards).
+                return role is not null && await db.Messages.AsNoTracking().AnyAsync(m => m.Id == owner.Id && m.SenderUserId == userId, ct);
             case AttachmentOwnerKind.Submission:
                 // The student changes the files of their own work until it is graded.
                 return role == AppRoles.StudentId && await db.Submissions.AsNoTracking().AnyAsync(s => s.Id == owner.Id && s.Student.UserId == userId && s.Status != SubmissionStatus.Graded, ct);
@@ -337,6 +365,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         AttachmentOwnerKind.MaterialItem => await db.Attachments.CountAsync(a => a.MaterialItemId == owner.Id, ct),
         AttachmentOwnerKind.Module => await db.Attachments.CountAsync(a => a.ModuleId == owner.Id, ct),
         AttachmentOwnerKind.Submission => await db.Attachments.CountAsync(a => a.SubmissionId == owner.Id, ct),
+        AttachmentOwnerKind.Message => await db.Attachments.CountAsync(a => a.MessageId == owner.Id, ct),
         _ => await db.Attachments.CountAsync(a => a.ItemId == owner.Id, ct),
     };
 

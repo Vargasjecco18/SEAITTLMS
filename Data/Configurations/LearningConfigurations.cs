@@ -177,15 +177,17 @@ internal sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachm
         b.HasOne(a => a.Module).WithMany(m => m.Attachments).HasForeignKey(a => a.ModuleId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Item).WithMany(i => i.Attachments).HasForeignKey(a => a.ItemId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Submission).WithMany(s => s.Attachments).HasForeignKey(a => a.SubmissionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(a => a.Message).WithMany(m => m.Attachments).HasForeignKey(a => a.MessageId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.UploadedBy).WithMany().HasForeignKey(a => a.UploadedByUserId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(a => a.Content).WithOne(c => c.Attachment).HasForeignKey<AttachmentContent>(c => c.AttachmentId).OnDelete(DeleteBehavior.Cascade);
 
-        // (Exactly one of the five owners is set; MySQL does not allow a check on columns with a cascading foreign key, so AttachmentService makes sure.)
+        // (Exactly one of the six owners is set; MySQL does not allow a check on columns with a cascading foreign key, so AttachmentService makes sure.)
         b.HasIndex(a => a.MaterialModuleId);
         b.HasIndex(a => a.MaterialItemId);
         b.HasIndex(a => a.ModuleId);
         b.HasIndex(a => a.ItemId);
         b.HasIndex(a => a.SubmissionId);
+        b.HasIndex(a => a.MessageId);
         b.ToTable(t => t.HasCheckConstraint("ck_attachments_size", "size_bytes >= 0"));
     }
 }

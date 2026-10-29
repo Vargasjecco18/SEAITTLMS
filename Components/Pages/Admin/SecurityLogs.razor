@@ -29,7 +29,7 @@
 <Card>
     <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
         <SearchField Id="log-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="An email, a name, an address or a word" AriaLabel="Search the log" OnClear="ApplyAsync" />
-        <Field For="log-severity" Label="Kind">
+        <Field For="log-severity" Label="Type">
             <select id="log-severity" class="input" @bind="severity" @bind:after="ApplyAsync">
                 <option value="">All</option>
                 <option value="Info">Information</option>

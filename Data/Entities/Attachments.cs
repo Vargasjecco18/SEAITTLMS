@@ -35,6 +35,10 @@ public class Attachment : AuditableEntity
     public int? SubmissionId { get; set; }
     public Submission? Submission { get; set; }
 
+    /// <summary>A file sent with a message (the sender and the person it was sent to open it).</summary>
+    public int? MessageId { get; set; }
+    public Message? Message { get; set; }
+
     public AttachmentContent? Content { get; set; }
 }
 
