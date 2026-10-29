@@ -21,6 +21,7 @@ public static class SubjectStyle
     {
         ItemKinds.Quiz => "file-question",
         ItemKinds.TaskPerformance => "clipboard-check",
+        ItemKinds.Exam => "clipboard-list",
         _ => "notebook-pen",
     };
 

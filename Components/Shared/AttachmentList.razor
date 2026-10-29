@@ -8,7 +8,14 @@
         {
             <li>
                 <span class="file-icon" aria-hidden="true"><Icon Name="@IconOf(f.Name)" Size="16" /></span>
-                <a class="file-name" href="files/a/@f.Id" target="_blank" rel="noopener noreferrer" title="@(f.CanPreview ? "Open in a new tab" : "Download")">@f.Name</a>
+                @if (PageHref?.Invoke(f) is { } readerHref)
+                {
+                    <a class="file-name" href="@readerHref" title="Read it here">@f.Name</a>
+                }
+                else
+                {
+                    <a class="file-name" href="files/a/@f.Id" target="_blank" rel="noopener noreferrer" title="@(f.CanPreview ? "Open in a new tab" : "Download")">@f.Name</a>
+                }
                 <span class="file-size">@FileSize.Text(f.SizeBytes)</span>
                 <a class="file-save" href="files/a/@f.Id?download=1" download="@f.Name" aria-label="@($"Download {f.Name}")" title="Download"><Icon Name="download" Size="15" /></a>
             </li>
@@ -18,6 +25,9 @@
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<AttachmentRow> Items { get; set; } = [];
+
+    /// <summary>When it gives an address for a file, the name opens that page of the system (the module, with the file shown in it) instead of a new tab of the browser.</summary>
+    [Parameter] public Func<AttachmentRow, string?>? PageHref { get; set; }
 
     /// <summary>What the list is, for screen readers.</summary>
     [Parameter] public string Label { get; set; } = "Attached files";

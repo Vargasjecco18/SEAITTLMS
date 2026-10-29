@@ -56,6 +56,7 @@ public static class HelpContent
             "Tick “Keep me signed in on this device” only on your own computer or phone.",
             "To sign out, press the arrow button at the bottom of the menu, next to your name.",
             $"After {settings.MaxFailedAttempts} wrong passwords in a row the account is locked for {settings.LockoutMinutes} minutes. Wait, or ask the administrator.",
+            "An account can be signed in in one place at a time. If someone is signed in with your account, a notice at the top of the login page says so: sign out there first, or wait a few minutes after that page was closed.",
         ]),
         new("I forgot my password.",
         [
@@ -78,6 +79,11 @@ public static class HelpContent
             "Under Profile picture, press “Upload a picture” and choose a photo. It is made small for you. “Remove” brings back your initials.",
             "Under Appearance choose Light, Dark or Auto (Auto follows your computer). You can also switch the animations off.",
         ]),
+        new("Can I get the notifications by email?",
+        [
+            "Press the gear at the top right (Settings). Under “Email for notifications” type your email (a Gmail address works), press Save and then “Send a test email”.",
+            "From then on a new module, a grade, a deadline and the other things the bell shows are also sent to that address. Press Remove to stop. If the test does not arrive, the school has not set up the email yet: ask the administrator.",
+        ]),
         new("How do messages work?",
         [
             "Press the speech bubble at the top. The list shows your conversations; the search box finds a person you may write to.",
@@ -86,7 +92,7 @@ public static class HelpContent
         ]),
         new("What do the notifications say?",
         [
-            "The bell at the top lists what happened for you: a new module, a grade, a deadline coming, a friend request, a file someone shared.",
+            "The bell at the top lists what happened for you: a new module, a grade, a deadline coming, a friend request, a file someone shared. A new one also plays a short sound (you can switch it off in Settings).",
             "Press one to go to the page it is about. “Mark all as read” clears the number.",
         ]),
     ]);
@@ -101,14 +107,14 @@ public static class HelpContent
         [
             "Open Courses in the menu. Enrolled shows this term; Completed shows the courses of terms that are over.",
             "Each course has a progress bar. It counts the modules you opened, out of the modules your teacher posted.",
-            "Switch between cards and a list with the buttons at the top right of the page.",
+            "Switch between cards and a list with the buttons at the top right of the page. The system remembers the one you chose.",
         ], "student/subjects", "Open Courses"),
         new("How do I open a module and do the assignments?",
         [
             "Open a course, then a module. The syllabus of the course is the first thing in the list.",
             "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
-            "Inside a course there is a second menu: Modules, Assignments, Quizzes and Task performances. Each one lists that kind of work for the whole course. The slides of a module are shown in their own card on the module page.",
+            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams when your teacher gave one). It stays in view while you scroll, and the button at its top hides it or shows it again. It is also there when you read a lesson or read it again.",
         ]),
         new("What if I hand in after the due date?",
         [
@@ -164,17 +170,19 @@ public static class HelpContent
         ], "teacher/subjects", "Open Courses"),
         new("How do I make a module and post it to my students?",
         [
-            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files.",
+            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Template and import (Excel)” in the same box.",
+            "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Press the “Add” button at the top right of the course: choose the module, then Assignment, Quiz or Task performance. Each has its points, the day it appears and its due date.",
+            "Press “Add Activities” at the top right of the course: choose the module, then Assignment, Quiz or Task performance. Each has its points, the day it appears and its due date.",
         ]),
         new("What is the menu inside a course?",
         [
-            "Inside a course there is a second menu: Modules, Assignments, Quizzes and Task performances. Each one lists that kind of work for the whole course. The gradebook and the attendance of the course are in the same menu.",
+            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams, once you added one). Each one lists that kind of work for the whole course. The gradebook and the attendance of the course are in the same menu.",
+            "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
         ]),
         new("Can I fill many assignments or questions from Excel?",
         [
-            "Yes. In a module, press “Excel” next to “Add assignment” (or quiz, or task performance): download the template, fill it in, and import it. Every row becomes one item. The same box can export what the module has.",
+            "Yes. Press “Add Activities”, choose the module and then “Template and import (Excel)”. The template is one workbook with a sheet for the Assignments, the Quizzes, the Quiz questions (each row says which quiz it belongs to) and the Task performances, and a column to name the files to attach. Fill it in, import it, and every row becomes one item. The same box can export what the module has.",
             "In the questions of a quiz, use Template, Export the questions and Import from Excel. The imported questions appear in the list; press Save questions to keep them.",
         ]),
         new("A student handed in after the due date. What do I do?",
@@ -194,7 +202,7 @@ public static class HelpContent
         ]),
         new("How do I check and grade the assignments of my students?",
         [
-            "Open the assignment, quiz or task performance to see who handed in. Press Grade (or Give score) on a student's row, read the answer and save the score with a comment.",
+            "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press Grade (or Give score) on a student's row, read the answer and save the score with a comment.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
             "“Assignments to check” on your dashboard lists what waits for you.",
         ]),
@@ -205,7 +213,7 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Type a score in a box and move on: it is saved by itself. “Export to Excel” makes a file that shows how the grades are worked out. “Add assignment, quiz or task” adds a column for extra scores.",
+            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Export to Excel” makes a file that shows how the grades are worked out, “Add Activities” adds a column for extra scores and “Add Exam” adds an exam.",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
@@ -233,10 +241,10 @@ public static class HelpContent
     [
         new("How do I add, change or switch off an account?",
         [
-            "Open Users Management and choose the tab of the role (Students, Teachers, Registrars, Guidance, Coordinators, Providers, Administrators).",
-            "Press the Add button, or Edit on a row. In Edit you can change the name and email, set a new password, and switch the account on or off.",
+            "Open Users Management and choose the tab of the role (Students, Teachers, Staff, Administrators).",
+            "Press the Add button (Add staff, on the Staff tab), or Edit on a row. In Edit you can change the name and email, set a new password, and switch the account on or off.",
             "Students are added by the registrar when enrolling them. A switched-off account can't sign in.",
-            "The school has one administrator, one registrar and one guidance counselor; it can have several academic coordinators and academic providers.",
+            "The school has one administrator, one registrar, one guidance counselor and one academic coordinator; it can have several academic providers. In Add staff, a role that the school has already is not in the list.",
         ], "admin/users", "Open Users Management"),
         new("A teacher needs courses.",
         [
@@ -311,14 +319,16 @@ public static class HelpContent
             "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Add a question by choosing how the students answer: a 5-point Likert scale, a 5-point performance scale, a frequency scale, a binary (Yes/No) scale, a ranking, select-all-that-apply, or a comment. Choose who it is about and the due date, then send it.",
             "Students answer once for each of their teachers; answers are anonymous. The page shows how many answered and who has not.",
             "Close it early, or let it close on its due date.",
+            "To write many questions at once press “Template and import (Excel)”: download the template, fill it in and import it. “Export” makes the same file from a questionnaire.",
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
-            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments.",
+            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments. “Export to Excel” puts everything of the page in one workbook, one sheet for each part.",
         ], "coordinator/analytics", "Open Analytics"),
         new("How do I write an announcement?",
         [
             "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody, the students, the teachers; a teachers' meeting is for the teachers) and, if you want, the last day it is shown.",
+            "To write many announcements at once press “Template and import (Excel)”; “Export” makes the same file from the announcements you have.",
             "The megaphone button at the top, next to Messages, shows the latest announcements to everybody.",
         ], "coordinator/announcements", "Open Announcements"),
     ]);
@@ -327,9 +337,9 @@ public static class HelpContent
     [
         new("How do I send a syllabus, modules and assignments to the teachers?",
         [
-            "Open Course library and choose a course. Add the syllabus first, then the modules. Press a syllabus or a module to open it and see its assignments, quizzes and task performances.",
+            "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once). Press a syllabus or a module to open it and see its assignments, quizzes and task performances. “Add Activities” adds them to a module, one by one or from an Excel workbook.",
             "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module, an assignment, a quiz or a task performance. A quiz is questions, a file, or both; the teacher sets its time limit and anti-cheating settings.",
-            "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
+            "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it. Each module says what it has, for example “1 assignment, 1 quiz, 0 TP” (TP is task performance), and to how many of the teachers it was sent.",
             "Each teacher gets their own copy as a draft, with the files: they edit the text and the due dates and post it to their students when they are ready. A PDF or a picture opens in a new tab of the browser, where it can be downloaded and printed.",
         ], "provider/library", "Open Course library"),
         new("How do I know if the teachers opened what I sent?",
@@ -349,7 +359,7 @@ public static class HelpContent
         ], "provider/tracking?tab=teachers", "Open the teachers"),
         new("What do the analytics show?",
         [
-            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, assignment, quiz, task performance), by section and week by week.",
+            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, assignment, quiz, task performance), by section and week by week. “Export to Excel” puts everything of the page in one workbook.",
         ], "provider/analytics", "Open Analytics"),
     ]);
 

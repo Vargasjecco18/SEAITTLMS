@@ -279,3 +279,9 @@
     display: flex;
     gap: 0.5rem;
 }
+
+/* The files a student handed in, one under the other, in the list. */
+.col-files {
+    min-width: 11rem;
+    max-width: 18rem;
+}

@@ -647,7 +647,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
     internal static List<string> ValidateItem(ItemInput input)
     {
         var errors = new List<string>();
-        if (!ItemKinds.All.Contains(input.Kind))
+        if (!ItemKinds.Listed.Contains(input.Kind))
         {
             errors.Add("Choose what kind it is.");
         }

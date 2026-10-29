@@ -76,6 +76,7 @@ else
                             <th scope="col">Status</th>
                             <th scope="col" class="col-more">Handed in</th>
                             <th scope="col">Score</th>
+                            <th scope="col" class="col-files">Files</th>
                             @if (data.AntiCheat)
                             {
                                 <th scope="col" class="col-more">Warnings</th>
@@ -97,6 +98,16 @@ else
                                 <td><Badge Tone="@tone">@text</Badge>@if (row.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
                                 <td class="col-more">@(row.SubmittedAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "—")</td>
                                 <td>@(row.Score is { } score ? $"{score:0.##} / {data.MaxScore:0.##}" : "—")</td>
+                                <td class="col-files">
+                                    @if (row.SubmissionId is { } submissionId && rowFiles.TryGetValue(submissionId, out var sent) && sent.Count > 0)
+                                    {
+                                        <AttachmentList Items="sent" Label="@($"Files of {row.StudentName}")" />
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
                                 @if (data.AntiCheat)
                                 {
                                     <td class="col-more">
@@ -317,9 +328,14 @@ else
 
     private bool isFileQuiz;
 
+    /// <summary>The files each student handed in, by the number of the submission (the Files column of the list).</summary>
+    private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> rowFiles = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
+
     private async Task LoadAsync()
     {
         data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
+        rowFiles = data is null ? new Dictionary<int, IReadOnlyList<AttachmentRow>>()
+            : await Files.ListForAsync(AttachmentOwnerKind.Submission, data.Rows.Where(r => r.SubmissionId != null).Select(r => r.SubmissionId!.Value).ToList());
         isFileQuiz = data is { Kind: ItemKinds.Quiz, Questions: 0 } && (await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId))).Count > 0;
     }
 

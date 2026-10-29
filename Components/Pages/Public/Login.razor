@@ -30,6 +30,9 @@
             <p class="login-notice" role="status"><Icon Name="circle-check" Size="18" /> <span>Your password was changed. Log in with your new password.</span></p>
         }
 
+        @* The alert at the top center: the account is in use (this page's own answer), or the one the address asks for (?alert=other-device: the sign-in of this browser was ended). *@
+        <TopAlert Name="@(accountInUse ? "in-use" : null)" />
+
         <FormErrors Errors="@(string.IsNullOrEmpty(errorMessage) ? Array.Empty<string>() : new[] { errorMessage })" />
 
         <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
@@ -79,6 +82,9 @@
 
 @code {
     private string? errorMessage;
+
+    /// <summary>The right password was typed, but the account is signed in on another browser or device: the alert at the top says so.</summary>
+    private bool accountInUse;
 
     /// <summary>The moment the account that was tried is unlocked (a lock this browser saw: the answer of the sign-in, or the cookie of an earlier try).</summary>
     private DateTime? lockedUntil;
@@ -162,6 +168,12 @@
             else if (result.Failure == LoginFailure.UserNotFound)
             {
                 errorMessage = "User Not Found. No account uses this email.";
+            }
+            else if (result.Failure == LoginFailure.AlreadySignedIn)
+            {
+                // The alert at the top of the page says it; the form stays as it is.
+                errorMessage = null;
+                accountInUse = true;
             }
             else
             {

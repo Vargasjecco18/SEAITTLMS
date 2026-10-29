@@ -144,6 +144,8 @@ else
 
     [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
 
+    [CascadingParameter] private HttpContext? Http { get; set; }
+
     private IReadOnlyList<TeacherSubjectCard>? cards;
     private List<string> sections = [];
     private List<TeacherSubjectCard> shown = [];
@@ -151,7 +153,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        view = ViewText == "list" ? "list" : "cards";
+        view = ViewPreference.Resolve(Http, "subjects", ViewText, "cards", "list");
         var teacherId = await Me.GetTeacherIdAsync();
         cards = teacherId is { } id ? await Teaching.GetTeacherCardsAsync(id) : [];
         sections = cards.Select(c => c.SectionLabel).Distinct().ToList();

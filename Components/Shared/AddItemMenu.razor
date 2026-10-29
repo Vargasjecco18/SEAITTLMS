@@ -55,6 +55,13 @@
                             </button>
                         </li>
                     }
+                    <li class="add-rule" role="separator"></li>
+                    <li>
+                        <button type="button" role="menuitem" class="add-item" data-add-kind="excel" @onclick="() => PickAsync(AddItemMenuLabels.ExcelKind)">
+                            <Icon Name="file-spreadsheet" Size="16" />
+                            <span class="add-label">Template and import (Excel)</span>
+                        </button>
+                    </li>
                 </ul>
             }
         </div>

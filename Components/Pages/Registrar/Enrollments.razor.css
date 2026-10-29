@@ -64,11 +64,22 @@
 }
 
 /* ---------- subjects ---------- */
+.courses-block {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.courses-title {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+}
+
 .subjects-note {
     display: flex;
     align-items: flex-start;
     gap: 0.55rem;
-    margin: 1rem 0 0;
+    margin: 0 0 0.75rem;
     padding: 0.7rem 0.85rem;
     border-radius: var(--radius-sm);
     background: var(--surface-2);

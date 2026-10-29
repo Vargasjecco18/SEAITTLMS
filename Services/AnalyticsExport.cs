@@ -169,11 +169,38 @@ public static class AnalyticsExport
         }
 
         weeks.Width(1, 16).Width(2, 10).Width(3, 20).Width(4, 10);
+
+        var waiting = book.AddSheet("Teachers waiting");
+        Title(waiting, "Teachers who have not opened what was sent", "How many things wait for each teacher, and for how long the oldest one has waited");
+        waiting.Row(4, ["Teacher", "Courses", "Received", "Opened", "Posted", "Waiting", "Oldest waiting (days)"], XlsxStyle.Header);
+        line = 5;
+        foreach (var t in a.SlowestTeachers)
+        {
+            waiting.Set(line, 1, t.Name).Set(line, 2, t.Courses, XlsxStyle.Integer).Set(line, 3, t.Received, XlsxStyle.Integer).Set(line, 4, t.Opened, XlsxStyle.Integer).Set(line, 5, t.Posted, XlsxStyle.Integer)
+                .Set(line, 6, t.Waiting, XlsxStyle.Integer).Set(line, 7, t.LongestWaitingDays, XlsxStyle.Integer);
+            line++;
+        }
+
+        waiting.Width(1, 34).Width(2, 10).Width(3, 12).Width(4, 10).Width(5, 10).Width(6, 10).Width(7, 22);
+
+        var least = book.AddSheet("Least opened");
+        Title(least, "Least opened by the students", "What was posted and the students open least");
+        least.Row(4, ["What", "Course", "Teacher", "Section", "Students who opened it", "Students", "Opened (%)"], XlsxStyle.Header);
+        line = 5;
+        foreach (var row in a.LeastOpened)
+        {
+            least.Set(line, 1, row.IsSyllabus ? "Syllabus" : row.Title).Set(line, 2, row.SubjectName).Set(line, 3, row.TeacherName).Set(line, 4, row.SectionLabel)
+                .Set(line, 5, row.ModuleOpens, XlsxStyle.Integer).Set(line, 6, row.Audience, XlsxStyle.Integer)
+                .Formula(line, 7, $"IF(F{line}=0,0,E{line}/F{line})", XlsxStyle.Percent, row.Audience == 0 ? 0 : (double)row.ModuleOpens / row.Audience);
+            line++;
+        }
+
+        least.Width(1, 34).Width(2, 30).Width(3, 30).Width(4, 16).Width(5, 22).Width(6, 10).Width(7, 14);
         return book.ToBytes();
     }
 
     /// <summary>The analytics of the teacher evaluation chosen by the academic coordinator.</summary>
-    public static byte[] ForEvaluation(EvaluationAnalytics a, DateTime nowPhilippine)
+    public static byte[] ForEvaluation(EvaluationAnalytics a, DateTime nowPhilippine, IReadOnlyList<TeacherDetail>? details = null)
     {
         var book = new XlsxBook();
 
@@ -250,6 +277,95 @@ public static class AnalyticsExport
             }
 
             other.Width(1, 60).Width(2, 18).Width(3, 30).Width(4, 10).Width(5, 12);
+        }
+
+        if (details is { Count: > 0 })
+        {
+            // what the page shows when a teacher is opened: their courses, their questions, the Yes or No and ranking questions, and what the students wrote
+            var byCourse = book.AddSheet("Teacher by course");
+            Title(byCourse, "Each teacher by course", "Answers and the average rating of every course");
+            byCourse.Row(4, ["Teacher", "Course", "Section", "Answers expected", "Answers received", "Answered (%)", "Average rating (of 5)"], XlsxStyle.Header);
+            line = 5;
+            foreach (var d in details)
+            {
+                foreach (var c in d.Courses)
+                {
+                    byCourse.Set(line, 1, d.TeacherName).Set(line, 2, c.SubjectName).Set(line, 3, c.SectionLabel).Set(line, 4, c.Expected, XlsxStyle.Integer).Set(line, 5, c.Responses, XlsxStyle.Integer)
+                        .Formula(line, 6, $"IF(D{line}=0,0,E{line}/D{line})", XlsxStyle.Percent, c.Expected == 0 ? 0 : (double)c.Responses / c.Expected).Set(line, 7, c.Average, XlsxStyle.Decimal);
+                    line++;
+                }
+            }
+
+            byCourse.Width(1, 32).Width(2, 34).Width(3, 16).Width(4, 18).Width(5, 18).Width(6, 14).Width(7, 22);
+
+            var byQuestion = book.AddSheet("Teacher by question");
+            Title(byQuestion, "Each teacher by question", "The average rating of every question for every teacher");
+            byQuestion.Row(4, ["Teacher", "Question", "Area", "Answers", "Average rating (of 5)"], XlsxStyle.Header);
+            line = 5;
+            foreach (var d in details)
+            {
+                foreach (var q in d.Questions)
+                {
+                    byQuestion.Set(line, 1, d.TeacherName).Set(line, 2, q.Text, XlsxStyle.Wrap).Set(line, 3, q.Category ?? "").Set(line, 4, q.Answers, XlsxStyle.Integer).Set(line, 5, q.Average, XlsxStyle.Decimal);
+                    line++;
+                }
+            }
+
+            byQuestion.Width(1, 32).Width(2, 64).Width(3, 22).Width(4, 10).Width(5, 22);
+
+            if (details.Any(d => d.OtherQuestions is { Count: > 0 }))
+            {
+                var teacherOthers = book.AddSheet("Teacher other questions");
+                Title(teacherOthers, "Each teacher: Yes or No, rankings and choices", "Each option with its count and value (the share in percent, or the average place of a ranking)");
+                teacherOthers.Row(4, ["Teacher", "Question", "Kind", "Option", "Count", "Value"], XlsxStyle.Header);
+                line = 5;
+                foreach (var d in details)
+                {
+                    foreach (var q in d.OtherQuestions ?? [])
+                    {
+                        foreach (var o in q.Options)
+                        {
+                            teacherOthers.Set(line, 1, d.TeacherName).Set(line, 2, q.Text, XlsxStyle.Wrap).Set(line, 3, EvaluationQuestionKinds.Display(q.Kind)).Set(line, 4, o.Label)
+                                .Set(line, 5, o.Count, XlsxStyle.Integer).Set(line, 6, o.Value, XlsxStyle.Decimal);
+                            line++;
+                        }
+                    }
+                }
+
+                teacherOthers.Width(1, 32).Width(2, 60).Width(3, 18).Width(4, 30).Width(5, 10).Width(6, 12);
+            }
+
+            var comments = book.AddSheet("Comments");
+            Title(comments, "What the students wrote", "The comments are anonymous: nobody sees who wrote what");
+            comments.Row(4, ["Teacher", "Course", "Section", "Question", "Comment", "Day"], XlsxStyle.Header);
+            line = 5;
+            foreach (var d in details)
+            {
+                foreach (var c in d.Comments)
+                {
+                    comments.Set(line, 1, d.TeacherName).Set(line, 2, c.SubjectName).Set(line, 3, c.SectionLabel).Set(line, 4, c.Question, XlsxStyle.Wrap).Set(line, 5, c.Text, XlsxStyle.Wrap)
+                        .Set(line, 6, PhilippineTime.ToLocal(c.AtUtc).Date, XlsxStyle.Date);
+                    line++;
+                }
+            }
+
+            comments.Width(1, 30).Width(2, 30).Width(3, 16).Width(4, 44).Width(5, 70).Width(6, 14);
+        }
+
+        if (a.Evaluations.Count > 0)
+        {
+            var trend = book.AddSheet("Evaluation after evaluation");
+            Title(trend, "Evaluation after evaluation", "How each round went");
+            trend.Row(4, ["Evaluation", "Sent", "Answers expected", "Answers received", "Answered (%)", "Average rating (of 5)"], XlsxStyle.Header);
+            line = 5;
+            foreach (var t in a.Evaluations)
+            {
+                trend.Set(line, 1, t.Title).Set(line, 2, PhilippineTime.ToLocal(t.SentAtUtc).Date, XlsxStyle.Date).Set(line, 3, t.Expected, XlsxStyle.Integer).Set(line, 4, t.Responses, XlsxStyle.Integer)
+                    .Formula(line, 5, $"IF(C{line}=0,0,D{line}/C{line})", XlsxStyle.Percent, t.Expected == 0 ? 0 : (double)t.Responses / t.Expected).Set(line, 6, t.Average, XlsxStyle.Decimal);
+                line++;
+            }
+
+            trend.Width(1, 44).Width(2, 14).Width(3, 18).Width(4, 18).Width(5, 14).Width(6, 22);
         }
 
         return book.ToBytes();

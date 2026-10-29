@@ -1,6 +1,6 @@
 @* The bottom of a module: three tabs, Assignments, Quizzes and Task performance, each with its list. *@
 <div class="tabs" role="tablist" aria-label="Assignments in this module">
-    @foreach (var kind in ItemKinds.All)
+    @foreach (var kind in ItemKinds.Listed.Where(k => k != ItemKinds.Exam || ItemsOf(k).Count > 0))
     {
         var count = ItemsOf(kind).Count;
         var todo = ItemsOf(kind).Count(i => i.Status is "NotStarted" or SubmissionStatus.InProgress);
@@ -80,7 +80,7 @@
 
     /// <summary>The tab that opens first: the first one that has something to do, otherwise the first one with anything in it.</summary>
     private string FirstWithWork() =>
-        ItemKinds.All.FirstOrDefault(k => Module.Items.Any(i => i.Kind == k && i.Status is "NotStarted" or SubmissionStatus.InProgress))
-        ?? ItemKinds.All.FirstOrDefault(k => Module.Items.Any(i => i.Kind == k))
+        ItemKinds.Listed.FirstOrDefault(k => Module.Items.Any(i => i.Kind == k && i.Status is "NotStarted" or SubmissionStatus.InProgress))
+        ?? ItemKinds.Listed.FirstOrDefault(k => Module.Items.Any(i => i.Kind == k))
         ?? ItemKinds.Activity;
 }

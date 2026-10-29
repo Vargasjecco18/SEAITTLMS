@@ -647,11 +647,18 @@ h3 {
     }
 }
 
-/* The box of a strand: opened by the button of the strand (wwwroot/app.js); Escape or a click outside closes it. */
-.strand-dialog {
+/* The courses of a strand drop down under its card (wwwroot/app.js); Escape, a second press or a click outside folds it up. */
+.strand-item {
+    position: relative;
+}
+
+.strand-drop {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    z-index: 30;
     width: min(46rem, calc(100vw - 2rem));
-    max-height: min(85vh, 40rem);
-    padding: 0;
+    max-height: min(70vh, 36rem);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--surface);
@@ -660,53 +667,39 @@ h3 {
     overflow: hidden;
 }
 
-.strand-dialog[open] {
-    display: flex;
-    flex-direction: column;
+.strand-drop[hidden] {
+    display: none;
 }
 
-.strand-dialog::backdrop {
-    background: rgba(8, 15, 30, 0.55);
+.strand-drop.right {
+    right: 0;
+    left: auto;
 }
 
-.dialog-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border);
+@media (max-width: 699px) {
+    .strand-drop {
+        width: 100%;
+    }
 }
 
-.dialog-head h3 {
-    margin: 0 0 0.4rem;
-    font-size: 1.25rem;
-}
-
-.dialog-head form {
-    margin: 0;
-}
-
-.dialog-close {
-    display: grid;
-    place-items: center;
-    width: 2.2rem;
-    height: 2.2rem;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-}
-
-.dialog-close:hover {
-    background: var(--surface-2);
-    color: var(--text);
-}
-
-.dialog-body {
+.drop-body {
+    max-height: inherit;
     padding: 0.25rem 1.25rem 1.25rem;
     overflow-y: auto;
+}
+
+.strand-chevron {
+    display: inline-flex;
+    transition: transform 0.15s;
+}
+
+.strand-card[aria-expanded="true"] {
+    border-color: var(--brand);
+    background: var(--surface-2);
+}
+
+.strand-card[aria-expanded="true"] .strand-chevron {
+    transform: rotate(180deg);
 }
 
 .term-grid {

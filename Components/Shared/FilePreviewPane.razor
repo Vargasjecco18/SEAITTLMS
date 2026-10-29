@@ -58,8 +58,13 @@
 
     [Parameter, EditorRequired] public IReadOnlyList<AttachmentRow> Items { get; set; } = [];
 
+    /// <summary>The file that is shown first (the one the person pressed in a list); the first one the browser can show when it is not given.</summary>
+    [Parameter] public int? InitialId { get; set; }
+
     /// <summary>What the buttons are, for screen readers.</summary>
     [Parameter] public string Label { get; set; } = "Files of the lesson";
+
+    protected override void OnParametersSet() => selectedId ??= InitialId;
 
     private AttachmentRow Current => Items.FirstOrDefault(f => f.Id == selectedId) ?? Items.FirstOrDefault(f => f.CanPreview) ?? Items[0];
 

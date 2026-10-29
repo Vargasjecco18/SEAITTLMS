@@ -62,6 +62,10 @@ builder.Services.AddScoped<EnrollmentImportService>();
 builder.Services.AddScoped<FileDownloads>();
 builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddSingleton<LiveUpdates>();
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+builder.Services.AddSingleton<EmailQueue>();
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHostedService<EmailWorker>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<SearchService>();
@@ -193,7 +197,7 @@ app.MapRazorComponents<App>()
 
 // Signing out has to clear a cookie, which a Blazor component can't do from inside a live circuit,
 // so it is a plain form post. The form carries an antiforgery token, checked here.
-app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery) =>
+app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery, AuthService auth) =>
 {
     try
     {
@@ -204,9 +208,28 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
         return Results.BadRequest();
     }
 
+    // The account is free for the next sign-in (one sign-in at a time).
+    if (int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
+    {
+        await auth.EndSessionAsync(id, http.User.FindFirstValue(AppClaimTypes.SessionId), http.RequestAborted);
+    }
+
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
     return Results.LocalRedirect("/login");
+}).AllowAnonymous();
+
+// A page that is open found that its sign-in is not the open one any more (the account was signed in somewhere else): the sign-in is ended here and the login page says why.
+app.MapGet("/account/session-ended", async (HttpContext http, AuthService auth) =>
+{
+    if (int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+        && !await auth.TouchSessionAsync(id, http.User.FindFirstValue(AppClaimTypes.SessionId), http.RequestAborted))
+    {
+        await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return Results.LocalRedirect("/login?alert=other-device");
+    }
+
+    return Results.LocalRedirect("/");
 }).AllowAnonymous();
 
 // After a person changed their own password (Settings) the session they are in is over: the security stamp of the cookie is not the account's any more.
@@ -295,8 +318,18 @@ app.MapGet("/coordinator/analytics/export", async (HttpContext http, EvaluationS
         return Results.LocalRedirect("/coordinator/analytics");
     }
 
+    // The page opens one teacher at a time (their courses, their questions, what the students wrote); the file has all of them.
+    var details = new List<TeacherDetail>();
+    foreach (var teacher in data.Teachers)
+    {
+        if (await evaluations.GetTeacherDetailAsync(data.EvaluationId.Value, teacher.TeacherId, http.RequestAborted) is { } detail)
+        {
+            details.Add(detail);
+        }
+    }
+
     var now = PhilippineTime.Now(clock).DateTime;
-    return Results.File(AnalyticsExport.ForEvaluation(data, now), FileDownloads.XlsxType, AnalyticsExport.FileName("Teacher evaluation analytics", now));
+    return Results.File(AnalyticsExport.ForEvaluation(data, now, details), FileDownloads.XlsxType, AnalyticsExport.FileName("Teacher evaluation analytics", now));
 }).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.AcademicCoordinator });
 
 // Backups: one is downloaded from the page, one is sent in (to be restored from the list). Only administrators.

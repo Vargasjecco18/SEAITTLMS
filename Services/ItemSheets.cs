@@ -280,6 +280,56 @@ public static class ItemSheets
         return book.ToBytes();
     }
 
+    /// <summary>
+    /// One question of a sheet: the questions sheet of a quiz and the sheet Quiz Questions of the workbook of activities follow the same rules. Gives the question, or what is wrong with it.
+    /// </summary>
+    public static (QuestionInput? Question, IReadOnlyList<string> Errors) ParseQuestionRow(string text, string type, string choices, string answer, string points)
+    {
+        var kind = type.ToLowerInvariant().Replace(" ", "").Replace("-", "") switch
+        {
+            "multiplechoice" or "multiple" or "mc" or "" => QuestionKinds.MultipleChoice,
+            "trueorfalse" or "truefalse" or "tf" or "t/f" => QuestionKinds.TrueFalse,
+            "shortanswer" or "short" or "sa" => QuestionKinds.ShortAnswer,
+            _ => null,
+        };
+        if (kind is null)
+        {
+            return (null, ["the type must be Multiple choice, True or false, or Short answer."]);
+        }
+
+        var pointsValue = 1m;
+        if (points.Length > 0 && !decimal.TryParse(points, NumberStyles.Number, CultureInfo.InvariantCulture, out pointsValue))
+        {
+            return (null, ["the points must be a number."]);
+        }
+
+        var question = new QuestionInput { Text = text, Kind = kind, Points = pointsValue };
+        if (kind == QuestionKinds.MultipleChoice)
+        {
+            var options = choices.Split([';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            question.OptionsText = string.Join('\n', options);
+            // The right answer is the text of the right choice, or its letter (A is the first).
+            var byText = options.FirstOrDefault(o => string.Equals(o, answer, StringComparison.OrdinalIgnoreCase));
+            question.CorrectAnswer = byText ?? (answer.Length == 1 && char.ToUpperInvariant(answer[0]) - 'A' is >= 0 and var index && index < options.Count ? options[index] : answer);
+        }
+        else if (kind == QuestionKinds.TrueFalse)
+        {
+            question.CorrectAnswer = answer.ToLowerInvariant() switch { "true" or "t" or "yes" => "True", "false" or "f" or "no" => "False", _ => answer };
+        }
+        else
+        {
+            question.CorrectAnswer = answer;
+        }
+
+        var found = ModuleService.ValidateQuestions([question]);
+        if (found.Count > 0)
+        {
+            return (null, [.. found.Select(e => e.Replace("Question 1: ", ""))]);
+        }
+
+        return (question, []);
+    }
+
     /// <summary>Reads the questions of an Excel file (the template, or an export of a quiz).</summary>
     public static QuestionImportParse ParseQuestions(byte[] data)
     {
@@ -319,48 +369,10 @@ public static class ItemSheets
             }
 
             var label = $"Row {r}";
-            var kind = type.ToLowerInvariant().Replace(" ", "").Replace("-", "") switch
+            var (question, problems) = ParseQuestionRow(text, type, choices, answer, points);
+            if (question is null)
             {
-                "multiplechoice" or "multiple" or "mc" or "" => QuestionKinds.MultipleChoice,
-                "trueorfalse" or "truefalse" or "tf" or "t/f" => QuestionKinds.TrueFalse,
-                "shortanswer" or "short" or "sa" => QuestionKinds.ShortAnswer,
-                _ => null,
-            };
-            if (kind is null)
-            {
-                errors.Add($"{label}: the type must be Multiple choice, True or false, or Short answer.");
-                continue;
-            }
-
-            var pointsValue = 1m;
-            if (points.Length > 0 && !decimal.TryParse(points, NumberStyles.Number, CultureInfo.InvariantCulture, out pointsValue))
-            {
-                errors.Add($"{label}: the points must be a number.");
-                continue;
-            }
-
-            var question = new QuestionInput { Text = text, Kind = kind, Points = pointsValue };
-            if (kind == QuestionKinds.MultipleChoice)
-            {
-                var options = choices.Split([';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-                question.OptionsText = string.Join('\n', options);
-                // The right answer is the text of the right choice, or its letter (A is the first).
-                var byText = options.FirstOrDefault(o => string.Equals(o, answer, StringComparison.OrdinalIgnoreCase));
-                question.CorrectAnswer = byText ?? (answer.Length == 1 && char.ToUpperInvariant(answer[0]) - 'A' is >= 0 and var index && index < options.Count ? options[index] : answer);
-            }
-            else if (kind == QuestionKinds.TrueFalse)
-            {
-                question.CorrectAnswer = answer.ToLowerInvariant() switch { "true" or "t" or "yes" => "True", "false" or "f" or "no" => "False", _ => answer };
-            }
-            else
-            {
-                question.CorrectAnswer = answer;
-            }
-
-            var found = ModuleService.ValidateQuestions([question]);
-            if (found.Count > 0)
-            {
-                errors.AddRange(found.Select(e => $"{label}: {e.Replace("Question 1: ", "")}"));
+                errors.AddRange(problems.Select(p => $"{label}: {p}"));
                 continue;
             }
 

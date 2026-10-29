@@ -23,10 +23,16 @@
 
 .list {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.6rem;
     margin: 0 0 0.75rem;
     padding: 0;
     list-style: none;
+}
+
+/* A long line of detail is cut with "…" and never pushes the message button out of the card. */
+.list > li {
+    min-width: 0;
 }
 
 .chat {

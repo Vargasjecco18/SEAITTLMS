@@ -12,6 +12,7 @@
 <PageHeader Title="Teacher evaluation"
             IconName="clipboard-check">
     <ButtonLink Href="coordinator/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
+    <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenExcel">Template and import (Excel)</Button>
     <Button IconName="plus" Disabled="busy" OnClick="CreateAsync">New evaluation</Button>
 </PageHeader>
 
@@ -78,6 +79,7 @@
                                 <div class="row-actions">
                                     <ButtonLink Href="@($"coordinator/evaluations/{row.Id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="busy" Title="@($"Make a copy of {row.Title}")" OnClick="() => CopyAsync(row.Id)">Copy</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" Disabled="busy" Title="@($"Export {row.Title} to Excel")" OnClick="() => ExportAsync(row.Id)">Excel</Button>
                                 </div>
                             </td>
                         </tr>
@@ -88,7 +90,80 @@
     }
 </Card>
 
+<SheetImportDialog Open="excelOpen" Title="Evaluation in Excel" Lead="Fill in the template with the title, the instructions, the due date and the questions, then import it: a new draft evaluation is made. Open it to choose the teachers' courses and send it."
+                   Single="evaluation was" Plural="evaluations were" Added="made as a draft" RowLabel="Part" PreviewHint="Take out what is marked and import again." TemplateName="@EvaluationSheets.FileName("Template")" Template="EvaluationSheets.Template"
+                   Read="ReadSheet" OnImport="ImportSheetAsync" OnClose="CloseExcel" />
+
 @code {
+    [Inject] private FileDownloads Downloads { get; set; } = null!;
+
+    private bool excelOpen;
+
+    private void OpenExcel() => excelOpen = true;
+
+    private void CloseExcel() => excelOpen = false;
+
+    private async Task ExportAsync(int id)
+    {
+        if (await Service.GetAsync(id) is { } detail)
+        {
+            await Downloads.SaveAsync(EvaluationSheets.FileName(detail.Title), EvaluationSheets.Export(detail));
+        }
+    }
+
+    private static SheetImportDialog.SheetPreview ReadSheet(byte[] data)
+    {
+        var parsed = EvaluationSheets.Parse(data);
+        if (parsed.FileError is not null)
+        {
+            return new SheetImportDialog.SheetPreview([], parsed.FileError);
+        }
+
+        if (parsed.Errors.Count > 0)
+        {
+            return new SheetImportDialog.SheetPreview([.. parsed.Errors.Select(p => new SheetImportDialog.SheetPreviewRow("Problem", parsed.Details?.Title ?? "", p))], null);
+        }
+
+        return new SheetImportDialog.SheetPreview(
+        [
+            new SheetImportDialog.SheetPreviewRow("Evaluation", parsed.Details!.Title, null),
+            new SheetImportDialog.SheetPreviewRow("Questions", parsed.Questions.Count == 1 ? "1 question" : $"{parsed.Questions.Count} questions", null),
+        ], null);
+    }
+
+    /// <summary>Makes a new draft evaluation with the details and the questions of the workbook.</summary>
+    private async Task<ItemImportSummary> ImportSheetAsync(byte[] data)
+    {
+        var parsed = EvaluationSheets.Parse(data);
+        var me = await Me.GetAsync();
+        if (parsed.Errors.Count > 0 || parsed.Details is null || me is null)
+        {
+            return new ItemImportSummary(0, parsed.Errors.Count > 0 ? parsed.Errors : ["Please sign in again."]);
+        }
+
+        var created = await Service.CreateAsync(me.UserId);
+        if (!created.Succeeded || created.Id is not { } id)
+        {
+            return new ItemImportSummary(0, created.Errors);
+        }
+
+        var problems = new List<string>();
+        var details = await Service.SaveAsync(me.UserId, id, parsed.Details);
+        if (!details.Succeeded)
+        {
+            problems.AddRange(details.Errors);
+        }
+
+        var questions = await Service.SaveQuestionsAsync(me.UserId, id, parsed.Questions);
+        if (!questions.Succeeded)
+        {
+            problems.AddRange(questions.Errors);
+        }
+
+        rows = await Service.ListAsync();
+        return new ItemImportSummary(1, problems);
+    }
+
     private IReadOnlyList<EvaluationRow>? rows;
     private string? message;
     private bool busy;

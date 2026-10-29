@@ -1,0 +1,37 @@
+@* A page of a course: the second menu of the course at the left (it can be hidden and shown again, and it stays in view under the header while the page scrolls),
+   the page in the middle and, when the page has one, a column at the right. The choice to hide the menu is kept on this computer (wwwroot/app.js, data-cm-toggle). *@
+<div class="course-layout @(Aside is null ? "" : "with-aside")">
+    <div class="course-menu-box">
+        <button type="button" class="cm-toggle" data-cm-toggle aria-expanded="true" aria-controls="course-menu-nav" title="Hide or show the course menu">
+            <span class="cm-when-shown"><Icon Name="panel-left-close" Size="18" /> <span>Hide menu</span></span>
+            <span class="cm-when-hidden"><Icon Name="panel-left-open" Size="18" /> <span>Course menu</span></span>
+        </button>
+        <CourseMenu Id="course-menu-nav" PageHref="@PageHref" Selected="@Selected" ModuleCount="@ModuleCount" Counts="@Counts" Extra="@Extra" />
+    </div>
+
+    <div class="course-main">@ChildContent</div>
+
+    @if (Aside is not null)
+    {
+        <aside class="course-aside">@Aside</aside>
+    }
+</div>
+
+@code {
+    /// <summary>The address of the course page (without the tab).</summary>
+    [Parameter, EditorRequired] public string PageHref { get; set; } = "";
+
+    /// <summary>The tab of the menu that is open: "" for the modules, or assignments, quizzes, tasks.</summary>
+    [Parameter] public string Selected { get; set; } = "";
+
+    [Parameter] public int ModuleCount { get; set; }
+
+    [Parameter] public IReadOnlyDictionary<string, int> Counts { get; set; } = new Dictionary<string, int>();
+
+    [Parameter] public IReadOnlyList<CourseMenuLink> Extra { get; set; } = [];
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>A column at the right of the page (for the teacher's module page: Edit module).</summary>
+    [Parameter] public RenderFragment? Aside { get; set; }
+}

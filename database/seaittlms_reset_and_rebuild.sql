@@ -1833,5 +1833,18 @@ ALTER TABLE `submissions` ADD CONSTRAINT `ck_submissions_late_decision` CHECK (l
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261029082858_LateWorkAndSlides', '9.0.20');
 
+ALTER TABLE `module_items` DROP CONSTRAINT `ck_module_items_kind`;
+
+ALTER TABLE `users` ADD `active_session_id` varchar(36) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `users` ADD `active_session_seen_utc` datetime(6) NULL;
+
+ALTER TABLE `users` ADD `notify_email` varchar(254) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `module_items` ADD CONSTRAINT `ck_module_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Exam'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261029190026_SingleSessionExamAndNotifyEmail', '9.0.20');
+
 COMMIT;
 

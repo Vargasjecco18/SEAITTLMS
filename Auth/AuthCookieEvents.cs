@@ -41,10 +41,18 @@ public static class AuthCookieEvents
         var current = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new { u.IsActive, u.SecurityStamp })
+            .Select(u => new { u.IsActive, u.SecurityStamp, u.ActiveSessionId })
             .FirstOrDefaultAsync(context.HttpContext.RequestAborted);
 
         if (current is null || !current.IsActive || current.SecurityStamp != stamp)
+        {
+            await RejectAsync(context);
+            return;
+        }
+
+        // The account was signed in somewhere else after this sign-in had not been seen for a while: this one is over.
+        var session = context.Principal?.FindFirstValue(AppClaimTypes.SessionId);
+        if (settings.SingleSession && !string.IsNullOrEmpty(session) && current.ActiveSessionId != session)
         {
             await RejectAsync(context);
             return;

@@ -27,6 +27,18 @@ public class User : AuditableEntity
     /// <summary>Changes whenever the account must be signed out everywhere (password change, deactivation, ...).</summary>
     public string SecurityStamp { get; set; } = "";
 
+    /// <summary>
+    /// The number of the sign-in that is open now. An account has one sign-in open at a time (<see cref="Auth.AuthOptions.SingleSession"/>): while another browser or device is using it, a new sign-in is refused.
+    /// Empty: nobody is signed in with this account.
+    /// </summary>
+    public string? ActiveSessionId { get; set; }
+
+    /// <summary>The last time the open sign-in was seen (every page that is open says so now and then). After a few minutes without it the sign-in is taken as ended.</summary>
+    public DateTime? ActiveSessionSeenUtc { get; set; }
+
+    /// <summary>An email address (a Gmail, for example) that the person also gets their notifications at. Empty: only in the system.</summary>
+    public string? NotifyEmail { get; set; }
+
     public int FailedLoginCount { get; set; }
     public DateTime? LockoutEndUtc { get; set; }
     public DateTime? LastLoginAtUtc { get; set; }

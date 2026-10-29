@@ -34,9 +34,7 @@ else
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     @* The second menu of the course (modules, assignments, quizzes, task performances) next to its content. *@
-    <div class="course-layout">
-    <CourseMenu PageHref="@($"teacher/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks" />
-    <div class="course-main">
+    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
     @if (shownKind is { } listKind)
     {
         <Card Title="@ItemKinds.Plural(listKind)" IconName="@SubjectStyle.KindIcon(listKind)">
@@ -161,6 +159,7 @@ else
                                 <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye-off" OnClick="() => HideAsync(module)">Hide</Button>
                             }
 
+                            <ButtonLink Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Href="@($"teacher/subjects/{AssignmentId}/modules/{module.Id}")">Open</ButtonLink>
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
                         </div>
                     </header>
@@ -191,15 +190,15 @@ else
                     @{
                         var allModuleFiles = FilesOf(moduleFiles, module.Id);
                     }
-                    <AttachmentList Items="allModuleFiles.Where(f => !f.IsSlides).ToList()" Label="@($"Files of {module.Title}")" />
+                    <AttachmentList Items="allModuleFiles.Where(f => !f.IsSlides).ToList()" PageHref="@(f => ReaderHref(module.Id, f))" Label="@($"Files of {module.Title}")" />
                     @if (allModuleFiles.Any(f => f.IsSlides))
                     {
                         <h3 class="slides-title"><Icon Name="presentation" Size="16" /> Slides</h3>
-                        <AttachmentList Items="allModuleFiles.Where(f => f.IsSlides).ToList()" Label="@($"Slides of {module.Title}")" />
+                        <AttachmentList Items="allModuleFiles.Where(f => f.IsSlides).ToList()" PageHref="@(f => ReaderHref(module.Id, f))" Label="@($"Slides of {module.Title}")" />
                     }
 
                     <div class="groups">
-                        @foreach (var kind in ItemKinds.All.Where(k => !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
+                        @foreach (var kind in ItemKinds.Listed.Where(k => k == ItemKinds.Exam ? module.Items.Any(i => i.Kind == k) : !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
                         {
                             var items = module.Items.Where(i => i.Kind == kind).ToList();
                             <div class="group">
@@ -290,35 +289,14 @@ else
         </div>
     }
     }
-    </div>
-    </div>
+    </CourseLayout>
 }
 
 @* ===== Module: add or edit ===== *@
-<Modal Open="moduleForm is not null" Title="Edit module" OnClose="CloseModuleForm">
-    @if (moduleForm is not null)
+<Modal Open="editingModule is not null" Title="Edit module" OnClose="CloseModuleForm">
+    @if (editingModule is not null)
     {
-        <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
-            <FormErrors Errors="formErrors" />
-            <Field For="m-title" Label="Title" Required="true">
-                <InputText id="m-title" @bind-Value="moduleForm.Title" maxlength="200" autocomplete="off" />
-            </Field>
-            <Field For="m-desc" Label="Short description" Hint="One or two lines students see in the list.">
-                <InputText id="m-desc" @bind-Value="moduleForm.Description" maxlength="1000" autocomplete="off" />
-            </Field>
-            <Field For="m-body" Label="Lesson" Hint="The text of the lesson. Line breaks are kept.">
-                <InputTextArea id="m-body" @bind-Value="moduleForm.Body" rows="9" />
-            </Field>
-            <Field For="m-link" Label="Link" Hint="A file or video the lesson uses (starts with https://).">
-                <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
-            </Field>
-            <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="Files of the module" Existing="@(FilesOf(moduleFiles, editingModuleId).Where(f => !f.IsSlides).ToList())" />
-            <AttachmentPicker @ref="slidesPicker" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="Slides of the module (PowerPoint or PDF)" Existing="@(FilesOf(moduleFiles, editingModuleId).Where(f => f.IsSlides).ToList())" />
-            <div class="modal-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save module")</Button>
-            </div>
-        </EditForm>
+        <ModuleEditor @key="editingModule.Id" TeacherId="teacherId" Module="editingModule" Files="FilesOf(moduleFiles, editingModule.Id)" OnSaved="ModuleSavedAsync" OnCancel="CloseModuleForm" />
     }
 </Modal>
 
@@ -381,6 +359,7 @@ else
 
 @* ===== Excel: template, import, export of the assignments, quizzes or task performances of a module ===== *@
 <ItemExcelDialog Open="excelModule is not null" Kind="@excelKind" ModuleTitle="@(excelModule?.Title ?? "")" Existing="ExcelExisting" OnImport="ImportItemsAsync" OnClose="CloseExcel" />
+<ActivitiesExcelDialog Open="activitiesModule is not null" ModuleTitle="@(activitiesModule?.Title ?? "")" Existing="activitiesExisting" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
 
 @* ===== Schedule ===== *@
 <Modal Open="scheduleModule is not null" Title="Schedule the module" OnClose="CloseSchedule">
@@ -436,7 +415,7 @@ else
 
     private string? shownKind => CourseMenu.KindOfKey(Tab);
 
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.All.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
 
     private IReadOnlyList<CourseMenuLink> MenuLinks =>
     [
@@ -452,8 +431,7 @@ else
     private bool busy;
     private List<string> formErrors = [];
 
-    private ModuleInput? moduleForm;
-    private int? editingModuleId;
+    private TeacherModule? editingModule;
 
     private ItemForm? itemForm;
     private int? editingItemId;
@@ -461,10 +439,7 @@ else
 
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> moduleFiles = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> itemFiles = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
-    private AttachmentPicker? modulePicker;
-    private AttachmentPicker? slidesPicker;
     private AttachmentPicker? itemPicker;
-    private int moduleFormKey;
     private int itemFormKey;
 
     private TeacherModule? scheduleModule;
@@ -476,6 +451,9 @@ else
     private bool QuizIsAFile => itemForm?.Kind == ItemKinds.Quiz && (itemPicker?.HasFiles ?? FilesOf(itemFiles, editingItemId).Count > 0);
 
     private void FilesChanged() { }
+
+    /// <summary>The page where the module is read inside the system, with the file pressed shown (a file the browser can't show is saved instead).</summary>
+    private string? ReaderHref(int moduleId, AttachmentRow file) => file.CanPreview ? $"teacher/subjects/{AssignmentId}/modules/{moduleId}?file={file.Id}" : null;
 
     // ---------------------------------------------------------------- Excel
 
@@ -492,6 +470,44 @@ else
     }
 
     private void CloseExcel() => excelModule = null;
+
+    // ---- the workbook of activities (assignments, quizzes with their questions, task performances) of a module
+
+    private TeacherModule? activitiesModule;
+    private IReadOnlyList<ActivityExportItem> activitiesExisting = [];
+
+    private async Task OpenActivitiesAsync(TeacherModule module)
+    {
+        var list = new List<ActivityExportItem>();
+        foreach (var i in module.Items.Where(i => ItemKinds.All.Contains(i.Kind)))
+        {
+            var questions = i.Kind == ItemKinds.Quiz ? await Modules.GetQuestionsAsync(teacherId, i.Id) ?? [] : [];
+            list.Add(new ActivityExportItem(i.Kind, new ItemExportRow(i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, i.TimeLimitMinutes), questions, [.. FilesOf(itemFiles, i.Id).Select(f => f.Name)]));
+        }
+
+        activitiesExisting = list;
+        activitiesModule = module;
+    }
+
+    private void CloseActivities() => activitiesModule = null;
+
+    /// <summary>Every row of the workbook is saved like the box saves one item, so the same rules hold; the questions of a quiz and the files follow it.</summary>
+    private async Task<ItemImportSummary> ImportActivitiesAsync(IReadOnlyList<ActivityToSave> list)
+    {
+        var moduleId = activitiesModule?.Id ?? 0;
+        var userId = await UserIdAsync();
+        var summary = await ActivityImport.RunAsync(list,
+            input => Modules.SaveItemAsync(teacherId, moduleId, null, input),
+            (id, questions) => Modules.SaveQuestionsAsync(teacherId, id, questions),
+            (id, files) => Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.Item, id), files));
+        if (moduleId != 0)
+        {
+            openModules.Add(moduleId);
+        }
+
+        await LoadAsync();
+        return summary;
+    }
 
     private void OpenExcelFromForm()
     {
@@ -600,51 +616,17 @@ else
         }
 
         formErrors = [];
-        editingModuleId = module.Id;
-        moduleFormKey++;
-        moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
+        editingModule = module;
     }
 
-    private void CloseModuleForm() => moduleForm = null;
+    private void CloseModuleForm() => editingModule = null;
 
-    private async Task SaveModuleAsync()
+    private async Task ModuleSavedAsync(ModuleEditor.EditorResult result)
     {
-        if (moduleForm is null || busy)
-        {
-            return;
-        }
-
-        busy = true;
-        try
-        {
-            if (editingModuleId is not { } id)
-            {
-                return;
-            }
-
-            var result = await Modules.UpdateModuleAsync(teacherId, id, moduleForm);
-            if (!result.Succeeded)
-            {
-                formErrors = [.. result.Errors];
-                return;
-            }
-
-            var fileProblems = await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.Module, id));
-            fileProblems.AddRange(await ApplyFilesAsync(slidesPicker, new AttachmentOwner(AttachmentOwnerKind.Module, id), slides: true));
-            moduleForm = null;
-            Say(result);
-            if (fileProblems.Count > 0)
-            {
-                messageIsError = true;
-                message = $"{result.Message} But the files: {string.Join(" ", fileProblems)}";
-            }
-
-            await LoadAsync();
-        }
-        finally
-        {
-            busy = false;
-        }
+        editingModule = null;
+        messageIsError = !result.Ok;
+        message = result.Message;
+        await LoadAsync();
     }
 
     private async Task PostNowAsync(TeacherModule module)
@@ -721,7 +703,7 @@ else
     private static string ModuleSummary(TeacherModule module)
     {
         var parts = new List<string>();
-        foreach (var kind in ItemKinds.All)
+        foreach (var kind in ItemKinds.Listed)
         {
             var count = module.Items.Count(i => i.Kind == kind);
             if (count > 0)
@@ -737,11 +719,18 @@ else
     private IReadOnlyList<AddMenuModule> AddMenuModules => subject is null ? [] :
         [.. subject.Modules.Where(m => !m.IsSyllabus).Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))];
 
-    private void PickNew(AddMenuPick pick)
+    private async Task PickNew(AddMenuPick pick)
     {
         if (subject?.Modules.FirstOrDefault(m => m.Id == pick.ModuleId) is { } module)
         {
-            OpenNewItem(module, pick.Kind);
+            if (pick.Kind == AddItemMenuLabels.ExcelKind)
+            {
+                await OpenActivitiesAsync(module);
+            }
+            else
+            {
+                OpenNewItem(module, pick.Kind);
+            }
         }
     }
 

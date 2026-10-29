@@ -79,3 +79,9 @@
     font-weight: 600;
     color: var(--brand);
 }
+
+.add-rule {
+    height: 1px;
+    margin: 0.3rem 0.4rem;
+    background: var(--border);
+}

@@ -63,8 +63,6 @@
 /* Beside the page on a wide screen: a menu down the left side. */
 @media (min-width: 1000px) {
     .course-menu {
-        position: sticky;
-        top: 1rem;
         flex-direction: column;
         align-self: start;
         overflow: visible;

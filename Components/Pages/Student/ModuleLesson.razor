@@ -26,56 +26,22 @@ else
         <ButtonLink Href="@($"student/subjects/{module.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @module.SubjectName</ButtonLink>
     </PageHeader>
 
-    @* The lesson, and its files shown right here (a PDF, a picture ...) at the left, so the student reads without leaving the page. *@
-    var hasText = !string.IsNullOrWhiteSpace(module.Description) || !string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl);
-    var slides = files.Where(f => f.IsSlides).ToList();
-    var others = files.Where(f => !f.IsSlides).ToList();
-    <div class="layout @(files.Count > 0 && hasText ? "two" : "")">
-        @if (slides.Count > 0)
-        {
-            <Card Title="Slides" IconName="presentation">
-                <FilePreviewPane Items="slides" Label="Slides of this module" />
-            </Card>
-        }
-
-        @if (others.Count > 0)
-        {
-            <Card Title="@(others.Count == 1 ? "File" : "Files")" IconName="paperclip">
-                <FilePreviewPane Items="others" Label="Files of this module" />
-            </Card>
-        }
-
-        @if (hasText || files.Count == 0)
-        {
-            <Card Title="Lesson" IconName="book-open">
-                @if (!string.IsNullOrWhiteSpace(module.Description))
-                {
-                    <p class="lead">@module.Description</p>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(module.Body))
-                {
-                    <div class="lesson">@module.Body</div>
-                }
-                else if (!hasText)
-                {
-                    <p class="muted">This module has no lesson text.</p>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
-                {
-                    <p class="link"><Icon Name="link" Size="16" /> <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">@module.LinkUrl <Icon Name="external-link" Size="14" /></a></p>
-                }
-            </Card>
-        }
-    </div>
+    @* The menu of the course at the left (so the student can go to the modules, the assignments ... without going back), and the lesson with its files shown right here. *@
+    <CourseLayout PageHref="@($"student/subjects/{module.AssignmentId}")" ModuleCount="@(subject?.Modules.Count(m => !m.IsSyllabus) ?? 0)" Counts="KindCounts" Extra="MenuLinks">
+        <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" />
+    </CourseLayout>
 }
 
 @code {
     [Parameter] public int ModuleId { get; set; }
 
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+
+    private static readonly IReadOnlyList<CourseMenuLink> MenuLinks = [new("Grades", "trending-up", "student/grades")];
+
     private bool loaded;
     private StudentModule? module;
+    private StudentSubject? subject;
     private IReadOnlyList<AttachmentRow> files = [];
 
     protected override async Task OnParametersSetAsync()
@@ -83,6 +49,7 @@ else
         var studentId = await Me.GetStudentIdAsync();
         module = studentId is { } id ? await Modules.OpenModuleAsync(id, ModuleId) : null;
         files = module is null ? [] : await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Module, ModuleId));
+        subject = studentId is { } sid && module is not null ? await Modules.GetStudentSubjectAsync(sid, module.AssignmentId) : null;
         loaded = true;
     }
 }

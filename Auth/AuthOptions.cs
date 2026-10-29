@@ -22,4 +22,16 @@ public class AuthOptions
     /// changed security stamp stops working within this many minutes.
     /// </summary>
     public int RevalidateMinutes { get; set; } = 5;
+
+    /// <summary>
+    /// One sign-in at a time for each account: while someone is using the account in a browser or on a device, signing in with it somewhere else is refused
+    /// (the login page says so at the top). Turn it off to allow several.
+    /// </summary>
+    public bool SingleSession { get; set; } = true;
+
+    /// <summary>
+    /// A sign-in is taken as ended when it was not seen for this many minutes (a page that is open says it is there every minute). So after a browser was closed without
+    /// pressing Log out, the account can be used somewhere else after this long.
+    /// </summary>
+    public int SessionIdleMinutes { get; set; } = 3;
 }

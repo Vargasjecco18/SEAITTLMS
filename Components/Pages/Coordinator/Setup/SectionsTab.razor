@@ -1,4 +1,5 @@
 @inherits SetupTabBase
+@inject SystemSettingsService SystemSettings
 
 <Card>
     <div class="tab-head">
@@ -7,6 +8,14 @@
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @* The limit the registrar works with: a section can't be given more students than this. *@
+    <form class="capacity-bar" @onsubmit="SaveCapacityAsync">
+        <Field For="sec-capacity" Label="Students in one section (the limit)" Hint="From 1 to 100. The registrar sees how many students a section has, like 32 of 40, and can't enroll more.">
+            <input id="sec-capacity" type="number" class="input" min="1" max="100" @bind="capacity" />
+        </Field>
+        <Button Type="submit" Variant="ButtonVariant.Secondary" IconName="save" Disabled="Busy">Save limit</Button>
+    </form>
 
     <form class="filter-bar" role="search" @onsubmit="() => { }">
         <SearchField Id="sec-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Section or adviser" AriaLabel="Search sections" />
@@ -196,6 +205,7 @@
         .Where(t => t.Id == adviserId
             || string.IsNullOrWhiteSpace(adviserSearch)
             || adviserSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).All(w => t.SearchText.Contains(w, StringComparison.OrdinalIgnoreCase)));
+    private int capacity;
     private string search = "";
     private int yearFilter;
     private int gradeFilter;
@@ -215,6 +225,19 @@
     {
         lookups = await Setup.GetLookupsAsync();
         rows = await Setup.ListSectionsAsync();
+        capacity = SystemSettings.Current.SectionCapacity;
+    }
+
+    private async Task SaveCapacityAsync()
+    {
+        var result = await RunAsync(userId => SystemSettings.SaveSectionCapacityAsync(userId, capacity));
+        if (!result.Succeeded)
+        {
+            // the box shows what is really kept; the problems are in the notice
+            Message = string.Join(" ", Errors.Count > 0 ? Errors : [result.Message ?? "The limit was not saved."]);
+            MessageIsError = true;
+            capacity = SystemSettings.Current.SectionCapacity;
+        }
     }
 
     private async Task ReloadAsync() => rows = await Setup.ListSectionsAsync();

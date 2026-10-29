@@ -19,6 +19,7 @@ public static class CalendarKinds
     {
         ItemKinds.Quiz => "Quiz",
         ItemKinds.TaskPerformance => "Task performance",
+        ItemKinds.Exam => "Exam",
         ItemKinds.Activity => "Assignment",
         Module => "Module",
         Personal => "Event",

@@ -10,7 +10,7 @@ namespace SEAITT_LMS.Services;
 /// </summary>
 public static class GradebookExport
 {
-    private static readonly string[] Kinds = [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance];
+    private static readonly string[] Kinds = ItemKinds.Listed;
 
     private const int KindRow = 5;
     private const int TitleRow = 6;
@@ -20,7 +20,7 @@ public static class GradebookExport
 
     public static string FileName(SubjectGradebook book) => FileDownloads.CleanName($"Gradebook - {book.SubjectName} {book.SectionLabel}.xlsx");
 
-    private static string ShortKind(string kind) => kind switch { ItemKinds.Quiz => "Q", ItemKinds.TaskPerformance => "TP", _ => "A" };
+    private static string ShortKind(string kind) => ItemKinds.Code(kind);
 
     public static byte[] Build(SubjectGradebook book)
     {

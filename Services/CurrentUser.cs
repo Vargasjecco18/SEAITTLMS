@@ -7,7 +7,7 @@ using SEAITT_LMS.Data;
 namespace SEAITT_LMS.Services;
 
 /// <summary>Who is signed in, as the pages and services need to know it.</summary>
-public sealed record CurrentUserInfo(int UserId, string Role, string Name, string Email);
+public sealed record CurrentUserInfo(int UserId, string Role, string Name, string Email, string? SessionId = null);
 
 /// <summary>
 /// The signed-in person for the page that is open, read from the sign-in cookie. A teacher's or student's own record id
@@ -31,7 +31,7 @@ public sealed class CurrentUser(AuthenticationStateProvider authentication, IDbC
             return null;
         }
 
-        info = new CurrentUserInfo(id, user.FindFirstValue(ClaimTypes.Role) ?? "", user.Identity?.Name ?? "", user.FindFirstValue(ClaimTypes.Email) ?? "");
+        info = new CurrentUserInfo(id, user.FindFirstValue(ClaimTypes.Role) ?? "", user.Identity?.Name ?? "", user.FindFirstValue(ClaimTypes.Email) ?? "", user.FindFirstValue(SEAITT_LMS.Auth.AppClaimTypes.SessionId));
         return info;
     }
 

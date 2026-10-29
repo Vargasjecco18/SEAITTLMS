@@ -1,0 +1,293 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject FileDownloads Downloads
+@inject AttachmentService Attachments
+@inject SystemSettingsService Settings
+
+@* The box for the Excel workbook of modules of a course of the library: the template, an export of what the course has, and the import. The Files column names files; they are
+   chosen here and each one is attached to the module that names it. The page saves the modules (OnImport). *@
+<Modal Open="Open" Title="Add modules in Excel" Large="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        @if (result is null)
+        {
+            <p class="xl-lead">For <strong>@CourseName</strong>. Every row of the workbook becomes one module of the course.</p>
+            <ol class="xl-steps">
+                <li>
+                    <strong>Get the template.</strong> It has the column titles, an example and a sheet that says how to fill it.
+                    <div class="xl-row">
+                        <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
+                        @if (Existing.Count > 0)
+                        {
+                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export the modules of the course (@Existing.Count)</Button>
+                        }
+                    </div>
+                </li>
+                <li>
+                    <strong>Fill it</strong> and save it as an Excel file. Name the files of a module in the column Files.
+                </li>
+                <li>
+                    <strong>Choose the workbook.</strong>
+                    <div class="xl-row">
+                        <InputFile id="xl-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Excel file (.xlsx)" />
+                    </div>
+                    @if (fileName is not null)
+                    {
+                        <p class="xl-file"><Icon Name="file-spreadsheet" Size="16" /> @fileName</p>
+                    }
+                </li>
+                @if (parsed is not null && parsed.FileNamesWanted.Count > 0)
+                {
+                    <li>
+                        <strong>Choose the files</strong> the workbook names.
+                        <div class="xl-row">
+                            <InputFile id="xl-attachments" OnChange="AttachmentsChosenAsync" multiple aria-label="Files named in the workbook" />
+                        </div>
+                        <ul class="xl-files" aria-label="Files named in the workbook">
+                            @foreach (var name in parsed.FileNamesWanted)
+                            {
+                                var have = chosen.ContainsKey(name);
+                                <li class="@(have ? "have" : "missing")"><Icon Name="@(have ? "circle-check" : "circle-x")" Size="14" /> @name@(have ? "" : " — not chosen yet")</li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ol>
+
+            <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
+
+            @if (parsed is not null)
+            {
+                var ready = Ready.Count;
+                <p class="xl-summary" role="status">
+                    <strong>@ready</strong> of @parsed.Rows.Count @(parsed.Rows.Count == 1 ? "row is" : "rows are") ready to import.
+                    @if (ready < parsed.Rows.Count)
+                    {
+                        <span class="bad">The rows with a problem are left out; the reason is on its line.</span>
+                    }
+                </p>
+                <div class="xl-table-wrap">
+                    <table class="xl-table">
+                        <thead><tr><th scope="col">Row</th><th scope="col">Title</th><th scope="col">Result</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in parsed.Rows)
+                            {
+                                var problems = ProblemsOf(row);
+                                <tr class="@(problems.Count > 0 ? "failed" : "ok")">
+                                    <td>@row.Row</td>
+                                    <td>@row.Title</td>
+                                    <td>@(problems.Count > 0 ? string.Join(" ", problems) : row.FileNames.Count == 0 ? "Ready" : row.FileNames.Count == 1 ? "Ready · 1 file" : $"Ready · {row.FileNames.Count} files")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="xl-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                <Button IconName="upload" Disabled="@(importing || reading || parsed is null || Ready.Count == 0)" OnClick="ImportAsync">@(importing ? "Importing…" : "Import")</Button>
+            </div>
+        }
+        else
+        {
+            <p class="xl-summary" role="status">
+                <strong>@result.Created</strong> @(result.Created == 1 ? "module was" : "modules were") added to the course.
+                @if (result.Errors.Count > 0)
+                {
+                    <span class="bad">@result.Errors.Count @(result.Errors.Count == 1 ? "problem" : "problems").</span>
+                }
+            </p>
+            @if (result.Errors.Count > 0)
+            {
+                <ul class="xl-errors">
+                    @foreach (var e in result.Errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+
+            <div class="xl-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Import another file</Button>
+                <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    private const int MaxChosenFiles = 40;
+    private const long MaxChosenBytes = 60L * 1024 * 1024;
+
+    private bool importing;
+    private bool reading;
+    private string? fileName;
+    private string? error;
+    private ModuleImportParse? parsed;
+    private ItemImportSummary? result;
+    private readonly Dictionary<string, NewAttachment> chosen = new(StringComparer.OrdinalIgnoreCase);
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>The course the modules go to, for the heading.</summary>
+    [Parameter] public string CourseName { get; set; } = "";
+
+    /// <summary>The modules the course has now (the export).</summary>
+    [Parameter] public IReadOnlyList<ModuleExportRow> Existing { get; set; } = [];
+
+    /// <summary>Saves the modules and says how many were added and what went wrong.</summary>
+    [Parameter, EditorRequired] public Func<IReadOnlyList<ModuleToSave>, Task<ItemImportSummary>> OnImport { get; set; } = _ => Task.FromResult(new ItemImportSummary(0, []));
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            Reset();
+        }
+    }
+
+    private void Reset()
+    {
+        importing = reading = false;
+        fileName = null;
+        error = null;
+        parsed = null;
+        result = null;
+        chosen.Clear();
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void Another() => Reset();
+
+    private List<string> ProblemsOf(ModuleImportRow row)
+    {
+        if (row.Input is null)
+        {
+            return [.. row.Errors];
+        }
+
+        var problems = new List<string>();
+        foreach (var name in row.FileNames)
+        {
+            if (!chosen.TryGetValue(name, out var file))
+            {
+                problems.Add($"Choose the file {name}.");
+            }
+            else if (Attachments.Check([file]).FirstOrDefault(e => !e.StartsWith("At most", StringComparison.Ordinal)) is { } why)
+            {
+                problems.Add(why);
+            }
+        }
+
+        if (row.FileNames.Count > AttachmentService.MaxPerOwner)
+        {
+            problems.Add($"At most {AttachmentService.MaxPerOwner} files can go with one module.");
+        }
+
+        return problems;
+    }
+
+    private IReadOnlyList<ModuleImportRow> Ready => parsed is null ? [] : [.. parsed.Rows.Where(r => ProblemsOf(r).Count == 0)];
+
+    private async Task DownloadTemplateAsync() => await Downloads.SaveAsync(ModuleSheets.FileName("Template"), ModuleSheets.Template());
+
+    private async Task ExportAsync() => await Downloads.SaveAsync(ModuleSheets.FileName(CourseName.Length == 0 ? "Course" : CourseName), ModuleSheets.Export(Existing));
+
+    private async Task FileChosenAsync(InputFileChangeEventArgs e)
+    {
+        error = null;
+        parsed = null;
+        fileName = null;
+        reading = true;
+        try
+        {
+            if (e.File.Size > XlsxReader.MaxFileBytes)
+            {
+                error = $"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.";
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            fileName = e.File.Name;
+            var read = ModuleSheets.Parse(buffer.ToArray());
+            if (read.FileError is not null)
+            {
+                error = read.FileError;
+                return;
+            }
+
+            parsed = read;
+        }
+        catch (IOException)
+        {
+            error = "The file could not be read. Choose it again.";
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
+
+    private async Task AttachmentsChosenAsync(InputFileChangeEventArgs e)
+    {
+        error = null;
+        reading = true;
+        try
+        {
+            var maxBytes = Settings.Current.MaxFileMegabytes * 1024L * 1024;
+            foreach (var file in e.GetMultipleFiles(MaxChosenFiles))
+            {
+                if (chosen.Values.Sum(f => (long)f.Data.Length) + file.Size > MaxChosenBytes)
+                {
+                    error = $"Too many files at once: choose at most {MaxChosenBytes / (1024 * 1024)} MB in one import.";
+                    break;
+                }
+
+                if (file.Size > maxBytes)
+                {
+                    error = $"{file.Name} is bigger than {maxBytes / (1024 * 1024)} MB.";
+                    continue;
+                }
+
+                await using var stream = file.OpenReadStream(maxBytes);
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer);
+                chosen[file.Name] = new NewAttachment(file.Name, file.ContentType, buffer.ToArray());
+            }
+        }
+        catch (IOException)
+        {
+            error = "A file could not be read. Choose it again.";
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (importing || parsed is null)
+        {
+            return;
+        }
+
+        importing = true;
+        try
+        {
+            var list = Ready.Select(r => new ModuleToSave(r.Input!, [.. r.FileNames.Select(n => chosen[n])], r.Row)).ToList();
+            var summary = await OnImport(list);
+            var left = parsed.Rows.Where(r => ProblemsOf(r).Count > 0).Select(r => $"Row {r.Row}: {string.Join(" ", ProblemsOf(r))}");
+            result = summary with { Errors = [.. left, .. summary.Errors] };
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+}

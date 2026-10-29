@@ -1,0 +1,7 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.state {
+    margin: 0 0 0.9rem;
+}

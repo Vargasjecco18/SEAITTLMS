@@ -64,12 +64,20 @@ public static class ItemKinds
     public const string Quiz = "Quiz";
     public const string TaskPerformance = "TaskPerformance";
 
+    /// <summary>A major test (a midterm, a final): it is added from the gradebook, where its scores are typed. It is not one of the three kinds a teacher adds to a module.</summary>
+    public const string Exam = "Exam";
+
+    /// <summary>The kinds a teacher adds to a module, and the provider sends: the sheets of the Excel templates.</summary>
     public static readonly string[] All = [Activity, Quiz, TaskPerformance];
+
+    /// <summary>Every kind that is listed, in the module, in the menu of the course and in the gradebook: the three of <see cref="All"/> and the exam.</summary>
+    public static readonly string[] Listed = [Activity, Quiz, TaskPerformance, Exam];
 
     public static string Display(string kind) => kind switch
     {
         Quiz => "Quiz",
         TaskPerformance => "Task performance",
+        Exam => "Exam",
         _ => "Assignment",
     };
 
@@ -77,7 +85,17 @@ public static class ItemKinds
     {
         Quiz => "Quizzes",
         TaskPerformance => "Task performances",
+        Exam => "Exams",
         _ => "Assignments",
+    };
+
+    /// <summary>The short code of the column in the gradebook: A, Q, TP, E.</summary>
+    public static string Code(string kind) => kind switch
+    {
+        Quiz => "Q",
+        TaskPerformance => "TP",
+        Exam => "E",
+        _ => "A",
     };
 }
 

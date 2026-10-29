@@ -59,6 +59,7 @@
 
 .swatch.quiz { background: var(--violet); }
 .swatch.taskperformance { background: var(--amber); }
+.swatch.exam { background: var(--rose); }
 .swatch.module { background: var(--green); }
 .swatch.personal { background: #7c3aed; }
 .swatch.late { background: var(--danger-solid); }
@@ -163,6 +164,7 @@ a.chip:hover {
 
 .chip.quiz { background: var(--violet-soft); color: var(--violet); }
 .chip.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.chip.exam { background: var(--rose-soft); color: var(--rose); }
 .chip.module { background: var(--green-soft); color: var(--green); }
 .chip.personal { background: #ede9fe; color: #6d28d9; }
 .chip.late { background: var(--danger-soft); color: var(--danger); }
@@ -279,6 +281,7 @@ a.chip:hover {
 
 .sum.quiz { background: var(--violet-soft); color: var(--violet); }
 .sum.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.sum.exam { background: var(--rose-soft); color: var(--rose); }
 .sum.module { background: var(--green-soft); color: var(--green); }
 .sum.personal { background: #ede9fe; color: #6d28d9; }
 .sum.late { background: var(--danger-soft); color: var(--danger); }

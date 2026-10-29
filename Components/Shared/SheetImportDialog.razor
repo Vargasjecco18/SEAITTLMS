@@ -1,0 +1,242 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject FileDownloads Downloads
+
+@* A box for an Excel workbook that makes things in the system, without files: it gives the template, an export of what exists, and the import. The page says what the workbook is
+   (the texts), how to make the template and the export (functions), how to read a workbook for the preview (Read) and what to do with it (OnImport, which gets the file again). *@
+<Modal Open="Open" Title="@Title" Large="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        @if (result is null)
+        {
+            <p class="xl-lead">@Lead</p>
+            <ol class="xl-steps">
+                <li>
+                    <strong>Get the template.</strong> It has the column titles, an example and a sheet that says how to fill it.
+                    <div class="xl-row">
+                        <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
+                        @if (Export is not null && ExportCount > 0)
+                        {
+                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">@ExportLabel (@ExportCount)</Button>
+                        }
+                    </div>
+                </li>
+                <li>
+                    <strong>Fill it</strong> and save it as an Excel file.
+                </li>
+                <li>
+                    <strong>Choose the file.</strong>
+                    <div class="xl-row">
+                        <InputFile id="xl-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Excel file (.xlsx)" />
+                    </div>
+                    @if (fileName is not null)
+                    {
+                        <p class="xl-file"><Icon Name="file-spreadsheet" Size="16" /> @fileName</p>
+                    }
+                </li>
+            </ol>
+
+            <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
+
+            @if (preview is not null)
+            {
+                var ready = preview.Rows.Count(r => r.Problem is null);
+                <p class="xl-summary" role="status">
+                    <strong>@ready</strong> of @preview.Rows.Count @(preview.Rows.Count == 1 ? "row is" : "rows are") ready to import.
+                    @if (ready < preview.Rows.Count)
+                    {
+                        <span class="bad">@PreviewHint</span>
+                    }
+                </p>
+                <div class="xl-table-wrap">
+                    <table class="xl-table">
+                        <thead><tr><th scope="col">@RowLabel</th><th scope="col">Title</th><th scope="col">Result</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in preview.Rows)
+                            {
+                                <tr class="@(row.Problem is null ? "ok" : "failed")">
+                                    <td>@row.Place</td>
+                                    <td>@row.Title</td>
+                                    <td>@(row.Problem ?? "Ready")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="xl-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                <Button IconName="upload" Disabled="@(importing || reading || preview is null || preview.Rows.All(r => r.Problem is not null) && !preview.CanImportWithProblems)" OnClick="ImportAsync">@(importing ? "Importing…" : "Import")</Button>
+            </div>
+        }
+        else
+        {
+            <p class="xl-summary" role="status">
+                <strong>@result.Created</strong> @(result.Created == 1 ? Single : Plural) @Added.
+                @if (result.Errors.Count > 0)
+                {
+                    <span class="bad">@result.Errors.Count @(result.Errors.Count == 1 ? "problem" : "problems").</span>
+                }
+            </p>
+            @if (result.Errors.Count > 0)
+            {
+                <ul class="xl-errors">
+                    @foreach (var e in result.Errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+
+            <div class="xl-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Import another file</Button>
+                <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    private bool importing;
+    private bool reading;
+    private string? fileName;
+    private byte[]? bytes;
+    private string? error;
+    private SheetPreview? preview;
+    private ItemImportSummary? result;
+
+    [Parameter] public bool Open { get; set; }
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+
+    [Parameter, EditorRequired] public string Lead { get; set; } = "";
+
+    /// <summary>"announcement" and "announcements": what a row becomes, for the words after the import.</summary>
+    [Parameter] public string Single { get; set; } = "item was";
+
+    [Parameter] public string Plural { get; set; } = "items were";
+
+    [Parameter] public string Added { get; set; } = "added";
+
+    [Parameter] public string RowLabel { get; set; } = "Row";
+
+    [Parameter] public string PreviewHint { get; set; } = "The rows with a problem are left out; the reason is on its line.";
+
+    [Parameter, EditorRequired] public string TemplateName { get; set; } = "Template.xlsx";
+
+    [Parameter, EditorRequired] public Func<byte[]> Template { get; set; } = () => [];
+
+    /// <summary>The export of what exists (and its name); without it the button is not shown.</summary>
+    [Parameter] public Func<byte[]>? Export { get; set; }
+
+    [Parameter] public string ExportName { get; set; } = "Export.xlsx";
+
+    [Parameter] public string ExportLabel { get; set; } = "Export what exists";
+
+    [Parameter] public int ExportCount { get; set; }
+
+    /// <summary>Reads the file for the preview of the rows.</summary>
+    [Parameter, EditorRequired] public Func<byte[], SheetPreview> Read { get; set; } = _ => new SheetPreview([], null);
+
+    /// <summary>Saves what the file says (it gets the file again) and tells how many were made and what went wrong.</summary>
+    [Parameter, EditorRequired] public Func<byte[], Task<ItemImportSummary>> OnImport { get; set; } = _ => Task.FromResult(new ItemImportSummary(0, []));
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>One line of the preview: where it is in the file, its title, and what is wrong with it (nothing: it is ready).</summary>
+    public sealed record SheetPreviewRow(string Place, string Title, string? Problem);
+
+    /// <param name="CanImportWithProblems">The import is allowed even when every line has a problem (the workbook has problems that are not on a line, like an evaluation).</param>
+    public sealed record SheetPreview(IReadOnlyList<SheetPreviewRow> Rows, string? FileError, bool CanImportWithProblems = false);
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            Reset();
+        }
+    }
+
+    private void Reset()
+    {
+        importing = reading = false;
+        fileName = null;
+        bytes = null;
+        error = null;
+        preview = null;
+        result = null;
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void Another() => Reset();
+
+    private async Task DownloadTemplateAsync() => await Downloads.SaveAsync(TemplateName, Template());
+
+    private async Task ExportAsync()
+    {
+        if (Export is not null)
+        {
+            await Downloads.SaveAsync(ExportName, Export());
+        }
+    }
+
+    private async Task FileChosenAsync(InputFileChangeEventArgs e)
+    {
+        error = null;
+        preview = null;
+        bytes = null;
+        fileName = null;
+        reading = true;
+        try
+        {
+            if (e.File.Size > XlsxReader.MaxFileBytes)
+            {
+                error = $"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.";
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            bytes = buffer.ToArray();
+            fileName = e.File.Name;
+            var read = Read(bytes);
+            if (read.FileError is not null)
+            {
+                error = read.FileError;
+                return;
+            }
+
+            preview = read;
+        }
+        catch (IOException)
+        {
+            error = "The file could not be read. Choose it again.";
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (importing || bytes is null || preview is null)
+        {
+            return;
+        }
+
+        importing = true;
+        try
+        {
+            var summary = await OnImport(bytes);
+            var left = preview.Rows.Where(r => r.Problem is not null).Select(r => $"{r.Place}: {r.Problem}");
+            result = summary with { Errors = [.. left, .. summary.Errors] };
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+}

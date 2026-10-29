@@ -21,7 +21,7 @@ public sealed record StudentItemView(
 
 // ---------------------------------------------------------------------- what the teacher sees
 
-public sealed record SubmissionRow(int StudentId, string StudentName, string? Lrn, string Status, DateTime? SubmittedAtUtc, bool IsLate, decimal? Score, int ViolationCount, bool IsFlagged, string? LateDecision = null)
+public sealed record SubmissionRow(int StudentId, string StudentName, string? Lrn, string Status, DateTime? SubmittedAtUtc, bool IsLate, decimal? Score, int ViolationCount, bool IsFlagged, string? LateDecision = null, int? SubmissionId = null)
 {
     /// <summary>Handed in and waiting for the teacher: not graded, and not declined as late work.</summary>
     public bool NeedsCheck => Status == SubmissionStatus.Submitted && LateDecision != Data.Entities.LateDecisions.Declined;
@@ -317,7 +317,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var rows = students.Select(st =>
         {
             submissions.TryGetValue(st.StudentId, out var s);
-            return new SubmissionRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, s?.Status ?? "NotStarted", s?.SubmittedAtUtc, s?.IsLate ?? false, s?.Score, s?.ViolationCount ?? 0, s?.IsFlagged ?? false, s?.LateDecision);
+            return new SubmissionRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, s?.Status ?? "NotStarted", s?.SubmittedAtUtc, s?.IsLate ?? false, s?.Score, s?.ViolationCount ?? 0, s?.IsFlagged ?? false, s?.LateDecision, s?.Id);
         }).ToList();
 
         var i = context.Item;

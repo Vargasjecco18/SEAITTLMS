@@ -37,6 +37,7 @@
 
 .kind.quiz { background: var(--violet-soft); color: var(--violet); }
 .kind.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.kind.exam { background: var(--rose-soft); color: var(--rose); }
 .kind.module { background: var(--green-soft); color: var(--green); }
 
 .next-text {

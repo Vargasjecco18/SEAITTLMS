@@ -24,7 +24,7 @@
 
 <PageWithAside Show="@AsideShow" Stacked="@(view == "week")" ActivitiesTitle="Assignments">
     <ul class="legend" aria-label="Legend">
-        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Personal })
+        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Exam, CalendarKinds.Module, CalendarKinds.Personal })
         {
             <li><span class="swatch @kind.ToLowerInvariant()"></span> @CalendarKinds.Label(kind)</li>
         }
@@ -121,6 +121,8 @@
 
     [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
 
+    [CascadingParameter] private HttpContext? Http { get; set; }
+
     [SupplyParameterFromQuery(Name = "date")] private string? DateText { get; set; }
 
     // A teacher's "unassigned assignment" dropped on a day: ?edit=<item>&on=<day>.
@@ -161,7 +163,7 @@
     protected override async Task OnParametersSetAsync()
     {
         today = PhilippineTime.Today(Clock);
-        view = ViewText == "week" ? "week" : "month";
+        view = ViewPreference.Resolve(Http, "calendar", ViewText, "month", "week");
         anchor = DateOnly.TryParseExact(DateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed) && parsed.Year is > 2000 and < 2100 ? parsed : today;
 
         if (view == "month")
@@ -200,7 +202,7 @@
     /// <summary>"2 assignments", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
     private static IEnumerable<DaySummary> Summary(IReadOnlyList<CalendarEvent> onDay)
     {
-        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Personal })
+        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Exam, CalendarKinds.Module, CalendarKinds.Personal })
         {
             var these = onDay.Where(e => e.Kind == kind).ToList();
             if (these.Count == 0)
@@ -213,6 +215,7 @@
                 ItemKinds.Activity => these.Count == 1 ? "assignment" : "assignments",
                 ItemKinds.Quiz => these.Count == 1 ? "quiz" : "quizzes",
                 ItemKinds.TaskPerformance => these.Count == 1 ? "task performance" : "task performances",
+                ItemKinds.Exam => these.Count == 1 ? "exam" : "exams",
                 CalendarKinds.Module => these.Count == 1 ? "module" : "modules",
                 _ => these.Count == 1 ? "event" : "events",
             };

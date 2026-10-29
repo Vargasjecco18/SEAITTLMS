@@ -42,9 +42,7 @@ else
 
     <PageWithAside Show="calendar,upnext">
     @* The second menu of the course (modules, assignments, quizzes, task performances) next to its content. *@
-    <div class="course-layout">
-    <CourseMenu PageHref="@($"student/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks" />
-    <div class="course-main">
+    <CourseLayout PageHref="@($"student/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
     @if (shownKind is { } listKind)
     {
         var listNow = PhilippineTime.Now(Clock);
@@ -147,8 +145,7 @@ else
         </div>
     }
     }
-    </div>
-    </div>
+    </CourseLayout>
     </PageWithAside>
 }
 
@@ -160,7 +157,7 @@ else
 
     private string? shownKind => CourseMenu.KindOfKey(Tab);
 
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.All.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
 
     private IReadOnlyList<CourseMenuLink> MenuLinks => [new("Grades", "trending-up", "student/grades")];
 

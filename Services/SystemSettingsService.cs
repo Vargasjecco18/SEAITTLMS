@@ -86,7 +86,15 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     }
 
     /// <summary>Checks the values, writes the ones that changed, and tells the security log. Only an administrator may do it.</summary>
-    public async Task<ServiceResult> SaveAsync(int actingUserId, SystemSettingsValues values, CancellationToken ct = default)
+    public Task<ServiceResult> SaveAsync(int actingUserId, SystemSettingsValues values, CancellationToken ct = default) =>
+        SaveAsync(actingUserId, values, [AppRoles.AdminId], "Only an administrator can change the system settings.", ct);
+
+    /// <summary>The number of students a section can have. It is a setting of the academic part of the school, so the academic coordinator changes it (the administrator can too).</summary>
+    public Task<ServiceResult> SaveSectionCapacityAsync(int actingUserId, int capacity, CancellationToken ct = default) =>
+        SaveAsync(actingUserId, current with { SectionCapacity = capacity }, [AppRoles.AcademicCoordinatorId, AppRoles.AdminId],
+            "Only the academic coordinator can change how many students a section can have.", ct);
+
+    private async Task<ServiceResult> SaveAsync(int actingUserId, SystemSettingsValues values, int[] allowedRoleIds, string notAllowed, CancellationToken ct)
     {
         var errors = Validate(values);
         if (errors.Count > 0)
@@ -95,9 +103,9 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.AdminId, ct))
+        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && allowedRoleIds.Contains(u.RoleId), ct))
         {
-            return ServiceResult.Fail("Only an administrator can change the system settings.");
+            return ServiceResult.Fail(notAllowed);
         }
 
         var before = ToRows(current);

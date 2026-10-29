@@ -23,6 +23,9 @@ public enum LoginFailure
 
     /// <summary>The right password, but the system is closed for maintenance and the account is not an administrator's.</summary>
     Maintenance,
+
+    /// <summary>The right password, but somebody is signed in with the account on another browser or device (one sign-in at a time).</summary>
+    AlreadySignedIn,
 }
 
 /// <param name="Principal">The identity to put in the sign-in cookie, only set when the login succeeded.</param>
@@ -126,16 +129,29 @@ public sealed class AuthService(
 
         var newHash = hasher.NeedsRehash(user.PasswordHash) ? hasher.Hash(password) : null;
 
-        await db.Users
-            .Where(u => u.Id == user.Id)
+        // One sign-in at a time: the update below only happens when nobody else is using the account (no sign-in is open, or it was not seen for a few minutes). It is one statement
+        // in the database, so two people signing in at the same moment can't both get in.
+        var single = settings.SingleSession;
+        var sessionId = single ? Guid.NewGuid().ToString("N") : null;
+        var seenAfter = now.AddMinutes(-Math.Max(1, settings.SessionIdleMinutes));
+        var updated = await db.Users
+            .Where(u => u.Id == user.Id && (!single || u.ActiveSessionId == null || u.ActiveSessionSeenUtc == null || u.ActiveSessionSeenUtc < seenAfter))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(u => u.FailedLoginCount, 0)
                 .SetProperty(u => u.LockoutEndUtc, (DateTime?)null)
                 .SetProperty(u => u.LastLoginAtUtc, now)
+                .SetProperty(u => u.ActiveSessionId, sessionId)
+                .SetProperty(u => u.ActiveSessionSeenUtc, single ? now : (DateTime?)null)
                 .SetProperty(u => u.PasswordHash, u => newHash ?? u.PasswordHash), ct);
+        if (updated == 0)
+        {
+            logger.LogWarning("Sign-in refused for user {UserId}: the account is signed in somewhere else.", user.Id);
+            await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is signed in on another browser or device.", client, ct);
+            return LoginResult.Fail(LoginFailure.AlreadySignedIn);
+        }
 
         // (A sign-in is not written in the security log: the account keeps the day of its last login, and the Security Logs page lists them.)
-        return new LoginResult(true, CreatePrincipal(user), LoginFailure.None);
+        return new LoginResult(true, CreatePrincipal(user, sessionId), LoginFailure.None);
     }
 
     /// <summary>
@@ -194,6 +210,8 @@ public sealed class AuthService(
         user.FailedLoginCount = 0;
         user.LockoutEndUtc = null;
         user.SecurityStamp = Guid.NewGuid().ToString("N");
+        user.ActiveSessionId = null;   // every session ends, so the person can sign in again at once with the new password
+        user.ActiveSessionSeenUtc = null;
         await db.SaveChangesAsync(ct);
 
         await LogAsync(SecurityEvents.PasswordChanged, user.Id, user.Email, "The person changed their own password.", null, ct);
@@ -203,7 +221,38 @@ public sealed class AuthService(
     private Task LogAsync(string kind, int? userId, string? email, string? details, ClientInfo? client, CancellationToken ct) =>
         securityLog is null ? Task.CompletedTask : securityLog.AddAsync(kind, userId, email, details, client, ct: ct);
 
-    public static ClaimsPrincipal CreatePrincipal(User user)
+    /// <summary>
+    /// Says that the sign-in is still in use (a page of it is open): the account stays taken. False when this sign-in is not the open one any more (the account was signed in somewhere else
+    /// after this one was not seen for a while, or its password changed): the page signs out. A cookie made before sessions were kept (no number) is always fine.
+    /// </summary>
+    public async Task<bool> TouchSessionAsync(int userId, string? sessionId, CancellationToken ct = default)
+    {
+        if (!options.Value.SingleSession || string.IsNullOrEmpty(sessionId))
+        {
+            return true;
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var touched = await db.Users.Where(u => u.Id == userId && u.ActiveSessionId == sessionId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.ActiveSessionSeenUtc, now), ct);
+        return touched > 0;
+    }
+
+    /// <summary>The person pressed Log out: the account is free for the next sign-in.</summary>
+    public async Task EndSessionAsync(int userId, string? sessionId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            return;
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        await db.Users.Where(u => u.Id == userId && u.ActiveSessionId == sessionId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.ActiveSessionId, (string?)null).SetProperty(u => u.ActiveSessionSeenUtc, (DateTime?)null), ct);
+    }
+
+    public static ClaimsPrincipal CreatePrincipal(User user, string? sessionId = null)
     {
         var claims = new List<Claim>
         {
@@ -213,6 +262,10 @@ public sealed class AuthService(
             new(ClaimTypes.Role, user.Role.Name),
             new(AppClaimTypes.SecurityStamp, user.SecurityStamp),
         };
+        if (sessionId is not null)
+        {
+            claims.Add(new Claim(AppClaimTypes.SessionId, sessionId));
+        }
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
         return new ClaimsPrincipal(identity);

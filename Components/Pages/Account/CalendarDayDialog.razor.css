@@ -48,6 +48,11 @@
     color: var(--success);
 }
 
+.line.exam .line-icon {
+    background: var(--rose-soft);
+    color: var(--rose);
+}
+
 .line.module .line-icon {
     background: var(--surface-2);
     color: var(--text-muted);

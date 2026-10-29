@@ -458,3 +458,10 @@ html[data-sound="off"] [data-sound-toggle] .thumb {
     from { transform: scale(0.2) rotate(-30deg); opacity: 0; }
     to { transform: none; opacity: 1; }
 }
+
+.email-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.9rem;
+}

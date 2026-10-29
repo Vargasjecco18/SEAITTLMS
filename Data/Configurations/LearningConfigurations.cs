@@ -50,7 +50,7 @@ internal sealed class ModuleItemConfiguration : IEntityTypeConfiguration<ModuleI
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance')");
+            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Exam')");
             t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
         });
     }

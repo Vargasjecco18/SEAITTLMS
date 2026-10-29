@@ -18,11 +18,31 @@
 @code {
     private (string Title, string Detail)? message;
 
+    /// <summary>The message to show, by name, when the page asks for it itself (the login page, when the account is in use). Without it the name is read from ?alert= in the address.</summary>
+    [Parameter] public string? Name { get; set; }
+
     protected override void OnInitialized()
     {
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
-        message = query.TryGetValue("alert", out var name) && name.ToString() == "signed-in"
-            ? ("Can't log in, someone is logged in", "Somebody is already signed in on this browser. Sign out first if you want to use another account.")
-            : null;
+        if (Name is null)
+        {
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
+            message = query.TryGetValue("alert", out var name) ? Of(name.ToString()) : null;
+        }
     }
+
+    protected override void OnParametersSet()
+    {
+        if (Name is not null)
+        {
+            message = Of(Name);
+        }
+    }
+
+    private static (string Title, string Detail)? Of(string name) => name switch
+    {
+        "signed-in" => ("Can't log in, someone is logged in", "Somebody is already signed in on this browser. Sign out first if you want to use another account."),
+        "in-use" => ("Can't log in, someone is logged in", "This account is signed in on another device or browser. Log out there first, or try again in a few minutes."),
+        "other-device" => ("You were logged out", "This account was signed in on another device or browser, so this one ended."),
+        _ => null,
+    };
 }

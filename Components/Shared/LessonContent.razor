@@ -1,0 +1,59 @@
+@* The lesson of a module as the student reads it: the slides and the files shown right in the page (a PDF, a picture ...) and the text of the lesson. The teacher sees
+   the same thing on the page of the module, with the form to edit it at the right. *@
+@{
+    var hasText = !string.IsNullOrWhiteSpace(Description) || !string.IsNullOrWhiteSpace(Body) || !string.IsNullOrWhiteSpace(LinkUrl);
+    var slides = Files.Where(f => f.IsSlides).ToList();
+    var others = Files.Where(f => !f.IsSlides).ToList();
+}
+<div class="layout @(Files.Count > 0 && hasText ? "two" : "")">
+    @if (slides.Count > 0)
+    {
+        <Card Title="Slides" IconName="presentation">
+            <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this module" />
+        </Card>
+    }
+
+    @if (others.Count > 0)
+    {
+        <Card Title="@(others.Count == 1 ? "File" : "Files")" IconName="paperclip">
+            <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this module" />
+        </Card>
+    }
+
+    @if (hasText || Files.Count == 0)
+    {
+        <Card Title="Lesson" IconName="book-open">
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <p class="lead">@Description</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Body))
+            {
+                <div class="lesson">@Body</div>
+            }
+            else if (!hasText)
+            {
+                <p class="muted">This module has no lesson text.</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(LinkUrl))
+            {
+                <p class="link"><Icon Name="link" Size="16" /> <a href="@LinkUrl" target="_blank" rel="noopener noreferrer">@LinkUrl <Icon Name="external-link" Size="14" /></a></p>
+            }
+        </Card>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Description { get; set; }
+
+    [Parameter] public string? Body { get; set; }
+
+    [Parameter] public string? LinkUrl { get; set; }
+
+    [Parameter] public IReadOnlyList<AttachmentRow> Files { get; set; } = [];
+
+    /// <summary>The file to show first, when the person came from the name of a file.</summary>
+    [Parameter] public int? InitialFileId { get; set; }
+}

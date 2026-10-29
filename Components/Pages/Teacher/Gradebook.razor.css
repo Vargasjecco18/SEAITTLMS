@@ -197,16 +197,18 @@
 }
 
 /* The last column: the final grade the teacher writes, and the button that saves them. */
+/* The hint and the buttons are at the top right, the buttons under the hint. */
 .table-tools {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem 1rem;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.6rem;
     margin-bottom: 1.5rem;
+    text-align: right;
 }
 
 .table-tools p {
+    max-width: 46rem;
     margin: 0;
     font-size: 0.9rem;
 }
@@ -224,6 +226,7 @@
 .tools {
     display: flex;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.5rem;
 }
 

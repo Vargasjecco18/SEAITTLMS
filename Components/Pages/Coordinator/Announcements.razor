@@ -8,6 +8,8 @@
 <PageTitle>Announcements · SEAITT Legazpi LMS</PageTitle>
 
 <PageHeader Title="Announcements" IconName="megaphone">
+    <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Disabled="@(rows is null || rows.Count == 0)">Export to Excel</Button>
+    <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenExcel">Template and import (Excel)</Button>
     <Button IconName="plus" OnClick="OpenAdd">New announcement</Button>
 </PageHeader>
 
@@ -98,7 +100,55 @@ else
     }
 </Modal>
 
+<SheetImportDialog Open="excelOpen" Title="Announcements in Excel" Lead="Fill in the template, then import it: every row becomes an announcement, and the people it is for are told."
+                   Single="announcement was" Plural="announcements were" TemplateName="@AnnouncementSheets.FileName("Template")" Template="AnnouncementSheets.Template"
+                   Export="ExportBytes" ExportName="@AnnouncementSheets.FileName("Announcements")" ExportLabel="Export the announcements" ExportCount="@(rows?.Count ?? 0)"
+                   Read="ReadSheet" OnImport="ImportSheetAsync" OnClose="CloseExcel" />
+
 @code {
+    private bool excelOpen;
+
+    private void OpenExcel() => excelOpen = true;
+
+    private void CloseExcel() => excelOpen = false;
+
+    private byte[] ExportBytes() => AnnouncementSheets.Export(rows ?? []);
+
+    [Inject] private FileDownloads Downloads { get; set; } = null!;
+
+    private async Task ExportAsync() => await Downloads.SaveAsync(AnnouncementSheets.FileName("Announcements"), ExportBytes());
+
+    private static SheetImportDialog.SheetPreview ReadSheet(byte[] data)
+    {
+        var parsed = AnnouncementSheets.Parse(data);
+        return new SheetImportDialog.SheetPreview([.. parsed.Rows.Select(r => new SheetImportDialog.SheetPreviewRow($"Row {r.Row}", r.Title, r.Input is null ? string.Join(" ", r.Errors) : null))], parsed.FileError);
+    }
+
+    /// <summary>Every row is written like the box writes one (the same rules, the same notification to the people it is for).</summary>
+    private async Task<ItemImportSummary> ImportSheetAsync(byte[] data)
+    {
+        var created = 0;
+        var problems = new List<string>();
+        if (me is not null)
+        {
+            foreach (var row in AnnouncementSheets.Parse(data).Rows.Where(r => r.Input is not null))
+            {
+                var saved = await Service.SaveAsync(me, row.Input!);
+                if (saved.Succeeded)
+                {
+                    created++;
+                }
+                else
+                {
+                    problems.Add($"Row {row.Row} ({row.Title}): {string.Join(" ", saved.Errors)}");
+                }
+            }
+        }
+
+        await LoadAsync();
+        return new ItemImportSummary(created, problems);
+    }
+
     private CurrentUserInfo? me;
     private IReadOnlyList<AnnouncementView>? rows;
     private AnnouncementInput? form;

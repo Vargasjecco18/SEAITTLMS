@@ -26,16 +26,7 @@
     }
     else
     {
-        @* The school has many academic providers, so this button is always there. The others are one of each. *@
-        <Button Variant="@(MissingOneOnlyRoles.Count > 0 ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="send" OnClick="() => OpenAddAsync(AppRoles.AcademicProvider)">Add provider</Button>
-        @if (MissingOneOnlyRoles.Count > 0)
-        {
-            <Button IconName="user-plus" OnClick="() => OpenAddAsync(null)">Add staff</Button>
-        }
-        else
-        {
-            <span class="one-only"><Icon Name="info" Size="16" /> There is a registrar, a guidance counselor and an academic coordinator already. The school can have only one of each.</span>
-        }
+        <Button IconName="user-plus" OnClick="() => OpenAddAsync(null)">Add staff</Button>
     }
 </PageHeader>
 
@@ -396,11 +387,12 @@
 
             @if (tab.Role == UserManagementService.NonTeachingRole)
             {
-                <Field For="a-role" Label="Role" Required="true" Hint="@(MissingOneOnlyRoles.Count == 0 ? "A registrar, a guidance counselor and an academic coordinator exist already; only providers can be added." : "The school has one registrar, one guidance counselor and one academic coordinator. It can have many academic providers.")">
+                @* Only the roles the school can still have: the roles of which it has one already are not in the list. *@
+                <Field For="a-role" Label="Role" Required="true">
                     <select id="a-role" @bind="add.Role">
-                        @foreach (var staffRole in UserManagementService.NonTeachingRoles)
+                        @foreach (var staffRole in AvailableStaffRoles)
                         {
-                            <option value="@staffRole" disabled="@(AppRoles.OnlyOneAllowed(staffRole) && counts.GetValueOrDefault(staffRole) >= 1)">@AppRoles.DisplayName(staffRole)@(AppRoles.OnlyOneAllowed(staffRole) && counts.GetValueOrDefault(staffRole) >= 1 ? " (there is one already)" : "")</option>
+                            <option value="@staffRole">@AppRoles.DisplayName(staffRole)</option>
                         }
                     </select>
                 </Field>
@@ -643,8 +635,9 @@
         ["providers"] = AppRoles.AcademicProvider,
     };
 
-    private IReadOnlyList<string> MissingOneOnlyRoles =>
-        UserManagementService.NonTeachingRoles.Where(r => AppRoles.OnlyOneAllowed(r) && counts.GetValueOrDefault(r) == 0).ToList();
+    /// <summary>The roles that can be given to a new member of the staff: the academic provider always, and the registrar, the guidance counselor and the academic coordinator only while the school has none.</summary>
+    private IReadOnlyList<string> AvailableStaffRoles =>
+        UserManagementService.NonTeachingRoles.Where(r => !AppRoles.OnlyOneAllowed(r) || counts.GetValueOrDefault(r) == 0).ToList();
 
     private int CountOf(Tab t) => t.Role == UserManagementService.NonTeachingRole
         ? UserManagementService.NonTeachingRoles.Sum(r => counts.GetValueOrDefault(r))
@@ -1030,8 +1023,8 @@
 
         add = new NewStaff
         {
-            // The staff list: the role that was asked for (Add provider), else the first one the school does not have yet.
-            Role = tab.Role != UserManagementService.NonTeachingRole ? tab.Role : role ?? MissingOneOnlyRoles.FirstOrDefault() ?? AppRoles.AcademicProvider,
+            // The staff list: the first role of the list, which has no role the school has one of already.
+            Role = tab.Role != UserManagementService.NonTeachingRole ? tab.Role : role ?? AvailableStaffRoles.FirstOrDefault() ?? AppRoles.AcademicProvider,
         };
     }
 

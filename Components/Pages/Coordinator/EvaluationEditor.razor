@@ -26,6 +26,7 @@ else
     var draft = detail.State == EvaluationStates.Draft;
     <PageHeader Title="@detail.Title" IconName="clipboard-check">
         <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Ghost" IconName="chevron-left">All evaluations</ButtonLink>
+        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportExcelAsync">Export to Excel</Button>
         @if (!draft)
         {
             <ButtonLink Href="@($"coordinator/analytics?evaluation={detail.Id}")" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
@@ -357,6 +358,16 @@ else
 </Modal>
 
 @code {
+    [Inject] private FileDownloads Downloads { get; set; } = null!;
+
+    private async Task ExportExcelAsync()
+    {
+        if (detail is not null)
+        {
+            await Downloads.SaveAsync(EvaluationSheets.FileName(detail.Title), EvaluationSheets.Export(detail));
+        }
+    }
+
     [Parameter] public int EvaluationId { get; set; }
 
     private int userId;

@@ -39,6 +39,17 @@
         }
     });
 
+    // The phone menu is a drawer over the page. A press anywhere outside it (on the page, not on the menu or its button) folds it up, and the press still reaches
+    // what was pressed, so the page can be used at once.
+    document.addEventListener('pointerdown', function (event) {
+        const toggle = document.getElementById('nav-toggle');
+        if (!toggle || !toggle.checked) { return; }
+        const target = event.target;
+        if (target instanceof Element && !target.closest('.sidebar, .menu-button, label[for="nav-toggle"]')) {
+            toggle.checked = false;
+        }
+    }, true);
+
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             closeMenus();
@@ -164,6 +175,34 @@
             setMotion(root.getAttribute('data-motion') === 'off');
         }
     });
+})();
+
+// The way the courses (Cards or List) and the calendar (Month or Week) are looked at is remembered in a cookie (ViewPreference.cs reads it), so a page that
+// is opened without a view in its address - a tab of the courses, the Courses or Calendar link of the menu - shows it as the person chose last.
+(function () {
+    var pages = { subjects: ['cards', 'list'], calendar: ['month', 'week'] };
+
+    function remember(address) {
+        try {
+            var url = new URL(address, document.baseURI);
+            var view = url.searchParams.get('view');
+            var page = url.pathname.split('/').filter(Boolean).pop();
+            if (view && pages[page] && pages[page].indexOf(view) >= 0) {
+                document.cookie = 'seaitt-view-' + page + '=' + view + '; path=/; samesite=lax; max-age=31536000';
+            }
+        } catch (error) { }
+    }
+
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        var link = target instanceof Element ? target.closest('a[href]') : null;
+        if (link) { remember(link.href); }
+    }, true);
+
+    remember(location.href);
+    if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
+        window.Blazor.addEventListener('enhancednavigationend', function () { remember(location.href); });
+    }
 })();
 
 // The teacher's calendar: an "unassigned activity" (an element with data-unassigned-item, in the widgets at the right) is dragged onto a day
@@ -793,20 +832,75 @@ document.addEventListener('keydown', function (event) {
     start();
 })();
 
-// The boxes of the first page (a strand opens one): a button with data-open-dialog="id" opens the <dialog> with that id; a click outside the box closes it.
+// The menu of a course (CourseLayout) can be hidden and shown again with its button (data-cm-toggle). The choice is the attribute data-course-menu on the page
+// (so Blazor never draws over it) and is kept on this computer, so it is the same on every course.
 (function () {
+    var root = document.documentElement;
+    var key = 'seaitt-course-menu';
+
+    try { if (localStorage.getItem(key) === 'hidden') { root.setAttribute('data-course-menu', 'hidden'); } } catch (error) { }
+
+    function sync() {
+        var hidden = root.getAttribute('data-course-menu') === 'hidden';
+        document.querySelectorAll('[data-cm-toggle]').forEach(function (button) {
+            button.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+            button.title = hidden ? 'Show the course menu' : 'Hide the course menu';
+        });
+    }
+
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest && event.target.closest('[data-cm-toggle]');
+        if (!button) { return; }
+        var hide = root.getAttribute('data-course-menu') !== 'hidden';
+        if (hide) { root.setAttribute('data-course-menu', 'hidden'); } else { root.removeAttribute('data-course-menu'); }
+        try { if (hide) { localStorage.setItem(key, 'hidden'); } else { localStorage.removeItem(key); } } catch (error) { }
+        sync();
+    });
+
+    // The pages are drawn again by Blazor (and a live page replaces what the server drew), so the buttons are kept in step.
+    var waiting = false;
+    new MutationObserver(function () {
+        if (waiting) { return; }
+        waiting = true;
+        requestAnimationFrame(function () { waiting = false; sync(); });
+    }).observe(document.documentElement, { childList: true, subtree: true });
+    document.addEventListener('DOMContentLoaded', sync);
+    sync();
+})();
+
+// The strands of the first page: a button with data-drop-toggle="id" drops the panel with that id down under it (and folds the others up); Escape, a second press
+// or a click outside folds it up. A panel that would leave the screen on the right is aligned to the right edge of its card.
+(function () {
+    function fold(except) {
+        document.querySelectorAll('[data-drop-toggle][aria-expanded="true"]').forEach(function (button) {
+            if (button === except) { return; }
+            button.setAttribute('aria-expanded', 'false');
+            var panel = document.getElementById(button.getAttribute('data-drop-toggle'));
+            if (panel) { panel.hidden = true; }
+        });
+    }
+
     document.addEventListener('click', function (e) {
-        var opener = e.target.closest && e.target.closest('[data-open-dialog]');
-        if (opener) {
-            var dialog = document.getElementById(opener.getAttribute('data-open-dialog'));
-            if (dialog && dialog.showModal) { dialog.showModal(); }
+        var toggle = e.target.closest && e.target.closest('[data-drop-toggle]');
+        if (toggle) {
+            var panel = document.getElementById(toggle.getAttribute('data-drop-toggle'));
+            if (!panel) { return; }
+            var open = toggle.getAttribute('aria-expanded') === 'true';
+            fold(open ? null : toggle);
+            toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+            panel.hidden = open;
+            if (!open) {
+                panel.classList.remove('right');
+                var r = panel.getBoundingClientRect();
+                if (r.right > window.innerWidth - 8) { panel.classList.add('right'); }
+            }
             return;
         }
-        var target = e.target;
-        if (target && target.tagName === 'DIALOG' && target.classList.contains('strand-dialog')) {
-            var r = target.getBoundingClientRect();
-            if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { target.close(); }
-        }
+        if (!(e.target.closest && e.target.closest('.strand-drop'))) { fold(null); }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { fold(null); }
     });
 })();
 
@@ -829,9 +923,9 @@ document.addEventListener('keydown', function (event) {
     } catch (err) { /* an old browser: the message just stays in the address */ }
 })();
 
-// The sound of a new message or notification (HeaderTools calls seaitt.playNotificationSound). It is made with the browser's own sound
-// maker, so there is no file to load. A browser keeps sound off until the person has clicked or typed on the page once, so the first
-// click starts it. Settings has a switch (data-sound-toggle); the choice is kept on this computer.
+// The sound of a new message or notification (HeaderTools calls seaitt.playNotificationSound). It is the file wwwroot/sounds/notification.mp3 when the school put
+// one there, otherwise two short tones made with the browser's own sound maker. A browser keeps sound off until the person has clicked or typed on the page once, so the
+// first click starts it. Settings has a switch (data-sound-toggle); the choice is kept on this computer.
 (function () {
     var root = document.documentElement;
     var context = null;
@@ -867,14 +961,46 @@ document.addEventListener('keydown', function (event) {
         oscillator.stop(start + length + 0.05);
     }
 
-    window.seaitt = window.seaitt || {};
-    window.seaitt.playNotificationSound = function () {
-        if (root.getAttribute('data-sound') === 'off') { return; }
+    // The sound of a notification is a file of the school when there is one: wwwroot/sounds/notification.mp3 (or .ogg, .wav, .m4a). The first time it is needed the page
+    // asks which of them exists (one small request) and keeps the answer. Without a file, or if the browser can't play it, the two short tones above are played instead.
+    var soundFile = undefined;   // undefined: not asked yet; null: there is none; otherwise the address
+
+    function findSoundFile() {
+        if (soundFile !== undefined) { return Promise.resolve(soundFile); }
+        var names = ['notification.mp3', 'notification.ogg', 'notification.wav', 'notification.m4a'];
+        var base = document.baseURI;
+        return names.reduce(function (chain, name) {
+            return chain.then(function (found) {
+                if (found) { return found; }
+                var address = new URL('sounds/' + name, base).href;
+                return fetch(address, { method: 'HEAD' }).then(function (response) {
+                    var type = response.headers.get('content-type') || '';
+                    return response.ok && type.indexOf('text/html') === -1 ? address : null;
+                }).catch(function () { return null; });
+            });
+        }, Promise.resolve(null)).then(function (found) { soundFile = found; return found; });
+    }
+
+    function playTones() {
         var made = audio();
         if (!made || made.state !== 'running') { return; }
         var now = made.currentTime;
         tone(made, 880, now, 0.28);
         tone(made, 1318.5, now + 0.14, 0.4);
+    }
+
+    window.seaitt = window.seaitt || {};
+    window.seaitt.playNotificationSound = function () {
+        if (root.getAttribute('data-sound') === 'off') { return; }
+        findSoundFile().then(function (address) {
+            if (!address) { playTones(); return; }
+            try {
+                var player = new Audio(address);
+                player.volume = 0.85;
+                var started = player.play();
+                if (started && started.catch) { started.catch(playTones); }
+            } catch (error) { playTones(); }
+        });
     };
 
     document.addEventListener('click', function (event) {

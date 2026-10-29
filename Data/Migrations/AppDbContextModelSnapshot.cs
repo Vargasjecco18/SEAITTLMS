@@ -1718,7 +1718,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("module_items", null, t =>
                         {
-                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance')");
+                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Exam')");
 
                             t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
                         });
@@ -3341,6 +3341,15 @@ namespace SEAITT_LMS.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ActiveSessionId")
+                        .HasMaxLength(36)
+                        .HasColumnType("varchar(36)")
+                        .HasColumnName("active_session_id");
+
+                    b.Property<DateTime?>("ActiveSessionSeenUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("active_session_seen_utc");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
@@ -3366,6 +3375,11 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Property<DateTime?>("LockoutEndUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("lockout_end_utc");
+
+                    b.Property<string>("NotifyEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("varchar(254)")
+                        .HasColumnName("notify_email");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

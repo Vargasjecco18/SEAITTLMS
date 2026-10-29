@@ -81,7 +81,7 @@
     <section class="section alt" id="courses" aria-labelledby="courses-title">
         <div class="container">
             <h2 id="courses-title">Our <span>Courses</span></h2>
-            <p class="courses-intro">Press a strand to see the courses it studies, by grade level and term.</p>
+            <p class="courses-intro">Press a strand and its courses drop down, by grade level and term.</p>
 
             @if (tracks.Count == 0)
             {
@@ -95,54 +95,48 @@
                     <div class="strand-grid">
                         @foreach (var strand in track.Strands)
                         {
-                            @* A strand is a button: it opens a box (a plain <dialog>, opened by wwwroot/app.js) with its grade levels, its terms and their courses. *@
-                            <button type="button" class="strand-card" data-open-dialog="@DialogId(track.Code, strand.Code)" aria-haspopup="dialog">
-                                <span class="strand-top">
-                                    <span class="strand-title">@strand.Name</span>
-                                    <Icon Name="chevron-right" Size="18" />
-                                </span>
-                                <span class="strand-meta">
-                                    <span class="strand-code">@strand.Code</span>
-                                    <span class="course-count">@(strand.CourseCount == 1 ? "1 course" : $"{strand.CourseCount} courses")</span>
-                                </span>
-                            </button>
-                            <dialog class="strand-dialog" id="@DialogId(track.Code, strand.Code)" aria-labelledby="@($"{DialogId(track.Code, strand.Code)}-title")">
-                                <div class="dialog-head">
-                                    <div>
-                                        <h3 id="@($"{DialogId(track.Code, strand.Code)}-title")">@strand.Name</h3>
+                            @* A strand is a button: it drops a panel down under it (wwwroot/app.js) with its grade levels, its terms and their courses. *@
+                            <div class="strand-item">
+                                <button type="button" class="strand-card" data-drop-toggle="@DialogId(track.Code, strand.Code)" aria-expanded="false" aria-controls="@DialogId(track.Code, strand.Code)">
+                                    <span class="strand-top">
+                                        <span class="strand-title">@strand.Name</span>
+                                        <span class="strand-chevron"><Icon Name="chevron-down" Size="18" /></span>
+                                    </span>
+                                    <span class="strand-meta">
                                         <span class="strand-code">@strand.Code</span>
                                         <span class="course-count">@(strand.CourseCount == 1 ? "1 course" : $"{strand.CourseCount} courses")</span>
-                                    </div>
-                                    <form method="dialog"><button class="dialog-close" aria-label="Close"><Icon Name="x" Size="18" /></button></form>
-                                </div>
-                                <div class="dialog-body">
-                                    @if (strand.Groups.Count == 0)
-                                    {
-                                        <p class="muted">The courses of this strand will be listed soon.</p>
-                                    }
+                                    </span>
+                                </button>
+                                <div class="strand-drop" id="@DialogId(track.Code, strand.Code)" role="region" aria-label="@($"Courses of {strand.Name}")" hidden>
+                                    <div class="drop-body">
+                                        @if (strand.Groups.Count == 0)
+                                        {
+                                            <p class="muted">The courses of this strand will be listed soon.</p>
+                                        }
 
-                                    @foreach (var grade in strand.Groups.GroupBy(g => g.GradeLevel))
-                                    {
-                                        <div class="grade-block">
-                                            <h4 class="group-heading">Grade @grade.Key</h4>
-                                            <div class="term-grid">
-                                                @foreach (var group in grade)
-                                                {
-                                                    <section class="modal-term">
-                                                        <h5>@group.TermName <span class="term-count">@(group.Courses.Count == 1 ? "1 course" : $"{group.Courses.Count} courses")</span></h5>
-                                                        <ul class="course-list">
-                                                            @foreach (var course in group.Courses)
-                                                            {
-                                                                <li>@course.Name</li>
-                                                            }
-                                                        </ul>
-                                                    </section>
-                                                }
+                                        @foreach (var grade in strand.Groups.GroupBy(g => g.GradeLevel))
+                                        {
+                                            <div class="grade-block">
+                                                <h4 class="group-heading">Grade @grade.Key</h4>
+                                                <div class="term-grid">
+                                                    @foreach (var group in grade)
+                                                    {
+                                                        <section class="modal-term">
+                                                            <h5>@group.TermName <span class="term-count">@(group.Courses.Count == 1 ? "1 course" : $"{group.Courses.Count} courses")</span></h5>
+                                                            <ul class="course-list">
+                                                                @foreach (var course in group.Courses)
+                                                                {
+                                                                    <li>@course.Name</li>
+                                                                }
+                                                            </ul>
+                                                        </section>
+                                                    }
+                                                </div>
                                             </div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
-                            </dialog>
+                            </div>
                         }
                     </div>
                 </div>

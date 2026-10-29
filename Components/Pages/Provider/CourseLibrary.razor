@@ -33,7 +33,7 @@ else
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
-        <AddItemMenu Label="Add to a module" Modules="@([.. modules.Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))])" OnPick="PickNew" />
+        <AddItemMenu Label="Add Activities" Modules="@([.. modules.Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))])" OnPick="PickNew" />
         <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
     </PageHeader>
 
@@ -258,6 +258,11 @@ else
     {
         <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
             <FormErrors Errors="formErrors" />
+            @if (editingModuleId is null && !editingIsSyllabus)
+            {
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="OpenModulesExcel">Template and import (Excel)</Button> <span class="muted">to add many modules at once</span></p>
+            }
+
             <Field For="m-title" Label="Title" Required="true">
                 <InputText id="m-title" @bind-Value="moduleForm.Title" maxlength="200" autocomplete="off" />
             </Field>
@@ -333,6 +338,8 @@ else
 
 @* ===== Excel: template, import, export of the assignments, quizzes or task performances of a module ===== *@
 <ItemExcelDialog Open="excelModule is not null" Kind="@excelKind" ModuleTitle="@(excelModule?.Title ?? "")" Existing="ExcelExisting" OnImport="ImportItemsAsync" OnClose="CloseExcel" />
+<ActivitiesExcelDialog Open="activitiesModule is not null" ModuleTitle="@(activitiesModule?.Title ?? "")" Existing="activitiesExisting" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
+<ModulesExcelDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" Existing="ModulesExisting" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
 
 @* ===== Send to teachers ===== *@
 <Modal Open="sending" Title="Send to teachers" OnClose="CloseSend" Large="true">
@@ -366,7 +373,7 @@ else
                         <input type="checkbox" checked="@sendModules.Contains(id)" @onchange="e => TogglePick(sendModules, id, e)" />
                         <span>
                             <strong>@(module.IsSyllabus ? "Syllabus: " : "")@module.Title</strong>
-                            <small>@(module.IsSyllabus ? "Syllabus" : $"{module.Items.Count} {(module.Items.Count == 1 ? "assignment, quiz or task" : "assignments, quizzes and tasks")}") · sent to @module.SentTo of @course.Teachers.Count</small>
+                            <small>@(module.IsSyllabus ? "Syllabus" : ItemCounts(module.Items)) · sent to @module.SentTo of @course.Teachers.Count</small>
                         </span>
                     </label>
                 </li>
@@ -490,6 +497,86 @@ else
 
     private void CloseExcel() => excelModule = null;
 
+    // ---- the workbook of activities (assignments, quizzes with their questions, task performances) of a module
+
+    private MaterialModuleView? activitiesModule;
+    private IReadOnlyList<ActivityExportItem> activitiesExisting = [];
+
+    private async Task OpenActivitiesAsync(MaterialModuleView module)
+    {
+        var list = new List<ActivityExportItem>();
+        foreach (var i in module.Items.Where(i => ItemKinds.All.Contains(i.Kind)))
+        {
+            var questions = i.Kind == ItemKinds.Quiz ? await Library.GetQuestionsAsync(i.Id) ?? [] : [];
+            list.Add(new ActivityExportItem(i.Kind, new ItemExportRow(i.Title, i.Instructions, i.MaxScore, null, i.DueAtUtc, i.TimeLimitMinutes), questions, [.. FilesOf(itemAttachments, i.Id).Select(f => f.Name)]));
+        }
+
+        activitiesExisting = list;
+        activitiesModule = module;
+    }
+
+    private void CloseActivities() => activitiesModule = null;
+
+    private async Task<ItemImportSummary> ImportActivitiesAsync(IReadOnlyList<ActivityToSave> list)
+    {
+        var moduleId = activitiesModule?.Id ?? 0;
+        var summary = await ActivityImport.RunAsync(list,
+            input => Library.SaveItemAsync(userId, moduleId, null, input),
+            (id, questions) => Library.SaveQuestionsAsync(userId, id, questions),
+            (id, files) => Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.MaterialItem, id), files));
+        if (moduleId != 0)
+        {
+            openModules.Add(moduleId);
+        }
+
+        await LoadAsync();
+        return summary;
+    }
+
+    // ---- the workbook of modules of the course
+
+    private bool modulesExcelOpen;
+
+    private IReadOnlyList<ModuleExportRow> ModulesExisting =>
+        [.. (course?.Modules ?? []).Where(m => !m.IsSyllabus).Select(m => new ModuleExportRow(m.Title, m.Description, m.Body, m.LinkUrl, [.. FilesOf(moduleAttachments, m.Id).Select(f => f.Name)]))];
+
+    private void OpenModulesExcel()
+    {
+        moduleForm = null;
+        modulesExcelOpen = true;
+    }
+
+    private void CloseModulesExcel() => modulesExcelOpen = false;
+
+    private async Task<ItemImportSummary> ImportModulesAsync(IReadOnlyList<ModuleToSave> list)
+    {
+        var created = 0;
+        var problems = new List<string>();
+        foreach (var m in list)
+        {
+            var saved = await Library.SaveModuleAsync(userId, SubjectId, null, m.Input, false);
+            if (!saved.Succeeded || saved.Id is not { } id)
+            {
+                problems.Add($"Row {m.Row} ({m.Input.Title}): {string.Join(" ", saved.Errors)}");
+                continue;
+            }
+
+            created++;
+            openModules.Add(id);
+            if (m.Files.Count > 0)
+            {
+                var added = await Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.MaterialModule, id), m.Files);
+                if (!added.Succeeded)
+                {
+                    problems.Add($"Row {m.Row} ({m.Input.Title}): it was added, but not its files: {string.Join(" ", added.Errors)}");
+                }
+            }
+        }
+
+        await LoadAsync();
+        return new ItemImportSummary(created, problems);
+    }
+
     private void OpenExcelFromForm()
     {
         if (itemForm is null || course?.Modules.FirstOrDefault(m => m.Id == itemModuleId) is not { } module)
@@ -595,6 +682,15 @@ else
         return problems;
     }
 
+    /// <summary>What a module holds, like "1 assignment, 1 quiz, 0 TP".</summary>
+    private static string ItemCounts(IReadOnlyList<MaterialItemView> items)
+    {
+        var assignments = items.Count(i => i.Kind == ItemKinds.Activity);
+        var quizzes = items.Count(i => i.Kind == ItemKinds.Quiz);
+        var tasks = items.Count(i => i.Kind == ItemKinds.TaskPerformance);
+        return $"{assignments} {(assignments == 1 ? "assignment" : "assignments")}, {quizzes} {(quizzes == 1 ? "quiz" : "quizzes")}, {tasks} TP";
+    }
+
     private int ItemCount(string kind) => course?.Modules.Sum(m => m.Items.Count(i => i.Kind == kind)) ?? 0;
 
     private void Say(ServiceResult result, string? fallback = null)
@@ -682,11 +778,18 @@ else
 
     // ---------------------------------------------------------------- items
 
-    private void PickNew(AddMenuPick pick)
+    private async Task PickNew(AddMenuPick pick)
     {
         if (course?.Modules.FirstOrDefault(m => m.Id == pick.ModuleId) is { } module)
         {
-            OpenNewItem(module, pick.Kind);
+            if (pick.Kind == AddItemMenuLabels.ExcelKind)
+            {
+                await OpenActivitiesAsync(module);
+            }
+            else
+            {
+                OpenNewItem(module, pick.Kind);
+            }
         }
     }
 

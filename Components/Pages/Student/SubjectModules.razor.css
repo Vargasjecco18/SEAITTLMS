@@ -121,23 +121,6 @@ h2 {
     animation: rise 0.2s ease-out both;
 }
 
-/* The course page with its second menu. */
-.course-layout {
-    display: grid;
-    gap: 1rem;
-}
-
-@media (min-width: 1000px) {
-    .course-layout {
-        grid-template-columns: 15.5rem minmax(0, 1fr);
-        align-items: start;
-    }
-}
-
-.course-main {
-    min-width: 0;
-}
-
 .kind-list {
     margin: 0;
     padding: 0;

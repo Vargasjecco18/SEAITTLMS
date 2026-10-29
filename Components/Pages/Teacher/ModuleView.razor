@@ -1,0 +1,105 @@
+@page "/teacher/subjects/{AssignmentId:int}/modules/{ModuleId:int}"
+@attribute [Authorize(Roles = AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject AttachmentService Attachments
+
+<PageTitle>@(module?.Title ?? "Module") · SEAITT Legazpi LMS</PageTitle>
+
+@* A module as the students read it, inside the system: the menu of the course at the left, the lesson with its files (a PDF opens here, not in another tab) in the middle and the form
+   to edit the module at the right. *@
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subject is null || module is null)
+{
+    <Card>
+        <EmptyState IconName="layers" Title="Module not found" IsPage="true">
+            <p>This is not a module of one of your courses.</p>
+            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@module.Title" IconName="layers">
+        <ButtonLink Href="@($"teacher/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
+    </PageHeader>
+
+    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
+        <ChildContent>
+            <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" />
+        </ChildContent>
+        <Aside>
+            <Card Title="Edit module" IconName="pencil">
+                <p class="state">
+                    @if (module.State == Visibility.Posted)
+                    {
+                        <Badge Tone="Tone.Success">Posted</Badge>
+                    }
+                    else if (module.State == Visibility.Scheduled)
+                    {
+                        <Badge Tone="Tone.Warning">Scheduled</Badge>
+                    }
+                    else
+                    {
+                        <Badge>Draft · hidden from students</Badge>
+                    }
+                </p>
+                <ModuleEditor TeacherId="teacherId" Module="module" Files="files" BodyRows="6" OnSaved="SavedAsync" />
+            </Card>
+        </Aside>
+    </CourseLayout>
+}
+
+@code {
+    [Parameter] public int AssignmentId { get; set; }
+
+    [Parameter] public int ModuleId { get; set; }
+
+    /// <summary>The file to show first (the name the teacher pressed in the list of the course).</summary>
+    [SupplyParameterFromQuery(Name = "file")] public int? File { get; set; }
+
+    private int teacherId;
+    private bool loaded;
+    private TeacherSubject? subject;
+    private TeacherModule? module;
+    private IReadOnlyList<AttachmentRow> files = [];
+    private string? message;
+    private bool messageIsError;
+
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+
+    private IReadOnlyList<CourseMenuLink> MenuLinks =>
+    [
+        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
+        new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        await LoadAsync();
+        loaded = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        subject = teacherId == 0 ? null : await Modules.GetTeacherSubjectAsync(teacherId, AssignmentId);
+        module = subject?.Modules.FirstOrDefault(m => m.Id == ModuleId);
+        files = module is null ? [] : await Attachments.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Module, ModuleId));
+    }
+
+    private async Task SavedAsync(ModuleEditor.EditorResult result)
+    {
+        messageIsError = !result.Ok;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ClearMessage() => message = null;
+}

@@ -153,6 +153,31 @@
                     </form>
                 </section>
 
+                <section class="settings-section" aria-labelledby="set-email">
+                    <h3 class="group-title" id="set-email">Email for notifications</h3>
+                    <form @onsubmit="SaveEmailAsync" autocomplete="off">
+                        <Field For="set-notify-email" Label="Email address" Hint="Your Gmail, for example. The notifications of the system are also sent there.">
+                            <input id="set-notify-email" type="email" maxlength="254" autocomplete="email" placeholder="name@gmail.com" @bind="notifyEmail" @bind:event="oninput" />
+                        </Field>
+                        <div class="email-actions">
+                            <Button Type="submit" IconName="@(emailBusy ? "loader" : "mail")" Disabled="@emailBusy">@(emailBusy ? "Saving…" : "Save email")</Button>
+                            @if (!string.IsNullOrWhiteSpace(savedEmail))
+                            {
+                                <button type="button" class="link-button" disabled="@emailBusy" @onclick="SendTestEmailAsync">Send a test email</button>
+                                <button type="button" class="link-button" disabled="@emailBusy" @onclick="RemoveEmailAsync">Remove</button>
+                            }
+                        </div>
+                        @if (emailMessage is not null)
+                        {
+                            <p class="photo-message @(emailFailed ? "failed" : "")" role="status">@emailMessage</p>
+                        }
+                        else if (!Notifications.EmailIsSetUp)
+                        {
+                            <p class="hint">The school has not set up the sending of email yet. Your address is kept, and the emails start when it is.</p>
+                        }
+                    </form>
+                </section>
+
                 <section class="settings-section" aria-labelledby="set-look">
                     <h3 class="group-title" id="set-look">Appearance</h3>
                     <div class="choices" role="group" aria-label="Appearance">
@@ -209,6 +234,12 @@
     private string? photoMessage;
 
     private bool settingsOpen;
+    private string notifyEmail = "";
+    private string? savedEmail;
+    private bool emailBusy;
+    private bool emailFailed;
+    private string? emailMessage;
+    private DateTime lastSessionTouch;
     private bool showPasswords;
     private bool passwordBusy;
     private string? passwordMessage;
@@ -252,6 +283,17 @@
             if (user is not null)
             {
                 Presence.Touch(user.UserId);
+
+                // The sign-in says it is still in use (once a minute); when the account was signed in somewhere else it is over and this page goes to the login page.
+                if (DateTime.UtcNow - lastSessionTouch > TimeSpan.FromSeconds(50))
+                {
+                    lastSessionTouch = DateTime.UtcNow;
+                    if (!await Auth.TouchSessionAsync(user.UserId, user.SessionId))
+                    {
+                        Navigation.NavigateTo("/account/session-ended", forceLoad: true);
+                        return;
+                    }
+                }
             }
 
             var knownMessages = unreadMessages;
@@ -430,11 +472,69 @@
 
     private void OpenMessages() => messagesOpen = true;
 
-    private void OpenSettings()
+    private async Task OpenSettings()
     {
         photoMessage = null;
         passwordMessage = null;
+        emailMessage = null;
+        if (user is not null)
+        {
+            savedEmail = await Notifications.GetNotifyEmailAsync(user.UserId);
+            notifyEmail = savedEmail ?? "";
+        }
+
         settingsOpen = true;
+    }
+
+    private async Task SaveEmailAsync()
+    {
+        if (user is null || emailBusy)
+        {
+            return;
+        }
+
+        emailBusy = true;
+        try
+        {
+            var result = await Notifications.SetNotifyEmailAsync(user.UserId, notifyEmail);
+            emailFailed = !result.Succeeded;
+            emailMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            if (result.Succeeded)
+            {
+                savedEmail = await Notifications.GetNotifyEmailAsync(user.UserId);
+                notifyEmail = savedEmail ?? "";
+            }
+        }
+        finally
+        {
+            emailBusy = false;
+        }
+    }
+
+    private async Task RemoveEmailAsync()
+    {
+        notifyEmail = "";
+        await SaveEmailAsync();
+    }
+
+    private async Task SendTestEmailAsync()
+    {
+        if (user is null || emailBusy)
+        {
+            return;
+        }
+
+        emailBusy = true;
+        try
+        {
+            var result = await Notifications.SendTestEmailAsync(user.UserId);
+            emailFailed = !result.Succeeded;
+            emailMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+        }
+        finally
+        {
+            emailBusy = false;
+        }
     }
 
     private void CloseSettings()
