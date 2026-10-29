@@ -187,10 +187,8 @@ else
             parts.Add("section=" + Uri.EscapeDataString(section));
         }
 
-        if (view == "list")
-        {
-            parts.Add("view=list");
-        }
+        // The view is always in the address: a link to Cards must say so, or the view remembered by the browser (List) would come back.
+        parts.Add("view=" + view);
 
         return "teacher/subjects" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));
     }
