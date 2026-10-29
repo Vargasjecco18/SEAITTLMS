@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject FileService Files
+@inject AttachmentService Course
 @inject SystemSettingsService Settings
 
 <PageTitle>Resources · SEAITT Legazpi LMS</PageTitle>
@@ -106,17 +107,19 @@
                         <option value="person">From people</option>
                         <option value="group">From my groups</option>
                         <option value="course">For my courses</option>
+                        <option value="coursefile">Files of my courses</option>
                     </select>
                 </Field>
             </div>
 
             @{
                 var list = shared.Where(s => from == "" || s.Via == from).ToList();
+                var courseList = courseFiles.Where(_ => from is "" or "coursefile").ToList();
             }
-            @if (list.Count == 0)
+            @if (list.Count == 0 && courseList.Count == 0)
             {
                 <EmptyState IconName="files" Title="Nothing uploaded for you yet">
-                    <p>When a teacher shares a file with your course, or a friend or a group shares one with you, it is listed here.</p>
+                    <p>The files your teachers send to your courses, the files you send with your assignments, and the files a friend or a group shares with you are listed here.</p>
                 </EmptyState>
             }
             else
@@ -128,11 +131,32 @@
                                 <th scope="col">File</th>
                                 <th scope="col">From</th>
                                 <th scope="col" class="col-more">Size</th>
-                                <th scope="col" class="col-more">Shared</th>
+                                <th scope="col" class="col-more">Created</th>
                                 <th scope="col"><span class="sr-only">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody>
+                            @foreach (var c in courseList)
+                            {
+                                var course = c;
+                                <tr class="course-file">
+                                    <td><span class="file-name"><Icon Name="@(course.IsSlides ? "presentation" : IconFor(course.Name, ""))" Size="18" /> <span>@course.Name</span></span></td>
+                                    <td>
+                                        @course.From
+                                        <span class="muted-line">@course.Where@(course.IsSlides ? " · slides" : "")</span>
+                                    </td>
+                                    <td class="col-more">@FileSize.Text(course.SizeBytes)</td>
+                                    <td class="col-more">@PhilippineTime.FormatDate(course.CreatedAtUtc)</td>
+                                    <td class="right actions">
+                                        @if (FilePreview.CanPreview(course.Name))
+                                        {
+                                            <ButtonLink Href="@($"files/a/{course.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                        }
+                                        <ButtonLink Href="@($"files/a/{course.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                    </td>
+                                </tr>
+                            }
+
                             @foreach (var s in list)
                             {
                                 var file = s;
@@ -246,6 +270,7 @@
 
     private IReadOnlyList<FileRow> locker = [];
     private IReadOnlyList<SharedFileRow> shared = [];
+    private IReadOnlyList<CourseFileRow> courseFiles = [];
     private LockerUsage usage = new(0, 0, 0);
 
     private FileRow? renameTarget;
@@ -262,7 +287,7 @@
     private IReadOnlyList<PillTabs.Tab> Tabs =>
     [
         new("locker", "Locker", "hard-drive", usage.Files),
-        new("uploaded", "Uploaded files", "files", shared.Count),
+        new("uploaded", "Uploaded files", "files", shared.Count + courseFiles.Count),
     ];
 
     protected override async Task OnInitializedAsync()
@@ -282,6 +307,7 @@
         locker = await Files.GetLockerAsync(userId, search);
         usage = await Files.GetUsageAsync(userId);
         shared = await Files.GetSharedWithMeAsync(userId);
+        courseFiles = await Course.GetCourseFilesAsync(userId);
     }
 
     private void ClearMessage() => message = null;

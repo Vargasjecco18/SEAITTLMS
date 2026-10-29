@@ -120,3 +120,86 @@ h2 {
     border-top: 1px solid var(--border);
     animation: rise 0.2s ease-out both;
 }
+
+/* The course page with its second menu. */
+.course-layout {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (min-width: 1000px) {
+    .course-layout {
+        grid-template-columns: 14rem minmax(0, 1fr);
+        align-items: start;
+    }
+}
+
+.course-main {
+    min-width: 0;
+}
+
+.kind-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.kind-list li + li {
+    border-top: 1px solid var(--border);
+}
+
+.kind-link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 0.7rem 0.2rem;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.kind-link:hover .kind-title {
+    color: var(--brand-strong);
+    text-decoration: underline;
+}
+
+.kind-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.kind-title {
+    font-weight: 650;
+}
+
+.kind-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.9rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.kind-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.kind-meta .late {
+    color: var(--danger);
+}
+
+.kind-end {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.kind-score {
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}

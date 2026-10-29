@@ -33,6 +33,7 @@ else
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
+        <AddItemMenu Label="Add to a module" Modules="@([.. modules.Select((m, n) => new AddMenuModule(m.Id, $"Module {n + 1}: {m.Title}"))])" OnPick="PickNew" />
         <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
     </PageHeader>
 
@@ -172,7 +173,12 @@ else
                                 </p>
                             }
 
-                            <AttachmentList Items="moduleFiles" Label="@($"Files of {module.Title}")" />
+                            <AttachmentList Items="moduleFiles.Where(f => !f.IsSlides).ToList()" Label="@($"Files of {module.Title}")" />
+                            @if (moduleFiles.Any(f => f.IsSlides))
+                            {
+                                <h3 class="slides-title"><Icon Name="presentation" Size="16" /> Slides</h3>
+                                <AttachmentList Items="moduleFiles.Where(f => f.IsSlides).ToList()" Label="@($"Slides of {module.Title}")" />
+                            }
 
                             @if (!module.IsSyllabus)
                             {
@@ -183,7 +189,10 @@ else
                                         <div class="group">
                                             <div class="group-head">
                                                 <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
-                                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
+                                                <span class="group-actions">
+                                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" Title="Template, import and export in Excel" OnClick="() => OpenExcel(module, kind)">Excel</Button>
+                                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
+                                                </span>
                                             </div>
 
                                             @if (items.Count == 0)
@@ -261,7 +270,8 @@ else
             <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
-            <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@FilesOf(moduleAttachments, editingModuleId)" />
+            <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="slidesPicker" @key="moduleFormKey" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
@@ -276,6 +286,11 @@ else
     {
         <EditForm Model="itemForm" OnValidSubmit="SaveItemAsync">
             <FormErrors Errors="formErrors" />
+            @if (editingItemId is null)
+            {
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExcelFromForm">Fill many from an Excel file instead</Button></p>
+            }
+
             <Field For="i-title" Label="Title" Required="true">
                 <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
             </Field>
@@ -315,6 +330,9 @@ else
         </EditForm>
     }
 </Modal>
+
+@* ===== Excel: template, import, export of the assignments, quizzes or task performances of a module ===== *@
+<ItemExcelDialog Open="excelModule is not null" Kind="@excelKind" ModuleTitle="@(excelModule?.Title ?? "")" Existing="ExcelExisting" OnImport="ImportItemsAsync" OnClose="CloseExcel" />
 
 @* ===== Send to teachers ===== *@
 <Modal Open="sending" Title="Send to teachers" OnClose="CloseSend" Large="true">
@@ -442,6 +460,7 @@ else
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> moduleAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> itemAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
     private AttachmentPicker? modulePicker;
+    private AttachmentPicker? slidesPicker;
     private AttachmentPicker? itemPicker;
     private int moduleFormKey;
     private int itemFormKey;
@@ -454,6 +473,61 @@ else
     private bool QuizIsAFile => itemForm?.Kind == ItemKinds.Quiz && (itemPicker?.HasFiles ?? FilesOf(itemAttachments, editingItemId).Count > 0);
 
     private void FilesChanged() { }
+
+    // ---------------------------------------------------------------- Excel
+
+    private MaterialModuleView? excelModule;
+    private string excelKind = ItemKinds.Activity;
+
+    private IReadOnlyList<ItemExportRow> ExcelExisting => excelModule is null ? [] :
+        [.. excelModule.Items.Where(i => i.Kind == excelKind).Select(i => new ItemExportRow(i.Title, i.Instructions, i.MaxScore, null, i.DueAtUtc, null))];
+
+    private void OpenExcel(MaterialModuleView module, string kind)
+    {
+        excelModule = module;
+        excelKind = kind;
+    }
+
+    private void CloseExcel() => excelModule = null;
+
+    private void OpenExcelFromForm()
+    {
+        if (itemForm is null || course?.Modules.FirstOrDefault(m => m.Id == itemModuleId) is not { } module)
+        {
+            return;
+        }
+
+        var kind = itemForm.Kind;
+        itemForm = null;
+        OpenExcel(module, kind);
+    }
+
+    private async Task<ItemImportSummary> ImportItemsAsync(IReadOnlyList<ItemInput> inputs)
+    {
+        var moduleId = excelModule?.Id ?? 0;
+        var created = 0;
+        var problems = new List<string>();
+        foreach (var input in inputs)
+        {
+            var saved = await Library.SaveItemAsync(userId, moduleId, null, input);
+            if (saved.Succeeded)
+            {
+                created++;
+            }
+            else
+            {
+                problems.Add($"{input.Title}: {string.Join(" ", saved.Errors)}");
+            }
+        }
+
+        if (moduleId != 0)
+        {
+            openModules.Add(moduleId);
+        }
+
+        await LoadAsync();
+        return new ItemImportSummary(created, problems);
+    }
 
     private string ItemModalTitle => itemForm is null ? "" : editingItemId is null ? $"Add {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}" : $"Edit {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}";
 
@@ -498,7 +572,7 @@ else
     }
 
     /// <summary>Saves the files chosen in a form for the syllabus, module or item with this number: the new ones are attached, the ones taken off are removed.</summary>
-    private async Task<List<string>> ApplyFilesAsync(AttachmentPicker? picker, AttachmentOwner owner)
+    private async Task<List<string>> ApplyFilesAsync(AttachmentPicker? picker, AttachmentOwner owner, bool slides = false)
     {
         var problems = new List<string>();
         if (picker is null)
@@ -512,7 +586,7 @@ else
             problems.AddRange(removed.Errors);
         }
 
-        var added = await Files.AddAsync(userId, owner, picker.Pending);
+        var added = await Files.AddAsync(userId, owner, picker.Pending, slides: slides);
         if (!added.Succeeded)
         {
             problems.AddRange(added.Errors);
@@ -580,6 +654,11 @@ else
             }
 
             var fileProblems = result.Id is { } savedModuleId ? await ApplyFilesAsync(modulePicker, new AttachmentOwner(AttachmentOwnerKind.MaterialModule, savedModuleId)) : [];
+            if (result.Id is { } slidesModuleId)
+            {
+                fileProblems.AddRange(await ApplyFilesAsync(slidesPicker, new AttachmentOwner(AttachmentOwnerKind.MaterialModule, slidesModuleId), slides: true));
+            }
+
             moduleForm = null;
             if (result.Id is { } newModuleId)
             {
@@ -602,6 +681,14 @@ else
     }
 
     // ---------------------------------------------------------------- items
+
+    private void PickNew(AddMenuPick pick)
+    {
+        if (course?.Modules.FirstOrDefault(m => m.Id == pick.ModuleId) is { } module)
+        {
+            OpenNewItem(module, pick.Kind);
+        }
+    }
 
     private void OpenNewItem(MaterialModuleView module, string kind)
     {

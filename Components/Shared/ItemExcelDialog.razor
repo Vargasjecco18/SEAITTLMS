@@ -1,0 +1,211 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject FileDownloads Downloads
+
+@* The box for the Excel file of assignments, quizzes or task performances of a module: the template to fill in, an export of what the module has, and the import
+   (every row of the file becomes one item). The page that opens it saves the items (OnImport), so the teacher's rules and the provider's rules each apply. *@
+<Modal Open="Open" Title="@($"{ItemKinds.Plural(Kind)} in Excel")" Large="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        @if (result is null)
+        {
+            <p class="xl-lead">For <strong>@ModuleTitle</strong>. Fill in the template, then import it: every row becomes @(Kind == ItemKinds.Quiz ? "a quiz" : $"an {ItemKinds.Display(Kind).ToLowerInvariant()}").</p>
+            <ol class="xl-steps">
+                <li>
+                    <strong>Get the template.</strong> It has the column titles, an example and a sheet that says how to fill it.
+                    <div class="xl-row">
+                        <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
+                        @if (Existing.Count > 0)
+                        {
+                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export what the module has (@Existing.Count)</Button>
+                        }
+                    </div>
+                </li>
+                <li>
+                    <strong>Fill it</strong> and save it as an Excel file.
+                </li>
+                <li>
+                    <strong>Choose the file.</strong>
+                    <div class="xl-row">
+                        <InputFile id="xl-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Excel file (.xlsx)" />
+                    </div>
+                    @if (fileName is not null)
+                    {
+                        <p class="xl-file"><Icon Name="file-spreadsheet" Size="16" /> @fileName</p>
+                    }
+                </li>
+            </ol>
+
+            <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
+
+            @if (parsed is not null)
+            {
+                <p class="xl-summary" role="status">
+                    <strong>@parsed.Rows.Count(r => r.Input is not null)</strong> of @parsed.Rows.Count @(parsed.Rows.Count == 1 ? "row is" : "rows are") ready to import.
+                    @if (parsed.Rows.Any(r => r.Input is null))
+                    {
+                        <span class="bad">The rows with a problem are left out; the reason is on its line.</span>
+                    }
+                </p>
+                <div class="xl-table-wrap">
+                    <table class="xl-table">
+                        <thead><tr><th scope="col">Row</th><th scope="col">Title</th><th scope="col">Result</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in parsed.Rows)
+                            {
+                                <tr class="@(row.Input is null ? "failed" : "ok")">
+                                    <td>@row.Row</td>
+                                    <td>@(row.Input?.Title ?? "")</td>
+                                    <td>@(row.Input is null ? string.Join(" ", row.Errors) : "Ready")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="xl-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                <Button IconName="upload" Disabled="@(importing || reading || parsed is null || parsed.Rows.All(r => r.Input is null))" OnClick="ImportAsync">@(importing ? "Importing…" : "Import")</Button>
+            </div>
+        }
+        else
+        {
+            <p class="xl-summary" role="status">
+                <strong>@result.Created</strong> @(result.Created == 1 ? ItemKinds.Display(Kind).ToLowerInvariant() + " was" : ItemKinds.Plural(Kind).ToLowerInvariant() + " were") added to the module.
+                @if (result.Errors.Count > 0)
+                {
+                    <span class="bad">@result.Errors.Count could not be added.</span>
+                }
+            </p>
+            @if (result.Errors.Count > 0)
+            {
+                <ul class="xl-errors">
+                    @foreach (var e in result.Errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+
+            <div class="xl-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Import another file</Button>
+                <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    private bool importing;
+    private bool reading;
+    private string? fileName;
+    private byte[]? bytes;
+    private string? error;
+    private ItemImportParse? parsed;
+    private ItemImportSummary? result;
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>One of <see cref="ItemKinds"/>.</summary>
+    [Parameter, EditorRequired] public string Kind { get; set; } = ItemKinds.Activity;
+
+    /// <summary>The module the items go to, for the heading ("Module 2: Journal entries").</summary>
+    [Parameter] public string ModuleTitle { get; set; } = "";
+
+    /// <summary>What the module has of this kind now (the export).</summary>
+    [Parameter] public IReadOnlyList<ItemExportRow> Existing { get; set; } = [];
+
+    /// <summary>Saves the items and says how many were added and what went wrong.</summary>
+    [Parameter, EditorRequired] public Func<IReadOnlyList<ItemInput>, Task<ItemImportSummary>> OnImport { get; set; } = _ => Task.FromResult(new ItemImportSummary(0, []));
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // A box that was closed starts empty the next time.
+        if (!Open)
+        {
+            Reset();
+        }
+    }
+
+    private void Reset()
+    {
+        importing = reading = false;
+        fileName = null;
+        bytes = null;
+        error = null;
+        parsed = null;
+        result = null;
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void Another()
+    {
+        Reset();
+    }
+
+    private async Task DownloadTemplateAsync() => await Downloads.SaveAsync(ItemSheets.FileName(Kind, "Template"), ItemSheets.Template(Kind));
+
+    private async Task ExportAsync() => await Downloads.SaveAsync(ItemSheets.FileName(Kind, ModuleTitle.Length == 0 ? "Module" : ModuleTitle), ItemSheets.Export(Kind, Existing));
+
+    private async Task FileChosenAsync(InputFileChangeEventArgs e)
+    {
+        error = null;
+        parsed = null;
+        bytes = null;
+        fileName = null;
+        reading = true;
+        try
+        {
+            if (e.File.Size > XlsxReader.MaxFileBytes)
+            {
+                error = $"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.";
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            bytes = buffer.ToArray();
+            fileName = e.File.Name;
+            var read = ItemSheets.Parse(bytes, Kind);
+            if (read.FileError is not null)
+            {
+                error = read.FileError;
+                return;
+            }
+
+            parsed = read;
+        }
+        catch (IOException)
+        {
+            error = "The file could not be read. Choose it again.";
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (importing || parsed is null)
+        {
+            return;
+        }
+
+        importing = true;
+        try
+        {
+            var inputs = parsed.Rows.Where(r => r.Input is not null).Select(r => r.Input!).ToList();
+            var summary = await OnImport(inputs);
+            result = summary with { Errors = [.. parsed.Rows.Where(r => r.Input is null).Select(r => $"Row {r.Row}: {string.Join(" ", r.Errors)}"), .. summary.Errors] };
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+}

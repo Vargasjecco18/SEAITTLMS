@@ -5,6 +5,8 @@
 @inject CurrentUser Me
 @inject TeachingService Teaching
 @inject GradebookService Books
+@inject ModuleService Modules
+@inject FileDownloads Downloads
 
 <PageTitle>Gradebook · SEAITT Legazpi LMS</PageTitle>
 
@@ -54,6 +56,7 @@ else
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
                     <p>Assignments, quizzes and task performances of posted modules appear as columns here.</p>
                     <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
+                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add assignment, quiz or task</Button>
                 </EmptyState>
             }
             else if (book.Rows.Count == 0)
@@ -64,8 +67,12 @@ else
             {
                 <FormErrors Errors="formErrors" />
                 <div class="table-tools">
-                    <p class="muted">Write the final grade of each student in the last column, then press Save.</p>
-                    <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
+                    <p class="muted">Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press Save final grades.</p>
+                    <div class="tools">
+                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add assignment, quiz or task</Button>
+                        <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
+                    </div>
                 </div>
                 <div class="scroll">
                     <table class="grid">
@@ -81,14 +88,12 @@ else
                                 }
                                 <th scope="col" class="avg">Average</th>
                                 <th scope="col" class="final">Final grade</th>
-                                <th scope="col" class="edit"><span class="sr-only">Edit</span></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var row in book.Rows)
                             {
-                                var editing = editingStudent == row.StudentId;
-                                <tr class="@(editing ? "editing" : "")">
+                                <tr>
                                     <th scope="row" class="sticky">
                                         <span class="name">@row.Name</span>
                                         <span class="sub">@row.Lrn</span>
@@ -98,28 +103,23 @@ else
                                         var column = book.Columns[n];
                                         var cell = row.Cells[n];
                                         <td class="cell @CellClass(cell, column)">
-                                            @if (editing)
+                                            @if (cell.Status == SubmissionStatus.Submitted && cell.LateDecision is LateDecisions.Pending or LateDecisions.Declined)
                                             {
-                                                <input type="number" step="any" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" aria-label="@($"{row.Name}, {column.Title}")"
-                                                       value="@inputs.GetValueOrDefault(column.ItemId)" @onchange="e => inputs[column.ItemId] = e.Value?.ToString() ?? string.Empty" />
-                                            }
-                                            else if (cell.Status == SubmissionStatus.Graded && cell.Score is { } score)
-                                            {
-                                                <span class="score">@score.ToString("0.##")</span>
-                                                @if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }
-                                                @if (cell.IsFlagged) { <i class="flag-dot" title="Flagged by the anti-cheating watch"></i> }
-                                            }
-                                            else if (cell.Status == SubmissionStatus.Submitted)
-                                            {
-                                                <a class="check" href="teacher/items/@column.ItemId" title="Handed in, waiting for a score">To check</a>
-                                            }
-                                            else if (cell.Status == SubmissionStatus.InProgress)
-                                            {
-                                                <span class="dash" title="Started, not handed in">…</span>
+                                                @* Late work is graded after the teacher accepted it. *@
+                                                <a class="check" href="teacher/items/@column.ItemId" title="Handed in late: accept or decline it first">@(cell.LateDecision == LateDecisions.Pending ? "Late · decide" : "Declined")</a>
                                             }
                                             else
                                             {
-                                                <span class="dash" title="Nothing handed in">—</span>
+                                                <input type="number" step="any" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" @key="@($"{row.StudentId}-{column.ItemId}-{renderStamp}")"
+                                                       aria-label="@($"{row.Name}, {column.Title}")" placeholder="@(cell.Status == SubmissionStatus.Submitted ? "check" : "—")" value="@CellText(cell)"
+                                                       @onchange="e => SaveCellAsync(row, column, e.Value?.ToString())" />
+                                                @if (cell.Status == SubmissionStatus.Submitted)
+                                                {
+                                                    <a class="check small" href="teacher/items/@column.ItemId" title="Handed in, waiting for a score">To check</a>
+                                                }
+
+                                                @if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }
+                                                @if (cell.IsFlagged) { <i class="flag-dot" title="Flagged by the anti-cheating watch"></i> }
                                             }
                                         </td>
                                     }
@@ -138,19 +138,6 @@ else
                                                aria-label="@($"Final grade of {row.Name}")" value="@finalInputs.GetValueOrDefault(row.StudentId)"
                                                @onchange="e => finalInputs[row.StudentId] = e.Value?.ToString() ?? string.Empty" />
                                     </td>
-                                    <td class="edit">
-                                        @if (editing)
-                                        {
-                                            <div class="edit-actions">
-                                                <Button Small="true" IconName="circle-check" Disabled="busy" OnClick="SaveAsync">Save</Button>
-                                                <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="CancelEdit">Cancel</Button>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit grades of {row.Name}")" OnClick="() => StartEdit(row)">Edit grades</Button>
-                                        }
-                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -162,6 +149,47 @@ else
     }
 }
 
+@* ===== Extra grades: an assignment, a quiz or a task performance that is only there to give scores ===== *@
+<Modal Open="extraOpen" Title="Add to the gradebook" OnClose="CloseExtra">
+    @if (extraOpen)
+    {
+        <p class="dialog-text">Add an assignment, a quiz or a task performance to give <strong>extra scores</strong>. It becomes a new column of the gradebook, and it is added to the module you choose, so the students see it too.</p>
+        <FormErrors Errors="formErrors" />
+        @if (extraModules.Count == 0)
+        {
+            <p class="muted">There is no module that is posted yet. Post a module in the course first: the gradebook only has the work of posted modules.</p>
+        }
+        else
+        {
+            <div class="kind-choice" role="group" aria-label="What to add">
+                @foreach (var kind in ItemKinds.All)
+                {
+                    var k = kind;
+                    <button type="button" class="kind @(extraKind == k ? "on" : "")" aria-pressed="@(extraKind == k ? "true" : "false")" @onclick="() => extraKind = k"><Icon Name="@SubjectStyle.KindIcon(k)" Size="16" /> @ItemKinds.Display(k)</button>
+                }
+            </div>
+            <Field For="x-module" Label="Module" Required="true">
+                <select id="x-module" @bind="extraModuleId">
+                    @foreach (var m in extraModules)
+                    {
+                        <option value="@m.Id">@m.Title</option>
+                    }
+                </select>
+            </Field>
+            <Field For="x-title" Label="Title" Required="true">
+                <input id="x-title" type="text" maxlength="200" autocomplete="off" @bind="extraTitle" @bind:event="oninput" />
+            </Field>
+            <Field For="x-score" Label="Highest score" Required="true">
+                <input id="x-score" type="number" step="any" min="1" max="1000" @bind="extraMax" />
+            </Field>
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseExtra">Cancel</Button>
+                <Button IconName="circle-check" Disabled="busy" OnClick="SaveExtraAsync">@(busy ? "Adding…" : "Add the column")</Button>
+            </div>
+        }
+    }
+</Modal>
+
 @code {
     [SupplyParameterFromQuery(Name = "subject")] private int? SubjectQuery { get; set; }
 
@@ -170,9 +198,9 @@ else
     private IReadOnlyList<TeacherSubjectCard> subjects = [];
     private int subjectId;
     private SubjectGradebook? book;
-    private int? editingStudent;
-    private readonly Dictionary<int, string> inputs = [];
     private readonly Dictionary<int, string> finalInputs = [];
+    private int renderStamp;
+    private readonly SemaphoreSlim saveLock = new(1, 1);
     private readonly Dictionary<int, string> codes = [];
     private string? message;
     private bool messageIsError;
@@ -192,7 +220,6 @@ else
 
     private async Task LoadAsync()
     {
-        editingStudent = null;
         formErrors = [];
         book = subjectId == 0 ? null : await Books.GetAsync(teacherId, subjectId);
         ReadBook();
@@ -292,61 +319,105 @@ else
         }
     }
 
-    private void StartEdit(GradebookRow row)
-    {
-        formErrors = [];
-        editingStudent = row.StudentId;
-        inputs.Clear();
-        foreach (var cell in row.Cells)
-        {
-            inputs[cell.ItemId] = cell.Status == SubmissionStatus.Graded && cell.Score is { } s ? s.ToString("0.##", CultureInfo.InvariantCulture) : "";
-        }
-    }
+    private static string CellText(GradebookCell cell) =>
+        cell.Status == SubmissionStatus.Graded && cell.Score is { } score ? score.ToString("0.##", CultureInfo.InvariantCulture) : "";
 
-    private void CancelEdit()
+    /// <summary>A score typed in a box is saved when the person leaves the box. An empty box leaves the cell as it is.</summary>
+    private async Task SaveCellAsync(GradebookRow row, GradebookColumn column, string? text)
     {
-        editingStudent = null;
-        formErrors = [];
-    }
-
-    private async Task SaveAsync()
-    {
-        if (busy || editingStudent is not { } studentId)
+        if (string.IsNullOrWhiteSpace(text))
         {
             return;
         }
 
-        var scores = new Dictionary<int, decimal?>();
-        foreach (var (itemId, text) in inputs)
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
         {
-            if (string.IsNullOrWhiteSpace(text))
+            Fail("A score must be a number.");
+            return;
+        }
+
+        // Two scores typed one after the other are saved one after the other.
+        await saveLock.WaitAsync();
+        try
+        {
+            var result = await Books.SetScoresAsync(teacherId, subjectId, row.StudentId, new Dictionary<int, decimal?> { [column.ItemId] = value });
+            if (!result.Succeeded)
             {
-                scores[itemId] = null;
-            }
-            else if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
-            {
-                scores[itemId] = value;
-            }
-            else
-            {
-                formErrors = ["A score must be a number."];
+                Fail(string.Join(" ", result.Errors));
                 return;
             }
+
+            messageIsError = false;
+            message = result.Message == "Nothing changed." ? null : $"{row.Name}, {column.Title}: saved.";
+            // Only the numbers are read again: the final grades that are typed and not saved yet stay as they are.
+            book = await Books.GetAsync(teacherId, subjectId);
+        }
+        finally
+        {
+            saveLock.Release();
+        }
+    }
+
+    private void Fail(string text)
+    {
+        messageIsError = true;
+        message = text;
+        renderStamp++;   // the boxes are drawn again, so the wrong number is not left in the box
+    }
+
+    private async Task ExportAsync()
+    {
+        if (book is null)
+        {
+            return;
+        }
+
+        await Downloads.SaveAsync(GradebookExport.FileName(book), GradebookExport.Build(book));
+    }
+
+    // ---------------------------------------------------------------- extra grades
+
+    private bool extraOpen;
+    private string extraKind = ItemKinds.Activity;
+    private int extraModuleId;
+    private string extraTitle = "";
+    private decimal extraMax = 50;
+    private IReadOnlyList<TeacherModule> extraModules = [];
+
+    private async Task OpenExtra()
+    {
+        formErrors = [];
+        var subject = await Modules.GetTeacherSubjectAsync(teacherId, subjectId);
+        extraModules = subject?.Modules.Where(m => !m.IsSyllabus && m.State == Visibility.Posted).ToList() ?? [];
+        extraModuleId = extraModules.LastOrDefault()?.Id ?? 0;
+        extraKind = ItemKinds.Activity;
+        extraTitle = "";
+        extraMax = 50;
+        extraOpen = true;
+    }
+
+    private void CloseExtra() => extraOpen = false;
+
+    private async Task SaveExtraAsync()
+    {
+        if (busy)
+        {
+            return;
         }
 
         busy = true;
         try
         {
-            var result = await Books.SetScoresAsync(teacherId, subjectId, studentId, scores);
+            var result = await Modules.SaveItemAsync(teacherId, extraModuleId, null, new ItemInput { Kind = extraKind, Title = extraTitle, MaxScore = extraMax });
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];
                 return;
             }
 
-            var name = book?.Rows.FirstOrDefault(r => r.StudentId == studentId)?.Name;
+            extraOpen = false;
             messageIsError = false;
-            message = $"{name}: {result.Message}";
+            message = $"{ItemKinds.Display(extraKind)} added: it is a new column. Type the scores in it.";
             await LoadAsync();
         }
         finally

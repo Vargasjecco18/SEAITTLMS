@@ -1,0 +1,56 @@
+@* The second menu of a course: next to the course page it lists Modules, Assignments, Quizzes and Task performances (each opens the list of that kind for the whole course) and
+   the pages that belong to the course (the gradebook and the attendance for a teacher, the grades for a student). The menu of the school stays as it is. *@
+<nav class="course-menu" aria-label="Menu of the course">
+    <a class="cm-item @(Selected == "" ? "on" : "")" href="@PageHref" aria-current="@(Selected == "" ? "page" : null)" data-course-menu="modules">
+        <Icon Name="layers" Size="18" /> <span class="cm-label">Modules</span> <span class="cm-count">@ModuleCount</span>
+    </a>
+    @foreach (var kind in ItemKinds.All)
+    {
+        var key = KeyOf(kind);
+        <a class="cm-item @(Selected == key ? "on" : "")" href="@($"{PageHref}?tab={key}")" aria-current="@(Selected == key ? "page" : null)" data-course-menu="@key">
+            <Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> <span class="cm-label">@ItemKinds.Plural(kind)</span> <span class="cm-count">@Counts.GetValueOrDefault(kind)</span>
+        </a>
+    }
+
+    @if (Extra.Count > 0)
+    {
+        <span class="cm-rule" aria-hidden="true"></span>
+        @foreach (var link in Extra)
+        {
+            <a class="cm-item cm-extra" href="@link.Href"><Icon Name="@link.Icon" Size="18" /> <span class="cm-label">@link.Label</span></a>
+        }
+    }
+</nav>
+
+@code {
+    /// <summary>The address of the course page (without the tab).</summary>
+    [Parameter, EditorRequired] public string PageHref { get; set; } = "";
+
+    /// <summary>The tab that is open: "" for the modules, or assignments, quizzes, tasks.</summary>
+    [Parameter] public string Selected { get; set; } = "";
+
+    [Parameter] public int ModuleCount { get; set; }
+
+    /// <summary>How many assignments, quizzes and task performances the course has, by kind.</summary>
+    [Parameter] public IReadOnlyDictionary<string, int> Counts { get; set; } = new Dictionary<string, int>();
+
+    /// <summary>The other pages of the course (the gradebook, the attendance ...).</summary>
+    [Parameter] public IReadOnlyList<CourseMenuLink> Extra { get; set; } = [];
+
+    /// <summary>The word in the address for a kind: assignments, quizzes or tasks.</summary>
+    public static string KeyOf(string kind) => kind switch
+    {
+        ItemKinds.Quiz => "quizzes",
+        ItemKinds.TaskPerformance => "tasks",
+        _ => "assignments",
+    };
+
+    /// <summary>The kind a tab shows, or null for the modules.</summary>
+    public static string? KindOfKey(string? key) => key switch
+    {
+        "assignments" => ItemKinds.Activity,
+        "quizzes" => ItemKinds.Quiz,
+        "tasks" => ItemKinds.TaskPerformance,
+        _ => null,
+    };
+}

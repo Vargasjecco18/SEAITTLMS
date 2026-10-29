@@ -43,11 +43,11 @@
     }
 
     <label class="drop @(busy ? "busy" : "")">
-        <InputFile OnChange="ChooseAsync" multiple disabled="@(busy || Count >= AttachmentService.MaxPerOwner)" aria-label="@Title" />
+        <InputFile OnChange="ChooseAsync" multiple accept="@(Slides ? string.Join(",", AttachmentService.SlideExtensions) : null)" disabled="@(busy || Count >= AttachmentService.MaxPerOwner)" aria-label="@Title" />
         <Icon Name="@(busy ? "loader" : "file-up")" Size="18" />
         <span class="drop-text">
-            <strong>@(busy ? "Reading…" : "Choose files")</strong>
-            <small>Up to @Settings.Current.MaxFileMegabytes MB each, @AttachmentService.MaxPerOwner files at most. A PDF, a picture or a text file opens in the browser.</small>
+            <strong>@(busy ? "Reading…" : Slides ? "Choose slides" : "Choose files")</strong>
+            <small>@(Slides ? "A PowerPoint file (.ppt, .pptx) or a PDF. " : "")Up to @Settings.Current.MaxFileMegabytes MB each, @AttachmentService.MaxPerOwner files at most. A PDF, a picture or a text file opens in the browser.</small>
         </span>
     </label>
 
@@ -64,6 +64,9 @@
     private string? problem;
 
     [Parameter] public string Title { get; set; } = "Files";
+
+    /// <summary>The picker is for the slides of a lesson: only a PowerPoint file or a PDF is taken.</summary>
+    [Parameter] public bool Slides { get; set; }
 
     /// <summary>The files that are attached already.</summary>
     [Parameter] public IReadOnlyList<AttachmentRow> Existing { get; set; } = [];
@@ -129,6 +132,12 @@
                 if (FileService.IsBlocked(file.Name))
                 {
                     problem = $"{file.Name}: programs and scripts can't be attached.";
+                    continue;
+                }
+
+                if (Slides && !AttachmentService.IsSlideFile(file.Name))
+                {
+                    problem = $"{file.Name}: slides must be a PowerPoint file (.ppt, .pptx) or a PDF.";
                     continue;
                 }
 

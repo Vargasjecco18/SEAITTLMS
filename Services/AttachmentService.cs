@@ -28,7 +28,12 @@ public enum AttachmentOwnerKind
 
 public readonly record struct AttachmentOwner(AttachmentOwnerKind Kind, int Id);
 
-public sealed record AttachmentRow(int Id, string Name, long SizeBytes, bool CanPreview, DateTime AtUtc);
+/// <summary>A file of a course as the Resources page lists it: what it is, who sent it, and where it belongs ("BUSINESS ACCOUNTING · Module 1" or "... · 11-BUSSENT-A · Journal entries").</summary>
+/// <param name="From">Who sent it: the teacher of the course, the student ("You" for the student's own files).</param>
+public sealed record CourseFileRow(int Id, string Name, long SizeBytes, DateTime CreatedAtUtc, string From, string Where, bool IsSlides = false);
+
+/// <param name="IsSlides">A slide file (a PowerPoint or a PDF) of a lesson, listed apart from the other files of the module.</param>
+public sealed record AttachmentRow(int Id, string Name, long SizeBytes, bool CanPreview, DateTime AtUtc, bool IsSlides = false);
 
 /// <summary>A file chosen in a form, not saved yet.</summary>
 public sealed record NewAttachment(string Name, string? ContentType, byte[] Data);
@@ -69,6 +74,80 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         return rows.GroupBy(r => r.OwnerId).ToDictionary(g => g.Key, g => (IReadOnlyList<AttachmentRow>)g.Select(r => WithPreview(r.Row)).ToList());
     }
 
+    /// <summary>
+    /// The files that go with the courses of a person, newest first. A student gets the files the teachers sent to their courses (of modules and assignments that are posted, slides
+    /// included) and the files the student sent with their own work. A teacher gets the files the students sent with their work and the files the teacher attached to their own courses.
+    /// </summary>
+    public async Task<IReadOnlyList<CourseFileRow>> GetCourseFilesAsync(int userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var role = await db.Users.AsNoTracking().Where(u => u.Id == userId && u.IsActive).Select(u => (int?)u.RoleId).FirstOrDefaultAsync(ct);
+        var rows = new List<CourseFileRow>();
+
+        if (role == AppRoles.StudentId)
+        {
+            var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == userId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+            if (studentId is null)
+            {
+                return [];
+            }
+
+            var assignmentIds = await Roster.AssignmentsOf(db, studentId.Value).Select(a => a.Id).ToListAsync(ct);
+
+            var moduleFiles = await db.Attachments.AsNoTracking()
+                .Where(a => a.ModuleId != null && assignmentIds.Contains(a.Module!.AssignmentId) && a.Module.VisibleFromUtc != null && a.Module.VisibleFromUtc <= now)
+                .Select(a => new { a.Id, a.Name, a.SizeBytes, a.CreatedAtUtc, a.IsSlides, Subject = a.Module!.Assignment.Subject.Name, Title = a.Module.Title, Teacher = a.Module.Assignment.Teacher.FirstName + " " + a.Module.Assignment.Teacher.LastName })
+                .ToListAsync(ct);
+            rows.AddRange(moduleFiles.Select(f => new CourseFileRow(f.Id, f.Name, f.SizeBytes, f.CreatedAtUtc, f.Teacher, $"{f.Subject} · {f.Title}", f.IsSlides)));
+
+            var itemFiles = await db.Attachments.AsNoTracking()
+                .Where(a => a.ItemId != null && assignmentIds.Contains(a.Item!.Module.AssignmentId) && a.Item.Module.VisibleFromUtc != null && a.Item.Module.VisibleFromUtc <= now
+                            && (a.Item.VisibleFromUtc == null || a.Item.VisibleFromUtc <= now))
+                .Select(a => new { a.Id, a.Name, a.SizeBytes, a.CreatedAtUtc, Subject = a.Item!.Module.Assignment.Subject.Name, Title = a.Item.Title, Teacher = a.Item.Module.Assignment.Teacher.FirstName + " " + a.Item.Module.Assignment.Teacher.LastName })
+                .ToListAsync(ct);
+            rows.AddRange(itemFiles.Select(f => new CourseFileRow(f.Id, f.Name, f.SizeBytes, f.CreatedAtUtc, f.Teacher, $"{f.Subject} · {f.Title}")));
+
+            var mine = await db.Attachments.AsNoTracking()
+                .Where(a => a.SubmissionId != null && a.Submission!.StudentId == studentId)
+                .Select(a => new { a.Id, a.Name, a.SizeBytes, a.CreatedAtUtc, Subject = a.Submission!.Item.Module.Assignment.Subject.Name, Title = a.Submission.Item.Title })
+                .ToListAsync(ct);
+            rows.AddRange(mine.Select(f => new CourseFileRow(f.Id, f.Name, f.SizeBytes, f.CreatedAtUtc, "You", $"{f.Subject} · {f.Title}")));
+        }
+        else if (role == AppRoles.TeacherId)
+        {
+            var teacherId = await db.Teachers.AsNoTracking().Where(t => t.UserId == userId).Select(t => (int?)t.Id).FirstOrDefaultAsync(ct);
+            if (teacherId is null)
+            {
+                return [];
+            }
+
+            var sent = await db.Attachments.AsNoTracking()
+                .Where(a => a.SubmissionId != null && a.Submission!.Item.Module.Assignment.TeacherId == teacherId)
+                .Select(a => new
+                {
+                    a.Id, a.Name, a.SizeBytes, a.CreatedAtUtc, Subject = a.Submission!.Item.Module.Assignment.Subject.Name, Title = a.Submission.Item.Title,
+                    Grade = a.Submission.Item.Module.Assignment.Section.GradeLevel, Strand = a.Submission.Item.Module.Assignment.Section.Strand.Code, Section = a.Submission.Item.Module.Assignment.Section.Name,
+                    Student = a.Submission.Student.FirstName + " " + a.Submission.Student.LastName,
+                })
+                .ToListAsync(ct);
+            rows.AddRange(sent.Select(f => new CourseFileRow(f.Id, f.Name, f.SizeBytes, f.CreatedAtUtc, f.Student, $"{f.Subject} · {TeachingService.SectionLabel(f.Grade, f.Strand, f.Section)} · {f.Title}")));
+
+            var own = await db.Attachments.AsNoTracking()
+                .Where(a => (a.ModuleId != null && a.Module!.Assignment.TeacherId == teacherId) || (a.ItemId != null && a.Item!.Module.Assignment.TeacherId == teacherId))
+                .Select(a => new
+                {
+                    a.Id, a.Name, a.SizeBytes, a.CreatedAtUtc, a.IsSlides,
+                    Subject = a.ModuleId != null ? a.Module!.Assignment.Subject.Name : a.Item!.Module.Assignment.Subject.Name,
+                    Title = a.ModuleId != null ? a.Module!.Title : a.Item!.Title,
+                })
+                .ToListAsync(ct);
+            rows.AddRange(own.Select(f => new CourseFileRow(f.Id, f.Name, f.SizeBytes, f.CreatedAtUtc, "You", $"{f.Subject} · {f.Title}", f.IsSlides)));
+        }
+
+        return rows.OrderByDescending(r => r.CreatedAtUtc).ThenBy(r => r.Name).ToList();
+    }
+
     private sealed record OwnedRow(int OwnerId, AttachmentRow Row);
 
     private static IQueryable<OwnedRow> RowsOf(AppDbContext db, AttachmentOwnerKind kind, IReadOnlyCollection<int> ids)
@@ -85,7 +164,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         };
 
         return query.OrderBy(x => x.a.CreatedAtUtc).ThenBy(x => x.a.Id)
-            .Select(x => new OwnedRow(x.Owner, new AttachmentRow(x.a.Id, x.a.Name, x.a.SizeBytes, false, x.a.CreatedAtUtc)));
+            .Select(x => new OwnedRow(x.Owner, new AttachmentRow(x.a.Id, x.a.Name, x.a.SizeBytes, false, x.a.CreatedAtUtc, x.a.IsSlides)));
     }
 
     /// <summary>The same list with the "can the browser show it" flag, which depends on the name (EF can't ask that).</summary>
@@ -93,8 +172,13 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
 
     // ======================================================================= adding and removing
 
+    /// <summary>The kinds of file a lesson's slides can be: a PowerPoint (or an OpenDocument or Keynote presentation) or a PDF.</summary>
+    public static readonly string[] SlideExtensions = [".ppt", ".pptx", ".pps", ".ppsx", ".odp", ".key", ".pdf"];
+
+    public static bool IsSlideFile(string fileName) => SlideExtensions.Contains(Path.GetExtension(fileName).ToLowerInvariant());
+
     /// <summary>Checks the files chosen in a form (names, programs, empty, too big, too many) before anything is saved. Gives the problems, or none.</summary>
-    public IReadOnlyList<string> Check(IReadOnlyList<NewAttachment> files, int alreadyThere = 0)
+    public IReadOnlyList<string> Check(IReadOnlyList<NewAttachment> files, int alreadyThere = 0, bool slides = false)
     {
         var maxBytes = settings.Current.MaxFileMegabytes * 1024L * 1024;
         var errors = new List<string>();
@@ -108,6 +192,10 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             else if (FileService.IsBlocked(name))
             {
                 errors.Add($"{name}: programs and scripts can't be attached.");
+            }
+            else if (slides && !IsSlideFile(name))
+            {
+                errors.Add($"{name}: slides must be a PowerPoint file (.ppt, .pptx) or a PDF.");
             }
             else if (file.Data.Length == 0)
             {
@@ -127,14 +215,20 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         return errors;
     }
 
-    public async Task<ServiceResult> AddAsync(int userId, AttachmentOwner owner, IReadOnlyList<NewAttachment> files, CancellationToken ct = default)
+    /// <param name="slides">The files are the slides of a module (only a module or a syllabus has slides).</param>
+    public async Task<ServiceResult> AddAsync(int userId, AttachmentOwner owner, IReadOnlyList<NewAttachment> files, CancellationToken ct = default, bool slides = false)
     {
         if (files.Count == 0)
         {
             return ServiceResult.Ok("No file.");
         }
 
-        var errors = Check(files).Where(e => !e.StartsWith("At most", StringComparison.Ordinal)).ToList();
+        var errors = Check(files, slides: slides).Where(e => !e.StartsWith("At most", StringComparison.Ordinal)).ToList();
+        if (slides && owner.Kind is not (AttachmentOwnerKind.Module or AttachmentOwnerKind.MaterialModule))
+        {
+            return ServiceResult.Fail("Slides go with a module or a syllabus.");
+        }
+
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);
@@ -148,7 +242,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             return ServiceResult.Fail("You can't attach files here.");
         }
 
-        var existing = await CountAsync(db, owner, ct);
+        var existing = await CountAsync(db, owner, slides, ct);
         if (existing + clean.Count > MaxPerOwner)
         {
             return ServiceResult.Fail($"At most {MaxPerOwner} files can be attached here (there are {existing} already).");
@@ -158,7 +252,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         {
             var attachment = new Attachment
             {
-                Name = name, ContentType = CleanType(file.ContentType), SizeBytes = file.Data.Length, UploadedByUserId = userId,
+                Name = name, ContentType = CleanType(file.ContentType), SizeBytes = file.Data.Length, UploadedByUserId = userId, IsSlides = slides,
                 Content = new AttachmentContent { Data = file.Data },
             };
             switch (owner.Kind)
@@ -359,11 +453,12 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         }
     }
 
-    private static async Task<int> CountAsync(AppDbContext db, AttachmentOwner owner, CancellationToken ct) => owner.Kind switch
+    /// <summary>How many files (or how many slides) the owner has. The files and the slides of a module each have their own limit.</summary>
+    private static async Task<int> CountAsync(AppDbContext db, AttachmentOwner owner, bool slides, CancellationToken ct) => owner.Kind switch
     {
-        AttachmentOwnerKind.MaterialModule => await db.Attachments.CountAsync(a => a.MaterialModuleId == owner.Id, ct),
+        AttachmentOwnerKind.MaterialModule => await db.Attachments.CountAsync(a => a.MaterialModuleId == owner.Id && a.IsSlides == slides, ct),
         AttachmentOwnerKind.MaterialItem => await db.Attachments.CountAsync(a => a.MaterialItemId == owner.Id, ct),
-        AttachmentOwnerKind.Module => await db.Attachments.CountAsync(a => a.ModuleId == owner.Id, ct),
+        AttachmentOwnerKind.Module => await db.Attachments.CountAsync(a => a.ModuleId == owner.Id && a.IsSlides == slides, ct),
         AttachmentOwnerKind.Submission => await db.Attachments.CountAsync(a => a.SubmissionId == owner.Id, ct),
         AttachmentOwnerKind.Message => await db.Attachments.CountAsync(a => a.MessageId == owner.Id, ct),
         _ => await db.Attachments.CountAsync(a => a.ItemId == owner.Id, ct),

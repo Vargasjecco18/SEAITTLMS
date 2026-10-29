@@ -344,7 +344,7 @@ public static class HelpContent
         ], "guidance/referrals", "Open Referrals"),
         new("How do I follow up a referral?",
         [
-            "Press “Work on it” on a referral. Choose the status, the intervention and write your notes (only you can read them). When it is resolved, say whether the student Improved or had No change.",
+            "Press “Work on it” on a referral. Choose the help you gave and write your notes (only you can read them). When the case is over, choose how it ended: the student Improved or had No change. That closes the referral.",
         ]),
         new("How do I see the students who are failing or at risk?",
         [

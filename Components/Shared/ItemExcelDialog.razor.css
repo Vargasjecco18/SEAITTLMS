@@ -1,0 +1,76 @@
+.xl-lead {
+    margin: 0 0 0.8rem;
+}
+
+.xl-steps {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0 0 1rem;
+    padding-left: 1.3rem;
+}
+
+.xl-steps li > div {
+    margin-top: 0.5rem;
+}
+
+.xl-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.xl-file {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.5rem 0 0;
+    color: var(--text-muted);
+}
+
+.xl-summary {
+    margin: 0.6rem 0;
+}
+
+.xl-summary .bad {
+    margin-left: 0.4rem;
+    color: var(--danger);
+}
+
+.xl-table-wrap {
+    max-height: 16rem;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.xl-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.xl-table th,
+.xl-table td {
+    padding: 0.4rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+}
+
+.xl-table tr.failed td:last-child {
+    color: var(--danger);
+}
+
+.xl-errors {
+    margin: 0 0 1rem;
+    padding-left: 1.2rem;
+    color: var(--danger);
+}
+
+.xl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}

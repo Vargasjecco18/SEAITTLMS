@@ -187,14 +187,6 @@
         <FormErrors Errors="formErrors" />
 
         <div class="two">
-            <Field For="w-status" Label="Status">
-                <select id="w-status" value="@editStatus" @onchange="e => editStatus = e.Value?.ToString() ?? ReferralStatus.Open">
-                    @foreach (var s in ReferralStatus.All)
-                    {
-                        <option value="@s" selected="@(editStatus == s)">@ReferralStatus.Display(s)</option>
-                    }
-                </select>
-            </Field>
             <Field For="w-help" Label="Help given">
                 <select id="w-help" value="@editIntervention" @onchange="e => editIntervention = e.Value?.ToString() ?? string.Empty">
                     <option value="">Not decided yet</option>
@@ -204,20 +196,16 @@
                     }
                 </select>
             </Field>
-        </div>
-
-        @if (editStatus == ReferralStatus.Resolved)
-        {
-            <Field For="w-outcome" Label="How did it end?" Required="true" Hint="This shows in the analytics, so you can see which help works.">
+            <Field For="w-outcome" Label="How did it end?" Hint="Leave it as Still working until the case is over. Choosing a result closes the referral.">
                 <select id="w-outcome" value="@editOutcome" @onchange="e => editOutcome = e.Value?.ToString() ?? string.Empty">
-                    <option value="">Choose</option>
+                    <option value="">Still working on it</option>
                     @foreach (var o in ReferralOutcomes.All)
                     {
                         <option value="@o" selected="@(editOutcome == o)">@(o == ReferralOutcomes.Improved ? "Improved" : "No change")</option>
                     }
                 </select>
             </Field>
-        }
+        </div>
 
         <Field For="w-notes" Label="Notes" Hint="Only you can read these.">
             <textarea id="w-notes" rows="4" maxlength="1000" value="@editNotes" @onchange="e => editNotes = e.Value?.ToString() ?? string.Empty"></textarea>
@@ -247,7 +235,6 @@
     private ReferralStudentPage? result;
     private ReferralStudentRow? viewing;
     private ReferralRow? current;
-    private string editStatus = ReferralStatus.Open;
     private string editIntervention = "";
     private string editNotes = "";
     private string editOutcome = "";
@@ -331,7 +318,6 @@
         current = await Desk.GetAsync(row.Id);
         if (current is not null)
         {
-            editStatus = current.Status;
             editIntervention = current.Intervention ?? "";
             editNotes = current.Notes ?? "";
             editOutcome = current.Outcome ?? "";
@@ -350,7 +336,9 @@
         busy = true;
         try
         {
-            var saved = await Desk.UpdateAsync(current.Id, editStatus, editIntervention, editNotes, editStatus == ReferralStatus.Resolved ? editOutcome : null, userId);
+            // There is no status box: a referral that was opened is "in progress" while the counselor works on it, and "resolved" once a result is chosen.
+            var closing = !string.IsNullOrEmpty(editOutcome);
+            var saved = await Desk.UpdateAsync(current.Id, closing ? ReferralStatus.Resolved : ReferralStatus.InProgress, editIntervention, editNotes, closing ? editOutcome : null, userId);
             if (!saved.Succeeded)
             {
                 formErrors = [.. saved.Errors];

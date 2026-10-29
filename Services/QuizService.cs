@@ -25,7 +25,7 @@ public sealed record AnswerSaved(bool Ended, string? Message);
 /// <summary>
 /// Taking quizzes. The questions are shown in an order that is different for every student (if the teacher wants), the answers are saved
 /// as the student goes, and the quiz is graded as soon as it is handed in. When the teacher turned on the anti-cheating watch, the page
-/// reports leaving the tab, copying and pasting: every report is a warning, the attempt is flagged for the teacher, and after the
+/// reports leaving the tab, copying, pasting, printing and taking a screenshot: every report is a warning, the attempt is flagged for the teacher, and after the
 /// allowed number of warnings the quiz is handed in by itself. Time is checked here on the server, not only on the screen.
 /// </summary>
 public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)

@@ -1,0 +1,81 @@
+.add-menu {
+    position: relative;
+    display: inline-block;
+}
+
+/* The click anywhere else closes the menu. */
+.add-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: transparent;
+}
+
+.add-pop {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 41;
+    min-width: 17rem;
+    max-width: min(24rem, 90vw);
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg, 0 12px 32px rgb(0 0 0 / 18%));
+}
+
+.add-title {
+    margin: 0.2rem 0.5rem 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.add-empty {
+    margin: 0.5rem;
+    color: var(--text-muted);
+}
+
+.add-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.add-item,
+.add-back {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.55rem 0.6rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.add-item:hover,
+.add-item:focus-visible,
+.add-back:hover,
+.add-back:focus-visible {
+    background: var(--surface-2);
+}
+
+.add-label {
+    flex: 1;
+    overflow-wrap: anywhere;
+}
+
+.add-back {
+    font-weight: 600;
+    color: var(--brand);
+}

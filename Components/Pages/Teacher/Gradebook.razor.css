@@ -134,11 +134,6 @@
     background: var(--surface-2);
 }
 
-.grid tbody tr.editing td,
-.grid tbody tr.editing th {
-    background: var(--brand-soft);
-}
-
 .score {
     font-weight: 650;
     font-variant-numeric: tabular-nums;
@@ -187,32 +182,6 @@
     min-width: 6rem;
 }
 
-.edit {
-    position: sticky;
-    right: 0;
-    z-index: 1;
-    border-left: 1px solid var(--border);
-    background: var(--surface);
-    text-align: right !important;
-}
-
-.grid thead .edit {
-    background: var(--surface-2);
-}
-
-.grid tbody tr:hover .edit {
-    background: var(--surface-2);
-}
-
-.grid tbody tr.editing .edit {
-    background: var(--brand-soft);
-}
-
-.edit-actions {
-    display: inline-flex;
-    gap: 0.35rem;
-}
-
 .legend {
     margin: 1.4rem 0 0;
     color: var(--text-muted);
@@ -250,4 +219,55 @@
     width: 5.6rem;
     padding: 0.3rem 0.4rem;
     text-align: center;
+}
+
+.tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.check.small {
+    margin-left: 0.3rem;
+    padding: 0.05rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+.dialog-text {
+    margin: 0 0 0.8rem;
+}
+
+.kind-choice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+}
+
+.kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.kind.on {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 600;
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
 }

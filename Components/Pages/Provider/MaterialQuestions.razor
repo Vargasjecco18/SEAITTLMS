@@ -34,6 +34,8 @@ else
 
     <FormErrors Errors="formErrors" />
 
+    <QuestionExcelTools QuizTitle="@info.Title" Questions="questions" Disabled="locked" OnImported="ImportedAsync" />
+
     <div class="total">
         <strong>@questions.Count @(questions.Count == 1 ? "question" : "questions")</strong>
         <span>·</span>
@@ -163,6 +165,9 @@ else
     }
 
     private void ClearMessage() => message = null;
+
+    /// <summary>The questions of an Excel file are added to the end of the list; the provider looks at them and presses Save questions.</summary>
+    private void ImportedAsync(IReadOnlyList<QuestionInput> imported) => questions!.AddRange(imported);
 
     private void Add(string kind) => questions!.Add(new QuestionInput
     {

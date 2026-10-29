@@ -592,7 +592,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     /// <summary>A copy of a file of the library for the teacher's draft (the teacher can take it off without touching the library).</summary>
     private static Attachment CopyOf(Attachment source, int userId) => new()
     {
-        Name = source.Name, ContentType = source.ContentType, SizeBytes = source.SizeBytes, UploadedByUserId = userId,
+        Name = source.Name, ContentType = source.ContentType, SizeBytes = source.SizeBytes, UploadedByUserId = userId, IsSlides = source.IsSlides,
         Content = new AttachmentContent { Data = source.Content?.Data ?? [] },
     };
 

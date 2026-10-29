@@ -41,6 +41,59 @@ else
     </div>
 
     <PageWithAside Show="calendar,upnext">
+    @* The second menu of the course (modules, assignments, quizzes, task performances) next to its content. *@
+    <div class="course-layout">
+    <CourseMenu PageHref="@($"student/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks" />
+    <div class="course-main">
+    @if (shownKind is { } listKind)
+    {
+        var listNow = PhilippineTime.Now(Clock);
+        var listed = subject.Modules.SelectMany(m => m.Items.Where(i => i.Kind == listKind)).ToList();
+        <Card Title="@ItemKinds.Plural(listKind)" IconName="@SubjectStyle.KindIcon(listKind)">
+            @if (listed.Count == 0)
+            {
+                <p class="muted">No @ItemKinds.Plural(listKind).ToLowerInvariant() in this course yet.</p>
+            }
+            else
+            {
+                <ul class="kind-list">
+                    @foreach (var item in listed)
+                    {
+                        var hidden = item.Kind == ItemKinds.Quiz && item.Status == SubmissionStatus.Graded && item.Score is null;
+                        var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, item.Kind == ItemKinds.Quiz, hidden, item.LateDecision);
+                        <li>
+                            <a class="kind-link" href="student/items/@item.Id">
+                                <span class="kind-text">
+                                    <span class="kind-title">@item.Title</span>
+                                    <span class="kind-meta">
+                                        <span><Icon Name="layers" Size="14" /> @item.ModuleTitle</span>
+                                        @if (item.DueAtUtc is { } due)
+                                        {
+                                            <span class="@(item.IsOverdue ? "late" : "")"><Icon Name="calendar-clock" Size="14" /> @PhilippineTime.DueText(due, listNow)</span>
+                                        }
+                                        else
+                                        {
+                                            <span>No due date</span>
+                                        }
+                                        <span>@item.MaxScore.ToString("0.##") points</span>
+                                    </span>
+                                </span>
+                                <span class="kind-end">
+                                    @if (item.Score is { } listScore)
+                                    {
+                                        <span class="kind-score">@listScore.ToString("0.##") / @item.MaxScore.ToString("0.##")</span>
+                                    }
+                                    <Badge Tone="@tone">@text</Badge>
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+    }
+    else
+    {
     @if (subject.Modules.Count == 0)
     {
         <Card>
@@ -93,11 +146,23 @@ else
             }
         </div>
     }
+    }
+    </div>
+    </div>
     </PageWithAside>
 }
 
 @code {
     [Parameter] public int AssignmentId { get; set; }
+
+    /// <summary>The tab of the second menu: assignments, quizzes or tasks (the modules when empty).</summary>
+    [SupplyParameterFromQuery(Name = "tab")] public string? Tab { get; set; }
+
+    private string? shownKind => CourseMenu.KindOfKey(Tab);
+
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.All.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+
+    private IReadOnlyList<CourseMenuLink> MenuLinks => [new("Grades", "trending-up", "student/grades")];
 
     private bool loaded;
     private readonly HashSet<int> openModules = [];

@@ -281,7 +281,9 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         window.print();
     },
     // The anti-cheating watch of a quiz. It tells the quiz page (a C# object, "reference") when the student leaves the tab or the
-    // window, or tries to copy, cut or paste. Copying, cutting, pasting and the right-click menu are blocked while it is on.
+    // window, tries to copy, cut or paste, or takes a screenshot (the Print Screen key, Windows + Shift + S, Command + Shift + 3, 4 or 5)
+    // or prints the page. Copying, cutting, pasting and the right-click menu are blocked while it is on. A photo taken with another device
+    // can't be seen by a web page, so the page also shows the student's name over the questions: a photo of it leads back to the student.
     startQuizGuard: function (reference) {
         window.seaitt.stopQuizGuard();
         var last = 0;
@@ -294,9 +296,29 @@ window.seaitt = Object.assign(window.seaitt || {}, {
             reference.invokeMethodAsync('OnSuspicious', what);
         }
 
+        // The Print Screen key often only gives a key-up. Whatever was copied to the clipboard is replaced, so a screenshot is not left there.
+        function screenshot(what) {
+            report(what);
+            try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(' '); } } catch (clipError) { /* the browser did not allow it */ }
+        }
+
+        function isScreenshotKey(event) {
+            var key = (event.key || '').toLowerCase();
+            if (key === 'printscreen' || event.code === 'PrintScreen') { return true; }
+            // Windows: Windows + Shift + S. Mac: Command + Shift + 3, 4 or 5.
+            if (event.metaKey && event.shiftKey && (key === 's' || key === '3' || key === '4' || key === '5' || event.code === 'Digit3' || event.code === 'Digit4' || event.code === 'Digit5')) { return true; }
+            return false;
+        }
+
         var handlers = {
             visibilitychange: function () { if (document.hidden) { report('Left the quiz tab'); } },
             blur: function () { report('Switched to another window'); },
+            keydown: function (event) {
+                if (isScreenshotKey(event)) { event.preventDefault(); screenshot('Tried to take a screenshot'); }
+                else if ((event.ctrlKey || event.metaKey) && (event.key || '').toLowerCase() === 'p') { event.preventDefault(); screenshot('Tried to print the quiz'); }
+            },
+            keyup: function (event) { if (isScreenshotKey(event)) { screenshot('Tried to take a screenshot'); } },
+            beforeprint: function () { screenshot('Tried to print the quiz'); },
             copy: function (event) { event.preventDefault(); report('Tried to copy'); },
             cut: function (event) { event.preventDefault(); report('Tried to cut'); },
             paste: function (event) { event.preventDefault(); report('Tried to paste'); },
@@ -304,7 +326,7 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         };
 
         Object.keys(handlers).forEach(function (name) {
-            (name === 'visibilitychange' ? document : name === 'blur' ? window : document).addEventListener(name, handlers[name]);
+            (name === 'visibilitychange' ? document : name === 'blur' || name === 'beforeprint' ? window : document).addEventListener(name, handlers[name]);
         });
         window.seaitt.quizGuard = handlers;
     },
@@ -312,7 +334,7 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         var handlers = window.seaitt.quizGuard;
         if (!handlers) { return; }
         Object.keys(handlers).forEach(function (name) {
-            (name === 'visibilitychange' ? document : name === 'blur' ? window : document).removeEventListener(name, handlers[name]);
+            (name === 'visibilitychange' ? document : name === 'blur' || name === 'beforeprint' ? window : document).removeEventListener(name, handlers[name]);
         });
         window.seaitt.quizGuard = null;
     },

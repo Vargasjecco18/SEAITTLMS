@@ -52,7 +52,7 @@ else
                 @if (files.Count > 0)
                 {
                     <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
-                    <AttachmentList Items="files" Label="@($"Files of {item.Title}")" />
+                    <FilePreviewPane Items="files" Label="@($"Files of {item.Title}")" />
                 }
 
                 @if (item.IsQuiz)
@@ -66,7 +66,7 @@ else
 
                         @if (item.AntiCheat)
                         {
-                            <li class="strict"><Icon Name="shield-alert" Size="16" /> Anti-cheating is on. Leaving the quiz tab or window, copying or pasting gives you a warning. After @item.MaxViolations @(item.MaxViolations == 1 ? "warning" : "warnings") the quiz is handed in and your teacher is told.</li>
+                            <li class="strict"><Icon Name="shield-alert" Size="16" /> Anti-cheating is on. Leaving the quiz tab or window, copying, pasting, printing or taking a screenshot gives you a warning. After @item.MaxViolations @(item.MaxViolations == 1 ? "warning" : "warnings") the quiz is handed in and your teacher is told.</li>
                         }
                     </ul>
                 }
@@ -149,7 +149,7 @@ else
                         @if (myFiles.Count > 0)
                         {
                             <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files you sent</h3>
-                            <AttachmentList Items="myFiles" Label="Files you sent" />
+                            <FilePreviewPane Items="myFiles" Label="Files you sent" />
                         }
 
                         @if (item.LateDecision == LateDecisions.Declined && item.Status != SubmissionStatus.Graded)
@@ -221,7 +221,7 @@ else
 
             @if (item.AntiCheat)
             {
-                <li class="strict"><Icon Name="shield-alert" Size="16" /> Stay on this tab. Leaving it, copying or pasting is a warning. After @item.MaxViolations @(item.MaxViolations == 1 ? "warning" : "warnings") the quiz is handed in.</li>
+                <li class="strict"><Icon Name="shield-alert" Size="16" /> Stay on this tab. Leaving it, copying, pasting, printing or taking a screenshot is a warning. After @item.MaxViolations @(item.MaxViolations == 1 ? "warning" : "warnings") the quiz is handed in.</li>
             }
 
             <li><Icon Name="circle-check" Size="16" /> Your answers are saved as you go. You can hand in before the time is over.</li>

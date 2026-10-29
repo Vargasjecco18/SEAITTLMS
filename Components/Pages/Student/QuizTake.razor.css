@@ -81,6 +81,40 @@
     list-style: none;
 }
 
+/* The note that says what the watch looks for (and what it can't see). */
+.guard-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+/* The name of the student, over the whole page and under the clicks: in a picture of the screen it shows who took it. */
+.watermark {
+    position: fixed;
+    inset: -30%;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: space-around;
+    justify-content: space-around;
+    gap: 3rem 4rem;
+    transform: rotate(-24deg);
+    color: var(--text);
+    opacity: 0.07;
+    font-size: 1.05rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+}
+
 /* While the anti-cheating watch is on, the text of the questions can't be selected. */
 .questions.guarded {
     -webkit-user-select: none;

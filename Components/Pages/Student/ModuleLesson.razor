@@ -28,11 +28,20 @@ else
 
     @* The lesson, and its files shown right here (a PDF, a picture ...) at the left, so the student reads without leaving the page. *@
     var hasText = !string.IsNullOrWhiteSpace(module.Description) || !string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl);
+    var slides = files.Where(f => f.IsSlides).ToList();
+    var others = files.Where(f => !f.IsSlides).ToList();
     <div class="layout @(files.Count > 0 && hasText ? "two" : "")">
-        @if (files.Count > 0)
+        @if (slides.Count > 0)
         {
-            <Card Title="@(files.Count == 1 ? "File" : "Files")" IconName="paperclip">
-                <FilePreviewPane Items="files" Label="Files of this module" />
+            <Card Title="Slides" IconName="presentation">
+                <FilePreviewPane Items="slides" Label="Slides of this module" />
+            </Card>
+        }
+
+        @if (others.Count > 0)
+        {
+            <Card Title="@(others.Count == 1 ? "File" : "Files")" IconName="paperclip">
+                <FilePreviewPane Items="others" Label="Files of this module" />
             </Card>
         }
 

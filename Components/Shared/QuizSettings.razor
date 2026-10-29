@@ -30,7 +30,7 @@
             <label class="switch">
                 <input id="@(IdPrefix)-anti" type="checkbox" role="switch" checked="@AntiCheat" @onchange="e => AntiCheatChanged.InvokeAsync(e.Value is true)" />
                 <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="switch-text"><strong>@(AntiCheat ? "On" : "Off")</strong><small>Warns the student who leaves the quiz, copies or pastes. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
+                <span class="switch-text"><strong>@(AntiCheat ? "On" : "Off")</strong><small>Warns the student who leaves the quiz tab or window, copies, pastes, prints or takes a screenshot, and shows the student's name faintly over the page. A photo taken with another device can't be detected. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
             </label>
             @if (AntiCheat)
             {

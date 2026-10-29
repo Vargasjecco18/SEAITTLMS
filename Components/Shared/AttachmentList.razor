@@ -27,7 +27,8 @@
         ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" => "file-image",
         ".xls" or ".xlsx" or ".csv" => "file-spreadsheet",
         ".zip" or ".rar" or ".7z" => "file-archive",
-        ".pdf" or ".doc" or ".docx" or ".txt" or ".md" or ".ppt" or ".pptx" => "file-text",
+        ".ppt" or ".pptx" or ".pps" or ".ppsx" or ".odp" or ".key" => "presentation",
+        ".pdf" or ".doc" or ".docx" or ".txt" or ".md" => "file-text",
         _ => "file",
     };
 }

@@ -47,6 +47,20 @@ else
         </div>
     </div>
 
+    @if (attempt.AntiCheat)
+    {
+        <p class="guard-note" role="note">
+            <Icon Name="shield-alert" Size="16" />
+            <span>This quiz is watched. Leaving the tab or the window, copying, pasting, printing or taking a screenshot is a warning. Your name is shown faintly over the page: a picture taken with another device can't be seen by the page, but it shows your name, and your teacher can compare it with your answers.</span>
+        </p>
+        <div class="watermark" aria-hidden="true">
+            @for (var i = 0; i < 40; i++)
+            {
+                <span>@watermark</span>
+            }
+        </div>
+    }
+
     @if (warning is not null)
     {
         <div class="warning" role="alert"><Icon Name="triangle-alert" Size="18" /> <span>@warning</span></div>
@@ -124,6 +138,7 @@ else
     private bool confirmSubmit;
     private bool finished;
     private bool guardStarted;
+    private string watermark = "";
     private Timer? timer;
     private DotNetObjectReference<QuizTake>? self;
     private int remainingSeconds;
@@ -141,6 +156,9 @@ else
         studentId = await Me.GetStudentIdAsync() ?? 0;
         if (studentId != 0)
         {
+            // The name and the first part of the email (last name and LRN) that are shown faintly over the quiz.
+            var me = await Me.GetAsync();
+            watermark = me is null ? "" : $"{me.Name} · {me.Email.Split('@')[0]}";
             var start = await Quiz.StartAsync(studentId, ItemId);
             attempt = start.Attempt;
             startError = start.Error;
@@ -211,7 +229,7 @@ else
         }
     }
 
-    /// <summary>Called by the page script when the student leaves the tab, copies or pastes.</summary>
+    /// <summary>Called by the page script when the student leaves the tab, copies, pastes, prints or takes a screenshot.</summary>
     [JSInvokable]
     public async Task OnSuspicious(string what)
     {

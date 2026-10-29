@@ -9,7 +9,12 @@
 
 <PageTitle>Attendance · SEAITT Legazpi LMS</PageTitle>
 
-<PageHeader Title="Attendance" IconName="calendar-check" />
+<PageHeader Title="Attendance" IconName="calendar-check">
+    @if (loaded && subjects.Count > 0)
+    {
+        <Button Variant="ButtonVariant.Secondary" IconName="eye" OnClick="OpenView">View attendance</Button>
+    }
+</PageHeader>
 
 @if (!loaded)
 {
@@ -93,54 +98,53 @@ else
         }
     </Card>
 
-    <Card Title="Attendance summary" IconName="chart-column">
-        @if (summary is null || summary.Rows.Count == 0)
+    @* The attendance of the whole class: what each student came to, from every day that was saved. *@
+    <Modal Open="viewing" Title="@ViewTitle" OnClose="CloseView" Large="true">
+        @if (viewing)
         {
-            <p class="muted">No students yet.</p>
-        }
-        else if (summary.DaysRecorded == 0)
-        {
-            <p class="muted">Nothing was marked yet. The summary appears after the first day is saved.</p>
-        }
-        else
-        {
-            <div class="table-wrap">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Student</th>
-                            <th scope="col" class="num">Present</th>
-                            <th scope="col" class="num">Late</th>
-                            <th scope="col" class="num">Absent</th>
-                            <th scope="col" class="num">Attendance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var r in summary.Rows)
-                        {
+            @if (summary is null || summary.Rows.Count == 0)
+            {
+                <p class="muted">No students yet.</p>
+            }
+            else if (summary.DaysRecorded == 0)
+            {
+                <p class="muted">Nothing was marked yet. The attendance appears after the first day is saved.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
                             <tr>
-                                <td>@r.Name</td>
-                                <td class="num">@r.Present</td>
-                                <td class="num">@r.Late</td>
-                                <td class="num">@r.Absent</td>
-                                <td class="num">@if (r.Percent is { } p) { <Badge Tone="@(p < AttendanceService.LowAttendancePercent ? Tone.Danger : p < 90 ? Tone.Warning : Tone.Success)">@p.ToString("0.#")%</Badge> } else { <span class="muted">—</span> }</td>
+                                <th scope="col">Student</th>
+                                <th scope="col" class="num">Present</th>
+                                <th scope="col" class="num">Late</th>
+                                <th scope="col" class="num">Absent</th>
+                                <th scope="col" class="num">Attendance</th>
                             </tr>
-                        }
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th scope="row">Class (@summary.DaysRecorded @(summary.DaysRecorded == 1 ? "day" : "days") marked)</th>
-                            <td class="num">@summary.Rows.Sum(r => r.Present)</td>
-                            <td class="num">@summary.Rows.Sum(r => r.Late)</td>
-                            <td class="num">@summary.Rows.Sum(r => r.Absent)</td>
-                            <td class="num">@(summary.ClassPercent is { } c ? $"{c:0.#}%" : "—")</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in summary.Rows)
+                            {
+                                <tr>
+                                    <td>@r.Name</td>
+                                    <td class="num">@r.Present</td>
+                                    <td class="num">@r.Late</td>
+                                    <td class="num">@r.Absent</td>
+                                    <td class="num">@if (r.Percent is { } p) { <Badge Tone="@(p < AttendanceService.LowAttendancePercent ? Tone.Danger : p < 90 ? Tone.Warning : Tone.Success)">@p.ToString("0.#")%</Badge> } else { <span class="muted">—</span> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="note">Attendance is the days present or late divided by the days marked. Below @AttendanceService.LowAttendancePercent.ToString("0")% is shown in red.</p>
+            }
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseView">Close</Button>
             </div>
-            <p class="note">Attendance is the days present or late divided by the days marked. Below @AttendanceService.LowAttendancePercent.ToString("0")% is shown in red.</p>
         }
-    </Card>
+    </Modal>
 }
 
 @code {
@@ -159,6 +163,13 @@ else
     private bool messageIsError;
     private bool busy;
     private List<string> formErrors = [];
+    private bool viewing;
+
+    private string ViewTitle => $"Attendance · {subjects.FirstOrDefault(s => s.AssignmentId == subjectId)?.SubjectName} {subjects.FirstOrDefault(s => s.AssignmentId == subjectId)?.SectionLabel}".Trim();
+
+    private void OpenView() => viewing = true;
+
+    private void CloseView() => viewing = false;
 
     protected override async Task OnInitializedAsync()
     {

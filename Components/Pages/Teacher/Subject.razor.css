@@ -334,3 +334,52 @@ h3 {
 .module-body > .module-description:first-child {
     margin-top: 0;
 }
+
+.slides-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.8rem 0 0.3rem;
+    font-size: 0.95rem;
+}
+
+.group-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.from-excel {
+    margin: 0 0 0.6rem;
+}
+
+/* The course page with its second menu. */
+.course-layout {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (min-width: 1000px) {
+    .course-layout {
+        grid-template-columns: 14rem minmax(0, 1fr);
+        align-items: start;
+    }
+}
+
+.course-main {
+    min-width: 0;
+}
+
+.kind-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+}
+
+.kind-head p {
+    margin: 0;
+}

@@ -48,7 +48,6 @@ public static class InterventionTypes
     [
         "Talked with the student",
         "Called the parents",
-        "Tutoring or remedial classes",
         "Talked with the teacher",
         "Other",
     ];

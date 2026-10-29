@@ -1,0 +1,123 @@
+@using Microsoft.AspNetCore.Components.Web
+@* The Add button at the top right of a course: it opens a small menu. First the module (a lesson of the course), then what to add to it: an assignment,
+   a quiz or a task performance. With only one module the menu goes straight to the three kinds. *@
+<div class="add-menu" @onkeydown="OnKeyDown">
+    <Button IconName="plus" OnClick="Toggle" aria-haspopup="menu" aria-expanded="@(open ? "true" : "false")">@Label</Button>
+
+    @if (open)
+    {
+        <div class="add-scrim" @onclick="Close"></div>
+        <div class="add-pop" role="menu" aria-label="Add to the course">
+            @if (Modules.Count == 0)
+            {
+                <p class="add-empty">There is no module yet. Add a module first.</p>
+            }
+            else if (Current is null || Kind is not null)
+            {
+                <p class="add-title">Choose a module</p>
+                <ul class="add-list">
+                    @foreach (var m in Modules)
+                    {
+                        var module = m;
+                        <li>
+                            <button type="button" role="menuitem" class="add-item" @onclick="() => ChooseAsync(module)">
+                                <Icon Name="layers" Size="16" />
+                                <span class="add-label">@module.Label</span>
+                                @if (Kind is null)
+                                {
+                                    <Icon Name="chevron-right" Size="16" />
+                                }
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                @if (Modules.Count > 1)
+                {
+                    <button type="button" class="add-back" @onclick="() => chosen = null"><Icon Name="chevron-left" Size="16" /> <span>@Current.Label</span></button>
+                }
+                else
+                {
+                    <p class="add-title">@Current.Label</p>
+                }
+
+                <p class="add-title">Add to this module</p>
+                <ul class="add-list">
+                    @foreach (var kind in ItemKinds.All)
+                    {
+                        var k = kind;
+                        <li>
+                            <button type="button" role="menuitem" class="add-item" data-add-kind="@k" @onclick="() => PickAsync(k)">
+                                <Icon Name="@SubjectStyle.KindIcon(k)" Size="16" />
+                                <span class="add-label">@ItemKinds.Display(k)</span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool open;
+    private int? chosen;
+
+    /// <summary>The words on the button.</summary>
+    [Parameter] public string Label { get; set; } = "Add";
+
+    /// <summary>When the kind is known (the list of assignments, for example) only the module is asked.</summary>
+    [Parameter] public string? Kind { get; set; }
+
+    /// <summary>The modules of the course (not the syllabus), in order. The label is like "Module 2: Journal entries".</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<AddMenuModule> Modules { get; set; } = [];
+
+    /// <summary>Called with the module and the kind (one of <see cref="ItemKinds"/>) the person chose.</summary>
+    [Parameter] public EventCallback<AddMenuPick> OnPick { get; set; }
+
+    private async Task ChooseAsync(AddMenuModule module)
+    {
+        if (Kind is { } kind)
+        {
+            Close();
+            await OnPick.InvokeAsync(new AddMenuPick(module.Id, kind));
+            return;
+        }
+
+        chosen = module.Id;
+    }
+
+    private AddMenuModule? Current => chosen is { } id ? Modules.FirstOrDefault(m => m.Id == id) : Modules.Count == 1 ? Modules[0] : null;
+
+    private void Toggle()
+    {
+        open = !open;
+        chosen = null;
+    }
+
+    private void Close()
+    {
+        open = false;
+        chosen = null;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Close();
+        }
+    }
+
+    private async Task PickAsync(string kind)
+    {
+        var module = Current;
+        Close();
+        if (module is not null)
+        {
+            await OnPick.InvokeAsync(new AddMenuPick(module.Id, kind));
+        }
+    }
+}

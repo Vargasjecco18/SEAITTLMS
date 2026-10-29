@@ -1,0 +1,64 @@
+.qx {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.qx-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-right: 0.3rem;
+    font-weight: 600;
+}
+
+.qx-import {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.qx-import:hover,
+.qx-import:focus-within {
+    border-color: var(--brand);
+}
+
+.qx-import.busy {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.qx-import ::deep input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.qx-message {
+    margin: -0.4rem 0 0.8rem;
+}
+
+.qx-message.bad,
+.qx-problems {
+    color: var(--danger);
+}
+
+.qx-problems {
+    margin: -0.4rem 0 1rem;
+    padding-left: 1.2rem;
+}

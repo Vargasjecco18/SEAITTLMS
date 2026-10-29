@@ -1,0 +1,103 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject FileDownloads Downloads
+
+@* The Excel part of the page where the questions of a quiz are written: the template to fill in, an export of the questions that are written now, and the import. The imported
+   questions are added to the list on the page (they are saved when the person presses Save questions). *@
+<div class="qx">
+    <span class="qx-title"><Icon Name="file-spreadsheet" Size="16" /> Excel</span>
+    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="download" OnClick="TemplateAsync">Template</Button>
+    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="download" Disabled="@(Questions.Count == 0)" OnClick="ExportAsync">Export the questions</Button>
+    @if (!Disabled)
+    {
+        <label class="qx-import @(busy ? "busy" : "")">
+            <InputFile OnChange="ImportAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled="@busy" aria-label="Import questions from Excel" />
+            <Icon Name="@(busy ? "loader" : "upload")" Size="16" />
+            <span>@(busy ? "Reading…" : "Import from Excel")</span>
+        </label>
+    }
+</div>
+@if (message is not null)
+{
+    <p class="qx-message @(isError ? "bad" : "")" role="status">@message</p>
+}
+@if (problems.Count > 0)
+{
+    <ul class="qx-problems">
+        @foreach (var p in problems)
+        {
+            <li>@p</li>
+        }
+    </ul>
+}
+
+@code {
+    private bool busy;
+    private string? message;
+    private bool isError;
+    private List<string> problems = [];
+
+    [Parameter, EditorRequired] public string QuizTitle { get; set; } = "";
+
+    /// <summary>The questions on the page now (the export).</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<QuestionInput> Questions { get; set; } = [];
+
+    /// <summary>No import (the questions can't be changed any more).</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Called with the questions of the file that are right; the page adds them to its list.</summary>
+    [Parameter] public EventCallback<IReadOnlyList<QuestionInput>> OnImported { get; set; }
+
+    private async Task TemplateAsync() => await Downloads.SaveAsync(ItemSheets.QuestionsFileName("Template"), ItemSheets.QuestionTemplate());
+
+    private async Task ExportAsync() => await Downloads.SaveAsync(ItemSheets.QuestionsFileName(QuizTitle.Length == 0 ? "Quiz" : QuizTitle), ItemSheets.ExportQuestions(Questions));
+
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        message = null;
+        problems = [];
+        busy = true;
+        try
+        {
+            if (e.File.Size > XlsxReader.MaxFileBytes)
+            {
+                Say($"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.", true);
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            var read = ItemSheets.ParseQuestions(buffer.ToArray());
+            if (read.FileError is not null)
+            {
+                Say(read.FileError, true);
+                return;
+            }
+
+            problems = [.. read.Errors];
+            if (read.Questions.Count > 0)
+            {
+                await OnImported.InvokeAsync(read.Questions);
+                Say($"{read.Questions.Count} {(read.Questions.Count == 1 ? "question was" : "questions were")} added to the list. Press Save questions to keep {(read.Questions.Count == 1 ? "it" : "them")}.{(read.Errors.Count > 0 ? $" {read.Errors.Count} could not be read:" : "")}", false);
+            }
+            else
+            {
+                Say("No question could be added:", true);
+            }
+        }
+        catch (IOException)
+        {
+            Say("The file could not be read. Choose it again.", true);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void Say(string text, bool error)
+    {
+        message = text;
+        isError = error;
+    }
+}

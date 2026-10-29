@@ -1,0 +1,74 @@
+.course-menu {
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+}
+
+.cm-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.cm-item:hover {
+    background: var(--surface-2);
+}
+
+.cm-item.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.cm-label {
+    flex: 1;
+}
+
+.cm-count {
+    min-width: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.cm-item.on .cm-count {
+    background: var(--surface);
+    color: var(--brand-strong);
+}
+
+.cm-rule {
+    flex: 0 0 1px;
+    margin: 0.3rem 0.25rem;
+    background: var(--border);
+}
+
+/* Beside the page on a wide screen: a menu down the left side. */
+@media (min-width: 1000px) {
+    .course-menu {
+        position: sticky;
+        top: 1rem;
+        flex-direction: column;
+        align-self: start;
+        overflow: visible;
+    }
+
+    .cm-rule {
+        flex: 0 0 1px;
+        margin: 0.25rem 0.5rem;
+    }
+}
