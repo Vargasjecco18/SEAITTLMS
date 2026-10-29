@@ -40,13 +40,13 @@ else
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span>What you send, with its files, reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and can change the due dates, the text and the settings of the quizzes. Open the syllabus or a module to see its activities, quizzes and task performances.</span>
+        <span>What you send, with its files, reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and can change the due dates, the text and the settings of the quizzes. Open the syllabus or a module to see its assignments, quizzes and task performances.</span>
     </p>
 
     <div class="tiles">
         <div class="tile"><strong>@(syllabus is null ? "No" : "Yes")</strong><span>Syllabus</span></div>
         <div class="tile"><strong>@modules.Count</strong><span>Modules</span></div>
-        <div class="tile"><strong>@ItemCount(ItemKinds.Activity)</strong><span>Activities</span></div>
+        <div class="tile"><strong>@ItemCount(ItemKinds.Activity)</strong><span>Assignments</span></div>
         <div class="tile"><strong>@ItemCount(ItemKinds.Quiz)</strong><span>Quizzes</span></div>
         <div class="tile"><strong>@ItemCount(ItemKinds.TaskPerformance)</strong><span>Task performances</span></div>
     </div>
@@ -84,7 +84,7 @@ else
     {
         <Card>
             <EmptyState IconName="layers" Title="Nothing prepared yet">
-                <p>Start with the syllabus, then add the modules. Each module can have activities, quizzes and task performances.</p>
+                <p>Start with the syllabus, then add the modules. Each module can have assignments, quizzes and task performances.</p>
                 <div class="modal-actions">
                     <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
                     <Button IconName="plus" OnClick="OpenNewModule">Add the first module</Button>
@@ -111,7 +111,7 @@ else
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewSyllabus">Add syllabus</Button>
                         </div>
                     </header>
-                    <p class="module-description">The syllabus is sent first, before the modules and their activities, quizzes and task performances.</p>
+                    <p class="module-description">The syllabus is sent first, before the modules and their assignments, quizzes and task performances.</p>
                 </section>
             }
 
@@ -122,7 +122,7 @@ else
                 var isOpen = openModules.Contains(id);
                 var moduleFiles = FilesOf(moduleAttachments, id);
                 <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
-                    @* A click on the title opens the syllabus or the module: its text, its files and its activities, quizzes and task performances. *@
+                    @* A click on the title opens the syllabus or the module: its text, its files and its assignments, quizzes and task performances. *@
                     <header class="module-head">
                         <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{id}")" @onclick="() => ToggleModule(id)">
                             <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
@@ -214,13 +214,13 @@ else
                                                                     }
                                                                     else
                                                                     {
-                                                                        <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")@(item.Questions > 0 ? $" · {item.MaxScore:0.##} points" : "")</span>
+                                                                        <span>@(item.Questions == 0 && itemFiles.Count > 0 ? "File quiz · no questions" : $"{item.Questions} {(item.Questions == 1 ? "question" : "questions")}")@(item.Questions > 0 ? $" · {item.MaxScore:0.##} points" : "")</span>
                                                                     }
                                                                 </div>
                                                                 <AttachmentList Items="itemFiles" Label="@($"Files of {item.Title}")" />
                                                             </div>
                                                             <div class="item-actions">
-                                                                @if (item.Kind == ItemKinds.Quiz)
+                                                                @if (item.Kind == ItemKinds.Quiz && !(item.Questions == 0 && itemFiles.Count > 0))
                                                                 {
                                                                     <ButtonLink Href="@($"provider/library/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
                                                                 }
@@ -276,24 +276,14 @@ else
     {
         <EditForm Model="itemForm" OnValidSubmit="SaveItemAsync">
             <FormErrors Errors="formErrors" />
-            <div class="two">
-                <Field For="i-kind" Label="Kind" Required="true">
-                    <InputSelect id="i-kind" @bind-Value="itemForm.Kind" disabled="@(editingItemId is not null)">
-                        @foreach (var kind in ItemKinds.All)
-                        {
-                            <option value="@kind">@ItemKinds.Display(kind)</option>
-                        }
-                    </InputSelect>
-                </Field>
-                <Field For="i-title" Label="Title" Required="true">
-                    <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
-                </Field>
-            </div>
+            <Field For="i-title" Label="Title" Required="true">
+                <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
+            </Field>
             <Field For="i-text" Label="Instructions">
                 <InputTextArea id="i-text" @bind-Value="itemForm.Instructions" rows="5" />
             </Field>
             <div class="two">
-                @if (itemForm.Kind != ItemKinds.Quiz)
+                @if (itemForm.Kind != ItemKinds.Quiz || QuizIsAFile)
                 {
                     <Field For="i-score" Label="Highest score" Required="true">
                         <InputNumber id="i-score" @bind-Value="itemForm.MaxScore" />
@@ -308,16 +298,16 @@ else
             {
                 <p class="quiz-note">
                     <Icon Name="info" Size="16" />
-                    <span>A quiz is <strong>questions</strong>, <strong>a file</strong>, or both. Attach the file below, or write the questions after saving. <strong>The teacher</strong> sets the time limit, the anti-cheating watch and the rest of the settings.</span>
+                    <span>A quiz is <strong>questions</strong> or <strong>a file</strong>. With a file there are no questions: the students send their answers as a file. Without a file, write the questions after saving. <strong>The teacher</strong> sets the time limit, the anti-cheating watch and the rest of the settings.</span>
                 </p>
             }
 
-            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz" : "Files")" Existing="@FilesOf(itemAttachments, editingItemId)" />
+            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz (optional)" : "Files")" Existing="@FilesOf(itemAttachments, editingItemId)" OnChanged="FilesChanged" />
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseItemForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
-                @if (itemForm.Kind == ItemKinds.Quiz)
+                @if (itemForm.Kind == ItemKinds.Quiz && !QuizIsAFile)
                 {
                     <Button Variant="ButtonVariant.Secondary" IconName="list-checks" Disabled="busy" OnClick="SaveAndWriteQuestionsAsync">Save and write questions</Button>
                 }
@@ -358,7 +348,7 @@ else
                         <input type="checkbox" checked="@sendModules.Contains(id)" @onchange="e => TogglePick(sendModules, id, e)" />
                         <span>
                             <strong>@(module.IsSyllabus ? "Syllabus: " : "")@module.Title</strong>
-                            <small>@(module.IsSyllabus ? "Syllabus" : $"{module.Items.Count} {(module.Items.Count == 1 ? "activity, quiz or task" : "activities, quizzes and tasks")}") · sent to @module.SentTo of @course.Teachers.Count</small>
+                            <small>@(module.IsSyllabus ? "Syllabus" : $"{module.Items.Count} {(module.Items.Count == 1 ? "assignment, quiz or task" : "assignments, quizzes and tasks")}") · sent to @module.SentTo of @course.Teachers.Count</small>
                         </span>
                     </label>
                 </li>
@@ -445,7 +435,7 @@ else
 
     private DeleteTarget? deleteTarget;
 
-    // which syllabus or modules are open (their text and files, and their activities, quizzes and task performances)
+    // which syllabus or modules are open (their text and files, and their assignments, quizzes and task performances)
     private readonly HashSet<int> openModules = [];
 
     // the files of the library, by syllabus or module and by item
@@ -459,6 +449,11 @@ else
     private string ModuleModalTitle => editingIsSyllabus
         ? (editingModuleId is null ? "Add syllabus" : "Edit syllabus")
         : (editingModuleId is null ? "Add module" : "Edit module");
+
+    /// <summary>A quiz that has a file has no questions: the students answer with a file and the teacher gives the score.</summary>
+    private bool QuizIsAFile => itemForm?.Kind == ItemKinds.Quiz && (itemPicker?.HasFiles ?? FilesOf(itemAttachments, editingItemId).Count > 0);
+
+    private void FilesChanged() { }
 
     private string ItemModalTitle => itemForm is null ? "" : editingItemId is null ? $"Add {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}" : $"Edit {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}";
 
@@ -488,7 +483,7 @@ else
         }
     }
 
-    /// <summary>"3 activities, 1 quiz, 1 task performance" for the line under the title of a module.</summary>
+    /// <summary>"3 assignments, 1 quiz, 1 task performance" for the line under the title of a module.</summary>
     private static string Summary(MaterialModuleView module)
     {
         string Part(string kind, string one, string many)
@@ -497,9 +492,9 @@ else
             return n == 0 ? "" : $"{n} {(n == 1 ? one : many)}";
         }
 
-        var parts = new[] { Part(ItemKinds.Activity, "activity", "activities"), Part(ItemKinds.Quiz, "quiz", "quizzes"), Part(ItemKinds.TaskPerformance, "task performance", "task performances") }
+        var parts = new[] { Part(ItemKinds.Activity, "assignment", "assignments"), Part(ItemKinds.Quiz, "quiz", "quizzes"), Part(ItemKinds.TaskPerformance, "task performance", "task performances") }
             .Where(p => p.Length > 0).ToList();
-        return parts.Count == 0 ? "No activities yet" : string.Join(", ", parts);
+        return parts.Count == 0 ? "No assignments yet" : string.Join(", ", parts);
     }
 
     /// <summary>Saves the files chosen in a form for the syllabus, module or item with this number: the new ones are attached, the ones taken off are removed.</summary>
@@ -802,7 +797,7 @@ else
         deleteTarget = new DeleteTarget(module.IsSyllabus ? "Delete the syllabus?" : "Delete this module?",
             module.IsSyllabus
                 ? $"\"{module.Title}\" will be deleted from the library. The copies the teachers already got stay with them."
-                : $"\"{module.Title}\" will be deleted from the library with its {count} {(count == 1 ? "activity, quiz or task performance" : "activities, quizzes and task performances")}. The copies the teachers already got stay with them.",
+                : $"\"{module.Title}\" will be deleted from the library with its {count} {(count == 1 ? "assignment, quiz or task performance" : "assignments, quizzes and task performances")}. The copies the teachers already got stay with them.",
             true, module.Id);
     }
 

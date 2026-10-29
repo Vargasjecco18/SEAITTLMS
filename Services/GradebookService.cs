@@ -7,7 +7,7 @@ namespace SEAITT_LMS.Services;
 public sealed record GradebookColumn(int ItemId, string Title, string Kind, decimal Max, string ModuleTitle);
 
 /// <param name="Status">NotStarted, InProgress, Submitted (waiting for a score) or Graded.</param>
-public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bool IsLate, bool IsFlagged);
+public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bool IsLate, bool IsFlagged, string? LateDecision = null);
 
 public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null);
 
@@ -44,7 +44,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var students = await Roster.Enrollments(db, a.SectionId, a.SubjectId)
             .Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName, e.Student.Lrn }).Distinct()
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct);
-        var subs = await db.Submissions.AsNoTracking().Where(s => itemIds.Contains(s.ItemId)).Select(s => new { s.ItemId, s.StudentId, s.Status, s.Score, s.IsLate, s.IsFlagged }).ToListAsync(ct);
+        var subs = await db.Submissions.AsNoTracking().Where(s => itemIds.Contains(s.ItemId)).Select(s => new { s.ItemId, s.StudentId, s.Status, s.Score, s.IsLate, s.IsFlagged, s.LateDecision }).ToListAsync(ct);
         var bySlot = subs.ToDictionary(s => (s.StudentId, s.ItemId));
         var finals = await db.FinalGrades.AsNoTracking().Where(g => g.AssignmentId == assignmentId).ToDictionaryAsync(g => g.StudentId, g => g.Grade, ct);
 
@@ -58,14 +58,14 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             {
                 if (bySlot.TryGetValue((st.StudentId, c.ItemId), out var s))
                 {
-                    cells.Add(new GradebookCell(c.ItemId, s.Status, s.Score, s.IsLate, s.IsFlagged));
+                    cells.Add(new GradebookCell(c.ItemId, s.Status, s.Score, s.IsLate, s.IsFlagged, s.LateDecision));
                     if (s.Score is { } score && s.Status == SubmissionStatus.Graded)
                     {
                         earned += score;
                         possible += c.Max;
                     }
 
-                    if (s.Status == SubmissionStatus.Submitted)
+                    if (s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined)
                     {
                         toCheck++;
                     }

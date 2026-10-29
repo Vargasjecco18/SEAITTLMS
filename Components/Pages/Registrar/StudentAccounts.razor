@@ -76,7 +76,7 @@
             {
                 <p class="result-count">@(result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")</p>
                 <div class="table-in-card">
-                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" ShowFinalGrade="true" ShowNextTerm="true" ShowPhone="true" NextTerm="result.NextTerm" />
+                    <EnrollmentTable Rows="result.Items" ShowSubjects="true" ShowFinalGrade="true" ShowNextTerm="true" ShowPhone="true" ShowActions="true" NextTerm="result.NextTerm" />
                 </div>
 
                 @if (result.PageCount > 1)

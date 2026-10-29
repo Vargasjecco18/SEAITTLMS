@@ -4,6 +4,7 @@
 @inject CurrentUser Me
 @inject WorkService Work
 @inject ModuleService Modules
+@inject AttachmentService Files
 
 <PageTitle>Questions · @(data?.Title ?? "Quiz") · SEAITT Legazpi LMS</PageTitle>
 
@@ -28,6 +29,18 @@ else
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    @if (isFile)
+    {
+        @* A quiz that is a file has no questions: the students send their answers as a file. *@
+        <Card>
+            <EmptyState IconName="file-text" Title="This quiz is a file">
+                <p>The students open the file and send their answers as a file, and you give the score on the Results page. To write questions instead, take the file off the quiz first.</p>
+                <ButtonLink Href="@($"teacher/items/{data.ItemId}")" Variant="ButtonVariant.Secondary" IconName="eye">Results</ButtonLink>
+            </EmptyState>
+        </Card>
+        return;
+    }
 
     @if (locked)
     {
@@ -148,6 +161,7 @@ else
     private ItemSubmissionList? data;
     private List<QuestionInput>? questions;
     private bool locked;
+    private bool isFile;
     private string? message;
     private bool messageIsError;
     private bool busy;
@@ -167,6 +181,7 @@ else
             var saved = await Modules.GetQuestionsAsync(teacherId, ItemId);
             questions = saved is null ? null : [.. saved];
             locked = data.Rows.Any(r => r.Status != "NotStarted");
+            isFile = (questions?.Count ?? 0) == 0 && (await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId))).Count > 0;
         }
 
         loaded = true;

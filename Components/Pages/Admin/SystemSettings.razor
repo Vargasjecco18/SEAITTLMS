@@ -25,6 +25,13 @@
             </Field>
         </Card>
 
+        <Card Title="Sections" IconName="users">
+            <p class="note">The registrar sees how many students a section has, like 32 of 40, and can't enroll more than the limit.</p>
+            <Field For="s-capacity" Label="Students in one section (the limit)" Hint="From 1 to 100.">
+                <input id="s-capacity" type="number" class="input" min="1" max="100" @bind="form.SectionCapacity" />
+            </Field>
+        </Card>
+
         <Card Title="Backups and the log" IconName="database-backup">
             <p class="note">The backups themselves are made on the <a href="admin/backups">Database Backup &amp; Restore</a> page.</p>
             <label class="check">
@@ -121,6 +128,7 @@
         public int AutoBackupHour { get; set; }
         public int BackupsToKeep { get; set; }
         public int LogKeepDays { get; set; }
+        public int SectionCapacity { get; set; }
         public int MaxFileMegabytes { get; set; }
         public int LockerMegabytes { get; set; }
 
@@ -131,7 +139,7 @@
             MaintenanceOn = v.MaintenanceOn, MaintenanceMessage = v.MaintenanceMessage, MessagesHaveClosingHours = v.MessagesHaveClosingHours,
             MessagesCloseHour = v.MessagesCloseHour, MessagesOpenHour = v.MessagesOpenHour, AutoBackupOn = v.AutoBackupOn,
             AutoBackupHour = v.AutoBackupHour, BackupsToKeep = v.BackupsToKeep, LogKeepDays = v.LogKeepDays,
-            MaxFileMegabytes = v.MaxFileMegabytes, LockerMegabytes = v.LockerMegabytes,
+            SectionCapacity = v.SectionCapacity, MaxFileMegabytes = v.MaxFileMegabytes, LockerMegabytes = v.LockerMegabytes,
         };
 
         public SystemSettingsValues ToValues() => new()
@@ -141,7 +149,7 @@
             MaintenanceOn = MaintenanceOn, MaintenanceMessage = MaintenanceMessage, MessagesHaveClosingHours = MessagesHaveClosingHours,
             MessagesCloseHour = MessagesCloseHour, MessagesOpenHour = MessagesOpenHour, AutoBackupOn = AutoBackupOn,
             AutoBackupHour = AutoBackupHour, BackupsToKeep = BackupsToKeep, LogKeepDays = LogKeepDays,
-            MaxFileMegabytes = MaxFileMegabytes, LockerMegabytes = LockerMegabytes,
+            SectionCapacity = SectionCapacity, MaxFileMegabytes = MaxFileMegabytes, LockerMegabytes = LockerMegabytes,
         };
     }
 }

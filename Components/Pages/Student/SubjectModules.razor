@@ -33,7 +33,7 @@ else
         <StatCard Label="Attendance" Text="@(attendanceOf?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
                   Accent="@(attendanceOf?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
                   Hint="@(attendanceOf is { Percent: not null } ? $"{attendanceOf.Present} present · {attendanceOf.Late} late · {attendanceOf.Absent} absent" : "Nothing marked yet")" />
-        <StatCard Label="Work" Text="@(gradeOf is null ? "—" : $"{gradeOf.GradedCount} of {gradeOf.TotalItems}")" IconName="clipboard-check" Accent="AccentColor.Violet"
+        <StatCard Label="Assignments" Text="@(gradeOf is null ? "—" : $"{gradeOf.GradedCount} of {gradeOf.TotalItems}")" IconName="clipboard-check" Accent="AccentColor.Violet"
                   Hint="@(gradeOf is null ? "" : $"graded · {gradeOf.OpenItems} to do" + (gradeOf.Missing > 0 ? $" · {gradeOf.Missing} missing" : ""))" />
         <StatCard Label="Grade" Text="@(gradeOf?.Percent is { } pct ? $"{pct:0.#}%" : "—")" IconName="trending-up"
                   Accent="@(gradeOf?.Percent is { } p2 && p2 < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
@@ -60,7 +60,7 @@ else
                 var moduleId = module.Id;
                 var isOpen = openModules.Contains(moduleId);
                 <section class="module @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
-                    @* A click on the title opens the module: then its activities, quizzes and task performances show. *@
+                    @* A click on the title opens the module: then its assignments, quizzes and task performances show. *@
                     <header class="module-head">
                         <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{moduleId}")" @onclick="() => ToggleModule(moduleId)">
                             <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>

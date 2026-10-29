@@ -6,7 +6,18 @@ public static class StudentStatus
     public const string Active = "Active";
     public const string Graduated = "Graduated";
 
-    public static readonly string[] All = [Active, Graduated];
+    /// <summary>The student left school before finishing. Like a graduate the student is archived: the account is switched off and the records stay.</summary>
+    public const string DroppedOut = "DroppedOut";
+
+    public static readonly string[] All = [Active, Graduated, DroppedOut];
+
+    public static string Display(string? status) => status switch
+    {
+        Active => "Active",
+        Graduated => "Graduated",
+        DroppedOut => "Dropped out",
+        _ => status ?? "",
+    };
 }
 
 /// <summary>Why a student was referred to the guidance counselor.</summary>

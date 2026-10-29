@@ -38,6 +38,9 @@ public sealed record SystemSettingsValues
     public int BackupsToKeep { get; init; } = 7;
     public int LogKeepDays { get; init; } = 180;
 
+    // ---- classes: how many students one section can have (the registrar sees "32 of 40" and can't enroll more)
+    public int SectionCapacity { get; init; } = 40;
+
     // ---- files (the locker)
     public int MaxFileMegabytes { get; init; } = 10;
     public int LockerMegabytes { get; init; } = 100;
@@ -208,6 +211,11 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             errors.Add("Keep the security log for 30 to 3650 days.");
         }
 
+        if (v.SectionCapacity is < 1 or > 100)
+        {
+            errors.Add("A section can have from 1 to 100 students.");
+        }
+
         if (v.MaxFileMegabytes is < 1 or > 50)
         {
             errors.Add("A file in the locker can be from 1 to 50 MB.");
@@ -247,6 +255,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
         "backup.auto_hour" => "hour of the automatic backup",
         "backup.keep" => "automatic backups kept",
         "logs.keep_days" => "days the log is kept",
+        "classes.section_capacity" => "students in a section",
         "files.max_mb" => "biggest file",
         "files.locker_mb" => "size of a locker",
         _ => key,
@@ -286,6 +295,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             ["backup.auto_hour"] = N(v.AutoBackupHour),
             ["backup.keep"] = N(v.BackupsToKeep),
             ["logs.keep_days"] = N(v.LogKeepDays),
+            ["classes.section_capacity"] = N(v.SectionCapacity),
             ["files.max_mb"] = N(v.MaxFileMegabytes),
             ["files.locker_mb"] = N(v.LockerMegabytes),
         };
@@ -320,6 +330,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             AutoBackupHour = Number("backup.auto_hour", v.AutoBackupHour),
             BackupsToKeep = Number("backup.keep", v.BackupsToKeep),
             LogKeepDays = Number("logs.keep_days", v.LogKeepDays),
+            SectionCapacity = Number("classes.section_capacity", v.SectionCapacity),
             MaxFileMegabytes = Number("files.max_mb", v.MaxFileMegabytes),
             LockerMegabytes = Number("files.locker_mb", v.LockerMegabytes),
         };

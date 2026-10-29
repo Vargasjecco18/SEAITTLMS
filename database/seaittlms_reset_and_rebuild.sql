@@ -1817,5 +1817,21 @@ ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_messages_message_id` FO
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261029032734_MessageAttachments', '9.0.20');
 
+ALTER TABLE `students` DROP CONSTRAINT `ck_students_status`;
+
+ALTER TABLE `students` ADD CONSTRAINT `ck_students_status` CHECK (status IN ('Active', 'Graduated', 'DroppedOut'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261029045855_StudentDroppedOut', '9.0.20');
+
+ALTER TABLE `submissions` ADD `late_decision` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `attachments` ADD `is_slides` tinyint(1) NOT NULL DEFAULT FALSE;
+
+ALTER TABLE `submissions` ADD CONSTRAINT `ck_submissions_late_decision` CHECK (late_decision IS NULL OR late_decision IN ('Pending', 'Accepted', 'Declined'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261029082858_LateWorkAndSlides', '9.0.20');
+
 COMMIT;
 

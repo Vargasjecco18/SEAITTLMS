@@ -1,0 +1,303 @@
+@rendermode InteractiveServer
+@inject EnrollmentService Enrollment
+@inject StudentLifecycleService Lifecycle
+@inject CurrentUser Me
+@inject NavigationManager Navigation
+
+@* The registrar's two buttons for one line of the list of enrollments: Edit (the name, the term, the course of study, the section and the courses)
+   and Drop out. Each opens a box over the list. It is its own live island, so it works inside a list that is otherwise plain. *@
+<div class="buttons">
+    @if (Status == "Enrolled")
+    {
+        <button type="button" class="act" @onclick="OpenEditAsync"><Icon Name="pencil" Size="14" /> Edit</button>
+    }
+    @if (StudentActive)
+    {
+        <button type="button" class="act danger" @onclick="OpenDrop"><Icon Name="user-x" Size="14" /> Drop out</button>
+    }
+</div>
+
+<Modal Open="editing" Title="@($"Edit the enrollment of {StudentName}")" OnClose="CloseEdit" Large="true">
+    @if (editing)
+    {
+        @if (lookups is null || view is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else
+        {
+            <FormErrors Errors="errors" />
+
+            <p class="quiet">LRN @view.Lrn. A change of the name is written in all the enrollments of the student.</p>
+            <div class="two">
+                <Field For="ed-first" Label="First name" Required="true"><input id="ed-first" type="text" maxlength="100" autocomplete="off" class="cap" @bind="first" /></Field>
+                <Field For="ed-middle" Label="Middle name"><input id="ed-middle" type="text" maxlength="100" autocomplete="off" class="cap" @bind="middle" /></Field>
+            </div>
+            <div class="two">
+                <Field For="ed-last" Label="Last name" Required="true"><input id="ed-last" type="text" maxlength="100" autocomplete="off" class="cap" @bind="last" /></Field>
+                <Field For="ed-ext" Label="Name extension"><input id="ed-ext" type="text" maxlength="10" autocomplete="off" placeholder="Jr." class="cap" @bind="extension" /></Field>
+            </div>
+            <Field For="ed-phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567."><input id="ed-phone" type="tel" maxlength="20" autocomplete="off" @bind="phone" /></Field>
+
+            <div class="two">
+                <Field For="ed-term" Label="Term" Required="true">
+                    <select id="ed-term" @bind="termId" @bind:after="PlaceChangedAsync">
+                        @foreach (var term in lookups.Terms)
+                        {
+                            <option value="@term.Id">@term.SchoolYear · @term.Name@(term.IsCurrent ? " (current)" : "")</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="ed-grade" Label="Grade level" Required="true">
+                    <select id="ed-grade" @bind="grade" @bind:after="PlaceChangedAsync">
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="ed-track" Label="Track" Required="true">
+                    <select id="ed-track" @bind="trackId" @bind:after="TrackChangedAsync">
+                        <option value="0">Choose a track</option>
+                        @foreach (var track in lookups.Tracks)
+                        {
+                            <option value="@track.Id">@track.Code</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="ed-strand" Label="Strand" Required="true">
+                    <select id="ed-strand" disabled="@(trackId == 0)" @bind="strandId" @bind:after="PlaceChangedAsync">
+                        <option value="0">@(trackId == 0 ? "Choose a track first" : "Choose a strand")</option>
+                        @foreach (var strand in lookups.Strands.Where(s => s.TrackId == trackId))
+                        {
+                            <option value="@strand.Id">@strand.Code@(string.Equals(strand.Name, strand.Code, StringComparison.OrdinalIgnoreCase) ? "" : $" ({strand.Name})")</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+            <Field For="ed-section" Label="Section" Required="true" Hint="@SectionHint">
+                <select id="ed-section" disabled="@(strandId == 0)" @bind="sectionName">
+                    <option value="">@(strandId == 0 ? "Choose a strand first" : "Choose the section")</option>
+                    @foreach (var load in loads)
+                    {
+                        <option value="@load.Name" disabled="@(load.IsFull && load.Name != sectionName)">@load.Name · @load.Text@(load.IsFull ? " (full)" : "")</option>
+                    }
+                </select>
+            </Field>
+
+            <div class="field">
+                <span class="field-label" id="ed-courses-label">Courses</span>
+                @if (curriculum.Count == 0)
+                {
+                    <p class="muted small">No courses are set for this strand, grade level and term yet.</p>
+                }
+                else
+                {
+                    <div class="course-picks" role="group" aria-labelledby="ed-courses-label">
+                        @foreach (var course in curriculum)
+                        {
+                            <label class="course-pick">
+                                <input type="checkbox" checked="@subjectIds.Contains(course.Id)" @onchange="e => ToggleCourse(course.Id, e.Value is true)" />
+                                <span>@course.Name</span>
+                            </label>
+                        }
+                    </div>
+                    <button type="button" class="link-button" @onclick="ToggleAllCourses">@(subjectIds.Count == curriculum.Count ? "Clear all" : "Select all")</button>
+                }
+            </div>
+
+            <div class="actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseEdit">Cancel</Button>
+                <Button IconName="circle-check" Disabled="@(busy || strandId == 0 || string.IsNullOrEmpty(sectionName))" OnClick="SaveAsync">@(busy ? "Saving…" : "Save changes")</Button>
+            </div>
+        }
+    }
+</Modal>
+
+<Modal Open="dropping" Title="Mark this student as dropped out?" OnClose="CloseDrop">
+    @if (dropping)
+    {
+        <p>
+            <strong>@StudentName</strong> (LRN @Lrn) left school. The sign-in is switched off, the enrollments are marked dropped and the student is
+            <strong>not in the list of graduating students</strong>. The records stay in the archive; an administrator can restore the student.
+        </p>
+        <Field For="dr-note" Label="Why (optional)"><input id="dr-note" type="text" maxlength="300" autocomplete="off" @bind="dropNote" /></Field>
+        <FormErrors Errors="errors" />
+        <div class="actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDrop">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="user-x" Disabled="busy" OnClick="ConfirmDropAsync">@(busy ? "Saving…" : "Mark as dropped out")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public int EnrollmentId { get; set; }
+
+    [Parameter, EditorRequired] public int StudentId { get; set; }
+
+    [Parameter, EditorRequired] public string StudentName { get; set; } = "";
+
+    [Parameter, EditorRequired] public string Lrn { get; set; } = "";
+
+    /// <summary>The status of the enrollment: only one that is going on ("Enrolled") can be edited.</summary>
+    [Parameter] public string Status { get; set; } = "Enrolled";
+
+    /// <summary>False for a student who is in the archive (nothing to drop out).</summary>
+    [Parameter] public bool StudentActive { get; set; } = true;
+
+    private bool editing;
+    private bool dropping;
+    private bool busy;
+    private List<string> errors = [];
+    private EnrollmentLookups? lookups;
+    private EnrollmentEditView? view;
+    private IReadOnlyList<SectionLoad> loads = [];
+    private IReadOnlyList<SubjectOption> curriculum = [];
+    private HashSet<int> subjectIds = [];
+    private string first = "", middle = "", last = "", extension = "", phone = "", sectionName = "", dropNote = "";
+    private int termId, trackId, strandId;
+    private byte grade = 11;
+
+    private string SectionHint => strandId == 0 ? "Choose the section, A, B or C." : loads.FirstOrDefault(l => l.Name == sectionName) is { } load
+        ? $"Section {load.Name} has {load.Text}. {(load.IsFull ? "It is full." : load.SeatsLeft == 1 ? "1 seat is left." : $"{load.SeatsLeft} seats are left.")}"
+        : "Choose the section, A, B or C.";
+
+    private async Task OpenEditAsync()
+    {
+        errors = [];
+        editing = true;
+        lookups = await Enrollment.GetLookupsAsync();
+        view = await Enrollment.GetEnrollmentForEditAsync(EnrollmentId);
+        if (view is null)
+        {
+            errors = ["This enrollment was not found."];
+            return;
+        }
+
+        (first, middle, last, extension, phone) = (view.FirstName, view.MiddleName ?? "", view.LastName, view.NameExtension ?? "", view.PhoneNumber ?? "");
+        (termId, grade, trackId, strandId, sectionName) = (view.TermId, view.GradeLevel, view.TrackId, view.StrandId, view.SectionName);
+        subjectIds = view.SubjectIds.ToHashSet();
+        await ReloadAsync(keepCourses: true);
+    }
+
+    private async Task TrackChangedAsync()
+    {
+        strandId = 0;
+        sectionName = "";
+        await ReloadAsync(keepCourses: false);
+    }
+
+    // The term, grade level or strand moved: the sections and the courses of the new place are shown (all the courses ticked).
+    private async Task PlaceChangedAsync() => await ReloadAsync(keepCourses: false);
+
+    private async Task ReloadAsync(bool keepCourses)
+    {
+        if (strandId == 0)
+        {
+            loads = [];
+            curriculum = [];
+            subjectIds = [];
+            return;
+        }
+
+        loads = await Enrollment.GetSectionLoadsAsync(termId, strandId, grade, EnrollmentId);
+        curriculum = await Enrollment.GetCurriculumAsync(strandId, grade, termId);
+        if (!keepCourses)
+        {
+            subjectIds = curriculum.Select(c => c.Id).ToHashSet();
+        }
+    }
+
+    private void ToggleCourse(int id, bool on)
+    {
+        if (on)
+        {
+            subjectIds.Add(id);
+        }
+        else
+        {
+            subjectIds.Remove(id);
+        }
+    }
+
+    private void ToggleAllCourses() => subjectIds = subjectIds.Count == curriculum.Count ? [] : curriculum.Select(c => c.Id).ToHashSet();
+
+    private void CloseEdit()
+    {
+        editing = false;
+        errors = [];
+    }
+
+    private async Task SaveAsync()
+    {
+        if (busy || view is null)
+        {
+            return;
+        }
+
+        busy = true;
+        errors = [];
+        try
+        {
+            var me = await Me.GetAsync();
+            // No course ticked at all means "none was chosen" to the service, which gives all of them: so a student without courses is not made here.
+            var change = new EnrollmentChange(EnrollmentId, first, middle, last, extension, phone, termId, grade, trackId, strandId, sectionName, subjectIds.Count == 0 ? null : subjectIds.ToList());
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Enrollment.UpdateEnrollmentAsync(change, me.UserId);
+            if (result.Succeeded)
+            {
+                editing = false;
+                Navigation.Refresh();
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void OpenDrop()
+    {
+        errors = [];
+        dropNote = "";
+        dropping = true;
+    }
+
+    private void CloseDrop()
+    {
+        dropping = false;
+        errors = [];
+    }
+
+    private async Task ConfirmDropAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        errors = [];
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Lifecycle.DropOutAsync(StudentId, dropNote, me.UserId);
+            if (result.Succeeded)
+            {
+                dropping = false;
+                Navigation.Refresh();
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

@@ -10,7 +10,8 @@ public sealed record StudentItemView(
     int ItemId, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc,
     int ModuleId, string ModuleTitle, int AssignmentId, string SubjectName,
     string Status, string? AnswerText, string? AnswerHtml, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
-    int Questions, int? TimeLimitMinutes, bool AntiCheat, int MaxViolations, bool ShowResult, int ViolationCount, string? AutoSubmitReason, int? SubmissionId = null)
+    int Questions, int? TimeLimitMinutes, bool AntiCheat, int MaxViolations, bool ShowResult, int ViolationCount, string? AutoSubmitReason, int? SubmissionId = null,
+    string? LateDecision = null)
 {
     public bool IsQuiz => Kind == ItemKinds.Quiz;
 
@@ -20,7 +21,11 @@ public sealed record StudentItemView(
 
 // ---------------------------------------------------------------------- what the teacher sees
 
-public sealed record SubmissionRow(int StudentId, string StudentName, string? Lrn, string Status, DateTime? SubmittedAtUtc, bool IsLate, decimal? Score, int ViolationCount, bool IsFlagged);
+public sealed record SubmissionRow(int StudentId, string StudentName, string? Lrn, string Status, DateTime? SubmittedAtUtc, bool IsLate, decimal? Score, int ViolationCount, bool IsFlagged, string? LateDecision = null)
+{
+    /// <summary>Handed in and waiting for the teacher: not graded, and not declined as late work.</summary>
+    public bool NeedsCheck => Status == SubmissionStatus.Submitted && LateDecision != Data.Entities.LateDecisions.Declined;
+}
 
 public sealed record ItemSubmissionList(
     int ItemId, string Kind, string Title, decimal MaxScore, DateTime? DueAtUtc, int ModuleId, string ModuleTitle,
@@ -31,7 +36,7 @@ public sealed record AnswerReview(string Question, string Kind, string? Given, s
 public sealed record SubmissionDetail(
     int StudentId, string StudentName, string Kind, string ItemTitle, decimal MaxScore, string Status,
     string? AnswerText, string? AnswerHtml, string? LinkUrl, decimal? Score, string? Feedback, DateTime? SubmittedAtUtc, bool IsLate,
-    int ViolationCount, string? ViolationLog, string? AutoSubmitReason, bool IsFlagged, IReadOnlyList<AnswerReview> Answers, int? SubmissionId = null);
+    int ViolationCount, string? ViolationLog, string? AutoSubmitReason, bool IsFlagged, IReadOnlyList<AnswerReview> Answers, int? SubmissionId = null, string? LateDecision = null);
 
 /// <summary>An item together with where it belongs, loaded after checking that the person is allowed to see it.</summary>
 internal sealed record ItemContext(
@@ -109,7 +114,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         return new StudentItemView(
             i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName,
             s?.Status ?? "NotStarted", s?.AnswerText, s?.AnswerHtml, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
-            questions, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShowResult, s?.ViolationCount ?? 0, s?.AutoSubmitReason, s?.Id);
+            questions, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShowResult, s?.ViolationCount ?? 0, s?.AutoSubmitReason, s?.Id, s?.LateDecision);
     }
 
     /// <summary>
@@ -220,7 +225,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var context = await ItemAccess.ForStudentAsync(db, studentId, itemId, now, tracking: false, ct);
         if (context is null)
         {
-            return ServiceResult.Fail("This work was not found.");
+            return ServiceResult.Fail("This assignment was not found.");
         }
 
         // A quiz with questions is taken on its own page. A quiz that is only a file (no questions) is answered here, like an activity, and the teacher gives the score.
@@ -232,7 +237,12 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var submission = await db.Submissions.FirstOrDefaultAsync(s => s.ItemId == itemId && s.StudentId == studentId, ct);
         if (submission is { Status: SubmissionStatus.Graded })
         {
-            return ServiceResult.Fail("This work was already graded, so it can't be handed in again.");
+            return ServiceResult.Fail("This assignment was already graded, so it can't be handed in again.");
+        }
+
+        if (submission is { LateDecision: LateDecisions.Declined })
+        {
+            return ServiceResult.Fail("Your teacher did not accept your late work, so it can't be handed in again.");
         }
 
         // The work is the written answer, the files the student sent with it, or both.
@@ -251,16 +261,41 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         submission.SubmittedAtUtc = now;
         submission.IsLate = context.Item.DueAtUtc is { } due && now > due;
 
+        // Work handed in after the due date can be handed in, but the teacher decides whether to accept it. Only accepted late work is graded.
+        submission.LateDecision = !submission.IsLate ? null : submission.LateDecision == LateDecisions.Accepted ? LateDecisions.Accepted : LateDecisions.Pending;
+
         try
         {
             await db.SaveChangesAsync(ct);
         }
         catch (DbUpdateException) when (isNew)
         {
-            return ServiceResult.Fail("Your work was already handed in. Reload the page.");
+            return ServiceResult.Fail("Your answer was already handed in. Reload the page.");
         }
 
-        return ServiceResult.Ok(submission.IsLate ? "Handed in. It was after the due date, so it is marked late." : "Handed in. Your teacher will check it.");
+        await TellTeacherAsync(db, context, studentId, submission.IsLate, ct);
+
+        return ServiceResult.Ok(submission.IsLate ? "Handed in late. Your teacher decides if it is accepted." : "Handed in. Your teacher will check it.");
+    }
+
+    /// <summary>The teacher is told that a student handed in work to check. Handing in again while the first notice is still unread does not tell again.</summary>
+    private async Task TellTeacherAsync(AppDbContext db, ItemContext context, int studentId, bool late, CancellationToken ct)
+    {
+        var teacherUserId = await db.Teachers.AsNoTracking().Where(x => x.Id == context.TeacherId).Select(x => (int?)x.UserId).FirstOrDefaultAsync(ct);
+        var student = await db.Students.AsNoTracking().Where(x => x.Id == studentId).Select(x => new { x.FirstName, x.LastName }).FirstOrDefaultAsync(ct);
+        if (teacherUserId is not { } teacherUser || student is null)
+        {
+            return;
+        }
+
+        var title = $"{student.FirstName} {student.LastName} handed in {context.Item.Title}";
+        var link = $"teacher/items/{context.Item.Id}";
+        if (await db.Notifications.AsNoTracking().AnyAsync(n => n.UserId == teacherUser && n.Link == link && n.Title == title && !n.IsRead, ct))
+        {
+            return;
+        }
+
+        await notifications.AddAsync(teacherUser, "activity", late ? title + " (late)" : title, late ? $"{context.SubjectName} · accept or decline it" : context.SubjectName, link, ct);
     }
 
     // ======================================================================= the teacher
@@ -282,7 +317,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var rows = students.Select(st =>
         {
             submissions.TryGetValue(st.StudentId, out var s);
-            return new SubmissionRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, s?.Status ?? "NotStarted", s?.SubmittedAtUtc, s?.IsLate ?? false, s?.Score, s?.ViolationCount ?? 0, s?.IsFlagged ?? false);
+            return new SubmissionRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, s?.Status ?? "NotStarted", s?.SubmittedAtUtc, s?.IsLate ?? false, s?.Score, s?.ViolationCount ?? 0, s?.IsFlagged ?? false, s?.LateDecision);
         }).ToList();
 
         var i = context.Item;
@@ -312,7 +347,52 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         return new SubmissionDetail(
             studentId, student, context.Item.Kind, context.Item.Title, context.Item.MaxScore, s?.Status ?? "NotStarted",
             s?.AnswerText, s?.AnswerHtml, s?.LinkUrl, s?.Score, s?.Feedback, s?.SubmittedAtUtc, s?.IsLate ?? false,
-            s?.ViolationCount ?? 0, s?.ViolationLog, s?.AutoSubmitReason, s?.IsFlagged ?? false, answers, s?.Id);
+            s?.ViolationCount ?? 0, s?.ViolationLog, s?.AutoSubmitReason, s?.IsFlagged ?? false, answers, s?.Id, s?.LateDecision);
+    }
+
+    /// <summary>
+    /// The teacher accepts or declines work that was handed in after the due date. Accepted work is graded like any other; declined work is not, and the student can't
+    /// hand it in again. The student is told. The decision can be changed until the work is graded.
+    /// </summary>
+    public async Task<ServiceResult> DecideLateAsync(int teacherId, int itemId, int studentId, bool accept, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var context = await ItemAccess.ForTeacherAsync(db, teacherId, itemId, tracking: false, ct);
+        if (context is null)
+        {
+            return ServiceResult.Fail("This assignment was not found.");
+        }
+
+        var s = await db.Submissions.FirstOrDefaultAsync(x => x.ItemId == itemId && x.StudentId == studentId, ct);
+        if (s is null || !s.IsLate || s.LateDecision is null)
+        {
+            return ServiceResult.Fail("This work was not handed in late.");
+        }
+
+        if (s.Status == SubmissionStatus.Graded)
+        {
+            return ServiceResult.Fail("This work was graded already.");
+        }
+
+        var decision = accept ? LateDecisions.Accepted : LateDecisions.Declined;
+        if (s.LateDecision == decision)
+        {
+            return ServiceResult.Ok(accept ? "It was accepted already." : "It was declined already.");
+        }
+
+        s.LateDecision = decision;
+        await db.SaveChangesAsync(ct);
+
+        var studentUserId = await db.Students.AsNoTracking().Where(x => x.Id == studentId).Select(x => (int?)x.UserId).FirstOrDefaultAsync(ct);
+        if (studentUserId is { } userId)
+        {
+            await notifications.AddAsync(userId, "activity",
+                accept ? $"Your late {context.Item.Title} was accepted" : $"Your late {context.Item.Title} was not accepted",
+                accept ? $"{context.SubjectName} · your teacher will check it" : $"{context.SubjectName} · it will not be graded",
+                $"student/items/{itemId}", ct);
+        }
+
+        return ServiceResult.Ok(accept ? "Accepted. You can give it a score now. The student was told." : "Declined. The student was told.");
     }
 
     /// <summary>Gives a score and feedback. Works also when the student handed nothing in (a task performance done in class). The student is told.</summary>
@@ -324,7 +404,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var context = await ItemAccess.ForTeacherAsync(db, teacherId, itemId, tracking: false, ct);
         if (context is null)
         {
-            return ServiceResult.Fail("This work was not found.");
+            return ServiceResult.Fail("This assignment was not found.");
         }
 
         if (score is null)
@@ -351,6 +431,16 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         var now = Now;
         var s = await db.Submissions.FirstOrDefaultAsync(x => x.ItemId == itemId && x.StudentId == studentId, ct);
+        if (s is { IsLate: true, LateDecision: LateDecisions.Pending })
+        {
+            return ServiceResult.Fail("This work was handed in late. Accept it first, then give the score.");
+        }
+
+        if (s is { IsLate: true, LateDecision: LateDecisions.Declined })
+        {
+            return ServiceResult.Fail("You did not accept this late work. Accept it first if you want to give it a score.");
+        }
+
         var isNew = s is null;
         s ??= db.Submissions.Add(new Submission { ItemId = itemId, StudentId = studentId }).Entity;
         s.Score = Math.Round(score.Value, 2);
@@ -368,7 +458,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         }
         catch (DbUpdateException) when (isNew)
         {
-            return ServiceResult.Fail("The student's work changed while you were grading. Open it again.");
+            return ServiceResult.Fail("The student's answer changed while you were grading. Open it again.");
         }
 
         await notifications.AddAsync(studentUserId.Value, "grade", $"{context.Item.Title} was graded",

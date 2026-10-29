@@ -341,13 +341,25 @@ document.addEventListener('toggle', function (event) {
     pop.style.left = left + 'px';
 }, true);
 
-// Ctrl+K (Cmd+K on a Mac) opens the search pop-up of the header (Components/Layout/SearchBox.razor).
+// Escape in the search box of the header leaves the box (the list closes by itself), so the page is not "in use" any more.
+document.addEventListener('keydown', function (event) {
+    var target = event.target;
+    if (event.key === 'Escape' && target instanceof Element && target.matches('[data-search-input]')) {
+        target.blur();
+    }
+});
+
+// Ctrl+K (Cmd+K on a Mac) puts the cursor in the search box of the header (Components/Layout/SearchBox.razor); on a phone it opens the box.
 document.addEventListener('keydown', function (event) {
     if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
-        var trigger = document.querySelector('[data-search-trigger]');
-        if (trigger) {
+        var field = document.querySelector('[data-search-input]');
+        var lens = document.querySelector('[data-search-lens]');
+        if (field && field.offsetParent !== null) {
             event.preventDefault();
-            trigger.click();
+            field.focus();
+        } else if (lens) {
+            event.preventDefault();
+            lens.click();
         }
     }
 });
@@ -774,4 +786,100 @@ document.addEventListener('keydown', function (event) {
             if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) { target.close(); }
         }
     });
+})();
+
+// The message at the top center (TopAlert): the X closes it, and ?alert= is taken off the address so a refresh does not show it again.
+(function () {
+    document.addEventListener('click', function (e) {
+        var close = e.target.closest && e.target.closest('[data-close-top-alert]');
+        if (close) {
+            var box = close.closest('.top-alert');
+            if (box) { box.hidden = true; }
+        }
+    });
+
+    try {
+        var url = new URL(window.location.href);
+        if (url.searchParams.has('alert')) {
+            url.searchParams.delete('alert');
+            window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+        }
+    } catch (err) { /* an old browser: the message just stays in the address */ }
+})();
+
+// The sound of a new message or notification (HeaderTools calls seaitt.playNotificationSound). It is made with the browser's own sound
+// maker, so there is no file to load. A browser keeps sound off until the person has clicked or typed on the page once, so the first
+// click starts it. Settings has a switch (data-sound-toggle); the choice is kept on this computer.
+(function () {
+    var root = document.documentElement;
+    var context = null;
+
+    try { if (localStorage.getItem('seaitt-sound') === 'off') { root.setAttribute('data-sound', 'off'); } } catch (error) { }
+
+    function audio() {
+        if (context) { return context; }
+        var Maker = window.AudioContext || window.webkitAudioContext;
+        if (!Maker) { return null; }
+        try { context = new Maker(); } catch (error) { context = null; }
+        return context;
+    }
+
+    function unlock() {
+        var made = audio();
+        if (made && made.state === 'suspended') { made.resume(); }
+    }
+
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (name) { document.addEventListener(name, unlock, { passive: true }); });
+
+    function tone(made, frequency, start, length) {
+        var oscillator = made.createOscillator();
+        var volume = made.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        volume.gain.setValueAtTime(0.0001, start);
+        volume.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+        volume.gain.exponentialRampToValueAtTime(0.0001, start + length);
+        oscillator.connect(volume);
+        volume.connect(made.destination);
+        oscillator.start(start);
+        oscillator.stop(start + length + 0.05);
+    }
+
+    window.seaitt = window.seaitt || {};
+    window.seaitt.playNotificationSound = function () {
+        if (root.getAttribute('data-sound') === 'off') { return; }
+        var made = audio();
+        if (!made || made.state !== 'running') { return; }
+        var now = made.currentTime;
+        tone(made, 880, now, 0.28);
+        tone(made, 1318.5, now + 0.14, 0.4);
+    };
+
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (target instanceof Element && target.closest('[data-sound-toggle]')) {
+            var off = root.getAttribute('data-sound') !== 'off';
+            if (off) { root.setAttribute('data-sound', 'off'); } else { root.removeAttribute('data-sound'); }
+            try { if (off) { localStorage.setItem('seaitt-sound', 'off'); } else { localStorage.removeItem('seaitt-sound'); } } catch (error) { }
+            // (Also in a cookie: the server writes it onto <html>, which is how it survives when Blazor swaps the page. See App.razor.)
+            try { document.cookie = 'seaitt-sound=' + (off ? 'off' : '') + '; path=/; samesite=lax; max-age=' + (off ? 31536000 : 0); } catch (error) { }
+            if (!off) { unlock(); window.seaitt.playNotificationSound(); }
+        }
+    });
+})();
+
+// Saves a file the page made in memory (Services/FileDownloads.cs): the bytes come as a stream, and the browser is asked to save them under the given name.
+(function () {
+    window.seaitt = window.seaitt || {};
+    window.seaitt.downloadFile = async function (fileName, contentType, stream) {
+        const buffer = await stream.arrayBuffer();
+        const url = URL.createObjectURL(new Blob([buffer], { type: contentType }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    };
 })();

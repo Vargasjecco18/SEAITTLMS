@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
+using SEAITT_LMS.Services;
 
 namespace SEAITT_LMS.Auth;
 
@@ -57,10 +58,11 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             errors.Add(passwordError);
         }
 
-        var firstName = request.FirstName?.Trim();
-        var lastName = request.LastName?.Trim();
-        var middleName = NullIfBlank(request.MiddleName);
-        var nameExtension = NullIfBlank(request.NameExtension);
+        // Names are written with capital letters (juan dela cruz -> Juan Dela Cruz), whoever typed them.
+        var firstName = NameCase.Title(request.FirstName);
+        var lastName = NameCase.Title(request.LastName);
+        var middleName = NullIfBlank(NameCase.Title(request.MiddleName));
+        var nameExtension = NullIfBlank(NameCase.Title(request.NameExtension));
 
         if (string.IsNullOrEmpty(firstName) || firstName.Length > 100)
         {

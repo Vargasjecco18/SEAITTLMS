@@ -1,5 +1,5 @@
-@* The bottom of a module: three tabs, Activities, Quizzes and Task performance, each with its list. *@
-<div class="tabs" role="tablist" aria-label="Work in this module">
+@* The bottom of a module: three tabs, Assignments, Quizzes and Task performance, each with its list. *@
+<div class="tabs" role="tablist" aria-label="Assignments in this module">
     @foreach (var kind in ItemKinds.All)
     {
         var count = ItemsOf(kind).Count;
@@ -30,7 +30,7 @@
             @foreach (var item in items)
             {
                 var hidden = item.Kind == ItemKinds.Quiz && item.Status == SubmissionStatus.Graded && item.Score is null;
-                var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, item.Kind == ItemKinds.Quiz, hidden);
+                var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, item.Kind == ItemKinds.Quiz, hidden, item.LateDecision);
                 <li class="item">
                     <a class="item-link" href="student/items/@item.Id">
                         <span class="item-icon"><Icon Name="@SubjectStyle.KindIcon(item.Kind)" Size="18" /></span>

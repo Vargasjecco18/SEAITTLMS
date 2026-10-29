@@ -25,18 +25,18 @@ else
 {
     <PageWithAside Show="calendar,online,onlineteachers">
         <div class="stats">
-            <StatCard Label="Work to check" Value="@data.ToCheck" IconName="clipboard-list" Accent="@(data.ToCheck > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="@(data.ToCheck == 0 ? "All checked" : "Waiting for a score")" />
+            <StatCard Label="Assignments to check" Value="@data.ToCheck" IconName="clipboard-list" Accent="@(data.ToCheck > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="@(data.ToCheck == 0 ? "All checked" : "Waiting for a score")" />
             <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Last 30 days. See who on the calendar." Href="calendar" />
             <StatCard Label="Not posted yet" Value="@data.DraftCount" IconName="eye-off" Accent="AccentColor.Violet" Hint="Drafts and scheduled modules" />
             <StatCard Label="Due this week" Value="@data.DueSoon" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="@($"{data.SubjectCount} courses · {data.StudentCount} students")" />
         </div>
 
         <div class="cards">
-            <Card Title="Unchecked activities" IconName="clipboard-list">
+            <Card Title="Unchecked assignments" IconName="clipboard-list">
                 @if (data.Unchecked.Count == 0)
                 {
                     <EmptyState IconName="circle-check" Title="Everything is checked">
-                        <p>Work that students hand in and that still needs a score shows up here.</p>
+                        <p>Assignments that students hand in and that still need a score show up here.</p>
                     </EmptyState>
                 }
                 else

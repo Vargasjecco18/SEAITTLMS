@@ -65,7 +65,7 @@ else
                             <th scope="col" class="col-more">Teacher</th>
                             <th scope="col">Status</th>
                             <th scope="col">Modules</th>
-                            <th scope="col">Work</th>
+                            <th scope="col">Assignments</th>
                             <th scope="col">Progress</th>
                             <th scope="col">Next due</th>
                             <th scope="col" class="col-more">Grade</th>
@@ -104,13 +104,13 @@ else
                                     }
                                     else if (card.Activities + card.Quizzes + card.TaskPerformances == 0)
                                     {
-                                        <span class="muted">No work yet</span>
+                                        <span class="muted">No assignments yet</span>
                                     }
                                     else
                                     {
                                         @if (card.ItemsOpen > 0)
                                         {
-                                            @* The number is a button: it opens the activities, quizzes and task performances still to do, each one a link. *@
+                                            @* The number is a button: it opens the assignments, quizzes and task performances still to do, each one a link. *@
                                             <CourseWorkButton AssignmentId="workId" CourseName="@card.SubjectName" Text="@($"{card.ItemsOpen} to do")" Student="true" />
                                         }
                                         else
@@ -213,7 +213,7 @@ else
         shown = cards.Where(c => filter is null || (filter == "completed") == c.IsCompleted).ToList();
     }
 
-    /// <summary>"2 A · 1 Q · 1 TP": the activities, quizzes and task performances (the short names the gradebook uses); the full words are in the title.</summary>
+    /// <summary>"2 A · 1 Q · 1 TP": the assignments, quizzes and task performances (the short names the gradebook uses); the full words are in the title.</summary>
     private static string WorkSummary(StudentSubjectCard card)
     {
         var parts = new List<string>();
@@ -226,7 +226,7 @@ else
     private static string WorkTitle(StudentSubjectCard card)
     {
         var parts = new List<string>();
-        if (card.Activities > 0) { parts.Add(card.Activities == 1 ? "1 activity" : $"{card.Activities} activities"); }
+        if (card.Activities > 0) { parts.Add(card.Activities == 1 ? "1 assignment" : $"{card.Activities} assignments"); }
         if (card.Quizzes > 0) { parts.Add(card.Quizzes == 1 ? "1 quiz" : $"{card.Quizzes} quizzes"); }
         if (card.TaskPerformances > 0) { parts.Add(card.TaskPerformances == 1 ? "1 task performance" : $"{card.TaskPerformances} task performances"); }
         return string.Join(" · ", parts);

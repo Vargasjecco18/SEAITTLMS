@@ -80,7 +80,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         b.ToTable(t =>
         {
             t.HasCheckConstraint("ck_students_lrn", "lrn REGEXP '^[0-9]{12}$'");
-            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated')");
+            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated', 'DroppedOut')");
         });
 
         PlacementConfiguration.Configure(b, "students");

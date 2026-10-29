@@ -1,6 +1,7 @@
-/* The box in the middle of the header: it looks like a search box but it is a button that opens the pop-up. */
+/* The box in the middle of the header, and the list of results that drops down under it (like Google). */
 .search {
     position: relative;
+    z-index: 1;
     display: flex;
     flex: 1;
     justify-content: center;
@@ -8,110 +9,208 @@
     margin: 0 auto;
 }
 
-.trigger {
+/* The click anywhere else closes the list. It sits behind the box and its list. */
+.search-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: transparent;
+}
+
+.search-box {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.35rem;
     width: 100%;
-    padding: 0.55rem 1rem;
+    padding: 0 0.5rem 0 0.35rem;
     border: 1px solid var(--border);
     border-radius: 999px;
     background: var(--surface-2);
     color: var(--text-muted);
-    font: inherit;
-    font-size: 0.92rem;
-    text-align: left;
-    cursor: text;
     transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
 
-.trigger:hover {
+.search-box:hover {
     border-color: var(--brand);
 }
 
-.trigger:focus-visible {
-    outline: none;
+.search-box:focus-within,
+.search-box.open {
     border-color: var(--brand);
+    background: var(--surface);
     box-shadow: 0 0 0 3px var(--brand-ring);
 }
 
-.placeholder {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* With the list open the box and the list look like one piece. */
+.search-box.open {
+    border-radius: 1.2rem 1.2rem 0 0;
+    box-shadow: none;
 }
 
-/* On a phone only the magnifying glass is left, pushed to the right. */
+.search-lens {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.search-query {
+    flex: 1;
+    min-width: 0;
+    height: 2.35rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.92rem;
+}
+
+.search-query:focus {
+    outline: none;
+}
+
+.search-query::-webkit-search-cancel-button {
+    display: none;
+}
+
+.search-clear {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.search-clear:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+.search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    max-height: min(70vh, 32rem);
+    overflow-y: auto;
+    padding: 0.5rem 0.6rem 0.7rem;
+    border: 1px solid var(--brand);
+    border-top-color: var(--border);
+    border-radius: 0 0 1.2rem 1.2rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    animation: drop-in 0.12s ease-out;
+}
+
+@keyframes drop-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* On a phone only the magnifying glass is left, pushed to the right. Pressing it opens the box over the whole header. */
 @media (max-width: 719px) {
     .search {
         flex: none;
         margin: 0 0 0 auto;
     }
 
-    .trigger {
-        justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
+    .search-box {
+        width: auto;
         padding: 0;
         border: 0;
-        border-radius: 50%;
         background: transparent;
-        cursor: pointer;
     }
 
-    .trigger:hover {
+    .search-box:hover {
+        border: 0;
+    }
+
+    .search-lens {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .search-lens:hover {
         background: var(--surface-2);
         color: var(--text);
     }
 
-    .placeholder {
+    .search-query,
+    .search-clear {
         display: none;
+    }
+
+    .search.expanded {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 80;
+        max-width: none;
+        height: var(--header-h);
+        margin: 0;
+        padding: 0 0.5rem;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .search.expanded .search-box {
+        width: 100%;
+        border: 1px solid var(--brand);
+        background: var(--surface-2);
+        border-radius: 999px;
+    }
+
+    .search.expanded .search-query,
+    .search.expanded .search-clear {
+        display: block;
+    }
+
+    .search.expanded .search-clear {
+        display: grid;
+    }
+
+    .search.expanded .search-dropdown {
+        position: fixed;
+        top: var(--header-h);
+        left: 0;
+        right: 0;
+        max-height: calc(100vh - var(--header-h));
+        border-radius: 0;
+        border-width: 0 0 1px;
+    }
+
+    .search.expanded .search-box.open {
+        border-radius: 999px;
     }
 }
 
-/* ---------- inside the pop-up ---------- */
-.box {
-    position: relative;
-    margin-bottom: 1rem;
-}
-
-.box ::deep .box-icon {
-    position: absolute;
-    top: 50%;
-    left: 0.9rem;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    pointer-events: none;
-}
-
-.box input {
-    width: 100%;
-    padding: 0.7rem 1rem 0.7rem 2.6rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    color: var(--text);
-    font: inherit;
-}
-
-.box input:focus {
-    outline: none;
-    border-color: var(--brand);
-    background: var(--surface);
-    box-shadow: 0 0 0 3px var(--brand-ring);
-}
-
-.state {
-    margin: 0.5rem 0 1rem;
+.search-state {
+    margin: 0.5rem 0 0.25rem;
     color: var(--text-muted);
     text-align: center;
+    font-size: 0.9rem;
 }
 
-.results {
+.search-results {
     display: grid;
-    gap: 1rem;
-    max-height: 60vh;
-    overflow-y: auto;
+    gap: 0.75rem;
 }
 
 h3 {
@@ -141,7 +240,8 @@ h3 {
 }
 
 .hits a:hover,
-.hits a:focus-visible {
+.hits a:focus-visible,
+.hits li.active a {
     background: var(--surface-2);
     outline: none;
 }

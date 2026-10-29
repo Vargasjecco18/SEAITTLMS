@@ -1,7 +1,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject SystemSettingsService Settings
 
-@* The files part of a form for a syllabus, a module or an activity: the files that are attached now (each can be taken off) and a box to choose
+@* The files part of a form for a syllabus, a module or an assignment: the files that are attached now (each can be taken off) and a box to choose
    new ones. The files are read when they are chosen and kept in this component; the page that owns the form saves them after it saved the syllabus,
    module or item (it needs its number): it reads <see cref="Pending"/> and <see cref="Removed"/> (through @ref) and gives them to AttachmentService. *@
 <div class="picker">
@@ -20,11 +20,11 @@
                     <span class="size">@FileSize.Text(f.SizeBytes)</span>
                     @if (isRemoved)
                     {
-                        <button type="button" class="act" @onclick="() => Keep(id)">Keep it</button>
+                        <button type="button" class="act" @onclick="() => KeepAsync(id)">Keep it</button>
                     }
                     else
                     {
-                        <button type="button" class="act" aria-label="@($"Take {f.Name} off")" title="Take off" @onclick="() => Remove(id)"><Icon Name="x" Size="14" /></button>
+                        <button type="button" class="act" aria-label="@($"Take {f.Name} off")" title="Take off" @onclick="() => RemoveAsync(id)"><Icon Name="x" Size="14" /></button>
                     }
                 </li>
             }
@@ -36,7 +36,7 @@
                     <Icon Name="@AttachmentList.IconOf(file.Name)" Size="16" />
                     <span class="name">@file.Name</span>
                     <span class="size">@FileSize.Text(file.Data.Length) · new</span>
-                    <button type="button" class="act" aria-label="@($"Do not attach {file.Name}")" title="Do not attach" @onclick="() => pending.Remove(file)"><Icon Name="x" Size="14" /></button>
+                    <button type="button" class="act" aria-label="@($"Do not attach {file.Name}")" title="Do not attach" @onclick="() => DropPendingAsync(file)"><Icon Name="x" Size="14" /></button>
                 </li>
             }
         </ul>
@@ -76,9 +76,29 @@
 
     private int Count => Existing.Count(f => !removed.Contains(f.Id)) + pending.Count;
 
-    private void Remove(int id) => removed.Add(id);
+    /// <summary>Whether the owner has any file now: the ones attached and kept, and the ones chosen.</summary>
+    public bool HasFiles => Count > 0;
 
-    private void Keep(int id) => removed.Remove(id);
+    /// <summary>Called when the files of the form change (a file was chosen, taken off or kept), so the form can react (a quiz with a file has no questions).</summary>
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private async Task RemoveAsync(int id)
+    {
+        removed.Add(id);
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task KeepAsync(int id)
+    {
+        removed.Remove(id);
+        await OnChanged.InvokeAsync();
+    }
+
+    private async Task DropPendingAsync(NewAttachment file)
+    {
+        pending.Remove(file);
+        await OnChanged.InvokeAsync();
+    }
 
     private async Task ChooseAsync(InputFileChangeEventArgs e)
     {
@@ -135,5 +155,7 @@
         {
             busy = false;
         }
+
+        await OnChanged.InvokeAsync();
     }
 }

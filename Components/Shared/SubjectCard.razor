@@ -35,12 +35,12 @@
             </ul>
         }
 
-        @* What the course holds, in the same style: modules, activities, quizzes and task performances. *@
+        @* What the course holds, in the same style: modules, assignments, quizzes and task performances. *@
         @if (Modules is { } modules)
         {
             <ul class="details counts" aria-label="What is in the course">
                 <li><Icon Name="book-open" Size="16" /><span class="txt"><b class="n">@modules</b> @(modules == 1 ? "Module" : "Modules")@if (ModulesNote is not null) { <span class="note"> · @ModulesNote</span> }</span></li>
-                <li><Icon Name="notebook-pen" Size="16" /><span class="txt"><b class="n">@Activities</b> @(Activities == 1 ? "Activity" : "Activities")</span></li>
+                <li><Icon Name="notebook-pen" Size="16" /><span class="txt"><b class="n">@Activities</b> @(Activities == 1 ? "Assignment" : "Assignments")</span></li>
                 <li><Icon Name="file-question" Size="16" /><span class="txt"><b class="n">@Quizzes</b> @(Quizzes == 1 ? "Quiz" : "Quizzes")</span></li>
                 <li><Icon Name="clipboard-check" Size="16" /><span class="txt"><b class="n">@TaskPerformances</b> Task performance</span></li>
             </ul>

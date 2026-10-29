@@ -52,7 +52,7 @@ else
             @if (book.Columns.Count == 0)
             {
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
-                    <p>Activities, quizzes and task performances of posted modules appear as columns here.</p>
+                    <p>Assignments, quizzes and task performances of posted modules appear as columns here.</p>
                     <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
                 </EmptyState>
             }
@@ -156,7 +156,7 @@ else
                         </tbody>
                     </table>
                 </div>
-                <p class="legend"><strong>A</strong> activity &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
+                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
             }
         </Card>
     }

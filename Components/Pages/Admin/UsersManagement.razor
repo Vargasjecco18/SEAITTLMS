@@ -9,22 +9,32 @@
 @inject UserManagementService Management
 @inject TeachingService Teaching
 @inject EnrollmentService Enrollment
+@inject StudentLifecycleService Lifecycle
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 
 <PageTitle>@tab.Title · Users Management · SEAITT Legazpi LMS</PageTitle>
 
 <PageHeader Title="Users Management" IconName="users">
-    @* Students get their account when the registrar enrolls them, so only the other roles can be added here. *@
-    @if (tab.Role != AppRoles.Student)
+    @if (tab.Role == AppRoles.Student)
     {
-        @if (AppRoles.OnlyOneAllowed(tab.Role) && counts.GetValueOrDefault(tab.Role) >= 1)
+        <Button IconName="user-plus" OnClick="() => OpenAddAsync(null)">Add student</Button>
+    }
+    else if (tab.Role == AppRoles.Teacher)
+    {
+        <Button IconName="user-plus" OnClick="() => OpenAddAsync(null)">Add teacher</Button>
+    }
+    else
+    {
+        @* The school has many academic providers, so this button is always there. The others are one of each. *@
+        <Button Variant="@(MissingOneOnlyRoles.Count > 0 ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="send" OnClick="() => OpenAddAsync(AppRoles.AcademicProvider)">Add provider</Button>
+        @if (MissingOneOnlyRoles.Count > 0)
         {
-            <span class="one-only"><Icon Name="info" Size="16" /> There is already @AppRoles.WithArticle(tab.Singular). The school can have only one.</span>
+            <Button IconName="user-plus" OnClick="() => OpenAddAsync(null)">Add staff</Button>
         }
         else
         {
-            <Button IconName="user-plus" OnClick="OpenAddAsync">Add @tab.Singular</Button>
+            <span class="one-only"><Icon Name="info" Size="16" /> There is a registrar, a guidance counselor and an academic coordinator already. The school can have only one of each.</span>
         }
     }
 </PageHeader>
@@ -32,11 +42,11 @@
 <nav class="tabs" aria-label="User roles">
     @foreach (var t in Tabs)
     {
-        <NavLink class="tab" href="@($"admin/users/{t.Key}")">
+        <a class="tab @(t.Key == tab.Key ? "active" : "")" href="@($"admin/users/{t.Key}")" aria-current="@(t.Key == tab.Key ? "page" : null)">
             <Icon Name="@t.Icon" Size="18" />
             <span>@t.Label</span>
-            <span class="count">@counts.GetValueOrDefault(t.Role)</span>
-        </NavLink>
+            <span class="count">@CountOf(t)</span>
+        </a>
     }
 </nav>
 
@@ -52,11 +62,36 @@
 <Card>
     <form class="filter-bar" role="search" @onsubmit="SearchAsync">
         <SearchField Id="u-search" @bind-Value="searchText" Label="Search" Placeholder="@SearchHint" AriaLabel="@($"Search {tab.Title.ToLowerInvariant()}")" OnClear="ClearSearchAsync" />
+        @if (tab.Role == UserManagementService.NonTeachingRole)
+        {
+            <Field For="u-role" Label="Role">
+                <select id="u-role" @bind="staffRoleFilter" @bind:after="StatusChangedAsync">
+                    <option value="">All staff</option>
+                    @foreach (var staffRole in UserManagementService.NonTeachingRoles)
+                    {
+                        <option value="@staffRole">@AppRoles.DisplayName(staffRole)</option>
+                    }
+                </select>
+            </Field>
+        }
+        @* The order of the list is at the left of the status. *@
+        <Field For="u-sort" Label="Order">
+            <select id="u-sort" @bind="sortChoice" @bind:after="StatusChangedAsync">
+                <option value="newest">Newest to oldest</option>
+                <option value="oldest">Oldest to newest</option>
+                <option value="name">Name A to Z</option>
+            </select>
+        </Field>
         <Field For="u-status" Label="Status">
             <select id="u-status" @bind="statusFilter" @bind:after="StatusChangedAsync">
                 <option value="">All statuses</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                @if (tab.Role == AppRoles.Student)
+                {
+                    <option value="dropped">Dropped out</option>
+                    <option value="graduated">Graduated</option>
+                }
             </select>
         </Field>
         <span class="filter-count">@(list is null ? "" : list.Total == 1 ? "1 account" : $"{list.Total:N0} accounts")</span>
@@ -76,7 +111,7 @@
             }
             else if (tab.Role == AppRoles.Student)
             {
-                <p>Students get their account when the registrar enrolls them.</p>
+                <p>Students get their account when the registrar enrolls them, or when you add the student here.</p>
             }
         </EmptyState>
     }
@@ -87,6 +122,10 @@
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
+                        @if (tab.Role == UserManagementService.NonTeachingRole)
+                        {
+                            <th scope="col">Role</th>
+                        }
                         @if (tab.Role == AppRoles.Student)
                         {
                             <th scope="col">LRN</th>
@@ -107,7 +146,7 @@
                             }
                         }
                         <th scope="col">Status</th>
-                        <th scope="col" class="col-wide">Last sign-in</th>
+                        <th scope="col" class="col-wide">Last login</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
                     </tr>
                 </thead>
@@ -124,6 +163,10 @@
                                     </div>
                                 </div>
                             </td>
+                            @if (tab.Role == UserManagementService.NonTeachingRole)
+                            {
+                                <td>@AppRoles.DisplayName(user.Role)</td>
+                            }
                             @if (tab.Role == AppRoles.Student)
                             {
                                 <td class="mono">@user.Lrn</td>
@@ -143,7 +186,7 @@
                                     <td class="col-more">@(user.PhoneNumber ?? "—")</td>
                                 }
                             }
-                            <td><Badge Tone="@(user.IsActive ? Tone.Success : Tone.Neutral)">@(user.IsActive ? "Active" : "Inactive")</Badge></td>
+                            <td><Badge Tone="@StatusTone(user)">@StatusText(user)</Badge></td>
                             <td class="col-wide">
                                 @if (user.LastLoginAtUtc is { } signedIn)
                                 {
@@ -163,6 +206,11 @@
                                     }
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {user.FullName}")"
                                             OnClick="() => OpenEditAsync(user)">Edit</Button>
+                                    @if (user.Role == AppRoles.Student && user.StudentStatus == StudentStatus.Active)
+                                    {
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="user-x" Title="@($"Mark {user.FullName} as dropped out")"
+                                                OnClick="() => OpenDropOut(user)">Drop out</Button>
+                                    }
                                     <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true"
                                             Title="@(user.UserId == currentUserId ? "You can't delete your own account" : $"Delete {user.FullName}")"
                                             Disabled="@(user.UserId == currentUserId)" OnClick="() => OpenDeleteAsync(user)" />
@@ -242,10 +290,18 @@
                 <InputText id="e-password" type="password" @bind-Value="edit.NewPassword" autocomplete="new-password" />
             </Field>
 
-            <Field For="e-status" Label="Status" Hint="@(edit.UserId == currentUserId ? "You can't make your own account inactive." : "An inactive account can't sign in.")">
-                <select id="e-status" disabled="@(edit.UserId == currentUserId)" value="@(edit.IsActive ? "Active" : "Inactive")" @onchange="SetEditStatus">
+            <Field For="e-status" Label="Status" Hint="@EditStatusHint">
+                <select id="e-status" disabled="@(edit.UserId == currentUserId)" value="@editStatus" @onchange="SetEditStatus">
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
+                    @if (edit.Role == AppRoles.Student)
+                    {
+                        <option value="DroppedOut">Dropped out</option>
+                        @if (edit.StudentStatus == StudentStatus.Graduated)
+                        {
+                            <option value="Graduated">Graduated</option>
+                        }
+                    }
                 </select>
             </Field>
 
@@ -257,14 +313,98 @@
     }
 </Modal>
 
-@* ===== Add (teachers, registrars, guidance counselors, administrators) ===== *@
-<Modal Open="add is not null" Title="@($"Add {tab.Singular}")" OnClose="CloseAdd">
+@* ===== Add a student ===== *@
+<Modal Open="newStudent is not null" Title="Add student" OnClose="CloseAddStudent">
+    @if (newStudent is not null)
+    {
+        <EditForm Model="newStudent" OnValidSubmit="SaveAddStudentAsync">
+            <DataAnnotationsValidator />
+
+            <FormErrors Errors="formErrors" />
+
+            <p class="muted small">This makes the account of the student. The registrar enrolls the student in a section later, with the same LRN.</p>
+
+            <div class="two">
+                <Field For="s-first" Label="First name" Required="true">
+                    <InputText id="s-first" @bind-Value="newStudent.FirstName" autocomplete="off" />
+                    <ValidationMessage For="() => newStudent.FirstName" />
+                </Field>
+                <Field For="s-middle" Label="Middle name">
+                    <InputText id="s-middle" @bind-Value="newStudent.MiddleName" autocomplete="off" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="s-last" Label="Last name" Required="true">
+                    <InputText id="s-last" @bind-Value="newStudent.LastName" autocomplete="off" />
+                    <ValidationMessage For="() => newStudent.LastName" />
+                </Field>
+                <Field For="s-ext" Label="Name extension" Hint="Jr., III, ...">
+                    <InputText id="s-ext" @bind-Value="newStudent.NameExtension" autocomplete="off" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="s-lrn" Label="LRN" Required="true" Hint="12 digits.">
+                    <InputText id="s-lrn" @bind-Value="newStudent.Lrn" inputmode="numeric" maxlength="12" autocomplete="off" />
+                    <ValidationMessage For="() => newStudent.Lrn" />
+                </Field>
+                <Field For="s-phone" Label="Phone number" Hint="Like 09171234567">
+                    <InputText id="s-phone" @bind-Value="newStudent.PhoneNumber" inputmode="tel" autocomplete="off" />
+                </Field>
+            </div>
+            <Field For="s-email" Label="Email" Hint="Leave empty to make it from the last name and the LRN (like vargas.111111@legazpi.seaitt.edu.ph).">
+                <InputText id="s-email" type="email" @bind-Value="newStudent.Email" autocomplete="off" />
+            </Field>
+            <Field For="s-password" Label="First password" Hint="At least 8 characters. Leave empty to make it from the last name and the LRN (like vargas111111).">
+                <InputText id="s-password" type="password" @bind-Value="newStudent.Password" autocomplete="new-password" />
+            </Field>
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAddStudent">Cancel</Button>
+                <Button Type="submit" IconName="user-plus" Disabled="busy">@(busy ? "Adding…" : "Add student")</Button>
+            </div>
+        </EditForm>
+    }
+</Modal>
+
+@* ===== Mark a student as dropped out ===== *@
+<Modal Open="dropTarget is not null" Title="Mark this student as dropped out?" OnClose="CloseDropOut">
+    @if (dropTarget is not null)
+    {
+        <p class="delete-text">
+            <strong>@dropTarget.FullName</strong> (LRN @dropTarget.Lrn) left school. The sign-in is switched off, the enrollments are marked dropped and the student is
+            <strong>not in the list of graduating students</strong>. The records stay in the archive, and an administrator can restore the student later.
+        </p>
+        <Field For="drop-note" Label="Why (optional)">
+            <InputText id="drop-note" @bind-Value="dropNote" maxlength="300" autocomplete="off" />
+        </Field>
+        <FormErrors Errors="formErrors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDropOut">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="user-x" Disabled="busy" OnClick="ConfirmDropOutAsync">@(busy ? "Saving…" : "Mark as dropped out")</Button>
+        </div>
+    }
+</Modal>
+
+@* ===== Add (teachers, and the staff: registrar, guidance counselor, academic coordinator, academic provider) ===== *@
+<Modal Open="add is not null" Title="@AddTitle" OnClose="CloseAdd">
     @if (add is not null)
     {
         <EditForm Model="add" OnValidSubmit="SaveAddAsync">
             <DataAnnotationsValidator />
 
             <FormErrors Errors="formErrors" />
+
+            @if (tab.Role == UserManagementService.NonTeachingRole)
+            {
+                <Field For="a-role" Label="Role" Required="true" Hint="@(MissingOneOnlyRoles.Count == 0 ? "A registrar, a guidance counselor and an academic coordinator exist already; only providers can be added." : "The school has one registrar, one guidance counselor and one academic coordinator. It can have many academic providers.")">
+                    <select id="a-role" @bind="add.Role">
+                        @foreach (var staffRole in UserManagementService.NonTeachingRoles)
+                        {
+                            <option value="@staffRole" disabled="@(AppRoles.OnlyOneAllowed(staffRole) && counts.GetValueOrDefault(staffRole) >= 1)">@AppRoles.DisplayName(staffRole)@(AppRoles.OnlyOneAllowed(staffRole) && counts.GetValueOrDefault(staffRole) >= 1 ? " (there is one already)" : "")</option>
+                        }
+                    </select>
+                </Field>
+            }
 
             <div class="two">
                 <Field For="a-first" Label="First name" Required="true">
@@ -364,7 +504,7 @@
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseAdd">Cancel</Button>
-                <Button Type="submit" IconName="user-plus" Disabled="busy">@(busy ? "Adding…" : $"Add {tab.Singular}")</Button>
+                <Button Type="submit" IconName="user-plus" Disabled="busy">@(busy ? "Adding…" : AddTitle)</Button>
             </div>
         </EditForm>
     }
@@ -405,7 +545,7 @@
                             <div class="assigned-confirm">
                                 @if (removalImpact is { Modules: > 0 })
                                 {
-                                    <span>This deletes @removalImpact.Modules @(removalImpact.Modules == 1 ? "module" : "modules"), @removalImpact.Items @(removalImpact.Items == 1 ? "activity" : "activities") and @removalImpact.Submissions @(removalImpact.Submissions == 1 ? "piece" : "pieces") of handed-in work.</span>
+                                    <span>This deletes @removalImpact.Modules @(removalImpact.Modules == 1 ? "module" : "modules"), @removalImpact.Items @(removalImpact.Items == 1 ? "assignment" : "assignments") and @removalImpact.Submissions @(removalImpact.Submissions == 1 ? "piece" : "pieces") of handed-in work.</span>
                                 }
                                 <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="CancelRemove">Keep</Button>
                                 <Button Small="true" Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="ConfirmRemoveAsync">Remove</Button>
@@ -485,16 +625,54 @@
         public string Label => ShortLabel ?? Title;
     }
 
+    // Three lists: the students, the teachers, and the staff who do not teach (registrar, guidance counselor, academic coordinators and academic providers,
+    // each with its role). There is no list of administrators: the school has one and it is not managed here.
     private static readonly Tab[] Tabs =
     [
         new("students", AppRoles.Student, "Students", "student", "graduation-cap"),
         new("teachers", AppRoles.Teacher, "Teachers", "teacher", "presentation"),
-        new("registrars", AppRoles.Registrar, "Registrars", "registrar", "clipboard-check"),
-        new("guidance", AppRoles.GuidanceCounselor, "Guidance counselors", "guidance counselor", "heart-handshake", "Guidance"),
-        new("coordinators", AppRoles.AcademicCoordinator, "Academic coordinators", "academic coordinator", "clipboard-list", "Coordinators"),
-        new("providers", AppRoles.AcademicProvider, "Academic providers", "academic provider", "send", "Providers"),
-        new("administrators", AppRoles.Admin, "Administrators", "administrator", "shield-check"),
+        new("staff", UserManagementService.NonTeachingRole, "Staff / Non-teaching", "staff member", "id-card", "Staff / Non-teaching"),
     ];
+
+    // The old addresses of the lists of the staff open the staff list with that role chosen (the menu and the search link to them).
+    private static readonly Dictionary<string, string> StaffAddresses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["registrars"] = AppRoles.Registrar,
+        ["guidance"] = AppRoles.GuidanceCounselor,
+        ["coordinators"] = AppRoles.AcademicCoordinator,
+        ["providers"] = AppRoles.AcademicProvider,
+    };
+
+    private IReadOnlyList<string> MissingOneOnlyRoles =>
+        UserManagementService.NonTeachingRoles.Where(r => AppRoles.OnlyOneAllowed(r) && counts.GetValueOrDefault(r) == 0).ToList();
+
+    private int CountOf(Tab t) => t.Role == UserManagementService.NonTeachingRole
+        ? UserManagementService.NonTeachingRoles.Sum(r => counts.GetValueOrDefault(r))
+        : counts.GetValueOrDefault(t.Role);
+
+    private string AddTitle => tab.Role == UserManagementService.NonTeachingRole
+        ? (add?.Role is { Length: > 0 } role ? $"Add {AppRoles.DisplayName(role).ToLowerInvariant()}" : "Add staff")
+        : $"Add {tab.Singular}";
+
+    private static string StatusText(UserListItem user) => user.StudentStatus switch
+    {
+        StudentStatus.DroppedOut => "Dropped out",
+        StudentStatus.Graduated => "Graduated",
+        _ => user.IsActive ? "Active" : "Inactive",
+    };
+
+    private static Tone StatusTone(UserListItem user) => user.StudentStatus switch
+    {
+        StudentStatus.DroppedOut => Tone.Warning,
+        StudentStatus.Graduated => Tone.Info,
+        _ => user.IsActive ? Tone.Success : Tone.Neutral,
+    };
+
+    private string EditStatusHint => edit is null ? "" : edit.UserId == currentUserId
+        ? "You can't make your own account inactive."
+        : edit.Role == AppRoles.Student
+            ? "An inactive account can't sign in. Dropped out: the student left school; the sign-in is off and the student is not in the list of graduating students."
+            : "An inactive account can't sign in.";
 
     private sealed class NewStaff
     {
@@ -523,6 +701,9 @@
 
         public bool IsActive { get; set; } = true;
 
+        /// <summary>The staff list only: the role of the new account.</summary>
+        public string Role { get; set; } = "";
+
         // Teachers only: where they work (all optional).
         public int TrackId { get; set; }
         public int StrandId { get; set; }
@@ -541,6 +722,8 @@
     private string searchText = "";
     private string appliedSearch = "";
     private string statusFilter = "";
+    private string sortChoice = UserManagementService.SortName;
+    private string staffRoleFilter = "";
     private int pageNumber = 1;
     private UserPage? list;
     private IReadOnlyDictionary<string, int> counts = new Dictionary<string, int>();
@@ -568,6 +751,12 @@
     {
         // /admin/users alone, or an address that is not one of the tabs, opens the first tab.
         var found = Tabs.FirstOrDefault(t => string.Equals(t.Key, RoleKey, StringComparison.OrdinalIgnoreCase));
+        var addressRole = RoleKey is not null && StaffAddresses.TryGetValue(RoleKey, out var staffOfAddress) ? staffOfAddress : null;
+        if (found is null && addressRole is not null)
+        {
+            found = Tabs.First(t => t.Role == UserManagementService.NonTeachingRole);
+        }
+
         if (found is null)
         {
             Navigation.NavigateTo($"admin/users/{Tabs[0].Key}", replace: true);
@@ -575,13 +764,14 @@
         }
 
         // The tab and the words in the address (?q=...) decide what is shown; the search page links here with a name.
-        var loading = $"{found.Key}|{InitialSearch}";
+        var loading = $"{found.Key}|{addressRole}|{InitialSearch}";
         if (loading != loadedKey)
         {
             tab = found;
             loadedKey = loading;
             searchText = appliedSearch = InitialSearch?.Trim() ?? "";
             statusFilter = "";
+            staffRoleFilter = addressRole ?? "";
             pageNumber = 1;
             message = null;
             list = null;
@@ -591,23 +781,32 @@
 
     private async Task LoadAsync()
     {
-        list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize, active: ActiveFilter);
+        list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize, active: ActiveFilter, sort: sortChoice, status: StudentFilter, staffRole: staffRoleFilter);
 
         // The last account of the last page was deleted: show the new last page.
         if (list.Items.Count == 0 && pageNumber > 1)
         {
             pageNumber = list.PageCount;
-            list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize, active: ActiveFilter);
+            list = await Management.ListAsync(tab.Role, appliedSearch, pageNumber, PageSize, active: ActiveFilter, sort: sortChoice, status: StudentFilter, staffRole: staffRoleFilter);
         }
 
         counts = await Management.CountByRoleAsync();
     }
 
-    private void SetEditStatus(ChangeEventArgs e) => edit!.IsActive = e.Value?.ToString() != "Inactive";
+    private string editStatus = "Active";
+
+    private void SetEditStatus(ChangeEventArgs e)
+    {
+        editStatus = e.Value?.ToString() ?? "Active";
+        edit!.IsActive = editStatus == "Active";
+    }
 
     private void SetAddStatus(ChangeEventArgs e) => add!.IsActive = e.Value?.ToString() != "Inactive";
 
-    private bool? ActiveFilter => statusFilter switch { "active" => true, "inactive" => false, _ => null };
+    // Students use their own filter (active, inactive, dropped out, graduated); the others use active or inactive.
+    private bool? ActiveFilter => tab.Role == AppRoles.Student ? null : statusFilter switch { "active" => true, "inactive" => false, _ => null };
+
+    private string? StudentFilter => tab.Role == AppRoles.Student && statusFilter.Length > 0 ? statusFilter : null;
 
     private async Task StatusChangedAsync()
     {
@@ -650,7 +849,10 @@
         {
             message = "This account no longer exists.";
             await LoadAsync();
+            return;
         }
+
+        editStatus = edit.StudentStatus is StudentStatus.DroppedOut or StudentStatus.Graduated ? edit.StudentStatus : edit.IsActive ? "Active" : "Inactive";
     }
 
     private void CloseEdit()
@@ -669,11 +871,123 @@
         busy = true;
         try
         {
+            // A student who comes back from the archive (dropped out or graduated) is restored first; the other changes are saved after that.
+            var wasArchived = edit.StudentStatus is StudentStatus.DroppedOut or StudentStatus.Graduated;
+            var wantsArchived = editStatus is StudentStatus.DroppedOut or StudentStatus.Graduated;
+            if (edit.Role == AppRoles.Student && edit.StudentId is { } studentId && wasArchived && !wantsArchived)
+            {
+                var restored = await Lifecycle.RestoreAsync(studentId, currentUserId);
+                if (!restored.Succeeded)
+                {
+                    formErrors = restored.Errors.ToList();
+                    return;
+                }
+            }
+
+            edit.IsActive = editStatus == "Active";
             var result = await Management.UpdateAsync(edit, currentUserId);
             if (result.Succeeded)
             {
+                var dropFailed = false;
+                if (edit.Role == AppRoles.Student && edit.StudentId is { } id && editStatus == StudentStatus.DroppedOut && edit.StudentStatus == StudentStatus.Active)
+                {
+                    var dropped = await Lifecycle.DropOutAsync(id, null, currentUserId);
+                    dropFailed = !dropped.Succeeded;
+                    if (dropFailed)
+                    {
+                        formErrors = dropped.Errors.ToList();
+                    }
+                }
+
+                if (!dropFailed)
+                {
+                    message = result.Message;
+                    CloseEdit();
+                    await LoadAsync();
+                }
+            }
+            else
+            {
+                formErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------- drop out
+    private UserListItem? dropTarget;
+    private string dropNote = "";
+
+    private void OpenDropOut(UserListItem user)
+    {
+        formErrors = [];
+        dropNote = "";
+        dropTarget = user;
+    }
+
+    private void CloseDropOut()
+    {
+        dropTarget = null;
+        formErrors = [];
+    }
+
+    private async Task ConfirmDropOutAsync()
+    {
+        if (dropTarget is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var studentId = await Management.GetStudentIdAsync(dropTarget.UserId);
+            var result = studentId is { } id ? await Lifecycle.DropOutAsync(id, dropNote, currentUserId) : ServiceResult.Fail("This student was not found.");
+            if (result.Succeeded)
+            {
                 message = result.Message;
-                CloseEdit();
+                CloseDropOut();
+                await LoadAsync();
+            }
+            else
+            {
+                formErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------- add a student
+    private NewStudentAccount? newStudent;
+
+    private void CloseAddStudent()
+    {
+        newStudent = null;
+        formErrors = [];
+    }
+
+    private async Task SaveAddStudentAsync()
+    {
+        if (newStudent is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Management.AddStudentAsync(newStudent, currentUserId);
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                CloseAddStudent();
+                sortChoice = UserManagementService.SortNewest; // the new account is the first one
                 await LoadAsync();
             }
             else
@@ -697,9 +1011,15 @@
 
     private IReadOnlyList<SubjectChoice> AddCourses => addSectionChoices.FirstOrDefault(s => s.SectionId == add!.SectionId)?.Subjects ?? [];
 
-    private async Task OpenAddAsync()
+    private async Task OpenAddAsync(string? role)
     {
         formErrors = [];
+
+        if (tab.Role == AppRoles.Student)
+        {
+            newStudent = new NewStudentAccount();
+            return;
+        }
 
         // A teacher is added together with the track, strand, section and courses they work in: load the choices before the box opens.
         if (tab.Role == AppRoles.Teacher)
@@ -708,7 +1028,11 @@
             addSectionChoices = await Teaching.GetAssignableAsync();
         }
 
-        add = new NewStaff();
+        add = new NewStaff
+        {
+            // The staff list: the role that was asked for (Add provider), else the first one the school does not have yet.
+            Role = tab.Role != UserManagementService.NonTeachingRole ? tab.Role : role ?? MissingOneOnlyRoles.FirstOrDefault() ?? AppRoles.AcademicProvider,
+        };
     }
 
     private void AddTrackChanged()
@@ -767,10 +1091,10 @@
         try
         {
             var account = new NewAccount(
-                tab.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
+                add.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
                 add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive);
 
-            var result = tab.Role == AppRoles.Teacher
+            var result = add.Role == AppRoles.Teacher
                 ? await Management.AddTeacherAsync(account, new TeacherPlacement(add.TrackId, add.StrandId, add.SectionId, add.SubjectIds.ToList()), currentUserId)
                 : await Management.AddStaffAsync(account, currentUserId);
             if (result.Succeeded)

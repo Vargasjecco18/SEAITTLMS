@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="@Theme" data-theme-pref="@(Theme ?? "auto")" data-motion="@Motion">
+<html lang="en" data-theme="@Theme" data-theme-pref="@(Theme ?? "auto")" data-motion="@Motion" data-sound="@Sound">
 
 <head>
     <meta charset="utf-8" />
@@ -20,6 +20,7 @@
                 if (theme === 'light' || theme === 'dark') { root.setAttribute('data-theme', theme); }
                 root.setAttribute('data-theme-pref', theme === 'light' || theme === 'dark' ? theme : 'auto');
                 if (localStorage.getItem('seaitt-motion') === 'off') { root.setAttribute('data-motion', 'off'); }
+                if (localStorage.getItem('seaitt-sound') === 'off') { root.setAttribute('data-sound', 'off'); }
                 if (theme && document.cookie.indexOf('seaitt-theme=') < 0) { document.cookie = 'seaitt-theme=' + theme + '; path=/; max-age=31536000; samesite=lax'; }
                 if (localStorage.getItem('seaitt-motion') === 'off' && document.cookie.indexOf('seaitt-motion=') < 0) { document.cookie = 'seaitt-motion=off; path=/; max-age=31536000; samesite=lax'; }
             } catch (e) { }
@@ -53,4 +54,7 @@
 
     /// <summary>"off" when the person switched the animations off, otherwise null.</summary>
     private string? Motion => HttpContext?.Request.Cookies["seaitt-motion"] == "off" ? "off" : null;
+
+    /// <summary>"off" when the person switched the sound of new messages and notifications off, otherwise null.</summary>
+    private string? Sound => HttpContext?.Request.Cookies["seaitt-sound"] == "off" ? "off" : null;
 }

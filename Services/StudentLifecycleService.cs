@@ -105,6 +105,58 @@ public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFa
         return ServiceResult.Ok($"{students.Count} {(students.Count == 1 ? "student was" : "students were")} archived as graduated.");
     }
 
+    /// <summary>
+    /// A student who left school before finishing. The administrator or the registrar marks the student as dropped out: the sign-in is switched off,
+    /// the open enrollments are marked dropped, open referrals are closed, and the student leaves the list of graduating students. The records stay and
+    /// an administrator can restore the student (the same as for a graduate).
+    /// </summary>
+    public async Task<ServiceResult> DropOutAsync(int studentId, string? note, int actingUserId, CancellationToken ct = default)
+    {
+        note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+        if (note is { Length: > 300 })
+        {
+            return ServiceResult.Fail("The note can have at most 300 characters.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var actor = await db.Users.AsNoTracking().Where(u => u.Id == actingUserId && u.IsActive).Select(u => (int?)u.RoleId).FirstOrDefaultAsync(ct);
+        if (actor != AppRoles.AdminId && actor != AppRoles.RegistrarId)
+        {
+            return ServiceResult.Fail("Only an administrator or a registrar can mark a student as dropped out.");
+        }
+
+        var student = await db.Students.Include(s => s.User).FirstOrDefaultAsync(s => s.Id == studentId, ct);
+        if (student is null)
+        {
+            return ServiceResult.Fail("This student was not found.");
+        }
+
+        if (student.Status != StudentStatus.Active)
+        {
+            return ServiceResult.Fail($"{student.FullName} is already in the archive ({StudentStatus.Display(student.Status).ToLowerInvariant()}).");
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        student.Status = StudentStatus.DroppedOut;
+        student.StatusChangedAtUtc = now;
+        student.StatusNote = note ?? "Dropped out";
+        student.User.IsActive = false;
+        student.User.SecurityStamp = Guid.NewGuid().ToString("N");
+
+        await db.Enrollments.Where(e => e.StudentId == student.Id && e.Status == EnrollmentStatus.Enrolled)
+            .ExecuteUpdateAsync(set => set.SetProperty(e => e.Status, EnrollmentStatus.Dropped), ct);
+        await db.Referrals.Where(r => r.StudentId == student.Id && r.Status != ReferralStatus.Resolved)
+            .ExecuteUpdateAsync(set => set.SetProperty(r => r.Status, ReferralStatus.Resolved).SetProperty(r => r.ResolvedAtUtc, now), ct);
+        await db.SaveChangesAsync(ct);
+
+        if (securityLog is not null)
+        {
+            await securityLog.AddAsync(SecurityEvents.StudentDroppedOut, student.UserId, details: $"{student.FullName} was marked as dropped out.", actorUserId: actingUserId, ct: ct);
+        }
+
+        return ServiceResult.Ok($"{student.FullName} is marked as dropped out. The account can't sign in and the student is not in the list of graduating students.");
+    }
+
     /// <summary>Takes a student out of the archive: the account works again. The student has to be enrolled again to be in a class.</summary>
     public async Task<ServiceResult> RestoreAsync(int studentId, int actingUserId, CancellationToken ct = default)
     {

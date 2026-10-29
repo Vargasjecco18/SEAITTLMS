@@ -4,6 +4,7 @@
 @using SEAITT_LMS.Data
 @using SEAITT_LMS.Data.Queries
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject SystemSettingsService Settings
 @inject TimeProvider Clock
 
 <PageTitle>Registrar · SEAITT Legazpi LMS</PageTitle>
@@ -53,7 +54,7 @@
                                     <span class="people-name">@student.Name</span>
                                     <span class="people-sub">@(student.LastPlacement is null ? "Never enrolled" : $"Was in {student.LastPlacement}") · LRN @student.Lrn</span>
                                 </span>
-                                <a class="people-action" href="registrar/enrollments?lrn=@student.Lrn&term=@notEnrolled.Term!.Id">Enroll</a>
+                                <ReEnrollButton Lrn="@student.Lrn" StudentName="@student.Name" TermId="notEnrolled.Term!.Id" TermLabel="@notEnrolled.Term!.Label" CssClass="people-action" />
                             </li>
                         }
                     </ul>
@@ -118,9 +119,9 @@
                             <li>
                                 <div class="bar-label">
                                     <span class="bar-name">@row.Label</span>
-                                    <strong>@row.Count</strong>
+                                    <strong>@row.Count <span class="of">of @capacity@(row.Count >= capacity ? " · full" : "")</span></strong>
                                 </div>
-                                <div class="bar-track"><div class="bar-fill" style="width: @(Percent(row.Count, maxSection))%"></div></div>
+                                <div class="bar-track"><div class="bar-fill @(row.Count >= capacity ? "full" : "")" style="width: @(Percent(row.Count, capacity))%"></div></div>
                             </li>
                         }
                     </ul>
@@ -142,6 +143,7 @@
     private RegistrarOverview? overview;
     private int maxStrand;
     private int maxSection;
+    private int capacity;
 
     private int SectionsWithStudents => overview?.BySection?.Count(s => s.Count > 0) ?? 0;
 
@@ -152,6 +154,7 @@
 
         await using var db = await DbFactory.CreateDbContextAsync();
         overview = await RegistrarOverview.LoadAsync(db, startOfToday);
+        capacity = Math.Max(1, Settings.Current.SectionCapacity); // a section can have this many students (System Settings)
         maxStrand = overview.ByStrand.Select(s => s.Count).DefaultIfEmpty(0).Max();
         maxSection = (overview.BySection ?? []).Select(s => s.Count).DefaultIfEmpty(0).Max();
     }

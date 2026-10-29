@@ -171,12 +171,38 @@
     font-size: 0.75rem;
 }
 
-/* ---------- settings ---------- */
-.settings {
-    padding: 1rem;
-    width: min(20rem, calc(100vw - 1.5rem));
-    max-height: calc(100vh - var(--header-h) - 1rem);
-    overflow-y: auto;
+/* ---------- settings (a box) ---------- */
+.settings-box {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.settings-section {
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-section:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.show-passwords {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: -0.25rem 0 0.9rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.password-message {
+    margin: 0 0 0.9rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 0.88rem;
 }
 
 /* The picture of the person: the circle and the button to change it. */
@@ -362,11 +388,13 @@ html[data-theme-pref="auto"] .choice[data-theme-choice="auto"] {
     transition: left 0.2s var(--ease);
 }
 
-html[data-motion="off"] .track {
+html[data-motion="off"] [data-motion-toggle] .track,
+html[data-sound="off"] [data-sound-toggle] .track {
     background: var(--border);
 }
 
-html[data-motion="off"] .thumb {
+html[data-motion="off"] [data-motion-toggle] .thumb,
+html[data-sound="off"] [data-sound-toggle] .thumb {
     left: 0.1875rem;
 }
 

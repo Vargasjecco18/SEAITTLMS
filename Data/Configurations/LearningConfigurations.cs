@@ -86,6 +86,7 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
         b.Property(s => s.Feedback).HasMaxLength(1000);
         b.Property(s => s.ViolationLog).HasColumnType("text");
         b.Property(s => s.AutoSubmitReason).HasMaxLength(20);
+        b.Property(s => s.LateDecision).HasMaxLength(10);
 
         // The work goes with its item and with its student.
         b.HasOne(s => s.Item).WithMany(i => i.Submissions).HasForeignKey(s => s.ItemId).OnDelete(DeleteBehavior.Cascade);
@@ -99,6 +100,7 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
         {
             t.HasCheckConstraint("ck_submissions_status", "status IN ('InProgress', 'Submitted', 'Graded')");
             t.HasCheckConstraint("ck_submissions_score", "score IS NULL OR score >= 0");
+            t.HasCheckConstraint("ck_submissions_late_decision", "late_decision IS NULL OR late_decision IN ('Pending', 'Accepted', 'Declined')");
         });
     }
 }
@@ -170,6 +172,7 @@ internal sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachm
         b.ToTable("attachments");
         b.Property(a => a.Name).HasMaxLength(255).IsRequired();
         b.Property(a => a.ContentType).HasMaxLength(100).IsRequired();
+        b.Property(a => a.IsSlides).HasDefaultValue(false);
 
         // A file goes with the syllabus, module or item it is attached to. A deleted account keeps the files it added (the link is dropped).
         b.HasOne(a => a.MaterialModule).WithMany(m => m.Attachments).HasForeignKey(a => a.MaterialModuleId).OnDelete(DeleteBehavior.Cascade);

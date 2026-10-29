@@ -1,0 +1,28 @@
+@* A message in the top center of the page, for something that was refused on the way here. It is asked for with ?alert=name in the address
+   (the login page sends a signed-in person home with ?alert=signed-in). It goes away by itself after a few seconds, the X closes it, and
+   wwwroot/app.js takes the ?alert= off the address so a refresh does not show it again. *@
+@inject NavigationManager Navigation
+
+@if (message is not null)
+{
+    <div class="top-alert" role="alert">
+        <span class="top-alert-icon" aria-hidden="true"><Icon Name="triangle-alert" Size="20" /></span>
+        <div class="top-alert-text">
+            <strong>@message.Value.Title</strong>
+            <span>@message.Value.Detail</span>
+        </div>
+        <button type="button" class="top-alert-close" data-close-top-alert aria-label="Close this message"><Icon Name="x" Size="16" /></button>
+    </div>
+}
+
+@code {
+    private (string Title, string Detail)? message;
+
+    protected override void OnInitialized()
+    {
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
+        message = query.TryGetValue("alert", out var name) && name.ToString() == "signed-in"
+            ? ("Can't log in, someone is logged in", "Somebody is already signed in on this browser. Sign out first if you want to use another account.")
+            : null;
+    }
+}

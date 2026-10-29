@@ -20,7 +20,7 @@ public class TeachingAssignment : AuditableEntity
 }
 
 /// <summary>
-/// A part of a subject: a lesson with text and, below it, the activities, quizzes and task performances that go with it.
+/// A part of a subject: a lesson with text and, below it, the assignments, quizzes and task performances that go with it.
 /// A new module is a draft that students cannot see. The teacher posts it now or sets a time for it to appear.
 /// </summary>
 public class LearningModule : AuditableEntity
@@ -70,18 +70,18 @@ public static class ItemKinds
     {
         Quiz => "Quiz",
         TaskPerformance => "Task performance",
-        _ => "Activity",
+        _ => "Assignment",
     };
 
     public static string Plural(string kind) => kind switch
     {
         Quiz => "Quizzes",
         TaskPerformance => "Task performances",
-        _ => "Activities",
+        _ => "Assignments",
     };
 }
 
-/// <summary>Something a student does for a module: an activity, a quiz or a task performance. Has a due date and a maximum score.</summary>
+/// <summary>Something a student does for a module: an assignment (stored as "Activity"), a quiz or a task performance. Has a due date and a maximum score.</summary>
 public class ModuleItem : AuditableEntity
 {
     public int ModuleId { get; set; }
@@ -165,6 +165,14 @@ public static class SubmissionStatus
     public const string Graded = "Graded";
 }
 
+/// <summary>What a teacher decided about late work: waiting, accepted (it is graded), or declined (it is not).</summary>
+public static class LateDecisions
+{
+    public const string Pending = "Pending";
+    public const string Accepted = "Accepted";
+    public const string Declined = "Declined";
+}
+
 /// <summary>A student's work for one item, or their attempt at a quiz. One per student and item.</summary>
 public class Submission : AuditableEntity
 {
@@ -184,6 +192,12 @@ public class Submission : AuditableEntity
 
     /// <summary>Handed in after the due date.</summary>
     public bool IsLate { get; set; }
+
+    /// <summary>
+    /// What the teacher decided about work that was handed in late: <see cref="LateDecisions"/>. Empty for work that was on time (and for work
+    /// handed in late before teachers could decide). Late work is graded only after the teacher accepted it.
+    /// </summary>
+    public string? LateDecision { get; set; }
 
     /// <summary>What the student wrote, without formatting (for counting and for the screens that only need the words).</summary>
     public string? AnswerText { get; set; }

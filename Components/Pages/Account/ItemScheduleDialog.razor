@@ -4,12 +4,12 @@
 @inject NavigationManager Navigation
 @inject TimeProvider Clock
 
-@* The box a teacher gets when an unassigned activity is dropped on a day of the calendar: its due date (the day it was dropped on)
+@* The box a teacher gets when an unassigned assignment is dropped on a day of the calendar: its due date (the day it was dropped on)
    and the rest of its settings, also the quiz's anti-cheating watch. Saving puts it on the calendar; Cancel leaves it unassigned. *@
 <Modal Open="loaded" Title="@(item is null ? "Not found" : $"Set the due date: {item.Title}")" OnClose="Cancel" Large="true">
     @if (item is null || form is null)
     {
-        <p>This activity was not found. It may have been deleted, or it is not one of yours.</p>
+        <p>This assignment was not found. It may have been deleted, or it is not one of yours.</p>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="Cancel">Close</Button>
         </div>

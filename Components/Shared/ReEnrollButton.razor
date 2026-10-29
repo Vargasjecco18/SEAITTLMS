@@ -1,0 +1,243 @@
+@rendermode InteractiveServer
+@inject EnrollmentService Enrollment
+@inject CurrentUser Me
+@inject NavigationManager Navigation
+
+@* "Re-enroll" for the next term, in a box over the list (no other page). It is its own live island, so it works inside a list that is otherwise plain.
+   The box starts from where the student was: the grade level, the track and the strand of the last enrollment (one grade up in a new school year).
+   The section is left empty for the registrar to choose. A student who changes strand starts again in Grade 11. *@
+<button type="button" class="@CssClass" @onclick="OpenAsync">@Label</button>
+
+<Modal Open="open" Title="@($"Re-enroll {StudentName}")" OnClose="CloseAsync">
+    @if (open)
+    {
+        @if (done is not null)
+        {
+            <div class="done" role="status">
+                <Icon Name="circle-check" Size="28" />
+                <p><strong>@done.FullName</strong> is enrolled for the <strong>@TermLabel</strong>.</p>
+                <p class="muted">@done.Section · @(done.Subjects.Count == 1 ? "1 course" : $"{done.Subjects.Count} courses")</p>
+            </div>
+            <div class="actions">
+                <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
+            </div>
+        }
+        else if (lookups is null || existing is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else
+        {
+            <FormErrors Errors="errors" />
+
+            <p class="lead"><strong>@existing.FullName</strong> · LRN @Lrn · <strong>@TermLabel</strong></p>
+            @if (defaults is not null)
+            {
+                <p class="quiet">Last time: Grade @defaults.PreviousGradeLevel, @defaults.PreviousStrandCode. The grade level, the track and the strand are filled in for you; choose the section.</p>
+            }
+
+            <div class="two">
+                <Field For="re-grade" Label="Grade level" Required="true">
+                    <select id="re-grade" @bind="grade" @bind:after="ReloadAsync">
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </Field>
+                <Field For="re-track" Label="Track" Required="true">
+                    <select id="re-track" @bind="trackId" @bind:after="TrackChangedAsync">
+                        <option value="0">Choose a track</option>
+                        @foreach (var track in lookups.Tracks)
+                        {
+                            <option value="@track.Id">@track.Code</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+            <Field For="re-strand" Label="Strand" Required="true">
+                <select id="re-strand" disabled="@(trackId == 0)" @bind="strandId" @bind:after="StrandChangedAsync">
+                    <option value="0">@(trackId == 0 ? "Choose a track first" : "Choose a strand")</option>
+                    @foreach (var strand in lookups.Strands.Where(s => s.TrackId == trackId))
+                    {
+                        <option value="@strand.Id">@strand.Code@(string.Equals(strand.Name, strand.Code, StringComparison.OrdinalIgnoreCase) ? "" : $" ({strand.Name})")</option>
+                    }
+                </select>
+            </Field>
+            @if (shifted)
+            {
+                <p class="shift" role="status"><Icon Name="info" Size="16" /> The student changes strand, so the student starts again in Grade 11.</p>
+            }
+
+            <Field For="re-section" Label="Section" Required="true" Hint="@SectionHint">
+                <select id="re-section" disabled="@(strandId == 0)" @bind="sectionName" @bind:after="ReloadAsync">
+                    <option value="">@(strandId == 0 ? "Choose a strand first" : "Choose the section")</option>
+                    @foreach (var load in loads)
+                    {
+                        <option value="@load.Name" disabled="@load.IsFull">@load.Name · @load.Text@(load.IsFull ? " (full)" : "")</option>
+                    }
+                </select>
+            </Field>
+
+            @if (strandId != 0)
+            {
+                <p class="courses">
+                    <Icon Name="book-open" Size="16" />
+                    @if (plan.Count == 0)
+                    {
+                        <span>No courses are set for this strand, grade level and term yet. The student is enrolled without courses.</span>
+                    }
+                    else
+                    {
+                        <span>The student gets all @plan.Count courses of this strand for the term: @string.Join(", ", plan.Select(c => c.Name)).</span>
+                    }
+                </p>
+            }
+
+            <div class="actions">
+                <Button Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="@(busy || strandId == 0 || string.IsNullOrEmpty(sectionName))" OnClick="SubmitAsync">@(busy ? "Enrolling…" : "Re-enroll")</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public string Lrn { get; set; } = "";
+
+    [Parameter, EditorRequired] public string StudentName { get; set; } = "";
+
+    [Parameter, EditorRequired] public int TermId { get; set; }
+
+    /// <summary>"2nd Term · 2026-2027"</summary>
+    [Parameter, EditorRequired] public string TermLabel { get; set; } = "";
+
+    [Parameter] public string Label { get; set; } = "Re-enroll";
+
+    [Parameter] public string CssClass { get; set; } = "enroll-link";
+
+    private bool open;
+    private bool busy;
+    private bool shifted;
+    private EnrollmentLookups? lookups;
+    private ExistingStudent? existing;
+    private ReEnrollDefaults? defaults;
+    private IReadOnlyList<SectionLoad> loads = [];
+    private IReadOnlyList<CoursePlanRow> plan = [];
+    private List<string> errors = [];
+    private EnrollmentReceipt? done;
+    private byte grade = 11;
+    private int trackId;
+    private int strandId;
+    private string sectionName = "";
+
+    private string SectionHint => strandId == 0
+        ? "Choose the section, A, B or C."
+        : loads.FirstOrDefault(l => l.Name == sectionName) is { } load ? $"Section {load.Name} has {load.Text}. {(load.IsFull ? "It is full." : load.SeatsLeft == 1 ? "1 seat is left." : $"{load.SeatsLeft} seats are left.")}" : "Choose the section, A, B or C.";
+
+    private async Task OpenAsync()
+    {
+        open = true;
+        done = null;
+        errors = [];
+        sectionName = "";
+        shifted = false;
+        lookups = await Enrollment.GetLookupsAsync();
+        existing = await Enrollment.FindStudentAsync(Lrn);
+        defaults = existing is null ? null : await Enrollment.GetReEnrollDefaultsAsync(existing.StudentId, TermId);
+        if (defaults is not null && lookups.Strands.FirstOrDefault(s => s.Id == defaults.StrandId) is { } strand)
+        {
+            grade = defaults.GradeLevel;
+            trackId = strand.TrackId;
+            strandId = strand.Id;
+        }
+        else
+        {
+            grade = 11;
+            trackId = 0;
+            strandId = 0;
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task TrackChangedAsync()
+    {
+        strandId = 0;
+        sectionName = "";
+        await ReloadAsync();
+    }
+
+    private async Task StrandChangedAsync()
+    {
+        // A student who goes to another strand starts again in Grade 11.
+        shifted = defaults is not null && strandId != 0 && strandId != defaults.StrandId;
+        if (shifted)
+        {
+            grade = 11;
+        }
+        else if (defaults is not null && strandId == defaults.StrandId)
+        {
+            grade = defaults.GradeLevel;
+        }
+
+        sectionName = "";
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (strandId == 0 || existing is null)
+        {
+            loads = [];
+            plan = [];
+            return;
+        }
+
+        loads = await Enrollment.GetSectionLoadsAsync(TermId, strandId, grade);
+        plan = await Enrollment.GetCoursePlanAsync(TermId, strandId, grade, sectionName);
+        if (loads.FirstOrDefault(l => l.Name == sectionName)?.IsFull == true)
+        {
+            sectionName = "";
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (busy || existing is null)
+        {
+            return;
+        }
+
+        busy = true;
+        errors = [];
+        try
+        {
+            var me = await Me.GetAsync();
+            var request = new EnrollmentRequest(Lrn, existing.FirstName, existing.MiddleName, existing.LastName, grade, TermId, trackId, strandId, sectionName, null, existing.NameExtension);
+            var result = me is null ? EnrollmentResult.Fail("Please sign in again.") : await Enrollment.EnrollAsync(request, me.UserId);
+            if (result.Succeeded)
+            {
+                done = result.Receipt;
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private Task CloseAsync()
+    {
+        var wasDone = done is not null;
+        open = false;
+        if (wasDone)
+        {
+            Navigation.Refresh();
+        }
+
+        return Task.CompletedTask;
+    }
+}

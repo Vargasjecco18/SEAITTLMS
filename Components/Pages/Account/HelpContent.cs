@@ -100,13 +100,13 @@ public static class HelpContent
         new("Where are my courses, and how far along am I?",
         [
             "Open Courses in the menu. Enrolled shows this term; Completed shows the courses of terms that are over.",
-            "Each course has a progress bar. It counts the modules you opened and the activities and quizzes you finished, out of everything your teacher posted.",
+            "Each course has a progress bar. It counts the modules you opened, out of the modules your teacher posted.",
             "Switch between cards and a list with the buttons at the top right of the page.",
         ], "student/subjects", "Open Courses"),
-        new("How do I open a module and do the activities?",
+        new("How do I open a module and do the assignments?",
         [
             "Open a course, then a module. The syllabus of the course is the first thing in the list.",
-            "Under a module you find its activities, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
+            "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
         ]),
         new("How does a quiz work?",
@@ -123,7 +123,7 @@ public static class HelpContent
         new("How do I see my deadlines?",
         [
             "Open Calendar. Switch between month and week. A dot on a day is something due.",
-            "Press an activity to go to it.",
+            "Press an assignment to go to it.",
         ], "calendar", "Open Calendar"),
         new("How do I evaluate a teacher?",
         [
@@ -154,18 +154,18 @@ public static class HelpContent
     [
         new("Where are my courses?",
         [
-            "Open Courses. Each course you teach is a card (or a row, in the list view) with its section. Press Open to see its modules and work.",
+            "Open Courses. Each course you teach is a card (or a row, in the list view) with its section. Press Open to see its modules and assignments.",
             "The administrator gives you your courses (Users Management). If one is missing, ask them.",
         ], "teacher/subjects", "Open Courses"),
         new("How do I make a module and post it to my students?",
         [
             "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Under a module add activities, quizzes and task performances, each with its points and due date.",
+            "Under a module add assignments, quizzes and task performances, each with its points and due date.",
         ]),
         new("What are the drafts that came from the academic provider?",
         [
-            "The academic provider (of the central team) can send you the syllabus and modules of a course, with their activities and quizzes. They arrive in your course as drafts with a badge “From the academic provider”.",
+            "The academic provider (of the central team) can send you the syllabus and modules of a course, with their assignments and quizzes. They arrive in your course as drafts with a badge “From the academic provider”.",
             "The provider sees whether you opened what was sent and whether you posted it. Opening a draft to read it or to edit it is enough to count as opened.",
             "They are yours to change: edit the text, move the due dates, then post them when you are ready. The syllabus is always first.",
         ]),
@@ -174,11 +174,11 @@ public static class HelpContent
             "Add a quiz to a module, then press Questions. Add multiple choice, true or false and short answer questions with their points.",
             "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules (how many times a student may leave the page).",
         ]),
-        new("How do I check and grade the work of my students?",
+        new("How do I check and grade the assignments of my students?",
         [
-            "Open the activity, quiz or task performance to see who handed in. Press Grade (or Give score) on a student's row, read the answer and save the score with a comment.",
+            "Open the assignment, quiz or task performance to see who handed in. Press Grade (or Give score) on a student's row, read the answer and save the score with a comment.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
-            "“Work to check” on your dashboard lists what waits for you.",
+            "“Assignments to check” on your dashboard lists what waits for you.",
         ]),
         new("How do I take attendance?",
         [
@@ -187,12 +187,12 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose a course. Every student has a row, every activity, quiz and task a column, and the average at the end. Press “Edit grades” on a row to change the scores of that student.",
+            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Press “Edit grades” on a row to change the scores of that student.",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
-            "Open Calendar. Activities without a due date are listed at the right: drag one onto a day, or press “Set date”.",
-            "Press an activity on the calendar to see who has handed it in.",
+            "Open Calendar. Assignments without a due date are listed at the right: drag one onto a day, or press “Set date”.",
+            "Press an assignment on the calendar to see who has handed it in.",
         ], "calendar", "Open Calendar"),
         new("How do I find my students, and make friends?",
         [
@@ -235,7 +235,7 @@ public static class HelpContent
         ], "admin/archive", "Open Archive Accounts"),
         new("How do I read the security log?",
         [
-            "Open Security Logs. The tabs filter the lines: Sign-ins, Failed, Accounts and System. You can search by email or address and choose dates.",
+            "Open Security Logs. The tabs filter the lines: Last login (the day each person last logged in), Failed, Accounts and System. You can search by email or address and choose dates.",
             "Download CSV saves the lines you see as a file for a spreadsheet. Old lines are cleared by the system (see System Settings) or by you.",
         ], "admin/security-logs", "Open Security Logs"),
         new("How do I back up and restore the data?",
@@ -283,7 +283,7 @@ public static class HelpContent
             "In the second card choose a section. For each of its courses choose the days, MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday), and when the class starts and ends, then press Save.",
             "A section can't have two classes at the same time in the same term, and a teacher can't have two classes at the same time. Students and teachers see the days and the time on their courses.",
         ], "coordinator/academic-setup/class-schedule", "Open the class schedule"),
-        new("Who sends the syllabus, modules and activities to the teachers?",
+        new("Who sends the syllabus, modules and assignments to the teachers?",
         [
             "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",
             "If a course has no syllabus or a teacher did not get the modules, write to the academic provider (Messages).",
@@ -307,22 +307,22 @@ public static class HelpContent
 
     private static HelpSection Provider() => new("For the academic provider", "send",
     [
-        new("How do I send a syllabus, modules and activities to the teachers?",
+        new("How do I send a syllabus, modules and assignments to the teachers?",
         [
-            "Open Course library and choose a course. Add the syllabus first, then the modules. Press a syllabus or a module to open it and see its activities, quizzes and task performances.",
-            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module, an activity, a quiz or a task performance. A quiz is questions, a file, or both; the teacher sets its time limit and anti-cheating settings.",
+            "Open Course library and choose a course. Add the syllabus first, then the modules. Press a syllabus or a module to open it and see its assignments, quizzes and task performances.",
+            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module, an assignment, a quiz or a task performance. A quiz is questions, a file, or both; the teacher sets its time limit and anti-cheating settings.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
             "Each teacher gets their own copy as a draft, with the files: they edit the text and the due dates and post it to their students when they are ready. A PDF or a picture opens in a new tab of the browser, where it can be downloaded and printed.",
         ], "provider/library", "Open Course library"),
         new("How do I know if the teachers opened what I sent?",
         [
             "Open Tracking. Each line is one thing sent to one teacher's course. The state tells where it is: Not opened, Opened (a draft the teacher has seen), Scheduled or Posted.",
-            "A teacher counts as having opened it when they read or edit the module, open one of its activities, or post it. Filter by state to see what is waiting.",
+            "A teacher counts as having opened it when they read or edit the module, open one of its assignments, or post it. Filter by state to see what is waiting.",
         ], "provider/tracking", "Open Tracking"),
         new("How do I know if the students opened it?",
         [
-            "Once a teacher posts a module, the Tracking page shows how many students opened it and its activities. Open a line to see each student, with the ones who have not opened it first.",
-            "The syllabus counts like a module. An activity, quiz or task performance counts when the student opens its page.",
+            "Once a teacher posts a module, the Tracking page shows how many students opened it and its assignments. Open a line to see each student, with the ones who have not opened it first.",
+            "The syllabus counts like a module. An assignment, quiz or task performance counts when the student opens its page.",
         ]),
         new("Where do I see one teacher or one student?",
         [
@@ -331,7 +331,7 @@ public static class HelpContent
         ], "provider/tracking?tab=teachers", "Open the teachers"),
         new("What do the analytics show?",
         [
-            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, activity, quiz, task performance), by section and week by week.",
+            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, assignment, quiz, task performance), by section and week by week.",
         ], "provider/analytics", "Open Analytics"),
     ]);
 
@@ -339,7 +339,7 @@ public static class HelpContent
     [
         new("Where do the referrals come from?",
         [
-            "The system refers a student to you by itself when they are failing (below 70), close to failing or missing work, or missing class.",
+            "The system refers a student to you by itself when they are failing (below 70), close to failing or missing assignments, or missing class.",
             "Open Referrals to see them. Filter by status: Open, In progress or Resolved.",
         ], "guidance/referrals", "Open Referrals"),
         new("How do I follow up a referral?",

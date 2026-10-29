@@ -7,7 +7,12 @@
 <PageTitle>Analytics · SEAITT Legazpi LMS</PageTitle>
 <AutoRefresh />
 
-<PageHeader Title="Student analytics" IconName="chart-column" />
+<PageHeader Title="Student analytics" IconName="chart-column">
+    @if (report is { Students: > 0 })
+    {
+        <ButtonLink Href="analytics/export" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" data-enhance-nav="false" download>Export to Excel</ButtonLink>
+    }
+</PageHeader>
 
 @if (report is null)
 {
@@ -30,7 +35,7 @@ else
         {
             <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
             <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students" : null)" />
-            <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing work" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students?kind=AtRisk" : null)" />
+            <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing assignments" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students?kind=AtRisk" : null)" />
         }
         <StatCard Label="Open referrals" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your courses")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
     </div>

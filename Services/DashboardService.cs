@@ -104,7 +104,7 @@ public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, 
 
         // Work waiting for a score.
         var waiting = await db.Submissions.AsNoTracking()
-            .Where(s => s.Status == SubmissionStatus.Submitted && s.Item.Module.Assignment.TeacherId == teacherId)
+            .Where(s => s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined && s.Item.Module.Assignment.TeacherId == teacherId)
             .Select(s => new { s.ItemId, s.Item.Title, s.Item.Kind, Subject = s.Item.Module.Assignment.Subject.Name, s.Item.Module.AssignmentId, At = s.SubmittedAtUtc ?? s.UpdatedAtUtc })
             .ToListAsync(ct);
         var unchecked_ = waiting.GroupBy(w => w.ItemId)

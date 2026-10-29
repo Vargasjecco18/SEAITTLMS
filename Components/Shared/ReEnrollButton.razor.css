@@ -1,0 +1,101 @@
+.lead {
+    margin: 0 0 0.25rem;
+}
+
+.quiet {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.shift,
+.courses {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.shift {
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.done {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0 0.5rem;
+    color: var(--success);
+    text-align: center;
+}
+
+.done p {
+    margin: 0;
+    color: var(--text);
+}
+
+.done .muted {
+    color: var(--text-muted);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+    .two {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* The two looks of the button: a link in a table, and a small pill in the list of the students who are not enrolled. */
+.enroll-link {
+    display: inline-block;
+    margin-top: 0.3rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.enroll-link:hover {
+    text-decoration: underline;
+}
+
+.people-action {
+    flex: none;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.people-action:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}

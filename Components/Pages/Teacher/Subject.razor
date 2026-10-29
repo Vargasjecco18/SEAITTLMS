@@ -41,7 +41,7 @@ else
     {
         <Card>
             <EmptyState IconName="layers" Title="No modules yet">
-                <p>A module is a lesson with its activities, quizzes and task performances. The academic provider sends the modules of this course.</p>
+                <p>A module is a lesson with its assignments, quizzes and task performances. The academic provider sends the modules of this course.</p>
             </EmptyState>
         </Card>
     }
@@ -55,7 +55,7 @@ else
                 var moduleId = module.Id;
                 var isOpen = openModules.Contains(moduleId);
                 <section class="module @module.State.ToLowerInvariant() @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
-                    @* A click on the title opens the syllabus or the module: its text, its files and its activities, quizzes and task performances. *@
+                    @* A click on the title opens the syllabus or the module: its text, its files and its assignments, quizzes and task performances. *@
                     <header class="module-head">
                         <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{moduleId}")" @onclick="() => ToggleModule(moduleId)">
                             <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
@@ -164,7 +164,11 @@ else
                                                             <span>No due date</span>
                                                         }
                                                         <span>@item.MaxScore.ToString("0.##") points</span>
-                                                        @if (item.Kind == ItemKinds.Quiz)
+                                                        @if (item.Kind == ItemKinds.Quiz && IsFileQuiz(item))
+                                                        {
+                                                            <span><Icon Name="file-text" Size="14" /> File quiz · no questions</span>
+                                                        }
+                                                        else if (item.Kind == ItemKinds.Quiz)
                                                         {
                                                             <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")</span>
                                                             @if (item.TimeLimitMinutes is { } minutes)
@@ -195,7 +199,7 @@ else
                                                     }
                                                 </div>
                                                 <div class="item-actions">
-                                                    @if (item.Kind == ItemKinds.Quiz)
+                                                    @if (item.Kind == ItemKinds.Quiz && !IsFileQuiz(item))
                                                     {
                                                         <ButtonLink Href="@($"teacher/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
                                                     }
@@ -251,49 +255,47 @@ else
     {
         <EditForm Model="itemForm" OnValidSubmit="SaveItemAsync">
             <FormErrors Errors="formErrors" />
-            <div class="two">
-                <Field For="i-kind" Label="Kind" Required="true">
-                    <InputSelect id="i-kind" @bind-Value="itemForm.Kind" disabled="@(editingItemId is not null)">
-                        @foreach (var kind in ItemKinds.All)
-                        {
-                            <option value="@kind">@ItemKinds.Display(kind)</option>
-                        }
-                    </InputSelect>
-                </Field>
-                <Field For="i-title" Label="Title" Required="true">
-                    <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
-                </Field>
-            </div>
+            <Field For="i-title" Label="Title" Required="true">
+                <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
+            </Field>
             <Field For="i-text" Label="Instructions">
                 <InputTextArea id="i-text" @bind-Value="itemForm.Instructions" rows="5" />
             </Field>
-            <div class="two">
-                @if (itemForm.Kind != ItemKinds.Quiz)
-                {
-                    <Field For="i-score" Label="Highest score" Required="true">
-                        <InputNumber id="i-score" @bind-Value="itemForm.MaxScore" />
-                    </Field>
-                }
-                <Field For="i-due" Label="Due date" Hint="Philippine time. Leave empty for no due date.">
-                    <input id="i-due" type="datetime-local" value="@itemForm.DueText" @onchange="SetDue" />
+            @if (itemForm.Kind != ItemKinds.Quiz || QuizIsAFile)
+            {
+                <Field For="i-score" Label="Highest score" Required="true">
+                    <InputNumber id="i-score" @bind-Value="itemForm.MaxScore" />
                 </Field>
+            }
+            <div class="two">
                 <Field For="i-from" Label="Appears on" Hint="Leave empty to show it with its module.">
                     <input id="i-from" type="datetime-local" value="@itemForm.VisibleText" @onchange="SetVisible" />
                 </Field>
+                <Field For="i-due" Label="Due date" Hint="Philippine time. Leave empty for no due date.">
+                    <input id="i-due" type="datetime-local" value="@itemForm.DueText" @onchange="SetDue" />
+                </Field>
             </div>
 
-            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz (optional)" : "Files")" Existing="@FilesOf(itemFiles, editingItemId)" />
+            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz (optional)" : "Files")" Existing="@FilesOf(itemFiles, editingItemId)" OnChanged="FilesChanged" />
 
             @if (itemForm.Kind == ItemKinds.Quiz)
             {
-                <QuizSettings IdPrefix="i" Note="You write the questions after saving. The quiz is worth the total of the points of its questions."
+                @if (QuizIsAFile)
+                {
+                    <p class="file-quiz-note" role="status">
+                        <Icon Name="file-text" Size="16" />
+                        <span>This quiz is a <strong>file</strong>, so it has <strong>no questions</strong>. The students send their answers as a file and you give the score. Take the file off to write questions instead.</span>
+                    </p>
+                }
+
+                <QuizSettings IdPrefix="i" Note="@(QuizIsAFile ? "The time limit and the anti-cheating watch only work for a quiz with questions." : "You write the questions after saving. The quiz is worth the total of the points of its questions.")"
                               @bind-TimeLimit="itemForm.TimeLimit" @bind-MaxViolations="itemForm.MaxViolations" @bind-AntiCheat="itemForm.AntiCheat"
                               @bind-ShuffleQuestions="itemForm.ShuffleQuestions" @bind-ShuffleOptions="itemForm.ShuffleOptions" @bind-ShowResult="itemForm.ShowResult" />
             }
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseItemForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : itemForm.Kind == ItemKinds.Quiz && editingItemId is null ? "Save and write questions" : "Save")</Button>
+                <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : itemForm.Kind == ItemKinds.Quiz && editingItemId is null && !QuizIsAFile ? "Save and write questions" : "Save")</Button>
             </div>
         </EditForm>
     }
@@ -374,6 +376,14 @@ else
     private string scheduleText = "";
 
     private DeleteTarget? deleteTarget;
+
+    /// <summary>A quiz that has a file has no questions: the students answer with a file and the teacher gives the score.</summary>
+    private bool QuizIsAFile => itemForm?.Kind == ItemKinds.Quiz && (itemPicker?.HasFiles ?? FilesOf(itemFiles, editingItemId).Count > 0);
+
+    private void FilesChanged() { }
+
+    /// <summary>A quiz that has a file and no questions: the students answer with a file, so there is no question editor for it.</summary>
+    private bool IsFileQuiz(TeacherItem item) => item.Kind == ItemKinds.Quiz && item.Questions == 0 && FilesOf(itemFiles, item.Id).Count > 0;
 
     private string ItemModalTitle => itemForm is null ? "" : editingItemId is null ? $"Add {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}" : $"Edit {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}";
 
@@ -555,7 +565,7 @@ else
         }
     }
 
-    /// <summary>"2 activities · 1 quiz" under the title of a closed module.</summary>
+    /// <summary>"2 assignments · 1 quiz" under the title of a closed module.</summary>
     private static string ModuleSummary(TeacherModule module)
     {
         var parts = new List<string>();
@@ -628,6 +638,7 @@ else
                 AntiCheat = itemForm.AntiCheat, MaxViolations = itemForm.MaxViolations, ShowResult = itemForm.ShowResult,
             };
             var wasNew = editingItemId is null;
+            var quizIsAFile = QuizIsAFile;
             var result = await Modules.SaveItemAsync(teacherId, itemModuleId, editingItemId, input);
             if (!result.Succeeded)
             {
@@ -637,7 +648,7 @@ else
 
             var fileProblems = result.Id is { } savedItemId ? await ApplyFilesAsync(itemPicker, new AttachmentOwner(AttachmentOwnerKind.Item, savedItemId)) : [];
             itemForm = null;
-            if (wasNew && input.Kind == ItemKinds.Quiz && result.Id is { } quizId && fileProblems.Count == 0)
+            if (wasNew && input.Kind == ItemKinds.Quiz && !quizIsAFile && result.Id is { } quizId && fileProblems.Count == 0)
             {
                 Navigation.NavigateTo($"teacher/items/{quizId}/questions");
                 return;
@@ -666,7 +677,7 @@ else
         deleteTarget = new DeleteTarget($"Delete this {ItemKinds.Display(item.Kind).ToLowerInvariant()}?",
             handed == 0
                 ? $"\"{item.Title}\" will be deleted."
-                : $"\"{item.Title}\" will be deleted with the {handed} {(handed == 1 ? "piece of work" : "pieces of work")} the students handed in and their scores.",
+                : $"\"{item.Title}\" will be deleted with the {handed} {(handed == 1 ? "answer" : "answers")} the students handed in and their scores.",
             item.Id);
     }
 

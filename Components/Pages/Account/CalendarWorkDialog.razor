@@ -3,12 +3,12 @@
 @inject WorkService Work
 @inject NavigationManager Navigation
 
-@* The box a teacher gets when an activity, quiz or task performance is clicked on the calendar: who handed it in (and who did not),
+@* The box a teacher gets when an assignment, quiz or task performance is clicked on the calendar: who handed it in (and who did not),
    with the anti-cheating warnings of a quiz, so flagged attempts are found here. "Open and grade" goes to the page of the work. *@
 <Modal Open="loaded" Title="@(data?.Title ?? "Not found")" OnClose="Close" Large="true">
     @if (data is null)
     {
-        <p>This work was not found. It may have been deleted, or it is not one of yours.</p>
+        <p>This assignment was not found. It may have been deleted, or it is not one of yours.</p>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
         </div>
@@ -30,7 +30,7 @@
 
         <div class="summary">
             <div class="tile"><span class="tile-value">@handed.Count / @data.Rows.Count</span><span class="tile-label">handed in</span></div>
-            <div class="tile"><span class="tile-value">@data.Rows.Count(r => r.Status == SubmissionStatus.Submitted)</span><span class="tile-label">to check</span></div>
+            <div class="tile"><span class="tile-value">@data.Rows.Count(r => r.NeedsCheck)</span><span class="tile-label">to check</span></div>
             @if (data.AntiCheat)
             {
                 <div class="tile @(flagged > 0 ? "alert" : "")"><span class="tile-value">@flagged</span><span class="tile-label">flagged</span></div>

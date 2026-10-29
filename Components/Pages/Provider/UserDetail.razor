@@ -87,7 +87,7 @@ else if (student is not null)
     </PageHeader>
 
     <div class="kpis">
-        <StatCard Label="Posted to the student" Value="@student.Rows.Count" IconName="send" Accent="AccentColor.Blue" Hint="Syllabi, modules and activities" />
+        <StatCard Label="Posted to the student" Value="@student.Rows.Count" IconName="send" Accent="AccentColor.Blue" Hint="Syllabi, modules and assignments" />
         <StatCard Label="Opened" Value="@student.Opened" IconName="eye" Accent="AccentColor.Green" Hint="@(student.OpenedPercent is { } sp ? $"{sp}% of what was posted" : "")" />
         <StatCard Label="Not opened" Value="@(student.Rows.Count - student.Opened)" IconName="mail" Accent="@(student.Rows.Count - student.Opened == 0 ? AccentColor.Slate : AccentColor.Amber)" Hint="Still to open" />
     </div>

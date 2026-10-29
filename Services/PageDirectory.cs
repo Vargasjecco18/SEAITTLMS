@@ -26,7 +26,7 @@ public static class PageDirectory
             new("Not enrolled", "The students who are not enrolled yet", "admin/enrollment/not-enrolled", "user-x"),
             new("Archive Accounts", "Archive the students who graduate, restore a student", "admin/archive", "archive"),
             new("Analytics", "How students are doing across the school", "analytics", "chart-column"),
-            new("Security Logs", "Sign-ins, failed sign-ins and changes to accounts and the system", "admin/security-logs", "scroll-text"),
+            new("Security Logs", "Last login of each account, failed sign-ins and changes to accounts and the system", "admin/security-logs", "scroll-text"),
             new("Database Backup & Restore", "Save a copy of all the data, and put it back", "admin/backups", "database-backup"),
             new("System Settings", "Maintenance mode, backups and the log", "admin/settings", "settings-2"),
         ],
@@ -41,7 +41,7 @@ public static class PageDirectory
         AppRoles.AcademicProvider =>
         [
             new("Dashboard", "What you sent to the teachers, and who opened it", "provider", "layout-dashboard"),
-            new("Course library", "Syllabus, modules, activities, quizzes and task performances to send to the teachers", "provider/library", "folder-open"),
+            new("Course library", "Syllabus, modules, assignments, quizzes and task performances to send to the teachers", "provider/library", "folder-open"),
             new("Tracking", "Every module you sent, the teachers who got it and the students who see it, and whether they opened it", "provider/tracking", "eye"),
             new("Analytics", "How far what you send gets: teachers, students, courses", "provider/analytics", "chart-column"),
         ],
@@ -53,8 +53,8 @@ public static class PageDirectory
         ],
         AppRoles.Teacher =>
         [
-            new("Dashboard", "Work to check and drafts", "teacher", "layout-dashboard"),
-            new("Courses", "The courses you teach, with their modules and work", "teacher/subjects", "book-open"),
+            new("Dashboard", "Assignments to check and drafts", "teacher", "layout-dashboard"),
+            new("Courses", "The courses you teach, with their modules and assignments", "teacher/subjects", "book-open"),
             new("Attendance", "Mark who came to class and see the attendance summary", "teacher/attendance", "calendar-check"),
             new("Calendar", "Deadlines and postings, by month or week", "calendar", "calendar-days"),
             new("Announcements", "Write to the students of your classes, and read the notices of the school", "teacher/announcements", "megaphone"),
@@ -67,7 +67,7 @@ public static class PageDirectory
         AppRoles.Student =>
         [
             new("Dashboard", "Assignments, due dates, new modules and achievements", "student", "layout-dashboard"),
-            new("Courses", "Your courses, modules, activities and quizzes", "student/subjects", "book-open"),
+            new("Courses", "Your courses, modules, assignments and quizzes", "student/subjects", "book-open"),
             new("Calendar", "Deadlines, by month or week", "calendar", "calendar-days"),
             new("Grades and progress", "Your grade in every course and how it is going", "student/grades", "trending-up"),
             new("Users", "Your classmates, all the students, your friends and your teachers", "users", "users-round"),

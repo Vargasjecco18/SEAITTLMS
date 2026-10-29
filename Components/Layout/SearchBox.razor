@@ -3,37 +3,46 @@
 @inject CurrentUser Me
 @inject SearchService SearchEngine
 
-@* The search of the header. The box in the middle opens a pop-up where the results appear as you type (there is no search page).
-   Ctrl+K (or Cmd+K) opens it too; Enter opens the first result; Escape closes it. It is its own live component. *@
-<div class="search">
-    <button type="button" class="trigger" data-search-trigger aria-haspopup="dialog" aria-label="Search" title="Search (Ctrl+K)" @onclick="OpenAsync">
-        <Icon Name="search" Size="18" />
-        <span class="placeholder">Search courses, people and pages</span>
-    </button>
+@* The search of the header, like the one of Google: a box in the middle of the header, and the results drop down right under it as you type (there is
+   no pop-up and no search page). Ctrl+K (or Cmd+K) puts the cursor in it; the arrow keys choose a result; Enter opens it (the first one when none is
+   chosen); Escape or a click anywhere else closes the list. On a phone only the magnifying glass shows, and it opens the box over the header.
+   It is its own live component. *@
+<div class="search @(expanded ? "expanded" : "")">
+    @if (open)
+    {
+        @* Catches the click anywhere else, so the list closes. *@
+        <div class="search-scrim" aria-hidden="true" @onclick="Close"></div>
+    }
 
-    <Modal Open="open" Title="Search" OnClose="Close">
-        @if (open)
+    <form class="search-box @(open ? "open" : "")" role="search" @onsubmit="OpenChosen">
+        <button type="button" class="search-lens" data-search-lens aria-label="Search" title="Search (Ctrl+K)" @onclick="LensClickedAsync"><Icon Name="search" Size="18" /></button>
+        <input @ref="input" type="search" class="search-query" data-search-input placeholder="Search courses, people and pages" aria-label="Search" autocomplete="off"
+               @bind="query" @bind:event="oninput" @bind:after="QueryChangedAsync" @onfocus="OnFocus" @onkeydown="OnKeyDown" />
+        @if (query.Length > 0)
         {
-            <form class="box" role="search" @onsubmit="OpenFirstAsync">
-                <Icon Name="search" Size="18" Class="box-icon" />
-                <input type="search" @ref="input" placeholder="What are you looking for?" aria-label="Search" autocomplete="off" @bind="query" @bind:event="oninput" @bind:after="QueryChangedAsync" />
-            </form>
+            <button type="button" class="search-clear" aria-label="Clear the search" @onclick="ClearAsync"><Icon Name="x" Size="14" /></button>
+        }
+    </form>
 
+    @if (open)
+    {
+        <div class="search-dropdown" role="region" aria-label="Search results">
             @if (string.IsNullOrWhiteSpace(query))
             {
-                <p class="state">Type the name of a course, a person or a page.</p>
+                <p class="search-state">Type the name of a course, a person or a page.</p>
             }
             else if (searching && groups.Count == 0)
             {
-                <p class="state">Searching…</p>
+                <p class="search-state">Searching…</p>
             }
             else if (groups.Count == 0)
             {
-                <p class="state">Nothing matches “@query”. Try another word.</p>
+                <p class="search-state">Nothing matches “@query”. Try another word.</p>
             }
             else
             {
-                <div class="results">
+                var position = 0;
+                <div class="search-results">
                     @foreach (var group in groups)
                     {
                         <section>
@@ -41,8 +50,9 @@
                             <ul class="hits">
                                 @foreach (var hit in group.Hits)
                                 {
-                                    <li>
-                                        <a href="@hit.Href" @onclick="Close">
+                                    var mine = position++;
+                                    <li class="@(mine == active ? "active" : "")">
+                                        <a href="@hit.Href" aria-current="@(mine == active ? "true" : null)" @onclick="Close">
                                             <span class="hit-icon"><Icon Name="@hit.Icon" Size="18" /></span>
                                             <span class="hit-text">
                                                 <span class="hit-title">@hit.Title</span>
@@ -60,8 +70,8 @@
                     }
                 </div>
             }
-        }
-    </Modal>
+        </div>
+    }
 </div>
 
 @code {
@@ -69,30 +79,57 @@
 
     private ElementReference input;
     private bool open;
+    private bool expanded;
     private bool focusInput;
     private bool searching;
+    private int active = -1;
     private string query = "";
     private IReadOnlyList<SearchGroup> groups = [];
     private CancellationTokenSource? pending;
 
-    private async Task OpenAsync()
+    private IEnumerable<SearchHit> AllHits => groups.SelectMany(g => g.Hits);
+
+    private void OnFocus() => open = true;
+
+    /// <summary>The magnifying glass: on a phone it opens the box over the header (and closes it again), on a computer it puts the cursor in the box.</summary>
+    private void LensClickedAsync()
     {
-        query = "";
-        groups = [];
+        if (expanded)
+        {
+            Close();
+            return;
+        }
+
+        expanded = true;
         open = true;
         focusInput = true;
-        await Task.CompletedTask;
     }
 
     private void Close()
     {
         pending?.Cancel();
         open = false;
+        expanded = false;
+        active = -1;
+    }
+
+    private async Task ClearAsync()
+    {
+        query = "";
+        groups = [];
+        active = -1;
+        searching = false;
+        pending?.Cancel();
+        focusInput = true;
+        await Task.CompletedTask;
     }
 
     /// <summary>Searches 250 ms after the last key, so typing fast does not ask the database for every letter.</summary>
     private async Task QueryChangedAsync()
     {
+        // (The list opens when something is typed. Emptying the box does not open it: the Escape key of a search box empties it, and that must not open the list again.)
+        open = open || !string.IsNullOrWhiteSpace(query);
+        active = -1;
         pending?.Cancel();
         var source = pending = new CancellationTokenSource();
 
@@ -128,21 +165,42 @@
         }
     }
 
-    /// <summary>Enter: go to the first result.</summary>
-    private void OpenFirstAsync()
+    private void OnKeyDown(KeyboardEventArgs e)
     {
-        if (groups.Count > 0 && groups[0].Hits.Count > 0)
+        var count = AllHits.Count();
+        switch (e.Key)
         {
-            var href = groups[0].Hits[0].Href;
-            Close();
-            Navigation.NavigateTo(href);
+            case "Escape":
+                Close();
+                break;
+            case "ArrowDown" when count > 0:
+                open = true;
+                active = (active + 1) % count;
+                break;
+            case "ArrowUp" when count > 0:
+                open = true;
+                active = active <= 0 ? count - 1 : active - 1;
+                break;
         }
+    }
+
+    /// <summary>Enter: go to the chosen result, or to the first one.</summary>
+    private void OpenChosen()
+    {
+        var hits = AllHits.ToList();
+        if (hits.Count == 0)
+        {
+            return;
+        }
+
+        var href = hits[active >= 0 && active < hits.Count ? active : 0].Href;
+        Close();
+        Navigation.NavigateTo(href);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // The pop-up has just opened: put the cursor in the box (the pop-up itself takes the focus first).
-        if (focusInput && open)
+        if (focusInput)
         {
             focusInput = false;
             await Task.Delay(30);

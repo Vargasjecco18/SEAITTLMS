@@ -2,6 +2,7 @@
 @layout BlankLayout
 @attribute [AllowAnonymous]
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.Extensions.Options
@@ -23,6 +24,11 @@
 
         <h1>@SystemSettings.Current.SchoolShortName LMS</h1>
         <p class="subtitle">Log-in to access your courses</p>
+
+        @if (Notice == "password-changed")
+        {
+            <p class="login-notice" role="status"><Icon Name="circle-check" Size="18" /> <span>Your password was changed. Log in with your new password.</span></p>
+        }
 
         <FormErrors Errors="@(string.IsNullOrEmpty(errorMessage) ? Array.Empty<string>() : new[] { errorMessage })" />
 
@@ -88,13 +94,16 @@
 
     [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
 
+    [SupplyParameterFromQuery] private string? Notice { get; set; }
+
     [SupplyParameterFromForm] private LoginInput Input { get; set; } = new();
 
     protected override void OnInitialized()
     {
+        // Somebody is signed in on this browser already: nobody else can log in here. The person goes back to their own page, with a message at the top.
         if (HttpContext.User.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo(LocalUrl.Sanitize(ReturnUrl), forceLoad: true);
+            Navigation.NavigateTo(RoleHome.For(HttpContext.User.FindFirstValue(ClaimTypes.Role)) + "?alert=signed-in", forceLoad: true);
             return;
         }
 
@@ -139,7 +148,6 @@
         {
             if (result.Failure == LoginFailure.LockedOut && result.LockedUntilUtc is { } until)
             {
-                // Said the same way for an email with an account and for one without, after the same number of tries (see LoginLockouts).
                 lockedUntil = until;
                 lockedEmail = Input.Email?.Trim();
                 errorMessage = null;   // the box with the timer over the email says it all
@@ -149,12 +157,14 @@
             }
             else if (result.Failure == LoginFailure.Maintenance)
             {
-                // Only said to somebody who knew the password, so it doesn't reveal which emails have accounts.
                 errorMessage = SystemSettings.ClosedMessage;
+            }
+            else if (result.Failure == LoginFailure.UserNotFound)
+            {
+                errorMessage = "User Not Found. No account uses this email.";
             }
             else
             {
-                // The same message for every kind of failure, so it doesn't reveal which emails have accounts.
                 var limits = SystemSettings.Current;
                 errorMessage = $"Incorrect email or password. After {limits.MaxFailedAttempts} wrong attempts " +
                                $"the account is locked for {limits.LockoutMinutes} minutes.";

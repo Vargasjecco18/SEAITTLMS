@@ -395,6 +395,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<bool>("IsSlides")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_slides");
+
                     b.Property<int?>("ItemId")
                         .HasColumnType("int")
                         .HasColumnName("item_id");
@@ -2702,7 +2708,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                             t.HasCheckConstraint("ck_students_section_needs_strand_and_grade", "section_id IS NULL OR (strand_id IS NOT NULL AND grade_level IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated')");
+                            t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated', 'DroppedOut')");
 
                             t.HasCheckConstraint("ck_students_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
                         });
@@ -2898,6 +2904,11 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("item_id");
 
+                    b.Property<string>("LateDecision")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("late_decision");
+
                     b.Property<string>("LinkUrl")
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)")
@@ -2950,6 +2961,8 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("submissions", null, t =>
                         {
+                            t.HasCheckConstraint("ck_submissions_late_decision", "late_decision IS NULL OR late_decision IN ('Pending', 'Accepted', 'Declined')");
+
                             t.HasCheckConstraint("ck_submissions_score", "score IS NULL OR score >= 0");
 
                             t.HasCheckConstraint("ck_submissions_status", "status IN ('InProgress', 'Submitted', 'Graded')");

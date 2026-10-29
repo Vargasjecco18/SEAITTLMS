@@ -8,7 +8,7 @@
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 
-<PageTitle>@(item?.Title ?? "Work") · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>@(item?.Title ?? "Assignment") · SEAITT Legazpi LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -18,7 +18,7 @@ else if (item is null)
 {
     <Card>
         <EmptyState IconName="file-text" Title="Not found" IsPage="true">
-            <p>This work is not posted yet, or it is not one of your courses.</p>
+            <p>This assignment is not posted yet, or it is not one of your courses.</p>
             <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>
@@ -27,7 +27,7 @@ else
 {
     var now = PhilippineTime.Now(Clock);
     var overdue = item.DueAtUtc is { } dueAt && dueAt < now.UtcDateTime;
-    // A quiz that is only a file (no questions) is answered in the editor like an activity.
+    // A quiz that is only a file (no questions) is answered in the editor like an assignment.
     var fileQuiz = item.IsQuiz && item.Questions == 0 && files.Count > 0;
     var closedQuiz = item.IsQuiz && !fileQuiz && overdue && item.Status == "NotStarted";
 
@@ -133,8 +133,8 @@ else
             }
             else
             {
-                <Card Title="@(item.IsQuiz ? "Your answers" : "Your work")" IconName="notebook-pen">
-                    @if (item.Status == SubmissionStatus.Graded)
+                <Card Title="@(item.IsQuiz ? "Your answers" : "Your answer")" IconName="notebook-pen">
+                    @if (item.Status == SubmissionStatus.Graded || item.LateDecision == LateDecisions.Declined)
                     {
                         @if (!string.IsNullOrWhiteSpace(item.AnswerText))
                         {
@@ -152,7 +152,14 @@ else
                             <AttachmentList Items="myFiles" Label="Files you sent" />
                         }
 
-                        <p class="muted">This was graded, so it can't be handed in again.</p>
+                        @if (item.LateDecision == LateDecisions.Declined && item.Status != SubmissionStatus.Graded)
+                        {
+                            <p class="warn"><Icon Name="circle-x" Size="16" /> You handed this in late and your teacher did not accept it, so it is not graded and can't be handed in again.</p>
+                        }
+                        else
+                        {
+                            <p class="muted">This was graded, so it can't be handed in again.</p>
+                        }
                     }
                     else
                     {
@@ -162,9 +169,13 @@ else
                             <RichTextEditor @ref="editor" Id="w-text" Html="@answerHtml" />
                         </div>
                         <AttachmentPicker @ref="picker" @key="pickerKey" Title="Send files" Existing="myFiles" />
-                        @if (overdue)
+                        @if (item.LateDecision == LateDecisions.Pending && item.Status == SubmissionStatus.Submitted)
                         {
-                            <p class="warn"><Icon Name="triangle-alert" Size="16" /> The due date has passed. You can still hand it in, but it is marked late.</p>
+                            <p class="warn"><Icon Name="alarm-clock" Size="16" /> You handed this in late. Your teacher decides if it is accepted. You will be told.</p>
+                        }
+                        else if (overdue)
+                        {
+                            <p class="warn"><Icon Name="triangle-alert" Size="16" /> The due date has passed. You can still hand it in, but it is marked late and your teacher decides if it is accepted.</p>
                         }
 
                         <div class="actions">
@@ -241,9 +252,9 @@ else
     private bool confirmStart;
     private List<string> formErrors = [];
 
-    private string StatusText => item is null ? "" : SubjectStyle.StudentStatus(item.Status, item.IsLate, item.DueAtUtc is { } d && d < Clock.GetUtcNow().UtcDateTime, item.IsQuiz, item.IsQuiz && !item.ShowResult).Text;
+    private string StatusText => item is null ? "" : SubjectStyle.StudentStatus(item.Status, item.IsLate, item.DueAtUtc is { } d && d < Clock.GetUtcNow().UtcDateTime, item.IsQuiz, item.IsQuiz && !item.ShowResult, item.LateDecision).Text;
 
-    private Tone StatusTone => item is null ? Tone.Neutral : SubjectStyle.StudentStatus(item.Status, item.IsLate, item.DueAtUtc is { } d && d < Clock.GetUtcNow().UtcDateTime, item.IsQuiz, item.IsQuiz && !item.ShowResult).Tone;
+    private Tone StatusTone => item is null ? Tone.Neutral : SubjectStyle.StudentStatus(item.Status, item.IsLate, item.DueAtUtc is { } d && d < Clock.GetUtcNow().UtcDateTime, item.IsQuiz, item.IsQuiz && !item.ShowResult, item.LateDecision).Tone;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -287,7 +298,7 @@ else
                 var draftId = await Work.EnsureDraftAsync(studentId, ItemId);
                 if (draftId is not { } id)
                 {
-                    formErrors = ["Your work can't be changed now."];
+                    formErrors = ["Your answer can't be changed now."];
                     return;
                 }
 

@@ -233,3 +233,15 @@ h1:focus {
 .lock-timer.done .lock-text strong {
     color: var(--success);
 }
+
+.login-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: 0.92rem;
+}

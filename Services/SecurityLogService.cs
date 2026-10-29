@@ -18,6 +18,14 @@ public sealed record SecurityLogFilter(string? Group = null, string? Search = nu
 public sealed record SecurityLogRow(
     int Id, DateTime AtUtc, string Kind, string Severity, int? UserId, string? Email, string? ActorName, string? IpAddress, string? UserAgent, string? Details);
 
+/// <summary>One account in the Last login list: who, and when the person last logged in (null: never).</summary>
+public sealed record LastLoginRow(int UserId, string Name, string Email, string Role, DateTime? LastLoginAtUtc, bool IsActive);
+
+public sealed record LastLoginPage(IReadOnlyList<LastLoginRow> Items, int Total, int Page, int PageSize)
+{
+    public int PageCount => Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
+}
+
 public sealed record SecurityLogPage(IReadOnlyList<SecurityLogRow> Items, int Total, int Page, int PageSize)
 {
     public int PageCount => Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
@@ -36,9 +44,10 @@ public sealed class SecurityLogService(IDbContextFactory<AppDbContext> dbFactory
     /// <summary>The groups of events the page can filter by, in the order of the buttons.</summary>
     public static readonly (string Key, string Title, string[] Kinds)[] Groups =
     [
-        ("signins", "Sign-ins", [SecurityEvents.SignInSucceeded, SecurityEvents.SignedOut]),
+        // Not a group of lines: the list of the accounts with the day each one last logged in (see GetLastLoginsAsync). Every sign-in and sign-out is no longer written.
+        ("lastlogin", "Last login", []),
         ("failed", "Failed", [SecurityEvents.SignInFailed, SecurityEvents.AccountLocked, SecurityEvents.SignInRefused]),
-        ("accounts", "Accounts", [SecurityEvents.AccountCreated, SecurityEvents.AccountChanged, SecurityEvents.PasswordReset, SecurityEvents.AccountActivated, SecurityEvents.AccountDeactivated, SecurityEvents.AccountDeleted, SecurityEvents.StudentsArchived]),
+        ("accounts", "Accounts", [SecurityEvents.AccountCreated, SecurityEvents.AccountChanged, SecurityEvents.PasswordReset, SecurityEvents.PasswordChanged, SecurityEvents.AccountActivated, SecurityEvents.AccountDeactivated, SecurityEvents.AccountDeleted, SecurityEvents.StudentsArchived, SecurityEvents.StudentDroppedOut]),
         ("system", "System", [SecurityEvents.BackupCreated, SecurityEvents.BackupDeleted, SecurityEvents.BackupRestored, SecurityEvents.BackupRestoreFailed, SecurityEvents.SettingsChanged, SecurityEvents.LogsCleared]),
     ];
 
@@ -80,6 +89,53 @@ public sealed class SecurityLogService(IDbContextFactory<AppDbContext> dbFactory
         {
             logger.LogWarning(ex, "The security log line '{Kind}' could not be written.", kind);
         }
+    }
+
+    /// <summary>
+    /// Who logged in and when, last: one line for each account, the newest first, from what the accounts keep (users.last_login_at_utc). It replaces the lines
+    /// "signed in" and "signed out", which were many and said little.
+    /// </summary>
+    /// <param name="role">Only the accounts of this role (one of <see cref="AppRoles"/>); empty: all.</param>
+    public async Task<LastLoginPage> GetLastLoginsAsync(string? search, string? role, int page, int pageSize = 25, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        IQueryable<User> users = db.Users.AsNoTracking();
+
+        if (role is { Length: > 0 } && AppRoles.Ids.TryGetValue(role, out var roleId))
+        {
+            users = users.Where(u => u.RoleId == roleId);
+        }
+
+        foreach (var token in (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(5))
+        {
+            var t = token;
+            users = users.Where(u => u.Email.Contains(t)
+                || (u.Student != null && (u.Student.FirstName.Contains(t) || u.Student.LastName.Contains(t)))
+                || (u.Teacher != null && (u.Teacher.FirstName.Contains(t) || u.Teacher.LastName.Contains(t)))
+                || (u.Registrar != null && (u.Registrar.FirstName.Contains(t) || u.Registrar.LastName.Contains(t)))
+                || (u.GuidanceCounselor != null && (u.GuidanceCounselor.FirstName.Contains(t) || u.GuidanceCounselor.LastName.Contains(t)))
+                || (u.AcademicCoordinator != null && (u.AcademicCoordinator.FirstName.Contains(t) || u.AcademicCoordinator.LastName.Contains(t)))
+                || (u.AcademicProvider != null && (u.AcademicProvider.FirstName.Contains(t) || u.AcademicProvider.LastName.Contains(t)))
+                || (u.Administrator != null && (u.Administrator.FirstName.Contains(t) || u.Administrator.LastName.Contains(t))));
+        }
+
+        var total = await users.CountAsync(ct);
+        pageSize = Math.Clamp(pageSize, 5, 200);
+        var pages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+        page = Math.Clamp(page, 1, pages);
+
+        var rows = await users
+            .OrderByDescending(u => u.LastLoginAtUtc != null).ThenByDescending(u => u.LastLoginAtUtc).ThenBy(u => u.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(u => new { u.Id, u.Email, u.RoleId, u.LastLoginAtUtc, u.IsActive })
+            .ToListAsync(ct);
+        var names = await UserDirectory.LoadAsync(db, rows.Select(r => r.Id).ToList(), ct);
+
+        return new LastLoginPage(
+            rows.Select(r => new LastLoginRow(
+                r.Id, names.TryGetValue(r.Id, out var person) ? person.Name : r.Email, r.Email,
+                AppRoles.Ids.First(kv => kv.Value == r.RoleId).Key, r.LastLoginAtUtc, r.IsActive)).ToList(),
+            total, page, pageSize);
     }
 
     public async Task<SecurityLogPage> GetPageAsync(SecurityLogFilter filter, int page, int pageSize = 25, CancellationToken ct = default)
@@ -128,7 +184,9 @@ public sealed class SecurityLogService(IDbContextFactory<AppDbContext> dbFactory
         var warnings = await db.SecurityLogs.CountAsync(l => l.CreatedAtUtc >= since && l.Severity != "Info", ct);
         var locked = await db.Users.CountAsync(u => u.LockoutEndUtc != null && u.LockoutEndUtc > now, ct);
 
-        return new SecuritySummary(Count(SecurityEvents.SignInSucceeded), Count(SecurityEvents.SignInFailed), locked, warnings, 0);
+        // The people who logged in during the last 24 hours (from their last login), not the lines of the log.
+        var loggedIn = await db.Users.CountAsync(u => u.LastLoginAtUtc != null && u.LastLoginAtUtc >= since, ct);
+        return new SecuritySummary(loggedIn, Count(SecurityEvents.SignInFailed), locked, warnings, 0);
     }
 
     /// <summary>Deletes the lines older than this many days. Gives back how many were deleted.</summary>
@@ -162,7 +220,8 @@ public sealed class SecurityLogService(IDbContextFactory<AppDbContext> dbFactory
 
     private static IQueryable<SecurityLog> Filtered(AppDbContext db, SecurityLogFilter filter)
     {
-        IQueryable<SecurityLog> query = db.SecurityLogs.AsNoTracking();
+        // The lines "signed in" and "signed out" of the old days are not shown any more (the Last login list says it better).
+        IQueryable<SecurityLog> query = db.SecurityLogs.AsNoTracking().Where(l => l.Kind != SecurityEvents.SignInSucceeded && l.Kind != SecurityEvents.SignedOut);
 
         if (Groups.FirstOrDefault(g => g.Key == filter.Group) is { Kinds: { } kinds })
         {

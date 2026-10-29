@@ -23,7 +23,8 @@ public sealed record UserListItem(
     DateTime? LastLoginAtUtc,
     DateTime CreatedAtUtc,
     string? Placement,
-    IReadOnlyList<string>? Courses = null);
+    IReadOnlyList<string>? Courses = null,
+    string? StudentStatus = null);
 
 public sealed record UserPage(IReadOnlyList<UserListItem> Items, int Total, int Page, int PageSize)
 {
@@ -61,11 +62,43 @@ public sealed class UserEdit
     /// <summary>Students only.</summary>
     public string? Lrn { get; set; }
 
+    /// <summary>Students only: the id of the student (not of the account) and the status now (see <see cref="StudentStatus"/>).</summary>
+    public int? StudentId { get; set; }
+
+    public string? StudentStatus { get; set; }
+
     /// <summary>Whether the account can sign in. For staff it also sets their status (Active or Inactive).</summary>
     public bool IsActive { get; set; } = true;
 
     /// <summary>Leave empty to keep the password. Otherwise the account gets this new password.</summary>
     public string? NewPassword { get; set; }
+}
+
+/// <summary>The form for adding a student's account. The email and the password can be empty: they are made from the last name and the LRN.</summary>
+public sealed class NewStudentAccount
+{
+    [Required(ErrorMessage = "Enter the first name."), StringLength(100, ErrorMessage = "At most 100 characters.")]
+    public string FirstName { get; set; } = "";
+
+    [StringLength(100, ErrorMessage = "At most 100 characters.")]
+    public string? MiddleName { get; set; }
+
+    [Required(ErrorMessage = "Enter the last name."), StringLength(100, ErrorMessage = "At most 100 characters.")]
+    public string LastName { get; set; } = "";
+
+    [StringLength(10, ErrorMessage = "At most 10 characters.")]
+    public string? NameExtension { get; set; }
+
+    [Required(ErrorMessage = "Enter the LRN."), StringLength(12, MinimumLength = 12, ErrorMessage = "The LRN has 12 digits.")]
+    public string Lrn { get; set; } = "";
+
+    public string? Email { get; set; }
+
+    public string? PhoneNumber { get; set; }
+
+    public string? Password { get; set; }
+
+    public bool IsActive { get; set; } = true;
 }
 
 /// <summary>
@@ -92,8 +125,85 @@ public sealed record DeleteImpact(string FullName, string Role, IReadOnlyList<st
 /// What an administrator does with accounts: list them by role, edit them, delete them. Every change checks again, in
 /// the database, that the person doing it is an active administrator.
 /// </summary>
-public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFactory, PasswordHasher hasher, UserAccountService accounts, SecurityLogService? securityLog = null)
+public sealed class UserManagementService(
+    IDbContextFactory<AppDbContext> dbFactory, PasswordHasher hasher, UserAccountService accounts, SecurityLogService? securityLog = null,
+    Microsoft.Extensions.Options.IOptions<EnrollmentOptions>? enrollmentOptions = null)
 {
+    /// <summary>
+    /// The administrator adds a student's account without an enrollment (the registrar enrolls the student later, with the same LRN). The email and the password
+    /// can be left empty: then they are made from the last name and the LRN, as when the registrar enrolls a new student.
+    /// </summary>
+    public async Task<ServiceResult> AddStudentAsync(NewStudentAccount student, int actingUserId, CancellationToken ct = default)
+    {
+        await using (var db = await dbFactory.CreateDbContextAsync(ct))
+        {
+            if (!await IsActiveAdminAsync(db, actingUserId, ct))
+            {
+                return ServiceResult.Fail("Only an administrator can add accounts.");
+            }
+        }
+
+        var lrn = (student.Lrn ?? "").Trim();
+        if (lrn.Length != 12 || !lrn.All(char.IsAsciiDigit))
+        {
+            return ServiceResult.Fail("The LRN must be exactly 12 digits.");
+        }
+
+        var firstName = NameCase.Title(student.FirstName);
+        var lastName = NameCase.Title(student.LastName);
+        if (firstName.Length == 0 || lastName.Length == 0)
+        {
+            return ServiceResult.Fail("Enter the first name and the last name.");
+        }
+
+        await using var check = await dbFactory.CreateDbContextAsync(ct);
+        if (await check.Students.AnyAsync(s => s.Lrn == lrn, ct))
+        {
+            return ServiceResult.Fail("A student with this LRN already exists.");
+        }
+
+        var email = string.IsNullOrWhiteSpace(student.Email) ? null : student.Email.Trim();
+        var password = string.IsNullOrEmpty(student.Password) ? null : student.Password;
+        if (email is null || password is null)
+        {
+            // The same email and password the registrar's enrollment makes: lastname.123456@domain and lastname123456 (more digits when taken).
+            var domain = enrollmentOptions?.Value.EmailDomain ?? new EnrollmentOptions().EmailDomain;
+            StudentLogin? made = null;
+            for (var digits = StudentCredentials.DefaultDigits; digits <= StudentCredentials.MaxDigits; digits++)
+            {
+                var attempt = StudentCredentials.Create(lastName, lrn, domain, digits);
+                if (!await check.Users.AnyAsync(u => u.Email == attempt.Email, ct))
+                {
+                    made = attempt;
+                    break;
+                }
+            }
+
+            if (made is null)
+            {
+                return ServiceResult.Fail("An email for this student could not be made, because the ones made from this last name and LRN are all taken.");
+            }
+
+            email ??= made.Email;
+            password ??= made.Password;
+        }
+
+        var result = await accounts.CreateAsync(new NewAccount(
+            AppRoles.Student, email, password, firstName, lastName, NullIfBlank(NameCase.Title(student.MiddleName)), NullIfBlank(NameCase.Title(student.NameExtension)),
+            NullIfBlank(student.PhoneNumber), Lrn: lrn, IsActive: student.IsActive), ct);
+        if (!result.Succeeded)
+        {
+            return ServiceResult.Fail(result.Errors);
+        }
+
+        if (securityLog is not null)
+        {
+            await securityLog.AddAsync(SecurityEvents.AccountCreated, result.UserId, details: "A student account was added.", actorUserId: actingUserId, ct: ct);
+        }
+
+        return ServiceResult.Ok($"Added {FullName(firstName, NullIfBlank(NameCase.Title(student.MiddleName)), lastName, NullIfBlank(NameCase.Title(student.NameExtension)))}. Email: {email}", result.UserId);
+    }
+
     /// <summary>
     /// Adds an account for a teacher, registrar, guidance counselor or administrator. (Students are added by enrolling them.)
     /// The email must be given; the administrator chooses the first password.
@@ -102,7 +212,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
     {
         if (account.Role == AppRoles.Student)
         {
-            return ServiceResult.Fail("Students are added by enrolling them.");
+            return ServiceResult.Fail("Students are added with Add student, or by enrolling them.");
         }
 
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
@@ -291,8 +401,26 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             : (new ResolvedPlacement(trackId, strandId, section?.Id, section?.GradeLevel, subjectIds), errors);
     }
 
+    /// <summary>The "role" of the list of the staff who do not teach: registrars, guidance counselors, academic coordinators and academic providers together.</summary>
+    public const string NonTeachingRole = "NonTeaching";
+
+    /// <summary>The roles of the non-teaching staff (the administrator is not in the list: the school has one and it is not managed here).</summary>
+    public static readonly string[] NonTeachingRoles = [AppRoles.Registrar, AppRoles.GuidanceCounselor, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider];
+
+    /// <summary>How the list is ordered: by name (the default), the newest accounts first, or the oldest first.</summary>
+    public const string SortName = "name";
+    public const string SortNewest = "newest";
+    public const string SortOldest = "oldest";
+
+    /// <summary>The choices of the status filter of the students: active, inactive (switched off), dropped out, graduated.</summary>
+    public static readonly string[] StudentStatusFilters = ["active", "inactive", "dropped", "graduated"];
+
     /// <param name="active">Only the accounts that are active (true) or inactive (false); empty: all of them.</param>
-    public async Task<UserPage> ListAsync(string role, string? search, int page, int pageSize, CancellationToken ct = default, bool? active = null)
+    /// <param name="sort">One of <see cref="SortName"/>, <see cref="SortNewest"/>, <see cref="SortOldest"/>.</param>
+    /// <param name="status">Students only: "active", "inactive", "dropped" or "graduated" (empty: all). It replaces <paramref name="active"/> for students.</param>
+    /// <param name="staffRole">The non-teaching list only: one role of <see cref="NonTeachingRoles"/>; empty: all of them.</param>
+    public async Task<UserPage> ListAsync(string role, string? search, int page, int pageSize, CancellationToken ct = default, bool? active = null,
+        string sort = SortName, string? status = null, string? staffRole = null)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
@@ -302,19 +430,30 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
 
         switch (role)
         {
+            case NonTeachingRole:
+                return await NonTeachingPageAsync(db, tokens, active, sort, staffRole, page, pageSize, ct);
+
             case AppRoles.Student:
             {
-                var query = ByStatus(Filter(db.Students.AsNoTracking(), tokens, t => s =>
+                var filtered = Filter(db.Students.AsNoTracking(), tokens, t => s =>
                     s.FirstName.Contains(t) || (s.MiddleName != null && s.MiddleName.Contains(t)) || s.LastName.Contains(t)
-                    || s.Lrn.Contains(t) || s.User.Email.Contains(t)), active);
+                    || s.Lrn.Contains(t) || s.User.Email.Contains(t));
+                var query = status switch
+                {
+                    "active" => filtered.Where(s => s.Status == StudentStatus.Active && s.User.IsActive),
+                    "inactive" => filtered.Where(s => s.Status == StudentStatus.Active && !s.User.IsActive),
+                    "dropped" => filtered.Where(s => s.Status == StudentStatus.DroppedOut),
+                    "graduated" => filtered.Where(s => s.Status == StudentStatus.Graduated),
+                    _ => ByStatus(filtered, active),
+                };
 
                 var total = await query.CountAsync(ct);
-                var rows = await query.OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ThenBy(s => s.Id)
+                var rows = await OrderBySort(query, sort)
                     .Skip((page - 1) * pageSize).Take(pageSize)
                     .Select(s => new
                     {
                         StudentId = s.Id, s.UserId, s.FirstName, s.MiddleName, s.LastName, s.NameExtension, s.User.Email, s.User.PhoneNumber, s.Lrn,
-                        s.User.IsActive, s.User.LastLoginAtUtc, s.User.CreatedAtUtc, s.GradeLevel, s.StrandId, s.SectionId,
+                        s.User.IsActive, s.User.LastLoginAtUtc, s.User.CreatedAtUtc, s.GradeLevel, s.StrandId, s.SectionId, s.Status,
                     })
                     .ToListAsync(ct);
 
@@ -357,7 +496,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                         ? fromEnrollment
                         : Placement(r.GradeLevel, r.StrandId is { } sid ? strandCodes.GetValueOrDefault(sid) : null,
                             r.SectionId is { } secId ? sectionNames.GetValueOrDefault(secId) : null),
-                    CoursesOf(r.StudentId))).ToList();
+                    CoursesOf(r.StudentId), r.Status)).ToList();
                 return new UserPage(items, total, page, pageSize);
             }
 
@@ -368,7 +507,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
                     || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t)), active);
 
                 var total = await query.CountAsync(ct);
-                var rows = await query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id)
+                var rows = await OrderBySort(query, sort)
                     .Skip((page - 1) * pageSize).Take(pageSize)
                     .Select(p => new
                     {
@@ -393,19 +532,19 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             }
 
             case AppRoles.Registrar:
-                return await StaffPageAsync(db.Registrars.AsNoTracking(), role, tokens, active, page, pageSize, ct);
+                return await StaffPageAsync(db.Registrars.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
             case AppRoles.GuidanceCounselor:
-                return await StaffPageAsync(db.GuidanceCounselors.AsNoTracking(), role, tokens, active, page, pageSize, ct);
+                return await StaffPageAsync(db.GuidanceCounselors.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
             case AppRoles.AcademicCoordinator:
-                return await StaffPageAsync(db.AcademicCoordinators.AsNoTracking(), role, tokens, active, page, pageSize, ct);
+                return await StaffPageAsync(db.AcademicCoordinators.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
             case AppRoles.AcademicProvider:
-                return await StaffPageAsync(db.AcademicProviders.AsNoTracking(), role, tokens, active, page, pageSize, ct);
+                return await StaffPageAsync(db.AcademicProviders.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
             case AppRoles.Admin:
-                return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, active, page, pageSize, ct);
+                return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
             default:
                 return new UserPage([], 0, 1, pageSize);
@@ -413,7 +552,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
     }
 
     /// <summary>Administrators, registrars and guidance counselors have the same columns.</summary>
-    private static async Task<UserPage> StaffPageAsync<T>(IQueryable<T> source, string role, string[] tokens, bool? active, int page, int pageSize, CancellationToken ct)
+    private static async Task<UserPage> StaffPageAsync<T>(IQueryable<T> source, string role, string[] tokens, bool? active, string sort, int page, int pageSize, CancellationToken ct)
         where T : StaffContactProfile
     {
         var query = ByStatus(Filter(source, tokens, t => p =>
@@ -421,7 +560,7 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t)), active);
 
         var total = await query.CountAsync(ct);
-        var rows = await query.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id)
+        var rows = await OrderBySort(query, sort)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(p => new
             {
@@ -434,6 +573,55 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, r.EmployeeNumber, null,
             r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null)).ToList(), total, page, pageSize);
     }
+
+    /// <summary>
+    /// The staff who do not teach in one list, with the role of each: the four small tables are read (each filtered in the database), put together,
+    /// ordered and cut into pages here. There are only a few of them.
+    /// </summary>
+    private static async Task<UserPage> NonTeachingPageAsync(AppDbContext db, string[] tokens, bool? active, string sort, string? staffRole, int page, int pageSize, CancellationToken ct)
+    {
+        async Task<List<UserListItem>> One<T>(IQueryable<T> source, string role) where T : StaffContactProfile
+        {
+            if (staffRole is { Length: > 0 } && staffRole != role)
+            {
+                return [];
+            }
+
+            var query = ByStatus(Filter(source.AsNoTracking(), tokens, t => p =>
+                p.FirstName.Contains(t) || (p.MiddleName != null && p.MiddleName.Contains(t)) || p.LastName.Contains(t)
+                || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t)), active);
+            var rows = await query.Select(p => new
+            {
+                p.UserId, p.FirstName, p.MiddleName, p.LastName, p.NameExtension, p.User.Email, p.PhoneNumber, p.EmployeeNumber,
+                p.User.IsActive, p.User.LastLoginAtUtc, p.User.CreatedAtUtc,
+            }).Take(500).ToListAsync(ct);
+            return rows.Select(r => new UserListItem(
+                r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, r.EmployeeNumber, null,
+                r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null)).ToList();
+        }
+
+        var all = new List<UserListItem>();
+        all.AddRange(await One(db.Registrars, AppRoles.Registrar));
+        all.AddRange(await One(db.GuidanceCounselors, AppRoles.GuidanceCounselor));
+        all.AddRange(await One(db.AcademicCoordinators, AppRoles.AcademicCoordinator));
+        all.AddRange(await One(db.AcademicProviders, AppRoles.AcademicProvider));
+
+        IEnumerable<UserListItem> ordered = sort switch
+        {
+            SortNewest => all.OrderByDescending(u => u.CreatedAtUtc).ThenByDescending(u => u.UserId),
+            SortOldest => all.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.UserId),
+            _ => all.OrderBy(u => u.FullName, StringComparer.CurrentCultureIgnoreCase).ThenBy(u => u.UserId),
+        };
+        return new UserPage(ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList(), all.Count, page, pageSize);
+    }
+
+    /// <summary>The order of a list: by last name, or by the day the account was made (newest first, oldest first).</summary>
+    private static IOrderedQueryable<T> OrderBySort<T>(IQueryable<T> source, string sort) where T : PersonProfile => sort switch
+    {
+        SortNewest => source.OrderByDescending(p => p.User.CreatedAtUtc).ThenByDescending(p => p.Id),
+        SortOldest => source.OrderBy(p => p.User.CreatedAtUtc).ThenBy(p => p.Id),
+        _ => source.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id),
+    };
 
     /// <summary>Only the active (or only the inactive) accounts; with no choice, all.</summary>
     private static IQueryable<T> ByStatus<T>(IQueryable<T> source, bool? active) where T : PersonProfile =>
@@ -480,18 +668,27 @@ public sealed class UserManagementService(IDbContextFactory<AppDbContext> dbFact
             PhoneNumber = profile is StaffContactProfile staff ? staff.PhoneNumber : user.PhoneNumber,
             EmployeeNumber = (profile as StaffProfile)?.EmployeeNumber,
             Lrn = (profile as Student)?.Lrn,
+            StudentId = (profile as Student)?.Id,
+            StudentStatus = (profile as Student)?.Status,
             IsActive = user.IsActive,
         };
+    }
+
+    /// <summary>The student (not the account) of a user, or null when the user is not a student.</summary>
+    public async Task<int?> GetStudentIdAsync(int userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Students.AsNoTracking().Where(s => s.UserId == userId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
     }
 
     public async Task<ServiceResult> UpdateAsync(UserEdit edit, int actingUserId, CancellationToken ct = default)
     {
         var errors = new List<string>();
 
-        var firstName = Clean(edit.FirstName);
-        var lastName = Clean(edit.LastName);
-        var middleName = NullIfBlank(Clean(edit.MiddleName));
-        var nameExtension = NullIfBlank(Clean(edit.NameExtension));
+        var firstName = NameCase.Title(edit.FirstName);
+        var lastName = NameCase.Title(edit.LastName);
+        var middleName = NullIfBlank(NameCase.Title(edit.MiddleName));
+        var nameExtension = NullIfBlank(NameCase.Title(edit.NameExtension));
         if (firstName.Length is 0 or > 100)
         {
             errors.Add("Enter the first name (up to 100 characters).");

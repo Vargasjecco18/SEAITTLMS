@@ -1,5 +1,6 @@
 @rendermode InteractiveServer
 @using Microsoft.JSInterop
+@using SEAITT_LMS.Auth
 @implements IDisposable
 @inject CurrentUser Me
 @inject MessageService Messages
@@ -11,6 +12,7 @@
 @inject MessageLauncher Launcher
 @inject PopupGate Gate
 @inject IJSRuntime JS
+@inject AuthService Auth
 
 @* The buttons at the right of the header: messages, notifications and settings. It is a live component, so the
    numbers on the buttons keep up with what happens while a page is open. *@
@@ -70,53 +72,9 @@
             </div>
         </details>
 
-        <details class="pop">
-            <summary class="tool" aria-label="Settings" title="Settings">
-                <Icon Name="settings" Size="20" />
-            </summary>
-
-            <div class="panel settings">
-                <p class="group-title">Profile picture</p>
-                <div class="photo-row">
-                    <Avatar @key="Photos.VersionOf(user.UserId)" Name="@user.Name" UserId="@user.UserId" Size="56" />
-                    <div class="photo-actions">
-                        <label class="photo-button" aria-busy="@photoBusy">
-                            <InputFile OnChange="PhotoChosenAsync" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Choose a picture" />
-                            <Icon Name="@(photoBusy ? "loader" : "camera")" Size="16" />
-                            <span>@(photoBusy ? "Saving…" : HasPhoto ? "Change picture" : "Upload a picture")</span>
-                        </label>
-                        @if (HasPhoto)
-                        {
-                            <button type="button" class="link-button" disabled="@photoBusy" @onclick="RemovePhotoAsync">Remove</button>
-                        }
-                    </div>
-                </div>
-                @if (photoMessage is not null)
-                {
-                    <p class="photo-message @(photoFailed ? "failed" : "")" role="status">@photoMessage</p>
-                }
-                else
-                {
-                    <p class="hint photo-hint">JPG, PNG, GIF or WebP. It is made small for you.</p>
-                }
-
-                <p class="group-title">Appearance</p>
-                <div class="choices" role="group" aria-label="Appearance">
-                    <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
-                    <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Dark</span></button>
-                    <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
-                </div>
-                <p class="hint">Auto follows the setting of your computer.</p>
-
-                <button type="button" class="switch" data-motion-toggle>
-                    <span class="switch-text">
-                        <strong>Animations</strong>
-                        <small>Small movements when pages and menus open</small>
-                    </span>
-                    <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                </button>
-            </div>
-        </details>
+        <button type="button" class="tool" aria-label="Settings" title="Settings" @onclick="OpenSettings">
+            <Icon Name="settings" Size="20" />
+        </button>
     </div>
 
     @* The counselor saved something about the student: a box in the middle of the screen, like an achievement, until the student presses OK. *@
@@ -137,6 +95,89 @@
                 }
 
                 <Button IconName="@(guidanceQueue.Count > 1 ? "arrow-right" : "circle-check")" OnClick="CloseGuidanceAsync">@(guidanceQueue.Count > 1 ? "Next" : "OK")</Button>
+            </div>
+        }
+    </Modal>
+
+    @* The settings are a box: the picture, the password, the look of the pages and the sound. *@
+    <Modal Open="settingsOpen" Title="Settings" OnClose="CloseSettings">
+        @if (settingsOpen)
+        {
+            <div class="settings-box">
+                <section class="settings-section" aria-labelledby="set-photo">
+                    <h3 class="group-title" id="set-photo">Profile picture</h3>
+                    <div class="photo-row">
+                        <Avatar @key="Photos.VersionOf(user.UserId)" Name="@user.Name" UserId="@user.UserId" Size="64" />
+                        <div class="photo-actions">
+                            <label class="photo-button" aria-busy="@photoBusy">
+                                <InputFile OnChange="PhotoChosenAsync" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Choose a picture" />
+                                <Icon Name="@(photoBusy ? "loader" : "camera")" Size="16" />
+                                <span>@(photoBusy ? "Saving…" : HasPhoto ? "Change picture" : "Upload a picture")</span>
+                            </label>
+                            @if (HasPhoto)
+                            {
+                                <button type="button" class="link-button" disabled="@photoBusy" @onclick="RemovePhotoAsync">Remove</button>
+                            }
+                        </div>
+                    </div>
+                    @if (photoMessage is not null)
+                    {
+                        <p class="photo-message @(photoFailed ? "failed" : "")" role="status">@photoMessage</p>
+                    }
+                    else
+                    {
+                        <p class="hint photo-hint">JPG, PNG, GIF or WebP. It is made small for you.</p>
+                    }
+                </section>
+
+                <section class="settings-section" aria-labelledby="set-password">
+                    <h3 class="group-title" id="set-password">Change password</h3>
+                    <form @onsubmit="ChangePasswordAsync" autocomplete="off">
+                        <Field For="pw-current" Label="Current password">
+                            <input id="pw-current" type="@(showPasswords ? "text" : "password")" autocomplete="current-password" maxlength="@PasswordPolicy.MaxLength" @bind="currentPassword" @bind:event="oninput" />
+                        </Field>
+                        <Field For="pw-new" Label="New password" Hint="@($"At least {PasswordPolicy.MinLength} characters.")">
+                            <input id="pw-new" type="@(showPasswords ? "text" : "password")" autocomplete="new-password" maxlength="@PasswordPolicy.MaxLength" @bind="newPassword" @bind:event="oninput" />
+                        </Field>
+                        <Field For="pw-confirm" Label="Type the new password again">
+                            <input id="pw-confirm" type="@(showPasswords ? "text" : "password")" autocomplete="new-password" maxlength="@PasswordPolicy.MaxLength" @bind="confirmPassword" @bind:event="oninput" />
+                        </Field>
+                        <label class="show-passwords"><input type="checkbox" @bind="showPasswords" /> <span>Show the passwords</span></label>
+                        @if (passwordMessage is not null)
+                        {
+                            <p class="password-message" role="alert">@passwordMessage</p>
+                        }
+
+                        <Button Type="submit" IconName="@(passwordBusy ? "loader" : "key-round")" Disabled="@(passwordBusy || string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword))">@(passwordBusy ? "Saving…" : "Change password")</Button>
+                        <p class="hint">After the change you log in again with the new password.</p>
+                    </form>
+                </section>
+
+                <section class="settings-section" aria-labelledby="set-look">
+                    <h3 class="group-title" id="set-look">Appearance</h3>
+                    <div class="choices" role="group" aria-label="Appearance">
+                        <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
+                        <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Dark</span></button>
+                        <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
+                    </div>
+                    <p class="hint">Auto follows the setting of your computer.</p>
+
+                    <button type="button" class="switch" data-motion-toggle>
+                        <span class="switch-text">
+                            <strong>Animations</strong>
+                            <small>Small movements when pages and menus open</small>
+                        </span>
+                        <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                    </button>
+
+                    <button type="button" class="switch" data-sound-toggle>
+                        <span class="switch-text">
+                            <strong>Sound</strong>
+                            <small>A short sound when a new message or notification arrives</small>
+                        </span>
+                        <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                    </button>
+                </section>
             </div>
         }
     </Modal>
@@ -166,6 +207,14 @@
     private bool photoBusy;
     private bool photoFailed;
     private string? photoMessage;
+
+    private bool settingsOpen;
+    private bool showPasswords;
+    private bool passwordBusy;
+    private string? passwordMessage;
+    private string currentPassword = "";
+    private string newPassword = "";
+    private string confirmPassword = "";
 
     private bool HasPhoto => user is not null && Photos.VersionOf(user.UserId) is not null;
 
@@ -205,6 +254,8 @@
                 Presence.Touch(user.UserId);
             }
 
+            var knownMessages = unreadMessages;
+            var knownNotifications = unreadNotifications;
             await RefreshCountsAsync();
             if (notificationList is not null)
             {
@@ -213,8 +264,14 @@
 
             await LoadGuidanceAsync();
             StateHasChanged();
+
+            // Something new came in while the page was open: a short sound (wwwroot/app.js; the person can turn it off in Settings).
+            if (unreadMessages > knownMessages || unreadNotifications > knownNotifications)
+            {
+                await JS.InvokeVoidAsync("seaitt.playNotificationSound");
+            }
         }
-        catch (ObjectDisposedException)
+        catch (Exception ex) when (ex is ObjectDisposedException or JSException or JSDisconnectedException or InvalidOperationException)
         {
         }
     }
@@ -372,6 +429,49 @@
     }
 
     private void OpenMessages() => messagesOpen = true;
+
+    private void OpenSettings()
+    {
+        photoMessage = null;
+        passwordMessage = null;
+        settingsOpen = true;
+    }
+
+    private void CloseSettings()
+    {
+        settingsOpen = false;
+        currentPassword = newPassword = confirmPassword = "";
+        passwordMessage = null;
+        showPasswords = false;
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (user is null || passwordBusy)
+        {
+            return;
+        }
+
+        passwordBusy = true;
+        passwordMessage = null;
+        try
+        {
+            var result = await Auth.ChangePasswordAsync(user.UserId, currentPassword, newPassword, confirmPassword);
+            if (result.Succeeded)
+            {
+                // The session ends with the old password (a new security stamp): that page signs out and the login page says what happened.
+                Navigation.NavigateTo("/account/password-changed", forceLoad: true);
+                return;
+            }
+
+            passwordMessage = string.Join(" ", result.Errors);
+            currentPassword = "";
+        }
+        finally
+        {
+            passwordBusy = false;
+        }
+    }
 
     // A page asked for the messages box on one person ("Message" on the Users page).
     private void OnMessageRequested(int otherUserId) => _ = InvokeAsync(() =>

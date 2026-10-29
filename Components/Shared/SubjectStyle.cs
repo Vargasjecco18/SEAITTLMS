@@ -25,10 +25,12 @@ public static class SubjectStyle
     };
 
     /// <summary>The words for what a student sees of their own work: not started, handed in, graded ...</summary>
-    public static (string Text, Tone Tone) StudentStatus(string status, bool isLate, bool isOverdue, bool isQuiz, bool scoreHidden) => status switch
+    public static (string Text, Tone Tone) StudentStatus(string status, bool isLate, bool isOverdue, bool isQuiz, bool scoreHidden, string? lateDecision = null) => status switch
     {
         SubmissionStatus.Graded when isQuiz && scoreHidden => ("Handed in", Tone.Info),
         SubmissionStatus.Graded => ("Graded", Tone.Success),
+        SubmissionStatus.Submitted when isLate && lateDecision == LateDecisions.Pending => ("Late · waiting for your teacher", Tone.Warning),
+        SubmissionStatus.Submitted when isLate && lateDecision == LateDecisions.Declined => ("Late · not accepted", Tone.Danger),
         SubmissionStatus.Submitted => (isLate ? "Handed in late" : "Handed in", Tone.Info),
         SubmissionStatus.InProgress => ("In progress", Tone.Warning),
         _ => isOverdue ? ("Missing", Tone.Danger) : ("To do", Tone.Neutral),

@@ -12,7 +12,12 @@ namespace SEAITT_LMS.Auth;
 public enum LoginFailure
 {
     None,
+    /// <summary>The email is fine but the password is wrong (or what was typed can not be an email and a password).</summary>
     InvalidCredentials,
+
+    /// <summary>No account uses this email (the login page says "User Not Found").</summary>
+    UserNotFound,
+
     LockedOut,
     Inactive,
 
@@ -41,8 +46,7 @@ public sealed class AuthService(
     TimeProvider clock,
     ILogger<AuthService> logger,
     SystemSettingsService? systemSettings = null,
-    SecurityLogService? securityLog = null,
-    LoginLockouts? lockouts = null)
+    SecurityLogService? securityLog = null)
 {
     /// <param name="client">Where the sign-in came from (for the security log). Empty when it is not known.</param>
     public async Task<LoginResult> LoginAsync(string? email, string? password, ClientInfo? client = null, CancellationToken ct = default)
@@ -81,20 +85,8 @@ public sealed class AuthService(
         if (user is null)
         {
             hasher.BurnTime(password);
-            // An email with no account is counted and locked like a real one, so the lock does not tell which emails have an account.
-            if (lockouts?.LockedUntil(normalizedEmail, now) is { } stillLocked)
-            {
-                await LogAsync(SecurityEvents.SignInRefused, null, normalizedEmail, "There is no account with this email (and too many tries).", client, ct);
-                return LoginResult.Locked(stillLocked);
-            }
-
             await LogAsync(SecurityEvents.SignInFailed, null, normalizedEmail, "There is no account with this email.", client, ct);
-            if (lockouts?.RegisterFailure(normalizedEmail, maxFailed, lockoutMinutes, now) is { } lockedUntilUnknown)
-            {
-                return LoginResult.Locked(lockedUntilUnknown);
-            }
-
-            return LoginResult.Fail(LoginFailure.InvalidCredentials);
+            return LoginResult.Fail(LoginFailure.UserNotFound);
         }
 
         if (user.LockoutEndUtc is { } lockoutEnd && lockoutEnd > now)
@@ -142,8 +134,70 @@ public sealed class AuthService(
                 .SetProperty(u => u.LastLoginAtUtc, now)
                 .SetProperty(u => u.PasswordHash, u => newHash ?? u.PasswordHash), ct);
 
-        await LogAsync(SecurityEvents.SignInSucceeded, user.Id, user.Email, null, client, ct);
+        // (A sign-in is not written in the security log: the account keeps the day of its last login, and the Security Logs page lists them.)
         return new LoginResult(true, CreatePrincipal(user), LoginFailure.None);
+    }
+
+    /// <summary>
+    /// A signed-in person changes their own password (the Settings box). The current password must be right: a wrong one is counted like a wrong sign-in
+    /// (the same limit and lock). A new security stamp ends every session of the account (this one is ended by /account/password-changed), so the person logs in again with the new password.
+    /// </summary>
+    public async Task<ServiceResult> ChangePasswordAsync(int userId, string? currentPassword, string? newPassword, string? confirmPassword, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(currentPassword))
+        {
+            return ServiceResult.Fail("Enter your current password.");
+        }
+
+        if (PasswordPolicy.Validate(newPassword) is { } problem)
+        {
+            return ServiceResult.Fail(problem.Replace("Password", "The new password", StringComparison.Ordinal));
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            return ServiceResult.Fail("The two new passwords are not the same.");
+        }
+
+        if (newPassword == currentPassword)
+        {
+            return ServiceResult.Fail("The new password must be different from the current one.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive, ct);
+        if (user is null)
+        {
+            return ServiceResult.Fail("Your account was not found.");
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (user.LockoutEndUtc is { } lockoutEnd && lockoutEnd > now)
+        {
+            return ServiceResult.Fail($"Too many wrong passwords. Try again in {Math.Max(1, (int)Math.Ceiling((lockoutEnd - now).TotalMinutes))} minute(s).");
+        }
+
+        if (!hasher.Verify(currentPassword, user.PasswordHash))
+        {
+            var maxFailed = systemSettings?.Current.MaxFailedAttempts ?? options.Value.MaxFailedAttempts;
+            var lockoutMinutes = systemSettings?.Current.LockoutMinutes ?? options.Value.LockoutMinutes;
+            if (await RegisterFailedAttemptAsync(db, user.Id, maxFailed, lockoutMinutes, now, ct) is not null)
+            {
+                await LogAsync(SecurityEvents.AccountLocked, user.Id, user.Email, $"Locked for {lockoutMinutes} minutes after {maxFailed} wrong passwords (in Settings).", null, ct);
+                return ServiceResult.Fail($"Too many wrong passwords. The account is locked for {lockoutMinutes} minutes.");
+            }
+
+            return ServiceResult.Fail("The current password is not right.");
+        }
+
+        user.PasswordHash = hasher.Hash(newPassword!);
+        user.FailedLoginCount = 0;
+        user.LockoutEndUtc = null;
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+        await db.SaveChangesAsync(ct);
+
+        await LogAsync(SecurityEvents.PasswordChanged, user.Id, user.Email, "The person changed their own password.", null, ct);
+        return ServiceResult.Ok("Your password was changed.");
     }
 
     private Task LogAsync(string kind, int? userId, string? email, string? details, ClientInfo? client, CancellationToken ct) =>

@@ -6,8 +6,8 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>
-/// The things the system does by itself: tell students when a module or an activity appears (also when the teacher scheduled it for
-/// later) and remind them a day before something is due. Each thing is told once: a row is "claimed" with an update that only
+/// The things the system does by itself: tell students when an activity, quiz or task performance appears in a module that is already open
+/// (also when the teacher scheduled it for later) and remind them a day before something is due. A new module on its own is not told. Each thing is told once: a row is "claimed" with an update that only
 /// succeeds for the first caller, so two runs at the same moment can't send the same notice twice.
 /// </summary>
 public static class AutomationService
@@ -15,16 +15,19 @@ public static class AutomationService
     /// <summary>How long before the deadline the reminder goes out.</summary>
     public static readonly TimeSpan ReminderBefore = TimeSpan.FromHours(24);
 
-    /// <summary>Tells the students about every module and item that is visible now and was not told yet. Returns how many notices were sent.</summary>
+    /// <summary>
+    /// Tells the students about every item that is visible now and was not told yet. A module that appears is only marked as shown: the students are
+    /// not told about it (they see it in the course), and the items that come with it are marked too. Returns how many notices were sent.
+    /// </summary>
     public static async Task<int> NotifyNewContentAsync(IDbContextFactory<AppDbContext> dbFactory, NotificationService notifications, DateTime nowUtc, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var sent = 0;
 
-        // ---- modules that appeared
+        // ---- modules that appeared (marked, not told)
         var modules = await db.Modules.AsNoTracking()
             .Where(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= nowUtc && m.NotifiedAtUtc == null)
-            .Select(m => new { m.Id, m.Title, m.AssignmentId, m.Assignment.SectionId, m.Assignment.SubjectId, SubjectName = m.Assignment.Subject.Name })
+            .Select(m => new { m.Id })
             .ToListAsync(ct);
 
         foreach (var m in modules)
@@ -36,13 +39,9 @@ public static class AutomationService
                 continue;
             }
 
-            // The activities that come with the module are covered by this one notice.
+            // The activities that come with the module are part of it: they are not told one by one either.
             await db.ModuleItems.Where(i => i.ModuleId == m.Id && i.NotifiedAtUtc == null && (i.VisibleFromUtc == null || i.VisibleFromUtc <= nowUtc))
                 .ExecuteUpdateAsync(set => set.SetProperty(i => i.NotifiedAtUtc, nowUtc), ct);
-
-            var users = await StudentUserIdsAsync(db, m.SectionId, m.SubjectId, ct);
-            await notifications.AddForManyAsync(users, "module", $"New module in {m.SubjectName}", m.Title, $"student/modules/{m.Id}", ct);
-            sent += users.Count;
         }
 
         // ---- items that appeared later, in a module that was already shown

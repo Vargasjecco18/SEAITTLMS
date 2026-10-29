@@ -82,7 +82,7 @@ public sealed record TeacherSubject(
 // ---------------------------------------------------------------------- what the student sees
 
 public sealed record StudentItem(
-    int Id, string Kind, string Title, decimal MaxScore, DateTime? DueAtUtc, string Status, decimal? Score, bool IsLate, bool IsOverdue, int ModuleId, string ModuleTitle);
+    int Id, string Kind, string Title, decimal MaxScore, DateTime? DueAtUtc, string Status, decimal? Score, bool IsLate, bool IsOverdue, int ModuleId, string ModuleTitle, string? LateDecision = null);
 
 public sealed record StudentModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
@@ -240,7 +240,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var deleted = await db.Modules.Where(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId).ExecuteDeleteAsync(ct);
-        return deleted == 0 ? ServiceResult.Fail("This module was not found.") : ServiceResult.Ok("The module was deleted with its activities and grades.");
+        return deleted == 0 ? ServiceResult.Fail("This module was not found.") : ServiceResult.Ok("The module was deleted with its assignments and grades.");
     }
 
     /// <summary>Posts the module now (<paramref name="atUtc"/> empty) or at a time in the future. Students are told when it appears.</summary>
@@ -267,7 +267,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         if (atUtc is null)
         {
             await AutomationService.NotifyNewContentAsync(dbFactory, notifications, now, ct);
-            return ServiceResult.Ok("The module is posted. Students were told.");
+            return ServiceResult.Ok("The module is posted.");
         }
 
         return ServiceResult.Ok($"The module will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc.Value)}.");
@@ -387,7 +387,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var deleted = await db.ModuleItems.Where(i => i.Id == itemId && i.Module.Assignment.TeacherId == teacherId).ExecuteDeleteAsync(ct);
-        return deleted == 0 ? ServiceResult.Fail("This item was not found.") : ServiceResult.Ok("Deleted with the work the students handed in.");
+        return deleted == 0 ? ServiceResult.Fail("This item was not found.") : ServiceResult.Ok("Deleted with the answers the students handed in.");
     }
 
     public async Task<IReadOnlyList<QuestionInput>?> GetQuestionsAsync(int teacherId, int itemId, CancellationToken ct = default)
@@ -402,6 +402,8 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .Select(q => new QuestionInput { Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points })
             .ToListAsync(ct);
     }
+
+    internal const string FileQuizHasNoQuestions = "This quiz is a file, so it has no questions. Take the file off first to write questions.";
 
     /// <summary>Replaces the questions of a quiz. The score of the quiz becomes the total of the points. Not possible once somebody has started it.</summary>
     public async Task<ServiceResult> SaveQuestionsAsync(int teacherId, int itemId, IReadOnlyList<QuestionInput> questions, CancellationToken ct = default)
@@ -422,6 +424,12 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         if (await db.Submissions.AnyAsync(s => s.ItemId == itemId, ct))
         {
             return ServiceResult.Fail("Students have already started this quiz, so its questions can't be changed.");
+        }
+
+        // A quiz that is a file has no questions: the students answer with a file. (A quiz that already has questions keeps being editable.)
+        if (questions.Count > 0 && await db.Attachments.AnyAsync(f => f.ItemId == itemId, ct) && !await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct))
+        {
+            return ServiceResult.Fail(FileQuizHasNoQuestions);
         }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -590,7 +598,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .Select(i => new
             {
                 i.Id, i.Kind, i.Title, i.MaxScore, i.DueAtUtc, i.ModuleId, ModuleTitle = i.Module.Title, i.ShowResult,
-                Mine = i.Submissions.Where(s => s.StudentId == studentId).Select(s => new { s.Status, s.Score, s.IsLate }).FirstOrDefault(),
+                Mine = i.Submissions.Where(s => s.StudentId == studentId).Select(s => new { s.Status, s.Score, s.IsLate, s.LateDecision }).FirstOrDefault(),
             })
             .ToListAsync(ct);
 
@@ -599,7 +607,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             var status = r.Mine is null ? "NotStarted" : r.Mine.Status;
             var overdue = r.DueAtUtc is { } due && due < now && (r.Mine is null || r.Mine.Status == SubmissionStatus.InProgress);
             var score = r.Kind == ItemKinds.Quiz && !r.ShowResult ? null : r.Mine?.Score;
-            return new StudentItem(r.Id, r.Kind, r.Title, r.MaxScore, r.DueAtUtc, status, score, r.Mine?.IsLate ?? false, overdue, r.ModuleId, r.ModuleTitle);
+            return new StudentItem(r.Id, r.Kind, r.Title, r.MaxScore, r.DueAtUtc, status, score, r.Mine?.IsLate ?? false, overdue, r.ModuleId, r.ModuleTitle, r.Mine?.LateDecision);
         }).ToList();
     }
 

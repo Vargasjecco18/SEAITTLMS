@@ -4,7 +4,7 @@
 @inject CalendarService Events
 @inject NavigationManager Navigation
 
-@* The box a click on a day of the week opens: everything on that day. Each line is a link: an activity, quiz or task performance (a teacher gets
+@* The box a click on a day of the week opens: everything on that day. Each line is a link: an assignment, quiz or task performance (a teacher gets
    who handed it in), a module, or an event of the person's own calendar. *@
 <Modal Open="loaded" Title="@Day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)" OnClose="Close">
     @if (events.Count == 0)
@@ -58,7 +58,7 @@
 
     private void Close() => Navigation.NavigateTo(CloseUrl);
 
-    /// <summary>A teacher's activity, quiz or task performance opens the box with who handed it in; an event opens its own box; the rest go to their page.</summary>
+    /// <summary>A teacher's assignment, quiz or task performance opens the box with who handed it in; an event opens its own box; the rest go to their page.</summary>
     private string LinkOf(CalendarEvent e)
     {
         var back = $"calendar?view={View}&date={Day:yyyy-MM-dd}";

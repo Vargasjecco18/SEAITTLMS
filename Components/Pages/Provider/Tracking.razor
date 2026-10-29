@@ -13,7 +13,7 @@
     <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="RefreshAsync">Refresh</Button>
 </PageHeader>
 
-@* What was sent, one tab for each kind (the syllabi and modules, the activities, the quizzes, the task performances), then the teachers who got it and the students who see it. *@
+@* What was sent, one tab for each kind (the syllabi and modules, the assignments, the quizzes, the task performances), then the teachers who got it and the students who see it. *@
 <PillTabs Items="PartTabs" Selected="@part" SelectedChanged="PartChangedAsync" Label="Part of the tracking" />
 <p class="part-hint">@PartHint</p>
 
@@ -103,7 +103,7 @@ else
                         <th scope="col">Teacher</th>
                         <th scope="col">State</th>
                         <th scope="col" class="bar-cell">Students opened it</th>
-                        <th scope="col" class="bar-cell col-more">Activities opened</th>
+                        <th scope="col" class="bar-cell col-more">Assignments opened</th>
                         <th scope="col"><span class="sr-only">Details</span></th>
                     </tr>
                 </thead>
@@ -145,11 +145,11 @@ else
                                 @if (row.ItemPercent is { } ip)
                                 {
                                     <ProgressBar Percent="ip" Title="@($"{row.ItemOpens} of {row.ItemExpected} opens")" />
-                                    <span class="muted-line">@ProviderUi.Plural(row.Items, "activity", "activities")</span>
+                                    <span class="muted-line">@ProviderUi.Plural(row.Items, "assignment", "assignments")</span>
                                 }
                                 else
                                 {
-                                    <span class="na">@(row.IsPosted ? "No activities" : "—")</span>
+                                    <span class="na">@(row.IsPosted ? "No assignments" : "—")</span>
                                 }
                             </td>
                             <td class="right"><ButtonLink Href="@($"provider/tracking/{row.DeliveryId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="arrow-right" IconAfter="true">Details</ButtonLink></td>
@@ -203,7 +203,7 @@ else
     private IReadOnlyList<PillTabs.Tab> PartTabs =>
     [
         new("modules", "Modules", "eye"),
-        new("activities", "Activities", SubjectStyle.KindIcon(ItemKinds.Activity), itemCounts.GetValueOrDefault(ItemKinds.Activity)),
+        new("activities", "Assignments", SubjectStyle.KindIcon(ItemKinds.Activity), itemCounts.GetValueOrDefault(ItemKinds.Activity)),
         new("quizzes", "Quizzes", SubjectStyle.KindIcon(ItemKinds.Quiz), itemCounts.GetValueOrDefault(ItemKinds.Quiz)),
         new("tasks", "Task performance", SubjectStyle.KindIcon(ItemKinds.TaskPerformance), itemCounts.GetValueOrDefault(ItemKinds.TaskPerformance)),
         new("teachers", "Teachers", "presentation"),
@@ -220,7 +220,7 @@ else
 
     private string PartHint => part switch
     {
-        "activities" => "The activities that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
+        "activities" => "The assignments that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
         "quizzes" => "The quizzes that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
         "tasks" => "The task performances that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
         "teachers" => "Each teacher who has a course this school year: what they were sent and what they did with it.",

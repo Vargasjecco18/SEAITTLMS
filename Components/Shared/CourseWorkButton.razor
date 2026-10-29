@@ -3,7 +3,7 @@
 @inject TeachingService Teaching
 @inject TimeProvider Clock
 
-@* The count of work in a row of the list of courses ("3 to do" for a student, "2 to check" for a teacher). It is a button: it opens a box with the activities, quizzes and
+@* The count of work in a row of the list of courses ("3 to do" for a student, "2 to check" for a teacher). It is a button: it opens a box with the assignments, quizzes and
    task performances behind the number, and each one is a link to open it. It is its own live island, so it works in a list that is otherwise plain. *@
 <button type="button" class="work-button @(Student ? "todo" : "check")" aria-haspopup="dialog" @onclick="OpenAsync">@Text</button>
 

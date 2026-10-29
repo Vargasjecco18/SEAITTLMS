@@ -29,15 +29,16 @@ public sealed record StudentSubjectCard(
     bool IsCompleted = false, decimal? AttendancePercent = null, DateTime? NextDueUtc = null, string? Meets = null,
     int Activities = 0, int Quizzes = 0, int TaskPerformances = 0, string? StrandCode = null, string? StrandName = null)
 {
-    /// <summary>The parts of the course the student has gone through (modules opened, work handed in) and all the parts that are posted.</summary>
-    public int ProgressDone => (ModulesVisible - ModulesUnopened) + ItemsDone;
+    /// <summary>The modules the student has opened.</summary>
+    public int ProgressDone => ModulesVisible - ModulesUnopened;
 
-    public int ProgressTotal => ModulesVisible + ItemsOpen + ItemsDone;
+    /// <summary>The modules the teacher has posted.</summary>
+    public int ProgressTotal => ModulesVisible;
 
-    /// <summary>How far along the student is in the course: the modules they opened and the work they handed in, out of everything posted. Null when nothing is posted yet.</summary>
+    /// <summary>How far along the student is in the course: the modules they opened, out of the modules that are posted. Null when no module is posted yet.</summary>
     public int? ProgressPercent => AssignmentId is null || ProgressTotal == 0 ? null : (int)Math.Round(ProgressDone * 100.0 / ProgressTotal);
 
-    public string ProgressText => $"{ProgressDone} of {ProgressTotal} done: modules opened and work handed in";
+    public string ProgressText => $"{ProgressDone} of {ProgressTotal} {(ProgressTotal == 1 ? "module" : "modules")} opened";
 }
 
 /// <summary>A teacher's subject as the administrator sees it.</summary>
@@ -216,7 +217,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             {
                 a.Id, a.SubjectId, SubjectName = a.Subject.Name, a.SectionId, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, StrandName = a.Section.Strand.Name, SectionName = a.Section.Name,
                 Total = a.Modules.Count, Posted = a.Modules.Count(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= now),
-                ToGrade = db.Submissions.Count(s => s.Item.Module.AssignmentId == a.Id && s.Status == SubmissionStatus.Submitted),
+                ToGrade = db.Submissions.Count(s => s.Item.Module.AssignmentId == a.Id && s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined),
             })
             .ToListAsync(ct);
 
@@ -255,7 +256,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         }
 
         var rows = await db.Submissions.AsNoTracking()
-            .Where(s => s.Item.Module.AssignmentId == assignmentId && s.Status == SubmissionStatus.Submitted)
+            .Where(s => s.Item.Module.AssignmentId == assignmentId && s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined)
             .GroupBy(s => new { s.ItemId, s.Item.Kind, s.Item.Title, ModuleTitle = s.Item.Module.Title, s.Item.DueAtUtc, s.Item.Position })
             .Select(g => new { g.Key.ItemId, g.Key.Kind, g.Key.Title, g.Key.ModuleTitle, g.Key.DueAtUtc, Count = g.Count() })
             .ToListAsync(ct);

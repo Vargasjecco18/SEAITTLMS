@@ -6,12 +6,17 @@
 @inject EnrollmentService Enrollment
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JS
+@inject EnrollmentImportService Importer
+@inject FileDownloads Downloads
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Enrollments · SEAITT Legazpi LMS</PageTitle>
 
 <div class="screen-only">
     <PageHeader Title="Enrollments"
-                IconName="user-plus" />
+                IconName="user-plus">
+        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="OpenImport">Import from Excel</Button>
+    </PageHeader>
 </div>
 
 @if (lookups is null)
@@ -129,20 +134,20 @@ else
                 }
 
                 <Field For="first-name" Label="First name" Required="true">
-                    <input id="first-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)"
-                           @bind="FirstNameValue" />
+                    <input id="first-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap"
+                           @bind="FirstNameValue" @onblur="WriteNamesWithCapitals" />
                 </Field>
                 <Field For="middle-name" Label="Middle name">
-                    <input id="middle-name" type="text" maxlength="100" autocomplete="off" readonly="@(existing is not null)"
-                           @bind="MiddleNameValue" />
+                    <input id="middle-name" type="text" maxlength="100" autocomplete="off" readonly="@(existing is not null)" class="cap"
+                           @bind="MiddleNameValue" @onblur="WriteNamesWithCapitals" />
                 </Field>
                 <Field For="last-name" Label="Last name" Required="true">
-                    <input id="last-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)"
-                           @bind="LastNameValue" @bind:event="oninput" />
+                    <input id="last-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap"
+                           @bind="LastNameValue" @bind:event="oninput" @onblur="WriteNamesWithCapitals" />
                 </Field>
                 <Field For="name-extension" Label="Name extension" Hint="Optional: Jr., Sr., III ...">
-                    <input id="name-extension" type="text" maxlength="10" autocomplete="off" placeholder="Jr."
-                           readonly="@(existing is not null)" @bind="NameExtensionValue" />
+                    <input id="name-extension" type="text" maxlength="10" autocomplete="off" placeholder="Jr." class="cap"
+                           readonly="@(existing is not null)" @bind="NameExtensionValue" @onblur="WriteNamesWithCapitals" />
                 </Field>
                 <Field For="phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567.">
                     <input id="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="09XX XXX XXXX"
@@ -188,15 +193,19 @@ else
                     </select>
                 </Field>
 
-                <Field For="section" Label="Section" Required="true" Hint="Choose the section, A, B or C.">
+                <Field For="section" Label="Section" Required="true" Hint="@SectionHint">
                         <select id="section" required @bind="form.SectionName" @bind:after="OnSectionChangedAsync">
                             <option value="">Choose</option>
-                            @foreach (var name in SectionChoices)
+                            @foreach (var load in SectionLoads)
                             {
-                                <option value="@name">@name</option>
+                                <option value="@load.Name" disabled="@load.IsFull">@load.Name@(form.StrandId == 0 ? "" : $" · {load.Text}")@(load.IsFull ? " (full)" : "")</option>
                             }
                         </select>
                 </Field>
+                @if (strandShifted)
+                {
+                    <p class="shift-note" role="status"><Icon Name="info" Size="16" /> The student changes strand, so the student starts again in Grade 11.</p>
+                }
 
                 @* The subjects are not picked: the strand decides them (the academic coordinator sets them in the academic setup). *@
                 <p class="subjects-note">
@@ -291,6 +300,85 @@ else
     </EditForm>
 }
 
+<Modal Open="importOpen" Title="Import students from Excel" Large="true" OnClose="CloseImport">
+    @if (importOpen && lookups is not null)
+    {
+        @if (importResult is null)
+        {
+            <ol class="import-steps">
+                <li>
+                    <strong>Get the template.</strong> It has the columns (LRN, names, grade level, strand, section), drop-down lists, and a sheet that says how to fill it.
+                    <div><Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button></div>
+                </li>
+                <li>
+                    <strong>Fill it</strong> with the students (you can paste them from another file) and save it as an Excel file.
+                </li>
+                <li>
+                    <strong>Choose the term and the file.</strong>
+                    <div class="two">
+                        <Field For="imp-term" Label="Term" Required="true">
+                            <select id="imp-term" @bind="importTermId">
+                                @foreach (var term in lookups.Terms)
+                                {
+                                    <option value="@term.Id">@term.SchoolYear · @term.Name@(term.IsCurrent ? " (current)" : "")</option>
+                                }
+                            </select>
+                        </Field>
+                        <Field For="imp-file" Label="Excel file (.xlsx)" Required="true">
+                            <InputFile id="imp-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                        </Field>
+                    </div>
+                    @if (importFileName is not null)
+                    {
+                        <p class="chosen-file"><Icon Name="file-spreadsheet" Size="16" /> @importFileName</p>
+                    }
+                </li>
+            </ol>
+            <FormErrors Errors="@(importError is null ? Array.Empty<string>() : new[] { importError })" />
+            <div class="import-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseImport">Cancel</Button>
+                <Button IconName="upload" Disabled="@(importing || reading || importBytes is null || importTermId == 0)" OnClick="ImportAsync">@(importing ? "Enrolling the students…" : "Import")</Button>
+            </div>
+        }
+        else
+        {
+            <p class="import-summary" role="status">
+                <strong>@importResult.Enrolled</strong> @(importResult.Enrolled == 1 ? "student was" : "students were") enrolled for the @importResult.TermLabel.
+                @if (importResult.Failed > 0)
+                {
+                    <span class="bad"><strong>@importResult.Failed</strong> @(importResult.Failed == 1 ? "was" : "were") not enrolled; the reason is on its line.</span>
+                }
+            </p>
+            <div class="table-wrap">
+                <table class="import-table">
+                    <thead><tr><th scope="col">Row</th><th scope="col">LRN</th><th scope="col">Student</th><th scope="col">Section</th><th scope="col">Result</th></tr></thead>
+                    <tbody>
+                        @foreach (var row in importResult.Rows)
+                        {
+                            <tr class="@(row.Succeeded ? "ok" : "failed")">
+                                <td>@row.Row</td>
+                                <td class="mono">@row.Lrn</td>
+                                <td>@row.Name</td>
+                                <td>@row.Section</td>
+                                <td>@(row.Succeeded ? (row.NewAccount ? "Enrolled · new account" : "Enrolled") : string.Join(" ", row.Errors))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="import-actions">
+                <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadResultAsync">Download the result (Excel)</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="ImportAnother">Import another file</Button>
+                <Button IconName="circle-check" OnClick="CloseImport">Done</Button>
+            </div>
+            @if (importResult.Rows.Any(r => r.Password is not null))
+            {
+                <p class="hint">The result file has the email and the password of each new account. Hand them to the students and keep the file private.</p>
+            }
+        }
+    }
+</Modal>
+
 @code {
     private sealed class Form
     {
@@ -312,10 +400,18 @@ else
     private ExistingStudent? existing;
     private IReadOnlyList<SubjectOption> subjects = [];
     private IReadOnlyList<CoursePlanRow> plan = [];
-    private IReadOnlyList<string> sectionNames = [];
+    private IReadOnlyList<SectionLoad> sectionLoads = [];
+    private bool strandShifted;
+    private byte defaultGrade = 11;
 
-    /// <summary>A to C, and the sections with another name that this strand and grade level already have.</summary>
-    private IEnumerable<string> SectionChoices => SectionNames.Choices.Concat(sectionNames.Where(n => !SectionNames.IsChoice(n)));
+    /// <summary>A to C, and the sections with another name that this strand and grade level already have, each with how many students it has.</summary>
+    private IEnumerable<SectionLoad> SectionLoads => sectionLoads.Count > 0
+        ? sectionLoads
+        : SectionNames.Choices.Select(n => new SectionLoad(n, 0, Enrollment.SectionCapacity));
+
+    private string SectionHint => form.StrandId != 0 && sectionLoads.FirstOrDefault(l => l.Name == form.SectionName) is { } load
+        ? $"Section {load.Name} has {load.Text}. {(load.IsFull ? "It is full." : load.SeatsLeft == 1 ? "1 seat is left." : $"{load.SeatsLeft} seats are left.")}"
+        : $"Choose the section, A, B or C. A section can have {Enrollment.SectionCapacity} students.";
     private List<string> errors = [];
     private EnrollmentReceipt? receipt;
     private bool busy;
@@ -353,6 +449,15 @@ else
     {
         get => existing?.PhoneNumber ?? form.PhoneNumber;
         set => form.PhoneNumber = value;
+    }
+
+    /// <summary>When a name box is left, the names are written with capital letters (juan dela cruz -> Juan Dela Cruz). The service does it again when it saves.</summary>
+    private void WriteNamesWithCapitals()
+    {
+        form.FirstName = NameCase.Title(form.FirstName);
+        form.MiddleName = NameCase.Title(form.MiddleName);
+        form.LastName = NameCase.Title(form.LastName);
+        form.NameExtension = NameCase.Title(form.NameExtension);
     }
 
     private IEnumerable<StrandOption> StrandsOfTrack => lookups!.Strands.Where(s => s.TrackId == form.TrackId);
@@ -398,7 +503,8 @@ else
         }
 
         var termYear = lookups!.Terms.FirstOrDefault(t => t.Id == form.TermId)?.SchoolYear;
-        form.GradeLevel = termYear is not null && termYear != last.SchoolYear ? (byte)Math.Min(12, last.GradeLevel + 1) : last.GradeLevel;
+        form.GradeLevel = defaultGrade = termYear is not null && termYear != last.SchoolYear ? (byte)Math.Min(12, last.GradeLevel + 1) : last.GradeLevel;
+        strandShifted = false;
 
         var strand = lookups.Strands.FirstOrDefault(s => s.Id == last.StrandId);
         if (strand is null)
@@ -410,7 +516,7 @@ else
 
         form.TrackId = strand.TrackId;
         form.StrandId = strand.Id;
-        form.SectionName = last.SectionName;
+        form.SectionName = ""; // the section is chosen again every term
         await ReloadChoicesAsync();
     }
 
@@ -433,7 +539,17 @@ else
         await ReloadChoicesAsync();
     }
 
-    private async Task OnStrandChangedAsync() => await ReloadChoicesAsync();
+    private async Task OnStrandChangedAsync()
+    {
+        // A student who goes to another strand starts again in Grade 11 (the grade level of the last strand comes back if the old strand is chosen again).
+        if (existing?.LastPlacement is { } last && form.StrandId != 0)
+        {
+            strandShifted = form.StrandId != last.StrandId;
+            form.GradeLevel = strandShifted ? (byte)11 : defaultGrade;
+        }
+
+        await ReloadChoicesAsync();
+    }
 
     private async Task OnPlacementChangedAsync() => await ReloadChoicesAsync();
 
@@ -448,12 +564,12 @@ else
         {
             subjects = [];
             plan = [];
-            sectionNames = [];
+            sectionLoads = [];
             return;
         }
 
         var curriculum = await Enrollment.GetCurriculumAsync(form.StrandId, form.GradeLevel, form.TermId);
-        var sections = await Enrollment.GetSectionNamesAsync(form.TermId, form.StrandId, form.GradeLevel);
+        var sections = await Enrollment.GetSectionLoadsAsync(form.TermId, form.StrandId, form.GradeLevel);
         var coursePlan = await Enrollment.GetCoursePlanAsync(form.TermId, form.StrandId, form.GradeLevel, form.SectionName);
 
         // The choices changed again while this was loading: the newer load shows its own result.
@@ -464,7 +580,11 @@ else
 
         subjects = curriculum;
         plan = coursePlan;
-        sectionNames = sections;
+        sectionLoads = sections;
+        if (sections.FirstOrDefault(l => l.Name == form.SectionName)?.IsFull == true)
+        {
+            form.SectionName = "";
+        }
     }
 
     private async Task SubmitAsync()
@@ -532,4 +652,107 @@ else
     }
 
     private async Task PrintAsync() => await JS.InvokeVoidAsync("seaitt.print");
+
+    // ---------- import from Excel
+    private bool importOpen;
+    private bool importing;
+    private bool reading;
+    private int importTermId;
+    private string? importFileName;
+    private byte[]? importBytes;
+    private string? importError;
+    private ImportResult? importResult;
+
+    private void OpenImport()
+    {
+        importOpen = true;
+        importing = reading = false;
+        importFileName = null;
+        importBytes = null;
+        importError = null;
+        importResult = null;
+        importTermId = form.TermId != 0 ? form.TermId : (lookups?.Terms.FirstOrDefault(t => t.IsCurrent) ?? lookups?.Terms.FirstOrDefault())?.Id ?? 0;
+    }
+
+    private void CloseImport() => importOpen = false;
+
+    private async Task DownloadTemplateAsync()
+    {
+        await Downloads.SaveAsync("Enrollment template.xlsx", await Importer.BuildTemplateAsync());
+    }
+
+    private async Task FileChosenAsync(InputFileChangeEventArgs e)
+    {
+        importError = null;
+        importBytes = null;
+        importFileName = null;
+        reading = true;
+        try
+        {
+            if (e.File.Size > XlsxReader.MaxFileBytes)
+            {
+                importError = $"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.";
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            importBytes = buffer.ToArray();
+            importFileName = e.File.Name;
+        }
+        catch (IOException)
+        {
+            importError = "The file could not be read. Choose it again.";
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (importing || importBytes is null)
+        {
+            return;
+        }
+
+        importing = true;
+        importError = null;
+        try
+        {
+            var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+            _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
+            var result = await Importer.ImportAsync(importBytes, importTermId, userId);
+            if (result.FileError is not null)
+            {
+                importError = result.FileError;
+            }
+            else
+            {
+                importResult = result;
+            }
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+
+    private async Task DownloadResultAsync()
+    {
+        if (importResult is not null)
+        {
+            await Downloads.SaveAsync("Enrollment import result.xlsx", EnrollmentImportService.BuildResultFile(importResult));
+        }
+    }
+
+    private void ImportAnother()
+    {
+        importResult = null;
+        importBytes = null;
+        importFileName = null;
+        importError = null;
+    }
 }

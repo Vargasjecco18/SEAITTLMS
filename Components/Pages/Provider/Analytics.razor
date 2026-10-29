@@ -7,6 +7,10 @@
 
 <PageHeader Title="Analytics"
             IconName="chart-column">
+    @if (data is { Sent: > 0 })
+    {
+        <ButtonLink Href="provider/analytics/export" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" data-enhance-nav="false" download>Export to Excel</ButtonLink>
+    }
     <ButtonLink Href="provider/tracking" Variant="ButtonVariant.Secondary" IconName="eye">Tracking</ButtonLink>
 </PageHeader>
 
@@ -30,7 +34,7 @@ else
         <StatCard Label="Teachers open it in" Text="@ProviderUi.Duration(data.AverageHoursToOpen)" IconName="timer" Accent="AccentColor.Slate" Hint="On average" />
         <StatCard Label="Posted to the students" Text="@($"{data.PostedPercent}%")" IconName="circle-check" Accent="@Level(data.PostedPercent)" Hint="@(data.AverageHoursToPost is null ? "None posted" : $"after {ProviderUi.Duration(data.AverageHoursToPost)}")" />
         <StatCard Label="Modules opened by students" Text="@($"{data.StudentModulePercent}%")" IconName="book-open" Accent="@Level(data.StudentModulePercent)" Hint="Syllabi and modules posted" />
-        <StatCard Label="Activities opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Activities, quizzes and tasks" />
+        <StatCard Label="Assignments opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Assignments, quizzes and tasks" />
     </div>
 
     <div class="pcards">
@@ -136,7 +140,7 @@ else
                             <th scope="col" class="bar-cell">Opened by the teachers</th>
                             <th scope="col" class="bar-cell col-more">Posted</th>
                             <th scope="col" class="bar-cell">Modules opened</th>
-                            <th scope="col" class="bar-cell col-more">Activities opened</th>
+                            <th scope="col" class="bar-cell col-more">Assignments opened</th>
                         </tr>
                     </thead>
                     <tbody>

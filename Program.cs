@@ -54,11 +54,12 @@ builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOpt
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PasswordHasher>();
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddSingleton<LoginLockouts>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(EnrollmentOptions.SectionName));
 builder.Services.AddScoped<EnrollmentService>();
 builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<EnrollmentImportService>();
+builder.Services.AddScoped<FileDownloads>();
 builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddSingleton<LiveUpdates>();
 builder.Services.AddScoped<NotificationService>();
@@ -130,8 +131,11 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddCascadingAuthenticationState();
 
+// A list with a live button on every line (the registrar's enrollments: two islands a line) tells the server about all of its
+// islands in one message when the page is opened from another page. The default limit of 32 KB is too small for that.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents()
+    .AddHubOptions(options => options.MaximumReceiveMessageSize = 1024 * 1024);
 
 var app = builder.Build();
 
@@ -200,14 +204,28 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
         return Results.BadRequest();
     }
 
-    var signedOutUserId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : (int?)null;
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-    if (signedOutUserId is not null)
-    {
-        await http.RequestServices.GetRequiredService<SecurityLogService>().AddAsync(SecurityEvents.SignedOut, signedOutUserId, client: ClientInfo.From(http));
-    }
 
     return Results.LocalRedirect("/login");
+}).AllowAnonymous();
+
+// After a person changed their own password (Settings) the session they are in is over: the security stamp of the cookie is not the account's any more.
+// This ends it at once (the cookie check would only notice it after a while) and goes to the login page. It does nothing for a session that is still valid.
+app.MapGet("/account/password-changed", async (HttpContext http, IDbContextFactory<AppDbContext> dbFactory) =>
+{
+    var stamp = http.User.FindFirstValue(AppClaimTypes.SecurityStamp);
+    if (int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) && stamp is not null)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(http.RequestAborted);
+        var current = await db.Users.AsNoTracking().Where(u => u.Id == id).Select(u => u.SecurityStamp).FirstOrDefaultAsync(http.RequestAborted);
+        if (current is not null && current != stamp)
+        {
+            await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Results.LocalRedirect("/login?notice=password-changed");
+        }
+    }
+
+    return Results.LocalRedirect("/");
 }).AllowAnonymous();
 
 // The security log as a file the administrator can open in a spreadsheet (the same filter as the page: ?group=&q=&severity=&from=&to=).
@@ -245,6 +263,41 @@ app.MapGet("/admin/security-logs/export", async (HttpContext http, SecurityLogSe
         return "\"" + value.Replace("\"", "\"\"") + "\"";
     }
 }).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.Admin });
+
+// The Analytics pages as Excel files (Export to Excel): the student analytics of the administrator, the guidance counselor and a teacher; the analytics of the
+// academic provider; the teacher evaluation analytics of the academic coordinator. The file has the numbers of the page the person is allowed to see.
+app.MapGet("/analytics/export", async (HttpContext http, AnalyticsService reports, TimeProvider clock) =>
+{
+    var id = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var role = http.User.FindFirstValue(ClaimTypes.Role) ?? "";
+    var user = new CurrentUserInfo(id, role, http.User.Identity?.Name ?? "", http.User.FindFirstValue(ClaimTypes.Email) ?? "");
+    if (await reports.GetAsync(user, http.RequestAborted) is not { } report)
+    {
+        return Results.NotFound();
+    }
+
+    var now = PhilippineTime.Now(clock).DateTime;
+    return Results.File(AnalyticsExport.ForStudents(report, user.Name, now), FileDownloads.XlsxType, AnalyticsExport.FileName("Student analytics", now));
+}).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.Admin + "," + AppRoles.GuidanceCounselor + "," + AppRoles.Teacher });
+
+app.MapGet("/provider/analytics/export", async (HttpContext http, ProviderService provider, TimeProvider clock) =>
+{
+    var data = await provider.GetAnalyticsAsync(http.RequestAborted);
+    var now = PhilippineTime.Now(clock).DateTime;
+    return Results.File(AnalyticsExport.ForProvider(data, now), FileDownloads.XlsxType, AnalyticsExport.FileName("Provider analytics", now));
+}).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.AcademicProvider });
+
+app.MapGet("/coordinator/analytics/export", async (HttpContext http, EvaluationService evaluations, TimeProvider clock) =>
+{
+    var data = await evaluations.GetAnalyticsAsync(int.TryParse(http.Request.Query["evaluation"], out var evaluation) ? evaluation : null, http.RequestAborted);
+    if (data.EvaluationId is null)
+    {
+        return Results.LocalRedirect("/coordinator/analytics");
+    }
+
+    var now = PhilippineTime.Now(clock).DateTime;
+    return Results.File(AnalyticsExport.ForEvaluation(data, now), FileDownloads.XlsxType, AnalyticsExport.FileName("Teacher evaluation analytics", now));
+}).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.AcademicCoordinator });
 
 // Backups: one is downloaded from the page, one is sent in (to be restored from the list). Only administrators.
 app.MapGet("/admin/backups/download/{name}", (string name, BackupService backups) =>

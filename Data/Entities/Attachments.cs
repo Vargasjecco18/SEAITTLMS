@@ -15,6 +15,9 @@ public class Attachment : AuditableEntity
 
     public long SizeBytes { get; set; }
 
+    /// <summary>A slide file (a PowerPoint or a PDF) of a lesson: the academic provider and the teacher attach it to a module, and the students read it in the module's slides.</summary>
+    public bool IsSlides { get; set; }
+
     /// <summary>Who added it (empty when the account was deleted).</summary>
     public int? UploadedByUserId { get; set; }
     public User? UploadedBy { get; set; }

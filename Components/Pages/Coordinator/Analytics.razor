@@ -7,6 +7,10 @@
 
 <PageHeader Title="Teacher evaluation analytics"
             IconName="chart-column">
+    @if (data?.EvaluationId is { } selectedEvaluation)
+    {
+        <ButtonLink Href="@($"coordinator/analytics/export?evaluation={selectedEvaluation}")" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" data-enhance-nav="false" download>Export to Excel</ButtonLink>
+    }
     <ButtonLink Href="coordinator/evaluations" Variant="ButtonVariant.Secondary" IconName="clipboard-check">Evaluations</ButtonLink>
 </PageHeader>
 

@@ -340,7 +340,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
         if (module.IsSyllabus)
         {
-            return ServiceResult.Fail("A syllabus has no activities. Add them to a module.");
+            return ServiceResult.Fail("A syllabus has no assignments. Add them to a module.");
         }
 
         MaterialItem item;
@@ -421,6 +421,11 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         if (item is null)
         {
             return ServiceResult.Fail("This quiz was not found.");
+        }
+
+        if (questions.Count > 0 && await db.Attachments.AnyAsync(f => f.MaterialItemId == itemId, ct) && !await db.MaterialQuestions.AnyAsync(q => q.ItemId == itemId, ct))
+        {
+            return ServiceResult.Fail(ModuleService.FileQuizHasNoQuestions);
         }
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);

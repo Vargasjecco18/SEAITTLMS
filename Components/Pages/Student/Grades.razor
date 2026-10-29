@@ -48,7 +48,7 @@ else
 
         <div class="stats">
             <StatCard Label="Overall average" Text="@(summary.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(summary.Overall is null ? AccentColor.Slate : summary.Overall < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
-                      Hint="@(summary.Overall is { } o ? GradeRules.Descriptor(o) : "No graded work yet")" />
+                      Hint="@(summary.Overall is { } o ? GradeRules.Descriptor(o) : "No graded assignments yet")" />
             <StatCard Label="Attendance" Text="@(attendance?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
                       Accent="@(attendance?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
                       Hint="@(attendance is { Days: > 0 } ? $"{attendance.Present} present · {attendance.Late} late · {attendance.Absent} absent" : "Nothing marked yet")" />
@@ -95,13 +95,13 @@ else
                         }
                         <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
 
-                        <h3 class="work-title">Work</h3>
+                        <h3 class="work-title">Assignments</h3>
                         <p class="counts">
                             @if (att is { Percent: { } attRate })
                             {
                                 <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
                             }
-                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "work" : "works") graded
+                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "assignment" : "assignments") graded
                             @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
                             @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
                         </p>
@@ -110,7 +110,7 @@ else
                         {
                             <div class="table-wrap">
                                 <table class="table">
-                                    <thead><tr><th scope="col">Work</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
+                                    <thead><tr><th scope="col">Assignment</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
                                     <tbody>
                                         @foreach (var g in s.Graded)
                                         {
@@ -127,7 +127,7 @@ else
                         }
                         else
                         {
-                            <p class="muted">No work is graded yet.</p>
+                            <p class="muted">No assignment is graded yet.</p>
                         }
 
                         <p class="open-course"><a href="student/subjects/@s.AssignmentId">Open the course <Icon Name="arrow-right" Size="14" /></a></p>

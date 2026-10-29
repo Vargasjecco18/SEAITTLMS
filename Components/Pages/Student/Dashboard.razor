@@ -29,7 +29,7 @@ else
     @* At the right, in this order: the calendar, the announcements, the students who are online and the teachers who are online. *@
     <PageWithAside Show="calendar,announcements,online,onlineteachers">
         <div class="stats">
-            <StatCard Label="Work to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
+            <StatCard Label="Assignments to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
             <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />
             <StatCard Label="New modules" Value="@data.UnopenedModules" IconName="layers" Accent="AccentColor.Amber" Hint="Not opened yet" />
             <StatCard Label="Average grade" Text="@(data.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(data.Failing > 0 ? AccentColor.Rose : AccentColor.Violet)"

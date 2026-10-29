@@ -1,7 +1,7 @@
 @inject ProviderService Provider
 @inject TimeProvider Clock
 
-@* The tracking of the activities, the quizzes or the task performances (Kind) that were sent to the teachers: one line for each, with the teacher and the section that have it,
+@* The tracking of the assignments, the quizzes or the task performances (Kind) that were sent to the teachers: one line for each, with the teacher and the section that have it,
    where it is (not opened, a draft, scheduled or posted) and how many of the students opened it and handed it in. The same filters as the modules have. *@
 <PillTabs Items="Tabs" Selected="@state" SelectedChanged="StateChangedAsync" Label="@($"State of the {Plural}")" />
 
@@ -144,7 +144,7 @@
 </Card>
 
 @code {
-    /// <summary>One of <see cref="ItemKinds"/>: Activity, Quiz or TaskPerformance.</summary>
+    /// <summary>One of <see cref="ItemKinds"/>: Assignment, Quiz or TaskPerformance.</summary>
     [Parameter, EditorRequired] public string Kind { get; set; } = ItemKinds.Activity;
 
     private ItemTrackingPage? data;
@@ -163,7 +163,7 @@
     {
         ItemKinds.Quiz => "quiz",
         ItemKinds.TaskPerformance => "task performance",
-        _ => "activity",
+        _ => "assignment",
     };
 
     private string Plural => ItemKinds.Plural(Kind).ToLowerInvariant();

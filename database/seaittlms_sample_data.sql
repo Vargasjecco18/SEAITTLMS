@@ -2711,13 +2711,10 @@ SELECT * FROM (
 
 INSERT INTO notifications (user_id, kind, title, body, link, is_read, created_at_utc, updated_at_utc)
 SELECT * FROM (
-  SELECT @su_1 AS user_id, 'module' AS kind, 'New module in Business Accounting' AS title, 'Module 3: Business Accounting in practice' AS body, NULL AS link, 1 AS is_read, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
-  UNION ALL SELECT @su_1, 'grade', 'Your activity was graded', 'Activity 1: Warm-up practice', 'student/subjects', 1, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
+  SELECT @su_1 AS user_id, 'grade' AS kind, 'Your activity was graded' AS title, 'Activity 1: Warm-up practice' AS body, 'student/subjects' AS link, 1 AS is_read, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE) AS created_at_utc, (@day0 + INTERVAL -12 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE) AS updated_at_utc
   UNION ALL SELECT @su_1, 'announcement', 'Quiz week starts next Monday', 'Quizzes of all courses are open from Monday to Friday.', NULL, 0, (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -2 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @su_1, 'due', 'Due soon: Activity 2: Worksheet', 'Business Accounting', 'student/subjects', 0, (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @su_2, 'module', 'New module in Business Accounting', 'Module 3: Business Accounting in practice', NULL, 0, (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -8 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @su_3, 'referral', 'A message from the guidance counselor', 'Let us talk about how school is going.', NULL, 0, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
-  UNION ALL SELECT @su_11, 'module', 'New module in Effective Communication', 'Module 2: Key ideas of Effective Communication', NULL, 1, (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -15 DAY + INTERVAL 1 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, 'activity', 'Work waiting for a score', 'Activity 2: Worksheet has new answers.', 'teacher/subjects', 0, (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, 'materials', 'Course materials from the academic provider', 'Business Accounting: Syllabus. They are drafts: set when to post them and the due dates.', 'teacher/subjects', 0, (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 5 HOUR + INTERVAL 0 MINUTE)
   UNION ALL SELECT @tu_0, 'announcement', 'Faculty meeting on Friday, 3:00 PM', 'We will talk about the grades of the first term.', NULL, 1, (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -1 DAY + INTERVAL 3 HOUR + INTERVAL 0 MINUTE)
@@ -2908,6 +2905,7 @@ SELECT r.k, r.v, @now, @u_admin FROM (
   UNION ALL SELECT 'backup.auto_hour', '2'
   UNION ALL SELECT 'backup.keep', '7'
   UNION ALL SELECT 'logs.keep_days', '180'
+  UNION ALL SELECT 'classes.section_capacity', '40'
   UNION ALL SELECT 'files.max_mb', '10'
   UNION ALL SELECT 'files.locker_mb', '100'
 ) AS r WHERE NOT EXISTS (SELECT 1 FROM system_settings x WHERE x.`key` = r.k) AND @u_admin IS NOT NULL;

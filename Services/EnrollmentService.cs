@@ -95,8 +95,12 @@ public sealed record EnrollmentResult(EnrollmentReceipt? Receipt, IReadOnlyList<
 public sealed partial class EnrollmentService(
     IDbContextFactory<AppDbContext> dbFactory,
     PasswordHasher hasher,
-    IOptions<EnrollmentOptions> options)
+    IOptions<EnrollmentOptions> options,
+    SystemSettingsService? settings = null)
 {
+    /// <summary>How many students one section can have (System Settings; 40 until the administrator changes it).</summary>
+    public int SectionCapacity => settings?.Current.SectionCapacity ?? new SystemSettingsValues().SectionCapacity;
+
     [GeneratedRegex(@"^[\p{L}\p{N}][\p{L}\p{N} \-]*$")]
     private static partial Regex SectionNamePattern();
 
@@ -248,10 +252,11 @@ public sealed partial class EnrollmentService(
             errors.Add("The LRN must be exactly 12 digits.");
         }
 
-        var firstName = Clean(request.FirstName);
-        var middleName = Clean(request.MiddleName);
-        var lastName = Clean(request.LastName);
-        var nameExtension = Clean(request.NameExtension);
+        // Names are written with capital letters (juan dela cruz -> Juan Dela Cruz).
+        var firstName = NameCase.Title(request.FirstName);
+        var middleName = NameCase.Title(request.MiddleName);
+        var lastName = NameCase.Title(request.LastName);
+        var nameExtension = NameCase.Title(request.NameExtension);
         if (firstName.Length is 0 or > 100)
         {
             errors.Add("Enter the first name (up to 100 characters).");
@@ -348,7 +353,7 @@ public sealed partial class EnrollmentService(
             {
                 if (student.Status != StudentStatus.Active)
                 {
-                    return EnrollmentResult.Fail($"{student.FullName} is in the archive ({student.Status.ToLowerInvariant()}). Ask an administrator to restore the student first.");
+                    return EnrollmentResult.Fail($"{student.FullName} is in the archive ({StudentStatus.Display(student.Status).ToLowerInvariant()}). Ask an administrator to restore the student first.");
                 }
 
                 if (await db.Enrollments.AnyAsync(e => e.StudentId == student.Id && e.TermId == term!.Id, ct))
@@ -356,7 +361,7 @@ public sealed partial class EnrollmentService(
                     return EnrollmentResult.Fail($"{student.FullName} is already enrolled for the {term!.Name} of {term.SchoolYear.Name}.");
                 }
 
-                // The name stays what the system already has. Changing it is for the administrator (user management).
+                // The name stays what the system already has. Changing it is done in Edit (the registrar) or in Users Management (the administrator).
                 firstName = student.FirstName;
                 middleName = student.MiddleName ?? "";
                 lastName = student.LastName;
@@ -396,10 +401,29 @@ public sealed partial class EnrollmentService(
                 db.Students.Add(student);
             }
 
+            // A student who changes strand starts again in Grade 11.
+            var lastStrandId = await db.Enrollments.AsNoTracking()
+                .Where(e => e.StudentId == student.Id && e.TermId != term!.Id)
+                .OrderByDescending(e => e.Term.SchoolYear.StartDate).ThenByDescending(e => e.Term.TermNumber).ThenByDescending(e => e.Id)
+                .Select(e => (int?)e.StrandId).FirstOrDefaultAsync(ct);
+            if (student.Id != 0 && lastStrandId is { } before && before != strand!.Id && request.GradeLevel != 11)
+            {
+                return EnrollmentResult.Fail($"{student.FullName} changes strand, so the student starts again in Grade 11.");
+            }
+
             // ---- the section: it is created the first time somebody is enrolled in it
             var section = await db.Sections.FirstOrDefaultAsync(s =>
                 s.SchoolYearId == term!.SchoolYearId && s.StrandId == strand!.Id && s.GradeLevel == request.GradeLevel
                 && s.Name == sectionName, ct);
+            if (section is not null)
+            {
+                var inSection = await db.Enrollments.CountAsync(e => e.TermId == term!.Id && e.SectionId == section.Id && e.Status == EnrollmentStatus.Enrolled, ct);
+                if (inSection >= SectionCapacity)
+                {
+                    return EnrollmentResult.Fail($"Section {section.Name} is full: {inSection} of {SectionCapacity} students. Choose another section.");
+                }
+            }
+
             if (section is null)
             {
                 // The registrar chooses the section (A to C), nobody types a new name. Other names only exist when the coordinator made them.

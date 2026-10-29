@@ -86,7 +86,7 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
             if (work.Count > 0)
             {
-                groups.Add(new SearchGroup("Modules and work", work));
+                groups.Add(new SearchGroup("Modules and assignments", work));
             }
         }
 
@@ -199,31 +199,25 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
         foreach (var s in await ByName(db.Registrars.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
                      .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
         {
-            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Registrar · {s.Email}", "admin/users/registrars", "clipboard-check"));
+            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Registrar · {s.Email}", $"admin/users/staff?q={Uri.EscapeDataString(s.Email)}", "clipboard-check"));
         }
 
         foreach (var s in await ByName(db.GuidanceCounselors.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
                      .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
         {
-            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Guidance counselor · {s.Email}", "admin/users/guidance", "heart-handshake"));
+            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Guidance counselor · {s.Email}", $"admin/users/staff?q={Uri.EscapeDataString(s.Email)}", "heart-handshake"));
         }
 
         foreach (var s in await ByName(db.AcademicCoordinators.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
                      .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
         {
-            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Academic coordinator · {s.Email}", "admin/users/coordinators", "clipboard-check"));
+            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Academic coordinator · {s.Email}", $"admin/users/staff?q={Uri.EscapeDataString(s.Email)}", "clipboard-check"));
         }
 
         foreach (var s in await ByName(db.AcademicProviders.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
                      .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
         {
-            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Academic provider · {s.Email}", "admin/users/providers", "send"));
-        }
-
-        foreach (var s in await ByName(db.Administrators.AsNoTracking(), tokens).OrderBy(x => x.LastName).Take(PerGroup)
-                     .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.User.Email }).ToListAsync(ct))
-        {
-            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Administrator · {s.Email}", "admin/users/administrators", "shield-check"));
+            hits.Add(new(UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName), $"Academic provider · {s.Email}", $"admin/users/staff?q={Uri.EscapeDataString(s.Email)}", "send"));
         }
 
         return hits;

@@ -67,10 +67,10 @@ else
                 }
             </Card>
 
-            <Card Title="Activities, quizzes and task performances" IconName="list-checks">
+            <Card Title="Assignments, quizzes and task performances" IconName="list-checks">
                 @if (detail.Items.Count == 0)
                 {
-                    <p class="muted">@(row.IsSyllabus ? "A syllabus has no activities." : "This module has no activities the students can see yet.")</p>
+                    <p class="muted">@(row.IsSyllabus ? "A syllabus has no assignments." : "This module has no assignments the students can see yet.")</p>
                 }
                 else
                 {
@@ -106,7 +106,7 @@ else
                             <tr>
                                 <th scope="col">Student</th>
                                 <th scope="col">Opened the @(row.IsSyllabus ? "syllabus" : "module")</th>
-                                <th scope="col" class="num">Activities opened</th>
+                                <th scope="col" class="num">Assignments opened</th>
                                 <th scope="col" class="num">Handed in</th>
                             </tr>
                         </thead>

@@ -78,7 +78,7 @@
                     }
                     else
                     {
-                        @* The day says what is on it (2 activities, 1 quiz ...); a click opens a box with each one as a link. *@
+                        @* The day says what is on it (2 assignments, 1 quiz ...); a click opens a box with each one as a link. *@
                         <a class="day-summary" href="@DayUrl(day)" aria-label="@($"{onDay.Count} on this day: open the day")">
                             @foreach (var g in Summary(onDay))
                             {
@@ -92,7 +92,7 @@
     }
 </PageWithAside>
 
-@* A teacher clicked an activity, quiz or task performance on the calendar: who handed it in, with the quiz's anti-cheating warnings. *@
+@* A teacher clicked an assignment, quiz or task performance on the calendar: who handed it in, with the quiz's anti-cheating warnings. *@
 @if (workItemId is { } workId)
 {
     <CalendarWorkDialog @key="workId" ItemId="workId" CloseUrl="@Url(view, anchor)" />
@@ -110,7 +110,7 @@
     <CalendarEntryDialog @key="@($"event-{eventMode}-{editDay}")" EntryId="@(eventMode == "new" ? null : int.Parse(eventMode))" Day="@(editDay ?? NewEventDay)" View="@view" CloseUrl="@Url(view, anchor)" />
 }
 
-@* A teacher dragged an unassigned activity onto a day (or pressed "Set date"): the box to give it its due date and settings. *@
+@* A teacher dragged an unassigned assignment onto a day (or pressed "Set date"): the box to give it its due date and settings. *@
 @if (editItemId is { } itemId)
 {
     <ItemScheduleDialog @key="@($"{itemId}-{editDay}")" ItemId="itemId" Day="editDay" CloseUrl="@Url(view, anchor)" />
@@ -123,7 +123,7 @@
 
     [SupplyParameterFromQuery(Name = "date")] private string? DateText { get; set; }
 
-    // A teacher's "unassigned activity" dropped on a day: ?edit=<item>&on=<day>.
+    // A teacher's "unassigned assignment" dropped on a day: ?edit=<item>&on=<day>.
     [SupplyParameterFromQuery(Name = "edit")] private string? EditText { get; set; }
 
     [SupplyParameterFromQuery(Name = "on")] private string? OnText { get; set; }
@@ -149,7 +149,7 @@
     private DateOnly? openDay;
     private string? eventMode;
 
-    /// <summary>The widgets at the right: a student's assignments (no separate due dates card), or the teacher's unchecked activities and then the ones that have no due date yet.</summary>
+    /// <summary>The widgets at the right: a student's assignments (no separate due dates card), or the teacher's unchecked assignments and then the ones that have no due date yet.</summary>
     private string AsideShow => isTeacher ? "unchecked,unassigned" : "activities";
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
@@ -197,7 +197,7 @@
 
     private sealed record DaySummary(string Kind, string Text, bool Late);
 
-    /// <summary>"2 activities", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
+    /// <summary>"2 assignments", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
     private static IEnumerable<DaySummary> Summary(IReadOnlyList<CalendarEvent> onDay)
     {
         foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, CalendarKinds.Module, CalendarKinds.Personal })
@@ -210,7 +210,7 @@
 
             var name = kind switch
             {
-                ItemKinds.Activity => these.Count == 1 ? "activity" : "activities",
+                ItemKinds.Activity => these.Count == 1 ? "assignment" : "assignments",
                 ItemKinds.Quiz => these.Count == 1 ? "quiz" : "quizzes",
                 ItemKinds.TaskPerformance => these.Count == 1 ? "task performance" : "task performances",
                 CalendarKinds.Module => these.Count == 1 ? "module" : "modules",
@@ -226,7 +226,7 @@
     private DateOnly Step(int direction) => view == "month" ? new DateOnly(anchor.Year, anchor.Month, 1).AddMonths(direction) : anchor.AddDays(7 * direction);
 
     /// <summary>
-    /// Where an event leads. A teacher's activity, quiz or task performance opens a box here with who handed it in (the key of
+    /// Where an event leads. A teacher's assignment, quiz or task performance opens a box here with who handed it in (the key of
     /// those events is item-&lt;id&gt;); everything else goes to its own page.
     /// </summary>
     private string LinkOf(CalendarEvent e) =>

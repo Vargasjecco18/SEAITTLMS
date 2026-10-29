@@ -92,7 +92,7 @@ else
                             <tr>
                                 <td>@student.Name<span class="sub">@student.Placement</span></td>
                                 <td class="mono">@student.Lrn</td>
-                                <td><Badge Tone="@(student.Status == StudentStatus.Graduated ? Tone.Success : Tone.Warning)">@student.Status</Badge></td>
+                                <td><Badge Tone="@(student.Status == StudentStatus.Graduated ? Tone.Success : Tone.Warning)">@StudentStatus.Display(student.Status)</Badge></td>
                                 <td class="col-more">@student.Note</td>
                                 <td class="col-more">@(student.ChangedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
                                 <td class="col-actions"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="undo-2" OnClick="() => restoreTarget = student">Restore</Button></td>

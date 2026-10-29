@@ -1,0 +1,71 @@
+.top-alert {
+    position: fixed;
+    top: 0.75rem;
+    left: 50%;
+    z-index: 200;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: min(32rem, calc(100vw - 2rem));
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--danger);
+    border-radius: 0.75rem;
+    background: var(--danger-soft);
+    color: var(--danger);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    transform: translateX(-50%);
+    animation: top-alert-in 0.25s ease-out, top-alert-out 0.4s ease-in 8s forwards;
+}
+
+.top-alert[hidden] {
+    display: none;
+}
+
+.top-alert-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    padding-top: 0.1rem;
+}
+
+.top-alert-text {
+    display: grid;
+    gap: 0.15rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.top-alert-text span {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.top-alert-close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.top-alert-close:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+@keyframes top-alert-in {
+    from { opacity: 0; transform: translate(-50%, -1rem); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes top-alert-out {
+    to { opacity: 0; visibility: hidden; transform: translate(-50%, -1rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .top-alert { animation: top-alert-out 0.01s linear 8s forwards; }
+}

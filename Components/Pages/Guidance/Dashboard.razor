@@ -22,7 +22,7 @@ else
         <StatCard Label="New referrals" Value="@overview.Open" IconName="flag" Accent="@(overview.Open > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Waiting for you" Href="guidance/referrals?status=Open" />
         <StatCard Label="In progress" Value="@overview.InProgress" IconName="heart-handshake" Accent="AccentColor.Blue" Hint="You are helping" Href="guidance/referrals?status=InProgress" />
         <StatCard Label="Failing" Value="@overview.Failing" IconName="triangle-alert" Accent="@(overview.Failing > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Students below {GradeRules.PassingPercent:0}")" Href="guidance/referrals?reason=FailingGrades" />
-        <StatCard Label="At risk" Value="@overview.AtRisk" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing or missing work" Href="guidance/referrals?reason=AtRisk" />
+        <StatCard Label="At risk" Value="@overview.AtRisk" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing or missing assignments" Href="guidance/referrals?reason=AtRisk" />
         <StatCard Label="Not attending" Value="@overview.LowAttendance" IconName="user-x" Accent="AccentColor.Violet" Hint="@($"Attendance under {AttendanceService.LowAttendancePercent:0}%")" Href="guidance/referrals?reason=LowAttendance" />
         <StatCard Label="Resolved this month" Value="@overview.ResolvedThisMonth" IconName="circle-check" Accent="AccentColor.Green" Hint="Referrals closed" Href="guidance/referrals?status=Resolved" />
     </div>

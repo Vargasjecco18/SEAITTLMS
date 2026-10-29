@@ -50,11 +50,11 @@
                     </Card>
                     break;
                 case "unassigned":
-                    <Card Title="Unassigned activities" IconName="clipboard-list" Class="unassigned">
+                    <Card Title="Without a due date" IconName="clipboard-list" Class="unassigned">
                         <p class="drag-hint"><Icon Name="grip-vertical" Size="14" /> Drag one onto a day of the calendar to give it a due date.</p>
                         @if (unassigned.Count == 0)
                         {
-                            <p class="quiet">Every activity has a due date.</p>
+                            <p class="quiet">Every assignment has a due date.</p>
                         }
                         else
                         {
@@ -80,7 +80,7 @@
                     <Card Title="@ActivitiesTitle" IconName="clipboard-list">
                         @if (activities.Count == 0)
                         {
-                            <p class="quiet">No activities waiting for you.</p>
+                            <p class="quiet">No assignments waiting for you.</p>
                         }
                         else
                         {
@@ -140,10 +140,10 @@
                     <AchievementsWidget Items="achievements" />
                     break;
                 case "unchecked":
-                    <Card Title="Unchecked activities" IconName="clipboard-pen" Class="unchecked">
+                    <Card Title="Unchecked assignments" IconName="clipboard-pen" Class="unchecked">
                         @if (toCheck is null || toCheck.Unchecked.Count == 0)
                         {
-                            <p class="quiet">Every activity is checked.</p>
+                            <p class="quiet">Every assignment is checked.</p>
                         }
                         else
                         {
@@ -174,7 +174,7 @@
                             <ul class="attention">
                                 @if (toCheck.ToCheck > 0)
                                 {
-                                    <li><Badge Tone="Tone.Warning">@toCheck.ToCheck</Badge> @(toCheck.ToCheck == 1 ? "piece of work" : "pieces of work") to check @if (toCheck.Unchecked.Count > 0) { <a href="teacher/items/@toCheck.Unchecked[0].ItemId">Start with @toCheck.Unchecked[0].Title</a> }</li>
+                                    <li><Badge Tone="Tone.Warning">@toCheck.ToCheck</Badge> @(toCheck.ToCheck == 1 ? "assignment" : "assignments") to check @if (toCheck.Unchecked.Count > 0) { <a href="teacher/items/@toCheck.Unchecked[0].ItemId">Start with @toCheck.Unchecked[0].Title</a> }</li>
                                 }
 
                                 @if (toCheck.FlaggedCount > 0)
@@ -196,7 +196,7 @@
 }
 
 @code {
-    /// <summary>Which widgets, in this order: announcements, activities (students), unassigned (teachers), unchecked (teachers: the work waiting to be checked), calendar, upnext (the due dates), achievements, tocheck, online (the students who are online).</summary>
+    /// <summary>Which widgets, in this order: announcements, assignments (students), unassigned (teachers), unchecked (teachers: the work waiting to be checked), calendar, upnext (the due dates), achievements, tocheck, online (the students who are online).</summary>
     [Parameter] public string Show { get; set; } = "calendar,upnext";
 
     private string? role;

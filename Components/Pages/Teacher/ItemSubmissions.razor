@@ -6,7 +6,7 @@
 @inject ModuleService Modules
 @inject AttachmentService Files
 
-<PageTitle>@(data?.Title ?? "Work") · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>@(data?.Title ?? "Assignment") · SEAITT Legazpi LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -16,7 +16,7 @@ else if (data is null)
 {
     <Card>
         <EmptyState IconName="file-text" Title="Not found" IsPage="true">
-            <p>This is not one of your activities, or it was deleted.</p>
+            <p>This is not one of your assignments, or it was deleted.</p>
             <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>
@@ -24,19 +24,25 @@ else if (data is null)
 else
 {
     var handedIn = data.Rows.Count(r => r.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded);
-    var toCheck = data.Rows.Count(r => r.Status == SubmissionStatus.Submitted);
+    var toCheck = data.Rows.Count(r => r.NeedsCheck);
+    var lateWaiting = data.Rows.Count(r => r.LateDecision == LateDecisions.Pending);
     var scored = data.Rows.Where(r => r.Score is not null).ToList();
     var flagged = data.Rows.Count(r => r.IsFlagged);
 
     <PageHeader Title="@data.Title" IconName="@SubjectStyle.KindIcon(data.Kind)">
         <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
-        @if (data.Kind == ItemKinds.Quiz)
+        @if (data.Kind == ItemKinds.Quiz && !isFileQuiz)
         {
             <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">Questions</ButtonLink>
         }
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+
+    @if (lateWaiting > 0)
+    {
+        <p class="late-hint" role="status"><Icon Name="alarm-clock" Size="16" /> <span>@lateWaiting @(lateWaiting == 1 ? "student handed in late" : "students handed in late"). Accept the work you want to grade, or decline it.</span></p>
+    }
 
     <div class="summary">
         <div class="tile"><span class="tile-value">@handedIn / @data.Rows.Count</span><span class="tile-label">handed in</span></div>
@@ -105,8 +111,22 @@ else
                                     </td>
                                 }
                                 <td class="col-actions">
-                                    <Button Small="true" Variant="@(row.Status == SubmissionStatus.Submitted ? ButtonVariant.Primary : ButtonVariant.Secondary)" IconName="@(row.Status == SubmissionStatus.Submitted ? "pencil" : "eye")"
-                                            OnClick="() => OpenAsync(row)">@(row.Status == SubmissionStatus.Submitted ? "Grade" : data.Kind == ItemKinds.Quiz || row.Status == SubmissionStatus.Graded ? "Open" : "Give score")</Button>
+                                    @if (row.LateDecision == LateDecisions.Pending && row.Status == SubmissionStatus.Submitted)
+                                    {
+                                        <Button Small="true" IconName="circle-check" Disabled="busy" OnClick="() => DecideAsync(row.StudentId, true)">Accept</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="circle-x" Disabled="busy" OnClick="() => DecideAsync(row.StudentId, false)">Decline</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="eye" OnClick="() => OpenAsync(row)">Read</Button>
+                                    }
+                                    else if (row.LateDecision == LateDecisions.Declined && row.Status == SubmissionStatus.Submitted)
+                                    {
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="circle-check" Disabled="busy" OnClick="() => DecideAsync(row.StudentId, true)">Accept</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="eye" OnClick="() => OpenAsync(row)">Read</Button>
+                                    }
+                                    else
+                                    {
+                                        <Button Small="true" Variant="@(row.Status == SubmissionStatus.Submitted ? ButtonVariant.Primary : ButtonVariant.Secondary)" IconName="@(row.Status == SubmissionStatus.Submitted ? "pencil" : "eye")"
+                                                OnClick="() => OpenAsync(row)">@(row.Status == SubmissionStatus.Submitted ? "Grade" : data.Kind == ItemKinds.Quiz || row.Status == SubmissionStatus.Graded ? "Open" : "Give score")</Button>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -192,6 +212,30 @@ else
             }
         }
 
+        @if (detail.IsLate && detail.LateDecision is LateDecisions.Pending or LateDecisions.Declined && detail.Status != SubmissionStatus.Graded)
+        {
+            <div class="late-box" role="status">
+                <p>
+                    <Icon Name="alarm-clock" Size="16" />
+                    @if (detail.LateDecision == LateDecisions.Declined)
+                    {
+                        <span>You declined this late work, so it is not graded. You can still accept it.</span>
+                    }
+                    else
+                    {
+                        <span>This was handed in after the due date. Accept it to give it a score, or decline it.</span>
+                    }
+                </p>
+                <div class="late-actions">
+                    <Button Small="true" IconName="circle-check" Disabled="busy" OnClick="() => DecideAsync(detail.StudentId, true)">Accept late work</Button>
+                    @if (detail.LateDecision != LateDecisions.Declined)
+                    {
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="circle-x" Disabled="busy" OnClick="() => DecideAsync(detail.StudentId, false)">Decline</Button>
+                    }
+                </div>
+            </div>
+        }
+
         <FormErrors Errors="formErrors" />
         <div class="grade-box">
             <Field For="g-score" Label="@($"Score (highest {data.MaxScore:0.##})")" Required="true">
@@ -203,7 +247,7 @@ else
         </div>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseDetail">Cancel</Button>
-            <Button IconName="circle-check" Disabled="busy" OnClick="SaveGradeAsync">@(busy ? "Saving…" : "Save score")</Button>
+            <Button IconName="circle-check" Disabled="@(busy || WaitingForDecision)" OnClick="SaveGradeAsync">@(busy ? "Saving…" : "Save score")</Button>
         </div>
     }
 </Modal>
@@ -235,7 +279,49 @@ else
         loaded = true;
     }
 
-    private async Task LoadAsync() => data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
+    /// <summary>Late work is graded only after the teacher accepted it.</summary>
+    private bool WaitingForDecision => detail is { IsLate: true, LateDecision: LateDecisions.Pending or LateDecisions.Declined } && detail.Status != SubmissionStatus.Graded;
+
+    private async Task DecideAsync(int studentId, bool accept)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Work.DecideLateAsync(teacherId, ItemId, studentId, accept);
+            if (detail is not null)
+            {
+                formErrors = result.Succeeded ? [] : [.. result.Errors];
+            }
+            else
+            {
+                messageIsError = !result.Succeeded;
+                message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            }
+
+            await LoadAsync();
+            if (detail is not null && result.Succeeded)
+            {
+                detail = await Work.GetSubmissionAsync(teacherId, ItemId, studentId);
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private bool isFileQuiz;
+
+    private async Task LoadAsync()
+    {
+        data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
+        isFileQuiz = data is { Kind: ItemKinds.Quiz, Questions: 0 } && (await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId))).Count > 0;
+    }
 
     private void ClearMessage() => message = null;
 
@@ -250,6 +336,8 @@ else
     private static (string Text, Tone Tone) TeacherStatus(SubmissionRow row) => row.Status switch
     {
         SubmissionStatus.Graded => ("Graded", Tone.Success),
+        SubmissionStatus.Submitted when row.LateDecision == LateDecisions.Pending => ("Late · accept?", Tone.Warning),
+        SubmissionStatus.Submitted when row.LateDecision == LateDecisions.Declined => ("Late · declined", Tone.Danger),
         SubmissionStatus.Submitted => ("To check", Tone.Warning),
         SubmissionStatus.InProgress => ("In progress", Tone.Info),
         _ => ("Not handed in", Tone.Neutral),

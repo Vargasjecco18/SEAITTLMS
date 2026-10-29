@@ -24,7 +24,8 @@ public sealed record EnrollmentRow(
     int StudentId = 0,
     int? NextEnrollmentId = null,
     string? Phone = null,
-    decimal? FinalGrade = null);
+    decimal? FinalGrade = null,
+    bool StudentActive = true);
 
 /// <summary>Everything the registrar's dashboard shows.</summary>
 /// <param name="TermLabel">For example "1st Term · 2026-2027". Null when no term is marked as current.</param>
@@ -152,7 +153,7 @@ public static class EnrollmentList
                 e.Id, e.StudentId, e.FirstName, e.MiddleName, e.LastName, e.Lrn, e.GradeLevel,
                 Track = e.Track.Code, Strand = e.Strand.Code, e.NameExtension,
                 Section = e.Section.Name, Term = e.Term.Name, SchoolYear = e.Term.SchoolYear.Name,
-                e.Subjects, e.Status, e.CreatedAtUtc, Phone = e.Student.User.PhoneNumber,
+                e.Subjects, e.Status, e.CreatedAtUtc, Phone = e.Student.User.PhoneNumber, StudentActive = e.Student.Status == StudentStatus.Active,
             })
             .ToListAsync(ct);
 
@@ -175,7 +176,7 @@ public static class EnrollmentList
             r.Lrn, r.GradeLevel, r.Track, r.Strand,
             $"{r.GradeLevel}-{r.Strand}-{r.Section}", r.Term, r.SchoolYear, r.Subjects, r.Status.ToString(), r.CreatedAtUtc,
             r.StudentId, nextEnrollments.TryGetValue(r.StudentId, out var nextId) ? nextId : null, r.Phone,
-            finalGrades.TryGetValue(r.Id, out var finalGrade) ? finalGrade : null)).ToList();
+            finalGrades.TryGetValue(r.Id, out var finalGrade) ? finalGrade : null, r.StudentActive)).ToList();
 
         return new EnrollmentPage(items, total, page, pageSize, next);
     }

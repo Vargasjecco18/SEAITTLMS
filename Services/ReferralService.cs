@@ -95,7 +95,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
 
                 if (m.Missing >= MissingForRisk)
                 {
-                    parts.Add($"{m.Missing} works missing");
+                    parts.Add($"{m.Missing} assignments missing");
                 }
 
                 list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.AtRisk, m.Percent, $"{m.SubjectName}: {string.Join(", ", parts)}"));

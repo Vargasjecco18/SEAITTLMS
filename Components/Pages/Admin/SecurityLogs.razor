@@ -8,8 +8,11 @@
 
 <PageHeader Title="Security Logs" IconName="scroll-text">
     <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
-    <ButtonLink Href="@ExportHref" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false" download>Download CSV</ButtonLink>
-    <Button Variant="ButtonVariant.Ghost" IconName="trash-2" OnClick="OpenClear">Clear old lines</Button>
+    @if (group != "lastlogin")
+    {
+        <ButtonLink Href="@ExportHref" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false" download>Download CSV</ButtonLink>
+        <Button Variant="ButtonVariant.Ghost" IconName="trash-2" OnClick="OpenClear">Clear old lines</Button>
+    }
 </PageHeader>
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
@@ -17,7 +20,7 @@
 @if (summary is not null)
 {
     <div class="stats">
-        <StatCard Label="Sign-ins" Value="summary.SignIns" Hint="last 24 hours" IconName="log-in" Accent="AccentColor.Green" />
+        <StatCard Label="Logged in" Value="summary.SignIns" Hint="people, last 24 hours" IconName="log-in" Accent="AccentColor.Green" />
         <StatCard Label="Failed sign-ins" Value="summary.FailedSignIns" Hint="last 24 hours" IconName="shield-alert" Accent="AccentColor.Amber" />
         <StatCard Label="Locked accounts" Value="summary.LockedAccounts" Hint="right now" IconName="lock" Accent="AccentColor.Rose" />
         <StatCard Label="Warnings" Value="summary.Warnings" Hint="last 24 hours" IconName="triangle-alert" Accent="AccentColor.Violet" />
@@ -26,6 +29,84 @@
 
 <PillTabs Items="Tabs" Selected="@group" SelectedChanged="GroupChangedAsync" Label="What to show" />
 
+@if (group == "lastlogin")
+{
+    @* One line for each account: the day and the time it was last used to log in. *@
+    <Card>
+        <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
+            <SearchField Id="log-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="A name or an email" AriaLabel="Search the accounts" OnClear="ApplyAsync" />
+            <Field For="log-role" Label="Role">
+                <select id="log-role" class="input" @bind="roleFilter" @bind:after="ApplyAsync">
+                    <option value="">All roles</option>
+                    @foreach (var role in AppRoles.Ids.Keys)
+                    {
+                        <option value="@role">@AppRoles.DisplayName(role)</option>
+                    }
+                </select>
+            </Field>
+            <div class="filter-actions"><Button Type="submit" IconName="search">Search</Button></div>
+        </form>
+
+        @if (logins is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (logins.Items.Count == 0)
+        {
+            <EmptyState IconName="search-x" Title="No account matches" />
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table logs">
+                    <thead>
+                        <tr>
+                            <th scope="col">Who</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Last login</th>
+                            <th scope="col" class="col-more">Account</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in logins.Items)
+                        {
+                            <tr>
+                                <td class="who">
+                                    <span>@row.Name</span>
+                                    <span class="muted-line">@row.Email</span>
+                                </td>
+                                <td>@AppRoles.DisplayName(row.Role)</td>
+                                <td class="when">
+                                    @if (row.LastLoginAtUtc is { } at)
+                                    {
+                                        @PhilippineTime.FormatDate(at)
+                                        <span class="muted-line">@PhilippineTime.FormatTime(at)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">Never</span>
+                                    }
+                                </td>
+                                <td class="col-more"><Badge Tone="@(row.IsActive ? Tone.Success : Tone.Neutral)">@(row.IsActive ? "Active" : "Inactive")</Badge></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <nav class="pager" aria-label="Pages of the list">
+                <span class="muted">@logins.Total.ToString("N0") @(logins.Total == 1 ? "account" : "accounts")</span>
+                <span class="pager-buttons">
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(logins.Page <= 1)" OnClick="PreviousAsync">Newer</Button>
+                    <span>Page @logins.Page of @logins.PageCount</span>
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(logins.Page >= logins.PageCount)" OnClick="NextAsync">Older</Button>
+                </span>
+            </nav>
+        }
+    </Card>
+}
+else
+{
 <Card>
     <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
         <SearchField Id="log-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="An email, a name, an address or a word" AriaLabel="Search the log" OnClear="ApplyAsync" />
@@ -53,7 +134,7 @@
     else if (data.Items.Count == 0)
     {
         <EmptyState IconName="scroll-text" Title="No lines here">
-            <p>Nothing matches. Sign-ins, wrong passwords, changes to accounts, backups and changes to the settings are written here as they happen.</p>
+            <p>Nothing matches. Wrong passwords, changes to accounts, backups and changes to the settings are written here as they happen. The day each person last logged in is under Last login.</p>
         </EmptyState>
     }
     else
@@ -119,6 +200,7 @@
         </nav>
     }
 </Card>
+}
 
 <Modal Open="clearing" Title="Clear old lines" OnClose="CloseClear">
     @if (clearing)
@@ -143,6 +225,8 @@
 @code {
     private int userId;
     private SecurityLogPage? data;
+    private LastLoginPage? logins;
+    private string roleFilter = "";
     private SecuritySummary? summary;
     private string group = "all";
     private string search = "";
@@ -161,7 +245,7 @@
         new("all", "All", "list"),
         .. SecurityLogService.Groups.Select(g => new PillTabs.Tab(g.Key, g.Title, g.Key switch
         {
-            "signins" => "log-in",
+            "lastlogin" => "log-in",
             "failed" => "shield-alert",
             "accounts" => "users",
             _ => "settings-2",
@@ -200,6 +284,13 @@
     private async Task ReloadAsync()
     {
         summary = await Logs.GetSummaryAsync();
+        if (group == "lastlogin")
+        {
+            logins = await Logs.GetLastLoginsAsync(search, roleFilter, pageNumber);
+            pageNumber = logins.Page;
+            return;
+        }
+
         data = await Logs.GetPageAsync(Filter, pageNumber);
         pageNumber = data.Page;
     }

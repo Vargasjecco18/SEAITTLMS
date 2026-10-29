@@ -187,10 +187,12 @@ public static class SecurityEvents
     public const string AccountCreated = "AccountCreated";
     public const string AccountChanged = "AccountChanged";
     public const string PasswordReset = "PasswordReset";
+    public const string PasswordChanged = "PasswordChanged";
     public const string AccountActivated = "AccountActivated";
     public const string AccountDeactivated = "AccountDeactivated";
     public const string AccountDeleted = "AccountDeleted";
     public const string StudentsArchived = "StudentsArchived";
+    public const string StudentDroppedOut = "StudentDroppedOut";
     public const string BackupCreated = "BackupCreated";
     public const string BackupDeleted = "BackupDeleted";
     public const string BackupRestored = "BackupRestored";
@@ -209,10 +211,12 @@ public static class SecurityEvents
         AccountCreated => "Account created",
         AccountChanged => "Account changed",
         PasswordReset => "Password set",
+        PasswordChanged => "Password changed",
         AccountActivated => "Account activated",
         AccountDeactivated => "Account deactivated",
         AccountDeleted => "Account deleted",
         StudentsArchived => "Students archived",
+        StudentDroppedOut => "Student dropped out",
         BackupCreated => "Backup made",
         BackupDeleted => "Backup deleted",
         BackupRestored => "Backup restored",
@@ -225,7 +229,7 @@ public static class SecurityEvents
     /// <summary>How serious it is: "Info", "Warning" or "Critical".</summary>
     public static string SeverityOf(string kind) => kind switch
     {
-        SignInFailed or SignInRefused or AccountDeactivated or BackupDeleted or LogsCleared => "Warning",
+        SignInFailed or SignInRefused or AccountDeactivated or StudentDroppedOut or BackupDeleted or LogsCleared => "Warning",
         AccountLocked or AccountDeleted or BackupRestored or BackupRestoreFailed => "Critical",
         _ => "Info",
     };
