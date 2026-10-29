@@ -227,9 +227,20 @@
     gap: 0.5rem;
 }
 
+.cell-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.cell-line {
+    display: inline-flex;
+    align-items: center;
+}
+
 .check.small {
-    margin-left: 0.3rem;
-    padding: 0.05rem 0.4rem;
+    padding: 0.05rem 0.45rem;
     font-size: 0.7rem;
 }
 

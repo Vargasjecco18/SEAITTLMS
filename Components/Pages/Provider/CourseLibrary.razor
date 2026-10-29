@@ -33,7 +33,7 @@ else
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
-        <AddItemMenu Label="Add to a module" Modules="@([.. modules.Select((m, n) => new AddMenuModule(m.Id, $"Module {n + 1}: {m.Title}"))])" OnPick="PickNew" />
+        <AddItemMenu Label="Add to a module" Modules="@([.. modules.Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))])" OnPick="PickNew" />
         <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
     </PageHeader>
 
@@ -271,7 +271,7 @@ else
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
             <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
-            <AttachmentPicker @ref="slidesPicker" @key="moduleFormKey" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="slidesPicker" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>

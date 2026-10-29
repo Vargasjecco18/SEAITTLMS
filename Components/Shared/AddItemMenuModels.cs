@@ -11,3 +11,10 @@ public sealed record ItemImportSummary(int Created, IReadOnlyList<string> Errors
 
 /// <summary>A link in the second menu of a course.</summary>
 public sealed record CourseMenuLink(string Label, string Icon, string Href);
+
+public static class AddItemMenuLabels
+{
+    /// <summary>"Module 2: Ledgers" for a module that is called Ledgers; a module whose title already starts with "Module" (like "Module 2: Ledgers") is shown as it is.</summary>
+    public static string ModuleLabel(int number, string title) =>
+        title.TrimStart().StartsWith("Module", StringComparison.OrdinalIgnoreCase) ? title : $"Module {number}: {title}";
+}

@@ -110,16 +110,19 @@ else
                                             }
                                             else
                                             {
-                                                <input type="number" step="any" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" @key="@($"{row.StudentId}-{column.ItemId}-{renderStamp}")"
-                                                       aria-label="@($"{row.Name}, {column.Title}")" placeholder="@(cell.Status == SubmissionStatus.Submitted ? "check" : "—")" value="@CellText(cell)"
-                                                       @onchange="e => SaveCellAsync(row, column, e.Value?.ToString())" />
-                                                @if (cell.Status == SubmissionStatus.Submitted)
-                                                {
-                                                    <a class="check small" href="teacher/items/@column.ItemId" title="Handed in, waiting for a score">To check</a>
-                                                }
-
-                                                @if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }
-                                                @if (cell.IsFlagged) { <i class="flag-dot" title="Flagged by the anti-cheating watch"></i> }
+                                                <div class="cell-box">
+                                                    <span class="cell-line">
+                                                        <input type="number" step="any" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" @key="@($"{row.StudentId}-{column.ItemId}-{renderStamp}")"
+                                                               aria-label="@($"{row.Name}, {column.Title}")" placeholder="—" value="@CellText(cell)"
+                                                               @onchange="e => SaveCellAsync(row, column, e.Value?.ToString())" />
+                                                        @if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }
+                                                        @if (cell.IsFlagged) { <i class="flag-dot" title="Flagged by the anti-cheating watch"></i> }
+                                                    </span>
+                                                    @if (cell.Status == SubmissionStatus.Submitted)
+                                                    {
+                                                        <a class="check small" href="teacher/items/@column.ItemId" title="Handed in, waiting for a score">To check</a>
+                                                    }
+                                                </div>
                                             }
                                         </td>
                                     }

@@ -108,11 +108,16 @@ public static class HelpContent
             "Open a course, then a module. The syllabus of the course is the first thing in the list.",
             "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
+            "Inside a course there is a second menu: Modules, Assignments, Quizzes and Task performances. Each one lists that kind of work for the whole course. The slides of a module are shown in their own card on the module page.",
+        ]),
+        new("What if I hand in after the due date?",
+        [
+            "You can still hand in an assignment, but it is marked late and your teacher decides if it is accepted. You are told. Work that is not accepted is not graded and can't be handed in again.",
         ]),
         new("How does a quiz work?",
         [
             "Read the time limit and the rules before you start. The timer keeps running even if you close the page.",
-            "Some quizzes watch if you leave the page. Leaving it too many times ends the quiz and sends what you have.",
+            "Some quizzes watch if you leave the page, copy, paste, print or take a screenshot. Each one is a warning, and too many warnings end the quiz and send what you have. Your name is shown faintly over the quiz.",
             "When you send it, the result is shown if your teacher allowed it.",
         ]),
         new("Where are my grades?",
@@ -159,9 +164,22 @@ public static class HelpContent
         ], "teacher/subjects", "Open Courses"),
         new("How do I make a module and post it to my students?",
         [
-            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one.",
+            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Under a module add assignments, quizzes and task performances, each with its points and due date.",
+            "Press the “Add” button at the top right of the course: choose the module, then Assignment, Quiz or Task performance. Each has its points, the day it appears and its due date.",
+        ]),
+        new("What is the menu inside a course?",
+        [
+            "Inside a course there is a second menu: Modules, Assignments, Quizzes and Task performances. Each one lists that kind of work for the whole course. The gradebook and the attendance of the course are in the same menu.",
+        ]),
+        new("Can I fill many assignments or questions from Excel?",
+        [
+            "Yes. In a module, press “Excel” next to “Add assignment” (or quiz, or task performance): download the template, fill it in, and import it. Every row becomes one item. The same box can export what the module has.",
+            "In the questions of a quiz, use Template, Export the questions and Import from Excel. The imported questions appear in the list; press Save questions to keep them.",
+        ]),
+        new("A student handed in after the due date. What do I do?",
+        [
+            "Open the assignment. A late row says “Late · accept?”. Press Accept to give it a score, or Decline. The student is told. Late work can be graded only after you accepted it.",
         ]),
         new("What are the drafts that came from the academic provider?",
         [
@@ -171,8 +189,8 @@ public static class HelpContent
         ]),
         new("How do I make a quiz?",
         [
-            "Add a quiz to a module, then press Questions. Add multiple choice, true or false and short answer questions with their points.",
-            "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules (how many times a student may leave the page).",
+            "Add a quiz to a module, then press Questions. Add multiple choice, true or false and short answer questions with their points. A quiz that has a file has no questions: the students answer with a file and you give the score.",
+            "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules (how many times a student may leave the page, copy, print or take a screenshot). A photo taken with another device can't be detected, but the student's name is shown faintly over the quiz.",
         ]),
         new("How do I check and grade the assignments of my students?",
         [
@@ -183,11 +201,11 @@ public static class HelpContent
         new("How do I take attendance?",
         [
             "Open Attendance, choose the course and the day, and mark each student Present, Late or Absent. Press Save.",
-            "The summary under the list shows each student's attendance. Students who miss a lot are sent to the guidance counselor by the system.",
+            "Press “View attendance” to see each student's attendance. Students who miss a lot are sent to the guidance counselor by the system.",
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Press “Edit grades” on a row to change the scores of that student.",
+            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Type a score in a box and move on: it is saved by itself. “Export to Excel” makes a file that shows how the grades are worked out. “Add assignment, quiz or task” adds a column for extra scores.",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [

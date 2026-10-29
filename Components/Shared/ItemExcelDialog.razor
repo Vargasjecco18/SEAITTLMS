@@ -54,7 +54,7 @@
                             {
                                 <tr class="@(row.Input is null ? "failed" : "ok")">
                                     <td>@row.Row</td>
-                                    <td>@(row.Input?.Title ?? "")</td>
+                                    <td>@row.Title</td>
                                     <td>@(row.Input is null ? string.Join(" ", row.Errors) : "Ready")</td>
                                 </tr>
                             }

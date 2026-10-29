@@ -5,7 +5,7 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>One row of an Excel file of assignments, quizzes or task performances: what it holds and what is wrong with it.</summary>
-public sealed record ItemImportRow(int Row, ItemInput? Input, IReadOnlyList<string> Errors);
+public sealed record ItemImportRow(int Row, ItemInput? Input, IReadOnlyList<string> Errors, string Title = "");
 
 public sealed record ItemImportParse(IReadOnlyList<ItemImportRow> Rows, string? FileError);
 
@@ -183,7 +183,7 @@ public static class ItemSheets
                 errors.AddRange(ModuleService.ValidateItem(input));
             }
 
-            rows.Add(new ItemImportRow(r, errors.Count == 0 ? input : null, errors));
+            rows.Add(new ItemImportRow(r, errors.Count == 0 ? input : null, errors, cells[0]));
         }
 
         return rows.Count == 0 ? new ItemImportParse([], "The file has no items. Fill in the rows under the column titles.") : new ItemImportParse(rows, null);

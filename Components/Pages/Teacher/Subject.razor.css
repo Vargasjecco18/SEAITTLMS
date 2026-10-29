@@ -362,7 +362,7 @@ h3 {
 
 @media (min-width: 1000px) {
     .course-layout {
-        grid-template-columns: 14rem minmax(0, 1fr);
+        grid-template-columns: 15.5rem minmax(0, 1fr);
         align-items: start;
     }
 }

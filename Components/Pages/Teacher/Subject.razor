@@ -67,7 +67,7 @@ else
                                         <span>No due date</span>
                                     }
                                     <span>@item.MaxScore.ToString("0.##") points</span>
-                                    <Badge Tone="@(item.State == Visibility.Posted ? Tone.Success : item.State == Visibility.Scheduled ? Tone.Warning : Tone.Neutral)">@(item.State == Visibility.Draft ? "Draft" : item.State)</Badge>
+                                    <Badge Tone="@(module.State == Visibility.Posted ? Tone.Success : module.State == Visibility.Scheduled ? Tone.Warning : Tone.Neutral)">@(module.State == Visibility.Draft ? "Draft module" : module.State == Visibility.Scheduled ? "Module scheduled" : "Posted")</Badge>
                                 </div>
                             </div>
                             <div class="item-side">
@@ -313,7 +313,7 @@ else
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
             <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="Files of the module" Existing="@(FilesOf(moduleFiles, editingModuleId).Where(f => !f.IsSlides).ToList())" />
-            <AttachmentPicker @ref="slidesPicker" @key="moduleFormKey" Slides="true" Title="Slides of the module (PowerPoint or PDF)" Existing="@(FilesOf(moduleFiles, editingModuleId).Where(f => f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="slidesPicker" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="Slides of the module (PowerPoint or PDF)" Existing="@(FilesOf(moduleFiles, editingModuleId).Where(f => f.IsSlides).ToList())" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save module")</Button>
@@ -735,7 +735,7 @@ else
 
     /// <summary>The modules the Add menu offers (the syllabus has no assignments).</summary>
     private IReadOnlyList<AddMenuModule> AddMenuModules => subject is null ? [] :
-        [.. subject.Modules.Where(m => !m.IsSyllabus).Select((m, n) => new AddMenuModule(m.Id, $"Module {n + 1}: {m.Title}"))];
+        [.. subject.Modules.Where(m => !m.IsSyllabus).Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))];
 
     private void PickNew(AddMenuPick pick)
     {
