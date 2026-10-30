@@ -224,7 +224,7 @@ else
 <Modal Open="adding" Title="Add people" OnClose="CloseAdd" Large="true">
     @if (adding)
     {
-        <PeoplePicker People="addable" Selected="picked" EmptyText="Everybody you can add is in the group already." />
+        <PeoplePicker People="addable" Selected="picked" OnChanged="StateHasChanged" EmptyText="Everybody you can add is in the group already." />
         <div class="dialog-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseAdd">Cancel</Button>
             <Button IconName="user-round-plus" Disabled="@(busy || picked.Count == 0)" OnClick="AddMembersAsync">Add @(picked.Count == 0 ? "" : picked.Count.ToString())</Button>

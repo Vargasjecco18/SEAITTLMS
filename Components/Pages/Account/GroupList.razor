@@ -61,7 +61,7 @@ else
             <textarea id="g-description" class="input" rows="2" maxlength="500" @bind="description"></textarea>
         </Field>
         <p class="pick-title">Add people</p>
-        <PeoplePicker People="reachable" Selected="picked" EmptyText="You can add classmates, teachers and friends. There is nobody to choose yet; you can add people later." />
+        <PeoplePicker People="reachable" Selected="picked" OnChanged="StateHasChanged" EmptyText="You can add classmates, teachers and friends. There is nobody to choose yet; you can add people later." />
         <div class="dialog-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseCreate">Cancel</Button>
             <Button IconName="plus" Disabled="@busy" OnClick="CreateAsync">@(busy ? "Making…" : "Make the group")</Button>

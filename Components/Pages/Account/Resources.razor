@@ -293,7 +293,7 @@
         <p class="dialog-note">Choose who can open this file. They can download it and keep a copy; they can't change yours.</p>
 
         <h3 class="share-title"><Icon Name="users-round" Size="16" /> People</h3>
-        <PeoplePicker People="shareOptions.People" Selected="sharePeople" EmptyText="You can share with classmates, teachers, students and friends. Nobody to choose yet." />
+        <PeoplePicker People="shareOptions.People" Selected="sharePeople" OnChanged="StateHasChanged" EmptyText="You can share with classmates, teachers, students and friends. Nobody to choose yet." />
 
         <h3 class="share-title"><Icon Name="users" Size="16" /> Groups</h3>
         @if (shareOptions.Groups.Count == 0)

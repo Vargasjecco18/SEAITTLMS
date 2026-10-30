@@ -80,7 +80,7 @@
                 }
                 else if (audience == "people")
                 {
-                    <PeoplePicker People="reachable" Selected="selected" EmptyText="You have no friends or classmates to choose from yet." />
+                    <PeoplePicker People="reachable" Selected="selected" OnChanged="StateHasChanged" EmptyText="You have no friends or classmates to choose from yet." />
                 }
 
                 @if (audience != "me")
