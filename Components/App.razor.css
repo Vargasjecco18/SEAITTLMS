@@ -68,6 +68,13 @@ html {
     --sidebar-w: 17rem;
 }
 
+/* The main menu folded to its icons (the pages where a lesson is read ask for it, wwwroot/app.js sets data-rail). It only applies where the menu is always open. */
+@media (min-width: 960px) {
+    html[data-rail="on"] {
+        --sidebar-w: 4.75rem;
+    }
+}
+
 /* Dark colors (black, not blue). They apply when dark is chosen in the settings menu (the page then has data-theme="dark"), and when
    nothing is chosen ("auto") and the computer is set to dark. data-theme="light" keeps the light colors. */
 html[data-theme="dark"] {

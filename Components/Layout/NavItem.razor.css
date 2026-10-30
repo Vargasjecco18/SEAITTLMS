@@ -52,6 +52,22 @@
         transition: opacity 0.12s ease 0.03s, transform 0.12s ease 0.03s, visibility 0s linear 0.03s;
     }
 
+    /* The pointer is on its way to the box of a page (app.js): that box stays, and the boxes of the pages it crosses wait. */
+    .item[data-aim] .flyout {
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+        transition: none;
+    }
+
+    html[data-aiming] .item:not([data-aim]):hover .flyout {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transition: none;
+    }
+
     /* After a link of the menu was clicked the box rests until the pointer has left (app.js), so it does not cover the page that opened. */
     .item[data-rest]:hover .flyout,
     .item[data-rest]:has(:focus-visible) .flyout {

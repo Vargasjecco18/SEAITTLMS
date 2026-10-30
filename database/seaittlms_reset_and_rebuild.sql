@@ -1846,5 +1846,29 @@ ALTER TABLE `module_items` ADD CONSTRAINT `ck_module_items_kind` CHECK (kind IN 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261029190026_SingleSessionExamAndNotifyEmail', '9.0.20');
 
+ALTER TABLE `users` ADD `notification_sound_choice` varchar(16) CHARACTER SET utf8mb4 NULL;
+
+CREATE TABLE `notification_sounds` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NULL,
+    `name` varchar(255) CHARACTER SET utf8mb4 NOT NULL,
+    `content_type` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `size_bytes` bigint NOT NULL,
+    `data` mediumblob NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_notification_sounds` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_notification_sounds_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE UNIQUE INDEX `ix_notification_sounds_user_id` ON `notification_sounds` (`user_id`);
+
+UPDATE system_settings SET `value` = '200' WHERE `key` = 'files.max_mb' AND `value` = '10';
+
+UPDATE system_settings SET `value` = '500' WHERE `key` = 'files.locker_mb' AND `value` = '100';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261030033202_NotificationSoundsAndBiggerFileLimits', '9.0.20');
+
 COMMIT;
 

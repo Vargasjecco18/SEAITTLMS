@@ -214,11 +214,7 @@
         gap: 0.45rem;
     }
 
-    /* Folded: only the icons are left, in a narrow column, and the page takes the room. */
-    html[data-rail="on"] {
-        --sidebar-w: 4.75rem;
-    }
-
+    /* Folded: only the icons are left, in a narrow column, and the page takes the room (the width is set in App.razor.css, where the <html> tag belongs). */
     .shell {
         transition: grid-template-columns 0.2s ease;
     }

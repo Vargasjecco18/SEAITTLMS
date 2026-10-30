@@ -88,6 +88,52 @@
     document.addEventListener('mouseover', onEnter);
     document.addEventListener('focusin', onEnter);
 
+    // Going from a page to a link of its box in a straight line crosses the pages below it, and their boxes would open over the one the person is heading to.
+    // While the pointer is inside the triangle between where it left the page and the near edge of the open box, that box stays and the others wait (data-aim, data-aiming).
+    let last = { x: 0, y: 0 };
+    let aim = null;
+
+    function inTriangle(p, a, b, c) {
+        const side = function (p1, p2, p3) { return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y); };
+        const d1 = side(p, a, b);
+        const d2 = side(p, b, c);
+        const d3 = side(p, c, a);
+        return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+    }
+
+    function stopAim() {
+        if (aim) {
+            aim.item.removeAttribute('data-aim');
+            document.documentElement.removeAttribute('data-aiming');
+            clearTimeout(aim.timer);
+            aim = null;
+        }
+    }
+
+    document.addEventListener('mousemove', function (event) {
+        const p = { x: event.clientX, y: event.clientY };
+        if (aim) {
+            const box = aim.item.querySelector('.flyout').getBoundingClientRect();
+            const inside = p.x >= box.left && p.x <= box.right && p.y >= box.top && p.y <= box.bottom;
+            if (inside || !inTriangle(p, aim.from, { x: box.left, y: box.top }, { x: box.left, y: box.bottom })) { stopAim(); }
+        }
+        last = p;
+    });
+
+    document.addEventListener('mouseout', function (event) {
+        const item = event.target instanceof Element ? event.target.closest('.item[data-flyout]') : null;
+        if (!item || aim || (event.relatedTarget instanceof Node && item.contains(event.relatedTarget))) { return; }
+        const flyout = item.querySelector('.flyout');
+        if (!flyout) { return; }
+        const style = getComputedStyle(flyout);
+        const box = flyout.getBoundingClientRect();
+        // Only a box that is open, to the right of the pointer, and a pointer that is moving towards it.
+        if (style.visibility !== 'visible' || Number(style.opacity) < 0.5 || event.clientX < last.x || last.x >= box.left) { return; }
+        aim = { item: item, from: last, timer: setTimeout(stopAim, 700) };
+        item.setAttribute('data-aim', '');
+        document.documentElement.setAttribute('data-aiming', '');
+    });
+
     // A click on a link of the menu closes its box until the pointer leaves the page's item (the pointer is still over it, and the box would cover the page).
     document.addEventListener('click', function (event) {
         const target = event.target;

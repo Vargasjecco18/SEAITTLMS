@@ -7915,8 +7915,8 @@ SELECT r.k, r.v, @now, @u_admin FROM (
   UNION ALL SELECT 'backup.keep', '7'
   UNION ALL SELECT 'logs.keep_days', '180'
   UNION ALL SELECT 'classes.section_capacity', '40'
-  UNION ALL SELECT 'files.max_mb', '10'
-  UNION ALL SELECT 'files.locker_mb', '100'
+  UNION ALL SELECT 'files.max_mb', '200'
+  UNION ALL SELECT 'files.locker_mb', '500'
 ) AS r WHERE NOT EXISTS (SELECT 1 FROM system_settings x WHERE x.`key` = r.k) AND @u_admin IS NOT NULL;
 
 -- the sample people have signed in recently

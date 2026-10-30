@@ -92,7 +92,7 @@ public static class HelpContent
         ]),
         new("What do the notifications say?",
         [
-            "The bell at the top lists what happened for you: a new module, a grade, a deadline coming, a friend request, a file someone shared. A new one also plays a short sound (you can switch it off in Settings).",
+            "The bell at the top lists what happened for you: a new module, a grade, a deadline coming, a friend request, a file someone shared. A new one also plays a short sound. In Settings (the gear at the top) you can choose the sound, add your own sound file, or switch it off. The browser lets a page make sound only after you clicked on it once, so click anywhere on the page if you hear nothing.",
             "Press one to go to the page it is about. “Mark all as read” clears the number.",
         ]),
     ]);
@@ -114,7 +114,8 @@ public static class HelpContent
             "Open a course, then a module. The syllabus of the course is the first thing in the list.",
             "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
-            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams when your teacher gave one). It stays in view while you scroll, and the button at its top hides it or shows it again. It is also there when you read a lesson or read it again.",
+            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams when your teacher gave one), then Grades and Teachers (the teacher of the course, with a Message button to write to them). It stays in view while you scroll, and the button at its top hides it or shows it again.",
+            "When you read a lesson, or read it again, the main menu folds to its icons to give the lesson more room. The button at the top of the icons shows the names again.",
         ]),
         new("What if I hand in after the due date?",
         [
@@ -156,7 +157,7 @@ public static class HelpContent
         new("What is the locker?",
         [
             "Open Resources. The Locker is your own storage for files: notes, projects, reviewers. Only you see them.",
-            "Press the Share button of a file to let some people, or a group, open it. “Uploaded files” lists what others shared with you; press the folder button to keep a copy in your locker.",
+            "Press the Share button of a file to let some people, or a group, open it. “Uploaded files” lists the files you sent to other people (who got each one, and when). “Received files” lists what others shared with you; press the folder button to keep a copy in your locker.",
             "There is a limit for the size of a file and of your locker (the bar shows how much you used).",
         ], "resources", "Open Resources"),
     ]);
@@ -177,12 +178,13 @@ public static class HelpContent
         ]),
         new("What is the menu inside a course?",
         [
-            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams, once you added one). Each one lists that kind of work for the whole course. The gradebook and the attendance of the course are in the same menu.",
+            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams, once you added one). Each one lists that kind of work for the whole course. Below them are Attendance, Gradebook and Students: the students of the course, each with a Message button to write to them.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
         ]),
         new("Can I fill many assignments or questions from Excel?",
         [
             "Yes. Press “Add Activities”, choose the module and then “Template and import (Excel)”. The template is one workbook with a sheet for the Assignments, the Quizzes, the Quiz questions (each row says which quiz it belongs to) and the Task performances, and a column to name the files to attach. Fill it in, import it, and every row becomes one item. The same box can export what the module has.",
+            "Every template has a sheet “How to fill”: for each column it says what to write and what to use in Excel. The cells that take a fixed answer (a quiz, a type, Yes or No) have a drop-down list, and a tip shows when you select a cell. Type a day like 2026-11-19.",
             "In the questions of a quiz, use Template, Export the questions and Import from Excel. The imported questions appear in the list; press Save questions to keep them.",
         ]),
         new("A student handed in after the due date. What do I do?",
@@ -233,7 +235,7 @@ public static class HelpContent
         new("How do I share a file with my students?",
         [
             "Open Resources and add the file to your locker (Add files).",
-            "Press Share, and under “My courses” tick the course. Its students see the file under Uploaded files and are notified. You can also share with people and groups.",
+            "Press Share, and under “My courses” tick the course. Its students see the file under Received files and are notified. The files you shared are listed under Uploaded files. You can also share with people and groups.",
         ], "resources", "Open Resources"),
     ]);
 
@@ -323,7 +325,7 @@ public static class HelpContent
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
-            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments. “Export to Excel” puts everything of the page in one workbook, one sheet for each part.",
+            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments. “Export to Excel” puts everything of the page in one workbook, one sheet for each part, with the result of every teacher.",
         ], "coordinator/analytics", "Open Analytics"),
         new("How do I write an announcement?",
         [
@@ -359,7 +361,7 @@ public static class HelpContent
         ], "provider/tracking?tab=teachers", "Open the teachers"),
         new("What do the analytics show?",
         [
-            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, assignment, quiz, task performance), by section and week by week. “Export to Excel” puts everything of the page in one workbook.",
+            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, assignment, quiz, task performance), by section and week by week. “Export to Excel” puts everything of the page in one workbook: the numbers of the page, every teacher, every student and the result of each student in each course.",
         ], "provider/analytics", "Open Analytics"),
     ]);
 
