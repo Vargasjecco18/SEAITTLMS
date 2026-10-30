@@ -327,8 +327,8 @@ else
         await LoadAsync();
         loaded = true;
 
-        // The wall and the green dots look again every 10 seconds, so what the others write shows up by itself.
-        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        // The wall and the green dots look again every 15 seconds, so what the others write shows up by itself.
+        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
     }
 
     private async Task TickAsync()

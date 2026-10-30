@@ -218,7 +218,7 @@
 
         loaded = true;
 
-        // The green dots look again every 10 seconds; the lists (new friend requests ...) every minute.
+        // The green dots look again every 30 seconds; the lists (new friend requests ...) every minute.
         var ticks = 0;
         timer = new Timer(_ => _ = InvokeAsync(async () =>
         {
@@ -234,7 +234,7 @@
             catch (ObjectDisposedException)
             {
             }
-        }), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private async Task LoadAsync()

@@ -234,7 +234,7 @@
         // The widgets look again every 30 seconds, so a new announcement, deadline or piece of work shows up without a refresh.
         if (role is not null)
         {
-            timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+            timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         }
     }
 

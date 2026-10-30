@@ -180,9 +180,9 @@
             await OnChanged.InvokeAsync();
         }
 
-        // While the box is open a new message shows up at once (LiveUpdates), and it also looks for new ones every 5 seconds.
+        // While the box is open a new message shows up at once (LiveUpdates), and it also looks for new ones every 15 seconds.
         subscription = Live.Subscribe(UserId, () => InvokeAsync(RefreshAsync));
-        timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+        timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

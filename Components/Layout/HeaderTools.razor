@@ -292,9 +292,9 @@
         await LoadGuidanceAsync();
 
         // New messages and notifications show up by themselves: at once when they are sent (LiveUpdates), and the numbers are looked at
-        // again every 10 seconds while the page is open, in case the news came from somewhere else.
+        // again every 30 seconds while the page is open, in case the news came from somewhere else.
         subscription = Live.Subscribe(user.UserId, () => InvokeAsync(RefreshAllAsync));
-        timer = new Timer(_ => _ = InvokeAsync(RefreshAllAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        timer = new Timer(_ => _ = InvokeAsync(RefreshAllAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private bool soundPrepared;

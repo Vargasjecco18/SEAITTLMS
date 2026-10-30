@@ -757,7 +757,7 @@
         _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out currentUserId);
 
         // The green dots follow who has a page open, so look again now and then.
-        onlineTimer = new Timer(_ => _ = InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(20));
+        onlineTimer = new Timer(_ => _ = InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     public void Dispose() => onlineTimer?.Dispose();

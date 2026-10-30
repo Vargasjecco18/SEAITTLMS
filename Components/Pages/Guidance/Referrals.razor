@@ -249,7 +249,6 @@
         show = ShowQuery == "all" ? "all" : "concerns";
         reason = ReferralReasons.All.Contains(ReasonQuery ?? "") ? ReasonQuery! : "";
         searchText = appliedSearch = SearchQuery?.Trim() ?? "";
-        await Desk.EvaluateAsync();
         await LoadAsync();
     }
 

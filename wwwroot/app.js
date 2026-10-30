@@ -643,7 +643,7 @@ document.addEventListener('toggle', function (event) {
 
     // Going to another page starts the wait again.
     document.addEventListener('enhancedload', function () { last = Date.now(); });
-    setInterval(tick, 2000);
+    setInterval(tick, 5000);
 })();
 
 // The editor of a student's work (the "RichTextEditor" component draws the bar of tools, this file makes them work).

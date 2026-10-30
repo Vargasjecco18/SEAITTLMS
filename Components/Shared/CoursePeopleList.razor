@@ -39,7 +39,7 @@ else
     private Timer? timer;
 
     protected override void OnInitialized() =>
-        timer = new Timer(_ => _ = InvokeAsync(() => { try { StateHasChanged(); } catch (ObjectDisposedException) { } }), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        timer = new Timer(_ => _ = InvokeAsync(() => { try { StateHasChanged(); } catch (ObjectDisposedException) { } }), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 
     public void Dispose() => timer?.Dispose();
 }

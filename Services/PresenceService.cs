@@ -9,8 +9,8 @@ namespace SEAITT_LMS.Services;
 /// </summary>
 public sealed class PresenceService(TimeProvider clock)
 {
-    /// <summary>The header says hello every 10 seconds, so a person who closed the last page is offline after this.</summary>
-    public static readonly TimeSpan OnlineWindow = TimeSpan.FromSeconds(45);
+    /// <summary>The header says hello every 30 seconds, so a person who closed the last page is offline after this.</summary>
+    public static readonly TimeSpan OnlineWindow = TimeSpan.FromSeconds(75);
 
     private readonly ConcurrentDictionary<int, DateTime> lastSeen = new();
     private DateTime lastClean = DateTime.MinValue;

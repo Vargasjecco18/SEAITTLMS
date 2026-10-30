@@ -47,7 +47,7 @@ public static class InterventionTypes
 
 /// <summary>
 /// The guidance counselor's concerns are attendance and violations only (failing grades and students at risk are the teacher's). The system looks at every student by itself
-/// (every minute, and when the counselor opens the page): an attendance rate under 80% over at least 5 marked days becomes one attendance referral, once. The counselor
+/// (every few minutes): an attendance rate under 80% over at least 5 marked days becomes one attendance referral, once. The counselor
 /// can also record a concern (attendance or a violation) for any student of the school.
 /// </summary>
 public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, NotificationService notifications, TimeProvider clock)

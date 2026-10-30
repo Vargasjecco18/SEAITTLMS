@@ -122,6 +122,7 @@ public sealed class AutomationWorker(IServiceScopeFactory scopes, TimeProvider c
         await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+        var runs = 0;
         do
         {
             try
@@ -134,7 +135,13 @@ public sealed class AutomationWorker(IServiceScopeFactory scopes, TimeProvider c
                 await AutomationService.NotifyNewContentAsync(dbFactory, notifications, now, stoppingToken);
                 await AutomationService.SendDueRemindersAsync(dbFactory, notifications, now, stoppingToken);
                 await QuizService.FinalizeExpiredAsync(dbFactory, now, stoppingToken);
-                await scope.ServiceProvider.GetRequiredService<ReferralService>().EvaluateAsync(stoppingToken);
+
+                // Looking at every student's attendance is the heaviest part, and a referral does not need the minute: every fifth run (and the first).
+                if (runs++ % 5 == 0)
+                {
+                    await scope.ServiceProvider.GetRequiredService<ReferralService>().EvaluateAsync(stoppingToken);
+                }
+
                 await scope.ServiceProvider.GetRequiredService<StudentLifecycleService>().ArchiveFinishedAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

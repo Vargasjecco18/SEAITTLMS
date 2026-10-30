@@ -67,7 +67,7 @@
         userId = me.UserId;
         role = me.Role;
         await LoadAsync();
-        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     private async Task LoadAsync()

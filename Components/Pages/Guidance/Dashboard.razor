@@ -89,8 +89,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Look at every student first, so what is shown is up to date.
-        await Referrals.EvaluateAsync();
         overview = await Referrals.GetOverviewAsync();
         absent = await Referrals.GetAtRiskAsync(ReferralReasons.LowAttendance);
     }
