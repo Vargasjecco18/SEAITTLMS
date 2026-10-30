@@ -26,14 +26,20 @@ public static class ReferralReasons
     public const string FailingGrades = "FailingGrades";
     public const string AtRisk = "AtRisk";
     public const string LowAttendance = "LowAttendance";
+    public const string Violation = "Violation";
 
-    public static readonly string[] All = [FailingGrades, AtRisk, LowAttendance];
+    /// <summary>
+    /// What the guidance counselor looks after: attendance and violations. Failing grades and students at risk of failing belong to the teacher (the Analytics page of the teacher
+    /// lists them); <see cref="FailingGrades"/> and <see cref="AtRisk"/> stay here only so the referrals made before are still read correctly.
+    /// </summary>
+    public static readonly string[] All = [LowAttendance, Violation];
 
     public static string Display(string reason) => reason switch
     {
         FailingGrades => "Failing grades",
         AtRisk => "At risk",
-        LowAttendance => "Not attending class",
+        LowAttendance => "Attendance",
+        Violation => "Violation",
         _ => reason,
     };
 }

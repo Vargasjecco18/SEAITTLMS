@@ -17,6 +17,10 @@
                 <Icon Name="circle-check" Size="28" />
                 <p><strong>@done.FullName</strong> is enrolled for the <strong>@TermLabel</strong>.</p>
                 <p class="muted">@done.Section · @(done.Subjects.Count == 1 ? "1 course" : $"{done.Subjects.Count} courses")</p>
+                @if (done.LeftStrand is not null)
+                {
+                    <p class="muted">The earlier enrollment in <strong>@done.LeftStrand</strong> was ended, so the student is only in the new strand.</p>
+                }
             </div>
             <div class="actions">
                 <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
@@ -64,7 +68,7 @@
             </Field>
             @if (shifted)
             {
-                <p class="shift" role="status"><Icon Name="info" Size="16" /> The student changes strand, so the student starts again in Grade 11.</p>
+                <p class="shift" role="status"><Icon Name="info" Size="16" /> The student changes strand, so the student starts again in Grade 11 and the earlier enrollment in @defaults?.PreviousStrandCode is ended.</p>
             }
 
             <Field For="re-section" Label="Section" Required="true" Hint="@SectionHint">

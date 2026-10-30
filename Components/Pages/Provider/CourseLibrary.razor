@@ -33,23 +33,21 @@ else
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
-        <AddItemMenu Label="Add Activities" Modules="@([.. modules.Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))])" OnPick="PickNew" />
-        <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
+        <Button Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
+        <Button IconName="send" Disabled="@(course.Modules.Count == 0 && course.Exams.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span>What you send, with its files, reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and can change the due dates, the text and the settings of the quizzes. Open the syllabus or a module to see its assignments, quizzes and task performances.</span>
+        <span>You send the <strong>syllabus</strong>, the <strong>modules</strong> and the <strong>summative exams</strong>. What you send, with its files, reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and writes the assignments, quizzes and task performances.</span>
     </p>
 
     <div class="tiles">
         <div class="tile"><strong>@(syllabus is null ? "No" : "Yes")</strong><span>Syllabus</span></div>
         <div class="tile"><strong>@modules.Count</strong><span>Modules</span></div>
-        <div class="tile"><strong>@ItemCount(ItemKinds.Activity)</strong><span>Assignments</span></div>
-        <div class="tile"><strong>@ItemCount(ItemKinds.Quiz)</strong><span>Quizzes</span></div>
-        <div class="tile"><strong>@ItemCount(ItemKinds.TaskPerformance)</strong><span>Task performances</span></div>
+        <div class="tile"><strong>@course.Exams.Count</strong><span>Summative exams</span></div>
     </div>
 
     <div class="layout">
@@ -66,13 +64,15 @@ else
                         var got = t.Received.Count;
                         <li>
                             <span class="who"><strong>@t.TeacherName</strong><span>@t.SectionLabel · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
-                            @if (course.Modules.Count == 0)
+                            @if (course.Modules.Count + course.Exams.Count == 0)
                             {
                                 <span class="muted">Nothing to send yet</span>
                             }
                             else
                             {
-                                <Badge Tone="@(got == 0 ? Tone.Neutral : got >= course.Modules.Count ? Tone.Success : Tone.Info)">Got @got of @course.Modules.Count</Badge>
+                                var total = course.Modules.Count + course.Exams.Count;
+                                var gotAll = got + Math.Min(t.ExamsGot, course.Exams.Count);
+                                <Badge Tone="@(gotAll == 0 ? Tone.Neutral : gotAll >= total ? Tone.Success : Tone.Info)">Got @gotAll of @total</Badge>
                             }
                         </li>
                     }
@@ -84,8 +84,8 @@ else
     @if (course.Modules.Count == 0)
     {
         <Card>
-            <EmptyState IconName="layers" Title="Nothing prepared yet">
-                <p>Start with the syllabus, then add the modules. Each module can have assignments, quizzes and task performances.</p>
+            <EmptyState IconName="layers" Title="No syllabus or module yet">
+                <p>Start with the syllabus, then add the modules. The teachers write the assignments, quizzes and task performances.</p>
                 <div class="modal-actions">
                     <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
                     <Button IconName="plus" OnClick="OpenNewModule">Add the first module</Button>
@@ -112,7 +112,7 @@ else
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewSyllabus">Add syllabus</Button>
                         </div>
                     </header>
-                    <p class="module-description">The syllabus is sent first, before the modules and their assignments, quizzes and task performances.</p>
+                    <p class="module-description">The syllabus is sent first, before the modules.</p>
                 </section>
             }
 
@@ -136,10 +136,6 @@ else
                                     @if (moduleFiles.Count > 0)
                                     {
                                         <span class="count-chip"><Icon Name="paperclip" Size="13" /> @moduleFiles.Count</span>
-                                    }
-                                    @if (!module.IsSyllabus)
-                                    {
-                                        <span class="count-chip">@Summary(module)</span>
                                     }
                                 </span>
                             </span>
@@ -180,76 +176,56 @@ else
                                 <AttachmentList Items="moduleFiles.Where(f => f.IsSlides).ToList()" Label="@($"Slides of {module.Title}")" />
                             }
 
-                            @if (!module.IsSyllabus)
-                            {
-                                <div class="groups">
-                                    @foreach (var kind in ItemKinds.All)
-                                    {
-                                        var items = module.Items.Where(i => i.Kind == kind).ToList();
-                                        <div class="group">
-                                            <div class="group-head">
-                                                <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
-                                                <span class="group-actions">
-                                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" Title="Template, import and export in Excel" OnClick="() => OpenExcel(module, kind)">Excel</Button>
-                                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
-                                                </span>
-                                            </div>
-
-                                            @if (items.Count == 0)
-                                            {
-                                                <p class="none">None yet.</p>
-                                            }
-                                            else
-                                            {
-                                                <ul class="items">
-                                                    @foreach (var item in items)
-                                                    {
-                                                        var itemFiles = FilesOf(itemAttachments, item.Id);
-                                                        <li class="item">
-                                                            <div class="item-main">
-                                                                <span class="item-title">@item.Title</span>
-                                                                <div class="item-meta">
-                                                                    @if (item.DueAtUtc is { } due)
-                                                                    {
-                                                                        <span title="@PhilippineTime.FormatDateTime(due)"><Icon Name="calendar-clock" Size="14" /> Suggested due date @PhilippineTime.FormatDateTime(due)</span>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <span>No due date</span>
-                                                                    }
-                                                                    @if (item.Kind != ItemKinds.Quiz)
-                                                                    {
-                                                                        <span>@item.MaxScore.ToString("0.##") points</span>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <span>@(item.Questions == 0 && itemFiles.Count > 0 ? "File quiz · no questions" : $"{item.Questions} {(item.Questions == 1 ? "question" : "questions")}")@(item.Questions > 0 ? $" · {item.MaxScore:0.##} points" : "")</span>
-                                                                    }
-                                                                </div>
-                                                                <AttachmentList Items="itemFiles" Label="@($"Files of {item.Title}")" />
-                                                            </div>
-                                                            <div class="item-actions">
-                                                                @if (item.Kind == ItemKinds.Quiz && !(item.Questions == 0 && itemFiles.Count > 0))
-                                                                {
-                                                                    <ButtonLink Href="@($"provider/library/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
-                                                                }
-                                                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
-                                                                <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
-                                                            </div>
-                                                        </li>
-                                                    }
-                                                </ul>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
                         </div>
                     }
                 </section>
             }
         </div>
     }
+
+    @* ===== The summative exams of the course: the paper, the highest score and the schedule ===== *@
+    <section class="exams" aria-labelledby="exams-title">
+        <header class="exams-head">
+            <h2 id="exams-title"><Icon Name="clipboard-list" Size="20" /> Summative exams <span class="count">@course.Exams.Count</span></h2>
+            <span class="exams-actions">
+                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" Title="Template, import and export in Excel" OnClick="OpenExamsExcel">Excel</Button>
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewExam">Add summative exam</Button>
+            </span>
+        </header>
+        <p class="exams-note">A summative exam has its paper (instructions and files), its highest score and its <strong>schedule</strong>: when it opens and when it closes. It goes to the teachers like a module, and they give the scores in the gradebook.</p>
+        @if (course.Exams.Count == 0)
+        {
+            <p class="none">No summative exam yet.</p>
+        }
+        else
+        {
+            <ul class="items">
+                @foreach (var exam in course.Exams)
+                {
+                    var examFiles = FilesOf(itemAttachments, exam.Id);
+                    <li class="item">
+                        <div class="item-main">
+                            <span class="item-title">@exam.Title</span>
+                            <div class="item-meta">
+                                <span><Icon Name="calendar-clock" Size="14" /> @ScheduleText(exam)</span>
+                                <span>@exam.MaxScore.ToString("0.##") points</span>
+                                <Badge Tone="@(exam.SentTo == 0 ? Tone.Neutral : Tone.Success)">@(exam.SentTo == 0 ? "Not sent yet" : $"Sent to {exam.SentTo} {(exam.SentTo == 1 ? "course" : "courses")}")</Badge>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(exam.Instructions))
+                            {
+                                <p class="exam-text">@exam.Instructions</p>
+                            }
+                            <AttachmentList Items="examFiles" Label="@($"Files of {exam.Title}")" />
+                        </div>
+                        <div class="item-actions">
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditExam(exam)">Edit</Button>
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteExam(exam)" />
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
 }
 
 @* ===== Module or syllabus: add or edit ===== *@
@@ -285,71 +261,62 @@ else
     }
 </Modal>
 
-@* ===== Item: add or edit ===== *@
-<Modal Open="itemForm is not null" Title="@ItemModalTitle" OnClose="CloseItemForm" Large="true">
-    @if (itemForm is not null)
+@* ===== Summative exam: add or edit ===== *@
+<Modal Open="examForm is not null" Title="@(editingExamId is null ? "Add summative exam" : "Edit summative exam")" OnClose="CloseExamForm" Large="true">
+    @if (examForm is not null)
     {
-        <EditForm Model="itemForm" OnValidSubmit="SaveItemAsync">
+        <EditForm Model="examForm" OnValidSubmit="SaveExamAsync">
             <FormErrors Errors="formErrors" />
-            @if (editingItemId is null)
+            @if (editingExamId is null)
             {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExcelFromForm">Fill many from an Excel file instead</Button></p>
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExamsExcelFromForm">Fill many from an Excel file instead</Button></p>
             }
 
-            <Field For="i-title" Label="Title" Required="true">
-                <InputText id="i-title" @bind-Value="itemForm.Title" maxlength="200" autocomplete="off" />
+            <Field For="x-title" Label="Title" Required="true" Hint="Like 1st Term summative exam.">
+                <InputText id="x-title" @bind-Value="examForm.Title" maxlength="200" autocomplete="off" />
             </Field>
-            <Field For="i-text" Label="Instructions">
-                <InputTextArea id="i-text" @bind-Value="itemForm.Instructions" rows="5" />
+            <Field For="x-text" Label="Instructions" Hint="What the students must know or do. The paper itself can be a file below.">
+                <InputTextArea id="x-text" @bind-Value="examForm.Instructions" rows="5" />
             </Field>
             <div class="two">
-                @if (itemForm.Kind != ItemKinds.Quiz || QuizIsAFile)
-                {
-                    <Field For="i-score" Label="Highest score" Required="true">
-                        <InputNumber id="i-score" @bind-Value="itemForm.MaxScore" />
-                    </Field>
-                }
-                <Field For="i-due" Label="Suggested due date" Hint="Philippine time. The teacher can change it. Leave empty for none.">
-                    <input id="i-due" type="datetime-local" value="@itemForm.DueText" @onchange="SetDue" />
+                <Field For="x-opens" Label="Opens on" Required="true" Hint="Philippine time.">
+                    <input id="x-opens" type="datetime-local" value="@examForm.OpensText" @onchange="SetOpens" />
+                </Field>
+                <Field For="x-closes" Label="Closes on" Required="true" Hint="After it opens.">
+                    <input id="x-closes" type="datetime-local" value="@examForm.DueText" @onchange="SetCloses" />
                 </Field>
             </div>
-
-            @if (itemForm.Kind == ItemKinds.Quiz)
-            {
-                <p class="quiz-note">
-                    <Icon Name="info" Size="16" />
-                    <span>A quiz is <strong>questions</strong> or <strong>a file</strong>. With a file there are no questions: the students send their answers as a file. Without a file, write the questions after saving. <strong>The teacher</strong> sets the time limit, the anti-cheating watch and the rest of the settings.</span>
-                </p>
-            }
-
-            <AttachmentPicker @ref="itemPicker" @key="itemFormKey" Title="@(itemForm.Kind == ItemKinds.Quiz ? "File of the quiz (optional)" : "Files")" Existing="@FilesOf(itemAttachments, editingItemId)" OnChanged="FilesChanged" />
+            <Field For="x-score" Label="Highest score" Required="true">
+                <InputNumber id="x-score" @bind-Value="examForm.MaxScore" />
+            </Field>
+            <AttachmentPicker @ref="examPicker" @key="examFormKey" Title="Files of the exam (the paper)" Existing="@FilesOf(itemAttachments, editingExamId)" />
 
             <div class="modal-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseItemForm">Cancel</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseExamForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
-                @if (itemForm.Kind == ItemKinds.Quiz && !QuizIsAFile)
-                {
-                    <Button Variant="ButtonVariant.Secondary" IconName="list-checks" Disabled="busy" OnClick="SaveAndWriteQuestionsAsync">Save and write questions</Button>
-                }
             </div>
         </EditForm>
     }
 </Modal>
 
-@* ===== Excel: template, import, export of the assignments, quizzes or task performances of a module ===== *@
-<ItemExcelDialog Open="excelModule is not null" Kind="@excelKind" ModuleTitle="@(excelModule?.Title ?? "")" Existing="ExcelExisting" OnImport="ImportItemsAsync" OnClose="CloseExcel" />
-<ActivitiesExcelDialog Open="activitiesModule is not null" ModuleTitle="@(activitiesModule?.Title ?? "")" Existing="activitiesExisting" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
+@* ===== Excel: template, import, export of the summative exams of the course ===== *@
+<SheetImportDialog Open="examsExcelOpen" Title="Summative exams in Excel"
+                   Lead="One row for each exam: its title, instructions, highest score and when it opens and closes. Download the template, fill it in and import it, or export the exams of this course, change them and import again. The files of an exam are added afterwards with Edit."
+                   Single="exam was" Plural="exams were" Added="added" RowLabel="Row" PreviewHint="The rows with a problem are left out; the reason is on its line."
+                   TemplateName="@ExamSheets.FileName("Template")" Template="ExamSheets.Template"
+                   Export="ExamsExportBytes" ExportName="@ExamSheets.FileName(course?.Name ?? "Course")" ExportLabel="Export the exams of this course" ExportCount="@(course?.Exams.Count ?? 0)"
+                   Read="ReadExams" OnImport="ImportExamsAsync" OnClose="CloseExamsExcel" />
 <ModulesExcelDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" Existing="ModulesExisting" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
 
 @* ===== Send to teachers ===== *@
 <Modal Open="sending" Title="Send to teachers" OnClose="CloseSend" Large="true">
     @if (sending && course is not null)
     {
-        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A module that a teacher's course already got is not sent again.</p>
+        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A module or an exam that a teacher's course already got is not sent again.</p>
         <FormErrors Errors="formErrors" />
 
         <p class="pick-title">What to send</p>
-        <button type="button" class="link-button" @onclick="ToggleAllModules">@(sendModules.Count == course.Modules.Count ? "Clear all" : "Select all")</button>
+        <button type="button" class="link-button" @onclick="ToggleAllModules">@(sendModules.Count == course.Modules.Count && sendExams.Count == course.Exams.Count ? "Clear all" : "Select all")</button>
         <ul class="picks">
             @* The syllabus is the first thing on the list (and the first thing the teacher sees in the course). *@
             @if (!course.Modules.Any(m => m.IsSyllabus))
@@ -373,7 +340,20 @@ else
                         <input type="checkbox" checked="@sendModules.Contains(id)" @onchange="e => TogglePick(sendModules, id, e)" />
                         <span>
                             <strong>@(module.IsSyllabus ? "Syllabus: " : "")@module.Title</strong>
-                            <small>@(module.IsSyllabus ? "Syllabus" : ItemCounts(module.Items)) · sent to @module.SentTo of @course.Teachers.Count</small>
+                            <small>@(module.IsSyllabus ? "Syllabus" : "Module") · sent to @module.SentTo of @course.Teachers.Count</small>
+                        </span>
+                    </label>
+                </li>
+            }
+            @foreach (var exam in course.Exams)
+            {
+                var id = exam.Id;
+                <li>
+                    <label class="pick">
+                        <input type="checkbox" checked="@sendExams.Contains(id)" @onchange="e => TogglePick(sendExams, id, e)" />
+                        <span>
+                            <strong>Summative exam: @exam.Title</strong>
+                            <small>@ScheduleText(exam) · sent to @exam.SentTo of @course.Teachers.Count</small>
                         </span>
                     </label>
                 </li>
@@ -425,15 +405,6 @@ else
 </Modal>
 
 @code {
-    private sealed class ItemForm
-    {
-        public string Kind { get; set; } = ItemKinds.Activity;
-        public string Title { get; set; } = "";
-        public string? Instructions { get; set; }
-        public decimal MaxScore { get; set; } = 100;
-        public string DueText { get; set; } = "";
-    }
-
     private sealed record DeleteTarget(string Title, string Text, bool IsModule, int Id);
 
     [Parameter] public int SubjectId { get; set; }
@@ -450,12 +421,12 @@ else
     private int? editingModuleId;
     private bool editingIsSyllabus;
 
-    private ItemForm? itemForm;
-    private int? editingItemId;
-    private int itemModuleId;
+    private ExamInput? examForm;
+    private int? editingExamId;
 
     private bool sending;
     private readonly HashSet<int> sendModules = [];
+    private readonly HashSet<int> sendExams = [];
     private readonly HashSet<int> sendTargets = [];
 
     private DeleteTarget? deleteTarget;
@@ -463,75 +434,18 @@ else
     // which syllabus or modules are open (their text and files, and their assignments, quizzes and task performances)
     private readonly HashSet<int> openModules = [];
 
-    // the files of the library, by syllabus or module and by item
+    // the files of the library, by syllabus or module and by exam
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> moduleAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> itemAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
     private AttachmentPicker? modulePicker;
     private AttachmentPicker? slidesPicker;
-    private AttachmentPicker? itemPicker;
+    private AttachmentPicker? examPicker;
     private int moduleFormKey;
-    private int itemFormKey;
+    private int examFormKey;
 
     private string ModuleModalTitle => editingIsSyllabus
         ? (editingModuleId is null ? "Add syllabus" : "Edit syllabus")
         : (editingModuleId is null ? "Add module" : "Edit module");
-
-    /// <summary>A quiz that has a file has no questions: the students answer with a file and the teacher gives the score.</summary>
-    private bool QuizIsAFile => itemForm?.Kind == ItemKinds.Quiz && (itemPicker?.HasFiles ?? FilesOf(itemAttachments, editingItemId).Count > 0);
-
-    private void FilesChanged() { }
-
-    // ---------------------------------------------------------------- Excel
-
-    private MaterialModuleView? excelModule;
-    private string excelKind = ItemKinds.Activity;
-
-    private IReadOnlyList<ItemExportRow> ExcelExisting => excelModule is null ? [] :
-        [.. excelModule.Items.Where(i => i.Kind == excelKind).Select(i => new ItemExportRow(i.Title, i.Instructions, i.MaxScore, null, i.DueAtUtc, null))];
-
-    private void OpenExcel(MaterialModuleView module, string kind)
-    {
-        excelModule = module;
-        excelKind = kind;
-    }
-
-    private void CloseExcel() => excelModule = null;
-
-    // ---- the workbook of activities (assignments, quizzes with their questions, task performances) of a module
-
-    private MaterialModuleView? activitiesModule;
-    private IReadOnlyList<ActivityExportItem> activitiesExisting = [];
-
-    private async Task OpenActivitiesAsync(MaterialModuleView module)
-    {
-        var list = new List<ActivityExportItem>();
-        foreach (var i in module.Items.Where(i => ItemKinds.All.Contains(i.Kind)))
-        {
-            var questions = i.Kind == ItemKinds.Quiz ? await Library.GetQuestionsAsync(i.Id) ?? [] : [];
-            list.Add(new ActivityExportItem(i.Kind, new ItemExportRow(i.Title, i.Instructions, i.MaxScore, null, i.DueAtUtc, i.TimeLimitMinutes), questions, [.. FilesOf(itemAttachments, i.Id).Select(f => f.Name)]));
-        }
-
-        activitiesExisting = list;
-        activitiesModule = module;
-    }
-
-    private void CloseActivities() => activitiesModule = null;
-
-    private async Task<ItemImportSummary> ImportActivitiesAsync(IReadOnlyList<ActivityToSave> list)
-    {
-        var moduleId = activitiesModule?.Id ?? 0;
-        var summary = await ActivityImport.RunAsync(list,
-            input => Library.SaveItemAsync(userId, moduleId, null, input),
-            (id, questions) => Library.SaveQuestionsAsync(userId, id, questions),
-            (id, files) => Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.MaterialItem, id), files));
-        if (moduleId != 0)
-        {
-            openModules.Add(moduleId);
-        }
-
-        await LoadAsync();
-        return summary;
-    }
 
     // ---- the workbook of modules of the course
 
@@ -577,47 +491,6 @@ else
         return new ItemImportSummary(created, problems);
     }
 
-    private void OpenExcelFromForm()
-    {
-        if (itemForm is null || course?.Modules.FirstOrDefault(m => m.Id == itemModuleId) is not { } module)
-        {
-            return;
-        }
-
-        var kind = itemForm.Kind;
-        itemForm = null;
-        OpenExcel(module, kind);
-    }
-
-    private async Task<ItemImportSummary> ImportItemsAsync(IReadOnlyList<ItemInput> inputs)
-    {
-        var moduleId = excelModule?.Id ?? 0;
-        var created = 0;
-        var problems = new List<string>();
-        foreach (var input in inputs)
-        {
-            var saved = await Library.SaveItemAsync(userId, moduleId, null, input);
-            if (saved.Succeeded)
-            {
-                created++;
-            }
-            else
-            {
-                problems.Add($"{input.Title}: {string.Join(" ", saved.Errors)}");
-            }
-        }
-
-        if (moduleId != 0)
-        {
-            openModules.Add(moduleId);
-        }
-
-        await LoadAsync();
-        return new ItemImportSummary(created, problems);
-    }
-
-    private string ItemModalTitle => itemForm is null ? "" : editingItemId is null ? $"Add {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}" : $"Edit {ItemKinds.Display(itemForm.Kind).ToLowerInvariant()}";
-
     protected override async Task OnParametersSetAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
@@ -630,7 +503,7 @@ else
         course = await Library.GetCourseAsync(SubjectId);
         var modules = course?.Modules ?? [];
         moduleAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialModule, modules.Select(m => m.Id).ToList());
-        itemAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialItem, modules.SelectMany(m => m.Items).Select(i => i.Id).ToList());
+        itemAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialItem, (course?.Exams ?? []).Select(e => e.Id).ToList());
     }
 
     private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>
@@ -642,20 +515,6 @@ else
         {
             openModules.Add(id);
         }
-    }
-
-    /// <summary>"3 assignments, 1 quiz, 1 task performance" for the line under the title of a module.</summary>
-    private static string Summary(MaterialModuleView module)
-    {
-        string Part(string kind, string one, string many)
-        {
-            var n = module.Items.Count(i => i.Kind == kind);
-            return n == 0 ? "" : $"{n} {(n == 1 ? one : many)}";
-        }
-
-        var parts = new[] { Part(ItemKinds.Activity, "assignment", "assignments"), Part(ItemKinds.Quiz, "quiz", "quizzes"), Part(ItemKinds.TaskPerformance, "task performance", "task performances") }
-            .Where(p => p.Length > 0).ToList();
-        return parts.Count == 0 ? "No assignments yet" : string.Join(", ", parts);
     }
 
     /// <summary>Saves the files chosen in a form for the syllabus, module or item with this number: the new ones are attached, the ones taken off are removed.</summary>
@@ -682,16 +541,11 @@ else
         return problems;
     }
 
-    /// <summary>What a module holds, like "1 assignment, 1 quiz, 0 TP".</summary>
-    private static string ItemCounts(IReadOnlyList<MaterialItemView> items)
-    {
-        var assignments = items.Count(i => i.Kind == ItemKinds.Activity);
-        var quizzes = items.Count(i => i.Kind == ItemKinds.Quiz);
-        var tasks = items.Count(i => i.Kind == ItemKinds.TaskPerformance);
-        return $"{assignments} {(assignments == 1 ? "assignment" : "assignments")}, {quizzes} {(quizzes == 1 ? "quiz" : "quizzes")}, {tasks} TP";
-    }
-
-    private int ItemCount(string kind) => course?.Modules.Sum(m => m.Items.Count(i => i.Kind == kind)) ?? 0;
+    /// <summary>"14 Dec 2026, 8:00 AM to 10:00 AM" for the schedule of an exam.</summary>
+    private static string ScheduleText(MaterialExamView exam) =>
+        exam.OpensAtUtc is { } opens && exam.DueAtUtc is { } closes
+            ? $"{PhilippineTime.FormatDateTime(opens)} to {PhilippineTime.FormatDateTime(closes)}"
+            : "No schedule";
 
     private void Say(ServiceResult result, string? fallback = null)
     {
@@ -776,57 +630,37 @@ else
         }
     }
 
-    // ---------------------------------------------------------------- items
+    // ---------------------------------------------------------------- summative exams
 
-    private async Task PickNew(AddMenuPick pick)
-    {
-        if (course?.Modules.FirstOrDefault(m => m.Id == pick.ModuleId) is { } module)
-        {
-            if (pick.Kind == AddItemMenuLabels.ExcelKind)
-            {
-                await OpenActivitiesAsync(module);
-            }
-            else
-            {
-                OpenNewItem(module, pick.Kind);
-            }
-        }
-    }
-
-    private void OpenNewItem(MaterialModuleView module, string kind)
+    private void OpenNewExam()
     {
         formErrors = [];
-        editingItemId = null;
-        itemModuleId = module.Id;
-        itemFormKey++;
-        itemForm = new ItemForm { Kind = kind, MaxScore = kind == ItemKinds.TaskPerformance ? 100 : 50 };
+        editingExamId = null;
+        examFormKey++;
+        examForm = new ExamInput();
     }
 
-    private void OpenEditItem(MaterialModuleView module, MaterialItemView item)
+    private void OpenEditExam(MaterialExamView exam)
     {
         formErrors = [];
-        editingItemId = item.Id;
-        itemModuleId = module.Id;
-        itemForm = new ItemForm
+        editingExamId = exam.Id;
+        examFormKey++;
+        examForm = new ExamInput
         {
-            Kind = item.Kind, Title = item.Title, Instructions = item.Instructions, MaxScore = item.MaxScore,
-            DueText = PhilippineTime.ToInputValue(item.DueAtUtc),
+            Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
+            OpensText = PhilippineTime.ToInputValue(exam.OpensAtUtc), DueText = PhilippineTime.ToInputValue(exam.DueAtUtc),
         };
-        itemFormKey++;
     }
 
-    private void CloseItemForm() => itemForm = null;
+    private void CloseExamForm() => examForm = null;
 
-    // The date box is written out (not @bind) because its text is converted by PhilippineTime, not by Blazor.
-    private void SetDue(ChangeEventArgs e) => itemForm!.DueText = e.Value?.ToString() ?? "";
+    private void SetOpens(ChangeEventArgs e) => examForm!.OpensText = e.Value?.ToString() ?? "";
 
-    private Task SaveItemAsync() => SaveItemCoreAsync(writeQuestions: false);
+    private void SetCloses(ChangeEventArgs e) => examForm!.DueText = e.Value?.ToString() ?? "";
 
-    private Task SaveAndWriteQuestionsAsync() => SaveItemCoreAsync(writeQuestions: true);
-
-    private async Task SaveItemCoreAsync(bool writeQuestions)
+    private async Task SaveExamAsync()
     {
-        if (itemForm is null || busy)
+        if (examForm is null || busy)
         {
             return;
         }
@@ -834,27 +668,18 @@ else
         busy = true;
         try
         {
-            var input = new ItemInput
-            {
-                Kind = itemForm.Kind, Title = itemForm.Title, Instructions = itemForm.Instructions, MaxScore = itemForm.MaxScore,
-                DueAtUtc = PhilippineTime.FromInputValue(itemForm.DueText),
-            };
-            var result = await Library.SaveItemAsync(userId, itemModuleId, editingItemId, input);
+            // The date boxes are written out (not @bind) because their text is converted by PhilippineTime, not by Blazor.
+            examForm.OpensAtUtc = PhilippineTime.FromInputValue(examForm.OpensText);
+            examForm.DueAtUtc = PhilippineTime.FromInputValue(examForm.DueText);
+            var result = await Library.SaveExamAsync(userId, SubjectId, editingExamId, examForm);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];
                 return;
             }
 
-            var fileProblems = result.Id is { } savedItemId ? await ApplyFilesAsync(itemPicker, new AttachmentOwner(AttachmentOwnerKind.MaterialItem, savedItemId)) : [];
-            itemForm = null;
-            openModules.Add(itemModuleId);
-            if (writeQuestions && input.Kind == ItemKinds.Quiz && result.Id is { } quizId)
-            {
-                Navigation.NavigateTo($"provider/library/items/{quizId}/questions");
-                return;
-            }
-
+            var fileProblems = result.Id is { } savedId ? await ApplyFilesAsync(examPicker, new AttachmentOwner(AttachmentOwnerKind.MaterialItem, savedId)) : [];
+            examForm = null;
             Say(result);
             if (fileProblems.Count > 0)
             {
@@ -870,6 +695,56 @@ else
         }
     }
 
+    // ---- the workbook of summative exams of the course
+
+    private bool examsExcelOpen;
+
+    private void OpenExamsExcel()
+    {
+        examForm = null;
+        examsExcelOpen = true;
+    }
+
+    private void OpenExamsExcelFromForm() => OpenExamsExcel();
+
+    private void CloseExamsExcel() => examsExcelOpen = false;
+
+    private byte[] ExamsExportBytes() =>
+        ExamSheets.Export((course?.Exams ?? []).Select(e => new ExamExportRow(e.Title, e.Instructions, e.MaxScore, e.OpensAtUtc, e.DueAtUtc)));
+
+    private static SheetImportDialog.SheetPreview ReadExams(byte[] data)
+    {
+        var parsed = ExamSheets.Parse(data);
+        return new SheetImportDialog.SheetPreview([.. parsed.Rows.Select(r => new SheetImportDialog.SheetPreviewRow($"Row {r.Row}", r.Title, r.Errors.Count == 0 ? null : string.Join(" ", r.Errors)))], parsed.FileError);
+    }
+
+    private async Task<ItemImportSummary> ImportExamsAsync(byte[] data)
+    {
+        var created = 0;
+        var problems = new List<string>();
+        foreach (var row in ExamSheets.Parse(data).Rows)
+        {
+            if (row.Input is null)
+            {
+                problems.Add($"Row {row.Row} ({row.Title}): {string.Join(" ", row.Errors)}");
+                continue;
+            }
+
+            var saved = await Library.SaveExamAsync(userId, SubjectId, null, row.Input);
+            if (saved.Succeeded)
+            {
+                created++;
+            }
+            else
+            {
+                problems.Add($"Row {row.Row} ({row.Title}): {string.Join(" ", saved.Errors)}");
+            }
+        }
+
+        await LoadAsync();
+        return new ItemImportSummary(created, problems);
+    }
+
     // ---------------------------------------------------------------- send
 
     private void OpenSend()
@@ -881,12 +756,18 @@ else
 
         formErrors = [];
         sendModules.Clear();
+        sendExams.Clear();
         sendTargets.Clear();
 
         // What a teacher's course still lacks is chosen at the start; the teachers are all chosen.
         foreach (var module in course.Modules.Where(m => m.SentTo < course.Teachers.Count || course.Teachers.Count == 0))
         {
             sendModules.Add(module.Id);
+        }
+
+        foreach (var exam in course.Exams.Where(e => e.SentTo < course.Teachers.Count || course.Teachers.Count == 0))
+        {
+            sendExams.Add(exam.Id);
         }
 
         foreach (var teacher in course.Teachers)
@@ -925,13 +806,15 @@ else
             return;
         }
 
-        if (sendModules.Count == course.Modules.Count)
+        if (sendModules.Count == course.Modules.Count && sendExams.Count == course.Exams.Count)
         {
             sendModules.Clear();
+            sendExams.Clear();
         }
         else
         {
             sendModules.UnionWith(course.Modules.Select(m => m.Id));
+            sendExams.UnionWith(course.Exams.Select(e => e.Id));
         }
     }
 
@@ -962,7 +845,7 @@ else
         busy = true;
         try
         {
-            var result = await Library.SendAsync(userId, SubjectId, [.. sendModules], [.. sendTargets]);
+            var result = await Library.SendAsync(userId, SubjectId, [.. sendModules], [.. sendTargets], [.. sendExams]);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];
@@ -983,16 +866,12 @@ else
 
     private void AskDeleteModule(MaterialModuleView module)
     {
-        var count = module.Items.Count;
         deleteTarget = new DeleteTarget(module.IsSyllabus ? "Delete the syllabus?" : "Delete this module?",
-            module.IsSyllabus
-                ? $"\"{module.Title}\" will be deleted from the library. The copies the teachers already got stay with them."
-                : $"\"{module.Title}\" will be deleted from the library with its {count} {(count == 1 ? "assignment, quiz or task performance" : "assignments, quizzes and task performances")}. The copies the teachers already got stay with them.",
-            true, module.Id);
+            $"\"{module.Title}\" will be deleted from the library. The copies the teachers already got stay with them.", true, module.Id);
     }
 
-    private void AskDeleteItem(MaterialItemView item) =>
-        deleteTarget = new DeleteTarget($"Delete this {ItemKinds.Display(item.Kind).ToLowerInvariant()}?", $"\"{item.Title}\" will be deleted from the library. The copies the teachers already got stay with them.", false, item.Id);
+    private void AskDeleteExam(MaterialExamView exam) =>
+        deleteTarget = new DeleteTarget("Delete this summative exam?", $"\"{exam.Title}\" will be deleted from the library. The copies the teachers already got stay with them.", false, exam.Id);
 
     private void CloseDelete() => deleteTarget = null;
 
@@ -1008,7 +887,7 @@ else
         {
             var result = deleteTarget.IsModule
                 ? await Library.DeleteModuleAsync(userId, deleteTarget.Id)
-                : await Library.DeleteItemAsync(userId, deleteTarget.Id);
+                : await Library.DeleteExamAsync(userId, deleteTarget.Id);
             deleteTarget = null;
             Say(result);
             await LoadAsync();

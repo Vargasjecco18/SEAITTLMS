@@ -227,8 +227,13 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         {
             concernTitle = "Primary concern categories";
             var reasons = await db.Referrals.AsNoTracking().GroupBy(r => r.Reason).Select(g => new { Reason = g.Key, Count = g.Count() }).ToListAsync(ct);
-            concerns = ReferralReasons.All.Select(r => new ConcernCount(r, reasons.FirstOrDefault(x => x.Reason == r)?.Count ?? 0)).ToList();
-            openReferrals = await db.Referrals.CountAsync(r => r.Status != ReferralStatus.Resolved, ct);
+
+            // The guidance counselor looks after attendance and violations only; the administrator sees every kind (failing grades and students at risk are the teachers').
+            var shown = user.Role == AppRoles.GuidanceCounselor ? ReferralReasons.All : [ReferralReasons.FailingGrades, ReferralReasons.AtRisk, ReferralReasons.LowAttendance, ReferralReasons.Violation];
+            concerns = shown.Select(r => new ConcernCount(r, reasons.FirstOrDefault(x => x.Reason == r)?.Count ?? 0)).ToList();
+            openReferrals = user.Role == AppRoles.GuidanceCounselor
+                ? await db.Referrals.Where(r => r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation).Select(r => r.StudentId).Distinct().CountAsync(ct)
+                : await db.Referrals.CountAsync(r => r.Status != ReferralStatus.Resolved, ct);
 
             var done = await db.Referrals.AsNoTracking().Where(r => r.Status == ReferralStatus.Resolved && r.Outcome != null).Select(r => new { r.Intervention, r.Outcome }).ToListAsync(ct);
             resolved = done.Count;
@@ -240,7 +245,7 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         {
             concernTitle = "Students who need attention";
             var findings = ReferralService.FindingsOf(metrics);
-            concerns = ReferralReasons.All.Select(r => new ConcernCount(r, findings.Count(f => f.Reason == r))).ToList();
+            concerns = new[] { ReferralReasons.FailingGrades, ReferralReasons.AtRisk, ReferralReasons.LowAttendance }.Select(r => new ConcernCount(r, findings.Count(f => f.Reason == r))).ToList();
             openReferrals = await db.Referrals.CountAsync(r => r.Status != ReferralStatus.Resolved && r.AssignmentId != null && assignmentIds!.Contains(r.AssignmentId.Value), ct);
         }
 

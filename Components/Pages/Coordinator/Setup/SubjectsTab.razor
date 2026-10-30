@@ -3,10 +3,48 @@
 <Card>
     <div class="tab-head">
         <p class="grow">Every course the school teaches. A course is given to strands (under <strong>Strands</strong>, the Courses button) for a grade level and a term.</p>
-        <Button IconName="plus" OnClick="OpenAdd">Add course</Button>
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @* The fields are always on the page: fill them in and press the button. Edit on a row puts that row in them. *@
+    @if (form is not null)
+    {
+        <section class="entry" id="@EntryId" aria-label="@(form.Id is null ? "Add a course" : "Change this course")">
+            <h3 class="entry-title">@(form.Id is null ? "Add a course" : "Change this course")</h3>
+        <EditForm Model="form" OnSubmit="SaveAsync" class="entry-form">
+            <FormErrors Errors="Errors" />
+            <div class="two">
+                <Field For="j-code" Label="Code" Required="true">
+                    <input id="j-code" maxlength="30" autocomplete="off" @bind="form.Code" />
+                </Field>
+                <Field For="j-name" Label="Name" Required="true">
+                    <input id="j-name" maxlength="150" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <Field For="j-units" Label="Units" Required="true" Hint="How many units the course is worth, from 0.5 to 12 (for example 3). It is printed on the enrollment form.">
+                <input id="j-units" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" autocomplete="off" @bind="form.Units" @bind:culture="System.Globalization.CultureInfo.InvariantCulture" />
+            </Field>
+            <Field For="j-description" Class="field-wide" Label="Description" Hint="Optional. Up to 500 characters.">
+                <textarea id="j-description" rows="3" maxlength="500" @bind="form.Description"></textarea>
+            </Field>
+            <label class="switch">
+                <input id="j-active" type="checkbox" @bind="form.IsActive" />
+                <span>
+                    <strong>The course is in use</strong>
+                    <small>Switch it off for a course that is not taught now. Students enrolled from then on don't get it.</small>
+                </span>
+            </label>
+            <div class="entry-actions">
+                    @if (form.Id is not null)
+                    {
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                    }
+                    <Button Type="submit" IconName="@(form.Id is null ? "plus" : "circle-check")" Disabled="Busy">@(Busy ? "Saving…" : form.Id is null ? "Add course" : "Save changes")</Button>
+                </div>
+        </EditForm>
+        </section>
+    }
 
     <form class="filter-bar" role="search" @onsubmit="() => { }">
         <SearchField Id="sub-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Code or name" AriaLabel="Search courses" />
@@ -85,40 +123,6 @@
     }
 </Card>
 
-<Modal Open="form is not null" Title="@(form?.Id is null ? "Add course" : "Edit course")" OnClose="CloseForm">
-    @if (form is not null)
-    {
-        <EditForm Model="form" OnSubmit="SaveAsync">
-            <FormErrors Errors="Errors" />
-            <div class="two">
-                <Field For="j-code" Label="Code" Required="true">
-                    <input id="j-code" maxlength="30" autocomplete="off" @bind="form.Code" />
-                </Field>
-                <Field For="j-name" Label="Name" Required="true">
-                    <input id="j-name" maxlength="150" autocomplete="off" @bind="form.Name" />
-                </Field>
-            </div>
-            <Field For="j-units" Label="Units" Required="true" Hint="How many units the course is worth, from 0.5 to 12 (for example 3). It is printed on the enrollment form.">
-                <input id="j-units" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" autocomplete="off" @bind="form.Units" @bind:culture="System.Globalization.CultureInfo.InvariantCulture" />
-            </Field>
-            <Field For="j-description" Label="Description" Hint="Optional. Up to 500 characters.">
-                <textarea id="j-description" rows="3" maxlength="500" @bind="form.Description"></textarea>
-            </Field>
-            <label class="switch">
-                <input id="j-active" type="checkbox" @bind="form.IsActive" />
-                <span>
-                    <strong>The course is in use</strong>
-                    <small>Switch it off for a course that is not taught now. Students enrolled from then on don't get it.</small>
-                </span>
-            </label>
-            <div class="modal-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
-            </div>
-        </EditForm>
-    }
-</Modal>
-
 <Modal Open="strandsOf is not null" Title="@($"Strands of {strandsOf?.Name}")" OnClose="CloseStrands">
     @if (strandsOf is not null)
     {
@@ -166,21 +170,26 @@
             || r.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
             || r.Code.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
 
-    protected override async Task OnInitializedAsync() => rows = await Setup.ListSubjectsAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        rows = await Setup.ListSubjectsAsync();
+        ResetForm();
+    }
 
-    private void OpenAdd()
+    private void ResetForm()
     {
         Errors = [];
         form = new SubjectInput();
     }
 
-    private void OpenEdit(SubjectRow row)
+    private async Task OpenEdit(SubjectRow row)
     {
         Errors = [];
         form = new SubjectInput { Id = row.Id, Code = row.Code, Name = row.Name, Description = row.Description, IsActive = row.IsActive, Units = row.Units };
+        await ShowFormAsync();
     }
 
-    private void CloseForm() => form = null;
+    private void CloseForm() => ResetForm();
 
     private void OpenStrands(SubjectRow row) => strandsOf = row;
 
@@ -191,7 +200,7 @@
         var result = await RunAsync(userId => Setup.SaveSubjectAsync(form!, userId));
         if (result.Succeeded)
         {
-            form = null;
+            ResetForm();
             rows = await Setup.ListSubjectsAsync();
         }
     }

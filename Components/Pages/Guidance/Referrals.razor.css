@@ -162,3 +162,17 @@ th.col-level {
 .all-sub {
     margin: 0 0 0.75rem;
 }
+
+.lead-line {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+.add-title {
+    margin: 1.25rem 0 0.5rem;
+    font-size: 1rem;
+}
+
+.none-yet {
+    margin: 0 0 0.5rem;
+}

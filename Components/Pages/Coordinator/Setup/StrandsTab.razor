@@ -3,10 +3,52 @@
 <Card>
     <div class="tab-head">
         <p class="grow">The strands of each track and <strong>their courses</strong>. When a student is enrolled the courses are not chosen: the student gets all the courses of the strand for that grade level and term.</p>
-        <Button IconName="plus" Disabled="@(lookups is { Tracks.Count: 0 })" OnClick="OpenAdd">Add strand</Button>
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @* The fields are always on the page: fill them in and press the button. Edit on a row puts that row in them. *@
+    @if (form is not null && lookups is not null)
+    {
+        <section class="entry" id="@EntryId" aria-label="@(form.Id is null ? "Add a strand" : "Change this strand")">
+            <h3 class="entry-title">@(form.Id is null ? "Add a strand" : "Change this strand")</h3>
+        <EditForm Model="form" OnSubmit="SaveAsync" class="entry-form">
+            <FormErrors Errors="Errors" />
+            <div class="two">
+                <Field For="s-code" Label="Code" Required="true" Hint="Like BUSSENT.">
+                    <input id="s-code" maxlength="20" autocomplete="off" @bind="form.Code" />
+                </Field>
+                <Field For="s-track" Label="Track" Required="true">
+                    <select id="s-track" @bind="form.TrackId">
+                        <option value="0">Choose a track</option>
+                        @foreach (var track in lookups.Tracks)
+                        {
+                            <option value="@track.Id">@track.Code</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+            <Field For="s-name" Label="Name" Required="true">
+                <input id="s-name" maxlength="150" autocomplete="off" @bind="form.Name" />
+            </Field>
+
+            <label class="switch">
+                <input id="s-active" type="checkbox" @bind="form.IsActive" />
+                <span>
+                    <strong>The school offers this strand</strong>
+                    <small>Switch it off for a strand that is not offered now. The registrar can't enroll students in it.</small>
+                </span>
+            </label>
+            <div class="entry-actions">
+                    @if (form.Id is not null)
+                    {
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                    }
+                    <Button Type="submit" IconName="@(form.Id is null ? "plus" : "circle-check")" Disabled="Busy">@(Busy ? "Saving…" : form.Id is null ? "Add strand" : "Save changes")</Button>
+                </div>
+        </EditForm>
+        </section>
+    }
 
     @if (rows is null)
     {
@@ -59,44 +101,6 @@
         </div>
     }
 </Card>
-
-<Modal Open="form is not null" Title="@(form?.Id is null ? "Add strand" : "Edit strand")" OnClose="CloseForm">
-    @if (form is not null && lookups is not null)
-    {
-        <EditForm Model="form" OnSubmit="SaveAsync">
-            <FormErrors Errors="Errors" />
-            <div class="two">
-                <Field For="s-code" Label="Code" Required="true" Hint="Like BUSSENT.">
-                    <input id="s-code" maxlength="20" autocomplete="off" @bind="form.Code" />
-                </Field>
-                <Field For="s-track" Label="Track" Required="true">
-                    <select id="s-track" @bind="form.TrackId">
-                        <option value="0">Choose a track</option>
-                        @foreach (var track in lookups.Tracks)
-                        {
-                            <option value="@track.Id">@track.Code</option>
-                        }
-                    </select>
-                </Field>
-            </div>
-            <Field For="s-name" Label="Name" Required="true">
-                <input id="s-name" maxlength="150" autocomplete="off" @bind="form.Name" />
-            </Field>
-
-            <label class="switch">
-                <input id="s-active" type="checkbox" @bind="form.IsActive" />
-                <span>
-                    <strong>The school offers this strand</strong>
-                    <small>Switch it off for a strand that is not offered now. The registrar can't enroll students in it.</small>
-                </span>
-            </label>
-            <div class="modal-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
-            </div>
-        </EditForm>
-    }
-</Modal>
 
 @* ===== The subjects of a strand (its curriculum) ===== *@
 <Modal Open="curriculumOf is not null" Title="@($"Courses of {curriculumOf?.Code}")" OnClose="CloseCurriculum" Large="true">
@@ -197,6 +201,7 @@
     {
         lookups = await Setup.GetLookupsAsync();
         rows = await Setup.ListStrandsAsync();
+        ResetForm();
     }
 
     private async Task ReloadAsync()
@@ -205,26 +210,27 @@
         rows = await Setup.ListStrandsAsync();
     }
 
-    private void OpenAdd()
+    private void ResetForm()
     {
         Errors = [];
         form = new StrandInput { TrackId = lookups?.Tracks.FirstOrDefault()?.Id ?? 0 };
     }
 
-    private void OpenEdit(StrandRow row)
+    private async Task OpenEdit(StrandRow row)
     {
         Errors = [];
         form = new StrandInput { Id = row.Id, Code = row.Code, Name = row.Name, TrackId = row.TrackId, IsActive = row.IsActive };
+        await ShowFormAsync();
     }
 
-    private void CloseForm() => form = null;
+    private void CloseForm() => ResetForm();
 
     private async Task SaveAsync()
     {
         var result = await RunAsync(userId => Setup.SaveStrandAsync(form!, userId));
         if (result.Succeeded)
         {
-            form = null;
+            ResetForm();
             await ReloadAsync();
         }
     }

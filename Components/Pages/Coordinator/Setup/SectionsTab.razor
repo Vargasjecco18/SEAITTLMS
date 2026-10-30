@@ -4,10 +4,103 @@
 <Card>
     <div class="tab-head">
         <p class="grow">The sections of a school year, like 11-BUSSENT-A. A section has a name, a grade level and a strand: <strong>the schedule (AM, MID or PM) is not part of it</strong>, it belongs to each course (see the Class schedule tab). The registrar also makes a section the first time a student is enrolled in it. Teachers get a section's courses under <strong>Users Management</strong>.</p>
-        <Button IconName="plus" Disabled="@(lookups is { Years.Count: 0 } or { Strands.Count: 0 })" OnClick="OpenAdd">Add section</Button>
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @* The fields are always on the page: fill them in and press the button. Edit on a row puts that row in them. *@
+    @if (form is not null && lookups is not null)
+    {
+        <section class="entry" id="@EntryId" aria-label="@(form.Id is null ? "Add a section" : "Change this section")">
+            <h3 class="entry-title">@(form.Id is null ? "Add a section" : "Change this section")</h3>
+        <EditForm Model="form" OnSubmit="SaveAsync" class="entry-form">
+            <FormErrors Errors="Errors" />
+            @if (locked)
+            {
+                <p class="note-box">Students or teachers are in this section, so only its name and its adviser can change.</p>
+            }
+
+            <Field For="n-year" Label="School year" Required="true">
+                <select id="n-year" disabled="@locked" @bind="form.SchoolYearId">
+                    <option value="0">Choose a school year</option>
+                    @foreach (var year in lookups.Years)
+                    {
+                        <option value="@year.Id">@year.Name</option>
+                    }
+                </select>
+            </Field>
+            <div class="two">
+                <Field For="n-grade" Label="Grade level" Required="true">
+                    <select id="n-grade" disabled="@locked" @bind="form.GradeLevel">
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </Field>
+                <Field For="n-strand" Label="Strand" Required="true">
+                    <select id="n-strand" disabled="@locked" @bind="form.StrandId">
+                        <option value="0">Choose a strand</option>
+                        @foreach (var strand in lookups.Strands)
+                        {
+                            <option value="@strand.Id">@strand.Code</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="n-name" Label="Section name" Required="true" Hint="Like A.">
+                    <input id="n-name" maxlength="50" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <Field For="n-adviser-search" Class="field-wide" Label="Adviser" Hint="Optional. Look at the grade level, the track and the courses of each teacher, and choose one.">
+                <div class="adviser-picker">
+                    <input id="n-adviser-search" type="search" class="adviser-search" form="no-form" autocomplete="off" placeholder="Search a teacher, a grade level, a track or a course"
+                           @bind="adviserSearch" @bind:event="oninput" />
+                    <div class="adviser-table-wrap">
+                        <table class="adviser-table" id="n-adviser">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><span class="sr-only">Choose</span></th>
+                                    <th scope="col">Teacher</th>
+                                    <th scope="col">Grade level</th>
+                                    <th scope="col">Track</th>
+                                    <th scope="col">Courses</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="@(adviserId == 0 ? "picked" : "")" @onclick="() => adviserId = 0">
+                                    <td><input type="radio" name="adviser" aria-label="No adviser" checked="@(adviserId == 0)" @onchange="() => adviserId = 0" /></td>
+                                    <td colspan="4" class="muted">No adviser</td>
+                                </tr>
+                                @foreach (var teacher in AdviserChoices)
+                                {
+                                    var id = teacher.Id;
+                                    <tr class="@(adviserId == id ? "picked" : "")" @onclick="() => adviserId = id">
+                                        <td><input type="radio" name="adviser" aria-label="@($"Choose {teacher.Name}")" checked="@(adviserId == id)" @onchange="() => adviserId = id" /></td>
+                                        <td class="a-name">@teacher.Name</td>
+                                        <td class="nowrap">@(teacher.GradeLevel ?? "—")</td>
+                                        <td class="nowrap">@(teacher.Track ?? "—")</td>
+                                        <td class="a-courses">@(teacher.Courses is { Count: > 0 } courses ? string.Join(", ", courses) : "No course yet")</td>
+                                    </tr>
+                                }
+                                @if (!AdviserChoices.Any())
+                                {
+                                    <tr><td></td><td colspan="4" class="muted">No teacher matches.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </Field>
+            <div class="entry-actions">
+                    @if (form.Id is not null)
+                    {
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                    }
+                    <Button Type="submit" IconName="@(form.Id is null ? "plus" : "circle-check")" Disabled="Busy">@(Busy ? "Saving…" : form.Id is null ? "Add section" : "Save changes")</Button>
+                </div>
+        </EditForm>
+        </section>
+    }
 
     @* The limit the registrar works with: a section can't be given more students than this. *@
     <form class="capacity-bar" @onsubmit="SaveCapacityAsync">
@@ -71,11 +164,18 @@
                 <tbody>
                     @foreach (var row in Shown)
                     {
-                        <tr>
-                            <td class="name nowrap">@row.Label</td>
+                        var isOpen = openId == row.Id;
+                        <tr class="@(isOpen ? "is-open" : "")">
+                            <td class="name nowrap">
+                                @* A click on the section shows the students who are in it. *@
+                                <button type="button" class="section-link" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"students-of-{row.Id}")"
+                                        title="@(isOpen ? "Hide the students" : "Show the students of this section")" @onclick="() => ToggleStudentsAsync(row)">
+                                    <Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="16" /> @row.Label
+                                </button>
+                            </td>
                             <td class="col-more nowrap">@row.SchoolYear</td>
                             <td class="col-more">@(row.Adviser ?? "—")</td>
-                            <td>@row.Students</td>
+                            <td>@(row.Students == 1 ? "1 student" : $"{row.Students} students")</td>
                             <td class="col-actions">
                                 <div class="row-actions">
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {row.Label}")" OnClick="() => OpenEdit(row)">Edit</Button>
@@ -83,101 +183,42 @@
                                 </div>
                             </td>
                         </tr>
+                        @if (isOpen)
+                        {
+                            <tr class="students-row" id="@($"students-of-{row.Id}")">
+                                <td colspan="5">
+                                    @if (students is null)
+                                    {
+                                        <p class="muted">Loading…</p>
+                                    }
+                                    else if (students.Count == 0)
+                                    {
+                                        <p class="muted">No student is in section @row.Label yet. The registrar puts students in a section when enrolling them.</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="students-lead"><strong>@row.Label</strong> · @(students.Count == 1 ? "1 student" : $"{students.Count} students")</p>
+                                        <ol class="students-list">
+                                            @foreach (var student in students)
+                                            {
+                                                <li>
+                                                    <span class="s-name">@student.Name</span>
+                                                    <span class="s-lrn mono">@student.Lrn</span>
+                                                    <span class="s-term">@student.Term</span>
+                                                    <Badge Tone="@(student.Status == "Dropped" ? Tone.Neutral : Tone.Success)">@student.Status</Badge>
+                                                </li>
+                                            }
+                                        </ol>
+                                    }
+                                </td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
         </div>
     }
 </Card>
-
-<Modal Open="form is not null" Title="@(form?.Id is null ? "Add section" : "Edit section")" OnClose="CloseForm" Large="true">
-    @if (form is not null && lookups is not null)
-    {
-        <EditForm Model="form" OnSubmit="SaveAsync">
-            <FormErrors Errors="Errors" />
-            @if (locked)
-            {
-                <p class="note-box">Students or teachers are in this section, so only its name and its adviser can change.</p>
-            }
-
-            <Field For="n-year" Label="School year" Required="true">
-                <select id="n-year" disabled="@locked" @bind="form.SchoolYearId">
-                    <option value="0">Choose a school year</option>
-                    @foreach (var year in lookups.Years)
-                    {
-                        <option value="@year.Id">@year.Name</option>
-                    }
-                </select>
-            </Field>
-            <div class="two">
-                <Field For="n-grade" Label="Grade level" Required="true">
-                    <select id="n-grade" disabled="@locked" @bind="form.GradeLevel">
-                        <option value="11">Grade 11</option>
-                        <option value="12">Grade 12</option>
-                    </select>
-                </Field>
-                <Field For="n-strand" Label="Strand" Required="true">
-                    <select id="n-strand" disabled="@locked" @bind="form.StrandId">
-                        <option value="0">Choose a strand</option>
-                        @foreach (var strand in lookups.Strands)
-                        {
-                            <option value="@strand.Id">@strand.Code</option>
-                        }
-                    </select>
-                </Field>
-            </div>
-            <div class="two">
-                <Field For="n-name" Label="Section name" Required="true" Hint="Like A.">
-                    <input id="n-name" maxlength="50" autocomplete="off" @bind="form.Name" />
-                </Field>
-            </div>
-            <Field For="n-adviser-search" Label="Adviser" Hint="Optional. Look at the grade level, the track and the courses of each teacher, and choose one.">
-                <div class="adviser-picker">
-                    <input id="n-adviser-search" type="search" class="adviser-search" form="no-form" autocomplete="off" placeholder="Search a teacher, a grade level, a track or a course"
-                           @bind="adviserSearch" @bind:event="oninput" />
-                    <div class="adviser-table-wrap">
-                        <table class="adviser-table" id="n-adviser">
-                            <thead>
-                                <tr>
-                                    <th scope="col"><span class="sr-only">Choose</span></th>
-                                    <th scope="col">Teacher</th>
-                                    <th scope="col">Grade level</th>
-                                    <th scope="col">Track</th>
-                                    <th scope="col">Courses</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="@(adviserId == 0 ? "picked" : "")" @onclick="() => adviserId = 0">
-                                    <td><input type="radio" name="adviser" aria-label="No adviser" checked="@(adviserId == 0)" @onchange="() => adviserId = 0" /></td>
-                                    <td colspan="4" class="muted">No adviser</td>
-                                </tr>
-                                @foreach (var teacher in AdviserChoices)
-                                {
-                                    var id = teacher.Id;
-                                    <tr class="@(adviserId == id ? "picked" : "")" @onclick="() => adviserId = id">
-                                        <td><input type="radio" name="adviser" aria-label="@($"Choose {teacher.Name}")" checked="@(adviserId == id)" @onchange="() => adviserId = id" /></td>
-                                        <td class="a-name">@teacher.Name</td>
-                                        <td class="nowrap">@(teacher.GradeLevel ?? "—")</td>
-                                        <td class="nowrap">@(teacher.Track ?? "—")</td>
-                                        <td class="a-courses">@(teacher.Courses is { Count: > 0 } courses ? string.Join(", ", courses) : "No course yet")</td>
-                                    </tr>
-                                }
-                                @if (!AdviserChoices.Any())
-                                {
-                                    <tr><td></td><td colspan="4" class="muted">No teacher matches.</td></tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </Field>
-            <div class="modal-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
-            </div>
-        </EditForm>
-    }
-</Modal>
 
 <Modal Open="deleting is not null" Title="Delete this section?" OnClose="CloseDelete">
     @if (deleting is not null)
@@ -196,6 +237,8 @@
     private SetupLookups? lookups;
     private SectionInput? form;
     private SectionRow? deleting;
+    private int openId;
+    private IReadOnlyList<SectionStudentRow>? students;
     private bool locked;
     private int adviserId;
     private string adviserSearch = "";
@@ -226,6 +269,7 @@
         lookups = await Setup.GetLookupsAsync();
         rows = await Setup.ListSectionsAsync();
         capacity = SystemSettings.Current.SectionCapacity;
+        ResetForm();
     }
 
     private async Task SaveCapacityAsync()
@@ -240,9 +284,30 @@
         }
     }
 
-    private async Task ReloadAsync() => rows = await Setup.ListSectionsAsync();
+    private async Task ReloadAsync()
+    {
+        rows = await Setup.ListSectionsAsync();
+        if (openId != 0)
+        {
+            students = await Setup.ListSectionStudentsAsync(openId);
+        }
+    }
 
-    private void OpenAdd()
+    private async Task ToggleStudentsAsync(SectionRow row)
+    {
+        if (openId == row.Id)
+        {
+            openId = 0;
+            students = null;
+            return;
+        }
+
+        openId = row.Id;
+        students = null;
+        students = await Setup.ListSectionStudentsAsync(row.Id);
+    }
+
+    private void ResetForm()
     {
         Errors = [];
         locked = false;
@@ -251,7 +316,7 @@
         form = new SectionInput { SchoolYearId = lookups?.Years.FirstOrDefault()?.Id ?? 0 };
     }
 
-    private void OpenEdit(SectionRow row)
+    private async Task OpenEdit(SectionRow row)
     {
         Errors = [];
         locked = row.Students > 0 || row.Teachers > 0;
@@ -262,9 +327,10 @@
             Id = row.Id, SchoolYearId = row.SchoolYearId, StrandId = row.StrandId, GradeLevel = row.GradeLevel,
             Name = row.Name, AdviserTeacherId = row.AdviserTeacherId,
         };
+        await ShowFormAsync();
     }
 
-    private void CloseForm() => form = null;
+    private void CloseForm() => ResetForm();
 
     private async Task SaveAsync()
     {
@@ -272,7 +338,7 @@
         var result = await RunAsync(userId => Setup.SaveSectionAsync(form!, userId));
         if (result.Succeeded)
         {
-            form = null;
+            ResetForm();
             await ReloadAsync();
         }
     }

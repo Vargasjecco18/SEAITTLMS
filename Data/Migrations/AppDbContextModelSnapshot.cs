@@ -1431,6 +1431,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at_utc");
 
+                    b.Property<DateTime?>("VisibleFromUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("visible_from_utc");
+
                     b.HasKey("Id")
                         .HasName("pk_material_items");
 
@@ -1439,7 +1443,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("material_items", null, t =>
                         {
-                            t.HasCheckConstraint("ck_material_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance')");
+                            t.HasCheckConstraint("ck_material_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam')");
 
                             t.HasCheckConstraint("ck_material_items_max_score", "max_score > 0");
                         });
@@ -1470,6 +1474,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)")
                         .HasColumnName("description");
+
+                    b.Property<bool>("IsExamSet")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_exam_set");
 
                     b.Property<bool>("IsSyllabus")
                         .HasColumnType("tinyint(1)")
@@ -1661,6 +1671,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("kind");
+
+                    b.Property<int?>("MaterialItemId")
+                        .HasColumnType("int")
+                        .HasColumnName("material_item_id");
 
                     b.Property<decimal>("MaxScore")
                         .HasPrecision(6, 2)
@@ -2042,7 +2056,7 @@ namespace SEAITT_LMS.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_referrals_outcome", "outcome IS NULL OR outcome IN ('Improved', 'NoChange')");
 
-                            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance')");
+                            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation')");
 
                             t.HasCheckConstraint("ck_referrals_status", "status IN ('Open', 'InProgress', 'Resolved')");
                         });

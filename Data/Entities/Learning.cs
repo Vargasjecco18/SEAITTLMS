@@ -139,6 +139,9 @@ public class ModuleItem : AuditableEntity
 
     public int Position { get; set; }
 
+    /// <summary>The summative exam of the academic provider's library this item is the copy of (so it is not sent twice to the same course). Empty for the rest.</summary>
+    public int? MaterialItemId { get; set; }
+
     /// <summary>The place of its column in the gradebook (1, 2, 3 ...) once the teacher moved the columns. 0: not placed yet, so after the columns that are.</summary>
     public int GradebookOrder { get; set; }
 

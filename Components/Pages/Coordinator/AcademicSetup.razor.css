@@ -6,49 +6,79 @@
     min-width: 0;
 }
 
-/* ---------- one tab per part of the setup ---------- */
-.tabs {
+/* ---------- the steps of the setup, all on one page ---------- */
+.setup-lead {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+.steps-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.1rem 0.25rem;
-    margin-bottom: 1.25rem;
+    gap: 0.35rem;
+    margin: 0 0 1.25rem;
+    padding: 0.5rem 0;
+    overflow-x: auto;
+    background: var(--bg);
     border-bottom: 1px solid var(--border);
 }
 
-.tabs .tab {
+.step-link {
     display: inline-flex;
     flex: none;
     align-items: center;
-    gap: 0.4rem;
-    margin-bottom: -1px;
-    padding: 0.6rem 0.6rem;
-    border-bottom: 2px solid transparent;
-    font-size: 0.93rem;
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-    color: var(--text-muted);
+    gap: 0.45rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
-    transition: background-color 0.15s, color 0.15s;
 }
 
-.tabs .tab:hover {
-    background: var(--surface-2);
-    color: var(--text);
-}
-
-.tabs .tab:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: -2px;
-}
-
-.tabs .tab.active {
-    border-bottom-color: var(--brand);
+.step-link:hover {
+    background: var(--brand-soft);
     color: var(--brand-strong);
 }
 
-.tabs ::deep .look {
-    opacity: 0.6;
+.step-link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+}
+
+.step-num {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--btn-bg);
+    color: var(--btn-text, #fff);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.steps {
+    display: grid;
+    gap: 2rem;
+}
+
+.step {
+    min-width: 0;
+    scroll-margin-top: 4rem;
+}
+
+.step-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 0.75rem;
+    font-size: 1.15rem;
 }
 
 .count {
@@ -62,12 +92,125 @@
     text-align: center;
 }
 
-.tabs .tab.active .count {
-    background: var(--brand-soft);
-    color: var(--brand-strong);
+.step-link .count {
+    background: var(--surface);
 }
 
-/* ---------- inside the tabs ---------- */
+/* ---------- the fields of a step: always on the page ---------- */
+.setup ::deep .entry {
+    margin: 0 0 1.25rem;
+    padding: 0.9rem 1rem 1rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--brand);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.setup ::deep .entry.flash {
+    animation: entry-flash 1.2s ease-out;
+}
+
+@keyframes entry-flash {
+    from { box-shadow: 0 0 0 4px var(--brand-soft); }
+    to { box-shadow: 0 0 0 0 transparent; }
+}
+
+.setup ::deep .entry-title {
+    margin: 0 0 0.7rem;
+    font-size: 0.98rem;
+}
+
+.setup ::deep .entry-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0 1rem;
+    align-items: start;
+}
+
+/* The pairs of fields (.two) flow in the same row of fields instead of making their own. */
+.setup ::deep .entry-form .two {
+    display: contents;
+}
+
+.setup ::deep .entry-form > .switch,
+.setup ::deep .entry-form > .entry-actions,
+.setup ::deep .entry-form > .field-wide,
+.setup ::deep .entry-form > :not(.field):not(.two) {
+    grid-column: 1 / -1;
+}
+
+.setup ::deep .entry-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+/* ---------- the students of a section ---------- */
+.setup ::deep .section-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.35rem;
+    margin-left: -0.35rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--brand-strong);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.setup ::deep .section-link:hover {
+    background: var(--brand-soft);
+}
+
+.setup ::deep .section-link:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+}
+
+.setup ::deep .students-row > td {
+    padding: 0.5rem 0.75rem 1rem 2rem;
+    background: var(--surface-2);
+}
+
+.setup ::deep .students-lead {
+    margin: 0 0 0.5rem;
+}
+
+.setup ::deep .students-list {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
+    max-height: 18rem;
+    overflow: auto;
+}
+
+.setup ::deep .students-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.9rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.setup ::deep .students-list .s-name {
+    flex: 1 1 14rem;
+    font-weight: 600;
+}
+
+.setup ::deep .students-list .s-lrn,
+.setup ::deep .students-list .s-term {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+/* ---------- inside the steps ---------- */
 .setup ::deep .muted {
     color: var(--text-muted);
 }

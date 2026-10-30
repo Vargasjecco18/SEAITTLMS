@@ -28,6 +28,9 @@ public sealed record SubjectRow(int Id, string Code, string Name, string? Descri
     public int Strands => StrandList.Count;
 }
 
+/// <summary>A student in a section, as the section's list shows them.</summary>
+public sealed record SectionStudentRow(int StudentId, string Name, string Lrn, string Term, string Status);
+
 public sealed record SectionRow(
     int Id, int SchoolYearId, string SchoolYear, int StrandId, string StrandCode, int GradeLevel, string Name,
     int? AdviserTeacherId, string? Adviser, int Students, int Teachers)
@@ -858,6 +861,24 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             })
             .ToListAsync(ct);
         return rows.Select(r => new SectionRow(r.Id, r.SchoolYearId, r.Year, r.StrandId, r.StrandCode, r.GradeLevel, r.Name, r.AdviserTeacherId, r.Adviser, r.Students, r.Teachers)).ToList();
+    }
+
+    /// <summary>The students who are (or were) in a section, last name first. Each is shown once, with the term and the state of their latest enrollment in it.</summary>
+    public async Task<IReadOnlyList<SectionStudentRow>> ListSectionStudentsAsync(int sectionId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.Enrollments.AsNoTracking()
+            .Where(e => e.SectionId == sectionId)
+            .Select(e => new { e.StudentId, e.Lrn, e.FirstName, e.MiddleName, e.LastName, e.NameExtension, TermName = e.Term.Name, e.Term.StartDate, e.Term.IsCurrent, e.Status, e.Id })
+            .ToListAsync(ct);
+        return rows
+            .GroupBy(r => r.StudentId)
+            .Select(g => g.OrderByDescending(r => r.StartDate).ThenByDescending(r => r.Id).First())
+            .OrderBy(r => r.LastName).ThenBy(r => r.FirstName)
+            .Select(r => new SectionStudentRow(
+                r.StudentId, string.Join(' ', new[] { r.LastName + ",", r.FirstName, r.MiddleName, r.NameExtension }.Where(p => !string.IsNullOrWhiteSpace(p))),
+                r.Lrn, r.TermName, r.Status switch { EnrollmentStatus.Dropped => "Dropped", EnrollmentStatus.Completed => "Completed", _ => "Enrolled" }))
+            .ToList();
     }
 
     public async Task<ServiceResult> SaveSectionAsync(SectionInput input, int actingUserId, CancellationToken ct = default)

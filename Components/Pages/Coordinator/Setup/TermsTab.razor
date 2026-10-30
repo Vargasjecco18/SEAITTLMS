@@ -3,10 +3,59 @@
 <Card>
     <div class="tab-head">
         <p class="grow">The terms of a school year (1st Term, 2nd Term ...). One term is the <strong>current term</strong>, the one the school is running now; the term after it is the <strong>next term</strong>, which the registrar enrolls students for.</p>
-        <Button IconName="plus" Disabled="@(years is { Count: 0 })" OnClick="OpenAdd">Add term</Button>
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
+
+    @* The fields are always on the page: fill them in and press the button. Edit on a row puts that row in them. *@
+    @if (form is not null)
+    {
+        <section class="entry" id="@EntryId" aria-label="@(form.Id is null ? "Add a term" : "Change this term")">
+            <h3 class="entry-title">@(form.Id is null ? "Add a term" : "Change this term")</h3>
+        <EditForm Model="form" OnSubmit="SaveAsync" class="entry-form">
+            <FormErrors Errors="Errors" />
+            <Field For="t-year" Label="School year" Required="true">
+                <select id="t-year" @bind="form.SchoolYearId">
+                    <option value="0">Choose a school year</option>
+                    @foreach (var year in years ?? [])
+                    {
+                        <option value="@year.Id">@year.Name</option>
+                    }
+                </select>
+            </Field>
+            <div class="two">
+                <Field For="t-number" Label="Number" Required="true" Hint="1 for the 1st term, 2 for the 2nd ...">
+                    <input id="t-number" type="number" min="1" max="9" @bind="form.TermNumber" />
+                </Field>
+                <Field For="t-name" Label="Name" Required="true" Hint="Like 3rd Term.">
+                    <input id="t-name" maxlength="50" autocomplete="off" @bind="form.Name" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="t-start" Label="First day" Required="true">
+                    <input id="t-start" type="date" @bind="form.StartDate" />
+                </Field>
+                <Field For="t-end" Label="Last day" Required="true">
+                    <input id="t-end" type="date" @bind="form.EndDate" />
+                </Field>
+            </div>
+            <label class="switch">
+                <input id="t-current" type="checkbox" @bind="form.IsCurrent" />
+                <span>
+                    <strong>This is the current term</strong>
+                    <small>The school runs one term at a time. Making this the current term takes it away from the term that is current now.</small>
+                </span>
+            </label>
+            <div class="entry-actions">
+                    @if (form.Id is not null)
+                    {
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
+                    }
+                    <Button Type="submit" IconName="@(form.Id is null ? "plus" : "circle-check")" Disabled="Busy">@(Busy ? "Saving…" : form.Id is null ? "Add term" : "Save changes")</Button>
+                </div>
+        </EditForm>
+        </section>
+    }
 
     @if (rows is null)
     {
@@ -64,51 +113,6 @@
     }
 </Card>
 
-<Modal Open="form is not null" Title="@(form?.Id is null ? "Add term" : "Edit term")" OnClose="CloseForm">
-    @if (form is not null)
-    {
-        <EditForm Model="form" OnSubmit="SaveAsync">
-            <FormErrors Errors="Errors" />
-            <Field For="t-year" Label="School year" Required="true">
-                <select id="t-year" @bind="form.SchoolYearId">
-                    <option value="0">Choose a school year</option>
-                    @foreach (var year in years ?? [])
-                    {
-                        <option value="@year.Id">@year.Name</option>
-                    }
-                </select>
-            </Field>
-            <div class="two">
-                <Field For="t-number" Label="Number" Required="true" Hint="1 for the 1st term, 2 for the 2nd ...">
-                    <input id="t-number" type="number" min="1" max="9" @bind="form.TermNumber" />
-                </Field>
-                <Field For="t-name" Label="Name" Required="true" Hint="Like 3rd Term.">
-                    <input id="t-name" maxlength="50" autocomplete="off" @bind="form.Name" />
-                </Field>
-            </div>
-            <div class="two">
-                <Field For="t-start" Label="First day" Required="true">
-                    <input id="t-start" type="date" @bind="form.StartDate" />
-                </Field>
-                <Field For="t-end" Label="Last day" Required="true">
-                    <input id="t-end" type="date" @bind="form.EndDate" />
-                </Field>
-            </div>
-            <label class="switch">
-                <input id="t-current" type="checkbox" @bind="form.IsCurrent" />
-                <span>
-                    <strong>This is the current term</strong>
-                    <small>The school runs one term at a time. Making this the current term takes it away from the term that is current now.</small>
-                </span>
-            </label>
-            <div class="modal-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
-                <Button Type="submit" IconName="circle-check" Disabled="Busy">@(Busy ? "Saving…" : "Save")</Button>
-            </div>
-        </EditForm>
-    }
-</Modal>
-
 <Modal Open="deleting is not null" Title="Delete this term?" OnClose="CloseDelete">
     @if (deleting is not null)
     {
@@ -132,6 +136,7 @@
     {
         years = (await Setup.GetLookupsAsync()).Years;
         await LoadAsync();
+        ResetForm();
     }
 
     private async Task LoadAsync()
@@ -144,26 +149,27 @@
         nextId = current >= 0 && current + 1 < ordered.Count ? ordered[current + 1].Id : null;
     }
 
-    private void OpenAdd()
+    private void ResetForm()
     {
         Errors = [];
         form = new TermInput { SchoolYearId = years?.FirstOrDefault()?.Id ?? 0, TermNumber = 1 };
     }
 
-    private void OpenEdit(TermRow row)
+    private async Task OpenEdit(TermRow row)
     {
         Errors = [];
         form = new TermInput { Id = row.Id, SchoolYearId = row.SchoolYearId, TermNumber = row.TermNumber, Name = row.Name, StartDate = row.StartDate, EndDate = row.EndDate, IsCurrent = row.IsCurrent };
+        await ShowFormAsync();
     }
 
-    private void CloseForm() => form = null;
+    private void CloseForm() => ResetForm();
 
     private async Task SaveAsync()
     {
         var result = await RunAsync(userId => Setup.SaveTermAsync(form!, userId));
         if (result.Succeeded)
         {
-            form = null;
+            ResetForm();
             await LoadAsync();
         }
     }

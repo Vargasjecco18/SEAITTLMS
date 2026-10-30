@@ -482,6 +482,34 @@ window.seaitt = Object.assign(window.seaitt || {}, {
     },
 });
 
+// The fields of the academic setup are always on the page. Edit on a row fills them in; this brings them into view and puts the cursor in the first one.
+window.seaitt = Object.assign(window.seaitt || {}, {
+    goToId: function (id) {
+        var box = document.getElementById(id);
+        if (box) { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    },
+    showEntry: function (id) {
+        var box = document.getElementById(id);
+        if (!box) { return; }
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        box.classList.remove('flash');
+        void box.offsetWidth;
+        box.classList.add('flash');
+        var field = box.querySelector('input:not([type=checkbox]):not([type=radio]):not([disabled]), select:not([disabled]), textarea');
+        if (field) { field.focus({ preventScroll: true }); }
+    },
+});
+
+// The steps line of the academic setup: a click scrolls to the step (the address is still a real link).
+document.addEventListener('click', function (event) {
+    var link = event.target instanceof Element ? event.target.closest('a[data-goto]') : null;
+    if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) { return; }
+    var box = document.getElementById(link.getAttribute('data-goto'));
+    if (!box) { return; }
+    event.preventDefault();
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
 // The pop-up of the courses of an enrollment (EnrollmentTable.razor) opens next to the button that opened it, below it when there is
 // room and above it otherwise, and never outside the screen. Without this script it simply stays in the middle of the screen.
 document.addEventListener('toggle', function (event) {

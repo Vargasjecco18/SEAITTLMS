@@ -216,6 +216,7 @@
 .track i.failinggrades { background: #dc2626; }
 .track i.atrisk { background: #f59e0b; }
 .track i.lowattendance { background: #6366f1; }
+.track i.violation { background: #e11d48; }
 .track i.improved { background: var(--green); }
 
 .success {

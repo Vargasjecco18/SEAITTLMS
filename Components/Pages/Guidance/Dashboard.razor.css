@@ -72,6 +72,7 @@
 
 .row-icon.failinggrades { background: var(--danger-soft); color: var(--danger); }
 .row-icon.atrisk { background: var(--warning-soft); color: var(--warning); }
+.row-icon.violation { background: var(--danger-soft); color: var(--danger); }
 .row-icon.lowattendance { background: var(--violet-soft); color: var(--violet); }
 
 .row-text {

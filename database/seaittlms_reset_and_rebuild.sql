@@ -1881,5 +1881,22 @@ ALTER TABLE `module_items` ADD CONSTRAINT `ck_module_items_kind` CHECK (kind IN 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261030045847_GradebookOrderClassroomWorkAndNoNotifyEmail', '9.0.20');
 
+ALTER TABLE `referrals` DROP CONSTRAINT `ck_referrals_reason`;
+
+ALTER TABLE `material_items` DROP CONSTRAINT `ck_material_items_kind`;
+
+ALTER TABLE `module_items` ADD `material_item_id` int NULL;
+
+ALTER TABLE `material_modules` ADD `is_exam_set` tinyint(1) NOT NULL DEFAULT FALSE;
+
+ALTER TABLE `material_items` ADD `visible_from_utc` datetime(6) NULL;
+
+ALTER TABLE `referrals` ADD CONSTRAINT `ck_referrals_reason` CHECK (reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation'));
+
+ALTER TABLE `material_items` ADD CONSTRAINT `ck_material_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261030152058_SummativeExamsAndConcerns', '9.0.20');
+
 COMMIT;
 

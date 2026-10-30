@@ -17,6 +17,12 @@ public class MaterialModule : AuditableEntity
     /// <summary>The syllabus of the course (it has no activities). Otherwise a module.</summary>
     public bool IsSyllabus { get; set; }
 
+    /// <summary>
+    /// The box that holds the summative exams of the course (one per course, made when the first exam is added; it is not a module and is never listed or
+    /// sent as one). Each exam is a <see cref="MaterialItem"/> of kind Exam in it.
+    /// </summary>
+    public bool IsExamSet { get; set; }
+
     public string Title { get; set; } = "";
     public string? Description { get; set; }
 
@@ -50,8 +56,11 @@ public class MaterialItem : AuditableEntity
     public string? Instructions { get; set; }
     public decimal MaxScore { get; set; } = 100;
 
-    /// <summary>A suggested deadline. The teacher can change it.</summary>
+    /// <summary>A suggested deadline. The teacher can change it. For a summative exam: when it closes.</summary>
     public DateTime? DueAtUtc { get; set; }
+
+    /// <summary>Summative exams only: when the exam opens (its schedule runs from here to <see cref="DueAtUtc"/>).</summary>
+    public DateTime? VisibleFromUtc { get; set; }
 
     public int Position { get; set; }
 

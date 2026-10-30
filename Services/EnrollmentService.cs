@@ -78,7 +78,8 @@ public sealed record EnrollmentReceipt(
     string? Password,
     string? PhoneNumber = null,
     IReadOnlyList<string?>? SubjectMeets = null,
-    IReadOnlyList<decimal>? SubjectUnits = null);
+    IReadOnlyList<decimal>? SubjectUnits = null,
+    string? LeftStrand = null);
 
 public sealed record EnrollmentResult(EnrollmentReceipt? Receipt, IReadOnlyList<string> Errors)
 {
@@ -406,7 +407,8 @@ public sealed partial class EnrollmentService(
                 .Where(e => e.StudentId == student.Id && e.TermId != term!.Id)
                 .OrderByDescending(e => e.Term.SchoolYear.StartDate).ThenByDescending(e => e.Term.TermNumber).ThenByDescending(e => e.Id)
                 .Select(e => (int?)e.StrandId).FirstOrDefaultAsync(ct);
-            if (student.Id != 0 && lastStrandId is { } before && before != strand!.Id && request.GradeLevel != 11)
+            var changesStrand = student.Id != 0 && lastStrandId is { } before && before != strand!.Id;
+            if (changesStrand && request.GradeLevel != 11)
             {
                 return EnrollmentResult.Fail($"{student.FullName} changes strand, so the student starts again in Grade 11.");
             }
@@ -466,6 +468,23 @@ public sealed partial class EnrollmentService(
             };
             db.Enrollments.Add(enrollment);
 
+            // A student who moved to another strand leaves the old one: the enrollments in the old strand that are still open are ended (kept, as dropped),
+            // so the student is not in two strands at once and does not show up in the old strand's sections and lists.
+            string? leftStrand = null;
+            if (changesStrand)
+            {
+                var open = await db.Enrollments
+                    .Where(e => e.StudentId == student.Id && e.TermId != term.Id && e.StrandId != strand.Id && e.Status == EnrollmentStatus.Enrolled)
+                    .Include(e => e.Strand)
+                    .ToListAsync(ct);
+                foreach (var old in open)
+                {
+                    old.Status = EnrollmentStatus.Dropped;
+                }
+
+                leftStrand = open.Select(e => e.Strand.Code).Distinct().OrderBy(c => c).FirstOrDefault();
+            }
+
             // The short summary on the student's own row follows the newest enrollment.
             student.GradeLevel = request.GradeLevel;
             student.TrackId = strand.TrackId;
@@ -485,7 +504,7 @@ public sealed partial class EnrollmentService(
                     enrollment.Id, student.Id, fullName, lrn, term.SchoolYear.Name, term.Name, request.GradeLevel,
                     strand.Track.Name, strand.Code, $"{request.GradeLevel}-{strand.Code}-{section.Name}",
                     subjects.Select(s => s.Name).ToList(),
-                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, meets, subjects.Select(x => x.Units).ToList()),
+                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, meets, subjects.Select(x => x.Units).ToList(), leftStrand),
                 []);
         }
         catch (DbUpdateException ex) when (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry } duplicate)

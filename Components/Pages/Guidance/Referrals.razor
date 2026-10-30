@@ -11,19 +11,17 @@
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
 <Card>
+    <p class="lead-line">You look after <strong>attendance</strong> and <strong>violations</strong>. Every student of the school is in the list: press <strong>At risk</strong> on a student to see their concerns, to add one, or to write what you did.</p>
     <form class="filter-bar one-row" role="search" @onsubmit="SearchAsync">
-        <SearchField Id="r-search" @bind-Value="searchText" Label="Search" SubmitText="" Placeholder="Name, course, subject, teacher…"
-                     AriaLabel="Search the referrals" OnClear="SearchAsync" />
-        <Field For="r-status" Label="Status">
-            <select id="r-status" value="@status" @onchange="StatusChanged">
-                <option value="">All</option>
-                @foreach (var s in ReferralStatus.All)
-                {
-                    <option value="@s" selected="@(status == s)">@ReferralStatus.Display(s)</option>
-                }
+        <SearchField Id="r-search" @bind-Value="searchText" Label="Search" SubmitText="" Placeholder="Name, LRN, grade level, strand, section…"
+                     AriaLabel="Search the students" OnClear="SearchAsync" />
+        <Field For="r-show" Label="Show">
+            <select id="r-show" value="@show" @onchange="ShowChanged">
+                <option value="all" selected="@(show == "all")">All students</option>
+                <option value="concerns" selected="@(show == "concerns")">Only students with a concern</option>
             </select>
         </Field>
-        <Field For="r-reason" Label="Problem">
+        <Field For="r-reason" Label="Concern">
             <select id="r-reason" value="@reason" @onchange="ReasonChanged">
                 <option value="">All</option>
                 @foreach (var r in ReferralReasons.All)
@@ -40,7 +38,6 @@
             </select>
         </Field>
     </form>
-    <p class="search-help">Search by the student’s name or LRN, the grade level, section, course, subject, teacher or problem. Several words work together: for example <em>garcia accounting 11 failing</em>.</p>
 
     @if (result is null)
     {
@@ -48,31 +45,28 @@
     }
     else if (result.Items.Count == 0)
     {
-        <EmptyState IconName="circle-check" Title="No referrals here">
-            <p>Referrals appear by themselves when a student's grade or attendance needs help.</p>
+        <EmptyState IconName="circle-check" Title="@(show == "all" ? "No student matches" : "No student with a concern here")">
+            <p>@(show == "all" ? "Try another name, number or grade level." : "Attendance concerns appear by themselves. Choose All students to record a concern for anybody.")</p>
         </EmptyState>
     }
     else
     {
-        <p class="filter-count">@(result.Total == 1 ? "1 student" : $"{result.Total:N0} students") · @(result.Referrals == 1 ? "1 referral" : $"{result.Referrals:N0} referrals")</p>
+        <p class="filter-count">@(result.Total == 1 ? "1 student" : $"{result.Total:N0} students")</p>
         <div class="table-wrap">
             <table class="table">
                 <thead>
                     <tr>
                         <th scope="col">Student</th>
                         <th scope="col" class="col-level">Grade level</th>
-                        <th scope="col">Course</th>
+                        <th scope="col">Strand</th>
                         <th scope="col">Section</th>
-                        <th scope="col">Problem</th>
-                        <th scope="col" class="col-more">Since</th>
-                        <th scope="col">Status</th>
+                        <th scope="col">Concerns</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var student in result.Items)
                     {
-                        var primary = student.Primary;
                         <tr>
                             <td>
                                 <span class="name">@student.StudentName</span>
@@ -82,20 +76,22 @@
                             <td>@(student.Strand ?? "—")</td>
                             <td>@(student.Placement ?? "—")</td>
                             <td>
-                                <span class="reasons">
-                                    @foreach (var r in student.Reasons)
-                                    {
-                                        <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r)">@ReferralReasons.Display(r)</Badge>
-                                    }
-                                </span>
-                                <button type="button" class="view-all" @onclick="() => ViewAll(student)">View all (@student.Referrals.Count)</button>
-                            </td>
-                            <td class="col-more">@PhilippineTime.FormatDate(student.SinceUtc)</td>
-                            <td>
-                                <Badge Tone="@StatusTone(student.Status)">@ReferralStatus.Display(student.Status)</Badge>
+                                @if (student.Referrals.Count == 0)
+                                {
+                                    <span class="muted">None</span>
+                                }
+                                else
+                                {
+                                    <span class="reasons">
+                                        @foreach (var r in student.Reasons)
+                                        {
+                                            <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r)">@ReferralReasons.Display(r)</Badge>
+                                        }
+                                    </span>
+                                }
                             </td>
                             <td class="col-actions">
-                                <Button Small="true" Variant="@(student.Status == ReferralStatus.Resolved ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="pencil" OnClick="() => OpenAsync(primary)">@(student.Status == ReferralStatus.Resolved ? "View" : "Work on it")</Button>
+                                <Button Small="true" Variant="@(student.Referrals.Count == 0 ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="shield-alert" OnClick="() => ViewAll(student)">At risk</Button>
                             </td>
                         </tr>
                     }
@@ -114,67 +110,80 @@
     }
 </Card>
 
+@* ===== One student: their concerns, and a place to add one ===== *@
 <Modal Open="viewing is not null" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
     @if (viewing is not null)
     {
-        <p class="sub all-sub">@viewing.Lrn@(viewing.GradeLevel is { } viewLevel ? $" · Grade {viewLevel}" : "")@(viewing.Strand is null ? "" : " · " + viewing.Strand)@(viewing.Placement is null ? "" : " · " + viewing.Placement) · @(viewing.Referrals.Count == 1 ? "1 referral" : $"{viewing.Referrals.Count} referrals")</p>
-        <div class="table-wrap">
-            <table class="table all-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Subject and teacher</th>
-                        <th scope="col">Problem</th>
-                        <th scope="col">Grade</th>
-                        <th scope="col" class="col-more">Since</th>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in viewing.Referrals)
-                    {
+        <p class="sub all-sub">@viewing.Lrn@(viewing.GradeLevel is { } viewLevel ? $" · Grade {viewLevel}" : "")@(viewing.Strand is null ? "" : " · " + viewing.Strand)@(viewing.Placement is null ? "" : " · " + viewing.Placement)</p>
+
+        @if (viewing.Referrals.Count == 0)
+        {
+            <p class="muted none-yet">No concern yet.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table all-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <span class="name">@(r.SubjectName ?? "—")</span>
-                                <span class="sub">@(r.TeacherName ?? "")</span>
-                            </td>
-                            <td>
-                                <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
-                                <span class="detail">@r.Detail</span>
-                            </td>
-                            <td>
-                                @if (r.Metric is { } metric)
-                                {
-                                    <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@metric.ToString("0.#")%</Badge>
-                                    <span class="sub">@(r.Reason == ReferralReasons.LowAttendance ? "attendance" : "grade")</span>
-                                }
-                                else
-                                {
-                                    <span class="muted">—</span>
-                                }
-                            </td>
-                            <td class="col-more">@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
-                            <td>
-                                <Badge Tone="@StatusTone(r.Status)">@ReferralStatus.Display(r.Status)</Badge>
-                                @if (r.Outcome is { } outcome)
-                                {
-                                    <span class="sub">@ReferralOutcomes.Display(outcome)</span>
-                                }
-                            </td>
-                            <td class="col-actions">
-                                <Button Small="true" Variant="@(r.Status == ReferralStatus.Resolved ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="pencil" OnClick="() => OpenAsync(r)">@(r.Status == ReferralStatus.Resolved ? "View" : "Work on it")</Button>
-                            </td>
+                            <th scope="col">Concern</th>
+                            <th scope="col">What was found or what happened</th>
+                            <th scope="col" class="col-more">Since</th>
+                            <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in viewing.Referrals)
+                        {
+                            <tr>
+                                <td>
+                                    <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
+                                    @if (r.SubjectName is not null)
+                                    {
+                                        <span class="sub">@r.SubjectName@(r.TeacherName is null ? "" : " · " + r.TeacherName)</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="detail">@r.Detail</span>
+                                    @if (!string.IsNullOrWhiteSpace(r.Intervention))
+                                    {
+                                        <span class="sub">Help: @r.Intervention</span>
+                                    }
+                                </td>
+                                <td class="col-more">@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
+                                <td class="col-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenAsync(r)">Notes</Button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <h3 class="add-title">Add a concern</h3>
+        <FormErrors Errors="formErrors" />
+        <div class="two">
+            <Field For="a-reason" Label="What is it?" Required="true">
+                <select id="a-reason" value="@newReason" @onchange="e => newReason = e.Value?.ToString() ?? ReferralReasons.Violation">
+                    @foreach (var r in ReferralReasons.All)
+                    {
+                        <option value="@r" selected="@(newReason == r)">@ReferralReasons.Display(r)</option>
                     }
-                </tbody>
-            </table>
+                </select>
+            </Field>
         </div>
+        <Field For="a-detail" Label="What happened?" Required="true" Hint="Only you can read this.">
+            <textarea id="a-detail" rows="3" maxlength="500" value="@newDetail" @onchange="e => newDetail = e.Value?.ToString() ?? string.Empty"></textarea>
+        </Field>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseViewAll">Close</Button>
+            <Button IconName="plus" Disabled="busy" OnClick="AddConcernAsync">@(busy ? "Adding…" : "Add the concern")</Button>
         </div>
     }
 </Modal>
 
+@* ===== The help given and the notes of one concern ===== *@
 <Modal Open="current is not null" Title="@(current?.StudentName ?? "")" OnClose="Close" Large="true">
     @if (current is not null)
     {
@@ -182,30 +191,19 @@
             <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(current.Reason)">@ReferralReasons.Display(current.Reason)</Badge>
             <span>@current.Detail</span>
         </div>
-        <p class="sub">@current.Lrn@(current.GradeLevel is { } level ? $" · Grade {level}" : "")@(current.Strand is null ? "" : " · " + current.Strand)@(current.Placement is null ? "" : " · " + current.Placement)@(current.SubjectName is null ? "" : " · " + current.SubjectName)@(current.TeacherName is null ? "" : " · teacher " + current.TeacherName) · referred @PhilippineTime.FormatDate(current.CreatedAtUtc)</p>
+        <p class="sub">@current.Lrn@(current.GradeLevel is { } level ? $" · Grade {level}" : "")@(current.Strand is null ? "" : " · " + current.Strand)@(current.Placement is null ? "" : " · " + current.Placement)@(current.SubjectName is null ? "" : " · " + current.SubjectName)@(current.TeacherName is null ? "" : " · teacher " + current.TeacherName) · since @PhilippineTime.FormatDate(current.CreatedAtUtc)</p>
 
         <FormErrors Errors="formErrors" />
 
-        <div class="two">
-            <Field For="w-help" Label="Help given">
-                <select id="w-help" value="@editIntervention" @onchange="e => editIntervention = e.Value?.ToString() ?? string.Empty">
-                    <option value="">Not decided yet</option>
-                    @foreach (var i in InterventionTypes.All)
-                    {
-                        <option value="@i" selected="@(editIntervention == i)">@i</option>
-                    }
-                </select>
-            </Field>
-            <Field For="w-outcome" Label="How did it end?" Hint="Leave it as Still working until the case is over. Choosing a result closes the referral.">
-                <select id="w-outcome" value="@editOutcome" @onchange="e => editOutcome = e.Value?.ToString() ?? string.Empty">
-                    <option value="">Still working on it</option>
-                    @foreach (var o in ReferralOutcomes.All)
-                    {
-                        <option value="@o" selected="@(editOutcome == o)">@(o == ReferralOutcomes.Improved ? "Improved" : "No change")</option>
-                    }
-                </select>
-            </Field>
-        </div>
+        <Field For="w-help" Label="Help given">
+            <select id="w-help" value="@editIntervention" @onchange="e => editIntervention = e.Value?.ToString() ?? string.Empty">
+                <option value="">Not decided yet</option>
+                @foreach (var i in InterventionTypes.All)
+                {
+                    <option value="@i" selected="@(editIntervention == i)">@i</option>
+                }
+            </select>
+        </Field>
 
         <Field For="w-notes" Label="Notes" Hint="Only you can read these.">
             <textarea id="w-notes" rows="4" maxlength="1000" value="@editNotes" @onchange="e => editNotes = e.Value?.ToString() ?? string.Empty"></textarea>
@@ -219,15 +217,17 @@
 </Modal>
 
 @code {
-    [SupplyParameterFromQuery(Name = "status")] private string? StatusQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "show")] private string? ShowQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = "reason")] private string? ReasonQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = "q")] private string? SearchQuery { get; set; }
 
     private int userId;
-    private string status = "";
+    private string show = "concerns";
     private string reason = "";
+    private string newReason = ReferralReasons.Violation;
+    private string newDetail = "";
     private string grade = "";
     private string searchText = "";
     private string appliedSearch = "";
@@ -237,7 +237,6 @@
     private ReferralRow? current;
     private string editIntervention = "";
     private string editNotes = "";
-    private string editOutcome = "";
     private string? message;
     private bool messageIsError;
     private bool busy;
@@ -246,7 +245,8 @@
     protected override async Task OnInitializedAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
-        status = ReferralStatus.All.Contains(StatusQuery ?? "") ? StatusQuery! : "";
+        // The menu's "All students" opens the whole school; the other entries open the students who have a concern.
+        show = ShowQuery == "all" ? "all" : "concerns";
         reason = ReferralReasons.All.Contains(ReasonQuery ?? "") ? ReasonQuery! : "";
         searchText = appliedSearch = SearchQuery?.Trim() ?? "";
         await Desk.EvaluateAsync();
@@ -257,26 +257,69 @@
 
     private async Task LoadAsync()
     {
-        result = await Desk.ListByStudentAsync(status == "" ? null : status, reason == "" ? null : reason, appliedSearch, pageNumber, grade == "" ? null : int.Parse(grade));
-
-        // The list of a student that is open stays up to date after a referral is saved.
-        if (viewing is not null)
-        {
-            viewing = result.Items.FirstOrDefault(x => x.StudentId == viewing.StudentId);
-        }
+        result = show == "all" && reason == ""
+            ? await Desk.ListAllStudentsAsync(appliedSearch, pageNumber, grade == "" ? null : int.Parse(grade))
+            : await Desk.ListByStudentAsync(null, reason == "" ? null : reason, appliedSearch, pageNumber, grade == "" ? null : int.Parse(grade));
     }
 
-    private static Tone StatusTone(string status) => status == ReferralStatus.Open ? Tone.Danger : status == ReferralStatus.InProgress ? Tone.Info : Tone.Success;
+    /// <summary>The student that is open stays up to date after a concern is added or saved.</summary>
+    private async Task RefreshViewingAsync()
+    {
+        if (viewing is null)
+        {
+            return;
+        }
 
-    private void ViewAll(ReferralStudentRow student) => viewing = student;
+        var row = viewing;
+        var fresh = await Desk.ListAllStudentsAsync(row.Lrn, 1);
+        viewing = fresh.Items.FirstOrDefault(x => x.StudentId == row.StudentId) ?? row;
+    }
+
+    private void ViewAll(ReferralStudentRow student)
+    {
+        formErrors = [];
+        newReason = ReferralReasons.Violation;
+        newDetail = "";
+        viewing = student;
+    }
 
     private void CloseViewAll() => viewing = null;
 
-    private async Task StatusChanged(ChangeEventArgs e)
+    private async Task ShowChanged(ChangeEventArgs e)
     {
-        status = e.Value?.ToString() ?? "";
+        show = e.Value?.ToString() == "all" ? "all" : "concerns";
         pageNumber = 1;
         await LoadAsync();
+    }
+
+    private async Task AddConcernAsync()
+    {
+        if (viewing is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var saved = await Desk.AddConcernAsync(viewing.StudentId, newReason, newDetail, userId);
+            if (!saved.Succeeded)
+            {
+                formErrors = [.. saved.Errors];
+                return;
+            }
+
+            formErrors = [];
+            newDetail = "";
+            messageIsError = false;
+            message = saved.Message;
+            await LoadAsync();
+            await RefreshViewingAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private async Task ReasonChanged(ChangeEventArgs e)
@@ -320,7 +363,6 @@
         {
             editIntervention = current.Intervention ?? "";
             editNotes = current.Notes ?? "";
-            editOutcome = current.Outcome ?? "";
         }
     }
 
@@ -336,9 +378,7 @@
         busy = true;
         try
         {
-            // There is no status box: a referral that was opened is "in progress" while the counselor works on it, and "resolved" once a result is chosen.
-            var closing = !string.IsNullOrEmpty(editOutcome);
-            var saved = await Desk.UpdateAsync(current.Id, closing ? ReferralStatus.Resolved : ReferralStatus.InProgress, editIntervention, editNotes, closing ? editOutcome : null, userId);
+            var saved = await Desk.UpdateAsync(current.Id, ReferralStatus.InProgress, editIntervention, editNotes, null, userId);
             if (!saved.Succeeded)
             {
                 formErrors = [.. saved.Errors];
@@ -350,6 +390,7 @@
             messageIsError = false;
             message = $"{name}: {saved.Message}";
             await LoadAsync();
+            await RefreshViewingAsync();
         }
         finally
         {

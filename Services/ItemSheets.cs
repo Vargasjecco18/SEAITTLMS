@@ -32,7 +32,7 @@ public static class ItemSheets
 
     private static string[] HeadersOf(string kind) => kind == ItemKinds.Quiz ? QuizHeaders : WorkHeaders;
 
-    private static string DateText(DateTime? utc) => utc is { } at ? PhilippineTime.ToLocal(at).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) : "";
+    internal static string DateText(DateTime? utc) => utc is { } at ? PhilippineTime.ToLocal(at).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) : "";
 
     // ======================================================================= assignments, quizzes, task performances
 
@@ -186,7 +186,7 @@ public static class ItemSheets
         return rows.Count == 0 ? new ItemImportParse([], "The file has no items. Fill in the rows under the column titles.") : new ItemImportParse(rows, null);
     }
 
-    private static DateTime? ParseMoment(string text, string label, List<string> errors)
+    internal static DateTime? ParseMoment(string text, string label, List<string> errors)
     {
         if (text.Length == 0)
         {

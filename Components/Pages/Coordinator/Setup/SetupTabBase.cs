@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using SEAITT_LMS.Services;
 
 namespace SEAITT_LMS.Components.Pages.Coordinator.Setup;
@@ -9,6 +10,28 @@ public abstract class SetupTabBase : ComponentBase
     [Inject] protected SchoolSetupService Setup { get; set; } = null!;
 
     [Inject] protected CurrentUser Me { get; set; } = null!;
+
+    [Inject] protected IJSRuntime JS { get; set; } = null!;
+
+    /// <summary>The id of the box with the fields of the tab (the fields are always on the page).</summary>
+    protected string EntryId => "entry-" + GetType().Name;
+
+    /// <summary>Edit on a row puts the row in the fields; this brings the fields into view and puts the cursor in the first one.</summary>
+    protected async Task ShowFormAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("seaitt.showEntry", EntryId);
+        }
+        catch (JSException)
+        {
+            // The fields are filled in anyway; only the scrolling is missed.
+        }
+        catch (InvalidOperationException)
+        {
+            // No browser to talk to (the page is closing).
+        }
+    }
 
     /// <summary>Called after something was saved or deleted, so the page can refresh the numbers on its tabs.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }

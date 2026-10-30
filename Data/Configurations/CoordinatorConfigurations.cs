@@ -13,6 +13,7 @@ internal sealed class MaterialModuleConfiguration : IEntityTypeConfiguration<Mat
         b.Property(m => m.Description).HasMaxLength(1000);
         b.Property(m => m.Body).HasColumnType("text");
         b.Property(m => m.LinkUrl).HasMaxLength(500);
+        b.Property(m => m.IsExamSet).HasDefaultValue(false);
 
         b.HasOne(m => m.Subject).WithMany().HasForeignKey(m => m.SubjectId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne<User>().WithMany().HasForeignKey(m => m.CreatedByUserId).OnDelete(DeleteBehavior.SetNull);
@@ -35,7 +36,7 @@ internal sealed class MaterialItemConfiguration : IEntityTypeConfiguration<Mater
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_material_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance')");
+            t.HasCheckConstraint("ck_material_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam')");
             t.HasCheckConstraint("ck_material_items_max_score", "max_score > 0");
         });
     }

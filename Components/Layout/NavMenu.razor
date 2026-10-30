@@ -249,16 +249,13 @@
         new("Teachers", "users?tab=teachers", "presentation"),
     ];
 
-    private static readonly IReadOnlyList<string> GuidanceDashboard = ["New referrals", "Students who are failing", "Follow-ups"];
+    private static readonly IReadOnlyList<string> GuidanceDashboard = ["New concerns", "Students not attending class"];
 
     private static readonly IReadOnlyList<NavItem.Sub> GuidanceReferrals =
     [
-        new("All", "guidance/referrals", "list"),
-        new("Open", "guidance/referrals?status=Open", "circle-dot"),
-        new("In progress", "guidance/referrals?status=InProgress", "clock"),
-        new("Resolved", "guidance/referrals?status=Resolved", "circle-check"),
-        new("Failing", "guidance/referrals?reason=FailingGrades", "triangle-alert"),
-        new("At risk", "guidance/referrals?reason=AtRisk", "shield-alert"),
-        new("Not attending", "guidance/referrals?reason=LowAttendance", "user-x"),
+        new("All students", "guidance/referrals?show=all", "users"),
+        new("With concerns", "guidance/referrals", "list"),
+        new("Attendance", "guidance/referrals?reason=LowAttendance", "user-x"),
+        new("Violation", "guidance/referrals?reason=Violation", "shield-alert"),
     ];
 }

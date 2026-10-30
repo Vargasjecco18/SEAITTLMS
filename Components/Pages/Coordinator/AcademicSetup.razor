@@ -8,8 +8,9 @@
 @inject SetupWorkbookService Workbook
 @inject CurrentUser Me
 @inject FileDownloads Downloads
+@inject IJSRuntime JS
 
-<PageTitle>@tab.Label · Academic setup · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>Academic setup · SEAITT Legazpi LMS</PageTitle>
 
 <PageHeader Title="Academic setup" IconName="school">
     <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
@@ -19,44 +20,57 @@
 <Notice Message="@message" IsError="false" OnDismiss="ClearMessage" />
 
 <div class="setup">
-    <nav class="tabs" aria-label="Academic setup">
-        @foreach (var t in Tabs)
+    <p class="setup-lead">Everything the school needs is on this page. Go from <strong>1</strong> to <strong>@Tabs.Length</strong>: the fields of each step are always open, so type and press the button. Press <strong>Edit</strong> on a line to change it.</p>
+
+    @* The steps on one line: a click goes to that step. The number is how many lines the step has. *@
+    <nav class="steps-nav" aria-label="Steps of the academic setup">
+        @foreach (var (t, place) in Tabs.Select((t, i) => (t, i + 1)))
         {
-            @* The open tab is the one this page shows (an address that is not a tab, or none, shows the first), so it is marked here, not by the address. *@
-            <a class="tab @(t.Key == tab.Key ? "active" : "")" href="@($"coordinator/academic-setup/{t.Key}")" aria-current="@(t.Key == tab.Key ? "page" : null)">
-                <Icon Name="@t.Icon" Size="18" />
+            <a class="step-link" href="@($"coordinator/academic-setup/{t.Key}")" data-goto="@($"step-{t.Key}")">
+                <span class="step-num">@place</span>
                 <span>@t.Label</span>
                 <span class="count">@CountOf(t.Key)</span>
             </a>
         }
     </nav>
 
-    @* A new key makes the tab read its rows again (after an import). *@
-    <div @key="reloadKey">
-    @switch (tab.Key)
-    {
-        case "school-years":
-            <SchoolYearsTab OnChanged="ReloadCountsAsync" />
-            break;
-        case "terms":
-            <TermsTab OnChanged="ReloadCountsAsync" />
-            break;
-        case "tracks":
-            <TracksTab OnChanged="ReloadCountsAsync" />
-            break;
-        case "strands":
-            <StrandsTab OnChanged="ReloadCountsAsync" />
-            break;
-        case "subjects":
-            <SubjectsTab OnChanged="ReloadCountsAsync" />
-            break;
-        case "sections":
-            <SectionsTab OnChanged="ReloadCountsAsync" />
-            break;
-        case "class-schedule":
-            <ScheduleTab OnChanged="ReloadCountsAsync" />
-            break;
-    }
+    @* A new key makes the steps read their rows again (after an import). *@
+    <div @key="reloadKey" class="steps">
+        @foreach (var (t, place) in Tabs.Select((t, i) => (t, i + 1)))
+        {
+            <section class="step" id="@($"step-{t.Key}")" aria-labelledby="@($"step-{t.Key}-title")">
+                <h2 class="step-title" id="@($"step-{t.Key}-title")">
+                    <span class="step-num">@place</span>
+                    <Icon Name="@t.Icon" Size="20" />
+                    <span>@t.Label</span>
+                    <span class="count">@CountOf(t.Key)</span>
+                </h2>
+                @switch (t.Key)
+                {
+                    case "school-years":
+                        <SchoolYearsTab OnChanged="ReloadCountsAsync" />
+                        break;
+                    case "terms":
+                        <TermsTab OnChanged="ReloadCountsAsync" />
+                        break;
+                    case "tracks":
+                        <TracksTab OnChanged="ReloadCountsAsync" />
+                        break;
+                    case "strands":
+                        <StrandsTab OnChanged="ReloadCountsAsync" />
+                        break;
+                    case "subjects":
+                        <SubjectsTab OnChanged="ReloadCountsAsync" />
+                        break;
+                    case "sections":
+                        <SectionsTab OnChanged="ReloadCountsAsync" />
+                        break;
+                    case "class-schedule":
+                        <ScheduleTab OnChanged="ReloadCountsAsync" />
+                        break;
+                }
+            </section>
+        }
     </div>
 </div>
 
@@ -83,18 +97,21 @@
 
     [Parameter] public string? TabKey { get; set; }
 
-    private SetupTab tab = Tabs[0];
     private SetupCounts? counts;
     private int reloadKey;
     private string? message;
     private bool excelOpen;
     private SetupSnapshot? snapshot;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnParametersSetAsync() => counts ??= await Setup.GetCountsAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // An address that is not a tab (or none) shows the first one.
-        tab = Tabs.FirstOrDefault(t => string.Equals(t.Key, TabKey, StringComparison.OrdinalIgnoreCase)) ?? Tabs[0];
-        counts ??= await Setup.GetCountsAsync();
+        // An address like academic-setup/sections goes to that step.
+        if (firstRender && Tabs.FirstOrDefault(t => string.Equals(t.Key, TabKey, StringComparison.OrdinalIgnoreCase)) is { } wanted)
+        {
+            await JS.InvokeVoidAsync("seaitt.goToId", $"step-{wanted.Key}");
+        }
     }
 
     private async Task ReloadCountsAsync() => counts = await Setup.GetCountsAsync();

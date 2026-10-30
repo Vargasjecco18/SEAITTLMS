@@ -495,3 +495,47 @@ h3 {
 .from-excel {
     margin: 0 0 0.6rem;
 }
+
+/* ---------- the summative exams of the course ---------- */
+.exams {
+    margin-top: 1.5rem;
+    padding: 0.9rem 1rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.exams-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.exams-head h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.exams-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.exams-note {
+    margin: 0.5rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.exam-text {
+    margin: 0.35rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    white-space: pre-line;
+}
