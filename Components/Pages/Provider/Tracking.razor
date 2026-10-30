@@ -202,27 +202,28 @@ else
 
     private static bool IsItemPart(string? part) => part is "activities" or "quizzes" or "tasks" or "seatwork" or "recitations";
 
-    /// <summary>The tabs of the seatwork and the recitations are there once something of that kind was sent.</summary>
+    /// <summary>
+    /// The provider sends the syllabus, modules and summative exams only (the teacher makes the activities), so the tabs of the kinds of work are there once something of that kind
+    /// was sent (by an older version of the library) or when the address asks for one.
+    /// </summary>
     private IReadOnlyList<PillTabs.Tab> PartTabs
     {
         get
         {
-            var tabs = new List<PillTabs.Tab>
+            var tabs = new List<PillTabs.Tab> { new("modules", "Modules", "eye") };
+            void KindTab(string key, string label, string kind)
             {
-                new("modules", "Modules", "eye"),
-                new("activities", "Assignments", SubjectStyle.KindIcon(ItemKinds.Activity), itemCounts.GetValueOrDefault(ItemKinds.Activity)),
-                new("quizzes", "Quizzes", SubjectStyle.KindIcon(ItemKinds.Quiz), itemCounts.GetValueOrDefault(ItemKinds.Quiz)),
-                new("tasks", "Task performance", SubjectStyle.KindIcon(ItemKinds.TaskPerformance), itemCounts.GetValueOrDefault(ItemKinds.TaskPerformance)),
-            };
-            if (itemCounts.GetValueOrDefault(ItemKinds.Seatwork) > 0 || part == "seatwork")
-            {
-                tabs.Add(new("seatwork", "Seatwork", SubjectStyle.KindIcon(ItemKinds.Seatwork), itemCounts.GetValueOrDefault(ItemKinds.Seatwork)));
+                if (itemCounts.GetValueOrDefault(kind) > 0 || part == key)
+                {
+                    tabs.Add(new(key, label, SubjectStyle.KindIcon(kind), itemCounts.GetValueOrDefault(kind)));
+                }
             }
 
-            if (itemCounts.GetValueOrDefault(ItemKinds.Recitation) > 0 || part == "recitations")
-            {
-                tabs.Add(new("recitations", "Recitations", SubjectStyle.KindIcon(ItemKinds.Recitation), itemCounts.GetValueOrDefault(ItemKinds.Recitation)));
-            }
+            KindTab("activities", "Assignments", ItemKinds.Activity);
+            KindTab("quizzes", "Quizzes", ItemKinds.Quiz);
+            KindTab("tasks", "Task performance", ItemKinds.TaskPerformance);
+            KindTab("seatwork", "Seatwork", ItemKinds.Seatwork);
+            KindTab("recitations", "Recitations", ItemKinds.Recitation);
 
             tabs.Add(new("teachers", "Teachers", "presentation"));
             tabs.Add(new("students", "Students", "graduation-cap"));

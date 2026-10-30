@@ -53,7 +53,7 @@ public static class HelpContent
         new("How do I sign in and sign out?",
         [
             "Open the address of the system and type your email and your password.",
-            "Tick “Keep me signed in on this device” only on your own computer or phone.",
+            "When you close the browser you are signed out. Sign in again the next time. On a shared computer, press the arrow button to sign out before you leave.",
             "To sign out, press the arrow button at the bottom of the menu, next to your name.",
             $"After {settings.MaxFailedAttempts} wrong passwords in a row the account is locked for {settings.LockoutMinutes} minutes. Wait, or ask the administrator.",
             "An account can be signed in in one place at a time. If someone is signed in with your account, a notice at the top of the login page says so: sign out there first, or wait a few minutes after that page was closed.",
@@ -81,7 +81,7 @@ public static class HelpContent
         ]),
         new("How do messages work?",
         [
-            "Press the speech bubble at the top. The list shows your conversations; the search box finds a person you may write to.",
+            "Press the speech bubble at the top. The list shows your conversations; type a name in the box at the top of the list to find a person you may write to.",
             "You can write to a person at any hour. Press the paper clip to send a file with the message.",
             "A number on the bubble tells how many messages you have not read.",
         ]),
@@ -234,11 +234,18 @@ public static class HelpContent
     [
         new("How do I add, change or switch off an account?",
         [
-            "Open Users Management and choose the tab of the role (Students, Teachers, Staff, Administrators).",
+            "Open Users Management and choose the tab: Students, Teachers or Staff. A green dot on a person's picture means the person is online now.",
             "Press the Add button (Add staff, on the Staff tab), or Edit on a row. In Edit you can change the name and email, set a new password, and switch the account on or off.",
+            "A teacher who works in more than one section has a “sections” button: press it to see them all.",
             "Students are added by the registrar when enrolling them. A switched-off account can't sign in.",
             "The school has one administrator, one registrar, one guidance counselor and one academic coordinator; it can have several academic providers. In Add staff, a role that the school has already is not in the list.",
         ], "admin/users", "Open Users Management"),
+        new("How do I make a new staff role, like Assistant Registrar?",
+        [
+            "Open Users Management, the Staff tab, and press Add staff. Next to the Role list press “Add role”.",
+            "Type the name of the role, and choose the role it works like (for example Registrar). It uses the same pages and permissions as that role. Press “Add this role”: it is chosen in the Role list, so you can finish adding the person.",
+            "Many people can have a role you made. The staff list and the person's card show its name.",
+        ], "admin/users/staff", "Open the staff list"),
         new("A teacher needs courses.",
         [
             "Open Users Management, Teachers, and press Courses on the teacher's row. Choose the section and the courses.",
@@ -293,8 +300,8 @@ public static class HelpContent
     [
         new("How do I set up the school year, terms and sections?",
         [
-            "Open Academic setup and use the tabs: School years, Terms, Tracks, Strands, Courses, Sections and Class schedule.",
-            "To fill many rows at once press “Template and import (Excel)” at the top: the workbook has a sheet for each tab, the courses of each strand, and the hours of the day. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
+            "Open Academic setup. Everything is on one page, in seven steps: 1 School years, 2 Terms, 3 Tracks, 4 Strands, 5 Courses, 6 Sections and 7 Class schedule. Press a step at the top to go to it. The boxes of every step are always open: fill them in and press the button. Press Edit on a line to change it. Press the name of a section to see its students.",
+            "To fill many rows at once press “Template and import (Excel)” at the top: the workbook has a sheet for each step, the courses of each strand, and the hours of the day. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
             "The current term is the one students are enrolled in. Make the term first, then the sections.",
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
@@ -329,12 +336,20 @@ public static class HelpContent
 
     private static HelpSection Provider() => new("For the academic provider", "send",
     [
-        new("How do I send a syllabus, modules and assignments to the teachers?",
+        new("How do I send a syllabus and modules to the teachers?",
         [
-            "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once). Press a syllabus or a module to open it and see its assignments, quizzes and task performances. “Add Activities” adds them to a module, one by one or from an Excel workbook.",
-            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module, an assignment, a quiz or a task performance. A quiz is questions, a file, or both; the teacher sets its time limit and anti-cheating settings.",
-            "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it. Each module says what it has, for example “1 assignment, 1 quiz, 0 TP” (TP is task performance), and to how many of the teachers it was sent.",
-            "Each teacher gets their own copy as a draft, with the files: they edit the text and the due dates and post it to their students when they are ready. A PDF or a picture opens in a new tab of the browser, where it can be downloaded and printed.",
+            "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once). Press a syllabus or a module to open it and see its text and files.",
+            "You send the syllabus, the modules and the summative exams. The teacher makes the activities (assignments, quizzes, task performances) in their own copy of the course.",
+            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam.",
+            "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
+            "Each teacher gets their own copy as a draft, with the files: they edit the text and the dates and post it to their students when they are ready. A PDF or a picture opens in a box in the middle of the screen, where it can be downloaded.",
+        ], "provider/library", "Open Course library"),
+        new("How do I make a summative exam?",
+        [
+            "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
+            "Write the title, the instructions, attach the paper if you have it, and the highest score. Choose when it opens and when it closes. It must close after it opens.",
+            "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file.",
+            "Press “Send to teachers” and choose the exam. Each teacher gets it in a draft module called Summative exams, with its schedule, and gives the scores.",
         ], "provider/library", "Open Course library"),
         new("How do I know if the teachers opened what I sent?",
         [
@@ -344,7 +359,7 @@ public static class HelpContent
         new("How do I know if the students opened it?",
         [
             "Once a teacher posts a module, the Tracking page shows how many students opened it and its assignments. Open a line to see each student, with the ones who have not opened it first.",
-            "The syllabus counts like a module. An assignment, quiz or task performance counts when the student opens its page.",
+            "The syllabus counts like a module. A summative exam counts when the student opens its page.",
         ]),
         new("Where do I see one teacher or one student?",
         [
@@ -359,18 +374,20 @@ public static class HelpContent
 
     private static HelpSection Guidance() => new("For the guidance counselor", "heart-handshake",
     [
-        new("Where do the referrals come from?",
+        new("What do I look after?",
         [
-            "The system refers a student to you by itself when they are failing (below 70), close to failing or missing assignments, or missing class.",
-            "Open Referrals to see them. Filter by status: Open, In progress or Resolved.",
+            "You look after two things only: attendance and violations. Failing grades and students at risk in a course are for the teacher.",
+            "Open Referrals. Every student of the school is in the list, one line each, so you can write a concern for anybody. Use the search box (name, LRN, grade level, section, course) and the choices Show and Concern to find students.",
         ], "guidance/referrals", "Open Referrals"),
-        new("How do I follow up a referral?",
+        new("Where do the attendance concerns come from?",
         [
-            "Press “Work on it” on a referral. Choose the help you gave and write your notes (only you can read them). When the case is over, choose how it ended: the student Improved or had No change. That closes the referral.",
+            "The system finds them by itself: a student whose attendance is under 80% over at least 5 marked days. You get a notification, and the student shows with an Attendance badge.",
+            "To see only the students who have a concern choose “Only students with a concern” in Show, or use “With concerns” or “Attendance” under Referrals in the menu.",
+        ], "guidance/referrals?show=concerns", "Open the students with a concern"),
+        new("How do I write a violation or follow up a concern?",
+        [
+            "Press the “At risk” button on a student. A box shows the student's concerns. To write a new one, choose what it is (Violation or Attendance), write what happened (only you can read it) and press “Add the concern”.",
+            "Press “Notes” on a concern to choose the help you gave (talked with the student, called the parents, talked with the teacher, other) and write your notes. When the case is over, choose how it ended: the student Improved or had No change. That closes the concern.",
         ]),
-        new("How do I see the students who are failing or at risk?",
-        [
-            "Open Referrals. Each line shows the student, the grade level, the course, the problem and the grade. Filter by status, by problem (failing, at risk, not attending) and by grade level.",
-        ], "guidance/referrals", "Open Referrals"),
     ]);
 }
