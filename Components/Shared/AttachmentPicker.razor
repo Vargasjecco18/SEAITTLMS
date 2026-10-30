@@ -34,7 +34,7 @@
                 var file = f;
                 <li class="new">
                     <Icon Name="@AttachmentList.IconOf(file.Name)" Size="16" />
-                    <span class="name">@file.Name</span>
+                    <span class="name" title="@file.Name">@FileLabel.Short(file.Name, ModuleLabel, Existing.Count + pending.IndexOf(file) + 1)</span>
                     <span class="size">@FileSize.Text(file.Data.Length) · new</span>
                     <button type="button" class="act" aria-label="@($"Do not attach {file.Name}")" title="Do not attach" @onclick="() => DropPendingAsync(file)"><Icon Name="x" Size="14" /></button>
                 </li>

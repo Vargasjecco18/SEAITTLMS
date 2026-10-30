@@ -1647,7 +1647,9 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("due_reminder_sent_at_utc");
 
                     b.Property<int>("GradebookOrder")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
+                        .HasDefaultValue(0)
                         .HasColumnName("gradebook_order");
 
                     b.Property<string>("Instructions")

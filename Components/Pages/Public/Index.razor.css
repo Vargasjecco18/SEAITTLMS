@@ -15,7 +15,7 @@
 .guest-nav {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: 60;   /* above the courses that drop down under a strand (.strand-drop), so the bar is never covered while the page scrolls */
     background: rgba(8, 15, 35, 0.86);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     -webkit-backdrop-filter: blur(10px);
@@ -656,7 +656,7 @@ h3 {
     position: absolute;
     top: calc(100% + 0.4rem);
     left: 0;
-    z-index: 30;
+    z-index: 20;
     width: min(46rem, calc(100vw - 2rem));
     max-height: min(70vh, 36rem);
     border: 1px solid var(--border);

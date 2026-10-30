@@ -79,10 +79,10 @@ public static class HelpContent
             "Under Profile picture, press “Upload a picture” and choose a photo. It is made small for you. “Remove” brings back your initials.",
             "Under Appearance choose Light, Dark or Auto (Auto follows your computer). You can also switch the animations off.",
         ]),
-        new("Can I get the notifications by email?",
+        new("What does the Save button of Settings keep?",
         [
-            "Press the gear at the top right (Settings). Under “Email for notifications” type your email (a Gmail address works), press Save and then “Send a test email”.",
-            "From then on a new module, a grade, a deadline and the other things the bell shows are also sent to that address. Press Remove to stop. If the test does not arrive, the school has not set up the email yet: ask the administrator.",
+            "The picture, and the look of the pages (Light, Dark or Auto, the animations and the sound switch), are kept as soon as you choose them.",
+            "The notification sound and the password are kept with the Save button at the bottom of Settings. Choose a sound (it plays so you can hear it), or fill in the password boxes, then press Save. A new password signs you out, and you log in again with it.",
         ]),
         new("How do messages work?",
         [
@@ -174,7 +174,7 @@ public static class HelpContent
             "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Template and import (Excel)” in the same box.",
             "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Press “Add Activities” at the top right of the course: choose the module, then Assignment, Quiz or Task performance. Each has its points, the day it appears and its due date.",
+            "Press “Add Activities” at the top right of the course: choose the module, then Assignment, Quiz, Task performance, Seatwork or Recitation. Each has its points, the day it appears and its due date. Seatwork and recitations get their own tab in the course menu once the course has one.",
         ]),
         new("What is the menu inside a course?",
         [
@@ -215,7 +215,7 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Export to Excel” makes a file that shows how the grades are worked out, “Add Activities” adds a column for extra scores and “Add Exam” adds an exam.",
+            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no module to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
@@ -302,7 +302,8 @@ public static class HelpContent
     [
         new("How do I set up the school year, terms and sections?",
         [
-            "Open Academic setup and use the tabs: School years, Terms, Tracks, Strands, Courses and Sections.",
+            "Open Academic setup and use the tabs: School years, Terms, Tracks, Strands, Courses, Sections and Class schedule.",
+            "To fill many rows at once press “Template and import (Excel)” at the top: the workbook has a sheet for each tab, the courses of each strand, and the hours of the day. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
             "The current term is the one students are enrolled in. Make the term first, then the sections.",
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("How do I set the days and the time of a course (MWF or TTH)?",

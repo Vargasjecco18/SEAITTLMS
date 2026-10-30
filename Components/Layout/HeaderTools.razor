@@ -297,18 +297,24 @@
         timer = new Timer(_ => _ = InvokeAsync(RefreshAllAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
 
+    private bool soundPrepared;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         // A browser keeps sound off until the person has clicked on the page once: if that has not happened yet the page says so and waits for the click (wwwroot/app.js).
-        if (firstRender && user is not null)
+        // (The person is known after the first render, so it is done once, on the first render that has them.)
+        if (soundPrepared || user is null)
         {
-            try
-            {
-                await JS.InvokeVoidAsync("seaitt.prepareSound");
-            }
-            catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
-            {
-            }
+            return;
+        }
+
+        soundPrepared = true;
+        try
+        {
+            await JS.InvokeVoidAsync("seaitt.prepareSound");
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
+        {
         }
     }
 

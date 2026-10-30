@@ -1870,5 +1870,16 @@ UPDATE system_settings SET `value` = '500' WHERE `key` = 'files.locker_mb' AND `
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261030033202_NotificationSoundsAndBiggerFileLimits', '9.0.20');
 
+ALTER TABLE `module_items` DROP CONSTRAINT `ck_module_items_kind`;
+
+ALTER TABLE `users` DROP COLUMN `notify_email`;
+
+ALTER TABLE `module_items` ADD `gradebook_order` int NOT NULL DEFAULT 0;
+
+ALTER TABLE `module_items` ADD CONSTRAINT `ck_module_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261030045847_GradebookOrderClassroomWorkAndNoNotifyEmail', '9.0.20');
+
 COMMIT;
 
