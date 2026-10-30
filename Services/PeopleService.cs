@@ -151,6 +151,55 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
         return await WithStatesAsync(db, userId, cards, ct);
     }
 
+    /// <summary>The students of one course of the teacher (the course menu: Students). Empty when the course is not theirs.</summary>
+    public async Task<IReadOnlyList<PersonCard>> GetCourseStudentsAsync(int teacherUserId, int assignmentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var course = await db.TeachingAssignments.AsNoTracking().Where(a => a.Id == assignmentId && a.Teacher.UserId == teacherUserId)
+            .Select(a => new { a.SectionId, a.SubjectId, Grade = a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
+            .FirstOrDefaultAsync(ct);
+        if (course is null)
+        {
+            return [];
+        }
+
+        var label = TeachingService.SectionLabel(course.Grade, course.Strand, course.Section);
+        var rows = await Roster.Enrollments(db, course.SectionId, course.SubjectId).AsNoTracking()
+            .Where(e => e.Student.User.IsActive)
+            .Select(e => new { e.Student.UserId, e.Student.FirstName, e.Student.MiddleName, e.Student.LastName, e.Student.NameExtension })
+            .ToListAsync(ct);
+
+        var cards = rows
+            .Select(r => new PersonCard(r.UserId, UserDirectory.FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), AppRoles.Student, label))
+            .OrderBy(c => c.Name)
+            .ToList();
+
+        return await WithStatesAsync(db, teacherUserId, cards, ct);
+    }
+
+    /// <summary>The teacher of one course of the student (the course menu: Teachers). Empty when the student does not take the course.</summary>
+    public async Task<IReadOnlyList<PersonCard>> GetCourseTeachersAsync(int studentUserId, int assignmentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == studentUserId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+        if (studentId is null)
+        {
+            return [];
+        }
+
+        var rows = await Roster.AssignmentsOf(db, studentId.Value).AsNoTracking()
+            .Where(a => a.Id == assignmentId && a.Teacher.User.IsActive)
+            .Select(a => new { a.Teacher.UserId, a.Teacher.FirstName, a.Teacher.MiddleName, a.Teacher.LastName, a.Teacher.NameExtension, Subject = a.Subject.Name })
+            .ToListAsync(ct);
+
+        var cards = rows
+            .Select(r => new PersonCard(r.UserId, UserDirectory.FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), AppRoles.Teacher, r.Subject))
+            .OrderBy(c => c.Name)
+            .ToList();
+
+        return await WithStatesAsync(db, studentUserId, cards, ct);
+    }
+
     /// <summary>The other teachers of the school, with the courses each of them teaches.</summary>
     public async Task<IReadOnlyList<PersonCard>> GetColleaguesAsync(int userId, CancellationToken ct = default)
     {

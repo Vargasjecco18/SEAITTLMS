@@ -13,7 +13,7 @@
             <p class="xl-lead">For <strong>@CourseName</strong>. Every row of the workbook becomes one module of the course.</p>
             <ol class="xl-steps">
                 <li>
-                    <strong>Get the template.</strong> It has the column titles, an example and a sheet that says how to fill it.
+                    <strong>Get the template.</strong> It has an example and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel (type it, or choose it from the list).
                     <div class="xl-row">
                         <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
                         @if (Existing.Count > 0)
@@ -23,7 +23,7 @@
                     </div>
                 </li>
                 <li>
-                    <strong>Fill it</strong> and save it as an Excel file. Name the files of a module in the column Files.
+                    <strong>Fill the yellow cells</strong> (type, or choose from the list where a cell has an arrow) and save with Ctrl+S as an Excel file (.xlsx). Type the names of the files of a module in the column Files.
                 </li>
                 <li>
                     <strong>Choose the workbook.</strong>

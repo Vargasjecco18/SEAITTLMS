@@ -32,7 +32,6 @@ public static class ActivitySheets
     public const string QuizzesSheet = "Quizzes";
     public const string QuestionsSheet = "Quiz Questions";
     public const string TasksSheet = "Task Performances";
-    private const string HowSheet = "How to fill";
 
     private const int TemplateRows = 20;
 
@@ -94,6 +93,19 @@ public static class ActivitySheets
             }
 
             sheet.FrozenRows = 1;
+            var last = Math.Max(TemplateRows + 1, items.Count + 2);
+            sheet.Tip($"A2:A{last}", "Type the title (needed).").Tip($"B2:B{last}", "Type what the students must do or read.");
+            if (isQuiz)
+            {
+                sheet.Number($"C2:C{last}", 1, 600, "Type the minutes a student has to answer, from 1 to 600. Leave it empty for no limit.");
+            }
+            else
+            {
+                sheet.Number($"C2:C{last}", 1, 1000, "Type the highest score, a number from 1 to 1000. Leave it empty for the usual one (50 or 100).");
+            }
+
+            sheet.Tip($"D2:E{last}", "Type the day and the hour (Philippine time) like 2026-11-20 17:00. Leave it empty if it has none.");
+            sheet.Tip($"F2:F{last}", "Type the names of the files with a semicolon between them, like worksheet.pdf; rubric.docx. Choose the same files in the import box.");
         }
 
         WorkSheet(AssignmentsSheet, ItemKinds.Activity);
@@ -137,29 +149,37 @@ public static class ActivitySheets
         }
 
         questions.FrozenRows = 1;
-        questions.ListChoice($"C2:C{lastQuestionRow}", "Multiple choice", "True or false", "Short answer");
+        questions.ListChoice($"C2:C{lastQuestionRow}", ["Multiple choice", "True or false", "Short answer"], "Choose the type from the list.");
+        questions.ListFrom($"A2:A{lastQuestionRow}", $"{QuizzesSheet}!$A$2:$A${MaxRows + 1}", "Choose the quiz from the list: it shows the titles you wrote in the sheet " + QuizzesSheet + ".");
+        questions.Tip($"B2:B{lastQuestionRow}", "Type the question.");
+        questions.Tip($"D2:D{lastQuestionRow}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.");
+        questions.Tip($"E2:E{lastQuestionRow}", "Type the right answer: the right choice (or its letter), True or False, or the answer. Other accepted answers go after a | sign.");
+        questions.Number($"F2:F{lastQuestionRow}", 0.01m, 100, "Type the points, from 0.01 to 100. Leave it empty for 1.");
 
         WorkSheet(TasksSheet, ItemKinds.TaskPerformance);
 
-        var how = book.AddSheet(HowSheet);
-        how.Set(1, 1, "How to fill the workbook", XlsxStyle.Title);
-        var steps = new[]
-        {
-            $"1. Use the sheets you need: {AssignmentsSheet}, {QuizzesSheet}, {QuestionsSheet} and {TasksSheet}. Leave a sheet empty to add nothing of that kind. The example rows can be changed or deleted.",
-            "2. Title is needed for each one; Instructions are what the students read.",
-            "3. Highest score: a number from 1 to 1000 (50 for an assignment, 100 for a task performance if you leave it empty). For a quiz the column is the time limit in minutes (empty: no limit); a quiz is worth the points of its questions.",
-            "4. Appears on and Due date: write the day and the time in Philippine time, like 2026-11-20 17:00. Leave Appears on empty to show it with its module; leave Due date empty for no due date.",
-            $"5. Quiz Questions: write each question in a row and put the title of its quiz, exactly as in the sheet {QuizzesSheet}, in the column Quiz. That is what connects a question to its quiz.",
-            "6. Type: Multiple choice, True or false, or Short answer. Choices (multiple choice only): the choices separated by a semicolon. Right answer: the text of the right choice (or its letter, A for the first); True or False; or the answer of a short answer (other accepted answers after a | sign). Points: from 0.01 to 100 (1 if empty).",
-            "7. Files: the names of the files of the assignment, the quiz or the task performance, separated by a semicolon, like worksheet.pdf; rubric.docx. In the import box you choose these files from your computer, and each one is attached to the row that names it. A quiz with a file has no questions (the students answer with a file and you give the score).",
-            $"8. At most {MaxRows} rows in a sheet. Save the file as an Excel Workbook (.xlsx), then import it with the Template and import button.",
-        };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 120);
+        const string Needed = "Needed", Optional = "Optional";
+        TemplateGuide.Add(book, "How to fill the workbook",
+        [
+            new(AssignmentsSheet + ", " + TasksSheet, "Title", Needed, "The name of the work, like Assignment 1: Journal entries.", TemplateGuide.TypeIt),
+            new(AssignmentsSheet + ", " + TasksSheet, "Instructions", Optional, "What the students must do.", TemplateGuide.TypeIt),
+            new(AssignmentsSheet + ", " + TasksSheet, "Highest score", Optional, "A number from 1 to 1000. Empty: 50 for an assignment, 100 for a task performance.", TemplateGuide.TypeNumber),
+            new(AssignmentsSheet + ", " + TasksSheet, "Appears on", Optional, "The day and hour the students can see it (Philippine time). Empty: it appears with its module.", TemplateGuide.DateHow),
+            new(AssignmentsSheet + ", " + TasksSheet, "Due date", Optional, "The last day and hour to hand it in (Philippine time). Empty: no due date.", TemplateGuide.DateHow),
+            new(AssignmentsSheet + ", " + TasksSheet, "Files", Optional, "The names of the files that go with it, like worksheet.pdf; rubric.docx.", "Type the names with a semicolon (;) between them. In the import box, choose the same files."),
+            new(QuizzesSheet, "Title", Needed, "The name of the quiz, like Quiz 1: Debits and credits.", TemplateGuide.TypeIt),
+            new(QuizzesSheet, "Instructions", Optional, "What the students read before they start.", TemplateGuide.TypeIt),
+            new(QuizzesSheet, "Time limit (minutes)", Optional, "The minutes a student has once they start. Empty: no limit.", TemplateGuide.TypeNumber),
+            new(QuizzesSheet, "Appears on, Due date, Files", Optional, "The same as the other sheets.", "The same as above."),
+            new(QuestionsSheet, "Quiz", Needed, "The quiz the question belongs to. This is what connects a question to its quiz.", "Choose the title from the list (it lists the titles of the sheet " + QuizzesSheet + ")."),
+            new(QuestionsSheet, "Question", Needed, "The question the students read.", TemplateGuide.TypeIt),
+            new(QuestionsSheet, "Type", Needed, "Multiple choice, True or false, or Short answer.", "Choose it from the list."),
+            new(QuestionsSheet, "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
+            new(QuestionsSheet, "Right answer", Needed, "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
+            new(QuestionsSheet, "Points", Optional, "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),
+        ],
+            "Leave a sheet empty to add nothing of that kind.",
+            $"At most {MaxRows} rows in a sheet.");
         return book.ToBytes();
     }
 

@@ -10,7 +10,7 @@ public sealed record AddMenuPick(int ModuleId, string Kind);
 public sealed record ItemImportSummary(int Created, IReadOnlyList<string> Errors);
 
 /// <summary>A link in the second menu of a course.</summary>
-public sealed record CourseMenuLink(string Label, string Icon, string Href);
+public sealed record CourseMenuLink(string Label, string Icon, string Href, bool Current = false);
 
 public static class AddItemMenuLabels
 {

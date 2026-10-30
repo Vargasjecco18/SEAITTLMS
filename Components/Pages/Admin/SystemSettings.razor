@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject SystemSettingsService Settings
+@inject NotificationSoundService Sounds
 
 <PageTitle>System Settings · SEAITT Legazpi LMS</PageTitle>
 
@@ -23,6 +24,53 @@
             <Field For="s-message" Label="Message">
                 <textarea id="s-message" class="input" rows="3" maxlength="300" @bind="form.MaintenanceMessage"></textarea>
             </Field>
+        </Card>
+
+        <Card Title="Files and lockers" IconName="folder-open">
+            <p class="note">What people can upload: a file in a locker, an attachment of a module or a file sent in a message.</p>
+            <div class="two">
+                <Field For="s-max-file" Label="Biggest file (MB)" Hint="From 1 to 1000. Each file can be this big.">
+                    <input id="s-max-file" type="number" class="input" min="1" max="1000" @bind="form.MaxFileMegabytes" />
+                </Field>
+                <Field For="s-locker" Label="Locker of each person (MB)" Hint="From 10 to 50000. All the files of a person together.">
+                    <input id="s-locker" type="number" class="input" min="10" max="50000" @bind="form.LockerMegabytes" />
+                </Field>
+            </div>
+            @if (packetMegabytes > 0 && packetMegabytes < form.MaxFileMegabytes + 1)
+            {
+                <p class="warn" id="s-packet-warning">
+                    The database accepts files up to <strong>@packetMegabytes MB</strong> only, so a bigger file can't be saved. To allow @form.MaxFileMegabytes MB, put <code>max_allowed_packet=1G</code> under
+                    <code>[mysqld]</code> in the my.ini of MySQL and restart MySQL (the app asks MySQL for it by itself when its user is allowed to).
+                </p>
+            }
+        </Card>
+
+        <Card Title="Notification sound of the school" IconName="bell">
+            <p class="note">The sound people hear when a new message or notification arrives, unless they chose another one in their Settings. Without a file, the browser plays two short tones.</p>
+            @if (schoolSound is { } current)
+            {
+                <p class="sound-now" id="s-sound-name"><Icon Name="music" Size="16" /> <strong>@current.SchoolName</strong></p>
+            }
+            else
+            {
+                <p class="sound-now" id="s-sound-name"><Icon Name="music" Size="16" /> No file. The two short tones are used.</p>
+            }
+
+            <div class="sound-row">
+                <button type="button" class="link-button" data-sound-test data-sound-choice="@(schoolSound is null ? "tones" : "school")" data-sound-url="@(schoolSound is null ? "" : $"account/school-sound?v={schoolSound.SchoolVersion}")">Play it</button>
+                @if (schoolSound is not null)
+                {
+                    <button type="button" class="link-button" disabled="@soundBusy" @onclick="RemoveSchoolSoundAsync">Remove it</button>
+                }
+            </div>
+            <label class="sound-upload">
+                <span>Choose a sound file: .mp3, .ogg, .wav or .m4a, up to @(NotificationSoundService.MaxBytes / (1024 * 1024)) MB (a second or two is enough)</span>
+                <InputFile id="s-sound-file" OnChange="SchoolSoundChosenAsync" accept=".mp3,.ogg,.oga,.wav,.m4a,.aac,audio/*" disabled="@soundBusy" aria-label="Choose the sound of the school" />
+            </label>
+            @if (soundMessage is not null)
+            {
+                <p class="@(soundFailed ? "warn" : "note")" role="status" id="s-sound-message">@soundMessage</p>
+            }
         </Card>
 
         <Card Title="Backups and the log" IconName="database-backup">
@@ -60,6 +108,11 @@
     private static readonly int[] Hours = Enumerable.Range(0, 24).ToArray();
 
     private int userId;
+    private long packetMegabytes;
+    private SoundInfo? schoolSound;
+    private bool soundBusy;
+    private bool soundFailed;
+    private string? soundMessage;
     private SettingsForm? form;
     private IReadOnlyList<string> errors = [];
     private string? message;
@@ -69,7 +122,73 @@
     protected override async Task OnInitializedAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
+        packetMegabytes = await Settings.GetDatabasePacketBytesAsync() / (1024 * 1024);
+        await LoadSchoolSoundAsync();
         Reload();
+    }
+
+    private async Task LoadSchoolSoundAsync()
+    {
+        var info = await Sounds.GetInfoAsync(userId);
+        schoolSound = info.HasSchool ? info : null;
+    }
+
+    private async Task SchoolSoundChosenAsync(InputFileChangeEventArgs e)
+    {
+        if (soundBusy)
+        {
+            return;
+        }
+
+        soundBusy = true;
+        try
+        {
+            var file = e.File;
+            if (file.Size > NotificationSoundService.MaxBytes)
+            {
+                soundFailed = true;
+                soundMessage = $"The sound is bigger than {NotificationSoundService.MaxBytes / (1024 * 1024)} MB. A sound of a second or two is enough.";
+                return;
+            }
+
+            await using var stream = file.OpenReadStream(NotificationSoundService.MaxBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            var result = await Sounds.SaveSchoolAsync(userId, file.Name, buffer.ToArray());
+            soundFailed = !result.Succeeded;
+            soundMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadSchoolSoundAsync();
+        }
+        catch (IOException)
+        {
+            soundFailed = true;
+            soundMessage = "The file could not be read. Try again.";
+        }
+        finally
+        {
+            soundBusy = false;
+        }
+    }
+
+    private async Task RemoveSchoolSoundAsync()
+    {
+        if (soundBusy)
+        {
+            return;
+        }
+
+        soundBusy = true;
+        try
+        {
+            var result = await Sounds.RemoveSchoolAsync(userId);
+            soundFailed = !result.Succeeded;
+            soundMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadSchoolSoundAsync();
+        }
+        finally
+        {
+            soundBusy = false;
+        }
     }
 
     private void ClearMessage() => message = null;

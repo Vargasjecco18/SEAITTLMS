@@ -5,7 +5,7 @@
     var slides = Files.Where(f => f.IsSlides).ToList();
     var others = Files.Where(f => !f.IsSlides).ToList();
 }
-<div class="layout @(Files.Count > 0 && hasText ? "two" : "")">
+<div class="layout @(Files.Count > 0 && hasText && ShowText ? "two" : "")">
     @if (slides.Count > 0)
     {
         <Card Title="Slides" IconName="presentation">
@@ -20,7 +20,13 @@
         </Card>
     }
 
-    @if (hasText || Files.Count == 0)
+    @if (!ShowText && Files.Count == 0)
+    {
+        <Card Title="Files" IconName="paperclip">
+            <p class="muted">This module has no files. Its text is in Edit module, at the right.</p>
+        </Card>
+    }
+    else if (ShowText && (hasText || Files.Count == 0))
     {
         <Card Title="Lesson" IconName="book-open">
             @if (!string.IsNullOrWhiteSpace(Description))
@@ -53,6 +59,9 @@
     [Parameter] public string? LinkUrl { get; set; }
 
     [Parameter] public IReadOnlyList<AttachmentRow> Files { get; set; } = [];
+
+    /// <summary>False on the page of the teacher: the text of the lesson is in Edit module, so the page shows only the files.</summary>
+    [Parameter] public bool ShowText { get; set; } = true;
 
     /// <summary>The file to show first, when the person came from the name of a file.</summary>
     [Parameter] public int? InitialFileId { get; set; }

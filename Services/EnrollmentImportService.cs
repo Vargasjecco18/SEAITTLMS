@@ -57,25 +57,21 @@ public sealed class EnrollmentImportService(EnrollmentService enrollment)
             sheet.ListFrom($"I2:I{TemplateRows + 1}", $"Lists!$C$2:$C${lookups.Strands.Count + 1}");
         }
 
-        var how = book.AddSheet("How to fill");
-        how.Set(1, 1, "How to fill the Students sheet", XlsxStyle.Title);
-        var steps = new[]
-        {
-            "1. Type one student in each row of the Students sheet. You can also paste them from another file.",
-            "2. LRN: the 12 digits. First name, last name and grade level (11 or 12), strand and section (A, B or C) are needed. The other columns are optional.",
-            "3. Strand: pick the code from the list (the sheet Lists shows them). The Track is found from the strand, so you may leave it empty.",
-            "4. Names can be typed in small letters: the system writes them with capital letters.",
-            "5. A student who already has an account keeps the name and the sign-in details the system has.",
-            "6. A student who changes strand starts again in Grade 11.",
-            $"7. A section can have {enrollment.SectionCapacity} students. A row for a full section is not enrolled and is listed with the reason.",
-            $"8. At most {MaxRows} students in one file. Save the file as an Excel Workbook (.xlsx), then upload it on the Enrollments page and choose the term.",
-        };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 110);
+        sheet.Tip("A2:A" + (TemplateRows + 1), "Type the 12 digits of the LRN.").Tip("B2:B" + (TemplateRows + 1), "Type the first name (needed).").Tip("D2:D" + (TemplateRows + 1), "Type the last name (needed).");
+        TemplateGuide.Add(book, "How to fill the Students sheet",
+        [
+            new("Students", "LRN", "Needed", "The 12 digits of the LRN.", TemplateGuide.TypeIt),
+            new("Students", "First name, Last name", "Needed", "The names. Small letters are fine: the system writes them with capital letters.", TemplateGuide.TypeIt),
+            new("Students", "Middle name, Name extension, Phone number", "Optional", "Only if the student has one (Jr., III ...).", TemplateGuide.TypeIt),
+            new("Students", "Grade level", "Needed", "11 or 12.", "Choose it from the list."),
+            new("Students", "Track", "Optional", "It is found from the strand, so you may leave it empty.", "Choose it from the list."),
+            new("Students", "Strand", "Needed", "The code of the strand (the sheet Lists shows them).", "Choose it from the list."),
+            new("Students", "Section", "Needed", "A, B or C.", "Choose it from the list."),
+        ],
+            "A student who already has an account keeps the name and the sign-in details the system has.",
+            "A student who changes strand starts again in Grade 11.",
+            $"A section can have {enrollment.SectionCapacity} students. A row for a full section is not enrolled and is listed with the reason.",
+            $"At most {MaxRows} students in one file. On the Enrollments page, choose the term before you import.");
 
         var lists = book.AddSheet("Lists");
         lists.Row(1, ["Track", "Track name", "Strand", "Strand name", "Section"], XlsxStyle.Header);

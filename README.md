@@ -143,7 +143,7 @@ name and the number the person has at school, the same way the app makes the sig
 | Staff and teachers | the last name, a dot and the digits of the **employee number** | `villanueva.001@legazpi.seaitt.edu.ph` (employee number T-001) |
 | Students | the last name, a dot and the last 6 digits of the **LRN** | `jacinto.111111@legazpi.seaitt.edu.ph` (LRN 105202111111) |
 
-The passwords are **not** written in this repository (the SQL files hold only their hashes). A student's password is the last name followed by the same 6 digits, the rule the registrar's enrollment uses
+The SQL files hold only the hashes of the passwords. The list with every sign-in (name, email and password of the 57 accounts) is in [docs/sample_login.md](docs/sample_login.md). A student's password is the last name followed by the same 6 digits, the rule the registrar's Enrollments page shows when a student is enrolled. These are sample accounts: give real people a harder password in **Users Management > Edit**.
 (the registrar's Enrollments page shows it when a student is enrolled); the list with every sign-in is kept out of the repository, ask for it when you need it. Give real people a harder password in **Users Management > Edit**.
 
 The school has **one** administrator, registrar, guidance counselor, academic coordinator and academic provider, so the file never adds a second one and **never changes the password of the administrator you already have** (the last lines of the file, written as a

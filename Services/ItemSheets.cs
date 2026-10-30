@@ -89,24 +89,21 @@ public static class ItemSheets
 
         sheet.FrozenRows = 1;
 
-        var how = book.AddSheet("How to fill");
-        how.Set(1, 1, $"How to fill the {ItemKinds.Plural(kind)} sheet", XlsxStyle.Title);
-        var steps = new List<string>
-        {
-            $"1. Type one {ItemKinds.Display(kind).ToLowerInvariant()} in each row. The example row can be changed or deleted.",
-            "2. Title is needed. Instructions are what the students read.",
-        };
-        steps.Add(isQuiz
-            ? "3. Time limit: the minutes a student has once they start (empty for no limit). The quiz is worth the points of its questions, which you write after importing."
-            : "3. Highest score: a number from 1 to 1000 (50 if you leave it empty).");
-        steps.Add("4. Appears on and Due date: write the day and the time in Philippine time, like 2026-11-20 17:00. Leave Appears on empty to show it with its module; leave Due date empty for no due date.");
-        steps.Add($"5. At most {MaxRows} rows. Save the file as an Excel Workbook (.xlsx), then import it with the Import from Excel button.");
-        for (var i = 0; i < steps.Count; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 110);
+        var lastRow = Math.Max(TemplateRows + 1, rows.Count + 2);
+        sheet.Tip($"A2:A{lastRow}", "Type the title (needed).").Tip($"B2:B{lastRow}", "Type what the students must do or read.");
+        sheet.Number($"C2:C{lastRow}", 1, isQuiz ? 600 : 1000, isQuiz ? "Type the minutes a student has to answer, from 1 to 600. Leave it empty for no limit." : "Type the highest score, a number from 1 to 1000. Leave it empty for 50.");
+        sheet.Tip($"D2:E{lastRow}", "Type the day and the hour (Philippine time) like 2026-11-20 17:00. Leave it empty if it has none.");
+        TemplateGuide.Add(book, $"How to fill the {ItemKinds.Plural(kind)} sheet",
+        [
+            new(ItemKinds.Plural(kind), "Title", "Needed", $"The name of the {ItemKinds.Display(kind).ToLowerInvariant()}.", TemplateGuide.TypeIt),
+            new(ItemKinds.Plural(kind), "Instructions", "Optional", "What the students must do or read.", TemplateGuide.TypeIt),
+            isQuiz
+                ? new(ItemKinds.Plural(kind), "Time limit (minutes)", "Optional", "The minutes a student has once they start. Empty: no limit. The quiz is worth the points of its questions, which you write after importing.", TemplateGuide.TypeNumber)
+                : new(ItemKinds.Plural(kind), "Highest score", "Optional", "A number from 1 to 1000. Empty: 50.", TemplateGuide.TypeNumber),
+            new(ItemKinds.Plural(kind), "Appears on", "Optional", "The day and hour the students can see it (Philippine time). Empty: it appears with its module.", TemplateGuide.DateHow),
+            new(ItemKinds.Plural(kind), "Due date", "Optional", "The last day and hour to hand it in (Philippine time). Empty: no due date.", TemplateGuide.DateHow),
+        ],
+            $"At most {MaxRows} rows.");
         return book.ToBytes();
     }
 
@@ -258,25 +255,22 @@ public static class ItemSheets
         }
 
         sheet.FrozenRows = 1;
-        sheet.ListChoice($"B2:B{Math.Max(TemplateRows + 1, questions.Count + 2)}", "Multiple choice", "True or false", "Short answer");
+        sheet.ListChoice($"B2:B{Math.Max(TemplateRows + 1, questions.Count + 2)}", ["Multiple choice", "True or false", "Short answer"], "Choose the type from the list.");
 
-        var how = book.AddSheet("How to fill");
-        how.Set(1, 1, "How to fill the Questions sheet", XlsxStyle.Title);
-        var steps = new[]
-        {
-            "1. Type one question in each row. The three example rows can be changed or deleted.",
-            "2. Type: Multiple choice, True or false, or Short answer (choose it from the list).",
-            "3. Choices (multiple choice only): the choices separated by a semicolon, like Asset; Liability; Income. At least two.",
-            "4. Right answer: for multiple choice the text of the right choice (or its letter, A for the first); for true or false, True or False; for a short answer the answer, and other accepted answers after a | sign.",
-            "5. Points: from 0.01 to 100 (1 if you leave it empty).",
-            $"6. At most {MaxQuestions} questions. Save the file as an Excel Workbook (.xlsx), then import it in the question page: the questions are added to the list and you press Save questions.",
-        };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 110);
+        var lastQuestion = Math.Max(TemplateRows + 1, questions.Count + 2);
+        sheet.Tip($"A2:A{lastQuestion}", "Type the question (needed).").Tip($"C2:C{lastQuestion}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.")
+            .Tip($"D2:D{lastQuestion}", "Type the right answer: the right choice (or its letter), True or False, or the answer. Other accepted answers go after a | sign.");
+        sheet.Number($"E2:E{lastQuestion}", 0.01m, 100, "Type the points, from 0.01 to 100. Leave it empty for 1.");
+        TemplateGuide.Add(book, "How to fill the Questions sheet",
+        [
+            new("Questions", "Question", "Needed", "The question the students read.", TemplateGuide.TypeIt),
+            new("Questions", "Type", "Needed", "Multiple choice, True or false, or Short answer.", "Choose it from the list."),
+            new("Questions", "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
+            new("Questions", "Right answer", "Needed", "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
+            new("Questions", "Points", "Optional", "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),
+        ],
+            $"At most {MaxQuestions} questions.",
+            "The questions are added to the list; then press Save questions.");
         return book.ToBytes();
     }
 

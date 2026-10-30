@@ -159,7 +159,7 @@ else
 
     private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
 
-    private IReadOnlyList<CourseMenuLink> MenuLinks => [new("Grades", "trending-up", "student/grades")];
+    private IReadOnlyList<CourseMenuLink> MenuLinks => [new("Grades", "trending-up", "student/grades"), new("Teachers", "presentation", $"student/subjects/{AssignmentId}/teachers")];
 
     private bool loaded;
     private readonly HashSet<int> openModules = [];

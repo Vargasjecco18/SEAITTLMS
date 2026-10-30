@@ -79,25 +79,23 @@ public static class EvaluationSheets
         }
 
         questions.FrozenRows = 1;
-        questions.ListChoice($"B2:B{last}", EvaluationQuestionKinds.All.Select(EvaluationQuestionKinds.Display).ToArray());
+        questions.ListChoice($"B2:B{last}", EvaluationQuestionKinds.All.Select(EvaluationQuestionKinds.Display).ToArray(), "Choose how the students answer from the list.");
+        questions.Tip($"A2:A{last}", "Type the question (needed).").Tip($"C2:C{last}", "Type the group of the question, like Teaching. It can be empty.")
+            .Tip($"D2:D{last}", "Only for Ranking and Select-All: type the options with a semicolon between them, like Slides; Videos; Group work.");
+        details.Tip("B2", "Type the title of the questionnaire (needed).").Tip("B3", "Type what the students read before they answer.").Tip("B4", "Type the last day and hour to answer like 2026-12-05 17:00 (Philippine time), or leave it empty.");
 
-        var how = book.AddSheet("How to fill");
-        how.Set(1, 1, "How to fill the evaluation", XlsxStyle.Title);
-        var steps = new[]
-        {
-            "1. Sheet Evaluation: the title, the instructions for the students and the due date.",
-            "2. Sheet Questions: one question in each row. The example rows can be changed or deleted.",
-            "3. Type: choose it from the list: 5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment.",
-            "4. Area: the group the question belongs to (like Teaching or Feedback). The results are shown by area. It can be empty.",
-            $"5. Options: only for the Ranking Scale and Select-All-That-Apply: the options separated by a semicolon, from {EvaluationQuestionKinds.MinOptions} to {EvaluationQuestionKinds.MaxOptions}. Leave it empty for the other types.",
-            $"6. At most {MaxQuestions} questions. Save the file as an Excel Workbook (.xlsx), then import it: a new draft evaluation is made. Open it to choose the teachers' courses and send it.",
-        };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 120);
+        TemplateGuide.Add(book, "How to fill the evaluation",
+        [
+            new("Evaluation", "Title", "Needed", "The name of the questionnaire, like Teacher evaluation, 1st term.", TemplateGuide.TypeIt),
+            new("Evaluation", "Instructions", "Optional", "What the students read before they answer.", TemplateGuide.TypeIt),
+            new("Evaluation", "Due date", "Optional", "The last day and hour to answer (Philippine time). It can also be chosen when the evaluation is sent.", TemplateGuide.DateHow),
+            new("Questions", "Question", "Needed", "The question the students answer.", TemplateGuide.TypeIt),
+            new("Questions", "Type", "Needed", "How the students answer: 5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment.", "Choose it from the list."),
+            new("Questions", "Area", "Optional", "The group the question belongs to, like Teaching or Feedback. The results are shown by area.", TemplateGuide.TypeIt),
+            new("Questions", "Options", "Ranking and Select-All only", $"The options, from {EvaluationQuestionKinds.MinOptions} to {EvaluationQuestionKinds.MaxOptions}, like Slides; Videos; Group work. Leave it empty for the other types.", TemplateGuide.Semicolons),
+        ],
+            $"At most {MaxQuestions} questions.",
+            "A new draft evaluation is made. Open it to choose the teachers' courses and send it.");
         return book.ToBytes();
     }
 

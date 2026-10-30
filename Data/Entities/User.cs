@@ -39,6 +39,12 @@ public class User : AuditableEntity
     /// <summary>An email address (a Gmail, for example) that the person also gets their notifications at. Empty: only in the system.</summary>
     public string? NotifyEmail { get; set; }
 
+    /// <summary>
+    /// The sound of a new message or notification the person chose in Settings: "chime", "bell", "pop", "knock", "tones", "school" (the sound the administrator put) or "custom" (the file the person
+    /// added). Empty: the sound of the school when there is one, else two short tones. See <see cref="NotificationSound"/>.
+    /// </summary>
+    public string? NotificationSoundChoice { get; set; }
+
     public int FailedLoginCount { get; set; }
     public DateTime? LockoutEndUtc { get; set; }
     public DateTime? LastLoginAtUtc { get; set; }

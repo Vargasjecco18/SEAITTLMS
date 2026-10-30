@@ -34,6 +34,20 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
     }
 }
 
+internal sealed class NotificationSoundConfiguration : IEntityTypeConfiguration<NotificationSound>
+{
+    public void Configure(EntityTypeBuilder<NotificationSound> b)
+    {
+        b.Property(n => n.Name).HasMaxLength(255).IsRequired();
+        b.Property(n => n.ContentType).HasMaxLength(100).IsRequired();
+        b.Property(n => n.Data).HasColumnType("mediumblob").IsRequired();
+
+        // One sound for each person, and one for the school (no person): a deleted account takes its sound with it.
+        b.HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(n => n.UserId).IsUnique();
+    }
+}
+
 internal sealed class AnnouncementConfiguration : IEntityTypeConfiguration<Announcement>
 {
     public void Configure(EntityTypeBuilder<Announcement> b)

@@ -1,0 +1,61 @@
+@page "/student/subjects/{AssignmentId:int}/teachers"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject PeopleService People
+
+<PageTitle>Teachers · SEAITT Legazpi LMS</PageTitle>
+
+@* The teacher of one course, with the course menu at the left. A button opens the messages with them. *@
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subject is null)
+{
+    <Card>
+        <EmptyState IconName="presentation" Title="Course not found" IsPage="true">
+            <p>This is not one of your courses.</p>
+            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@($"Teachers · {subject.SubjectName}")" IconName="presentation">
+        <ButtonLink Href="@($"student/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
+    </PageHeader>
+
+    <CourseLayout PageHref="@($"student/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
+        <Card Title="@($"Teachers of {subject.SubjectName}")" IconName="presentation">
+            <p class="hint">Press <strong>Message</strong> to write to your teacher.</p>
+            <CoursePeopleList People="teachers" Singular="teacher" Plural="teachers" EmptyText="This course has no teacher yet." />
+        </Card>
+    </CourseLayout>
+}
+
+@code {
+    [Parameter] public int AssignmentId { get; set; }
+
+    private bool loaded;
+    private StudentSubject? subject;
+    private IReadOnlyList<PersonCard> teachers = [];
+
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+
+    private IReadOnlyList<CourseMenuLink> MenuLinks =>
+    [
+        new("Grades", "trending-up", "student/grades"),
+        new("Teachers", "presentation", $"student/subjects/{AssignmentId}/teachers", true),
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var me = await Me.GetAsync();
+        var studentId = await Me.GetStudentIdAsync();
+        subject = studentId is { } id ? await Modules.GetStudentSubjectAsync(id, AssignmentId) : null;
+        teachers = subject is null || me is null ? [] : await People.GetCourseTeachersAsync(me.UserId, AssignmentId);
+        loaded = true;
+    }
+}

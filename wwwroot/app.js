@@ -177,6 +177,38 @@
     });
 })();
 
+// The main menu on the pages where a lesson is read (a page asks for it with an element that has data-side-rail): it is folded to its icons so the lesson has the room.
+// The button at the top of the menu (data-rail-toggle) shows the names again, or folds them again. Leaving the page puts the menu back.
+(function () {
+    var root = document.documentElement;
+    var state = null;   // null: the page does not ask for it; "on": folded; "shown": the person showed it again
+
+    function sync() {
+        var wanted = !!document.querySelector('[data-side-rail]');
+        if (wanted) {
+            if (state === null) { state = 'on'; }
+            if (root.getAttribute('data-rail') !== state) { root.setAttribute('data-rail', state); }
+        } else if (state !== null) {
+            state = null;
+            root.removeAttribute('data-rail');
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (target instanceof Element && target.closest('[data-rail-toggle]') && state !== null) {
+            state = state === 'on' ? 'shown' : 'on';
+            sync();
+        }
+    });
+
+    new MutationObserver(sync).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-rail'] });
+    sync();
+    if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
+        window.Blazor.addEventListener('enhancednavigationend', sync);
+    }
+})();
+
 // The way the courses (Cards or List) and the calendar (Month or Week) are looked at is remembered in a cookie (ViewPreference.cs reads it), so a page that
 // is opened without a view in its address - a tab of the courses, the Courses or Calendar link of the menu - shows it as the person chose last.
 (function () {
@@ -923,9 +955,10 @@ document.addEventListener('keydown', function (event) {
     } catch (err) { /* an old browser: the message just stays in the address */ }
 })();
 
-// The sound of a new message or notification (HeaderTools calls seaitt.playNotificationSound). It is the file wwwroot/sounds/notification.mp3 when the school put
-// one there, otherwise two short tones made with the browser's own sound maker. A browser keeps sound off until the person has clicked or typed on the page once, so the
-// first click starts it. Settings has a switch (data-sound-toggle); the choice is kept on this computer.
+// The sound of a new message or notification (HeaderTools calls seaitt.playNotificationSound(choice, url, force)). The person chooses it in Settings: one of the sounds the browser makes
+// by itself (two tones, chime, bell, pop, knock), the sound of the school or a file they added (the page gives its address in url). With no choice it is the file
+// wwwroot/sounds/notification.mp3 when there is one, otherwise the two tones. A browser keeps sound off until the person has clicked or typed on the page once: when a sound can't
+// play for that reason a small button says so, and one click turns the sound on. Settings has a switch (data-sound-toggle) and a button that plays the sound (data-sound-test).
 (function () {
     var root = document.documentElement;
     var context = null;
@@ -940,20 +973,49 @@ document.addEventListener('keydown', function (event) {
         return context;
     }
 
+    function removeHint() {
+        var hint = document.getElementById('sound-hint');
+        if (hint) { hint.remove(); }
+    }
+
     function unlock() {
         var made = audio();
         if (made && made.state === 'suspended') { made.resume(); }
+        removeHint();
     }
 
     ['pointerdown', 'keydown', 'touchstart'].forEach(function (name) { document.addEventListener(name, unlock, { passive: true }); });
 
-    function tone(made, frequency, start, length) {
+    // The browser did not let the sound play (nobody has clicked on this page yet): a button to click, which is the click the browser wants.
+    function showHint() {
+        if (document.getElementById('sound-hint')) { return; }
+        var hint = document.createElement('button');
+        hint.id = 'sound-hint';
+        hint.type = 'button';
+        hint.textContent = 'Click here to hear notification sounds';
+        hint.setAttribute('style', 'position:fixed;right:1rem;bottom:1rem;z-index:300;padding:.55rem .95rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg);font:inherit;font-weight:600;cursor:pointer');
+        hint.addEventListener('click', function () { unlock(); playBuiltIn('tones', true); hint.remove(); });
+        document.body.appendChild(hint);
+        setTimeout(removeHint, 15000);
+    }
+
+    // Runs fn(context) when the browser lets the page make sound; otherwise shows the hint.
+    function withSound(fn, quiet) {
+        var made = audio();
+        if (!made) { return; }
+        if (made.state === 'running') { fn(made); return; }
+        var activated = !navigator.userActivation || navigator.userActivation.hasBeenActive;
+        if (!activated) { if (!quiet) { showHint(); } return; }
+        made.resume().then(function () { if (made.state === 'running') { fn(made); } else if (!quiet) { showHint(); } }).catch(function () { if (!quiet) { showHint(); } });
+    }
+
+    function tone(made, frequency, start, length, peak) {
         var oscillator = made.createOscillator();
         var volume = made.createGain();
         oscillator.type = 'sine';
         oscillator.frequency.value = frequency;
         volume.gain.setValueAtTime(0.0001, start);
-        volume.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+        volume.gain.exponentialRampToValueAtTime(peak || 0.25, start + 0.02);
         volume.gain.exponentialRampToValueAtTime(0.0001, start + length);
         oscillator.connect(volume);
         volume.connect(made.destination);
@@ -961,8 +1023,50 @@ document.addEventListener('keydown', function (event) {
         oscillator.stop(start + length + 0.05);
     }
 
-    // The sound of a notification is a file of the school when there is one: wwwroot/sounds/notification.mp3 (or .ogg, .wav, .m4a). The first time it is needed the page
-    // asks which of them exists (one small request) and keeps the answer. Without a file, or if the browser can't play it, the two short tones above are played instead.
+    // A short "pop": the pitch falls quickly.
+    function blip(made, from, to, start, length, peak) {
+        var oscillator = made.createOscillator();
+        var volume = made.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(from, start);
+        oscillator.frequency.exponentialRampToValueAtTime(to, start + length);
+        volume.gain.setValueAtTime(0.0001, start);
+        volume.gain.exponentialRampToValueAtTime(peak, start + 0.01);
+        volume.gain.exponentialRampToValueAtTime(0.0001, start + length);
+        oscillator.connect(volume);
+        volume.connect(made.destination);
+        oscillator.start(start);
+        oscillator.stop(start + length + 0.05);
+    }
+
+    // The sounds the browser makes by itself.
+    var builtIn = {
+        tones: function (made, now) { tone(made, 880, now, 0.28); tone(made, 1318.5, now + 0.14, 0.4); },
+        chime: function (made, now) { tone(made, 1046.5, now, 0.4, 0.22); tone(made, 1318.5, now + 0.13, 0.4, 0.22); tone(made, 1568, now + 0.26, 0.6, 0.22); },
+        bell: function (made, now) { tone(made, 1174.7, now, 1.3, 0.28); tone(made, 2349.3, now, 0.8, 0.12); tone(made, 3520, now, 0.4, 0.06); },
+        pop: function (made, now) { blip(made, 700, 160, now, 0.16, 0.5); },
+        knock: function (made, now) { blip(made, 260, 90, now, 0.14, 0.7); blip(made, 260, 90, now + 0.18, 0.14, 0.7); },
+    };
+
+    function playBuiltIn(name, quiet) {
+        var make = builtIn[name] || builtIn.tones;
+        withSound(function (made) { make(made, made.currentTime); }, quiet);
+    }
+
+    function playFile(address, quiet) {
+        try {
+            var player = new Audio(address);
+            player.volume = 0.9;
+            var started = player.play();
+            if (started && started.catch) {
+                started.catch(function (error) {
+                    if (error && error.name === 'NotAllowedError') { if (!quiet) { showHint(); } } else { playBuiltIn('tones', quiet); }
+                });
+            }
+        } catch (error) { playBuiltIn('tones', quiet); }
+    }
+
+    // The file of the school put in wwwroot/sounds (notification.mp3, .ogg, .wav or .m4a): the first time it is needed the page asks which of them exists and keeps the answer.
     var soundFile = undefined;   // undefined: not asked yet; null: there is none; otherwise the address
 
     function findSoundFile() {
@@ -981,37 +1085,38 @@ document.addEventListener('keydown', function (event) {
         }, Promise.resolve(null)).then(function (found) { soundFile = found; return found; });
     }
 
-    function playTones() {
-        var made = audio();
-        if (!made || made.state !== 'running') { return; }
-        var now = made.currentTime;
-        tone(made, 880, now, 0.28);
-        tone(made, 1318.5, now + 0.14, 0.4);
+    // choice: tones, chime, bell, pop, knock, school, custom (the last two come with the address of the file in url), or empty for the usual sound. force: play even if the switch is off (the Play button).
+    function play(choice, url, force) {
+        if (!force && root.getAttribute('data-sound') === 'off') { return; }
+        var kind = choice || '';
+        if ((kind === 'custom' || kind === 'school') && url) { playFile(new URL(url, document.baseURI).href, false); return; }
+        if (builtIn[kind]) { playBuiltIn(kind, false); return; }
+        findSoundFile().then(function (address) {
+            if (address) { playFile(address, false); } else { playBuiltIn('tones', false); }
+        });
     }
 
     window.seaitt = window.seaitt || {};
-    window.seaitt.playNotificationSound = function () {
-        if (root.getAttribute('data-sound') === 'off') { return; }
-        findSoundFile().then(function (address) {
-            if (!address) { playTones(); return; }
-            try {
-                var player = new Audio(address);
-                player.volume = 0.85;
-                var started = player.play();
-                if (started && started.catch) { started.catch(playTones); }
-            } catch (error) { playTones(); }
-        });
-    };
+    window.seaitt.playNotificationSound = play;
 
     document.addEventListener('click', function (event) {
         var target = event.target;
-        if (target instanceof Element && target.closest('[data-sound-toggle]')) {
+        if (!(target instanceof Element)) { return; }
+
+        if (target.closest('[data-sound-toggle]')) {
             var off = root.getAttribute('data-sound') !== 'off';
             if (off) { root.setAttribute('data-sound', 'off'); } else { root.removeAttribute('data-sound'); }
             try { if (off) { localStorage.setItem('seaitt-sound', 'off'); } else { localStorage.removeItem('seaitt-sound'); } } catch (error) { }
             // (Also in a cookie: the server writes it onto <html>, which is how it survives when Blazor swaps the page. See App.razor.)
             try { document.cookie = 'seaitt-sound=' + (off ? 'off' : '') + '; path=/; samesite=lax; max-age=' + (off ? 31536000 : 0); } catch (error) { }
-            if (!off) { unlock(); window.seaitt.playNotificationSound(); }
+            if (!off) { unlock(); play('', '', false); }
+            return;
+        }
+
+        var test = target.closest('[data-sound-test]');
+        if (test) {
+            unlock();
+            play(test.getAttribute('data-sound-choice') || '', test.getAttribute('data-sound-url') || '', true);
         }
     });
 })();

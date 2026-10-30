@@ -36,6 +36,9 @@ public sealed record AnalyticsReport(
     int Resolved, int Improved, IReadOnlyList<InterventionStat> Interventions,
     string PerformanceTitle, IReadOnlyList<GroupPerformance> Performance);
 
+/// <summary>One student in one course, as the analytics file lists them: the grade, how it is, the work missed and the attendance.</summary>
+public sealed record StudentResultRow(string Student, string Lrn, string Section, string Course, decimal? Grade, string Status, int Missing, int Present, int Late, int Absent, decimal? Attendance);
+
 /// <summary>
 /// The analytics page. The administrator and the guidance counselor see the whole school; a teacher sees only their own subjects. Everything is
 /// worked out from the scores and attendance that are already recorded, so there is nothing to type in.
@@ -67,6 +70,60 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
     {
         var list = metrics.ToList();
         return AttendanceService.Rate(list.Sum(m => m.Present), list.Sum(m => m.Late), list.Sum(m => m.Absent));
+    }
+
+    /// <summary>
+    /// The results behind the numbers of the page: every student of the person's scope (the whole school, or a teacher's own courses) in every course, with the grade, whether it is failing,
+    /// at risk or passing, the work missed and the attendance. They are in the Excel file of the analytics (the page only shows the totals).
+    /// </summary>
+    public async Task<IReadOnlyList<StudentResultRow>> GetStudentResultsAsync(CurrentUserInfo user, CancellationToken ct = default)
+    {
+        var schoolWide = user.Role is AppRoles.Admin or AppRoles.GuidanceCounselor;
+        if (!schoolWide && user.Role != AppRoles.Teacher)
+        {
+            return [];
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+
+        List<int>? assignmentIds = null;
+        if (!schoolWide)
+        {
+            assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.Teacher.UserId == user.UserId).Select(a => a.Id).ToListAsync(ct);
+            if (assignmentIds.Count == 0)
+            {
+                return [];
+            }
+        }
+
+        var metrics = await StudentMetrics.LoadAsync(db, now, assignmentIds, null, ct);
+        if (metrics.Count == 0)
+        {
+            return [];
+        }
+
+        var studentIds = metrics.Select(m => m.StudentId).Distinct().ToList();
+        var people = await db.Students.AsNoTracking().Where(st => studentIds.Contains(st.Id))
+            .Select(st => new { st.Id, st.Lrn, st.FirstName, st.MiddleName, st.LastName, st.NameExtension }).ToDictionaryAsync(st => st.Id, ct);
+        var assignmentList = metrics.Select(m => m.AssignmentId).Distinct().ToList();
+        var sections = await db.TeachingAssignments.AsNoTracking().Where(a => assignmentList.Contains(a.Id))
+            .Select(a => new { a.Id, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name }).ToDictionaryAsync(a => a.Id, ct);
+
+        return metrics
+            .Select(m =>
+            {
+                var who = people[m.StudentId];
+                var sec = sections[m.AssignmentId];
+                var status = m.Percent is null ? "No grade yet"
+                    : m.Percent < GradeRules.PassingPercent ? "Failing"
+                    : m.Percent < GradeRules.AtRiskUntil || m.Missing >= ReferralService.MissingForRisk ? "At risk"
+                    : "Passing";
+                return new StudentResultRow(UserDirectory.FullName(who.FirstName, who.MiddleName, who.LastName, who.NameExtension), who.Lrn, TeachingService.SectionLabel(sec.GradeLevel, sec.Strand, sec.Section),
+                    m.SubjectName, m.Percent, status, m.Missing, m.Present, m.Late, m.Absent, m.AttendanceRate);
+            })
+            .OrderBy(r => r.Section, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Student, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Course, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public async Task<AnalyticsReport?> GetAsync(CurrentUserInfo user, CancellationToken ct = default)

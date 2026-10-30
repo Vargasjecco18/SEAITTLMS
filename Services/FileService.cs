@@ -10,6 +10,13 @@ public sealed record FileRow(int Id, string Name, string ContentType, long SizeB
 /// <summary>A file somebody else shared with the person. <see cref="Via"/> is "person", "group" or "course"; <see cref="Where"/> names the group or the course.</summary>
 public sealed record SharedFileRow(int Id, string Name, string ContentType, long SizeBytes, DateTime SharedAtUtc, int OwnerUserId, string OwnerName, string Via, string? Where);
 
+/// <summary>
+/// A file the person sent to somebody (the "Uploaded files" tab is a record of what the person sent, not of what they received). <see cref="Source"/> is "locker" (a file of the locker that
+/// was shared; <see cref="Id"/> is the file), "message" (a file sent in a message), "submission" (a file a student sent with their work) or "course" (a file a teacher put in a module or in
+/// the work of a course; these three are attachments and <see cref="Id"/> is the attachment). <see cref="To"/> says to whom ("Ana Cruz, the group Math"), <see cref="Detail"/> where.
+/// </summary>
+public sealed record SentFileRow(string Source, int Id, string Name, string ContentType, long SizeBytes, DateTime AtUtc, string To, string? Detail);
+
 public sealed record LockerUsage(long UsedBytes, long LimitBytes, int Files)
 {
     public int Percent => LimitBytes <= 0 ? 0 : (int)Math.Min(100, UsedBytes * 100 / LimitBytes);
@@ -266,7 +273,7 @@ public sealed class FileService(
         var me = (await UserDirectory.LoadAsync(db, [userId], ct)).GetValueOrDefault(userId)?.Name ?? "Somebody";
         if (newUsers.Count > 0)
         {
-            await notifications.AddForManyAsync(newUsers, "file", $"{me} shared a file with you", file.Name, "resources?tab=uploaded", ct);
+            await notifications.AddForManyAsync(newUsers, "file", $"{me} shared a file with you", file.Name, "resources?tab=received", ct);
         }
 
         foreach (var groupId in newGroups)
@@ -281,7 +288,7 @@ public sealed class FileService(
             var a = await db.TeachingAssignments.AsNoTracking().Where(x => x.Id == assignmentId).Select(x => new { x.SectionId, x.SubjectId }).FirstAsync(ct);
             var students = await Roster.Enrollments(db, a.SectionId, a.SubjectId).Select(e => e.Student.UserId).Distinct().ToListAsync(ct);
             var label = options.Courses.First(c => c.AssignmentId == assignmentId).Label;
-            await notifications.AddForManyAsync(students, "file", $"{me} shared a file for {label}", file.Name, "resources?tab=uploaded", ct);
+            await notifications.AddForManyAsync(students, "file", $"{me} shared a file for {label}", file.Name, "resources?tab=received", ct);
         }
 
         var total = wantUsers.Count + wantGroups.Count + wantCourses.Count;
@@ -291,6 +298,94 @@ public sealed class FileService(
     // ----------------------------------------------------------------- files from others
 
     /// <summary>The files other people shared with the person: directly, with a group they are in, or with a course they take (or teach).</summary>
+    /// <summary>
+    /// The files the person sent to others, the newest first: the files of their locker that they shared (with people, groups or the students of a course), the files they sent in messages,
+    /// the files a student sent with their work and the files a teacher put in the modules and the work of their courses. Files that others sent to the person are not here.
+    /// </summary>
+    public async Task<IReadOnlyList<SentFileRow>> GetSentAsync(int userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = new List<SentFileRow>();
+
+        static string Join(IEnumerable<string> names)
+        {
+            var list = names.Distinct().ToList();
+            return list.Count <= 3 ? string.Join(", ", list) : $"{string.Join(", ", list.Take(3))} and {list.Count - 3} more";
+        }
+
+        // ---- the files of the locker that were shared
+        var shares = await db.SharedFiles.AsNoTracking().Where(s => s.File.OwnerUserId == userId)
+            .Select(s => new
+            {
+                s.FileId, s.File.Name, s.File.ContentType, s.File.SizeBytes, s.CreatedAtUtc, s.SharedWithUserId, s.GroupId, GroupName = s.Group != null ? s.Group.Name : null,
+                Subject = s.Assignment != null ? s.Assignment.Subject.Name : null,
+                Grade = s.Assignment != null ? (byte?)s.Assignment.Section.GradeLevel : null,
+                Strand = s.Assignment != null ? s.Assignment.Section.Strand.Code : null,
+                Section = s.Assignment != null ? s.Assignment.Section.Name : null,
+            })
+            .ToListAsync(ct);
+
+        var messageFiles = await db.Attachments.AsNoTracking().Where(a => a.MessageId != null && a.Message!.SenderUserId == userId)
+            .Select(a => new { a.Id, a.Name, a.ContentType, a.SizeBytes, a.CreatedAtUtc, a.Message!.RecipientUserId })
+            .ToListAsync(ct);
+
+        var people = await UserDirectory.LoadAsync(db,
+            shares.Where(x => x.SharedWithUserId != null).Select(x => x.SharedWithUserId!.Value).Concat(messageFiles.Select(m => m.RecipientUserId)).Distinct().ToList(), ct);
+        string Person(int id) => people.TryGetValue(id, out var p) ? p.Name : "Former member";
+
+        foreach (var g in shares.GroupBy(x => x.FileId))
+        {
+            var first = g.First();
+            var to = g.Select(x => x.SharedWithUserId is { } who ? Person(who)
+                : x.GroupId is not null ? $"the group {x.GroupName}"
+                : $"the students of {x.Subject} · {TeachingService.SectionLabel(x.Grade ?? 0, x.Strand ?? "", x.Section ?? "")}");
+            rows.Add(new SentFileRow("locker", first.FileId, first.Name, first.ContentType, first.SizeBytes, g.Max(x => x.CreatedAtUtc), Join(to), "Shared from my locker"));
+        }
+
+        rows.AddRange(messageFiles.Select(m => new SentFileRow("message", m.Id, m.Name, m.ContentType, m.SizeBytes, m.CreatedAtUtc, Person(m.RecipientUserId), "Sent in a message")));
+
+        // ---- the work of a student, and the courses of a teacher
+        var role = await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => (int?)u.RoleId).FirstOrDefaultAsync(ct);
+        if (role == AppRoles.StudentId)
+        {
+            var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == userId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+            if (studentId is not null)
+            {
+                var work = await db.Attachments.AsNoTracking().Where(a => a.SubmissionId != null && a.Submission!.StudentId == studentId)
+                    .Select(a => new
+                    {
+                        a.Id, a.Name, a.ContentType, a.SizeBytes, a.CreatedAtUtc, Subject = a.Submission!.Item.Module.Assignment.Subject.Name, Title = a.Submission.Item.Title,
+                        Teacher = a.Submission.Item.Module.Assignment.Teacher.FirstName + " " + a.Submission.Item.Module.Assignment.Teacher.LastName,
+                    })
+                    .ToListAsync(ct);
+                rows.AddRange(work.Select(f => new SentFileRow("submission", f.Id, f.Name, f.ContentType, f.SizeBytes, f.CreatedAtUtc, f.Teacher, $"{f.Subject} · {f.Title}")));
+            }
+        }
+        else if (role == AppRoles.TeacherId)
+        {
+            var teacherId = await db.Teachers.AsNoTracking().Where(t => t.UserId == userId).Select(t => (int?)t.Id).FirstOrDefaultAsync(ct);
+            if (teacherId is not null)
+            {
+                var own = await db.Attachments.AsNoTracking()
+                    .Where(a => (a.ModuleId != null && a.Module!.Assignment.TeacherId == teacherId) || (a.ItemId != null && a.Item!.Module.Assignment.TeacherId == teacherId))
+                    .Select(a => new
+                    {
+                        a.Id, a.Name, a.ContentType, a.SizeBytes, a.CreatedAtUtc,
+                        Subject = a.ModuleId != null ? a.Module!.Assignment.Subject.Name : a.Item!.Module.Assignment.Subject.Name,
+                        Title = a.ModuleId != null ? a.Module!.Title : a.Item!.Title,
+                        Grade = a.ModuleId != null ? a.Module!.Assignment.Section.GradeLevel : a.Item!.Module.Assignment.Section.GradeLevel,
+                        Strand = a.ModuleId != null ? a.Module!.Assignment.Section.Strand.Code : a.Item!.Module.Assignment.Section.Strand.Code,
+                        Section = a.ModuleId != null ? a.Module!.Assignment.Section.Name : a.Item!.Module.Assignment.Section.Name,
+                    })
+                    .ToListAsync(ct);
+                rows.AddRange(own.Select(f => new SentFileRow("course", f.Id, f.Name, f.ContentType, f.SizeBytes, f.CreatedAtUtc,
+                    $"the students of {TeachingService.SectionLabel(f.Grade, f.Strand, f.Section)}", $"{f.Subject} · {f.Title}")));
+            }
+        }
+
+        return rows.OrderByDescending(r => r.AtUtc).ThenBy(r => r.Name).ToList();
+    }
+
     public async Task<IReadOnlyList<SharedFileRow>> GetSharedWithMeAsync(int userId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);

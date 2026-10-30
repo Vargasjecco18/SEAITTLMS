@@ -82,6 +82,7 @@ public class AppDbContext : DbContext
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationSound> NotificationSounds => Set<NotificationSound>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

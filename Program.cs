@@ -67,6 +67,7 @@ builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 builder.Services.AddHostedService<EmailWorker>();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<NotificationSoundService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<TeachingService>();
@@ -140,6 +141,14 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options => options.MaximumReceiveMessageSize = 1024 * 1024);
+
+// A big file (the settings allow up to 1000 MB) comes from the browser in bigger pieces than the default 20 KB, so it does not take thousands of round trips.
+builder.Services.Configure<Microsoft.AspNetCore.Components.Forms.RemoteBrowserFileStreamOptions>(o =>
+{
+    o.MaxSegmentSize = 384 * 1024;
+    o.MaxBufferSize = 4 * 1024 * 1024;
+});
+
 
 var app = builder.Build();
 
@@ -300,14 +309,29 @@ app.MapGet("/analytics/export", async (HttpContext http, AnalyticsService report
     }
 
     var now = PhilippineTime.Now(clock).DateTime;
-    return Results.File(AnalyticsExport.ForStudents(report, user.Name, now), FileDownloads.XlsxType, AnalyticsExport.FileName("Student analytics", now));
+    var results = await reports.GetStudentResultsAsync(user, http.RequestAborted);
+    return Results.File(AnalyticsExport.ForStudents(report, user.Name, now, results), FileDownloads.XlsxType, AnalyticsExport.FileName("Student analytics", now));
 }).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.Admin + "," + AppRoles.GuidanceCounselor + "," + AppRoles.Teacher });
 
 app.MapGet("/provider/analytics/export", async (HttpContext http, ProviderService provider, TimeProvider clock) =>
 {
     var data = await provider.GetAnalyticsAsync(http.RequestAborted);
     var now = PhilippineTime.Now(clock).DateTime;
-    return Results.File(AnalyticsExport.ForProvider(data, now), FileDownloads.XlsxType, AnalyticsExport.FileName("Provider analytics", now));
+
+    // The page shows the teachers who wait the longest and the modules the students open least; the file also has every teacher and every student.
+    var teachers = await provider.ListTeachersAsync(null, http.RequestAborted);
+    var students = new List<StudentTrackRow>();
+    for (var page = 1; ; page++)
+    {
+        var chunk = await provider.ListStudentsAsync(null, page, http.RequestAborted);
+        students.AddRange(chunk.Rows);
+        if (chunk.Rows.Count == 0 || students.Count >= chunk.Total)
+        {
+            break;
+        }
+    }
+
+    return Results.File(AnalyticsExport.ForProvider(data, now, teachers, students), FileDownloads.XlsxType, AnalyticsExport.FileName("Provider analytics", now));
 }).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.AcademicProvider });
 
 app.MapGet("/coordinator/analytics/export", async (HttpContext http, EvaluationService evaluations, TimeProvider clock) =>
@@ -392,6 +416,30 @@ app.MapGet("/photos/{userId:int}", async (int userId, ProfilePhotoService photos
     http.Response.Headers.XContentTypeOptions = "nosniff";
     return Results.File(photo.Value.Data, photo.Value.ContentType);
 });
+
+// The sound of notifications: the file the person added (Settings), or the one of the school (System Settings). The address has the version (?v=), so the browser keeps the file
+// and asks again only when it changed. Only signed-in people get them (the fallback policy of the app); 404 when there is no file.
+app.MapGet("/account/notification-sound", async (HttpContext http, NotificationSoundService sounds) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var file = userId == 0 ? null : await sounds.GetFileAsync(userId, http.RequestAborted);
+    return SoundResult(http, file);
+});
+
+app.MapGet("/account/school-sound", async (HttpContext http, NotificationSoundService sounds) =>
+    SoundResult(http, await sounds.GetFileAsync(null, http.RequestAborted)));
+
+static IResult SoundResult(HttpContext http, SoundFile? file)
+{
+    if (file is null)
+    {
+        return Results.NotFound();
+    }
+
+    http.Response.Headers.CacheControl = http.Request.Query.ContainsKey("v") ? "private, max-age=31536000, immutable" : "private, no-cache";
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    return Results.File(file.Data, file.ContentType, enableRangeProcessing: true);
+}
 
 await using (var scope = app.Services.CreateAsyncScope())
 {

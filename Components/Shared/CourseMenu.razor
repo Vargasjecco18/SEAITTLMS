@@ -1,5 +1,5 @@
 @* The second menu of a course: next to the course page it lists Modules, Assignments, Quizzes and Task performances (each opens the list of that kind for the whole course) and
-   the pages that belong to the course (the gradebook and the attendance for a teacher, the grades for a student). The menu of the school stays as it is. *@
+   the pages that belong to the course (the attendance, the gradebook and the students for a teacher, the grades and the teachers for a student). The menu of the school stays as it is. *@
 <nav class="course-menu" id="@Id" aria-label="Menu of the course">
     <a class="cm-item @(Selected == "" ? "on" : "")" href="@PageHref" aria-current="@(Selected == "" ? "page" : null)" data-course-menu="modules">
         <Icon Name="layers" Size="18" /> <span class="cm-label">Modules</span> <span class="cm-count">@ModuleCount</span>
@@ -17,7 +17,7 @@
         <span class="cm-rule" aria-hidden="true"></span>
         @foreach (var link in Extra)
         {
-            <a class="cm-item cm-extra" href="@link.Href"><Icon Name="@link.Icon" Size="18" /> <span class="cm-label">@link.Label</span></a>
+            <a class="cm-item cm-extra @(link.Current ? "on" : "")" href="@link.Href" aria-current="@(link.Current ? "page" : null)"><Icon Name="@link.Icon" Size="18" /> <span class="cm-label">@link.Label</span></a>
         }
     }
 </nav>

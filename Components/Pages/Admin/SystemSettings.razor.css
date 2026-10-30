@@ -55,3 +55,55 @@
     gap: 0.6rem;
     grid-column: 1 / -1;
 }
+
+.warn {
+    margin: 0.25rem 0 0;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--warning, #d97706);
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft, #fef3c7);
+    color: var(--text);
+    font-size: 0.88rem;
+}
+
+.warn code {
+    padding: 0 0.25rem;
+    border-radius: 4px;
+    background: var(--surface-2);
+}
+
+.sound-now {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.6rem;
+}
+
+.sound-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+    margin: 0 0 0.8rem;
+}
+
+.sound-upload {
+    display: grid;
+    gap: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}

@@ -1,3 +1,4 @@
+using System.Globalization;
 using SEAITT_LMS.Components.Shared;
 using SEAITT_LMS.Data.Entities;
 
@@ -10,7 +11,7 @@ namespace SEAITT_LMS.Services;
 public static class AnalyticsExport
 {
     /// <summary>The student analytics of the administrator, the guidance counselor and a teacher.</summary>
-    public static byte[] ForStudents(AnalyticsReport r, string madeFor, DateTime nowPhilippine)
+    public static byte[] ForStudents(AnalyticsReport r, string madeFor, DateTime nowPhilippine, IReadOnlyList<StudentResultRow>? results = null)
     {
         var book = new XlsxBook();
 
@@ -98,11 +99,52 @@ public static class AnalyticsExport
         }
 
         performance.Width(1, 40).Width(2, 12).Width(3, 18).Width(4, 16).Width(5, 12);
+
+        if (results is { Count: > 0 })
+        {
+            // ---- the results behind the numbers: one line for each student, and one for each student in each course
+            var students = book.AddSheet("Students");
+            Title(students, "Every student", $"{r.ScopeText} · the average of their courses");
+            students.Row(4, ["Student", "LRN", "Section", "Courses", "Average grade (%)", "Failing courses", "At risk courses", "Work missed", "Attendance (%)"], XlsxStyle.Header);
+            line = 5;
+            foreach (var g in results.GroupBy(x => x.Lrn).OrderBy(g => g.First().Section, StringComparer.OrdinalIgnoreCase).ThenBy(g => g.First().Student, StringComparer.OrdinalIgnoreCase))
+            {
+                var graded = g.Where(x => x.Grade is not null).Select(x => x.Grade!.Value).ToList();
+                var present = g.Sum(x => x.Present);
+                var late = g.Sum(x => x.Late);
+                var absent = g.Sum(x => x.Absent);
+                students.Set(line, 1, g.First().Student).Set(line, 2, g.Key, XlsxStyle.Text).Set(line, 3, string.Join(", ", g.Select(x => x.Section).Distinct()))
+                    .Set(line, 4, g.Count(), XlsxStyle.Integer).Set(line, 5, graded.Count == 0 ? null : Math.Round(graded.Average(), 1), XlsxStyle.Decimal)
+                    .Set(line, 6, g.Count(x => x.Status == "Failing"), XlsxStyle.Integer).Set(line, 7, g.Count(x => x.Status == "At risk"), XlsxStyle.Integer)
+                    .Set(line, 8, g.Sum(x => x.Missing), XlsxStyle.Integer).Set(line, 9, AttendanceService.Rate(present, late, absent), XlsxStyle.Decimal);
+                line++;
+            }
+
+            students.Width(1, 34).Width(2, 16).Width(3, 24).Width(4, 10).Width(5, 18).Width(6, 16).Width(7, 16).Width(8, 14).Width(9, 16);
+            students.FrozenRows = 4;
+
+            var detail = book.AddSheet("Student results");
+            Title(detail, "Every student in every course", r.ScopeText);
+            detail.Row(4, ["Student", "LRN", "Section", "Course", "Grade (%)", "Result", "Work missed", "Present", "Late", "Absent", "Attendance (%)"], XlsxStyle.Header);
+            line = 5;
+            foreach (var x in results)
+            {
+                detail.Set(line, 1, x.Student).Set(line, 2, x.Lrn, XlsxStyle.Text).Set(line, 3, x.Section).Set(line, 4, x.Course).Set(line, 5, x.Grade, XlsxStyle.Decimal).Set(line, 6, x.Status)
+                    .Set(line, 7, x.Missing, XlsxStyle.Integer).Set(line, 8, x.Present, XlsxStyle.Integer).Set(line, 9, x.Late, XlsxStyle.Integer).Set(line, 10, x.Absent, XlsxStyle.Integer)
+                    .Set(line, 11, x.Attendance, XlsxStyle.Decimal);
+                line++;
+            }
+
+            detail.Width(1, 34).Width(2, 16).Width(3, 20).Width(4, 36).Width(5, 12).Width(6, 14).Width(7, 12).Width(8, 10).Width(9, 8).Width(10, 8).Width(11, 16);
+            detail.FrozenRows = 4;
+            detail.AutoFilter = (4, 11);
+        }
+
         return book.ToBytes();
     }
 
     /// <summary>The analytics of the academic provider: what was sent to the teachers and how it was used.</summary>
-    public static byte[] ForProvider(ProviderAnalytics a, DateTime nowPhilippine)
+    public static byte[] ForProvider(ProviderAnalytics a, DateTime nowPhilippine, IReadOnlyList<TeacherTrack>? teachers = null, IReadOnlyList<StudentTrackRow>? students = null)
     {
         var book = new XlsxBook();
 
@@ -196,6 +238,45 @@ public static class AnalyticsExport
         }
 
         least.Width(1, 34).Width(2, 30).Width(3, 30).Width(4, 16).Width(5, 22).Width(6, 10).Width(7, 14);
+
+        if (teachers is { Count: > 0 })
+        {
+            var everyTeacher = book.AddSheet("All teachers");
+            Title(everyTeacher, "Every teacher", "What each teacher received from the academic provider, opened and posted");
+            everyTeacher.Row(4, ["Teacher", "Courses", "Received", "Opened", "Opened (%)", "Posted", "Waiting", "Oldest waiting (days)", "Hours to open (average)", "Last opened"], XlsxStyle.Header);
+            line = 5;
+            foreach (var t in teachers)
+            {
+                everyTeacher.Set(line, 1, t.Name).Set(line, 2, t.Courses, XlsxStyle.Integer).Set(line, 3, t.Received, XlsxStyle.Integer).Set(line, 4, t.Opened, XlsxStyle.Integer)
+                    .Formula(line, 5, $"IF(C{line}=0,0,D{line}/C{line})", XlsxStyle.Percent, t.Received == 0 ? 0 : (double)t.Opened / t.Received)
+                    .Set(line, 6, t.Posted, XlsxStyle.Integer).Set(line, 7, t.Waiting, XlsxStyle.Integer).Set(line, 8, t.LongestWaitingDays, XlsxStyle.Integer)
+                    .Set(line, 9, t.AverageHoursToOpen is { } hours ? Math.Round(hours, 1) : null, XlsxStyle.Decimal)
+                    .Set(line, 10, t.LastOpenedAtUtc is { } seen ? PhilippineTime.ToLocal(seen).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) : "");
+                line++;
+            }
+
+            everyTeacher.Width(1, 34).Width(2, 10).Width(3, 10).Width(4, 10).Width(5, 12).Width(6, 10).Width(7, 10).Width(8, 20).Width(9, 22).Width(10, 18);
+            everyTeacher.FrozenRows = 4;
+        }
+
+        if (students is { Count: > 0 })
+        {
+            var everyStudent = book.AddSheet("All students");
+            Title(everyStudent, "Every student", "How much of what was posted to each student they opened");
+            everyStudent.Row(4, ["Student", "Section", "Posted to them", "Opened", "Opened (%)", "Last opened"], XlsxStyle.Header);
+            line = 5;
+            foreach (var st in students)
+            {
+                everyStudent.Set(line, 1, st.Name).Set(line, 2, st.SectionLabel).Set(line, 3, st.Available, XlsxStyle.Integer).Set(line, 4, st.Opened, XlsxStyle.Integer)
+                    .Formula(line, 5, $"IF(C{line}=0,0,D{line}/C{line})", XlsxStyle.Percent, st.Available == 0 ? 0 : (double)st.Opened / st.Available)
+                    .Set(line, 6, st.LastOpenedAtUtc is { } seen ? PhilippineTime.ToLocal(seen).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) : "");
+                line++;
+            }
+
+            everyStudent.Width(1, 34).Width(2, 22).Width(3, 16).Width(4, 10).Width(5, 12).Width(6, 18);
+            everyStudent.FrozenRows = 4;
+        }
+
         return book.ToBytes();
     }
 

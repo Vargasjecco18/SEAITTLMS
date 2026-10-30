@@ -41,9 +41,9 @@ public sealed record SystemSettingsValues
     // ---- classes: how many students one section can have (the registrar sees "32 of 40" and can't enroll more)
     public int SectionCapacity { get; init; } = 40;
 
-    // ---- files (the locker)
-    public int MaxFileMegabytes { get; init; } = 10;
-    public int LockerMegabytes { get; init; } = 100;
+    // ---- files: the biggest file a person can upload, and the size of the locker of each person
+    public int MaxFileMegabytes { get; init; } = 200;
+    public int LockerMegabytes { get; init; } = 500;
 
     public string SchoolTitle => string.IsNullOrWhiteSpace(SchoolShortName) ? "LMS" : $"{SchoolShortName} LMS";
 }
@@ -71,6 +71,23 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     public string ClosedMessage => restoring
         ? "The system is being restored from a backup. Please try again in a few minutes."
         : current.MaintenanceMessage;
+
+    /// <summary>
+    /// The biggest packet the database accepts (MySQL max_allowed_packet), in bytes: a file is saved in one piece, so a file bigger than this can't be kept. Zero when the database does not say.
+    /// The app asks for a big one when it starts (see DatabaseInitializer); this tells what the server really has.
+    /// </summary>
+    public async Task<long> GetDatabasePacketBytesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(ct);
+            return await db.Database.SqlQueryRaw<long>("SELECT CAST(@@max_allowed_packet AS SIGNED) AS `Value`").SingleAsync(ct);
+        }
+        catch (Exception)
+        {
+            return 0;
+        }
+    }
 
     public void BeginRestore() => restoring = true;
 
@@ -224,14 +241,14 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             errors.Add("A section can have from 1 to 100 students.");
         }
 
-        if (v.MaxFileMegabytes is < 1 or > 50)
+        if (v.MaxFileMegabytes is < 1 or > 1000)
         {
-            errors.Add("A file in the locker can be from 1 to 50 MB.");
+            errors.Add("The biggest file a person can upload is from 1 to 1000 MB.");
         }
 
-        if (v.LockerMegabytes is < 10 or > 5000)
+        if (v.LockerMegabytes is < 10 or > 50000)
         {
-            errors.Add("The locker of a person can hold from 10 to 5000 MB.");
+            errors.Add("The locker of a person can hold from 10 to 50000 MB.");
         }
 
         if (v.LockerMegabytes < v.MaxFileMegabytes)

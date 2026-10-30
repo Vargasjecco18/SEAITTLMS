@@ -97,12 +97,87 @@
             }
         </Card>
     }
-    else
+    else if (tab == "uploaded")
     {
         <Card>
+            <p class="hint sent-note">The files <strong>you sent</strong> to other people: the ones you shared from your locker, the ones you sent in messages@(isStudent ? " and the ones you sent with your work" : " and the ones you put in your courses"). The files other people send to you are not listed here.</p>
             <div class="filter-bar">
                 <Field For="r-from" Label="Show">
                     <select id="r-from" class="input" @bind="from">
+                        <option value="">All the files I sent</option>
+                        <option value="locker">Shared from my locker</option>
+                        <option value="message">Sent in messages</option>
+                        @if (isStudent)
+                        {
+                            <option value="submission">Sent with my work</option>
+                        }
+                        else
+                        {
+                            <option value="course">Files of my courses</option>
+                        }
+                    </select>
+                </Field>
+            </div>
+
+            @{
+                var list = sent.Where(x => from == "" || x.Source == from).ToList();
+            }
+            @if (list.Count == 0)
+            {
+                <EmptyState IconName="files" Title="You have not sent any file yet">
+                    <p>When you share a file from your locker (Share), send a file in a message@(isStudent ? ", or send a file with your work" : ", or add a file to a module") it is recorded here, with who it was sent to.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="data-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">File</th>
+                                <th scope="col">Sent to</th>
+                                <th scope="col" class="col-more">Size</th>
+                                <th scope="col" class="col-more">Sent</th>
+                                <th scope="col"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in list)
+                            {
+                                var file = f;
+                                var href = file.Source == "locker" ? $"files/{file.Id}" : $"files/a/{file.Id}";
+                                <tr class="sent-file" data-source="@file.Source">
+                                    <td><span class="file-name"><Icon Name="@IconFor(file.Name, file.ContentType)" Size="18" /> <span>@file.Name</span></span></td>
+                                    <td>
+                                        @file.To
+                                        @if (!string.IsNullOrWhiteSpace(file.Detail))
+                                        {
+                                            <span class="muted-line">@file.Detail</span>
+                                        }
+                                    </td>
+                                    <td class="col-more">@FileSize.Text(file.SizeBytes)</td>
+                                    <td class="col-more">@PhilippineTime.FormatDate(file.AtUtc)</td>
+                                    <td class="right actions">
+                                        @if (FilePreview.CanPreview(file.Name))
+                                        {
+                                            <ButtonLink Href="@href" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                        }
+                                        <ButtonLink Href="@($"{href}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    }
+    else if (tab == "received")
+    {
+        <Card>
+            <div class="filter-bar">
+                <Field For="r-from-received" Label="Show">
+                    <select id="r-from-received" class="input" @bind="fromReceived">
                         <option value="">All the files</option>
                         <option value="person">From people</option>
                         <option value="group">From my groups</option>
@@ -113,13 +188,13 @@
             </div>
 
             @{
-                var list = shared.Where(s => from == "" || s.Via == from).ToList();
-                var courseList = courseFiles.Where(_ => from is "" or "coursefile").ToList();
+                var list = shared.Where(s => fromReceived == "" || s.Via == fromReceived).ToList();
+                var courseList = courseFiles.Where(_ => fromReceived is "" or "coursefile").ToList();
             }
             @if (list.Count == 0 && courseList.Count == 0)
             {
-                <EmptyState IconName="files" Title="Nothing uploaded for you yet">
-                    <p>The files your teachers send to your courses, the files you send with your assignments, and the files a friend or a group shares with you are listed here.</p>
+                <EmptyState IconName="files" Title="Nothing received yet">
+                    <p>The files your teachers send to your courses, the files the students send with their work, and the files a friend or a group shares with you are listed here.</p>
                 </EmptyState>
             }
             else
@@ -261,6 +336,7 @@
     private string tab = "locker";
     private string search = "";
     private string from = "";
+    private string fromReceived = "";
     private bool busy;
     private bool uploading;
     private string uploadStatus = "";
@@ -269,8 +345,10 @@
     private IReadOnlyList<string> errors = [];
 
     private IReadOnlyList<FileRow> locker = [];
+    private IReadOnlyList<SentFileRow> sent = [];
     private IReadOnlyList<SharedFileRow> shared = [];
     private IReadOnlyList<CourseFileRow> courseFiles = [];
+    private bool isStudent;
     private LockerUsage usage = new(0, 0, 0);
 
     private FileRow? renameTarget;
@@ -287,15 +365,18 @@
     private IReadOnlyList<PillTabs.Tab> Tabs =>
     [
         new("locker", "Locker", "hard-drive", usage.Files),
-        new("uploaded", "Uploaded files", "files", shared.Count + courseFiles.Count),
+        new("uploaded", "Uploaded files", "files", sent.Count),
+        new("received", "Received files", "inbox", shared.Count + courseFiles.Count),
     ];
 
     protected override async Task OnInitializedAsync()
     {
-        userId = (await Me.GetAsync())?.UserId ?? 0;
-        if (TabQuery == "uploaded")
+        var me = await Me.GetAsync();
+        userId = me?.UserId ?? 0;
+        isStudent = me?.Role == AppRoles.Student;
+        if (TabQuery is "uploaded" or "received")
         {
-            tab = "uploaded";
+            tab = TabQuery;
         }
 
         await LoadAsync();
@@ -306,6 +387,7 @@
     {
         locker = await Files.GetLockerAsync(userId, search);
         usage = await Files.GetUsageAsync(userId);
+        sent = await Files.GetSentAsync(userId);
         shared = await Files.GetSharedWithMeAsync(userId);
         courseFiles = await Course.GetCourseFilesAsync(userId);
     }

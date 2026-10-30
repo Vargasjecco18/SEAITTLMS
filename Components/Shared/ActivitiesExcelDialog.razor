@@ -14,7 +14,7 @@
             <p class="xl-lead">For <strong>@ModuleTitle</strong>. One workbook has a sheet for the assignments, the quizzes (and their questions) and the task performances: every row becomes one activity of the module.</p>
             <ol class="xl-steps">
                 <li>
-                    <strong>Get the template.</strong> It has the sheets Assignments, Quizzes, Quiz Questions and Task Performances, an example and a sheet that says how to fill it.
+                    <strong>Get the template.</strong> It has the sheets Assignments, Quizzes, Quiz Questions and Task Performances, an example and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
                     <div class="xl-row">
                         <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
                         @if (Existing.Count > 0)
@@ -24,7 +24,7 @@
                     </div>
                 </li>
                 <li>
-                    <strong>Fill it.</strong> A question goes in the sheet Quiz Questions, with the title of its quiz in the column Quiz. Name the files of an activity in the column Files.
+                    <strong>Fill the yellow cells</strong> and save with Ctrl+S as .xlsx. A question goes in the sheet Quiz Questions: choose its quiz from the list in the column Quiz. Type the names of the files of an activity in the column Files.
                 </li>
                 <li>
                     <strong>Choose the workbook.</strong>

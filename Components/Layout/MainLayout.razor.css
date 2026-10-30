@@ -173,6 +173,92 @@
     }
 }
 
+/* The button that folds and shows the menu again: only on the pages that ask for the folded menu (a lesson that is read), and only where the menu is always open. */
+.rail-toggle,
+.rail-when-shown {
+    display: none;
+}
+
+@media (min-width: 960px) {
+    html[data-rail] .rail-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        align-self: stretch;
+        margin: 0 0 0.6rem;
+        padding: 0.5rem 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    html[data-rail] .rail-toggle:hover {
+        background: var(--brand-soft);
+        color: var(--brand-strong);
+    }
+
+    html[data-rail="on"] .rail-when-shown,
+    html[data-rail="shown"] .rail-when-on {
+        display: none;
+    }
+
+    html[data-rail="shown"] .rail-when-shown {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    /* Folded: only the icons are left, in a narrow column, and the page takes the room. */
+    html[data-rail="on"] {
+        --sidebar-w: 4.75rem;
+    }
+
+    .shell {
+        transition: grid-template-columns 0.2s ease;
+    }
+
+    html[data-rail="on"] .sidebar {
+        padding-right: 0.5rem;
+        padding-left: 0.5rem;
+    }
+
+    html[data-rail="on"] .sidebar ::deep .link span,
+    html[data-rail="on"] .sidebar ::deep .help span,
+    html[data-rail="on"] .sidebar ::deep .heading,
+    html[data-rail="on"] .sidebar ::deep .who .text {
+        display: none;
+    }
+
+    html[data-rail="on"] .sidebar ::deep .link,
+    html[data-rail="on"] .sidebar ::deep .help {
+        justify-content: center;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    html[data-rail="on"] .sidebar ::deep .card {
+        flex-direction: column;
+        padding: 0.4rem 0;
+    }
+
+    html[data-rail="on"] .sidebar ::deep .who {
+        flex: none;
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .shell {
+        transition: none;
+    }
+}
+
 /* Blazor turns this on (display: block) when a live page fails. */
 #blazor-error-ui {
     display: none;

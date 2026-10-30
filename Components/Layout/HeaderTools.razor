@@ -13,6 +13,7 @@
 @inject PopupGate Gate
 @inject IJSRuntime JS
 @inject AuthService Auth
+@inject NotificationSoundService Sounds
 
 @* The buttons at the right of the header: messages, notifications and settings. It is a live component, so the
    numbers on the buttons keep up with what happens while a page is open. *@
@@ -203,6 +204,42 @@
                         <span class="track" aria-hidden="true"><span class="thumb"></span></span>
                     </button>
                 </section>
+
+                <section class="settings-section" aria-labelledby="set-sound-title">
+                    <h3 class="group-title" id="set-sound-title">Notification sound</h3>
+                    <p class="hint">The sound you hear when a new message or a notification arrives. Choose one, or add your own file. The switch <strong>Sound</strong> above turns it on and off.</p>
+                    <Field For="set-sound" Label="Sound">
+                        <select id="set-sound" value="@(sound.Choice == "" ? (sound.HasSchool ? "school" : "tones") : sound.Choice)" @onchange="ChooseSoundAsync">
+                            @foreach (var choice in new[] { "tones", "chime", "bell", "pop", "knock" })
+                            {
+                                <option value="@choice">@NotificationSoundService.DisplayChoice(choice)</option>
+                            }
+                            @if (sound.HasSchool)
+                            {
+                                <option value="school">@NotificationSoundService.DisplayChoice("school") (@sound.SchoolName)</option>
+                            }
+                            @if (sound.HasOwn)
+                            {
+                                <option value="custom">@NotificationSoundService.DisplayChoice("custom") (@sound.OwnName)</option>
+                            }
+                        </select>
+                    </Field>
+                    <div class="sound-actions">
+                        <button type="button" class="link-button" data-sound-test data-sound-choice="@SoundChoiceForPlay" data-sound-url="@SoundUrl">Play it</button>
+                        @if (sound.HasOwn)
+                        {
+                            <button type="button" class="link-button" disabled="@soundBusy" @onclick="RemoveOwnSoundAsync">Remove my own sound</button>
+                        }
+                    </div>
+                    <label class="sound-upload">
+                        <span>Add your own sound: an .mp3, .ogg, .wav or .m4a file of up to @(NotificationSoundService.MaxBytes / (1024 * 1024)) MB</span>
+                        <InputFile id="set-sound-file" OnChange="SoundFileChosenAsync" accept=".mp3,.ogg,.oga,.wav,.m4a,.aac,audio/*" disabled="@soundBusy" aria-label="Choose a sound file" />
+                    </label>
+                    @if (soundMessage is not null)
+                    {
+                        <p class="photo-message @(soundFailed ? "failed" : "")" role="status">@soundMessage</p>
+                    }
+                </section>
             </div>
         }
     </Modal>
@@ -232,6 +269,11 @@
     private bool photoBusy;
     private bool photoFailed;
     private string? photoMessage;
+
+    private SoundInfo sound = new("", null, null, 0, 0);
+    private bool soundBusy;
+    private bool soundFailed;
+    private string? soundMessage;
 
     private bool settingsOpen;
     private string notifyEmail = "";
@@ -266,6 +308,7 @@
         Launcher.Requested += OnMessageRequested;
         Gate.Changed += OnGateChanged;
 
+        sound = await Sounds.GetInfoAsync(user.UserId);
         await RefreshCountsAsync();
         await LoadNotificationsAsync();
         await LoadGuidanceAsync();
@@ -310,7 +353,7 @@
             // Something new came in while the page was open: a short sound (wwwroot/app.js; the person can turn it off in Settings).
             if (unreadMessages > knownMessages || unreadNotifications > knownNotifications)
             {
-                await JS.InvokeVoidAsync("seaitt.playNotificationSound");
+                await JS.InvokeVoidAsync("seaitt.playNotificationSound", SoundChoiceForPlay, SoundUrl);
             }
         }
         catch (Exception ex) when (ex is ObjectDisposedException or JSException or JSDisconnectedException or InvalidOperationException)
@@ -481,9 +524,115 @@
         {
             savedEmail = await Notifications.GetNotifyEmailAsync(user.UserId);
             notifyEmail = savedEmail ?? "";
+            sound = await Sounds.GetInfoAsync(user.UserId);
+            soundMessage = null;
         }
 
         settingsOpen = true;
+    }
+
+    /// <summary>What the browser plays: the choice ("" is the sound of the school when there is one, else two tones) and the address of the file when there is one.</summary>
+    private string SoundChoiceForPlay => sound.Choice != "" ? sound.Choice : sound.HasSchool ? "school" : "";
+
+    private string SoundUrl => SoundChoiceForPlay switch
+    {
+        "custom" => $"account/notification-sound?v={sound.OwnVersion}",
+        "school" => $"account/school-sound?v={sound.SchoolVersion}",
+        _ => "",
+    };
+
+    private async Task ChooseSoundAsync(ChangeEventArgs e)
+    {
+        if (user is null || soundBusy)
+        {
+            return;
+        }
+
+        soundBusy = true;
+        try
+        {
+            var result = await Sounds.SetChoiceAsync(user.UserId, e.Value?.ToString());
+            soundFailed = !result.Succeeded;
+            soundMessage = result.Succeeded ? "Saved. This is the sound you hear now." : string.Join(" ", result.Errors);
+            sound = await Sounds.GetInfoAsync(user.UserId);
+            if (result.Succeeded)
+            {
+                await JS.InvokeVoidAsync("seaitt.playNotificationSound", SoundChoiceForPlay, SoundUrl, true);
+            }
+        }
+        finally
+        {
+            soundBusy = false;
+        }
+    }
+
+    private async Task SoundFileChosenAsync(InputFileChangeEventArgs e)
+    {
+        if (user is null || soundBusy)
+        {
+            return;
+        }
+
+        soundBusy = true;
+        try
+        {
+            var file = e.File;
+            if (NotificationSoundService.TypeOf(file.Name) is null)
+            {
+                soundFailed = true;
+                soundMessage = "Choose a sound file: .mp3, .ogg, .wav, .m4a or .aac.";
+                return;
+            }
+
+            if (file.Size > NotificationSoundService.MaxBytes)
+            {
+                soundFailed = true;
+                soundMessage = $"The sound is bigger than {NotificationSoundService.MaxBytes / (1024 * 1024)} MB. A sound of a second or two is enough.";
+                return;
+            }
+
+            await using var stream = file.OpenReadStream(NotificationSoundService.MaxBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            var result = await Sounds.SaveOwnAsync(user.UserId, file.Name, buffer.ToArray());
+            soundFailed = !result.Succeeded;
+            soundMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            sound = await Sounds.GetInfoAsync(user.UserId);
+            if (result.Succeeded)
+            {
+                await JS.InvokeVoidAsync("seaitt.playNotificationSound", SoundChoiceForPlay, SoundUrl, true);
+            }
+        }
+        catch (IOException)
+        {
+            soundFailed = true;
+            soundMessage = "The file could not be read. Try again.";
+        }
+        finally
+        {
+            soundBusy = false;
+        }
+    }
+
+    private async Task RemoveOwnSoundAsync()
+    {
+        if (user is null || soundBusy)
+        {
+            return;
+        }
+
+        soundBusy = true;
+        try
+        {
+            var result = await Sounds.RemoveOwnAsync(user.UserId);
+            soundFailed = !result.Succeeded;
+            soundMessage = result.Message;
+            sound = await Sounds.GetInfoAsync(user.UserId);
+        }
+        finally
+        {
+            soundBusy = false;
+        }
     }
 
     private async Task SaveEmailAsync()

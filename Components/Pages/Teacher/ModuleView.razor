@@ -30,9 +30,9 @@ else
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
-    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
+    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks" CollapseMenu="true">
         <ChildContent>
-            <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" />
+            <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" />
         </ChildContent>
         <Aside>
             <Card Title="Edit module" IconName="pencil">
@@ -76,8 +76,9 @@ else
 
     private IReadOnlyList<CourseMenuLink> MenuLinks =>
     [
-        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
         new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
+        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
+        new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students"),
     ];
 
     protected override async Task OnParametersSetAsync()

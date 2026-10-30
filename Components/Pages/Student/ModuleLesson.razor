@@ -27,7 +27,7 @@ else
     </PageHeader>
 
     @* The menu of the course at the left (so the student can go to the modules, the assignments ... without going back), and the lesson with its files shown right here. *@
-    <CourseLayout PageHref="@($"student/subjects/{module.AssignmentId}")" ModuleCount="@(subject?.Modules.Count(m => !m.IsSyllabus) ?? 0)" Counts="KindCounts" Extra="MenuLinks">
+    <CourseLayout PageHref="@($"student/subjects/{module.AssignmentId}")" ModuleCount="@(subject?.Modules.Count(m => !m.IsSyllabus) ?? 0)" Counts="KindCounts" Extra="MenuLinks" CollapseMenu="true">
         <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" />
     </CourseLayout>
 }
@@ -37,7 +37,7 @@ else
 
     private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
 
-    private static readonly IReadOnlyList<CourseMenuLink> MenuLinks = [new("Grades", "trending-up", "student/grades")];
+    private IReadOnlyList<CourseMenuLink> MenuLinks => [new("Grades", "trending-up", "student/grades"), new("Teachers", "presentation", $"student/subjects/{module?.AssignmentId ?? 0}/teachers")];
 
     private bool loaded;
     private StudentModule? module;

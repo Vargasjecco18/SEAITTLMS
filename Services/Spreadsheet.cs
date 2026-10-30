@@ -54,7 +54,7 @@ public sealed class XlsxSheet(string name)
 {
     private readonly SortedDictionary<int, SortedDictionary<int, (object? Value, bool IsFormula, XlsxStyle Style, double? Cached)>> cells = [];
     private readonly Dictionary<int, double> widths = [];
-    private readonly List<(string Range, string[] Items, string? Formula)> lists = [];
+    private readonly List<Validation> lists = [];
     private readonly List<string> merges = [];
 
     public string Name { get; } = name;
@@ -110,17 +110,36 @@ public sealed class XlsxSheet(string name)
         return this;
     }
 
-    /// <summary>The cells of the range (like <c>G2:G500</c>) get a drop-down list of these choices.</summary>
-    public XlsxSheet ListChoice(string range, params string[] items)
+    /// <summary>One rule of the cells of a range: a drop-down list, or a number between two limits, with the tip Excel shows when the cell is selected.</summary>
+    private sealed record Validation(string Range, string Type, string[] Items, string? Formula, decimal? Min, decimal? Max, string? Tip);
+
+    /// <summary>The cells of the range (like <c>G2:G500</c>) get a drop-down list of these choices. <paramref name="tip"/> is what Excel shows when a cell is selected.</summary>
+    public XlsxSheet ListChoice(string range, string[] items, string? tip = null)
     {
-        lists.Add((range, items, null));
+        lists.Add(new Validation(range, "list", items, null, null, null, tip ?? "Choose it from the list (press the arrow at the right of the cell)."));
         return this;
     }
 
+    public XlsxSheet ListChoice(string range, params string[] items) => ListChoice(range, items, null);
+
     /// <summary>The cells of the range get a drop-down list made from other cells, like <c>Lists!$B$2:$B$30</c> (for choices too long to write in the rule).</summary>
-    public XlsxSheet ListFrom(string range, string cells)
+    public XlsxSheet ListFrom(string range, string cells, string? tip = null)
     {
-        lists.Add((range, [], cells));
+        lists.Add(new Validation(range, "list", [], cells, null, null, tip ?? "Choose it from the list (press the arrow at the right of the cell)."));
+        return this;
+    }
+
+    /// <summary>The cells of the range only take a number from <paramref name="min"/> to <paramref name="max"/> (Excel refuses another value and shows the tip when a cell is selected).</summary>
+    public XlsxSheet Number(string range, decimal min, decimal max, string? tip = null)
+    {
+        lists.Add(new Validation(range, "decimal", [], null, min, max, tip ?? $"Type a number from {min.ToString(CultureInfo.InvariantCulture)} to {max.ToString(CultureInfo.InvariantCulture)}."));
+        return this;
+    }
+
+    /// <summary>A tip that Excel shows when a cell of the range is selected (for the cells that have no list: what to type).</summary>
+    public XlsxSheet Tip(string range, string tip)
+    {
+        lists.Add(new Validation(range, "none", [], null, null, null, tip));
         return this;
     }
 
@@ -229,14 +248,41 @@ public sealed class XlsxSheet(string name)
         {
             xml.WriteStartElement("dataValidations");
             xml.WriteAttributeString("count", lists.Count.ToString(CultureInfo.InvariantCulture));
-            foreach (var (range, items, formula) in lists)
+            foreach (var rule in lists)
             {
                 xml.WriteStartElement("dataValidation");
-                xml.WriteAttributeString("type", "list");
+                if (rule.Type != "none")
+                {
+                    xml.WriteAttributeString("type", rule.Type);
+                    if (rule.Type == "decimal")
+                    {
+                        xml.WriteAttributeString("operator", "between");
+                    }
+
+                    xml.WriteAttributeString("showErrorMessage", "1");
+                    xml.WriteAttributeString("errorTitle", "Not allowed");
+                    xml.WriteAttributeString("error", rule.Type == "list" ? "Choose one of the choices of the list." : rule.Tip ?? "This value is not allowed.");
+                }
+
                 xml.WriteAttributeString("allowBlank", "1");
-                xml.WriteAttributeString("showErrorMessage", "1");
-                xml.WriteAttributeString("sqref", range);
-                xml.WriteElementString("formula1", formula ?? "\"" + string.Join(",", items).Replace("\"", "\"\"") + "\"");
+                if (!string.IsNullOrEmpty(rule.Tip))
+                {
+                    xml.WriteAttributeString("showInputMessage", "1");
+                    xml.WriteAttributeString("promptTitle", "What to put here");
+                    xml.WriteAttributeString("prompt", rule.Tip.Length > 250 ? rule.Tip[..250] : rule.Tip);
+                }
+
+                xml.WriteAttributeString("sqref", rule.Range);
+                if (rule.Type == "list")
+                {
+                    xml.WriteElementString("formula1", rule.Formula ?? "\"" + string.Join(",", rule.Items).Replace("\"", "\"\"") + "\"");
+                }
+                else if (rule.Type == "decimal")
+                {
+                    xml.WriteElementString("formula1", rule.Min!.Value.ToString(CultureInfo.InvariantCulture));
+                    xml.WriteElementString("formula2", rule.Max!.Value.ToString(CultureInfo.InvariantCulture));
+                }
+
                 xml.WriteEndElement();
             }
 

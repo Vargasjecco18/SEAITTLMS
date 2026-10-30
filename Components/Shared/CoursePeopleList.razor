@@ -1,0 +1,45 @@
+@implements IDisposable
+@inject PresenceService Presence
+@inject MessageLauncher Launcher
+
+@* The people of a course that the person can write to (the students of a teacher's course, or the teacher of a student's course): a picture, the name, a green dot when they are
+   online and a button that opens the messages with them. The page that shows it is a live page (InteractiveServer), so the button works. *@
+@if (People.Count == 0)
+{
+    <p class="quiet">@EmptyText</p>
+}
+else
+{
+    <p class="count"><span class="dot"></span> @People.Count(p => Presence.IsOnline(p.UserId)) online · @People.Count @(People.Count == 1 ? Singular : Plural)</p>
+    <ul class="list">
+        @foreach (var person in People)
+        {
+            var p = person;
+            <li>
+                <PersonLine UserId="p.UserId" Name="@p.Name" Detail="@p.Detail" Online="@Presence.IsOnline(p.UserId)" Size="38">
+                    <button type="button" class="write" title="@($"Write to {p.Name}")" aria-label="@($"Write to {p.Name}")" @onclick="() => Launcher.Open(p.UserId)">
+                        <Icon Name="message-square" Size="16" /> <span>Message</span>
+                    </button>
+                </PersonLine>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<PersonCard> People { get; set; } = [];
+
+    /// <summary>What is said when the list is empty.</summary>
+    [Parameter] public string EmptyText { get; set; } = "Nobody to show here yet.";
+
+    [Parameter] public string Singular { get; set; } = "person";
+
+    [Parameter] public string Plural { get; set; } = "people";
+
+    private Timer? timer;
+
+    protected override void OnInitialized() =>
+        timer = new Timer(_ => _ = InvokeAsync(() => { try { StateHasChanged(); } catch (ObjectDisposedException) { } }), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+
+    public void Dispose() => timer?.Dispose();
+}

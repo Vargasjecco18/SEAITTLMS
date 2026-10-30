@@ -64,23 +64,21 @@ public static class ModuleSheets
         }
 
         sheet.FrozenRows = 1;
+        var lastModule = Math.Max(TemplateRows + 1, modules.Count + 2);
+        sheet.Tip($"A2:A{lastModule}", "Type the title of the module (needed).").Tip($"B2:B{lastModule}", "Type one line that says what the module is about.")
+            .Tip($"C2:C{lastModule}", "Type the text of the lesson.").Tip($"D2:D{lastModule}", "Type or paste an address that starts with https://")
+            .Tip($"E2:E{lastModule}", "Type the names of the files with a semicolon between them, like lesson.pdf; worksheet.docx. Choose the same files in the import box.");
 
-        var how = book.AddSheet("How to fill");
-        how.Set(1, 1, "How to fill the Modules sheet", XlsxStyle.Title);
-        var steps = new[]
-        {
-            "1. Type one module in each row. The example row can be changed or deleted.",
-            "2. Title is needed. The short description is what the teachers see in the list, the lesson is the text of the module.",
-            "3. Link (optional): a file or video the lesson uses; it starts with https://.",
-            "4. Files: the names of the files of the module, separated by a semicolon, like lesson.pdf; worksheet.docx. In the import box you choose these files from your computer, and each one is attached to the module that names it.",
-            $"5. At most {MaxRows} modules. Save the file as an Excel Workbook (.xlsx), then import it with the Template and import button. Add the assignments, quizzes and task performances of each module afterwards with Add Activities.",
-        };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 120);
+        TemplateGuide.Add(book, "How to fill the Modules sheet",
+        [
+            new("Modules", "Title", "Needed", "The name of the module, like Module 1: Introduction.", TemplateGuide.TypeIt),
+            new("Modules", "Short description", "Optional", "One line the teachers see in the list of modules.", TemplateGuide.TypeIt),
+            new("Modules", "Lesson", "Optional", "The text of the lesson the students read.", TemplateGuide.TypeIt),
+            new("Modules", "Link", "Optional", "A page or a video the lesson uses. It starts with https://", "Type or paste the address."),
+            new("Modules", "Files", "Optional", "The names of the files of the module, like lesson.pdf; worksheet.docx.", "Type the names with a semicolon (;) between them. In the import box, choose the same files."),
+        ],
+            $"At most {MaxRows} modules.",
+            "Add the assignments, quizzes and task performances of each module afterwards with Add Activities.");
         return book.ToBytes();
     }
 

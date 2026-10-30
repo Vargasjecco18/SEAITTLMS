@@ -39,6 +39,21 @@ public class Notification : AuditableEntity
     public bool IsRead { get; set; }
 }
 
+/// <summary>
+/// A sound file for the notifications: the one a person added in Settings (<see cref="UserId"/> is theirs), or the one of the school that the administrator put in System Settings
+/// (<see cref="UserId"/> empty; there is at most one of each). The bytes are in the database so a backup has them.
+/// </summary>
+public class NotificationSound : AuditableEntity
+{
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+
+    public string Name { get; set; } = "";
+    public string ContentType { get; set; } = "audio/mpeg";
+    public long SizeBytes { get; set; }
+    public byte[] Data { get; set; } = [];
+}
+
 public static class AnnouncementAudiences
 {
     public const string Everyone = "Everyone";

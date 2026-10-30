@@ -419,8 +419,9 @@ else
 
     private IReadOnlyList<CourseMenuLink> MenuLinks =>
     [
-        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
         new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
+        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
+        new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students"),
     ];
 
     private int teacherId;

@@ -55,26 +55,20 @@ public static class AnnouncementSheets
         }
 
         sheet.FrozenRows = 1;
-        sheet.ListChoice($"C2:C{last}", AnnouncementCategories.All.Select(AnnouncementCategories.Display).ToArray());
-        sheet.ListChoice($"D2:D{last}", AnnouncementAudiences.All);
+        sheet.ListChoice($"C2:C{last}", AnnouncementCategories.All.Select(AnnouncementCategories.Display).ToArray(), "Choose what the announcement is about from the list.");
+        sheet.ListChoice($"D2:D{last}", AnnouncementAudiences.All, "Choose who reads it from the list (Everyone, Students or Teachers).");
+        sheet.Tip($"A2:A{last}", "Type the title (needed).").Tip($"B2:B{last}", "Type the message people read (needed).").Tip($"E2:E{last}", "Type the last day it is shown, like 2026-11-19. Leave it empty to show it until you delete it.");
 
-        var how = book.AddSheet("How to fill");
-        how.Set(1, 1, "How to fill the Announcements sheet", XlsxStyle.Title);
-        var steps = new[]
-        {
-            "1. Type one announcement in each row. The example row can be changed or deleted.",
-            $"2. Title is needed (up to {AnnouncementService.MaxTitleLength} characters). Message is what people read (up to {AnnouncementService.MaxBodyLength} characters).",
-            "3. About: Exam, Holiday, Semester break, Teachers' meeting or Other (choose it from the list; Other if you leave it empty). A teachers' meeting is for the teachers only.",
-            "4. For: Everyone, Students or Teachers (Everyone if you leave it empty).",
-            "5. Last day to show: the day, like 2026-11-19, after which it is not shown any more. Leave it empty to show it until you delete it.",
-            $"6. At most {MaxRows} rows. Save the file as an Excel Workbook (.xlsx), then import it. The people it is for are told, as when you write one by hand.",
-        };
-        for (var i = 0; i < steps.Length; i++)
-        {
-            how.Set(3 + i, 1, steps[i], XlsxStyle.Wrap);
-        }
-
-        how.Width(1, 110);
+        TemplateGuide.Add(book, "How to fill the Announcements sheet",
+        [
+            new("Announcements", "Title", "Needed", $"The title people see (up to {AnnouncementService.MaxTitleLength} characters).", TemplateGuide.TypeIt),
+            new("Announcements", "Message", "Needed", $"What people read (up to {AnnouncementService.MaxBodyLength} characters).", TemplateGuide.TypeIt),
+            new("Announcements", "About", "Optional", "Exam, Holiday, Semester break, Teachers' meeting or Other. Empty: Other. A teachers' meeting is for the teachers only.", "Choose it from the list."),
+            new("Announcements", "For", "Optional", "Everyone, Students or Teachers. Empty: Everyone.", "Choose it from the list."),
+            new("Announcements", "Last day to show", "Optional", "The day after which it is not shown any more. Empty: it is shown until you delete it.", "Type it like 2026-11-19 (year-month-day)."),
+        ],
+            $"At most {MaxRows} rows.",
+            "The people each one is for are told, as when you write one by hand.");
         return book.ToBytes();
     }
 

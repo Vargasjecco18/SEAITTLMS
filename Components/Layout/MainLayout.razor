@@ -25,6 +25,11 @@
     <label for="nav-toggle" class="backdrop" aria-hidden="true"></label>
 
     <aside class="sidebar">
+        @* On the pages where a lesson is read the menu folds to its icons (wwwroot/app.js, data-side-rail); this button shows it again, or folds it again. It is only seen there. *@
+        <button type="button" class="rail-toggle" data-rail-toggle aria-label="Show or hide the names of the menu" title="Show or hide the names of the menu">
+            <span class="rail-when-on"><Icon Name="panel-left-open" Size="18" /></span>
+            <span class="rail-when-shown"><Icon Name="panel-left-close" Size="18" /> <span>Hide the names</span></span>
+        </button>
         <div class="sidebar-menu">
             <NavMenu />
         </div>

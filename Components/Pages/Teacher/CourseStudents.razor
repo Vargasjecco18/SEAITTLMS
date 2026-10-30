@@ -1,0 +1,62 @@
+@page "/teacher/subjects/{AssignmentId:int}/students"
+@attribute [Authorize(Roles = AppRoles.Teacher)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject PeopleService People
+
+<PageTitle>Students · SEAITT Legazpi LMS</PageTitle>
+
+@* The students of one course, with the course menu at the left. A button opens the messages with a student. *@
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subject is null)
+{
+    <Card>
+        <EmptyState IconName="users-round" Title="Course not found" IsPage="true">
+            <p>This is not one of your courses.</p>
+            <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@($"Students · {subject.SubjectName}")" IconName="users-round">
+        <ButtonLink Href="@($"teacher/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
+    </PageHeader>
+
+    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
+        <Card Title="@($"Students of {subject.SectionLabel}")" IconName="users-round">
+            <p class="hint">Press <strong>Message</strong> to write to a student.</p>
+            <CoursePeopleList People="students" Singular="student" Plural="students" EmptyText="No student is enrolled in this course yet." />
+        </Card>
+    </CourseLayout>
+}
+
+@code {
+    [Parameter] public int AssignmentId { get; set; }
+
+    private bool loaded;
+    private TeacherSubject? subject;
+    private IReadOnlyList<PersonCard> students = [];
+
+    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
+
+    private IReadOnlyList<CourseMenuLink> MenuLinks =>
+    [
+        new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
+        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
+        new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students", true),
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var me = await Me.GetAsync();
+        var teacherId = await Me.GetTeacherIdAsync() ?? 0;
+        subject = teacherId == 0 ? null : await Modules.GetTeacherSubjectAsync(teacherId, AssignmentId);
+        students = subject is null || me is null ? [] : await People.GetCourseStudentsAsync(me.UserId, AssignmentId);
+        loaded = true;
+    }
+}

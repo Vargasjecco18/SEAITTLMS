@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using SEAITT_LMS.Auth;
 using SEAITT_LMS.Data.Entities;
 
@@ -25,6 +26,7 @@ public sealed class DatabaseInitializer(
                 await db.Database.MigrateAsync(ct);
             }
 
+            await AllowBigFilesAsync(ct);
             await EnsureAdministratorAsync(ct);
         }
         catch (Exception ex)
@@ -40,6 +42,39 @@ public sealed class DatabaseInitializer(
                 ex.GetBaseException().Message);
             logger.LogDebug(ex, "Database setup failed (details)");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// A file is saved in the database in one piece, so MySQL must accept a packet as big as the biggest file the settings allow (max_allowed_packet, 64 MB at first). The app asks the
+    /// server for 1 GB while it runs (until MySQL is restarted); when the database user is not allowed to, a warning says how to put it in my.ini. Database:RaisePacketLimit turns this off.
+    /// </summary>
+    private async Task AllowBigFilesAsync(CancellationToken ct)
+    {
+        if (!configuration.GetValue("Database:RaisePacketLimit", true))
+        {
+            return;
+        }
+
+        const long wanted = 1024L * 1024 * 1024;
+        try
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(ct);
+            var now = await db.Database.SqlQueryRaw<long>("SELECT CAST(@@global.max_allowed_packet AS SIGNED) AS `Value`").SingleAsync(ct);
+            if (now >= wanted)
+            {
+                return;
+            }
+
+            await db.Database.ExecuteSqlRawAsync("SET GLOBAL max_allowed_packet = 1073741824", ct);
+            MySqlConnection.ClearAllPools();   // the connections that are open keep the old size; the new ones get the new one
+            logger.LogInformation("MySQL max_allowed_packet was {Old} MB; it is now 1024 MB, so files of the size the settings allow can be saved.", now / (1024 * 1024));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                "Could not raise max_allowed_packet ({Reason}). A file bigger than the packet MySQL accepts can't be saved. To allow big files, put  max_allowed_packet=1G  under [mysqld] in " +
+                "the my.ini (or my.cnf) of MySQL and restart MySQL.", ex.GetBaseException().Message);
         }
     }
 
