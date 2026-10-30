@@ -100,3 +100,17 @@ h2 {
 .dialog-body {
     padding: 1.25rem;
 }
+
+/* A phone: the box uses nearly the whole screen, and the X is easy to hit. */
+@media (max-width: 560px) {
+    .backdrop {
+        padding: 0.5rem;
+    }
+}
+
+@media (pointer: coarse) {
+    .close {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+}

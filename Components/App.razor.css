@@ -304,6 +304,16 @@ html ::deep .data-wrap {
     overflow-x: auto;
 }
 
+/* A table that is wider than the screen scrolls sideways inside its box; a soft shadow at the edge that has more behind it says so (it goes when the end is reached). */
+html ::deep .data-wrap,
+html ::deep .table-wrap {
+    background:
+        linear-gradient(to right, var(--surface) 30%, transparent) left center / 2rem 100% no-repeat local,
+        linear-gradient(to left, var(--surface) 30%, transparent) right center / 2rem 100% no-repeat local,
+        radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.18), transparent) left center / 0.8rem 100% no-repeat scroll,
+        radial-gradient(farthest-side at 100% 50%, rgba(15, 23, 42, 0.18), transparent) right center / 0.8rem 100% no-repeat scroll;
+}
+
 html ::deep .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -364,6 +374,8 @@ html ::deep .dialog-note {
 
 html ::deep .sr-only {
     position: absolute;
+    top: 0;
+    left: 0;   /* a hidden text inside a table that scrolls would otherwise sit at its column, past the edge of the page, and make the page scroll sideways */
     width: 1px;
     height: 1px;
     overflow: hidden;

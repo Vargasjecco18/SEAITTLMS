@@ -373,6 +373,61 @@
     }
 }
 
+/* On a phone a course of the class schedule is a small card: its name, then the schedule and the days, then the two hours, each box with its words above it. */
+@media (max-width: 700px) {
+    .setup ::deep .schedule-table,
+    .setup ::deep .schedule-table tbody {
+        display: block;
+    }
+
+    .setup ::deep .schedule-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .setup ::deep .schedule-table tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem 0.75rem;
+        padding: 0.9rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .setup ::deep .schedule-table td {
+        display: block;
+        padding: 0;
+        border: 0;
+    }
+
+    .setup ::deep .schedule-table td:first-child {
+        grid-column: 1 / -1;
+    }
+
+    .setup ::deep .schedule-table td:nth-child(n + 2)::before {
+        display: block;
+        margin-bottom: 0.2rem;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .setup ::deep .schedule-table td:nth-child(2)::before { content: "Term"; }
+    .setup ::deep .schedule-table td:nth-child(3)::before { content: "Teacher"; }
+    .setup ::deep .schedule-table td:nth-child(4)::before { content: "Schedule"; }
+    .setup ::deep .schedule-table td:nth-child(5)::before { content: "Days"; }
+    .setup ::deep .schedule-table td:nth-child(6)::before { content: "Starts"; }
+    .setup ::deep .schedule-table td:nth-child(7)::before { content: "Ends"; }
+
+    .setup ::deep .schedule-table select,
+    .setup ::deep .schedule-table input[type="time"] {
+        min-width: 0;
+        min-height: 2.5rem;
+    }
+}
+
 /* The section list says the section, its schedule, its school year and how many courses are set: it needs room. */
 .setup ::deep .filter-bar > .field.schedule-section {
     flex: 1 1 26rem;

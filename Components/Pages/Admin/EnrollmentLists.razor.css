@@ -311,3 +311,7 @@
 .setup ::deep .table-in-card {
     margin: 0 -1.25rem;
 }
+
+.setup ::deep .table-in-card .table-wrap {
+    margin: 0;
+}

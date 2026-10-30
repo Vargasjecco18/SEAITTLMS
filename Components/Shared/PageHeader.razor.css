@@ -35,7 +35,26 @@ h1:focus {
 
 .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
+    max-width: 100%;
+}
+
+@media (max-width: 640px) {
+    .page-header {
+        gap: 0.75rem;
+        margin-bottom: 1.1rem;
+    }
+
+    /* The buttons of a page share the width of the phone, each one at least as wide as its words. */
+    .actions {
+        width: 100%;
+    }
+
+    .actions ::deep .button {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 520px) {

@@ -29,6 +29,17 @@
     font-size: 0.88rem;
 }
 
+/* A finger needs more room than a mouse pointer: on a touch screen a button is at least as tall as a finger tip. */
+@media (pointer: coarse) {
+    .button {
+        min-height: 2.75rem;
+    }
+
+    .small {
+        min-height: 2.4rem;
+    }
+}
+
 .primary {
     background: var(--btn-bg);
     color: var(--on-brand);

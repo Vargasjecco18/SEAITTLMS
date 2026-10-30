@@ -149,6 +149,23 @@
     });
 })();
 
+// The menu of a course is a strip that scrolls sideways on a phone or a tablet: the page that is open is brought into view (it can be the 6th of the tabs).
+(function () {
+    function reveal() {
+        document.querySelectorAll('.course-menu').forEach(function (menu) {
+            const on = menu.querySelector('.cm-item.on');
+            if (!on || menu.scrollWidth <= menu.clientWidth + 2) { return; }
+            const left = on.getBoundingClientRect().left - menu.getBoundingClientRect().left + menu.scrollLeft;
+            menu.scrollLeft = Math.max(0, left - (menu.clientWidth - on.offsetWidth) / 2);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () { reveal(); setTimeout(reveal, 500); });
+    if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
+        window.Blazor.addEventListener('enhancednavigationend', function () { reveal(); setTimeout(reveal, 300); });
+    }
+})();
+
 // The picture of the person in the card at the bottom of the menu changes when they upload or remove it in the settings menu (the card is drawn
 // by the page, not by the settings menu, so the settings menu tells it).
 (function () {
@@ -1039,7 +1056,7 @@ document.addEventListener('keydown', function (event) {
         hint.id = 'sound-hint';
         hint.type = 'button';
         hint.textContent = 'Click here to turn on the notification sound';
-        hint.setAttribute('style', 'position:fixed;right:1rem;bottom:1rem;z-index:300;padding:.55rem .95rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg);font:inherit;font-weight:600;cursor:pointer');
+        hint.setAttribute('style', 'position:fixed;right:1rem;bottom:max(1rem,env(safe-area-inset-bottom));z-index:300;max-width:calc(100vw - 2rem);padding:.5rem .9rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg);font:inherit;font-size:.88rem;font-weight:600;line-height:1.3;cursor:pointer');
         hint.addEventListener('click', function () { unlock(); playBuiltIn('tones', true); hint.remove(); });
         document.body.appendChild(hint);
         // It stays until the person clicks (any click on the page also does it): the sound can't play before that, and a button that goes away by itself is easy to miss.
