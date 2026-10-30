@@ -8,8 +8,8 @@
     align-items: start;
 }
 
-/* The files at the left (wide), the lesson text at the right (only when the page is wide: the menu of the course takes room at the left). */
-@media (min-width: 1500px) {
+/* The files at the left (wide), the lesson text at the right (only when the page is wide enough: the menu of the course takes room at the left; the menu can be hidden for more room). */
+@media (min-width: 1400px) {
     .layout.two {
         grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
     }

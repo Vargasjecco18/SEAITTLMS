@@ -47,8 +47,8 @@ else
         }
 
         <nav class="views" aria-label="View">
-            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Section, "cards")" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
-            <a class="view @(view == "list" ? "on" : "")" href="@Url(Section, "list")" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
+            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Section, "cards", true)" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
+            <a class="view @(view == "list" ? "on" : "")" href="@Url(Section, "list", true)" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
         </nav>
     </div>
 
@@ -179,7 +179,7 @@ else
         return string.Join(" · ", parts);
     }
 
-    private static string Url(string? section, string view)
+    private static string Url(string? section, string view, bool explicitView = false)
     {
         var parts = new List<string>();
         if (section is not null)
@@ -187,8 +187,11 @@ else
             parts.Add("section=" + Uri.EscapeDataString(section));
         }
 
-        // The view is always in the address: a link to Cards must say so, or the view remembered by the browser (List) would come back.
-        parts.Add("view=" + view);
+        // The Cards / List buttons always say the view (explicitView): a link to Cards must say so, or the view remembered by the browser (List) would come back.
+        if (view == "list" || explicitView)
+        {
+            parts.Add("view=" + view);
+        }
 
         return "teacher/subjects" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));
     }
