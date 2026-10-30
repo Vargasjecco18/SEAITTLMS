@@ -68,6 +68,15 @@
         transition: none;
     }
 
+    /* A page opened under a pointer that has not moved: the box waits for the pointer to move (wwwroot/app.js, data-nomove). */
+    html[data-nomove] .item:hover .flyout {
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-4px);
+        transition: none;
+    }
+
     /* After a link of the menu was clicked the box rests until the pointer has left (app.js), so it does not cover the page that opened. */
     .item[data-rest]:hover .flyout,
     .item[data-rest]:has(:focus-visible) .flyout {

@@ -134,6 +134,14 @@
         document.documentElement.setAttribute('data-aiming', '');
     });
 
+    // A page that opens can change what is under a pointer that does not move (the menu of the school opens from its icons when a lesson is left, and then a page of it is under the
+    // pointer): the boxes beside the menu stay shut until the pointer really moves again (data-nomove, NavItem.razor.css).
+    function sleep() { document.documentElement.setAttribute('data-nomove', ''); }
+    document.addEventListener('mousemove', function (event) {
+        if ((event.movementX || event.movementY) && document.documentElement.hasAttribute('data-nomove')) { document.documentElement.removeAttribute('data-nomove'); }
+    }, { passive: true });
+    if (window.Blazor && typeof window.Blazor.addEventListener === 'function') { window.Blazor.addEventListener('enhancednavigationend', sleep); }
+
     // A click on a link of the menu closes its box until the pointer leaves the page's item (the pointer is still over it, and the box would cover the page).
     document.addEventListener('click', function (event) {
         const target = event.target;
