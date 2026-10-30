@@ -4,47 +4,6 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-/// <summary>
-/// When messages can be sent: not from 7:00 PM to 7:00 AM, Philippine time, unless the administrator changed it in System Settings.
-/// Reading is always possible.
-/// </summary>
-public static class MessagingHours
-{
-    public const int ClosesAtHour = 19;
-    public const int OpensAtHour = 7;
-
-    /// <summary>The Philippines are 8 hours ahead of UTC all year round (no daylight saving time).</summary>
-    private static readonly TimeSpan PhilippineOffset = TimeSpan.FromHours(8);
-
-    // One value that is replaced as a whole, so a reader never sees half of a change.
-    private sealed record Rule(bool HasClosingHours, int ClosesAt, int OpensAt);
-
-    private static volatile Rule rule = new(true, ClosesAtHour, OpensAtHour);
-
-    /// <summary>Sets the hours (System Settings does it when the app starts and when the administrator saves).</summary>
-    public static void Configure(bool hasClosingHours, int closesAtHour, int opensAtHour) =>
-        rule = new Rule(hasClosingHours, closesAtHour, opensAtHour);
-
-    public static bool IsClosed(DateTimeOffset now)
-    {
-        var r = rule;
-        if (!r.HasClosingHours || r.ClosesAt == r.OpensAt)
-        {
-            return false;
-        }
-
-        var hour = now.ToOffset(PhilippineOffset).Hour;
-
-        // 19 to 7 crosses midnight; 0 to 6 (or 13 to 15) does not.
-        return r.ClosesAt > r.OpensAt ? hour >= r.ClosesAt || hour < r.OpensAt : hour >= r.ClosesAt && hour < r.OpensAt;
-    }
-
-    /// <summary>"7:00 PM" for 19.</summary>
-    public static string HourText(int hour) => $"{(hour % 12 == 0 ? 12 : hour % 12)}:00 {(hour < 12 ? "AM" : "PM")}";
-
-    public static string ClosedText => $"Messages can't be sent from {HourText(rule.ClosesAt)} to {HourText(rule.OpensAt)} (Philippine time). You can still read them.";
-}
-
 public sealed record Contact(int UserId, string Name, string Role, string? Detail);
 
 public sealed record Conversation(Contact With, string LastBody, DateTime LastAtUtc, bool LastFromMe, int Unread);
@@ -55,13 +14,11 @@ public sealed record SendResult(bool Succeeded, string? Error = null, int Messag
 
 /// <summary>
 /// One-to-one messages between people of the school. Who may write to whom depends on the role (a student writes to
-/// the staff of the school, a teacher also to students, ...), and nobody can send a message at night.
+/// the staff of the school, a teacher also to students, ...). Messages can be sent at any hour.
 /// </summary>
 public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, NotificationService notifications, LiveUpdates? live = null, AttachmentService? attachments = null)
 {
     public const int MaxLength = 2000;
-
-    public bool IsClosed => MessagingHours.IsClosed(clock.GetUtcNow());
 
     /// <summary>The roles a person may write to.</summary>
     private static string[] AllowedRoles(string role) => role switch
@@ -213,11 +170,6 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
 
     public async Task<SendResult> SendAsync(int fromUserId, int toUserId, string? body, IReadOnlyList<NewAttachment>? files = null, CancellationToken ct = default)
     {
-        if (IsClosed)
-        {
-            return new SendResult(false, MessagingHours.ClosedText);
-        }
-
         var text = (body ?? "").Trim();
         var hasFiles = files is { Count: > 0 } && attachments is not null;
         if (text.Length == 0 && !hasFiles)

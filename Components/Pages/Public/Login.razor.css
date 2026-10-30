@@ -245,3 +245,10 @@ h1:focus {
     color: var(--success);
     font-size: 0.92rem;
 }
+
+.session-note {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}

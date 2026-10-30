@@ -83,4 +83,7 @@ public static class PhilippineTime
         < 18 => "Good afternoon",
         _ => "Good evening",
     };
+
+    /// <summary>"7:00 PM" for 19.</summary>
+    public static string HourText(int hour) => $"{(hour % 12 == 0 ? 12 : hour % 12)}:00 {(hour < 12 ? "AM" : "PM")}";
 }

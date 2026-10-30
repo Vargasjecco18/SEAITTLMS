@@ -150,7 +150,7 @@
     private string LastBackupText => backups.Count == 0 ? "None yet" : PhilippineTime.FormatDate(backups[0].CreatedAtUtc);
 
     private string AutoText => Settings.Current.AutoBackupOn
-        ? $"Automatic: every day from {MessagingHours.HourText(Settings.Current.AutoBackupHour)}"
+        ? $"Automatic: every day from {PhilippineTime.HourText(Settings.Current.AutoBackupHour)}"
         : "Automatic backup is off";
 
     protected override async Task OnInitializedAsync()

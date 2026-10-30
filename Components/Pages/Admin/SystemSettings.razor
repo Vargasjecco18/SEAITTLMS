@@ -84,7 +84,7 @@
                     <select id="s-auto-hour" class="input" disabled="@(!form.AutoBackupOn)" @bind="form.AutoBackupHour">
                         @foreach (var hour in Hours)
                         {
-                            <option value="@hour">@MessagingHours.HourText(hour)</option>
+                            <option value="@hour">@PhilippineTime.HourText(hour)</option>
                         }
                     </select>
                 </Field>
@@ -235,9 +235,6 @@
         public int LockoutMinutes { get; set; }
         public bool MaintenanceOn { get; set; }
         public string MaintenanceMessage { get; set; } = "";
-        public bool MessagesHaveClosingHours { get; set; }
-        public int MessagesCloseHour { get; set; }
-        public int MessagesOpenHour { get; set; }
         public bool AutoBackupOn { get; set; }
         public int AutoBackupHour { get; set; }
         public int BackupsToKeep { get; set; }
@@ -250,8 +247,7 @@
         {
             SchoolName = v.SchoolName, SchoolShortName = v.SchoolShortName, Tagline = v.Tagline, Address = v.Address,
             ContactEmail = v.ContactEmail, ContactPhone = v.ContactPhone, MaxFailedAttempts = v.MaxFailedAttempts, LockoutMinutes = v.LockoutMinutes,
-            MaintenanceOn = v.MaintenanceOn, MaintenanceMessage = v.MaintenanceMessage, MessagesHaveClosingHours = v.MessagesHaveClosingHours,
-            MessagesCloseHour = v.MessagesCloseHour, MessagesOpenHour = v.MessagesOpenHour, AutoBackupOn = v.AutoBackupOn,
+            MaintenanceOn = v.MaintenanceOn, MaintenanceMessage = v.MaintenanceMessage, AutoBackupOn = v.AutoBackupOn,
             AutoBackupHour = v.AutoBackupHour, BackupsToKeep = v.BackupsToKeep, LogKeepDays = v.LogKeepDays,
             SectionCapacity = v.SectionCapacity, MaxFileMegabytes = v.MaxFileMegabytes, LockerMegabytes = v.LockerMegabytes,
         };
@@ -260,8 +256,7 @@
         {
             SchoolName = SchoolName, SchoolShortName = SchoolShortName, Tagline = Tagline, Address = Address,
             ContactEmail = ContactEmail, ContactPhone = ContactPhone, MaxFailedAttempts = MaxFailedAttempts, LockoutMinutes = LockoutMinutes,
-            MaintenanceOn = MaintenanceOn, MaintenanceMessage = MaintenanceMessage, MessagesHaveClosingHours = MessagesHaveClosingHours,
-            MessagesCloseHour = MessagesCloseHour, MessagesOpenHour = MessagesOpenHour, AutoBackupOn = AutoBackupOn,
+            MaintenanceOn = MaintenanceOn, MaintenanceMessage = MaintenanceMessage, AutoBackupOn = AutoBackupOn,
             AutoBackupHour = AutoBackupHour, BackupsToKeep = BackupsToKeep, LogKeepDays = LogKeepDays,
             SectionCapacity = SectionCapacity, MaxFileMegabytes = MaxFileMegabytes, LockerMegabytes = LockerMegabytes,
         };

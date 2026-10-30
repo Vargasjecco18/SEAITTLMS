@@ -14,9 +14,6 @@ public class AuthOptions
     /// <summary>How long a normal sign-in lasts (sliding).</summary>
     public int SessionHours { get; set; } = 8;
 
-    /// <summary>How long "keep me signed in" lasts.</summary>
-    public int RememberMeDays { get; set; } = 14;
-
     /// <summary>
     /// A signed-in user is re-checked against the database this often, so a deactivated account or a
     /// changed security stamp stops working within this many minutes.

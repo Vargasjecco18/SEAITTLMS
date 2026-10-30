@@ -15,8 +15,6 @@
 
         <AuthorizeView>
             <Authorized>
-                @* The search in the middle opens a pop-up (on a phone it is the magnifying glass). *@
-                <SearchBox />
                 <HeaderTools />
             </Authorized>
         </AuthorizeView>
@@ -49,6 +47,8 @@
 </div>
 
 <TopAlert />
+
+<FileViewer />
 
 @* Blazor shows this by itself when something goes wrong in a page that is live (the enrollment form, the user lists). *@
 <div id="blazor-error-ui" role="alert">

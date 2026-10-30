@@ -1,0 +1,13 @@
+@* The box in the middle of the screen where a file is shown first. A link marked data-file="File name" (and data-show="1" when the browser can show that kind
+   of file) opens it here instead of saving it or leaving the page; wwwroot/app.js fills the box. Download saves the file, Open in a new tab opens it. *@
+<dialog id="file-viewer" class="file-viewer" aria-labelledby="file-viewer-name">
+    <div class="viewer-head">
+        <strong id="file-viewer-name" class="viewer-name"></strong>
+        <span class="viewer-actions">
+            <ButtonLink Href="/" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" data-viewer="tab" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open in a new tab</ButtonLink>
+            <ButtonLink Href="/" Small="true" IconName="download" data-viewer="save" data-enhance-nav="false">Download</ButtonLink>
+            <button type="button" class="viewer-close" aria-label="Close"><Icon Name="x" Size="18" /></button>
+        </span>
+    </div>
+    <div class="viewer-body"></div>
+</dialog>

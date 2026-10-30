@@ -63,11 +63,6 @@ public static class HelpContent
             "Ask the administrator of the school. An administrator can set a new password for you (Users Management, Edit).",
             "Then sign in with the new password.",
         ]),
-        new("How do I find a course, a person or a page?",
-        [
-            "Press the search box in the middle of the bar at the top and type a few letters.",
-            "The results are courses, people and pages. Press one to open it.",
-        ]),
         new("What is the menu on the left?",
         [
             "It lists the pages for your role. Rest the pointer on a page and a small box opens beside it showing what is inside, with links to its parts (for example, Courses shows Enrolled and Completed).",
@@ -87,7 +82,7 @@ public static class HelpContent
         new("How do messages work?",
         [
             "Press the speech bubble at the top. The list shows your conversations; the search box finds a person you may write to.",
-            MessagesRule(settings),
+            "You can write to a person at any hour. Press the paper clip to send a file with the message.",
             "A number on the bubble tells how many messages you have not read.",
         ]),
         new("What do the notifications say?",
@@ -96,10 +91,6 @@ public static class HelpContent
             "Press one to go to the page it is about. “Mark all as read” clears the number.",
         ]),
     ]);
-
-    private static string MessagesRule(SystemSettingsValues settings) => settings.MessagesHaveClosingHours
-        ? $"Messages can't be sent from {MessagingHours.HourText(settings.MessagesCloseHour)} to {MessagingHours.HourText(settings.MessagesOpenHour)} (Philippine time). You can still read them."
-        : "You can write at any hour.";
 
     private static HelpSection Student() => new("For students", "graduation-cap",
     [

@@ -65,7 +65,6 @@ builder.Services.AddSingleton<LiveUpdates>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<NotificationSoundService>();
 builder.Services.AddScoped<MessageService>();
-builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<TeachingService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<WorkService>();

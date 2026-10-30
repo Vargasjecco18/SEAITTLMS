@@ -186,7 +186,7 @@ else
                                     <td class="right">
                                         @if (FilePreview.CanPreview(file.Name))
                                         {
-                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-file="@file.Name" data-show="1" data-enhance-nav="false">View</ButtonLink>
                                         }
                                         <ButtonLink Href="@($"files/{file.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                         @if (file.OwnerUserId != userId)

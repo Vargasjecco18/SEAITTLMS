@@ -166,6 +166,28 @@
     min-width: 0;
 }
 
+.face {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+}
+
+/* The little dot at the corner of the picture: green when the person has a page open, grey when not. */
+.dot {
+    position: absolute;
+    right: -0.05rem;
+    bottom: -0.05rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+    background: var(--border);
+}
+
+.dot.on {
+    background: #22c55e;
+}
+
 .person-text {
     display: flex;
     flex-direction: column;

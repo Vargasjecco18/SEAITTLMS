@@ -505,28 +505,82 @@ document.addEventListener('toggle', function (event) {
     pop.style.left = left + 'px';
 }, true);
 
-// Escape in the search box of the header leaves the box (the list closes by itself), so the page is not "in use" any more.
-document.addEventListener('keydown', function (event) {
-    var target = event.target;
-    if (event.key === 'Escape' && target instanceof Element && target.matches('[data-search-input]')) {
-        target.blur();
-    }
-});
+// Files: a link marked data-file="Name" (data-show="1" when the browser can show that kind of file) opens in the box in the middle of the
+// screen (Components/Shared/FileViewer.razor) instead of saving the file or leaving the page. Download saves it, Open in a new tab opens it.
+// With Ctrl, Shift or the middle button the link works as a normal link.
+(function () {
+    function viewer() { return document.getElementById('file-viewer'); }
 
-// Ctrl+K (Cmd+K on a Mac) puts the cursor in the search box of the header (Components/Layout/SearchBox.razor); on a phone it opens the box.
-document.addEventListener('keydown', function (event) {
-    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
-        var field = document.querySelector('[data-search-input]');
-        var lens = document.querySelector('[data-search-lens]');
-        if (field && field.offsetParent !== null) {
-            event.preventDefault();
-            field.focus();
-        } else if (lens) {
-            event.preventDefault();
-            lens.click();
-        }
+    function kindOf(name) {
+        var ext = (name.split('.').pop() || '').toLowerCase();
+        if (ext === 'pdf') { return 'frame'; }
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].indexOf(ext) >= 0) { return 'image'; }
+        if (['mp3', 'wav', 'ogg'].indexOf(ext) >= 0) { return 'audio'; }
+        if (['mp4', 'webm'].indexOf(ext) >= 0) { return 'video'; }
+        return 'frame';
     }
-});
+
+    function open(url, name, canShow) {
+        var box = viewer();
+        if (!box) { return false; }
+
+        var base = url.split('?')[0];
+        box.querySelector('.viewer-name').textContent = name;
+        var tab = box.querySelector('[data-viewer="tab"]');
+        var save = box.querySelector('[data-viewer="save"]');
+        tab.href = base;
+        tab.style.display = canShow ? '' : 'none';
+        save.href = base + '?download=1';
+        save.setAttribute('download', name);
+
+        var body = box.querySelector('.viewer-body');
+        body.textContent = '';
+        var shown;
+        if (!canShow) {
+            shown = document.createElement('div');
+            shown.className = 'viewer-none';
+            var title = document.createElement('strong');
+            title.textContent = 'This file cannot be shown here';
+            var hint = document.createElement('p');
+            hint.textContent = 'Press Download to save it to your computer, then open it there.';
+            shown.append(title, hint);
+        } else {
+            var kind = kindOf(name);
+            shown = document.createElement(kind === 'frame' ? 'iframe' : kind === 'image' ? 'img' : kind);
+            if (kind === 'frame') { shown.title = name; }
+            if (kind === 'image') { shown.alt = name; }
+            if (kind === 'audio' || kind === 'video') { shown.controls = true; shown.autoplay = false; }
+            shown.setAttribute('src', base);
+        }
+        body.appendChild(shown);
+
+        if (!box.open) { box.showModal(); }
+        return true;
+    }
+
+    document.addEventListener('click', function (event) {
+        var link = event.target instanceof Element ? event.target.closest('a[data-file]') : null;
+        if (link) {
+            if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) { return; }
+            if (open(link.getAttribute('href') || '', link.getAttribute('data-file') || 'File', link.getAttribute('data-show') === '1')) {
+                event.preventDefault();
+            }
+            return;
+        }
+
+        var box = viewer();
+        if (!box || !box.open || !(event.target instanceof Element)) { return; }
+        // The close button, or a click on the dark area around the box.
+        if (event.target.closest('.viewer-close') || event.target === box) { box.close(); }
+    });
+
+    // Closing the box stops a sound or a video.
+    document.addEventListener('close', function (event) {
+        if (event.target && event.target.id === 'file-viewer') {
+            event.target.querySelector('.viewer-body').textContent = '';
+        }
+    }, true);
+})();
 
 // Auto refresh: a page with <AutoRefresh /> (Components/Shared/AutoRefresh.razor) loads itself again every few seconds with Blazor's
 // enhanced navigation, which only changes what is different. It does not do it while somebody is typing, a pop-up or box is open, a

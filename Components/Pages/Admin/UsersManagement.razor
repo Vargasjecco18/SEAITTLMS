@@ -12,6 +12,8 @@
 @inject StudentLifecycleService Lifecycle
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
+@inject PresenceService Presence
+@implements IDisposable
 
 <PageTitle>@tab.Title · Users Management · SEAITT Legazpi LMS</PageTitle>
 
@@ -147,7 +149,11 @@
                         <tr>
                             <td>
                                 <div class="person">
-                                    <Avatar Name="@user.FullName" UserId="@user.UserId" Size="34" />
+                                    <span class="face">
+                                        <Avatar Name="@user.FullName" UserId="@user.UserId" Size="34" />
+                                        <span class="dot @(Presence.IsOnline(user.UserId) ? "on" : "")" title="@(Presence.IsOnline(user.UserId) ? "Online now" : "Offline")" role="img"
+                                              aria-label="@(Presence.IsOnline(user.UserId) ? "Online now" : "Offline")"></span>
+                                    </span>
                                     <div class="person-text">
                                         <span class="person-name">@user.FullName@if (user.UserId == currentUserId) { <span class="you">You</span> }</span>
                                         <span class="sub" title="@user.Email">@user.Email</span>
@@ -169,7 +175,16 @@
                                 <td>@(user.EmployeeNumber ?? "—")</td>
                                 @if (tab.Role == AppRoles.Teacher)
                                 {
-                                    <td class="col-more">@(user.Placement ?? "—")</td>
+                                    <td class="col-more">
+                                        @if (SectionsOf(user) is { Count: > 1 } sections)
+                                        {
+                                            <CoursesPopup Key="@($"u{user.UserId}")" Noun="section" Who="@user.FullName" Detail="Teacher" Names="sections" />
+                                        }
+                                        else
+                                        {
+                                            @(user.Placement ?? "—")
+                                        }
+                                    </td>
                                     <td class="col-more"><CoursesPopup Key="@($"u{user.UserId}")" Who="@user.FullName" Detail="Teacher" Names="user.Courses" None="No course yet" /></td>
                                 }
                                 else
@@ -734,11 +749,22 @@
 
     private string EditTitle => edit is null ? "" : string.Join(' ', new[] { edit.FirstName, edit.LastName }.Where(p => !string.IsNullOrWhiteSpace(p)));
 
+    private Timer? onlineTimer;
+
     protected override async Task OnInitializedAsync()
     {
         var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
         _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out currentUserId);
+
+        // The green dots follow who has a page open, so look again now and then.
+        onlineTimer = new Timer(_ => _ = InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(20));
     }
+
+    public void Dispose() => onlineTimer?.Dispose();
+
+    /// <summary>The sections a teacher teaches in ("11-BUSSENT-A, 12-HT1-A" is two).</summary>
+    private static IReadOnlyList<string> SectionsOf(UserListItem user) =>
+        (user.Placement ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     protected override async Task OnParametersSetAsync()
     {

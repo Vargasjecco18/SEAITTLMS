@@ -1,6 +1,6 @@
-@* The files attached to a syllabus, a module or an assignment. A name opens the file in a new tab of the browser when the browser can show it (a PDF,
-   a picture, a text file, a sound, a video; the browser's own viewer has the download and print buttons), otherwise it saves the file. The small
-   arrow always saves it. *@
+@* The files attached to a syllabus, a module or an assignment. A name opens the file in the box in the middle of the screen (Components/Shared/FileViewer.razor)
+   first: shown there when the browser can show it (a PDF, a picture, a text file, a sound, a video), otherwise with a Download button. The small
+   arrow saves it at once. *@
 @if (Items.Count > 0)
 {
     <ul class="files" aria-label="@Label">
@@ -14,7 +14,7 @@
                 }
                 else
                 {
-                    <a class="file-name" href="files/a/@f.Id" target="_blank" rel="noopener noreferrer" title="@(f.CanPreview ? "Open in a new tab" : "Download")">@f.Name</a>
+                    <a class="file-name" href="files/a/@f.Id" target="_blank" rel="noopener noreferrer" data-file="@f.Name" data-show="@(f.CanPreview ? "1" : "0")" data-enhance-nav="false" title="Show the file">@f.Name</a>
                 }
                 <span class="file-size">@FileSize.Text(f.SizeBytes)</span>
                 <a class="file-save" href="files/a/@f.Id?download=1" download="@f.Name" aria-label="@($"Download {f.Name}")" title="Download"><Icon Name="download" Size="15" /></a>

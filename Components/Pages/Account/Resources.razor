@@ -82,7 +82,7 @@
                                     <td class="right actions">
                                         @if (FilePreview.CanPreview(file.Name))
                                         {
-                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-file="@file.Name" data-show="1" data-enhance-nav="false">View</ButtonLink>
                                         }
                                         <ButtonLink Href="@($"files/{file.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                         <Button Small="true" Variant="ButtonVariant.Secondary" IconName="share-2" OnClick="() => OpenShareAsync(file)">Share</Button>
@@ -160,7 +160,7 @@
                                     <td class="right actions">
                                         @if (FilePreview.CanPreview(file.Name))
                                         {
-                                            <ButtonLink Href="@href" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                            <ButtonLink Href="@href" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-file="@file.Name" data-show="1" data-enhance-nav="false">View</ButtonLink>
                                         }
                                         <ButtonLink Href="@($"{href}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                     </td>
@@ -225,7 +225,7 @@
                                     <td class="right actions">
                                         @if (FilePreview.CanPreview(course.Name))
                                         {
-                                            <ButtonLink Href="@($"files/a/{course.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                            <ButtonLink Href="@($"files/a/{course.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-file="@course.Name" data-show="1" data-enhance-nav="false">View</ButtonLink>
                                         }
                                         <ButtonLink Href="@($"files/a/{course.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                     </td>
@@ -246,7 +246,7 @@
                                     <td class="right actions">
                                         @if (FilePreview.CanPreview(file.Name))
                                         {
-                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-enhance-nav="false">Open</ButtonLink>
+                                            <ButtonLink Href="@($"files/{file.Id}")" Small="true" Variant="ButtonVariant.Secondary" IconName="external-link" target="_blank" rel="noopener noreferrer" data-file="@file.Name" data-show="1" data-enhance-nav="false">View</ButtonLink>
                                         }
                                         <ButtonLink Href="@($"files/{file.Id}?download=1")" Small="true" Variant="ButtonVariant.Secondary" IconName="download" data-enhance-nav="false">Download</ButtonLink>
                                         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="folder-plus" Title="Keep a copy in my locker" Disabled="@busy" OnClick="() => SaveCopyAsync(file)" />

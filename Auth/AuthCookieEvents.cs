@@ -41,7 +41,7 @@ public static class AuthCookieEvents
         var current = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new { u.IsActive, u.SecurityStamp, u.ActiveSessionId })
+            .Select(u => new { u.IsActive, u.SecurityStamp, u.ActiveSessionId, u.ActiveSessionSeenUtc })
             .FirstOrDefaultAsync(context.HttpContext.RequestAborted);
 
         if (current is null || !current.IsActive || current.SecurityStamp != stamp)
@@ -54,6 +54,17 @@ public static class AuthCookieEvents
         var session = context.Principal?.FindFirstValue(AppClaimTypes.SessionId);
         if (settings.SingleSession && !string.IsNullOrEmpty(session) && current.ActiveSessionId != session)
         {
+            await RejectAsync(context);
+            return;
+        }
+
+        // A page of this sign-in says every minute that it is open. When none has said so for a while the browser or the tab was closed: the sign-in is over (the person logs in again),
+        // and the account is free for the next sign-in.
+        if (settings.SingleSession && !string.IsNullOrEmpty(session) && current.ActiveSessionId == session && current.ActiveSessionSeenUtc is { } seen
+            && clock.GetUtcNow().UtcDateTime - seen > TimeSpan.FromMinutes(Math.Max(1, settings.SessionIdleMinutes)))
+        {
+            await db.Users.Where(u => u.Id == userId && u.ActiveSessionId == session)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.ActiveSessionId, (string?)null).SetProperty(u => u.ActiveSessionSeenUtc, (DateTime?)null), context.HttpContext.RequestAborted);
             await RejectAsync(context);
             return;
         }

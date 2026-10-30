@@ -1,14 +1,15 @@
 @* A small "6 courses" button that opens a pop-up over the page with the list (the columns of the table do not move). It is the same pop-up the registrar's
-   list uses; wwwroot/app.js puts it next to its button. A line like "BUSINESS ACCOUNTING · 11-BUSSENT-A" shows the section after the course. *@
+   list uses; wwwroot/app.js puts it next to its button. A line like "BUSINESS ACCOUNTING · 11-BUSSENT-A" shows the section after the course.
+   The same button also shows "3 sections" (Noun="section") for a teacher who teaches in several sections. *@
 @if (Names is { Count: > 0 })
 {
     <button type="button" class="courses-button" popovertarget="@PopupId">
-        @(Names.Count == 1 ? "1 course" : $"{Names.Count} courses")
+        @(Names.Count == 1 ? $"1 {Noun}" : $"{Names.Count} {Noun}s")
     </button>
-    <div id="@PopupId" popover class="courses-pop" role="group" aria-label="@($"Courses of {Who}")">
+    <div id="@PopupId" popover class="courses-pop" role="group" aria-label="@($"{Title} of {Who}")">
         <div class="pop-head">
             <div class="pop-title">
-                <strong>Courses</strong>
+                <strong>@Title</strong>
                 <span class="sub">@Who@(string.IsNullOrWhiteSpace(Detail) ? "" : " · " + Detail)</span>
             </div>
             <button type="button" class="pop-close" popovertarget="@PopupId" popovertargetaction="hide" aria-label="Close">
@@ -38,11 +39,16 @@ else
 
     [Parameter] public IReadOnlyList<string>? Names { get; set; }
 
+    /// <summary>What the list is of, in the singular: "course" (the default) or "section".</summary>
+    [Parameter] public string Noun { get; set; } = "course";
+
     /// <summary>What shows when there are no courses.</summary>
     [Parameter] public string None { get; set; } = "No course yet";
 
     /// <summary>Makes the pop-up of each person different (the user's number).</summary>
     [Parameter, EditorRequired] public string Key { get; set; } = "";
 
-    private string PopupId => $"courses-{Key}";
+    private string PopupId => $"{Noun}s-{Key}";
+
+    private string Title => char.ToUpperInvariant(Noun[0]) + Noun[1..] + "s";
 }

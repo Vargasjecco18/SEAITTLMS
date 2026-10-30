@@ -26,12 +26,6 @@ public sealed record SystemSettingsValues
     public bool MaintenanceOn { get; init; }
     public string MaintenanceMessage { get; init; } = "The system is being maintained. Please try again later.";
 
-    // ---- messages
-    /// <summary>When on, messages can't be sent between <see cref="MessagesCloseHour"/> and <see cref="MessagesOpenHour"/> (Philippine time).</summary>
-    public bool MessagesHaveClosingHours { get; init; } = true;
-    public int MessagesCloseHour { get; init; } = MessagingHours.ClosesAtHour;
-    public int MessagesOpenHour { get; init; } = MessagingHours.OpensAtHour;
-
     // ---- backups and logs
     public bool AutoBackupOn { get; init; }
     public int AutoBackupHour { get; init; } = 2;
@@ -211,16 +205,6 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             errors.Add("Write the maintenance message (up to 300 characters).");
         }
 
-        if (v.MessagesCloseHour is < 0 or > 23 || v.MessagesOpenHour is < 0 or > 23)
-        {
-            errors.Add("The hours for the messages are from 0 to 23.");
-        }
-
-        if (v.MessagesHaveClosingHours && v.MessagesCloseHour == v.MessagesOpenHour)
-        {
-            errors.Add("Messages must open at a different hour than they close.");
-        }
-
         if (v.AutoBackupHour is < 0 or > 23)
         {
             errors.Add("The hour of the automatic backup is from 0 to 23.");
@@ -313,9 +297,6 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             ["signin.lockout_minutes"] = N(v.LockoutMinutes),
             ["maintenance.on"] = B(v.MaintenanceOn),
             ["maintenance.message"] = v.MaintenanceMessage,
-            ["messages.closing_hours"] = B(v.MessagesHaveClosingHours),
-            ["messages.close_hour"] = N(v.MessagesCloseHour),
-            ["messages.open_hour"] = N(v.MessagesOpenHour),
             ["backup.auto_on"] = B(v.AutoBackupOn),
             ["backup.auto_hour"] = N(v.AutoBackupHour),
             ["backup.keep"] = N(v.BackupsToKeep),
@@ -348,9 +329,6 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             LockoutMinutes = Number("signin.lockout_minutes", v.LockoutMinutes),
             MaintenanceOn = Flag("maintenance.on", v.MaintenanceOn),
             MaintenanceMessage = Text("maintenance.message", v.MaintenanceMessage),
-            MessagesHaveClosingHours = Flag("messages.closing_hours", v.MessagesHaveClosingHours),
-            MessagesCloseHour = Number("messages.close_hour", v.MessagesCloseHour),
-            MessagesOpenHour = Number("messages.open_hour", v.MessagesOpenHour),
             AutoBackupOn = Flag("backup.auto_on", v.AutoBackupOn),
             AutoBackupHour = Number("backup.auto_hour", v.AutoBackupHour),
             BackupsToKeep = Number("backup.keep", v.BackupsToKeep),
@@ -364,7 +342,6 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     private void Apply(SystemSettingsValues values)
     {
         current = values;
-        MessagingHours.Configure(values.MessagesHaveClosingHours, values.MessagesCloseHour, values.MessagesOpenHour);
         Changed?.Invoke();
     }
 }

@@ -108,14 +108,6 @@
                 }
             </div>
 
-            @if (closed)
-            {
-                <div class="closed" role="status">
-                    <Icon Name="moon" Size="18" />
-                    <span>@MessagingHours.ClosedText</span>
-                </div>
-            }
-
             @if (!string.IsNullOrEmpty(error))
             {
                 <p class="error" role="alert">@error</p>
@@ -135,13 +127,13 @@
 
             <form class="composer" @onsubmit="SendAsync">
                 @* The paper clip, at the left of Send: choose files to send with the message. *@
-                <label class="attach @(closed || sending || reading ? "off" : "")" title="Send files" aria-label="Send files">
-                    <InputFile OnChange="ChooseFilesAsync" multiple disabled="@(closed || sending || reading)" />
+                <label class="attach @(sending || reading ? "off" : "")" title="Send files" aria-label="Send files">
+                    <InputFile OnChange="ChooseFilesAsync" multiple disabled="@(sending || reading)" />
                     <Icon Name="@(reading ? "loader" : "paperclip")" Size="18" />
                 </label>
-                <input type="text" placeholder="@(closed ? "Messages are closed until 7:00 AM" : "Write a message")" aria-label="Message" maxlength="@MessageService.MaxLength"
-                       autocomplete="off" disabled="@closed" @bind="draft" @bind:event="oninput" />
-                <button type="submit" class="send" aria-label="Send" disabled="@(closed || sending || reading || (string.IsNullOrWhiteSpace(draft) && pending.Count == 0))"><Icon Name="send" Size="18" /></button>
+                <input type="text" placeholder="Write a message" aria-label="Message" maxlength="@MessageService.MaxLength"
+                       autocomplete="off" @bind="draft" @bind:event="oninput" />
+                <button type="submit" class="send" aria-label="Send" disabled="@(sending || reading || (string.IsNullOrWhiteSpace(draft) && pending.Count == 0))"><Icon Name="send" Size="18" /></button>
             </form>
         }
     </section>
@@ -166,7 +158,6 @@
     private string search = "";
     private string draft = "";
     private string? error;
-    private bool closed;
     private bool sending;
     private bool reading;
     private bool scrollDown;
@@ -179,7 +170,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        closed = Messages.IsClosed;
         conversations = await Messages.GetConversationsAsync(UserId);
 
         if (StartWith is { } first && await Messages.GetContactAsync(UserId, first) is { } contact)
@@ -214,8 +204,7 @@
     {
         try
         {
-            closed = Messages.IsClosed;
-            conversations = await Messages.GetConversationsAsync(UserId);
+                conversations = await Messages.GetConversationsAsync(UserId);
             if (selected is not null)
             {
                 var latest = await Messages.GetThreadAsync(UserId, selected.UserId);
@@ -325,8 +314,7 @@
         try
         {
             var result = await Messages.SendAsync(UserId, selected.UserId, draft, pending.ToList());
-            closed = Messages.IsClosed;
-            if (result.Succeeded)
+                if (result.Succeeded)
             {
                 draft = "";
                 pending.Clear();
