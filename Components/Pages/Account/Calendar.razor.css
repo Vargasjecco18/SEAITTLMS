@@ -59,6 +59,8 @@
 
 .swatch.quiz { background: var(--violet); }
 .swatch.taskperformance { background: var(--amber); }
+.swatch.seatwork { background: var(--green); }
+.swatch.recitation { background: var(--blue); }
 .swatch.exam { background: var(--rose); }
 .swatch.module { background: var(--green); }
 .swatch.personal { background: #7c3aed; }
@@ -164,6 +166,8 @@ a.chip:hover {
 
 .chip.quiz { background: var(--violet-soft); color: var(--violet); }
 .chip.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.chip.seatwork { background: var(--green-soft); color: var(--green); }
+.chip.recitation { background: var(--blue-soft); color: var(--blue); }
 .chip.exam { background: var(--rose-soft); color: var(--rose); }
 .chip.module { background: var(--green-soft); color: var(--green); }
 .chip.personal { background: #ede9fe; color: #6d28d9; }
@@ -281,6 +285,8 @@ a.chip:hover {
 
 .sum.quiz { background: var(--violet-soft); color: var(--violet); }
 .sum.taskperformance { background: var(--amber-soft); color: var(--amber); }
+.sum.seatwork { background: var(--green-soft); color: var(--green); }
+.sum.recitation { background: var(--blue-soft); color: var(--blue); }
 .sum.exam { background: var(--rose-soft); color: var(--rose); }
 .sum.module { background: var(--green-soft); color: var(--green); }
 .sum.personal { background: #ede9fe; color: #6d28d9; }

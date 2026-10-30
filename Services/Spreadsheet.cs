@@ -111,7 +111,7 @@ public sealed class XlsxSheet(string name)
     }
 
     /// <summary>One rule of the cells of a range: a drop-down list, or a number between two limits, with the tip Excel shows when the cell is selected.</summary>
-    private sealed record Validation(string Range, string Type, string[] Items, string? Formula, decimal? Min, decimal? Max, string? Tip);
+    private sealed record Validation(string Range, string Type, string[] Items, string? Formula, decimal? Min, decimal? Max, string? Tip, bool Soft = false);
 
     /// <summary>The cells of the range (like <c>G2:G500</c>) get a drop-down list of these choices. <paramref name="tip"/> is what Excel shows when a cell is selected.</summary>
     public XlsxSheet ListChoice(string range, string[] items, string? tip = null)
@@ -126,6 +126,16 @@ public sealed class XlsxSheet(string name)
     public XlsxSheet ListFrom(string range, string cells, string? tip = null)
     {
         lists.Add(new Validation(range, "list", [], cells, null, null, tip ?? "Choose it from the list (press the arrow at the right of the cell)."));
+        return this;
+    }
+
+    /// <summary>
+    /// A drop-down list made from other cells that only warns when a typed value is not in it (Excel asks "Continue?"): for a list that holds what is in this workbook, when the value may
+    /// already exist in the system without being in the workbook.
+    /// </summary>
+    public XlsxSheet ListFromOrOther(string range, string cells, string? tip = null)
+    {
+        lists.Add(new Validation(range, "list", [], cells, null, null, tip ?? "Choose it from the list (press the arrow at the right of the cell).", Soft: true));
         return this;
     }
 
@@ -259,9 +269,14 @@ public sealed class XlsxSheet(string name)
                         xml.WriteAttributeString("operator", "between");
                     }
 
+                    if (rule.Soft)
+                    {
+                        xml.WriteAttributeString("errorStyle", "warning");
+                    }
+
                     xml.WriteAttributeString("showErrorMessage", "1");
-                    xml.WriteAttributeString("errorTitle", "Not allowed");
-                    xml.WriteAttributeString("error", rule.Type == "list" ? "Choose one of the choices of the list." : rule.Tip ?? "This value is not allowed.");
+                    xml.WriteAttributeString("errorTitle", rule.Soft ? "Not in the list" : "Not allowed");
+                    xml.WriteAttributeString("error", rule.Soft ? "This is not one of the rows of this workbook. Keep it only if it already exists in the system." : rule.Type == "list" ? "Choose one of the choices of the list." : rule.Tip ?? "This value is not allowed.");
                 }
 
                 xml.WriteAttributeString("allowBlank", "1");

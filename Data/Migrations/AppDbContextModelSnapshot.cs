@@ -1646,6 +1646,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("due_reminder_sent_at_utc");
 
+                    b.Property<int>("GradebookOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("gradebook_order");
+
                     b.Property<string>("Instructions")
                         .HasColumnType("text")
                         .HasColumnName("instructions");
@@ -1718,7 +1722,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("module_items", null, t =>
                         {
-                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Exam')");
+                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam')");
 
                             t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
                         });
@@ -3432,11 +3436,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("varchar(16)")
                         .HasColumnName("notification_sound_choice");
-
-                    b.Property<string>("NotifyEmail")
-                        .HasMaxLength(254)
-                        .HasColumnType("varchar(254)")
-                        .HasColumnName("notify_email");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

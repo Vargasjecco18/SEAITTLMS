@@ -32,7 +32,6 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         b.Property(u => u.SecurityStamp).HasMaxLength(64).IsRequired();
         b.Property(u => u.ActiveSessionId).HasMaxLength(36);
-        b.Property(u => u.NotifyEmail).HasMaxLength(254);
         b.Property(u => u.NotificationSoundChoice).HasMaxLength(16);
         b.Ignore(u => u.Profile);
         b.Ignore(u => u.DisplayName);

@@ -64,19 +64,30 @@ public static class ItemKinds
     public const string Quiz = "Quiz";
     public const string TaskPerformance = "TaskPerformance";
 
-    /// <summary>A major test (a midterm, a final): it is added from the gradebook, where its scores are typed. It is not one of the three kinds a teacher adds to a module.</summary>
+    /// <summary>Work done in class (a few questions on the lesson of the day). Handled like an assignment.</summary>
+    public const string Seatwork = "Seatwork";
+
+    /// <summary>Recitation: the teacher gives the score for what the student said in class. Handled like an assignment (the teacher types the scores in the gradebook).</summary>
+    public const string Recitation = "Recitation";
+
+    /// <summary>A major test (a midterm, a final): it is added from the gradebook, where its scores are typed. It is not one of the kinds a teacher adds to a module.</summary>
     public const string Exam = "Exam";
 
     /// <summary>The kinds a teacher adds to a module, and the provider sends: the sheets of the Excel templates.</summary>
-    public static readonly string[] All = [Activity, Quiz, TaskPerformance];
+    public static readonly string[] All = [Activity, Quiz, TaskPerformance, Seatwork, Recitation];
 
-    /// <summary>Every kind that is listed, in the module, in the menu of the course and in the gradebook: the three of <see cref="All"/> and the exam.</summary>
-    public static readonly string[] Listed = [Activity, Quiz, TaskPerformance, Exam];
+    /// <summary>Every kind that is listed, in the module, in the menu of the course and in the gradebook: the kinds of <see cref="All"/> and the exam.</summary>
+    public static readonly string[] Listed = [Activity, Quiz, TaskPerformance, Seatwork, Recitation, Exam];
+
+    /// <summary>The kinds whose tab (in the menu of the course and in a module) is only there once the course has one: the exam, the seatwork and the recitation.</summary>
+    public static bool IsOptionalTab(string kind) => kind is Exam or Seatwork or Recitation;
 
     public static string Display(string kind) => kind switch
     {
         Quiz => "Quiz",
         TaskPerformance => "Task performance",
+        Seatwork => "Seatwork",
+        Recitation => "Recitation",
         Exam => "Exam",
         _ => "Assignment",
     };
@@ -85,21 +96,25 @@ public static class ItemKinds
     {
         Quiz => "Quizzes",
         TaskPerformance => "Task performances",
+        Seatwork => "Seatworks",
+        Recitation => "Recitations",
         Exam => "Exams",
         _ => "Assignments",
     };
 
-    /// <summary>The short code of the column in the gradebook: A, Q, TP, E.</summary>
+    /// <summary>The short code of the column in the gradebook: A, Q, TP, S, R, E.</summary>
     public static string Code(string kind) => kind switch
     {
         Quiz => "Q",
         TaskPerformance => "TP",
+        Seatwork => "S",
+        Recitation => "R",
         Exam => "E",
         _ => "A",
     };
 }
 
-/// <summary>Something a student does for a module: an assignment (stored as "Activity"), a quiz or a task performance. Has a due date and a maximum score.</summary>
+/// <summary>Something a student does for a module: an assignment (stored as "Activity"), a quiz, a task performance, a seatwork or a recitation. Has a due date and a maximum score.</summary>
 public class ModuleItem : AuditableEntity
 {
     public int ModuleId { get; set; }
@@ -123,6 +138,9 @@ public class ModuleItem : AuditableEntity
     public DateTime? DueReminderSentAtUtc { get; set; }
 
     public int Position { get; set; }
+
+    /// <summary>The place of its column in the gradebook (1, 2, 3 ...) once the teacher moved the columns. 0: not placed yet, so after the columns that are.</summary>
+    public int GradebookOrder { get; set; }
 
     // ---- quizzes only
     /// <summary>Minutes a student has once they start. Empty: no limit.</summary>

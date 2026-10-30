@@ -1038,11 +1038,11 @@ document.addEventListener('keydown', function (event) {
         var hint = document.createElement('button');
         hint.id = 'sound-hint';
         hint.type = 'button';
-        hint.textContent = 'Click here to hear notification sounds';
+        hint.textContent = 'Click here to turn on the notification sound';
         hint.setAttribute('style', 'position:fixed;right:1rem;bottom:1rem;z-index:300;padding:.55rem .95rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg);font:inherit;font-weight:600;cursor:pointer');
         hint.addEventListener('click', function () { unlock(); playBuiltIn('tones', true); hint.remove(); });
         document.body.appendChild(hint);
-        setTimeout(removeHint, 15000);
+        // It stays until the person clicks (any click on the page also does it): the sound can't play before that, and a button that goes away by itself is easy to miss.
     }
 
     // Runs fn(context) when the browser lets the page make sound; otherwise shows the hint.
@@ -1144,6 +1144,13 @@ document.addEventListener('keydown', function (event) {
 
     window.seaitt = window.seaitt || {};
     window.seaitt.playNotificationSound = play;
+
+    // The header calls this when a page opens (a person who is signed in): when nobody has clicked on the page yet, the browser will not let a sound play when a message
+    // comes in, so the button that asks for the click is shown now, not only when a sound has failed.
+    window.seaitt.prepareSound = function () {
+        if (root.getAttribute('data-sound') === 'off') { return; }
+        if (navigator.userActivation && !navigator.userActivation.hasBeenActive) { showHint(); }
+    };
 
     document.addEventListener('click', function (event) {
         var target = event.target;

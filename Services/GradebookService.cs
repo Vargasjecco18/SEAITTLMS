@@ -4,7 +4,11 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-public sealed record GradebookColumn(int ItemId, string Title, string Kind, decimal Max, string ModuleTitle);
+public sealed record GradebookColumn(int ItemId, string Title, string Kind, decimal Max, string ModuleTitle)
+{
+    /// <summary>The short name of the column: the kind and its number among the work of that kind (A1, A2, Q1, TP1 ...). Moving the column does not change it.</summary>
+    public string Code { get; init; } = "";
+}
 
 /// <param name="Status">NotStarted, InProgress, Submitted (waiting for a score) or Graded.</param>
 public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bool IsLate, bool IsFlagged, string? LateDecision = null);
@@ -34,11 +38,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             return null;
         }
 
-        var columns = await db.ModuleItems.AsNoTracking()
-            .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now)
-            .OrderBy(i => i.Module.Position).ThenBy(i => i.Module.Id).ThenBy(i => i.Position).ThenBy(i => i.Id)
-            .Select(i => new GradebookColumn(i.Id, i.Title, i.Kind, i.MaxScore, i.Module.Title))
-            .ToListAsync(ct);
+        var columns = await GetColumnsAsync(db, assignmentId, now, ct);
         var itemIds = columns.Select(c => c.ItemId).ToList();
 
         var students = await Roster.Enrollments(db, a.SectionId, a.SubjectId)
@@ -82,6 +82,67 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var graded = rows.Where(r => r.Percent is not null).ToList();
         return new SubjectGradebook(a.Id, a.Subject, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), columns, rows,
             graded.Count == 0 ? null : Math.Round(graded.Average(r => r.Percent!.Value), 1), graded.Count(r => r.Percent < GradeRules.PassingPercent));
+    }
+
+    /// <summary>
+    /// The columns in the order the teacher put them (the ones that were never moved come last, module by module). The codes (A1, Q1 ...) count the work of each kind in the
+    /// order of the modules, so a column that is moved keeps its name.
+    /// </summary>
+    private static async Task<List<GradebookColumn>> GetColumnsAsync(AppDbContext db, int assignmentId, DateTime now, CancellationToken ct)
+    {
+        var rows = await db.ModuleItems.AsNoTracking()
+            .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now)
+            .OrderBy(i => i.Module.Position).ThenBy(i => i.Module.Id).ThenBy(i => i.Position).ThenBy(i => i.Id)
+            .Select(i => new { i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder })
+            .ToListAsync(ct);
+
+        var counters = new Dictionary<string, int>();
+        var columns = new List<(GradebookColumn Column, int Order, int Index)>();
+        for (var n = 0; n < rows.Count; n++)
+        {
+            var r = rows[n];
+            counters[r.Kind] = counters.GetValueOrDefault(r.Kind) + 1;
+            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle) { Code = $"{ItemKinds.Code(r.Kind)}{counters[r.Kind]}" }, r.GradebookOrder, n));
+        }
+
+        return columns.OrderBy(c => c.Order == 0 ? 1 : 0).ThenBy(c => c.Order).ThenBy(c => c.Index).Select(c => c.Column).ToList();
+    }
+
+    /// <summary>
+    /// Moves a column of the gradebook one place to the left (<paramref name="delta"/> -1) or to the right (+1). Every column gets its place, so the order is kept.
+    /// The students do not see the order: it is only how the teacher's gradebook, and the Excel file, list the work.
+    /// </summary>
+    public async Task<ServiceResult> MoveColumnAsync(int teacherId, int assignmentId, int itemId, int delta, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.TeachingAssignments.AnyAsync(x => x.Id == assignmentId && x.TeacherId == teacherId, ct))
+        {
+            return ServiceResult.Fail("This is not your course.");
+        }
+
+        var columns = await GetColumnsAsync(db, assignmentId, clock.GetUtcNow().UtcDateTime, ct);
+        var from = columns.FindIndex(c => c.ItemId == itemId);
+        if (from < 0)
+        {
+            return ServiceResult.Fail("This column is not part of the gradebook.");
+        }
+
+        var to = Math.Clamp(from + Math.Sign(delta), 0, columns.Count - 1);
+        if (to == from)
+        {
+            return ServiceResult.Ok("It is already there.");
+        }
+
+        (columns[from], columns[to]) = (columns[to], columns[from]);
+        var places = columns.Select((c, n) => (c.ItemId, Place: n + 1)).ToDictionary(x => x.ItemId, x => x.Place);
+        var items = await db.ModuleItems.Where(i => places.Keys.Contains(i.Id)).ToListAsync(ct);
+        foreach (var item in items)
+        {
+            item.GradebookOrder = places[item.Id];
+        }
+
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok("Moved.");
     }
 
     /// <summary>

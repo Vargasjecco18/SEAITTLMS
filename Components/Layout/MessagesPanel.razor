@@ -156,6 +156,9 @@
     /// <summary>Called when something was read or sent, so the numbers in the header can be updated.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }
 
+    /// <summary>Called when a new message of the other person arrives in the conversation that is open (it is read at once, so the number in the header never grows): the header plays the sound.</summary>
+    [Parameter] public EventCallback OnIncoming { get; set; }
+
     private IReadOnlyList<Conversation> conversations = [];
     private IReadOnlyList<Contact> contacts = [];
     private IReadOnlyList<ChatMessage> thread = [];
@@ -216,8 +219,16 @@
             if (selected is not null)
             {
                 var latest = await Messages.GetThreadAsync(UserId, selected.UserId);
+                var arrived = latest.Count > thread.Count && latest.Count > 0 && !latest[^1].Mine;
                 scrollDown = latest.Count != thread.Count;
                 thread = latest;
+                StateHasChanged();
+                if (arrived)
+                {
+                    await OnIncoming.InvokeAsync();
+                }
+
+                return;
             }
 
             StateHasChanged();

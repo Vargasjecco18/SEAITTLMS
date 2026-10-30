@@ -28,7 +28,7 @@ else
 
     @* The menu of the course at the left (so the student can go to the modules, the assignments ... without going back), and the lesson with its files shown right here. *@
     <CourseLayout PageHref="@($"student/subjects/{module.AssignmentId}")" ModuleCount="@(subject?.Modules.Count(m => !m.IsSyllabus) ?? 0)" Counts="KindCounts" Extra="MenuLinks" CollapseMenu="true">
-        <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" />
+        <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" ModuleLabel="@FileLabel.OfModule(module.Title)" />
     </CourseLayout>
 }
 

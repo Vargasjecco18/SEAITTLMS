@@ -240,7 +240,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             var meets = meetings.FirstOrDefault(m => m.SectionId == r.SectionId && m.SubjectId == r.SubjectId);
             cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
                 meets is null ? null : new MeetingInfo(meets.Days, meets.StartTime, meets.EndTime).Describe(),
-                KindCount(r.Id, ItemKinds.Activity), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName));
+                KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName));
         }
 
         return cards;
@@ -361,7 +361,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                     AttendancePercent: marked.Count == 0 ? null : Math.Round(came * 100m / marked.Count, 1),
                     NextDueUtc: nextDue,
                     Meets: meetings.FirstOrDefault(m => m.SectionId == e.SectionId && m.SubjectId == e.SubjectId) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null,
-                    Activities: its.Count(i => i.Kind == ItemKinds.Activity), Quizzes: its.Count(i => i.Kind == ItemKinds.Quiz), TaskPerformances: its.Count(i => i.Kind == ItemKinds.TaskPerformance),
+                    Activities: its.Count(i => i.Kind is ItemKinds.Activity or ItemKinds.Seatwork or ItemKinds.Recitation), Quizzes: its.Count(i => i.Kind == ItemKinds.Quiz), TaskPerformances: its.Count(i => i.Kind == ItemKinds.TaskPerformance),
                     StrandCode: e.StrandCode, StrandName: e.StrandName);
             })
             .ToList();

@@ -62,10 +62,6 @@ builder.Services.AddScoped<EnrollmentImportService>();
 builder.Services.AddScoped<FileDownloads>();
 builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddSingleton<LiveUpdates>();
-builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
-builder.Services.AddSingleton<EmailQueue>();
-builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
-builder.Services.AddHostedService<EmailWorker>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<NotificationSoundService>();
 builder.Services.AddScoped<MessageService>();
@@ -83,6 +79,7 @@ builder.Services.AddScoped<ProviderService>();
 builder.Services.AddScoped<EvaluationService>();
 builder.Services.AddScoped<SchoolSetupService>();
 builder.Services.AddScoped<CourseScheduleService>();
+builder.Services.AddScoped<SetupWorkbookService>();
 builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<GradebookService>();
 builder.Services.AddScoped<GradeService>();
@@ -141,13 +138,6 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options => options.MaximumReceiveMessageSize = 1024 * 1024);
-
-// A big file (the settings allow up to 1000 MB) comes from the browser in bigger pieces than the default 20 KB, so it does not take thousands of round trips.
-builder.Services.Configure<Microsoft.AspNetCore.Components.Forms.RemoteBrowserFileStreamOptions>(o =>
-{
-    o.MaxSegmentSize = 384 * 1024;
-    o.MaxBufferSize = 4 * 1024 * 1024;
-});
 
 
 var app = builder.Build();

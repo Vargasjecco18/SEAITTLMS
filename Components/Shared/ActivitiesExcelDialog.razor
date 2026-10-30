@@ -3,7 +3,7 @@
 @inject AttachmentService Attachments
 @inject SystemSettingsService Settings
 
-@* The box for the Excel workbook of a module: the template with the sheets Assignments, Quizzes, Quiz Questions and Task Performances, an export of what the module has, and the import.
+@* The box for the Excel workbook of a module: the template with the sheets Assignments, Quizzes, Quiz Questions, Task Performances, Seatwork and Recitations, an export of what the module has, and the import.
    The Files column of the workbook names files; they are chosen here and each one is attached to the row that names it. The page that opens the box saves the activities (OnImport),
    so the rules of the teacher and the rules of the academic provider each apply. *@
 <Modal Open="Open" Title="Add Activities in Excel" Large="true" OnClose="CloseAsync">
@@ -14,7 +14,7 @@
             <p class="xl-lead">For <strong>@ModuleTitle</strong>. One workbook has a sheet for the assignments, the quizzes (and their questions) and the task performances: every row becomes one activity of the module.</p>
             <ol class="xl-steps">
                 <li>
-                    <strong>Get the template.</strong> It has the sheets Assignments, Quizzes, Quiz Questions and Task Performances, an example and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
+                    <strong>Get the template.</strong> It has the sheets Assignments, Quizzes, Quiz Questions, Task Performances, Seatwork and Recitations, an example and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
                     <div class="xl-row">
                         <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
                         @if (Existing.Count > 0)

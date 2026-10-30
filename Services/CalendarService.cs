@@ -13,12 +13,14 @@ public static class CalendarKinds
     /// <summary>An event the person wrote on their own calendar ("Add event").</summary>
     public const string Personal = "Personal";
 
-    // The three kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance.
+    // The kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance, Seatwork, Recitation (and Exam).
 
     public static string Label(string kind) => kind switch
     {
         ItemKinds.Quiz => "Quiz",
         ItemKinds.TaskPerformance => "Task performance",
+        ItemKinds.Seatwork => "Seatwork",
+        ItemKinds.Recitation => "Recitation",
         ItemKinds.Exam => "Exam",
         ItemKinds.Activity => "Assignment",
         Module => "Module",

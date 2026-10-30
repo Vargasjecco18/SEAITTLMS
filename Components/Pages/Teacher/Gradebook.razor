@@ -69,11 +69,11 @@ else
                 <FormErrors Errors="formErrors" />
                 @* The way to use the gradebook, and what can be done with it, at the top right. *@
                 <div class="table-tools">
-                    <p class="muted">Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press Save final grades.</p>
+                    <p class="muted">Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press Save final grades. The arrows under a column move it to the left or to the right.</p>
                     <div class="tools">
-                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
                         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
                         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(true)">Add Exam</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
                         <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
                     </div>
                 </div>
@@ -82,11 +82,18 @@ else
                         <thead>
                             <tr>
                                 <th scope="col" class="sticky">Student</th>
-                                @foreach (var c in book.Columns)
+                                @for (var place = 0; place < book.Columns.Count; place++)
                                 {
+                                    var c = book.Columns[place];
+                                    var first = place == 0;
+                                    var last = place == book.Columns.Count - 1;
                                     <th scope="col" class="col">
-                                        <a href="teacher/items/@c.ItemId" title="@c.Title · @c.ModuleTitle · @ItemKinds.Display(c.Kind)" aria-label="@($"{c.Title}, {ItemKinds.Display(c.Kind)}")"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @codes[c.ItemId]</a>
+                                        <a href="teacher/items/@c.ItemId" title="@c.Title · @c.ModuleTitle · @ItemKinds.Display(c.Kind)" aria-label="@($"{c.Title}, {ItemKinds.Display(c.Kind)}")"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @c.Code</a>
                                         <span class="max">out of @c.Max.ToString("0.##")</span>
+                                        <span class="move" role="group" aria-label="@($"Move {c.Code}")">
+                                            <button type="button" class="mv" data-move="left" disabled="@(first || busy)" title="Move to the left" aria-label="@($"Move {c.Code} to the left")" @onclick="() => MoveAsync(c, -1)"><Icon Name="chevron-left" Size="14" /></button>
+                                            <button type="button" class="mv" data-move="right" disabled="@(last || busy)" title="Move to the right" aria-label="@($"Move {c.Code} to the right")" @onclick="() => MoveAsync(c, 1)"><Icon Name="chevron-right" Size="14" /></button>
+                                        </span>
                                     </th>
                                 }
                                 <th scope="col" class="avg">Average</th>
@@ -149,7 +156,7 @@ else
                         </tbody>
                     </table>
                 </div>
-                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
+                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>E</strong> exam &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
             }
         </Card>
     }
@@ -161,11 +168,11 @@ else
     {
         @if (extraKind == ItemKinds.Exam)
         {
-            <p class="dialog-text">Add an exam, like a midterm or a final, to give its scores. It becomes a new column of the gradebook, and it is added to the module you choose, so the students see it too.</p>
+            <p class="dialog-text">Add an exam, like a midterm or a final, to give its scores. It becomes a new column of the gradebook, and the students see it under Exams in the course menu.</p>
         }
         else
         {
-            <p class="dialog-text">Add an assignment, a quiz or a task performance to give <strong>extra scores</strong>. It becomes a new column of the gradebook, and it is added to the module you choose, so the students see it too.</p>
+            <p class="dialog-text">Add an assignment, a quiz, a task performance, a seatwork or a recitation to give <strong>extra scores</strong>. It becomes a new column of the gradebook, and it is added to the module you choose, so the students see it too.</p>
         }
         <FormErrors Errors="formErrors" />
         @if (extraModules.Count == 0)
@@ -184,14 +191,17 @@ else
                     }
                 </div>
             }
-            <Field For="x-module" Label="Module" Required="true">
-                <select id="x-module" @bind="extraModuleId">
-                    @foreach (var m in extraModules)
-                    {
-                        <option value="@m.Id">@m.Title</option>
-                    }
-                </select>
-            </Field>
+            @if (extraKind != ItemKinds.Exam)
+            {
+                <Field For="x-module" Label="Module" Required="true">
+                    <select id="x-module" @bind="extraModuleId">
+                        @foreach (var m in extraModules)
+                        {
+                            <option value="@m.Id">@m.Title</option>
+                        }
+                    </select>
+                </Field>
+            }
             <Field For="x-title" Label="Title" Required="true">
                 <input id="x-title" type="text" maxlength="200" autocomplete="off" @bind="extraTitle" @bind:event="oninput" />
             </Field>
@@ -217,7 +227,6 @@ else
     private readonly Dictionary<int, string> finalInputs = [];
     private int renderStamp;
     private readonly SemaphoreSlim saveLock = new(1, 1);
-    private readonly Dictionary<int, string> codes = [];
     private string? message;
     private bool messageIsError;
     private bool busy;
@@ -241,23 +250,13 @@ else
         ReadBook();
     }
 
-    /// <summary>The short names of the columns (A1, A2, Q1, TP1 ...: the kind and its number in the order of the columns) and the final grades that are saved.</summary>
+    /// <summary>The final grades that are saved (the short names of the columns, A1, Q1 ..., come with the columns).</summary>
     private void ReadBook()
     {
-        codes.Clear();
         finalInputs.Clear();
         if (book is null)
         {
             return;
-        }
-
-        foreach (var kind in book.Columns.GroupBy(c => c.Kind))
-        {
-            var n = 0;
-            foreach (var c in kind)
-            {
-                codes[c.ItemId] = $"{ShortKind(c.Kind)}{++n}";
-            }
         }
 
         foreach (var row in book.Rows)
@@ -265,14 +264,6 @@ else
             finalInputs[row.StudentId] = row.FinalGrade is { } g ? g.ToString("0.##", CultureInfo.InvariantCulture) : "";
         }
     }
-
-    private static string ShortKind(string kind) => kind switch
-    {
-        ItemKinds.Quiz => "Q",
-        ItemKinds.TaskPerformance => "TP",
-        ItemKinds.Exam => "E",
-        _ => "A",
-    };
 
     private async Task SubjectChanged(ChangeEventArgs e)
     {
@@ -380,6 +371,35 @@ else
         messageIsError = true;
         message = text;
         renderStamp++;   // the boxes are drawn again, so the wrong number is not left in the box
+    }
+
+    /// <summary>Moves a column one place. Only the columns are read again: the final grades that are typed and not saved yet stay as they are.</summary>
+    private async Task MoveAsync(GradebookColumn column, int delta)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Books.MoveColumnAsync(teacherId, subjectId, column.ItemId, delta);
+            if (!result.Succeeded)
+            {
+                Fail(string.Join(" ", result.Errors));
+                return;
+            }
+
+            messageIsError = false;
+            message = null;
+            book = await Books.GetAsync(teacherId, subjectId);
+            renderStamp++;
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private async Task ExportAsync()

@@ -198,7 +198,7 @@ else
                     }
 
                     <div class="groups">
-                        @foreach (var kind in ItemKinds.Listed.Where(k => k == ItemKinds.Exam ? module.Items.Any(i => i.Kind == k) : !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
+                        @foreach (var kind in ItemKinds.Listed.Where(k => ItemKinds.IsOptionalTab(k) ? module.Items.Any(i => i.Kind == k) : !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
                         {
                             var items = module.Items.Where(i => i.Kind == kind).ToList();
                             <div class="group">

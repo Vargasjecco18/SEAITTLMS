@@ -117,6 +117,39 @@
     font-weight: 500;
 }
 
+/* The two arrows under a column title: they move the column to the left or to the right. */
+.move {
+    display: flex;
+    justify-content: center;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+}
+
+.mv {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.35rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.mv:hover:not(:disabled) {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.mv:disabled {
+    cursor: default;
+    opacity: 0.35;
+}
+
 .name {
     display: block;
     font-weight: 650;

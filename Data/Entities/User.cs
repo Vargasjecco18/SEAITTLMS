@@ -36,9 +36,6 @@ public class User : AuditableEntity
     /// <summary>The last time the open sign-in was seen (every page that is open says so now and then). After a few minutes without it the sign-in is taken as ended.</summary>
     public DateTime? ActiveSessionSeenUtc { get; set; }
 
-    /// <summary>An email address (a Gmail, for example) that the person also gets their notifications at. Empty: only in the system.</summary>
-    public string? NotifyEmail { get; set; }
-
     /// <summary>
     /// The sound of a new message or notification the person chose in Settings: "chime", "bell", "pop", "knock", "tones", "school" (the sound the administrator put) or "custom" (the file the person
     /// added). Empty: the sound of the school when there is one, else two short tones. See <see cref="NotificationSound"/>.

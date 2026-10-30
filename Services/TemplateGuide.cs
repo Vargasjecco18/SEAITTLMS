@@ -12,14 +12,21 @@ public static class TemplateGuide
     public const string SheetName = "How to fill";
 
     /// <summary>Adds the sheet to the workbook. <paramref name="extraSteps"/> go after the four steps every template has (the limits, what happens after the import ...).</summary>
-    public static void Add(XlsxBook book, string title, IReadOnlyList<GuideColumn> columns, params string[] extraSteps)
+    public static void Add(XlsxBook book, string title, IReadOnlyList<GuideColumn> columns, params string[] extraSteps) =>
+        Build(book, title, columns, "1. Fill in the yellow cells. The first row shows an example: change it or delete it.", extraSteps);
+
+    /// <summary>The same sheet for a template that has no example row (the examples are in the table).</summary>
+    public static void AddWithoutExample(XlsxBook book, string title, IReadOnlyList<GuideColumn> columns, params string[] extraSteps) =>
+        Build(book, title, columns, "1. Fill in the yellow cells, one row for each thing you add. The table below gives an example for each column.", extraSteps);
+
+    private static void Build(XlsxBook book, string title, IReadOnlyList<GuideColumn> columns, string firstStep, string[] extraSteps)
     {
         var how = book.AddSheet(SheetName);
         how.Set(1, 1, title, XlsxStyle.Title);
 
         var steps = new List<string>
         {
-            "1. Fill in the yellow cells. The first row shows an example: change it or delete it.",
+            firstStep,
             "2. Where a cell has an arrow, press the arrow and choose from the list. Put the pointer on a cell to read what to put in it.",
             "3. Save the file with Ctrl+S as an Excel Workbook (.xlsx).",
             "4. Press the Import button in the system and choose the file.",

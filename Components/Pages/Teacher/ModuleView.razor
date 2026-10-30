@@ -32,7 +32,7 @@ else
 
     <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks" CollapseMenu="true">
         <ChildContent>
-            <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" />
+            <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" ModuleLabel="@FileLabel.OfModule(module.Title)" />
         </ChildContent>
         <Aside>
             <Card Title="Edit module" IconName="pencil">

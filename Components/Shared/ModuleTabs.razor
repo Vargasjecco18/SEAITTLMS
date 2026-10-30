@@ -1,6 +1,6 @@
-@* The bottom of a module: three tabs, Assignments, Quizzes and Task performance, each with its list. *@
+@* The bottom of a module: a tab for Assignments, Quizzes and Task performance, and one for the seatwork, recitations and exams the module has, each with its list. *@
 <div class="tabs" role="tablist" aria-label="Assignments in this module">
-    @foreach (var kind in ItemKinds.Listed.Where(k => k != ItemKinds.Exam || ItemsOf(k).Count > 0))
+    @foreach (var kind in ItemKinds.Listed.Where(k => !ItemKinds.IsOptionalTab(k) || ItemsOf(k).Count > 0))
     {
         var count = ItemsOf(kind).Count;
         var todo = ItemsOf(kind).Count(i => i.Status is "NotStarted" or SubmissionStatus.InProgress);

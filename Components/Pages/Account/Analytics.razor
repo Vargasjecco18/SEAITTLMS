@@ -77,7 +77,12 @@ else
             }
         </Card>
 
-        @if (Role != AppRoles.Teacher)
+        @if (Role == AppRoles.Teacher)
+        {
+            @* The courses at a glance sit at the right of the performance by course. *@
+            @PerformanceCard(report)
+        }
+        else
         {
             <Card Title="Attendance" IconName="calendar-check">
                 @if (report.Attendance.Marks == 0)
@@ -109,48 +114,65 @@ else
             </Card>
         }
 
-        @if (Role == AppRoles.Teacher)
-        {
-            @ConcernCard(report)
-        }
     </div>
 
-    <div class="grid two">
-        @if (Role != AppRoles.Teacher)
-        {
+    @if (Role == AppRoles.Teacher)
+    {
+        @* The students who need attention are at the bottom. *@
+        @ConcernCard(report)
+    }
+    else
+    {
+        <div class="grid two">
             @ConcernCard(report)
-        }
 
-        @if (report.SchoolWide)
-        {
-            <Card Title="Intervention effectiveness" IconName="heart-handshake">
-                @if (report.Resolved == 0)
-                {
-                    <p class="muted">When the guidance counselor resolves a referral and says how it ended, the results show here.</p>
-                }
-                else
-                {
-                    var success = report.Improved * 100 / report.Resolved;
-                    <div class="success">
-                        <span class="success-number">@success%</span>
-                        <span class="success-text">of @report.Resolved resolved @(report.Resolved == 1 ? "referral" : "referrals") improved</span>
-                    </div>
-                    <ul class="bars">
-                        @foreach (var i in report.Interventions)
-                        {
-                            <li>
-                                <span class="bar-name">@i.Intervention</span>
-                                <span class="track"><i class="concern improved" style="width: @(i.Total == 0 ? 0 : i.Improved * 100 / i.Total)%"></i></span>
-                                <span class="bar-value">@i.Improved / @i.Total</span>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-        }
-    </div>
+            @if (report.SchoolWide)
+            {
+                <Card Title="Intervention effectiveness" IconName="heart-handshake">
+                    @if (report.Resolved == 0)
+                    {
+                        <p class="muted">When the guidance counselor resolves a referral and says how it ended, the results show here.</p>
+                    }
+                    else
+                    {
+                        var success = report.Improved * 100 / report.Resolved;
+                        <div class="success">
+                            <span class="success-number">@success%</span>
+                            <span class="success-text">of @report.Resolved resolved @(report.Resolved == 1 ? "referral" : "referrals") improved</span>
+                        </div>
+                        <ul class="bars">
+                            @foreach (var i in report.Interventions)
+                            {
+                                <li>
+                                    <span class="bar-name">@i.Intervention</span>
+                                    <span class="track"><i class="concern improved" style="width: @(i.Total == 0 ? 0 : i.Improved * 100 / i.Total)%"></i></span>
+                                    <span class="bar-value">@i.Improved / @i.Total</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </Card>
+            }
+        </div>
 
-    <Card Title="@report.PerformanceTitle" IconName="layers">
+        @PerformanceCard(report)
+    }
+}
+
+@code {
+    private sealed record BandInfo(string Key, string Label, Func<BandCounts, int> Count);
+
+    private static readonly BandInfo[] Bands =
+    [
+        new("outstanding", "Outstanding (90+)", b => b.Outstanding),
+        new("verysat", "Very satisfactory (85–89)", b => b.VerySatisfactory),
+        new("sat", "Satisfactory (80–84)", b => b.Satisfactory),
+        new("fair", "Fairly satisfactory (70–79)", b => b.Fair),
+        new("failing", "Below 70", b => b.Failing),
+    ];
+
+    private RenderFragment PerformanceCard(AnalyticsReport report) => @<text>
+        <Card Title="@report.PerformanceTitle" IconName="layers">
         @if (report.Performance.Count == 0)
         {
             <p class="muted">Nothing to show yet.</p>
@@ -189,19 +211,7 @@ else
             </div>
         }
     </Card>
-}
-
-@code {
-    private sealed record BandInfo(string Key, string Label, Func<BandCounts, int> Count);
-
-    private static readonly BandInfo[] Bands =
-    [
-        new("outstanding", "Outstanding (90+)", b => b.Outstanding),
-        new("verysat", "Very satisfactory (85–89)", b => b.VerySatisfactory),
-        new("sat", "Satisfactory (80–84)", b => b.Satisfactory),
-        new("fair", "Fairly satisfactory (70–79)", b => b.Fair),
-        new("failing", "Below 70", b => b.Failing),
-    ];
+    </text>;
 
     private RenderFragment ConcernCard(AnalyticsReport report) => @<text>
         <Card Title="@report.ConcernTitle" IconName="flag">

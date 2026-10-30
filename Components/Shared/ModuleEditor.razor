@@ -18,8 +18,8 @@
     <Field For="m-link" Label="Link" Hint="A file or video the lesson uses (starts with https://).">
         <InputText id="m-link" @bind-Value="form.LinkUrl" maxlength="500" autocomplete="off" />
     </Field>
-    <AttachmentPicker @ref="filesPicker" Title="Files of the module" Existing="@(Files.Where(f => !f.IsSlides).ToList())" />
-    <AttachmentPicker @ref="slidesPicker" @key="@("slides")" Slides="true" Title="Slides of the module (PowerPoint or PDF)" Existing="@(Files.Where(f => f.IsSlides).ToList())" />
+    <AttachmentPicker @ref="filesPicker" Title="Files of the module" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => !f.IsSlides).ToList())" />
+    <AttachmentPicker @ref="slidesPicker" @key="@("slides")" Slides="true" Title="Slides of the module (PowerPoint or PDF)" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => f.IsSlides).ToList())" />
     <div class="modal-actions">
         @if (OnCancel.HasDelegate)
         {

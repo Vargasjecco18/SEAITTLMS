@@ -111,7 +111,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var m = modules.FirstOrDefault(x => x.SubjectId == s.Id);
             int Items(string kind) => items.FirstOrDefault(x => x.SubjectId == s.Id && x.Kind == kind)?.Count ?? 0;
             return new MaterialCourseRow(
-                s.Id, s.Code, s.Name, (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, Items(ItemKinds.Activity), Items(ItemKinds.Quiz), Items(ItemKinds.TaskPerformance),
+                s.Id, s.Code, s.Name, (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, Items(ItemKinds.Activity) + Items(ItemKinds.Seatwork) + Items(ItemKinds.Recitation), Items(ItemKinds.Quiz), Items(ItemKinds.TaskPerformance),
                 teachers.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0,
                 placements?.GetValueOrDefault(s.Id));
         }).ToList();

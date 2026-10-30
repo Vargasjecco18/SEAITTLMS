@@ -8,18 +8,18 @@
         @if (Items.Count > 1)
         {
             <div class="chips" role="group" aria-label="@Label">
-                @foreach (var f in Items)
+                @foreach (var (f, place) in Items.Select((f, i) => (f, i + 1)))
                 {
                     var id = f.Id;
-                    <button type="button" class="chip @(id == current.Id ? "on" : "")" aria-pressed="@(id == current.Id ? "true" : "false")" @onclick="() => selectedId = id">
-                        <Icon Name="@AttachmentList.IconOf(f.Name)" Size="15" /> <span>@f.Name</span>
+                    <button type="button" class="chip @(id == current.Id ? "on" : "")" aria-pressed="@(id == current.Id ? "true" : "false")" title="@f.Name" @onclick="() => selectedId = id">
+                        <Icon Name="@AttachmentList.IconOf(f.Name)" Size="15" /> <span>@FileLabel.Short(f.Name, ModuleLabel, place)</span>
                     </button>
                 }
             </div>
         }
 
         <div class="bar">
-            <span class="file-title"><Icon Name="@AttachmentList.IconOf(current.Name)" Size="16" /> <strong>@current.Name</strong> <span class="size">@FileSize.Text(current.SizeBytes)</span></span>
+            <span class="file-title" title="@current.Name"><Icon Name="@AttachmentList.IconOf(current.Name)" Size="16" /> <strong>@FileLabel.Short(current.Name, ModuleLabel, PlaceOf(current))</strong> <span class="size">@FileSize.Text(current.SizeBytes)</span></span>
             <span class="bar-links">
                 @if (current.CanPreview)
                 {
@@ -60,6 +60,11 @@
 
     /// <summary>The file that is shown first (the one the person pressed in a list); the first one the browser can show when it is not given.</summary>
     [Parameter] public int? InitialId { get; set; }
+
+    /// <summary>The module the files belong to ("Module 1"): a long file name is shown as this.</summary>
+    [Parameter] public string? ModuleLabel { get; set; }
+
+    private int PlaceOf(AttachmentRow file) => Items.ToList().FindIndex(f => f.Id == file.Id) + 1;
 
     /// <summary>What the buttons are, for screen readers.</summary>
     [Parameter] public string Label { get; set; } = "Files of the lesson";

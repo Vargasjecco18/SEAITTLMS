@@ -12,7 +12,7 @@ public sealed record NotificationList(IReadOnlyList<NotificationItem> Items, int
 /// The bell in the header. Other services call <see cref="AddAsync"/> when something happens that a person should know about
 /// (a module was posted, an activity was graded, a message came in, a student was referred).
 /// </summary>
-public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactory, LiveUpdates? live = null, EmailQueue? email = null)
+public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactory, LiveUpdates? live = null)
 {
     public async Task AddAsync(int userId, string kind, string title, string? body = null, string? link = null, CancellationToken ct = default) =>
         await AddForManyAsync([userId], kind, title, body, link, ct);
@@ -42,68 +42,6 @@ public sealed class NotificationService(IDbContextFactory<AppDbContext> dbFactor
 
         // The people who have a page open see it now.
         live?.Publish(ids);
-
-        // The people who added an email address in Settings get it there too (it only waits in the queue: the mail server is never waited for).
-        if (email is { Enabled: true })
-        {
-            var targets = await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id) && u.IsActive && u.NotifyEmail != null).Select(u => u.NotifyEmail!).ToListAsync(ct);
-            foreach (var address in targets.Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                email.TryEnqueue(email.ForNotification(address, title, body, link));
-            }
-        }
-    }
-
-    // ======================================================================= the email address of a person
-
-    /// <summary>Whether the system can send email at all (the "Email" section of appsettings is filled in).</summary>
-    public bool EmailIsSetUp => email?.Enabled ?? false;
-
-    public async Task<string?> GetNotifyEmailAsync(int userId, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => u.NotifyEmail).FirstOrDefaultAsync(ct);
-    }
-
-    /// <summary>The person adds the email address (a Gmail, for example) where their notifications are also sent, changes it, or takes it off (empty).</summary>
-    public async Task<ServiceResult> SetNotifyEmailAsync(int userId, string? address, CancellationToken ct = default)
-    {
-        string? normalized = null;
-        if (!string.IsNullOrWhiteSpace(address))
-        {
-            normalized = Auth.EmailAddresses.Normalize(address);
-            if (normalized is null)
-            {
-                return ServiceResult.Fail("Write a real email address, like name@gmail.com.");
-            }
-        }
-
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var changed = await db.Users.Where(u => u.Id == userId && u.IsActive).ExecuteUpdateAsync(s => s.SetProperty(u => u.NotifyEmail, normalized), ct);
-        if (changed == 0)
-        {
-            return ServiceResult.Fail("Your account was not found.");
-        }
-
-        return ServiceResult.Ok(normalized is null ? "The email address was taken off. Notifications stay in the system only." : $"Saved. Your notifications are also sent to {normalized}.");
-    }
-
-    /// <summary>Sends one email to the address the person added, so they can see that it arrives.</summary>
-    public async Task<ServiceResult> SendTestEmailAsync(int userId, CancellationToken ct = default)
-    {
-        if (email is not { Enabled: true })
-        {
-            return ServiceResult.Fail("The school has not set up the sending of email yet, so nothing can be sent now. Your address is kept: the emails start when the administrator sets it up.");
-        }
-
-        var address = await GetNotifyEmailAsync(userId, ct);
-        if (address is null)
-        {
-            return ServiceResult.Fail("Save an email address first.");
-        }
-
-        email.TryEnqueue(email.ForNotification(address, "Test message from SEAITT Legazpi LMS", "If you read this, the notifications of the system arrive at this address.", null));
-        return ServiceResult.Ok($"A test message was sent to {address}. It can take a minute to arrive; look in the spam folder too.");
     }
 
     public async Task<NotificationList> GetAsync(int userId, int take = 15, CancellationToken ct = default)

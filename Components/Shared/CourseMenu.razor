@@ -4,7 +4,7 @@
     <a class="cm-item @(Selected == "" ? "on" : "")" href="@PageHref" aria-current="@(Selected == "" ? "page" : null)" data-course-menu="modules">
         <Icon Name="layers" Size="18" /> <span class="cm-label">Modules</span> <span class="cm-count">@ModuleCount</span>
     </a>
-    @foreach (var kind in ItemKinds.Listed.Where(k => k != ItemKinds.Exam || Counts.GetValueOrDefault(k) > 0 || Selected == KeyOf(k)))
+    @foreach (var kind in ItemKinds.Listed.Where(k => !ItemKinds.IsOptionalTab(k) || Counts.GetValueOrDefault(k) > 0 || Selected == KeyOf(k)))
     {
         var key = KeyOf(kind);
         <a class="cm-item @(Selected == key ? "on" : "")" href="@($"{PageHref}?tab={key}")" aria-current="@(Selected == key ? "page" : null)" data-course-menu="@key">
@@ -45,6 +45,8 @@
     {
         ItemKinds.Quiz => "quizzes",
         ItemKinds.TaskPerformance => "tasks",
+        ItemKinds.Seatwork => "seatwork",
+        ItemKinds.Recitation => "recitations",
         ItemKinds.Exam => "exams",
         _ => "assignments",
     };
@@ -55,6 +57,8 @@
         "assignments" => ItemKinds.Activity,
         "quizzes" => ItemKinds.Quiz,
         "tasks" => ItemKinds.TaskPerformance,
+        "seatwork" => ItemKinds.Seatwork,
+        "recitations" => ItemKinds.Recitation,
         "exams" => ItemKinds.Exam,
         _ => null,
     };

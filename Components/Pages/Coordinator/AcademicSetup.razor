@@ -5,10 +5,18 @@
 @using SEAITT_LMS.Components.Pages.Coordinator.Setup
 @using SEAITT_LMS.Services
 @inject SchoolSetupService Setup
+@inject SetupWorkbookService Workbook
+@inject CurrentUser Me
+@inject FileDownloads Downloads
 
 <PageTitle>@tab.Label · Academic setup · SEAITT Legazpi LMS</PageTitle>
 
-<PageHeader Title="Academic setup" IconName="school" />
+<PageHeader Title="Academic setup" IconName="school">
+    <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
+    <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenExcelAsync">Template and import (Excel)</Button>
+</PageHeader>
+
+<Notice Message="@message" IsError="false" OnDismiss="ClearMessage" />
 
 <div class="setup">
     <nav class="tabs" aria-label="Academic setup">
@@ -23,6 +31,8 @@
         }
     </nav>
 
+    @* A new key makes the tab read its rows again (after an import). *@
+    <div @key="reloadKey">
     @switch (tab.Key)
     {
         case "school-years":
@@ -47,7 +57,15 @@
             <ScheduleTab OnChanged="ReloadCountsAsync" />
             break;
     }
+    </div>
 </div>
+
+<SheetImportDialog Open="excelOpen" Title="Academic setup in Excel"
+                   Lead="One workbook has a sheet for the school years, terms, tracks, strands, courses, the courses of each strand, sections, the hours of the day and the class schedule. Fill in the template, or export what the school has, change it and import it again."
+                   Single="row was" Plural="rows were" Added="saved" RowLabel="Sheet and row" PreviewHint="The rows with a problem are left out; the reason is on its line. A row that needs something that is not there yet (a school year, a strand) says so after the import."
+                   TemplateName="@SetupSheets.FileName("Template")" Template="SetupSheets.Template"
+                   Export="ExportBytes" ExportName="@SetupSheets.FileName("Academic setup")" ExportLabel="Export what the school has" ExportCount="@(snapshot?.Total ?? 0)"
+                   Read="ReadSheet" OnImport="ImportSheetAsync" OnClose="CloseExcel" />
 
 @code {
     private sealed record SetupTab(string Key, string Label, string Icon);
@@ -67,6 +85,10 @@
 
     private SetupTab tab = Tabs[0];
     private SetupCounts? counts;
+    private int reloadKey;
+    private string? message;
+    private bool excelOpen;
+    private SetupSnapshot? snapshot;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -76,6 +98,52 @@
     }
 
     private async Task ReloadCountsAsync() => counts = await Setup.GetCountsAsync();
+
+    private void ClearMessage() => message = null;
+
+    // ---------------------------------------------------------------- the Excel workbook of the whole setup
+
+    private async Task ExportAsync()
+    {
+        var all = await Workbook.GetSnapshotAsync();
+        await Downloads.SaveAsync(SetupSheets.FileName("Academic setup"), SetupSheets.Export(all));
+    }
+
+    private async Task OpenExcelAsync()
+    {
+        snapshot = await Workbook.GetSnapshotAsync();
+        excelOpen = true;
+    }
+
+    private void CloseExcel() => excelOpen = false;
+
+    private byte[] ExportBytes() => SetupSheets.Export(snapshot ?? SetupSnapshot.Empty);
+
+    private static SheetImportDialog.SheetPreview ReadSheet(byte[] data)
+    {
+        var book = SetupSheets.Parse(data);
+        return new SheetImportDialog.SheetPreview([.. book.Lines.Select(l => new SheetImportDialog.SheetPreviewRow(l.Place, l.Title, l.IsReady ? null : string.Join(" ", l.Errors)))], book.FileError);
+    }
+
+    /// <summary>The rows without problems are saved by the same rules as the tabs; then the tabs and their numbers are read again.</summary>
+    private async Task<ItemImportSummary> ImportSheetAsync(byte[] data)
+    {
+        var user = await Me.GetAsync();
+        if (user is null)
+        {
+            return new ItemImportSummary(0, ["Sign in again to import."]);
+        }
+
+        var result = await Workbook.ImportAsync(SetupSheets.Parse(data), user.UserId);
+        await ReloadCountsAsync();
+        reloadKey++;
+        if (result.Saved > 0)
+        {
+            message = $"The academic setup was updated from the workbook ({result.Saved} {(result.Saved == 1 ? "row" : "rows")}).";
+        }
+
+        return new ItemImportSummary(result.Saved, result.Errors);
+    }
 
     private string CountOf(string key) => counts is null ? "" : key switch
     {

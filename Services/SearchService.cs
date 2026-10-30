@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEAITT_LMS.Components.Shared;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
 
@@ -173,7 +174,7 @@ public sealed class SearchService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
         foreach (var i in await itemQuery.OrderBy(i => i.Title).Take(PerGroup).Select(i => new { i.Id, i.Title, i.Kind, Subject = i.Module.Assignment.Subject.Name }).ToListAsync(ct))
         {
-            work.Add(new SearchHit(i.Title, $"{ItemKinds.Display(i.Kind)} · {i.Subject}", $"student/items/{i.Id}", i.Kind == ItemKinds.Quiz ? "file-question" : i.Kind == ItemKinds.TaskPerformance ? "clipboard-check" : "notebook-pen"));
+            work.Add(new SearchHit(i.Title, $"{ItemKinds.Display(i.Kind)} · {i.Subject}", $"student/items/{i.Id}", SubjectStyle.KindIcon(i.Kind)));
         }
 
         return (subjects, work);

@@ -4,7 +4,7 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-/// <summary>One thing to add to a module that the workbook describes: an assignment, a quiz (with its questions) or a task performance, and the files it names.</summary>
+/// <summary>One thing to add to a module that the workbook describes: an assignment, a quiz (with its questions), a task performance, a seatwork or a recitation, and the files it names.</summary>
 public sealed record ActivityWork(string Kind, ItemInput Input, IReadOnlyList<QuestionInput> Questions, IReadOnlyList<string> FileNames);
 
 /// <summary>A row of the workbook: where it is (sheet and row), its title, and either the work that is ready or what is wrong with it.</summary>
@@ -20,8 +20,8 @@ public sealed record ActivityImportParse(IReadOnlyList<ActivityImportRow> Rows, 
 public sealed record ActivityExportItem(string Kind, ItemExportRow Row, IReadOnlyList<QuestionInput> Questions, IReadOnlyList<string> FileNames);
 
 /// <summary>
-/// The one Excel workbook for the assignments, quizzes and task performances of a module (the teacher's and the academic provider's "Add Activities"): the sheets Assignments, Quizzes,
-/// Quiz Questions and Task Performances, with the column Files to name the files that go with each one (they are chosen when the workbook is imported, and matched by name). The
+/// The one Excel workbook for the assignments, quizzes, task performances, seatwork and recitations of a module (the teacher's and the academic provider's "Add Activities"): the sheets Assignments, Quizzes,
+/// Quiz Questions, Task Performances, Seatwork and Recitations, with the column Files to name the files that go with each one (they are chosen when the workbook is imported, and matched by name). The
 /// questions of a quiz are connected to it by the title of the quiz: the column Quiz of the sheet Quiz Questions. The export of a module is the same workbook.
 /// </summary>
 public static class ActivitySheets
@@ -32,8 +32,23 @@ public static class ActivitySheets
     public const string QuizzesSheet = "Quizzes";
     public const string QuestionsSheet = "Quiz Questions";
     public const string TasksSheet = "Task Performances";
+    public const string SeatworkSheet = "Seatwork";
+    public const string RecitationsSheet = "Recitations";
 
     private const int TemplateRows = 20;
+
+    /// <summary>The sheets that have the same columns: the work that is not a quiz.</summary>
+    private const string WorkSheets = AssignmentsSheet + ", " + TasksSheet + ", " + SeatworkSheet + ", " + RecitationsSheet;
+
+    /// <summary>The sheet of a kind.</summary>
+    private static string SheetOf(string kind) => kind switch
+    {
+        ItemKinds.Quiz => QuizzesSheet,
+        ItemKinds.TaskPerformance => TasksSheet,
+        ItemKinds.Seatwork => SeatworkSheet,
+        ItemKinds.Recitation => RecitationsSheet,
+        _ => AssignmentsSheet,
+    };
 
     private static readonly string[] WorkHeaders = ["Title", "Instructions", "Highest score", "Appears on", "Due date", "Files"];
     private static readonly string[] QuizHeaders = ["Title", "Instructions", "Time limit (minutes)", "Appears on", "Due date", "Files"];
@@ -157,16 +172,18 @@ public static class ActivitySheets
         questions.Number($"F2:F{lastQuestionRow}", 0.01m, 100, "Type the points, from 0.01 to 100. Leave it empty for 1.");
 
         WorkSheet(TasksSheet, ItemKinds.TaskPerformance);
+        WorkSheet(SeatworkSheet, ItemKinds.Seatwork);
+        WorkSheet(RecitationsSheet, ItemKinds.Recitation);
 
         const string Needed = "Needed", Optional = "Optional";
         TemplateGuide.Add(book, "How to fill the workbook",
         [
-            new(AssignmentsSheet + ", " + TasksSheet, "Title", Needed, "The name of the work, like Assignment 1: Journal entries.", TemplateGuide.TypeIt),
-            new(AssignmentsSheet + ", " + TasksSheet, "Instructions", Optional, "What the students must do.", TemplateGuide.TypeIt),
-            new(AssignmentsSheet + ", " + TasksSheet, "Highest score", Optional, "A number from 1 to 1000. Empty: 50 for an assignment, 100 for a task performance.", TemplateGuide.TypeNumber),
-            new(AssignmentsSheet + ", " + TasksSheet, "Appears on", Optional, "The day and hour the students can see it (Philippine time). Empty: it appears with its module.", TemplateGuide.DateHow),
-            new(AssignmentsSheet + ", " + TasksSheet, "Due date", Optional, "The last day and hour to hand it in (Philippine time). Empty: no due date.", TemplateGuide.DateHow),
-            new(AssignmentsSheet + ", " + TasksSheet, "Files", Optional, "The names of the files that go with it, like worksheet.pdf; rubric.docx.", "Type the names with a semicolon (;) between them. In the import box, choose the same files."),
+            new(WorkSheets, "Title", Needed, "The name of the work, like Assignment 1: Journal entries.", TemplateGuide.TypeIt),
+            new(WorkSheets, "Instructions", Optional, "What the students must do.", TemplateGuide.TypeIt),
+            new(WorkSheets, "Highest score", Optional, "A number from 1 to 1000. Empty: 50 (100 for a task performance).", TemplateGuide.TypeNumber),
+            new(WorkSheets, "Appears on", Optional, "The day and hour the students can see it (Philippine time). Empty: it appears with its module.", TemplateGuide.DateHow),
+            new(WorkSheets, "Due date", Optional, "The last day and hour to hand it in (Philippine time). Empty: no due date.", TemplateGuide.DateHow),
+            new(WorkSheets, "Files", Optional, "The names of the files that go with it, like worksheet.pdf; rubric.docx.", "Type the names with a semicolon (;) between them. In the import box, choose the same files."),
             new(QuizzesSheet, "Title", Needed, "The name of the quiz, like Quiz 1: Debits and credits.", TemplateGuide.TypeIt),
             new(QuizzesSheet, "Instructions", Optional, "What the students read before they start.", TemplateGuide.TypeIt),
             new(QuizzesSheet, "Time limit (minutes)", Optional, "The minutes a student has once they start. Empty: no limit.", TemplateGuide.TypeNumber),
@@ -186,7 +203,7 @@ public static class ActivitySheets
     // ======================================================================= reading
 
     /// <summary>
-    /// Reads the workbook: each row of the sheets Assignments, Quizzes and Task Performances becomes one thing to add (checked like the box of the page checks it), and the rows of Quiz Questions
+    /// Reads the workbook: each row of the sheets Assignments, Quizzes, Task Performances, Seatwork and Recitations becomes one thing to add (checked like the box of the page checks it), and the rows of Quiz Questions
     /// are given to the quiz whose title is in their Quiz column. A row with a problem is not ready and says why.
     /// </summary>
     public static ActivityImportParse Parse(byte[] data)
@@ -205,9 +222,11 @@ public static class ActivitySheets
         var quizzes = Find(sheets, QuizzesSheet, "Quiz");
         var questions = Find(sheets, QuestionsSheet, "Questions", "Quiz Question");
         var tasks = Find(sheets, TasksSheet, "Task Performance", "Tasks", "TP");
-        if (assignments is null && quizzes is null && tasks is null)
+        var seatwork = Find(sheets, SeatworkSheet, "Seatworks");
+        var recitations = Find(sheets, RecitationsSheet, "Recitation");
+        if (assignments is null && quizzes is null && tasks is null && seatwork is null && recitations is null)
         {
-            return new ActivityImportParse([], $"This is not the template: it has no sheet called {AssignmentsSheet}, {QuizzesSheet} or {TasksSheet}. Download the template again.");
+            return new ActivityImportParse([], $"This is not the template: it has no sheet called {AssignmentsSheet}, {QuizzesSheet}, {TasksSheet}, {SeatworkSheet} or {RecitationsSheet}. Download the template again.");
         }
 
         var rows = new List<ActivityImportRow>();
@@ -231,9 +250,14 @@ public static class ActivitySheets
             }
         }
 
-        if (tasks is not null)
+        foreach (var (sheet, kind) in new[] { (tasks, ItemKinds.TaskPerformance), (seatwork, ItemKinds.Seatwork), (recitations, ItemKinds.Recitation) })
         {
-            var error = ReadWork(tasks, ItemKinds.TaskPerformance, rows, null);
+            if (sheet is null)
+            {
+                continue;
+            }
+
+            var error = ReadWork(sheet, kind, rows, null);
             if (error is not null)
             {
                 return new ActivityImportParse(rows, error);
@@ -276,7 +300,7 @@ public static class ActivitySheets
             : new ActivityImportParse(rows.OrderBy(r => SheetOrder(r.Sheet)).ThenBy(r => r.Row).ToList(), null);
     }
 
-    private static int SheetOrder(string sheet) => sheet switch { AssignmentsSheet => 0, QuizzesSheet => 1, _ => 2 };
+    private static int SheetOrder(string sheet) => sheet switch { AssignmentsSheet => 0, QuizzesSheet => 1, TasksSheet => 2, SeatworkSheet => 3, RecitationsSheet => 4, _ => 5 };
 
     private static XlsxSheetData? Find(IReadOnlyList<XlsxSheetData> sheets, params string[] names) =>
         sheets.FirstOrDefault(s => names.Any(n => string.Equals(s.Name.Trim(), n, StringComparison.OrdinalIgnoreCase)));
@@ -300,7 +324,7 @@ public static class ActivitySheets
         var appears = Column("appears on", 4);
         var due = Column("due date", 5);
         var files = Column("files", 6);
-        var sheetName = isQuiz ? QuizzesSheet : kind == ItemKinds.TaskPerformance ? TasksSheet : AssignmentsSheet;
+        var sheetName = SheetOf(kind);
         var count = 0;
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var r = 2; r <= sheet.Rows.Count; r++)

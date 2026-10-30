@@ -47,7 +47,7 @@ public static class GradebookExport
             var column = book.Columns[i];
             var c = FirstItemColumn + i;
             counters[column.Kind] = counters.GetValueOrDefault(column.Kind) + 1;
-            grades.Set(4, c, $"{ShortKind(column.Kind)}{counters[column.Kind]}", XlsxStyle.Header);
+            grades.Set(4, c, column.Code.Length > 0 ? column.Code : $"{ShortKind(column.Kind)}{counters[column.Kind]}", XlsxStyle.Header);
             grades.Set(KindRow, c, ItemKinds.Display(column.Kind));
             grades.Set(TitleRow, c, column.Title, XlsxStyle.Wrap);
             grades.Set(MaxRowOfHeader, c, column.Max, XlsxStyle.Decimal);

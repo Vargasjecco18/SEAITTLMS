@@ -10,13 +10,13 @@
     @if (Existing.Count > 0 || pending.Count > 0)
     {
         <ul class="chosen">
-            @foreach (var f in Existing)
+            @foreach (var (f, place) in Existing.Select((f, i) => (f, i + 1)))
             {
                 var isRemoved = removed.Contains(f.Id);
                 var id = f.Id;
                 <li class="@(isRemoved ? "gone" : "")">
                     <Icon Name="@AttachmentList.IconOf(f.Name)" Size="16" />
-                    <span class="name">@f.Name</span>
+                    <span class="name" title="@f.Name">@FileLabel.Short(f.Name, ModuleLabel, place)</span>
                     <span class="size">@FileSize.Text(f.SizeBytes)</span>
                     @if (isRemoved)
                     {
@@ -67,6 +67,9 @@
 
     /// <summary>The picker is for the slides of a lesson: only a PowerPoint file or a PDF is taken.</summary>
     [Parameter] public bool Slides { get; set; }
+
+    /// <summary>The module the files belong to ("Module 1"): a long file name is shown as this.</summary>
+    [Parameter] public string? ModuleLabel { get; set; }
 
     /// <summary>The files that are attached already.</summary>
     [Parameter] public IReadOnlyList<AttachmentRow> Existing { get; set; } = [];

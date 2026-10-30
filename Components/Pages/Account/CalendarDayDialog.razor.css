@@ -48,6 +48,16 @@
     color: var(--success);
 }
 
+.line.seatwork .line-icon {
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.line.recitation .line-icon {
+    background: var(--blue-soft);
+    color: var(--blue);
+}
+
 .line.exam .line-icon {
     background: var(--rose-soft);
     color: var(--rose);

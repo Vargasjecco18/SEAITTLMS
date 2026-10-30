@@ -104,7 +104,7 @@
     <Modal Open="settingsOpen" Title="Settings" OnClose="CloseSettings">
         @if (settingsOpen)
         {
-            <div class="settings-box">
+            <form class="settings-box" @onsubmit="SaveAsync" autocomplete="off">
                 <section class="settings-section" aria-labelledby="set-photo">
                     <h3 class="group-title" id="set-photo">Profile picture</h3>
                     <div class="photo-row">
@@ -133,7 +133,7 @@
 
                 <section class="settings-section" aria-labelledby="set-password">
                     <h3 class="group-title" id="set-password">Change password</h3>
-                    <form @onsubmit="ChangePasswordAsync" autocomplete="off">
+                    <div>
                         <Field For="pw-current" Label="Current password">
                             <input id="pw-current" type="@(showPasswords ? "text" : "password")" autocomplete="current-password" maxlength="@PasswordPolicy.MaxLength" @bind="currentPassword" @bind:event="oninput" />
                         </Field>
@@ -149,34 +149,8 @@
                             <p class="password-message" role="alert">@passwordMessage</p>
                         }
 
-                        <Button Type="submit" IconName="@(passwordBusy ? "loader" : "key-round")" Disabled="@(passwordBusy || string.IsNullOrEmpty(currentPassword) || string.IsNullOrEmpty(newPassword))">@(passwordBusy ? "Saving…" : "Change password")</Button>
-                        <p class="hint">After the change you log in again with the new password.</p>
-                    </form>
-                </section>
-
-                <section class="settings-section" aria-labelledby="set-email">
-                    <h3 class="group-title" id="set-email">Email for notifications</h3>
-                    <form @onsubmit="SaveEmailAsync" autocomplete="off">
-                        <Field For="set-notify-email" Label="Email address" Hint="Your Gmail, for example. The notifications of the system are also sent there.">
-                            <input id="set-notify-email" type="email" maxlength="254" autocomplete="email" placeholder="name@gmail.com" @bind="notifyEmail" @bind:event="oninput" />
-                        </Field>
-                        <div class="email-actions">
-                            <Button Type="submit" IconName="@(emailBusy ? "loader" : "mail")" Disabled="@emailBusy">@(emailBusy ? "Saving…" : "Save email")</Button>
-                            @if (!string.IsNullOrWhiteSpace(savedEmail))
-                            {
-                                <button type="button" class="link-button" disabled="@emailBusy" @onclick="SendTestEmailAsync">Send a test email</button>
-                                <button type="button" class="link-button" disabled="@emailBusy" @onclick="RemoveEmailAsync">Remove</button>
-                            }
-                        </div>
-                        @if (emailMessage is not null)
-                        {
-                            <p class="photo-message @(emailFailed ? "failed" : "")" role="status">@emailMessage</p>
-                        }
-                        else if (!Notifications.EmailIsSetUp)
-                        {
-                            <p class="hint">The school has not set up the sending of email yet. Your address is kept, and the emails start when it is.</p>
-                        }
-                    </form>
+                        <p class="hint">Leave these empty to keep your password. To change it, fill them in and press <strong>Save</strong> at the bottom. After the change you log in again with the new password.</p>
+                    </div>
                 </section>
 
                 <section class="settings-section" aria-labelledby="set-look">
@@ -207,9 +181,9 @@
 
                 <section class="settings-section" aria-labelledby="set-sound-title">
                     <h3 class="group-title" id="set-sound-title">Notification sound</h3>
-                    <p class="hint">The sound you hear when a new message or a notification arrives. Choose one, or add your own file. The switch <strong>Sound</strong> above turns it on and off.</p>
+                    <p class="hint">The sound you hear when a new message or a notification arrives. Choose one (it plays so you can hear it), or add your own file, then press <strong>Save</strong>. The switch <strong>Sound</strong> above turns it on and off.</p>
                     <Field For="set-sound" Label="Sound">
-                        <select id="set-sound" value="@(sound.Choice == "" ? (sound.HasSchool ? "school" : "tones") : sound.Choice)" @onchange="ChooseSoundAsync">
+                        <select id="set-sound" value="@pendingSound" @onchange="ChooseSoundAsync">
                             @foreach (var choice in new[] { "tones", "chime", "bell", "pop", "knock" })
                             {
                                 <option value="@choice">@NotificationSoundService.DisplayChoice(choice)</option>
@@ -225,7 +199,7 @@
                         </select>
                     </Field>
                     <div class="sound-actions">
-                        <button type="button" class="link-button" data-sound-test data-sound-choice="@SoundChoiceForPlay" data-sound-url="@SoundUrl">Play it</button>
+                        <button type="button" class="link-button" data-sound-test data-sound-choice="@pendingSound" data-sound-url="@UrlOfSound(pendingSound)">Play it</button>
                         @if (sound.HasOwn)
                         {
                             <button type="button" class="link-button" disabled="@soundBusy" @onclick="RemoveOwnSoundAsync">Remove my own sound</button>
@@ -240,14 +214,20 @@
                         <p class="photo-message @(soundFailed ? "failed" : "")" role="status">@soundMessage</p>
                     }
                 </section>
-            </div>
+
+                <div class="settings-footer">
+                    <p class="save-note @(saveFailed ? "failed" : "")" role="status">@saveMessage</p>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="CloseSettings">Close</Button>
+                    <Button Type="submit" IconName="@(saveBusy ? "loader" : "circle-check")" Disabled="@saveBusy">@(saveBusy ? "Saving…" : "Save")</Button>
+                </div>
+            </form>
         }
     </Modal>
 
     <Modal Open="messagesOpen" Title="Messages" Large="true" OnClose="CloseMessages">
         @if (messagesOpen)
         {
-            <MessagesPanel @key="startWith" UserId="user.UserId" StartWith="startWith" OnChanged="RefreshCountsAsync" />
+            <MessagesPanel @key="startWith" UserId="user.UserId" StartWith="startWith" OnChanged="RefreshCountsAsync" OnIncoming="PlayIncomingSoundAsync" />
         }
     </Modal>
 }
@@ -276,14 +256,12 @@
     private string? soundMessage;
 
     private bool settingsOpen;
-    private string notifyEmail = "";
-    private string? savedEmail;
-    private bool emailBusy;
-    private bool emailFailed;
-    private string? emailMessage;
+    private string pendingSound = "tones";
+    private bool saveBusy;
+    private bool saveFailed;
+    private string? saveMessage;
     private DateTime lastSessionTouch;
     private bool showPasswords;
-    private bool passwordBusy;
     private string? passwordMessage;
     private string currentPassword = "";
     private string newPassword = "";
@@ -317,6 +295,33 @@
         // again every 10 seconds while the page is open, in case the news came from somewhere else.
         subscription = Live.Subscribe(user.UserId, () => InvokeAsync(RefreshAllAsync));
         timer = new Timer(_ => _ = InvokeAsync(RefreshAllAsync), null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // A browser keeps sound off until the person has clicked on the page once: if that has not happened yet the page says so and waits for the click (wwwroot/app.js).
+        if (firstRender && user is not null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("seaitt.prepareSound");
+            }
+            catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
+            {
+            }
+        }
+    }
+
+    /// <summary>A message of the other person came into the conversation that is open: the sound (the numbers in the header do not grow, because it is read at once).</summary>
+    private async Task PlayIncomingSoundAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("seaitt.playNotificationSound", SoundChoiceForPlay, SoundUrl);
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
+        {
+        }
     }
 
     private async Task RefreshAllAsync()
@@ -519,13 +524,13 @@
     {
         photoMessage = null;
         passwordMessage = null;
-        emailMessage = null;
+        saveMessage = null;
+        saveFailed = false;
         if (user is not null)
         {
-            savedEmail = await Notifications.GetNotifyEmailAsync(user.UserId);
-            notifyEmail = savedEmail ?? "";
             sound = await Sounds.GetInfoAsync(user.UserId);
             soundMessage = null;
+            pendingSound = EffectiveSoundChoice;
         }
 
         settingsOpen = true;
@@ -534,36 +539,31 @@
     /// <summary>What the browser plays: the choice ("" is the sound of the school when there is one, else two tones) and the address of the file when there is one.</summary>
     private string SoundChoiceForPlay => sound.Choice != "" ? sound.Choice : sound.HasSchool ? "school" : "";
 
-    private string SoundUrl => SoundChoiceForPlay switch
+    private string SoundUrl => UrlOfSound(SoundChoiceForPlay);
+
+    /// <summary>The choice the person has now, as the box of the settings shows it: the saved one, else the sound of the school when there is one, else the two tones.</summary>
+    private string EffectiveSoundChoice => sound.Choice != "" ? sound.Choice : sound.HasSchool ? "school" : "tones";
+
+    /// <summary>The address of the file for a choice (the school's or the person's own), or empty for a sound the browser makes by itself.</summary>
+    private string UrlOfSound(string choice) => choice switch
     {
         "custom" => $"account/notification-sound?v={sound.OwnVersion}",
         "school" => $"account/school-sound?v={sound.SchoolVersion}",
         _ => "",
     };
 
+    /// <summary>A sound is chosen in the list: it plays so the person hears it, and it is kept when they press Save.</summary>
     private async Task ChooseSoundAsync(ChangeEventArgs e)
     {
-        if (user is null || soundBusy)
+        if (soundBusy)
         {
             return;
         }
 
-        soundBusy = true;
-        try
-        {
-            var result = await Sounds.SetChoiceAsync(user.UserId, e.Value?.ToString());
-            soundFailed = !result.Succeeded;
-            soundMessage = result.Succeeded ? "Saved. This is the sound you hear now." : string.Join(" ", result.Errors);
-            sound = await Sounds.GetInfoAsync(user.UserId);
-            if (result.Succeeded)
-            {
-                await JS.InvokeVoidAsync("seaitt.playNotificationSound", SoundChoiceForPlay, SoundUrl, true);
-            }
-        }
-        finally
-        {
-            soundBusy = false;
-        }
+        pendingSound = e.Value?.ToString() ?? pendingSound;
+        soundFailed = false;
+        soundMessage = "Press Save to keep this sound.";
+        await JS.InvokeVoidAsync("seaitt.playNotificationSound", pendingSound, UrlOfSound(pendingSound), true);
     }
 
     private async Task SoundFileChosenAsync(InputFileChangeEventArgs e)
@@ -600,6 +600,8 @@
             sound = await Sounds.GetInfoAsync(user.UserId);
             if (result.Succeeded)
             {
+                // The file is kept and chosen at once (it has to be kept to be heard); Save keeps the other choices.
+                pendingSound = EffectiveSoundChoice;
                 await JS.InvokeVoidAsync("seaitt.playNotificationSound", SoundChoiceForPlay, SoundUrl, true);
             }
         }
@@ -628,61 +630,11 @@
             soundFailed = !result.Succeeded;
             soundMessage = result.Message;
             sound = await Sounds.GetInfoAsync(user.UserId);
+            pendingSound = EffectiveSoundChoice;
         }
         finally
         {
             soundBusy = false;
-        }
-    }
-
-    private async Task SaveEmailAsync()
-    {
-        if (user is null || emailBusy)
-        {
-            return;
-        }
-
-        emailBusy = true;
-        try
-        {
-            var result = await Notifications.SetNotifyEmailAsync(user.UserId, notifyEmail);
-            emailFailed = !result.Succeeded;
-            emailMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
-            if (result.Succeeded)
-            {
-                savedEmail = await Notifications.GetNotifyEmailAsync(user.UserId);
-                notifyEmail = savedEmail ?? "";
-            }
-        }
-        finally
-        {
-            emailBusy = false;
-        }
-    }
-
-    private async Task RemoveEmailAsync()
-    {
-        notifyEmail = "";
-        await SaveEmailAsync();
-    }
-
-    private async Task SendTestEmailAsync()
-    {
-        if (user is null || emailBusy)
-        {
-            return;
-        }
-
-        emailBusy = true;
-        try
-        {
-            var result = await Notifications.SendTestEmailAsync(user.UserId);
-            emailFailed = !result.Succeeded;
-            emailMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
-        }
-        finally
-        {
-            emailBusy = false;
         }
     }
 
@@ -691,34 +643,64 @@
         settingsOpen = false;
         currentPassword = newPassword = confirmPassword = "";
         passwordMessage = null;
+        saveMessage = null;
         showPasswords = false;
     }
 
-    private async Task ChangePasswordAsync()
+    /// <summary>
+    /// The Save button at the bottom of the settings: it keeps the sound that is chosen in the list and, when the password boxes are filled in, changes the password (the page then goes to the
+    /// login page). The picture, the file of the person's own sound and the look of the pages are kept as soon as they are chosen.
+    /// </summary>
+    private async Task SaveAsync()
     {
-        if (user is null || passwordBusy)
+        if (user is null || saveBusy)
         {
             return;
         }
 
-        passwordBusy = true;
+        saveBusy = true;
+        saveMessage = null;
+        saveFailed = false;
         passwordMessage = null;
         try
         {
-            var result = await Auth.ChangePasswordAsync(user.UserId, currentPassword, newPassword, confirmPassword);
-            if (result.Succeeded)
+            if (pendingSound != EffectiveSoundChoice)
             {
-                // The session ends with the old password (a new security stamp): that page signs out and the login page says what happened.
-                Navigation.NavigateTo("/account/password-changed", forceLoad: true);
+                var chosen = await Sounds.SetChoiceAsync(user.UserId, pendingSound);
+                if (!chosen.Succeeded)
+                {
+                    saveFailed = true;
+                    saveMessage = string.Join(" ", chosen.Errors);
+                    return;
+                }
+
+                sound = await Sounds.GetInfoAsync(user.UserId);
+                pendingSound = EffectiveSoundChoice;
+                soundMessage = null;
+            }
+
+            if (currentPassword.Length > 0 || newPassword.Length > 0 || confirmPassword.Length > 0)
+            {
+                var changed = await Auth.ChangePasswordAsync(user.UserId, currentPassword, newPassword, confirmPassword);
+                if (changed.Succeeded)
+                {
+                    // The session ends with the old password (a new security stamp): that page signs out and the login page says what happened.
+                    Navigation.NavigateTo("/account/password-changed", forceLoad: true);
+                    return;
+                }
+
+                passwordMessage = string.Join(" ", changed.Errors);
+                currentPassword = "";
+                saveFailed = true;
+                saveMessage = "The password was not changed.";
                 return;
             }
 
-            passwordMessage = string.Join(" ", result.Errors);
-            currentPassword = "";
+            saveMessage = "Saved.";
         }
         finally
         {
-            passwordBusy = false;
+            saveBusy = false;
         }
     }
 

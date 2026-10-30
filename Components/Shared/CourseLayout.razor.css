@@ -70,7 +70,7 @@ html[data-course-menu="hidden"] .course-menu-box ::deep .course-menu {
     }
 
     .course-layout.with-aside {
-        grid-template-columns: 15.5rem minmax(0, 1fr) 18rem;
+        grid-template-columns: 15.5rem minmax(0, 1fr) 23rem;
     }
 
     html[data-course-menu="hidden"] .course-layout {
@@ -78,7 +78,7 @@ html[data-course-menu="hidden"] .course-menu-box ::deep .course-menu {
     }
 
     html[data-course-menu="hidden"] .course-layout.with-aside {
-        grid-template-columns: minmax(0, 1fr) 18rem;
+        grid-template-columns: minmax(0, 1fr) 23rem;
     }
 
     html[data-course-menu="hidden"] .course-menu-box {
