@@ -176,6 +176,8 @@
         ResetForm();
     }
 
+    protected override async Task RefreshAsync() => rows = await Setup.ListSubjectsAsync();
+
     private void ResetForm()
     {
         Errors = [];

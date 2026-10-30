@@ -253,8 +253,8 @@
 
     private static readonly IReadOnlyList<NavItem.Sub> GuidanceReferrals =
     [
-        new("All students", "guidance/referrals?show=all", "users"),
-        new("With concerns", "guidance/referrals", "list"),
+        new("All students", "guidance/referrals", "users"),
+        new("With concerns", "guidance/referrals?show=concerns", "list"),
         new("Attendance", "guidance/referrals?reason=LowAttendance", "user-x"),
         new("Violation", "guidance/referrals?reason=Violation", "shield-alert"),
     ];

@@ -36,6 +36,23 @@ public abstract class SetupTabBase : ComponentBase
     /// <summary>Called after something was saved or deleted, so the page can refresh the numbers on its tabs.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }
 
+    /// <summary>The page counts the changes of all the steps. When it grows, something in another step changed (a school year, a strand ...) and this step reads what it shows again.</summary>
+    [Parameter] public int Version { get; set; }
+
+    private int lastVersion;
+
+    /// <summary>Reads again the lists and the choices of this step (not the fields: what somebody is typing stays).</summary>
+    protected virtual Task RefreshAsync() => Task.CompletedTask;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Version != lastVersion)
+        {
+            lastVersion = Version;
+            await RefreshAsync();
+        }
+    }
+
     protected string? Message { get; set; }
 
     protected bool MessageIsError { get; set; }

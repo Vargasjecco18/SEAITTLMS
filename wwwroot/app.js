@@ -507,8 +507,9 @@ document.addEventListener('click', function (event) {
     var box = document.getElementById(link.getAttribute('data-goto'));
     if (!box) { return; }
     event.preventDefault();
+    event.stopPropagation(); // before Blazor's own handling of links, which would load the address again
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
+}, true);
 
 // The pop-up of the courses of an enrollment (EnrollmentTable.razor) opens next to the button that opened it, below it when there is
 // room and above it otherwise, and never outside the screen. Without this script it simply stays in the middle of the screen.

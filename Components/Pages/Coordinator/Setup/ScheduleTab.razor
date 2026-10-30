@@ -180,6 +180,17 @@
         await LoadCoursesAsync();
     }
 
+    protected override async Task RefreshAsync()
+    {
+        sections = await Times.ListSectionsAsync();
+        if (sections.All(s => s.SectionId != sectionId))
+        {
+            sectionId = sections.FirstOrDefault()?.SectionId ?? 0;
+        }
+
+        await LoadCoursesAsync();
+    }
+
     private async Task LoadCoursesAsync()
     {
         courses = sectionId == 0 ? [] : await Times.ListCoursesAsync(sectionId);

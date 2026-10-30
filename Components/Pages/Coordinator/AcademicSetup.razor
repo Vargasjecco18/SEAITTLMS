@@ -48,25 +48,25 @@
                 @switch (t.Key)
                 {
                     case "school-years":
-                        <SchoolYearsTab OnChanged="ReloadCountsAsync" />
+                        <SchoolYearsTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                     case "terms":
-                        <TermsTab OnChanged="ReloadCountsAsync" />
+                        <TermsTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                     case "tracks":
-                        <TracksTab OnChanged="ReloadCountsAsync" />
+                        <TracksTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                     case "strands":
-                        <StrandsTab OnChanged="ReloadCountsAsync" />
+                        <StrandsTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                     case "subjects":
-                        <SubjectsTab OnChanged="ReloadCountsAsync" />
+                        <SubjectsTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                     case "sections":
-                        <SectionsTab OnChanged="ReloadCountsAsync" />
+                        <SectionsTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                     case "class-schedule":
-                        <ScheduleTab OnChanged="ReloadCountsAsync" />
+                        <ScheduleTab OnChanged="ReloadCountsAsync" Version="changes" />
                         break;
                 }
             </section>
@@ -114,7 +114,14 @@
         }
     }
 
-    private async Task ReloadCountsAsync() => counts = await Setup.GetCountsAsync();
+    private int changes;
+
+    /// <summary>Something was saved or deleted in one step: the numbers are read again, and the other steps read their lists again (a new school year is a choice in Terms and Sections).</summary>
+    private async Task ReloadCountsAsync()
+    {
+        counts = await Setup.GetCountsAsync();
+        changes++;
+    }
 
     private void ClearMessage() => message = null;
 

@@ -139,6 +139,12 @@
         ResetForm();
     }
 
+    protected override async Task RefreshAsync()
+    {
+        years = (await Setup.GetLookupsAsync()).Years;
+        await LoadAsync();
+    }
+
     private async Task LoadAsync()
     {
         rows = await Setup.ListTermsAsync();

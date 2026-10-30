@@ -106,6 +106,8 @@
         ResetForm();
     }
 
+    protected override async Task RefreshAsync() => rows = await Setup.ListTracksAsync();
+
     private void ResetForm()
     {
         Errors = [];

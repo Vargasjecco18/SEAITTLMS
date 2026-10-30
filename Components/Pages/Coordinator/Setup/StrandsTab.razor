@@ -204,6 +204,8 @@
         ResetForm();
     }
 
+    protected override Task RefreshAsync() => ReloadAsync();
+
     private async Task ReloadAsync()
     {
         lookups = await Setup.GetLookupsAsync();

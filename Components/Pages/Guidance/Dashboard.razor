@@ -19,7 +19,7 @@
 else
 {
     <div class="stats">
-        <StatCard Label="Students with concerns" Value="@overview.Students" IconName="flag" Accent="@(overview.Students > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="Attendance or violation" Href="guidance/referrals" />
+        <StatCard Label="Students with concerns" Value="@overview.Students" IconName="flag" Accent="@(overview.Students > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="Attendance or violation" Href="guidance/referrals?show=concerns" />
         <StatCard Label="Attendance" Value="@overview.Attendance" IconName="user-x" Accent="AccentColor.Violet" Hint="@($"Attendance under {AttendanceService.LowAttendancePercent:0}%")" Href="guidance/referrals?reason=LowAttendance" />
         <StatCard Label="Violations" Value="@overview.Violations" IconName="shield-alert" Accent="@(overview.Violations > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Broke a school rule" Href="guidance/referrals?reason=Violation" />
     </div>
@@ -49,7 +49,7 @@ else
                         </li>
                     }
                 </ul>
-                <p class="more"><a href="guidance/referrals">All students <Icon Name="arrow-right" Size="14" /></a></p>
+                <p class="more"><a href="guidance/referrals?show=concerns">Students with concerns <Icon Name="arrow-right" Size="14" /></a></p>
             }
         </Card>
 

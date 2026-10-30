@@ -272,6 +272,12 @@
         ResetForm();
     }
 
+    protected override async Task RefreshAsync()
+    {
+        lookups = await Setup.GetLookupsAsync();
+        await ReloadAsync();
+    }
+
     private async Task SaveCapacityAsync()
     {
         var result = await RunAsync(userId => SystemSettings.SaveSectionCapacityAsync(userId, capacity));

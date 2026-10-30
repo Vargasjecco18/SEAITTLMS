@@ -224,7 +224,7 @@
     [SupplyParameterFromQuery(Name = "q")] private string? SearchQuery { get; set; }
 
     private int userId;
-    private string show = "concerns";
+    private string show = "all";
     private string reason = "";
     private string newReason = ReferralReasons.Violation;
     private string newDetail = "";
@@ -245,8 +245,8 @@
     protected override async Task OnInitializedAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
-        // The menu's "All students" opens the whole school; the other entries open the students who have a concern.
-        show = ShowQuery == "all" ? "all" : "concerns";
+        // The page opens on the whole school; "With concerns" in the menu, and a choice of concern, open only the students who have one.
+        show = ShowQuery == "concerns" || ReferralReasons.All.Contains(ReasonQuery ?? "") ? "concerns" : "all";
         reason = ReferralReasons.All.Contains(ReasonQuery ?? "") ? ReasonQuery! : "";
         searchText = appliedSearch = SearchQuery?.Trim() ?? "";
         await LoadAsync();

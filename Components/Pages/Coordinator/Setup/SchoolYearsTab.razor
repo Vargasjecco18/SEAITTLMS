@@ -104,6 +104,8 @@
         ResetForm();
     }
 
+    protected override async Task RefreshAsync() => rows = await Setup.ListSchoolYearsAsync();
+
     private void ResetForm()
     {
         Errors = [];
