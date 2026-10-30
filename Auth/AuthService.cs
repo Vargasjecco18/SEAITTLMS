@@ -74,6 +74,7 @@ public sealed class AuthService(
         var user = await db.Users
             .AsNoTracking()
             .Include(u => u.Role)
+            .Include(u => u.CustomRole)
             .Include(u => u.Administrator)
             .Include(u => u.GuidanceCounselor)
             .Include(u => u.AcademicCoordinator)
@@ -265,6 +266,11 @@ public sealed class AuthService(
         if (sessionId is not null)
         {
             claims.Add(new Claim(AppClaimTypes.SessionId, sessionId));
+        }
+
+        if (user.CustomRole is { } custom)
+        {
+            claims.Add(new Claim(AppClaimTypes.RoleTitle, custom.Name));
         }
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);

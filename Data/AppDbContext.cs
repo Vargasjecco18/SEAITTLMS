@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
 
     // Users and roles
     public DbSet<Role> Roles => Set<Role>();
+    public DbSet<CustomRole> CustomRoles => Set<CustomRole>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Teacher> Teachers => Set<Teacher>();

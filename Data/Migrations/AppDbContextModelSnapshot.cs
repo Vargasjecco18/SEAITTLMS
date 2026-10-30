@@ -682,6 +682,48 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.CustomRole", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BaseRole")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("base_role");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_custom_roles");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_custom_roles_name");
+
+                    b.ToTable("custom_roles", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_custom_roles_base", "base_role IN ('Registrar', 'GuidanceCounselor', 'AcademicCoordinator', 'AcademicProvider')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Enrollment", b =>
                 {
                     b.Property<int>("Id")
@@ -3426,6 +3468,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<int?>("CustomRoleId")
+                        .HasColumnType("int")
+                        .HasColumnName("custom_role_id");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(254)
@@ -3480,6 +3526,9 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_users");
+
+                    b.HasIndex("CustomRoleId")
+                        .HasDatabaseName("ix_users_custom_role_id");
 
                     b.HasIndex("Email")
                         .IsUnique()
@@ -4568,12 +4617,20 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.User", b =>
                 {
+                    b.HasOne("SEAITT_LMS.Data.Entities.CustomRole", "CustomRole")
+                        .WithMany()
+                        .HasForeignKey("CustomRoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_users_custom_roles_custom_role_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.Role", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_users_roles_role_id");
+
+                    b.Navigation("CustomRole");
 
                     b.Navigation("Role");
                 });

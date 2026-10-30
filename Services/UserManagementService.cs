@@ -24,7 +24,8 @@ public sealed record UserListItem(
     DateTime CreatedAtUtc,
     string? Placement,
     IReadOnlyList<string>? Courses = null,
-    string? StudentStatus = null);
+    string? StudentStatus = null,
+    string? RoleTitle = null);
 
 public sealed record UserPage(IReadOnlyList<UserListItem> Items, int Total, int Page, int PageSize)
 {
@@ -225,7 +226,8 @@ public sealed class UserManagementService(
 
         // One administrator, one registrar and one guidance counselor. The check and the creation happen one at a time, so two
         // administrators pressing Add together can't both get through.
-        var gate = AppRoles.OnlyOneAllowed(account.Role) ? RoleGates.GetOrAdd(account.Role, _ => new SemaphoreSlim(1, 1)) : null;
+        // (A role the administrator made up, like "Assistant Registrar", can have as many people as the school needs.)
+        var gate = account.CustomRoleId is null && AppRoles.OnlyOneAllowed(account.Role) ? RoleGates.GetOrAdd(account.Role, _ => new SemaphoreSlim(1, 1)) : null;
         if (gate is not null)
         {
             await gate.WaitAsync(ct);
@@ -251,6 +253,72 @@ public sealed class UserManagementService(
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> RoleGates = new();
+
+    /// <summary>The roles the administrator made up in Add staff, by name.</summary>
+    public async Task<IReadOnlyList<CustomRole>> ListCustomRolesAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.CustomRoles.AsNoTracking().OrderBy(r => r.Name).ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Makes a new role for the staff, like "Assistant Registrar". It works like <paramref name="baseRole"/> (one of the roles of the non-teaching staff): the same pages and the same
+    /// permissions. The name is 2 to 40 letters, numbers, spaces and dashes, and is not the name of a role that is there already.
+    /// </summary>
+    public async Task<ServiceResult> AddRoleAsync(string? name, string? baseRole, int actingUserId, CancellationToken ct = default)
+    {
+        name = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        if (name.Length is < 2 or > 40 || !name.All(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '\''))
+        {
+            return ServiceResult.Fail("Write the name of the role: 2 to 40 letters, numbers, spaces or dashes.");
+        }
+
+        if (baseRole is null || !NonTeachingRoles.Contains(baseRole))
+        {
+            return ServiceResult.Fail("Choose the role it works like.");
+        }
+
+        // The name is also not one of the usual roles (with or without the space: "Academic Provider", "AcademicProvider").
+        var plain = name.Replace(" ", "");
+        if (AppRoles.Ids.Keys.Any(r => string.Equals(r, plain, StringComparison.OrdinalIgnoreCase) || string.Equals(AppRoles.DisplayName(r), name, StringComparison.OrdinalIgnoreCase)) || string.Equals(name, "Staff", StringComparison.OrdinalIgnoreCase))
+        {
+            return ServiceResult.Fail("A role with this name is there already. Choose another name.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsActiveAdminAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail("Only an administrator can add a role.");
+        }
+
+        if (await db.CustomRoles.AnyAsync(r => r.Name == name, ct))
+        {
+            return ServiceResult.Fail("A role with this name is there already. Choose another name.");
+        }
+
+        if (await db.CustomRoles.CountAsync(ct) >= 30)
+        {
+            return ServiceResult.Fail("There are 30 roles already. That is the most.");
+        }
+
+        var role = new CustomRole { Name = name, BaseRole = baseRole };
+        db.CustomRoles.Add(role);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return ServiceResult.Fail("A role with this name is there already. Choose another name.");
+        }
+
+        if (securityLog is not null)
+        {
+            await securityLog.AddAsync(SecurityEvents.AccountCreated, null, details: $"The role {name} was added. It works like {AppRoles.DisplayName(baseRole).ToLowerInvariant()}.", actorUserId: actingUserId, ct: ct);
+        }
+
+        return ServiceResult.Ok($"The role {name} was added. It works like {AppRoles.DisplayName(baseRole).ToLowerInvariant()}.", role.Id);
+    }
 
     private async Task<ServiceResult> CreateStaffAsync(NewAccount account, int actingUserId, CancellationToken ct)
     {
@@ -593,11 +661,11 @@ public sealed class UserManagementService(
             var rows = await query.Select(p => new
             {
                 p.UserId, p.FirstName, p.MiddleName, p.LastName, p.NameExtension, p.User.Email, p.PhoneNumber, p.EmployeeNumber,
-                p.User.IsActive, p.User.LastLoginAtUtc, p.User.CreatedAtUtc,
+                p.User.IsActive, p.User.LastLoginAtUtc, p.User.CreatedAtUtc, RoleTitle = p.User.CustomRole != null ? p.User.CustomRole.Name : null,
             }).Take(500).ToListAsync(ct);
             return rows.Select(r => new UserListItem(
                 r.UserId, role, FullName(r.FirstName, r.MiddleName, r.LastName, r.NameExtension), r.Email, r.PhoneNumber, r.EmployeeNumber, null,
-                r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null)).ToList();
+                r.IsActive, r.LastLoginAtUtc, r.CreatedAtUtc, null, RoleTitle: r.RoleTitle)).ToList();
         }
 
         var all = new List<UserListItem>();

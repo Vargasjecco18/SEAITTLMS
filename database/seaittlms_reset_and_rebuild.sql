@@ -1898,5 +1898,26 @@ ALTER TABLE `material_items` ADD CONSTRAINT `ck_material_items_kind` CHECK (kind
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261030152058_SummativeExamsAndConcerns', '9.0.20');
 
+ALTER TABLE `users` ADD `custom_role_id` int NULL;
+
+CREATE TABLE `custom_roles` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(40) CHARACTER SET utf8mb4 NOT NULL,
+    `base_role` varchar(30) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_custom_roles` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_custom_roles_base` CHECK (base_role IN ('Registrar', 'GuidanceCounselor', 'AcademicCoordinator', 'AcademicProvider'))
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_users_custom_role_id` ON `users` (`custom_role_id`);
+
+CREATE UNIQUE INDEX `ix_custom_roles_name` ON `custom_roles` (`name`);
+
+ALTER TABLE `users` ADD CONSTRAINT `fk_users_custom_roles_custom_role_id` FOREIGN KEY (`custom_role_id`) REFERENCES `custom_roles` (`id`) ON DELETE RESTRICT;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261030183207_CustomStaffRoles', '9.0.20');
+
 COMMIT;
 

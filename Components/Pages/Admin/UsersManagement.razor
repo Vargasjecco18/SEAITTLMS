@@ -162,7 +162,7 @@
                             </td>
                             @if (tab.Role == UserManagementService.NonTeachingRole)
                             {
-                                <td>@AppRoles.DisplayName(user.Role)</td>
+                                <td>@(user.RoleTitle ?? AppRoles.DisplayName(user.Role))</td>
                             }
                             @if (tab.Role == AppRoles.Student)
                             {
@@ -395,23 +395,59 @@
 <Modal Open="add is not null" Title="@AddTitle" OnClose="CloseAdd">
     @if (add is not null)
     {
-        <EditForm Model="add" OnValidSubmit="SaveAddAsync">
-            <DataAnnotationsValidator />
-
-            <FormErrors Errors="formErrors" />
-
-            @if (tab.Role == UserManagementService.NonTeachingRole)
-            {
-                @* Only the roles the school can still have: the roles of which it has one already are not in the list. *@
-                <Field For="a-role" Label="Role" Required="true">
-                    <select id="a-role" @bind="add.Role">
+        @if (tab.Role == UserManagementService.NonTeachingRole)
+        {
+            @* Only the roles the school can still have: the roles of which it has one already are not in the list. The roles the administrator
+               made up (Add role) are in the list too. This part is not inside the form below, so Enter in the name of a new role does not send the form. *@
+            <div class="role-row">
+                <Field For="a-role" Label="Role" Required="true" Class="grow">
+                    <select id="a-role" value="@RoleChoice" @onchange="ChooseRole">
                         @foreach (var staffRole in AvailableStaffRoles)
                         {
                             <option value="@staffRole">@AppRoles.DisplayName(staffRole)</option>
                         }
+                        @foreach (var custom in customRoles)
+                        {
+                            <option value="custom:@custom.Id">@custom.Name</option>
+                        }
                     </select>
                 </Field>
+                <Button Variant="ButtonVariant.Secondary" IconName="plus" Small="true" Title="Make a new role" OnClick="OpenAddRole">Add role</Button>
+            </div>
+
+            @if (addingRole)
+            {
+                <section class="role-box" aria-label="Add a role">
+                    <p class="note-box">Make a role like <em>Assistant Registrar</em>. It works like one of the roles below: the same pages and the same permissions. Many people can have it.</p>
+                    @if (roleError is not null)
+                    {
+                        <p class="error" role="alert">@roleError</p>
+                    }
+                    <div class="two">
+                        <Field For="r-name" Label="Name of the role" Required="true">
+                            <input id="r-name" maxlength="40" autocomplete="off" @bind="newRoleName" @bind:event="oninput" @onkeydown="RoleNameKeyAsync" />
+                        </Field>
+                        <Field For="r-base" Label="Works like" Required="true">
+                            <select id="r-base" @bind="newRoleBase">
+                                @foreach (var baseRole in UserManagementService.NonTeachingRoles)
+                                {
+                                    <option value="@baseRole">@AppRoles.DisplayName(baseRole)</option>
+                                }
+                            </select>
+                        </Field>
+                    </div>
+                    <div class="role-actions">
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAddRole">Cancel</Button>
+                        <Button IconName="plus" Disabled="@(busy || string.IsNullOrWhiteSpace(newRoleName))" OnClick="SaveRoleAsync">Add this role</Button>
+                    </div>
+                </section>
             }
+        }
+
+        <EditForm Model="add" OnValidSubmit="SaveAddAsync">
+            <DataAnnotationsValidator />
+
+            <FormErrors Errors="formErrors" />
 
             <div class="two">
                 <Field For="a-first" Label="First name" Required="true">
@@ -659,7 +695,7 @@
         : counts.GetValueOrDefault(t.Role);
 
     private string AddTitle => tab.Role == UserManagementService.NonTeachingRole
-        ? (add?.Role is { Length: > 0 } role ? $"Add {AppRoles.DisplayName(role).ToLowerInvariant()}" : "Add staff")
+        ? (add?.Role is { Length: > 0 } role ? $"Add {ChosenRoleName(role).ToLowerInvariant()}" : "Add staff")
         : $"Add {tab.Singular}";
 
     private static string StatusText(UserListItem user) => user.StudentStatus switch
@@ -712,6 +748,9 @@
         /// <summary>The staff list only: the role of the new account.</summary>
         public string Role { get; set; } = "";
 
+        /// <summary>The staff list only: the role made up by the administrator (Add role) the account has; <see cref="Role"/> is the role it works like.</summary>
+        public int? CustomRoleId { get; set; }
+
         // Teachers only: where they work (all optional).
         public int TrackId { get; set; }
         public int StrandId { get; set; }
@@ -742,6 +781,91 @@
 
     private UserEdit? edit;
     private NewStaff? add;
+
+    // The roles made up by the administrator (Add role), and the little box to make a new one.
+    private IReadOnlyList<CustomRole> customRoles = [];
+    private bool addingRole;
+    private string newRoleName = "";
+    private string newRoleBase = AppRoles.AcademicProvider;
+    private string? roleError;
+
+    private string RoleChoice => add is null ? "" : add.CustomRoleId is { } id ? $"custom:{id}" : add.Role;
+
+    private string ChosenRoleName(string role) => add?.CustomRoleId is { } id && customRoles.FirstOrDefault(c => c.Id == id) is { } custom ? custom.Name : AppRoles.DisplayName(role);
+
+    private void ChooseRole(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        if (add is null)
+        {
+            return;
+        }
+
+        if (value.StartsWith("custom:", StringComparison.Ordinal) && int.TryParse(value["custom:".Length..], out var id) && customRoles.FirstOrDefault(c => c.Id == id) is { } custom)
+        {
+            add.CustomRoleId = custom.Id;
+            add.Role = custom.BaseRole;
+        }
+        else
+        {
+            add.CustomRoleId = null;
+            add.Role = value;
+        }
+    }
+
+    private void OpenAddRole()
+    {
+        roleError = null;
+        newRoleName = "";
+        addingRole = true;
+    }
+
+    private void CloseAddRole()
+    {
+        addingRole = false;
+        roleError = null;
+    }
+
+    private async Task RoleNameKeyAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveRoleAsync();
+        }
+    }
+
+    private async Task SaveRoleAsync()
+    {
+        if (busy || add is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Management.AddRoleAsync(newRoleName, newRoleBase, currentUserId);
+            if (!result.Succeeded)
+            {
+                roleError = result.Errors.FirstOrDefault() ?? "The role could not be added.";
+                return;
+            }
+
+            customRoles = await Management.ListCustomRolesAsync();
+            if (result.Id is int id && customRoles.FirstOrDefault(c => c.Id == id) is { } created)
+            {
+                add.CustomRoleId = created.Id;
+                add.Role = created.BaseRole;
+            }
+
+            addingRole = false;
+            roleError = null;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
     private UserListItem? deleteTarget;
     private DeleteImpact? impact;
 
@@ -1047,6 +1171,13 @@
             addSectionChoices = await Teaching.GetAssignableAsync();
         }
 
+        if (tab.Role == UserManagementService.NonTeachingRole)
+        {
+            customRoles = await Management.ListCustomRolesAsync();
+            addingRole = false;
+            roleError = null;
+        }
+
         add = new NewStaff
         {
             // The staff list: the first role of the list, which has no role the school has one of already.
@@ -1111,7 +1242,7 @@
         {
             var account = new NewAccount(
                 add.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
-                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive);
+                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive, CustomRoleId: add.CustomRoleId);
 
             var result = add.Role == AppRoles.Teacher
                 ? await Management.AddTeacherAsync(account, new TeacherPlacement(add.TrackId, add.StrandId, add.SectionId, add.SubjectIds.ToList()), currentUserId)

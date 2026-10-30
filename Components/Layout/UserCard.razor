@@ -5,7 +5,7 @@
     <Authorized>
         @{
             var name = context.User.Identity?.Name ?? "";
-            var role = AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role));
+            var role = context.User.FindFirstValue(SEAITT_LMS.Auth.AppClaimTypes.RoleTitle) ?? AppRoles.DisplayName(context.User.FindFirstValue(ClaimTypes.Role));
             int.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
         }
         <div class="card">

@@ -20,6 +20,18 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
     }
 }
 
+internal sealed class CustomRoleConfiguration : IEntityTypeConfiguration<CustomRole>
+{
+    public void Configure(EntityTypeBuilder<CustomRole> b)
+    {
+        b.ToTable("custom_roles");
+        b.Property(r => r.Name).HasMaxLength(40).IsRequired();
+        b.Property(r => r.BaseRole).HasMaxLength(30).IsRequired();
+        b.HasIndex(r => r.Name).IsUnique();
+        b.ToTable(t => t.HasCheckConstraint("ck_custom_roles_base", "base_role IN ('Registrar', 'GuidanceCounselor', 'AcademicCoordinator', 'AcademicProvider')"));
+    }
+}
+
 internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> b)
@@ -39,6 +51,11 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.HasOne(u => u.Role)
             .WithMany()
             .HasForeignKey(u => u.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(u => u.CustomRole)
+            .WithMany()
+            .HasForeignKey(u => u.CustomRoleId)
             .OnDelete(DeleteBehavior.Restrict);
 
         b.ToTable(t => t.HasCheckConstraint("ck_users_failed_login_count", "failed_login_count >= 0"));

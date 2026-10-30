@@ -21,6 +21,10 @@ public class User : AuditableEntity
     public int RoleId { get; set; }
     public Role Role { get; set; } = null!;
 
+    /// <summary>The name of the role the administrator chose in Add staff (a role of their own that works like <see cref="Role"/>). Empty for the usual roles.</summary>
+    public int? CustomRoleId { get; set; }
+    public CustomRole? CustomRole { get; set; }
+
     /// <summary>Deactivated accounts cannot sign in. Prefer this over deleting a user.</summary>
     public bool IsActive { get; set; } = true;
 

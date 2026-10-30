@@ -10,6 +10,7 @@ namespace SEAITT_LMS.Auth;
 /// <param name="Role">One of the <see cref="AppRoles"/> names.</param>
 /// <param name="Lrn">Required for students (12 digits), not allowed for anyone else.</param>
 /// <param name="EmployeeNumber">Only for staff roles.</param>
+/// <param name="CustomRoleId">A role the administrator named (see <see cref="CustomRole"/>). <paramref name="Role"/> must be the role it works like.</param>
 public sealed record NewAccount(
     string Role,
     string Email,
@@ -23,7 +24,8 @@ public sealed record NewAccount(
     string? EmployeeNumber = null,
     DateOnly? BirthDate = null,
     Sex? Sex = null,
-    bool IsActive = true);
+    bool IsActive = true,
+    int? CustomRoleId = null);
 
 public sealed record AccountResult(bool Succeeded, int? UserId, IReadOnlyList<string> Errors)
 {
@@ -139,12 +141,18 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             return AccountResult.Fail("A student with this LRN already exists.");
         }
 
+        if (request.CustomRoleId is { } customId && !await db.CustomRoles.AnyAsync(r => r.Id == customId && r.BaseRole == request.Role, ct))
+        {
+            return AccountResult.Fail("This role does not exist any more. Choose the role again.");
+        }
+
         var user = new User
         {
             Email = email!,
             PasswordHash = hasher.Hash(request.Password),
             PhoneNumber = phone,
             RoleId = roleId,
+            CustomRoleId = request.CustomRoleId,
             IsActive = request.IsActive,
             SecurityStamp = Guid.NewGuid().ToString("N"),
         };
