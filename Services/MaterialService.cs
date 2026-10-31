@@ -474,6 +474,12 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
             await db.SaveChangesAsync(ct);
         }
+        else if (!isNew && await db.MaterialQuestions.Where(q => q.ItemId == item.Id).SumAsync(q => (decimal?)q.Points, ct) is { } total && total > 0)
+        {
+            // The questions stay as they are, and the exam stays worth the total of their points.
+            item.MaxScore = total;
+            await db.SaveChangesAsync(ct);
+        }
 
         return ServiceResult.Ok(isNew ? "The exam was added." : "Saved.", item.Id);
     }
