@@ -68,6 +68,22 @@ else
                                         <span>No due date</span>
                                     }
                                     <span>@item.MaxScore.ToString("0.##") points</span>
+                                    @if (item.Kind == ItemKinds.Quiz && IsFileQuiz(item))
+                                    {
+                                        <span><Icon Name="file-text" Size="14" /> File quiz · no questions</span>
+                                    }
+                                    else if (item.Kind == ItemKinds.Quiz)
+                                    {
+                                        <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")</span>
+                                        @if (item.TimeLimitMinutes is { } minutes)
+                                        {
+                                            <span><Icon Name="timer" Size="14" /> @minutes min</span>
+                                        }
+                                        @if (item.AntiCheat)
+                                        {
+                                            <span title="Warns after @item.MaxViolations leaves of the quiz, copies, pastes, prints or screenshots"><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
+                                        }
+                                    }
                                     <Badge Tone="@(module.State == Visibility.Posted ? Tone.Success : module.State == Visibility.Scheduled ? Tone.Warning : Tone.Neutral)">@(module.State == Visibility.Draft ? "Draft module" : module.State == Visibility.Scheduled ? "Module scheduled" : "Posted")</Badge>
                                 </div>
                             </div>
@@ -77,8 +93,16 @@ else
                                 {
                                     <Badge Tone="Tone.Warning">@(item.Submitted - item.Graded) to check</Badge>
                                 }
+                                @if (item.Flagged > 0)
+                                {
+                                    <Badge Tone="Tone.Danger"><Icon Name="flag" Size="12" /> @item.Flagged flagged</Badge>
+                                }
                             </div>
                             <div class="item-actions">
+                                @if (item.Kind == ItemKinds.Quiz && !IsFileQuiz(item))
+                                {
+                                    <ButtonLink Href="@($"teacher/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
+                                }
                                 <ButtonLink Href="@($"teacher/items/{item.Id}")" Variant="ButtonVariant.Secondary" Small="true" IconName="eye">Open</ButtonLink>
                                 <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
                                 <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
@@ -92,6 +116,8 @@ else
     }
     else
     {
+        @* The first page of the course counts as being in the course: the Courses link of the menu comes back here (wwwroot/app.js). *@
+        <span data-last-course="@($"teacher/subjects/{AssignmentId}")" hidden></span>
         @* The first page of a course: only the syllabus and the modules, one line each. A click on the line opens it (its lesson, its files and, at the right, Edit module). *@
         <p class="hint-line">
             <Icon Name="eye-off" Size="16" />

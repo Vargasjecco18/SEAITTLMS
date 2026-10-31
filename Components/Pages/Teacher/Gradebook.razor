@@ -184,7 +184,8 @@ else
             @if (extraKind != ItemKinds.Exam)
             {
                 <div class="kind-choice" role="group" aria-label="What to add">
-                    @foreach (var kind in ItemKinds.All)
+                    @* The recitation is only a column of the gradebook, so it is offered here (and nowhere else). *@
+                    @foreach (var kind in ItemKinds.Listed.Where(k => k != ItemKinds.Exam))
                     {
                         var k = kind;
                         <button type="button" class="kind @(extraKind == k ? "on" : "")" aria-pressed="@(extraKind == k ? "true" : "false")" @onclick="() => extraKind = k"><Icon Name="@SubjectStyle.KindIcon(k)" Size="16" /> @ItemKinds.Display(k)</button>

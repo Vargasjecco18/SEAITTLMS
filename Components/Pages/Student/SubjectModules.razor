@@ -79,6 +79,8 @@ else
     }
     else
     {
+        @* The first page of the course counts as being in the course: the Courses link of the menu comes back here (wwwroot/app.js). *@
+        <span data-last-course="@($"student/subjects/{AssignmentId}")" hidden></span>
         @* What was on the card of the course in the list is here, after the click: the attendance, the work and the grade of this course. *@
         <div class="kpis">
             <StatCard Label="Attendance" Text="@(attendanceOf?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
