@@ -79,16 +79,22 @@ public sealed class SessionWatcher(TimeProvider clock, PresenceService presence)
     /// <summary>The person pressed Log out: this sign-in is over at once and the person is offline.</summary>
     public void End(int userId, string? sessionId)
     {
+        var othersOpen = false;
         if (!string.IsNullOrEmpty(sessionId))
         {
             ended[sessionId] = clock.GetUtcNow().UtcDateTime;
             lock (gate)
             {
                 sessions.Remove(sessionId);
+                othersOpen = sessions.Values.Any(e => e.UserId == userId && e.Circuits.Count > 0);
             }
         }
 
-        presence.Forget(userId);
+        // The same person may be signed in somewhere else with a page open: they are still online there.
+        if (!othersOpen)
+        {
+            presence.Forget(userId);
+        }
     }
 
     /// <summary>True when this sign-in was ended (logged out, or without a page for too long): its cookie is not good any more.</summary>
@@ -99,6 +105,7 @@ public sealed class SessionWatcher(TimeProvider clock, PresenceService presence)
     {
         var now = clock.GetUtcNow().UtcDateTime;
         var expired = new List<(int, string)>();
+        HashSet<int> stillOpen;
         lock (gate)
         {
             foreach (var (sessionId, entry) in sessions.ToList())
@@ -109,12 +116,19 @@ public sealed class SessionWatcher(TimeProvider clock, PresenceService presence)
                     expired.Add((entry.UserId, sessionId));
                 }
             }
+
+            stillOpen = sessions.Values.Where(e => e.Circuits.Count > 0).Select(e => e.UserId).ToHashSet();
         }
 
         foreach (var (userId, sessionId) in expired)
         {
             ended[sessionId] = now;
-            presence.Forget(userId);
+
+            // A person who signed in again (or in another browser) and has a page open there is still online.
+            if (!stillOpen.Contains(userId))
+            {
+                presence.Forget(userId);
+            }
         }
 
         // An ended sign-in is remembered for longer than a cookie lasts, then forgotten.
