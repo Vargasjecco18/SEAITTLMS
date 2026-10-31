@@ -123,7 +123,7 @@ public class CourseSchedule : AuditableEntity
     public int SubjectId { get; set; }
     public Subject Subject { get; set; } = null!;
 
-    /// <summary>AM, MID or PM: the class time is inside its hours.</summary>
+    /// <summary>AM, MID or PM: follows the time the class starts (before noon AM, the hour of noon MID, after that PM).</summary>
     public int ScheduleId { get; set; }
     public Schedule Schedule { get; set; } = null!;
 

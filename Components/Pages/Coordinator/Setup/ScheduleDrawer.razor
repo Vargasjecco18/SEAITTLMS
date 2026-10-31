@@ -3,7 +3,7 @@
 
 @* Every class schedule of the school year, on a panel that slides in from the right. It only shows; the class schedule page is where the classes are put in their places. *@
 <div class="drawer-shade @(Open ? "open" : "")" @onclick="CloseAsync" aria-hidden="true"></div>
-<aside class="drawer @(Open ? "open" : "")" id="all-schedules" role="dialog" aria-modal="false" aria-label="All class schedules" aria-hidden="@(Open ? "false" : "true")" inert="@(!Open)">
+<aside class="drawer @(Open ? "open" : "")" id="all-schedules" role="@(Open ? "dialog" : null)" aria-modal="false" aria-label="All class schedules" aria-hidden="@(Open ? "false" : "true")" inert="@(!Open)">
     <header class="drawer-head">
         <h2><Icon Name="calendar-clock" Size="20" /> All class schedules</h2>
         <button type="button" class="drawer-close" aria-label="Close the class schedules" title="Close" @onclick="CloseAsync"><Icon Name="x" Size="20" /></button>

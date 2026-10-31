@@ -192,7 +192,7 @@ public static class SetupSheets
         classes.ListFromOrOther($"A2:A{classesLast}", Refs(YearsSheet), "Choose the school year from the list.").ListFromOrOther($"B2:B{classesLast}", Refs(StrandsSheet), "Choose the strand from the list.")
             .ListChoice($"C2:C{classesLast}", ["11", "12"], "Choose the grade level: 11 or 12.").Tip($"D2:D{classesLast}", "Type the name of the section, like A. It must be a section of the sheet Sections (or one that already exists).")
             .ListFromOrOther($"E2:E{classesLast}", Refs(CoursesSheet), "Choose the course from the list. It must be one of the courses of the strand in that grade level.")
-            .ListChoice($"F2:F{classesLast}", ["AM", "MID", "PM"], "Choose the part of the day: AM, MID or PM. The class time must be inside its hours.")
+            .ListChoice($"F2:F{classesLast}", ["AM", "MID", "PM"], "The part of the day follows the class time (before 12:00 AM, from 12:00 to 12:59 MID, after that PM). Choose the one that matches.")
             .ListChoice($"G2:G{classesLast}", ["MWF", "TTH"], "Choose the days: MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday).")
             .Tip($"H2:I{classesLast}", "Type the hour like 08:00 or 13:30 (24 hours). A class lasts from 30 minutes to 4 hours.");
 
@@ -224,7 +224,7 @@ public static class SetupSheets
             new(ClassesSheet, "School year, Strand, Grade, Section", Needed, "The section whose class time it is. The section must exist (in the sheet Sections, or already in the system).", "Choose them from the lists; type the section."),
             new(ClassesSheet, "Course", Needed, "The code of the course. It must be one of the courses of the strand in that grade level (the sheet Curriculum).", "Choose it from the list."),
             new(ClassesSheet, "Part, Days", Needed, "The part of the day (AM, MID or PM) and the days (MWF or TTH).", "Choose them from the lists."),
-            new(ClassesSheet, "Starts, Ends", Needed, "The class time like 08:00 and 09:30. It must be inside the hours of its part of the day.", "Type them like 08:00 (24 hours)."),
+            new(ClassesSheet, "Starts, Ends", Needed, "The class time like 08:00 and 09:30. The part of the day (AM, MID or PM) follows the time it starts.", "Type them like 08:00 (24 hours)."),
         ],
             "Leave a sheet empty to change nothing there. The sheets are saved in the order of the tabs: day parts, school years, terms, tracks, strands, courses, curriculum, sections, class schedule.",
             "A row that already exists (the same code, name or section) is changed to what the row says; nothing is deleted if a row is missing. The export of the system is this same workbook with everything in it: change it and import it again.",

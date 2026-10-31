@@ -1397,7 +1397,8 @@ window.seaitt = Object.assign(window.seaitt || {}, {
                 // A class that is moved is held at the spot where it was grabbed: its top is what lands on a half hour.
                 state.grab = state.payload.charAt(0) === 'm' ? e.clientY - el.getBoundingClientRect().top : 0;
                 if (e.dataTransfer) { e.dataTransfer.setData('text/plain', state.payload); e.dataTransfer.effectAllowed = 'move'; }
-                root.classList.add('is-dragging');
+                // The class is added after the browser has taken the picture of what is dragged (changing the page inside dragstart can cancel the drag).
+                window.setTimeout(function () { if (state.payload) { root.classList.add('is-dragging'); } }, 0);
             };
             state.handlers.dragend = function () { state.payload = null; root.classList.remove('is-dragging'); clearHot(); };
             state.handlers.dragover = function (e) {
