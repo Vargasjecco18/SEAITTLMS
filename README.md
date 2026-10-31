@@ -494,7 +494,7 @@ Menu: **Registrar > Enrollments** (`/registrar/enrollments`). Fill in:
 | Term | **Not chosen by the registrar**: it is shown, and set by the calendar (the term that includes today, or the one that starts next). A term that is over is not offered. |
 | Grade level | 11 or 12. |
 | Track, strand | ACAD (BUSSENT, EDUC, ENG, MED, USP) or TECH-PRO (CD1, HT1, HT2). Pick the track first, it filters the strands. |
-| Section | Pick one of the sections that exist for that strand and grade level (A, B or C). There is no schedule to choose: each course has its own. |
+| Section | Pick one of the sections that exist for that strand and grade level (A or B). There is no schedule to choose: each course has its own. |
 | Phone number | **Optional.** A mobile number like `0917 123 4567`, saved as `+639171234567` on the student's account. A student who already has a number keeps it. It is kept for the school but **not printed** on the enrollment form. |
 
 There is nothing to pick for the subjects: the student gets **all the subjects of the strand** for that grade level and term (the form tells which). Press
