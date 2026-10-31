@@ -180,11 +180,11 @@
             </div>
         }
 
+        <div class="previous-bar">
+            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="history" Disabled="@(viewing.PreviousReferrals.Count == 0)" Title="@(viewing.PreviousReferrals.Count == 0 ? "This student has no solved concern yet" : "The concerns that were solved before")" OnClick="() => showPrevious = !showPrevious">@(showPrevious && viewing.PreviousReferrals.Count > 0 ? "Hide previous concerns" : $"Previous concerns ({viewing.PreviousReferrals.Count})")</Button>
+        </div>
         @if (viewing.PreviousReferrals.Count > 0)
         {
-            <div class="previous-bar">
-                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="history" OnClick="() => showPrevious = !showPrevious">@(showPrevious ? "Hide previous concerns" : $"Previous concerns ({viewing.PreviousReferrals.Count})")</Button>
-            </div>
             @if (showPrevious)
             {
                 <ul class="previous-list">
