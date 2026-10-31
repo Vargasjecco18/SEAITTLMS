@@ -37,8 +37,10 @@ else
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
+    @* What the teacher put (the question, the instructions and the file) is at the left; the answer and the details are at the right. The menu of the school folds to its icons so both have room. *@
+    <span data-side-rail hidden></span>
     <div class="layout">
-        <div class="main">
+        <div class="question">
             <Card Title="@(item.IsQuiz ? "About this quiz" : "Instructions")" IconName="file-text">
                 @if (string.IsNullOrWhiteSpace(item.Instructions))
                 {
@@ -71,7 +73,9 @@ else
                     </ul>
                 }
             </Card>
+        </div>
 
+        <div class="response">
             @if (item.IsQuiz && !fileQuiz)
             {
                 <Card Title="Your attempt" IconName="clipboard-check">
@@ -184,9 +188,7 @@ else
                     }
                 </Card>
             }
-        </div>
 
-        <aside class="side">
             <Card Title="Details" IconName="info">
                 <dl class="facts">
                     <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
@@ -205,7 +207,7 @@ else
                     <div class="text">@item.Feedback</div>
                 </Card>
             }
-        </aside>
+        </div>
     </div>
 }
 

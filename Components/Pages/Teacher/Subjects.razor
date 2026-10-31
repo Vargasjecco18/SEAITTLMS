@@ -34,28 +34,28 @@ else
 {
     <div class="bar">
         @* The chips and the switch are plain links: the page opens again with the choice in its address. *@
-        @if (sections.Count > 1)
-        {
-            <nav class="chips" aria-label="Show the courses of">
-                <a class="chip @(Section is null ? "on" : "")" href="@Url(null, view)">All <span class="n">@cards.Count</span></a>
-                @foreach (var label in sections)
-                {
-                    <a class="chip @(string.Equals(Section, label, StringComparison.Ordinal) ? "on" : "")" href="@Url(label, view)">@label <span class="n">@cards.Count(c => c.SectionLabel == label)</span></a>
-                }
-            </nav>
-        }
-        else
-        {
-            <span></span>
-        }
+        <nav class="chips" aria-label="Show the courses that are">
+            <a class="chip @(filter is null ? "on" : "")" href="@Url(null, view)">All <span class="n">@cards.Count</span></a>
+            <a class="chip @(filter == "enrolled" ? "on" : "")" href="@Url("enrolled", view)">Enrolled <span class="n">@cards.Count(c => !c.IsCompleted)</span></a>
+            <a class="chip @(filter == "completed" ? "on" : "")" href="@Url("completed", view)">Completed <span class="n">@cards.Count(c => c.IsCompleted)</span></a>
+        </nav>
 
         <nav class="views" aria-label="View">
-            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Section, "cards", true)" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
-            <a class="view @(view == "list" ? "on" : "")" href="@Url(Section, "list", true)" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
+            <a class="view @(view == "cards" ? "on" : "")" href="@Url(filter, "cards", true)" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
+            <a class="view @(view == "list" ? "on" : "")" href="@Url(filter, "list", true)" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
         </nav>
     </div>
 
-    @if (view == "list")
+    @if (shown.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="search-x" Title="@(filter == "completed" ? "No completed courses yet" : "No courses you are teaching right now")">
+                <p>@(filter == "completed" ? "A course is completed when its term is over." : "")</p>
+                <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Show all courses</ButtonLink>
+            </EmptyState>
+        </Card>
+    }
+    else if (view == "list")
     {
         <Card>
             <div class="table-wrap">
@@ -143,14 +143,14 @@ else
 }
 </text>;
 
-    [SupplyParameterFromQuery(Name = "section")] private string? Section { get; set; }
+    [SupplyParameterFromQuery(Name = "show")] private string? Show { get; set; }
 
     [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
 
     [CascadingParameter] private HttpContext? Http { get; set; }
 
     private IReadOnlyList<TeacherSubjectCard>? cards;
-    private List<string> sections = [];
+    private string? filter;
     private List<TeacherSubjectCard> shown = [];
     private string view = "cards";
 
@@ -159,8 +159,8 @@ else
         view = ViewPreference.Resolve(Http, "subjects", ViewText, "cards", "list");
         var teacherId = await Me.GetTeacherIdAsync();
         cards = teacherId is { } id ? await Teaching.GetTeacherCardsAsync(id) : [];
-        sections = cards.Select(c => c.SectionLabel).Distinct().ToList();
-        shown = cards.Where(c => Section is null || c.SectionLabel == Section).ToList();
+        filter = Show is "enrolled" or "completed" ? Show : null;
+        shown = cards.Where(c => filter is null || (filter == "completed") == c.IsCompleted).ToList();
     }
 
     /// <summary>"2 A · 1 Q · 1 TP": the assignments, quizzes and task performances (the short names the gradebook uses); the full words are in the title.</summary>
@@ -182,12 +182,12 @@ else
         return string.Join(" · ", parts);
     }
 
-    private static string Url(string? section, string view, bool explicitView = false)
+    private static string Url(string? show, string view, bool explicitView = false)
     {
         var parts = new List<string>();
-        if (section is not null)
+        if (show is not null)
         {
-            parts.Add("section=" + Uri.EscapeDataString(section));
+            parts.Add("show=" + show);
         }
 
         // The Cards / List buttons always say the view (explicitView): a link to Cards must say so, or the view remembered by the browser (List) would come back.

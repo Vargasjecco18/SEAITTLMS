@@ -8,6 +8,7 @@
 @inject NavigationManager Navigation
 
 <PageTitle>@(subject is null ? "Course" : $"{subject.SubjectName} · {subject.SectionLabel}") · SEAITT Legazpi LMS</PageTitle>
+<AutoRefresh Seconds="60" />
 
 @if (!loaded)
 {

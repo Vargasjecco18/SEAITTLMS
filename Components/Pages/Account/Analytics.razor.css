@@ -17,24 +17,6 @@
     }
 }
 
-.grid {
-    display: grid;
-    gap: 1.25rem;
-    margin-bottom: 1.25rem;
-}
-
-@media (min-width: 1000px) {
-    .grid.two {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: stretch;
-    }
-
-    /* The cards of a row are as tall as each other, so there is no empty block under the shorter one. */
-    .grid.two ::deep > .card {
-        height: 100%;
-    }
-}
-
 .legend {
     display: flex;
     flex-wrap: wrap;
@@ -303,17 +285,189 @@
     }
 }
 
-.students-bar {
-    max-width: 24rem;
+/* ---------- the layout: a row of four numbers, one big part that differs by person, and a board of cards that fills the page without empty places ---------- */
+.board {
+    column-count: 2;
+    column-gap: 1.25rem;
+    margin-bottom: 1.25rem;
 }
 
-.students-table .sub {
-    display: block;
+.board ::deep > .card {
+    display: inline-block;
+    width: 100%;
+    margin: 0 0 1.25rem;
+    break-inside: avoid;
+}
+
+@media (max-width: 999px) {
+    .board {
+        column-count: 1;
+    }
+}
+
+h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.8rem;
+    font-size: 1.1rem;
+}
+
+.count {
+    padding: 0.05rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-2);
     color: var(--text-muted);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    font-weight: 700;
 }
 
-.students-table .none-opened {
-    color: var(--danger);
-    font-weight: 700;
+/* The administrator: every grade level has its own strip of colors. */
+.levels {
+    margin-bottom: 1.25rem;
+    padding: 1.1rem 1.25rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: 0.9rem;
+}
+
+.level {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.level header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.level header span {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.level .stack {
+    height: 2.1rem;
+}
+
+/* The guidance counselor: a big tile for each kind of concern. */
+.concern-tiles {
+    margin-bottom: 1.25rem;
+}
+
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem;
+}
+
+.tile {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--brand);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.tile.lowattendance { border-top-color: #6366f1; }
+.tile.violation { border-top-color: #e11d48; }
+
+.tile-name {
+    color: var(--text-muted);
+    font-weight: 650;
+}
+
+.tile strong {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+.tile-bar {
+    display: block;
+    height: 0.6rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.tile-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand);
+}
+
+.tile.lowattendance .tile-bar i { background: #6366f1; }
+.tile.violation .tile-bar i { background: #e11d48; }
+
+.tile small {
+    color: var(--text-muted);
+}
+
+/* A teacher: one tile for each course. */
+.my-courses {
+    margin-bottom: 1.25rem;
+}
+
+.course-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1rem;
+}
+
+.course-tile {
+    display: grid;
+    gap: 0.55rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.course-tile header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.course-tile header strong {
+    overflow-wrap: anywhere;
+}
+
+.course-tile small {
+    color: var(--text-muted);
+}
+
+.meter-line {
+    display: grid;
+    grid-template-columns: 5.2rem minmax(0, 1fr) 3.2rem;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+}
+
+.meter-line > span:first-child {
+    color: var(--text-muted);
+}
+
+.meter-line b {
+    text-align: right;
 }

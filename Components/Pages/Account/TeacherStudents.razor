@@ -1,0 +1,99 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject AnalyticsService Reports
+
+@* Every student of the teacher's courses: did they open the modules, did they open the activities, how far are they. It is its own live island so the Course box works. *@
+<section class="students" aria-label="Students of my courses">
+    <header class="students-head">
+        <h2><Icon Name="users-round" Size="20" /> Students <span class="count">@Shown.Count()</span></h2>
+        @if (students.Count > 0)
+        {
+            <div class="students-tools">
+                <Field For="an-course" Label="Course">
+                    <select id="an-course" @bind="course">
+                        <option value="">All my courses</option>
+                        @foreach (var choice in Courses)
+                        {
+                            <option value="@choice">@choice</option>
+                        }
+                    </select>
+                </Field>
+                <Field For="an-search" Label="Search">
+                    <input id="an-search" type="search" placeholder="A student" autocomplete="off" @bind="search" @bind:event="oninput" />
+                </Field>
+            </div>
+        }
+    </header>
+
+    @if (!loaded)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (students.Count == 0)
+    {
+        <p class="muted">The students of your courses show here once they are enrolled.</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table students-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Student</th>
+                        <th scope="col">Course</th>
+                        <th scope="col" class="num">Modules opened</th>
+                        <th scope="col" class="num">Activities opened</th>
+                        <th scope="col">Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var st in Shown)
+                    {
+                        <tr>
+                            <td><span class="name">@st.Student</span><span class="sub">@st.Lrn</span></td>
+                            <td>@st.Course<span class="sub">@st.Section</span></td>
+                            <td class="num"><span class="@(st.Modules > 0 && st.ModulesOpened == 0 ? "none-opened" : "")">@st.ModulesOpened of @st.Modules</span></td>
+                            <td class="num"><span class="@(st.Items > 0 && st.ItemsOpened == 0 ? "none-opened" : "")">@st.ItemsOpened of @st.Items</span></td>
+                            <td>
+                                @if (st.Progress is { } progress)
+                                {
+                                    <div class="cell-bar">
+                                        <span class="track"><i class="@(progress < 50 ? "bad" : progress < 80 ? "warn" : "good")" style="width: @progress%"></i></span>
+                                        <span>@progress% <small class="muted">(@st.HandedIn of @st.Items handed in)</small></span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="muted">Nothing to do yet</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<StudentActivityRow> students = [];
+    private string course = "";
+    private string search = "";
+    private bool loaded;
+
+    private IEnumerable<StudentActivityRow> Shown => students
+        .Where(s => course == "" || $"{s.Course} · {s.Section}" == course)
+        .Where(s => string.IsNullOrWhiteSpace(search) || s.Student.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) || s.Lrn.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<string> Courses => students.Select(s => $"{s.Course} · {s.Section}").Distinct().OrderBy(x => x);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await Me.GetTeacherIdAsync() is { } teacherId)
+        {
+            students = await Reports.GetTeacherStudentsAsync(teacherId);
+        }
+
+        loaded = true;
+    }
+}

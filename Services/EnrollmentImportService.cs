@@ -66,7 +66,7 @@ public sealed class EnrollmentImportService(EnrollmentService enrollment)
             new("Students", "Grade level", "Needed", "11 or 12.", "Choose it from the list."),
             new("Students", "Track", "Optional", "It is found from the strand, so you may leave it empty.", "Choose it from the list."),
             new("Students", "Strand", "Needed", "The code of the strand (the sheet Lists shows them).", "Choose it from the list."),
-            new("Students", "Section", "Needed", "A, B or C.", "Choose it from the list."),
+            new("Students", "Section", "Needed", "A or B.", "Choose it from the list."),
         ],
             "A student who already has an account keeps the name and the sign-in details the system has.",
             "A student who changes strand starts again in Grade 11.",

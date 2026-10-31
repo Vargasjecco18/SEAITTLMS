@@ -1,0 +1,12 @@
+@* How much of a module has been read, at the right of its title. It grows while the person really reads: when the page is scrolled, and when a file or a slide has been in front of
+   them for a few seconds (wwwroot/app.js does the counting). It never goes back, and it is remembered on this computer. *@
+<div class="read-progress" data-read-progress data-read-key="@Key" role="progressbar" aria-label="How much of this module was read" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+     title="It grows as you scroll and look at the files and the slides">
+    <span class="rp-text">Read <b data-rp-value>0%</b></span>
+    <span class="rp-track"><i data-rp-bar></i></span>
+</div>
+
+@code {
+    /// <summary>What the progress belongs to (the module), so each module remembers its own.</summary>
+    [Parameter, EditorRequired] public string Key { get; set; } = "";
+}

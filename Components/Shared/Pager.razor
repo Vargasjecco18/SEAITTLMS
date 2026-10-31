@@ -1,0 +1,26 @@
+@* The line under a long list: how many lines there are, and Previous and Next buttons with the page the list is on. *@
+<nav class="pager" aria-label="Pages of the list">
+    <span class="muted">@Total.ToString("N0") @Unit</span>
+    <span class="pager-buttons">
+        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(Page <= 1)" OnClick="OnPrevious">Previous</Button>
+        <span>Page @Page of @PageCount</span>
+        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(Page >= PageCount)" OnClick="OnNext">Next</Button>
+    </span>
+</nav>
+
+@code {
+    [Parameter] public int Page { get; set; } = 1;
+
+    [Parameter] public int Total { get; set; }
+
+    [Parameter] public int PageSize { get; set; } = 20;
+
+    /// <summary>What the lines are called after the number ("lines", "students").</summary>
+    [Parameter] public string Unit { get; set; } = "lines";
+
+    [Parameter] public EventCallback OnPrevious { get; set; }
+
+    [Parameter] public EventCallback OnNext { get; set; }
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(Total / (double)Math.Max(1, PageSize)));
+}

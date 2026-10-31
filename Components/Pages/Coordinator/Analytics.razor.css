@@ -32,6 +32,7 @@
     }
 }
 
+/* The cards fill the page like a wall: the wide ones (the teachers, the questions) take the whole row, and the small ones share the columns between them, so no card leaves an empty place beside it. */
 .grid {
     display: grid;
     gap: 1.25rem;
@@ -39,11 +40,21 @@
 
 @media (min-width: 1000px) {
     .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: block;
+        column-count: 2;
+        column-gap: 1.25rem;
+    }
+
+    .grid ::deep > .card {
+        display: inline-block;
+        width: 100%;
+        margin: 0 0 1.25rem;
+        break-inside: avoid;
     }
 
     .grid .wide {
-        grid-column: 1 / -1;
+        column-span: all;
+        margin-bottom: 1.25rem;
     }
 }
 

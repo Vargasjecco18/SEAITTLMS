@@ -10,14 +10,23 @@
 
 @media (min-width: 1000px) {
     .layout {
-        grid-template-columns: minmax(0, 1fr) 20rem;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    }
+
+    /* The question stays in view while the answer is written. */
+    .question {
+        position: sticky;
+        top: calc(var(--header-h) + 0.5rem);
+        max-height: calc(100vh - var(--header-h) - 1rem);
+        overflow-y: auto;
     }
 }
 
-.main,
-.side {
+.question,
+.response {
     display: grid;
     gap: 1.25rem;
+    min-width: 0;
 }
 
 .text {

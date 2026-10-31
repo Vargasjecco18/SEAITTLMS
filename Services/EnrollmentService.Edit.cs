@@ -32,7 +32,7 @@ public sealed record EnrollmentChange(
 public sealed partial class EnrollmentService
 {
     /// <summary>
-    /// The sections A to C of a strand and grade level for a term, each with the number of students enrolled in it and the limit
+    /// The sections A and B of a strand and grade level for a term, each with the number of students enrolled in it and the limit
     /// (and any other section that exists). <paramref name="exceptEnrollmentId"/> is not counted: the enrollment that is being edited.
     /// </summary>
     public async Task<IReadOnlyList<SectionLoad>> GetSectionLoadsAsync(int termId, int strandId, byte gradeLevel, int? exceptEnrollmentId = null, CancellationToken ct = default)
@@ -135,7 +135,7 @@ public sealed partial class EnrollmentService
         var sectionName = Clean(change.SectionName);
         if (sectionName.Length is 0 or > MaxSectionNameLength || !SectionNamePattern().IsMatch(sectionName))
         {
-            errors.Add("Choose the section: A, B or C.");
+            errors.Add("Choose the section: A or B.");
         }
 
         string? phone = null;
@@ -234,7 +234,7 @@ public sealed partial class EnrollmentService
             {
                 if (!SectionNames.IsChoice(sectionName))
                 {
-                    return ServiceResult.Fail($"There is no section {sectionName} for this strand and grade level. Choose A, B or C.");
+                    return ServiceResult.Fail($"There is no section {sectionName} for this strand and grade level. Choose A or B.");
                 }
 
                 section = new Section { SchoolYearId = term.SchoolYearId, StrandId = strand!.Id, GradeLevel = change.GradeLevel, Name = sectionName };

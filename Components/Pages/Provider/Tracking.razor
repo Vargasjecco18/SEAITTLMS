@@ -2,129 +2,142 @@
 @attribute [Authorize(Roles = AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @inject ProviderService Provider
+@implements IDisposable
 @inject TimeProvider Clock
 
 <PageTitle>Tracking · SEAITT Legazpi LMS</PageTitle>
-<AutoRefresh Seconds="60" />
 
-<PageHeader Title="Tracking"
-            IconName="eye">
+<PageHeader Title="Tracking" IconName="eye">
     <ButtonLink Href="provider/analytics" Variant="ButtonVariant.Secondary" IconName="chart-column">Analytics</ButtonLink>
-    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="RefreshAsync">Refresh</Button>
+    <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="ReloadAsync">Refresh</Button>
 </PageHeader>
 
-@* Four parts: the syllabi and modules that were sent to the teachers, the summative exams posted to the students, the teachers who got them and the students who see them. *@
+@* Three parts: the syllabus, the modules and the summative exams. In each one the list is of the people who have not done their part: the teachers who did not post, and (once it is posted) the students who did not open or hand in. *@
 <PillTabs Items="PartTabs" Selected="@part" SelectedChanged="PartChangedAsync" Label="Part of the tracking" />
 <p class="part-hint">@PartHint</p>
 
-@if (part is "teachers" or "students")
-{
-    <TrackingUsers @ref="usersPanel" Tab="@part" />
-}
-else if (part == "exams")
-{
-    <Card>
-        <form class="filter-bar one-row" role="search" @onsubmit="LoadExamsAsync">
-            <SearchField Id="exam-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="Exam, course, teacher, section…" AriaLabel="Search the exams" OnClear="LoadExamsAsync" />
+<Card>
+    <div class="track-bar">
+        <form class="track-search" role="search" @onsubmit="ApplyAsync">
+            <SearchField Id="track-search" @bind-Value="search" SubmitText="" Placeholder="@SearchHint" AriaLabel="Search the tracking" OnClear="ApplyAsync" />
         </form>
 
-        @if (exams is null)
+        @if (part == "exams")
         {
-            <p class="muted">Loading…</p>
+            <Field For="track-grade" Label="Grade">
+                <select id="track-grade" class="input" @bind="grade" @bind:after="ApplyAsync">
+                    <option value="0">All grades</option>
+                    @foreach (var g in grades)
+                    {
+                        <option value="@g">Grade @g</option>
+                    }
+                </select>
+            </Field>
+            <Field For="track-course" Label="Course">
+                <select id="track-course" class="input" @bind="subjectId" @bind:after="ApplyAsync">
+                    <option value="0">All courses</option>
+                    @foreach (var c in courses)
+                    {
+                        <option value="@c.SubjectId">@c.Name</option>
+                    }
+                </select>
+            </Field>
         }
-        else if (exams.Count == 0)
-        {
-            <EmptyState IconName="clipboard-list" Title="No exam posted yet">
-                <p>Open the Course library, choose a course, add a summative exam and press “Post to students”.</p>
-            </EmptyState>
-        }
-        else
-        {
-            <div class="data-wrap">
-                <table class="data-table tracking">
-                    <thead>
-                        <tr>
-                            <th scope="col">Exam</th>
-                            <th scope="col">Section</th>
-                            <th scope="col">Schedule</th>
-                            <th scope="col" class="bar-cell">Opened it</th>
-                            <th scope="col" class="bar-cell">Handed in</th>
-                            <th scope="col" class="right">Average</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var row in exams)
-                        {
-                            <tr>
-                                <td class="what">
-                                    <span class="name">@row.Title</span>
-                                    <span class="muted-line">@row.SubjectName</span>
-                                </td>
-                                <td>
-                                    <span class="name">@row.SectionLabel</span>
-                                    <span class="muted-line">@row.TeacherName</span>
-                                </td>
-                                <td>
-                                    <span>@(row.OpensAtUtc is { } o ? PhilippineTime.FormatDateTime(o) : "—")</span>
-                                    <span class="muted-line">to @(row.ClosesAtUtc is { } c ? PhilippineTime.FormatDateTime(c) : "—")</span>
-                                </td>
-                                <td class="bar-cell">
-                                    <ProgressBar Percent="@ProviderMath.Percent(row.Opened, row.Students)" Title="@($"{row.Opened} of {row.Students} students opened it")" />
-                                    <span class="muted-line">@row.Opened of @row.Students</span>
-                                </td>
-                                <td class="bar-cell">
-                                    <ProgressBar Percent="@ProviderMath.Percent(row.HandedIn, row.Students)" Title="@($"{row.HandedIn} of {row.Students} students handed it in")" />
-                                    <span class="muted-line">@row.HandedIn of @row.Students</span>
-                                </td>
-                                <td class="right">@(row.AveragePercent is { } avg ? $"{avg}%" : "—")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </Card>
-}
-else
-{
-<PillTabs Items="Tabs" Selected="@state" SelectedChanged="StateChangedAsync" Label="State of what was sent" />
 
-<Card>
-    <form class="filter-bar one-row" role="search" @onsubmit="ApplyAsync">
-        <SearchField Id="track-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="Course, teacher, module…" AriaLabel="Search the tracking" OnClear="ApplyAsync" />
-        <Field For="track-kind" Label="What">
-            <select id="track-kind" class="input" @bind="kind" @bind:after="ApplyAsync">
-                <option value="">All</option>
-                <option value="Syllabus">Syllabi</option>
-                <option value="Module">Modules</option>
-            </select>
-        </Field>
-        <Field For="track-course" Label="Course">
-            <select id="track-course" class="input" @bind="subjectId" @bind:after="ApplyAsync">
-                <option value="0">All</option>
-                @foreach (var c in options?.Courses ?? [])
-                {
-                    <option value="@c.SubjectId">@c.Name</option>
-                }
-            </select>
-        </Field>
-        @if (HasChoice)
-        {
-            <div class="filter-actions">
-                <Button Variant="ButtonVariant.Ghost" IconName="x" OnClick="ClearChoicesAsync">Clear filters</Button>
-            </div>
-        }
-    </form>
+        <div class="state-choice" role="radiogroup" aria-label="State">
+            @foreach (var option in StateOptions)
+            {
+                <button type="button" role="radio" class="state @(state == option.Key ? "on" : "")" aria-checked="@(state == option.Key ? "true" : "false")" data-state="@option.Key" @onclick="() => StateChangedAsync(option.Key)">
+                    @option.Label
+                </button>
+            }
+        </div>
 
-    @if (data is null)
+        <div class="track-message">
+            <Button Variant="ButtonVariant.Secondary" IconName="bell-ring" Disabled="@(Total == 0)" OnClick="OpenMessage">Message @(Total == 0 ? "" : WhoText)</Button>
+        </div>
+    </div>
+
+    @if (loading)
     {
         <p class="muted">Loading…</p>
     }
-    else if (data.Rows.Count == 0)
+    else if (Total == 0)
     {
-        <EmptyState IconName="eye" Title="Nothing here">
-            <p>@(data.Total == 0 && string.IsNullOrWhiteSpace(search) && string.IsNullOrEmpty(state) && string.IsNullOrEmpty(kind) && !HasChoice ? "Nothing was sent to the teachers yet. Open the Course library, choose a course and press “Send to teachers”." : "Nothing matches. Change the state or the words you searched.")</p>
+        <EmptyState IconName="circle-check" Title="@EmptyTitle">
+            <p>@EmptyText</p>
         </EmptyState>
+    }
+    else if (part == "exams")
+    {
+        <div class="data-wrap">
+            <table class="data-table tracking exams-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Student</th>
+                        <th scope="col">Section</th>
+                        <th scope="col">Summative exam</th>
+                        <th scope="col">Opened</th>
+                        <th scope="col">Handed in</th>
+                        <th scope="col" class="right">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in examRows!.Rows)
+                    {
+                        <tr>
+                            <td class="what"><span class="name">@row.StudentName</span></td>
+                            <td>@row.SectionLabel</td>
+                            <td>
+                                <span class="name">@row.ExamTitle</span>
+                                <span class="muted-line">@row.SubjectName</span>
+                            </td>
+                            <td><Badge Tone="@(row.Opened ? Tone.Success : Tone.Warning)">@(row.Opened ? "Opened" : "Not opened")</Badge></td>
+                            <td><Badge Tone="@(row.HandedIn ? Tone.Success : Tone.Neutral)">@(row.HandedIn ? "Handed in" : "Not handed in")</Badge></td>
+                            <td class="right">@(row.Percent is { } p ? $"{row.Score:0.#} / {row.MaxScore:0.#} ({p}%)" : row.HandedIn ? "Not graded yet" : "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <Pager Page="examRows.Page" Total="examRows.Total" PageSize="examRows.PageSize" Unit="students" OnPrevious="PreviousAsync" OnNext="NextAsync" />
+    }
+    else if (state == TrackStates.NotPosted)
+    {
+        <div class="data-wrap">
+            <table class="data-table tracking">
+                <thead>
+                    <tr>
+                        <th scope="col">@(part == "syllabus" ? "Syllabus" : "Module")</th>
+                        <th scope="col">Teacher</th>
+                        <th scope="col">What the teacher did</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in postedRows!.Rows)
+                    {
+                        <tr>
+                            <td class="what">
+                                <span class="name">@(row.IsSyllabus ? "Syllabus" : row.Title)</span>
+                                <span class="muted-line">@row.SubjectName · sent @PhilippineTime.FormatDate(row.SentAtUtc)</span>
+                            </td>
+                            <td>
+                                <span class="name">@row.TeacherName</span>
+                                <span class="muted-line">@row.SectionLabel</span>
+                            </td>
+                            <td>
+                                <Badge Tone="@ProviderUi.StateTone(row.State)">@(row.State == DeliveryStates.Scheduled ? "Scheduled" : DeliveryStates.Display(row.State))</Badge>
+                                @if (row.State == DeliveryStates.Scheduled && row.ScheduledForUtc is { } at)
+                                {
+                                    <span class="muted-line">appears @PhilippineTime.FormatDateTime(at)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <Pager Page="postedRows.Page" Total="postedRows.Total" PageSize="postedRows.PageSize" Unit="lines" OnPrevious="PreviousAsync" OnNext="NextAsync" />
     }
     else
     {
@@ -132,78 +145,69 @@ else
             <table class="data-table tracking">
                 <thead>
                     <tr>
-                        <th scope="col">Sent</th>
+                        <th scope="col">Student</th>
+                        <th scope="col">@(part == "syllabus" ? "Syllabus" : "Module")</th>
                         <th scope="col">Teacher</th>
-                        <th scope="col">State</th>
-                        <th scope="col" class="bar-cell">Students opened it</th>
-                        <th scope="col"><span class="sr-only">Details</span></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var row in data.Rows)
+                    @foreach (var row in openedRows!.Rows)
                     {
                         <tr>
                             <td class="what">
-                                <a class="name-link" href="provider/tracking/@row.DeliveryId">@(row.IsSyllabus ? "Syllabus" : row.Title)</a>
-                                <span class="muted-line">@row.SubjectName · @PhilippineTime.FormatDate(row.SentAtUtc)</span>
-                            </td>
-                            <td>
-                                <a class="name-link" href="provider/tracking/users/@row.TeacherUserId">@row.TeacherName</a>
+                                <span class="name">@row.StudentName</span>
                                 <span class="muted-line">@row.SectionLabel</span>
                             </td>
                             <td>
-                                <Badge Tone="@ProviderUi.StateTone(row.State)">@DeliveryStates.Display(row.State)</Badge>
-                                @if (row.State != DeliveryStates.NotOpened && row.OpenedAtUtc is { } opened)
-                                {
-                                    <span class="muted-line">@(row.State == DeliveryStates.Posted ? "posted" : "opened") @ProviderUi.Ago(row.State == DeliveryStates.Posted ? row.PostedAtUtc ?? opened : opened, nowUtc)</span>
-                                }
-                                else
-                                {
-                                    <span class="muted-line">sent @ProviderUi.Ago(row.SentAtUtc, nowUtc)</span>
-                                }
+                                <span class="name">@(row.IsSyllabus ? "Syllabus" : row.Title)</span>
+                                <span class="muted-line">@row.SubjectName · posted @PhilippineTime.FormatDate(row.PostedAtUtc)</span>
                             </td>
-                            <td class="bar-cell">
-                                @if (row.ModulePercent is { } mp)
-                                {
-                                    <ProgressBar Percent="mp" Title="@($"{row.ModuleOpens} of {row.Audience} students opened it")" />
-                                    <span class="muted-line">@row.ModuleOpens of @row.Audience</span>
-                                }
-                                else
-                                {
-                                    <span class="na">@(row.State == DeliveryStates.Scheduled ? "Not yet: scheduled" : "Not posted yet")</span>
-                                }
-                            </td>
-                            <td class="right"><ButtonLink Href="@($"provider/tracking/{row.DeliveryId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="arrow-right" IconAfter="true">Details</ButtonLink></td>
+                            <td>@row.TeacherName</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
-
-        <nav class="pager" aria-label="Pages of the list">
-            <span class="muted">@data.Total.ToString("N0") @(data.Total == 1 ? "line" : "lines")</span>
-            <span class="pager-buttons">
-                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" Disabled="@(data.Page <= 1)" OnClick="PreviousAsync">Previous</Button>
-                <span>Page @data.Page of @PageCount</span>
-                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" Disabled="@(data.Page >= PageCount)" OnClick="NextAsync">Next</Button>
-            </span>
-        </nav>
+        <Pager Page="openedRows.Page" Total="openedRows.Total" PageSize="openedRows.PageSize" Unit="students" OnPrevious="PreviousAsync" OnNext="NextAsync" />
     }
 </Card>
-}
+
+<Modal Open="messaging" Title="@MessageTitle" OnClose="CloseMessage">
+    <form @onsubmit="SendMessageAsync">
+        <p class="muted">@MessageLead</p>
+        <Field For="track-message" Label="Message" Hint="Leave it as it is, or write your own words.">
+            <textarea id="track-message" rows="4" maxlength="500" @bind="messageText" @bind:event="oninput"></textarea>
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseMessage">Cancel</Button>
+            <Button Type="submit" IconName="send" Disabled="sending">@(sending ? "Sending…" : $"Send to {WhoText}")</Button>
+        </div>
+    </form>
+</Modal>
+
+<Notice Message="@notice" IsError="false" OnDismiss="ClearNotice" />
 
 @code {
-    private TrackingUsers? usersPanel;
-    private string part = "modules";
-    private TrackingPage? data;
-    private IReadOnlyList<ExamTrackRow>? exams;
-    private string state = "";
+    private sealed record StateOption(string Key, string Label);
+
+    private string part = "syllabus";
+    private string state = TrackStates.NotPosted;
     private string search = "";
-    private string kind = "";
+    private int grade;
     private int subjectId;
-    private TrackingOptions? options;
     private int pageNumber = 1;
-    private DateTime nowUtc;
+    private bool loading = true;
+    private TrackPage<NotPostedRow>? postedRows;
+    private TrackPage<NotOpenedRow>? openedRows;
+    private TrackPage<ExamStudentRow>? examRows;
+    private IReadOnlyList<int> grades = [];
+    private IReadOnlyList<(int SubjectId, string Name)> courses = [];
+    private int people;
+    private bool messaging;
+    private bool sending;
+    private string messageText = "";
+    private string? notice;
+    private string? lastQuery;
 
     [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
 
@@ -211,109 +215,111 @@ else
 
     [SupplyParameterFromQuery(Name = "q")] private string? SearchQuery { get; set; }
 
-    [SupplyParameterFromQuery(Name = "kind")] private string? KindQuery { get; set; }
+    private static readonly string[] Parts = ["syllabus", "modules", "exams"];
 
-    private int PageCount => data is null ? 1 : Math.Max(1, (int)Math.Ceiling(data.Total / (double)data.PageSize));
-
-    private static readonly string[] Parts = ["modules", "exams", "teachers", "students"];
-
-    /// <summary>The provider sends the syllabus, the modules and the summative exams only (the teacher makes the activities), so these are the parts to look at.</summary>
     private static readonly IReadOnlyList<PillTabs.Tab> PartTabs =
     [
-        new("modules", "Syllabus and modules", "eye"),
+        new("syllabus", "Syllabus", "book-open"),
+        new("modules", "Modules", "layers"),
         new("exams", "Summative exams", "clipboard-list"),
-        new("teachers", "Teachers", "presentation"),
-        new("students", "Students", "graduation-cap"),
     ];
+
+    private IReadOnlyList<StateOption> StateOptions => part == "exams"
+        ? [new(TrackStates.All, "All students"), new(TrackStates.NotOpened, "Not opened"), new(TrackStates.NotHandedIn, "Not handed in")]
+        : [new(TrackStates.NotPosted, "Not posted"), new(TrackStates.NotOpened, "Not opened")];
 
     private string PartHint => part switch
     {
-        "exams" => "The summative exams posted to the students: when each one opens, how many students opened it and handed it in, and their average.",
-        "teachers" => "Each teacher who has a course this school year: what they were sent and what they did with it.",
-        "students" => "Each student: what was posted to them and how much of it they opened.",
-        _ => "The syllabi and the modules that were sent: did the teacher open it, post it, and did the students open it.",
+        "exams" => "Every student of a summative exam, with whether they opened it, handed it in and their score.",
+        _ when state == TrackStates.NotPosted => $"The teachers who were sent the {(part == "syllabus" ? "syllabus" : "modules")} and have not posted {(part == "syllabus" ? "it" : "them")} for the students yet.",
+        _ => $"The students who have not opened the {(part == "syllabus" ? "syllabus" : "modules")} their teacher posted. A student shows here only once the teacher posted it.",
     };
 
-    private IReadOnlyList<PillTabs.Tab> Tabs => data is null
-        ? [new("", "All", "list")]
-        :
-        [
-            new("", "All", "list", data.NotOpened + data.Opened + data.Scheduled + data.Posted),
-            new(DeliveryStates.NotOpened, "Not opened", "mail", data.NotOpened),
-            new(DeliveryStates.Opened, "Opened · draft", "eye", data.Opened),
-            new(DeliveryStates.Scheduled, "Scheduled", "calendar-clock", data.Scheduled),
-            new(DeliveryStates.Posted, "Posted", "circle-check", data.Posted),
-        ];
+    private string SearchHint => part == "exams" ? "Student, course, section…" : state == TrackStates.NotPosted ? "Course, teacher, module…" : "Student, course, teacher…";
+
+    private int Total => part == "exams" ? examRows?.Total ?? 0 : state == TrackStates.NotPosted ? postedRows?.Total ?? 0 : openedRows?.Total ?? 0;
+
+    private string WhoText => people == 1 ? "1 person" : $"{people:N0} people";
+
+    private string EmptyTitle => part == "exams" ? "No student here" : state == TrackStates.NotPosted ? "Everything is posted" : "Everybody opened it";
+
+    private string EmptyText => (part, state) switch
+    {
+        ("exams", _) => string.IsNullOrWhiteSpace(search) && state == TrackStates.All && grade == 0 && subjectId == 0
+            ? "No summative exam was posted yet. Open the Course library, choose a course, add a summative exam and press “Post to students”."
+            : "Nothing matches. Change the words you searched or the choices.",
+        (_, TrackStates.NotPosted) => string.IsNullOrWhiteSpace(search) ? "Every teacher posted what was sent to them." : "Nothing matches the words you searched.",
+        _ => string.IsNullOrWhiteSpace(search) ? "Every student opened what was posted for them." : "Nothing matches the words you searched.",
+    };
+
+    private string MessageTitle => part == "exams" ? "Message the students" : state == TrackStates.NotPosted ? "Message the teachers" : "Message the students";
+
+    private string MessageLead => part == "exams"
+        ? $"A notification goes to {WhoText}: the students on this list."
+        : state == TrackStates.NotPosted ? $"A notification goes to {WhoText}: the teachers who have not posted the {(part == "syllabus" ? "syllabus" : "modules")}." : $"A notification goes to {WhoText}: the students who have not opened it.";
+
+    private System.Threading.Timer? refresher;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // The page looks again every minute, so what changed (a module whose time came and is posted now, a student who opened it) shows without pressing Refresh.
+        if (firstRender)
+        {
+            refresher = new System.Threading.Timer(_ => _ = InvokeAsync(async () =>
+            {
+                if (!messaging && !sending)
+                {
+                    await ReloadAsync();
+                    StateHasChanged();
+                }
+            }), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+        }
+    }
+
+    public void Dispose() => refresher?.Dispose();
 
     protected override async Task OnParametersSetAsync()
     {
-        // The links in the menu change the address of this same page (?tab=teachers), so the address is read every time it changes.
-        var wantedPart = TabQuery is not null && Parts.Contains(TabQuery) ? TabQuery : "modules";
-        if (data is not null && wantedPart == part && StateQuery == lastStateQuery)
+        // The links of the menu change the address of this same page (?tab=exams), so it is read every time it changes.
+        var query = $"{TabQuery}|{StateQuery}|{SearchQuery}";
+        if (query == lastQuery && postedRows is not null)
         {
             return;
         }
 
-        part = wantedPart;
-        lastStateQuery = StateQuery;
-        if (StateQuery is { } wanted && DeliveryStates.All.Contains(wanted))
+        lastQuery = query;
+        part = TabQuery is not null && Parts.Contains(TabQuery) ? TabQuery : (TabQuery is "teachers" or "students" ? "modules" : "syllabus");
+        state = StateOptions.Any(o => o.Key == StateQuery) ? StateQuery! : StateOptions[0].Key;
+        search = SearchQuery ?? "";
+        if (part == "exams")
         {
-            state = wanted;
+            var choices = await Provider.GetExamFilterChoicesAsync();
+            grades = choices.Grades;
+            courses = choices.Courses;
         }
 
-        search = SearchQuery ?? "";
-        kind = KindQuery is "Syllabus" or "Module" ? KindQuery : "";
+        pageNumber = 1;
         await ReloadAsync();
     }
 
-    private string? lastStateQuery;
-
     private async Task PartChangedAsync(string? key)
     {
-        part = key is not null && Parts.Contains(key) ? key : "modules";
-        if (part == "modules")
-        {
-            await ReloadAsync();
-        }
-        else if (part == "exams")
-        {
-            await LoadExamsAsync();
-        }
-    }
-
-    private async Task RefreshAsync()
-    {
-        if (part == "modules")
-        {
-            await ReloadAsync();
-        }
-        else if (part == "exams")
-        {
-            await LoadExamsAsync();
-        }
-        else if (usersPanel is not null)
-        {
-            await usersPanel.ReloadAsync();
-        }
-    }
-
-    private async Task ReloadAsync()
-    {
-        nowUtc = Clock.GetUtcNow().UtcDateTime;
-        options ??= await Provider.GetTrackingOptionsAsync();
-        data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber, SubjectId: subjectId));
-        pageNumber = data.Page;
+        part = key is not null && Parts.Contains(key) ? key : "syllabus";
+        state = StateOptions[0].Key;
+        pageNumber = 1;
         if (part == "exams")
         {
-            await LoadExamsAsync();
+            var choices = await Provider.GetExamFilterChoicesAsync();
+            grades = choices.Grades;
+            courses = choices.Courses;
         }
+
+        await ReloadAsync();
     }
 
-    private async Task LoadExamsAsync() => exams = await Provider.ListExamTrackingAsync(search);
-
-    private async Task StateChangedAsync(string? key)
+    private async Task StateChangedAsync(string key)
     {
-        state = key ?? "";
+        state = key;
         pageNumber = 1;
         await ReloadAsync();
     }
@@ -324,12 +330,32 @@ else
         await ReloadAsync();
     }
 
-    private bool HasChoice => subjectId != 0;
+    private bool IsSyllabus => part == "syllabus";
 
-    private async Task ClearChoicesAsync()
+    private async Task ReloadAsync()
     {
-        subjectId = 0;
-        await ApplyAsync();
+        loading = true;
+        if (part == "exams")
+        {
+            var exam = state is TrackStates.NotOpened or TrackStates.NotHandedIn ? state : null;
+            examRows = await Provider.ListExamStudentsAsync(exam, grade, subjectId, search, pageNumber);
+            pageNumber = examRows.Page;
+            people = (await Provider.GetExamStudentsAsync(exam, grade, subjectId, search)).Select(r => r.StudentUserId).Distinct().Count();
+        }
+        else if (state == TrackStates.NotPosted)
+        {
+            postedRows = await Provider.ListNotPostedAsync(IsSyllabus, search, pageNumber);
+            pageNumber = postedRows.Page;
+            people = (await Provider.GetNotPostedAsync(IsSyllabus, search)).Select(r => r.TeacherUserId).Distinct().Count();
+        }
+        else
+        {
+            openedRows = await Provider.ListNotOpenedAsync(IsSyllabus, search, pageNumber);
+            pageNumber = openedRows.Page;
+            people = (await Provider.GetNotOpenedAsync(IsSyllabus, search)).Select(r => r.StudentUserId).Distinct().Count();
+        }
+
+        loading = false;
     }
 
     private async Task PreviousAsync()
@@ -343,4 +369,34 @@ else
         pageNumber++;
         await ReloadAsync();
     }
+
+    // ---- the message to everybody on the list
+    private void OpenMessage()
+    {
+        messageText = part == "exams"
+            ? (state == TrackStates.NotHandedIn ? "You have not handed in your summative exam yet. Open your course and take it before it closes." : state == TrackStates.NotOpened ? "You have not opened your summative exam yet. Open your course and take it before it closes." : "A reminder about your summative exam: open your course and take it before it closes.")
+            : state == TrackStates.NotPosted
+                ? $"The {(IsSyllabus ? "syllabus" : "modules")} that was sent to you is not posted yet. Please open your course and post {(IsSyllabus ? "it" : "them")} for the students."
+                : $"Your teacher posted the {(IsSyllabus ? "syllabus" : "modules")} for you. Please open your course and read {(IsSyllabus ? "it" : "them")}.";
+        messaging = true;
+    }
+
+    private void CloseMessage() => messaging = false;
+
+    private async Task SendMessageAsync()
+    {
+        sending = true;
+        try
+        {
+            var told = await Provider.NotifyAsync(state, part == "exams", IsSyllabus, search, grade, subjectId, messageText);
+            messaging = false;
+            notice = told == 0 ? "Nobody was on the list, so nobody was told." : $"{(told == 1 ? "1 person was" : $"{told:N0} people were")} told.";
+        }
+        finally
+        {
+            sending = false;
+        }
+    }
+
+    private void ClearNotice() => notice = null;
 }

@@ -25,9 +25,9 @@ else
                   Hint="@(data.Sent == 0 ? "Nothing sent yet" : $"{ProviderUi.Plural(data.TeachersReached, "teacher", "teachers")} of {data.TeachersWithCourses:N0}")" Href="provider/tracking" />
         <StatCard Label="Opened by the teachers" Text="@(data.Sent == 0 ? "—" : $"{data.TeacherOpenedPercent}%")" IconName="eye"
                   Accent="@(data.Sent == 0 ? AccentColor.Slate : data.TeacherOpenedPercent >= 80 ? AccentColor.Green : data.TeacherOpenedPercent >= 50 ? AccentColor.Amber : AccentColor.Rose)"
-                  Hint="@(data.NotOpened == 0 ? "None waiting" : $"{data.NotOpened:N0} not opened yet")" Href="provider/tracking?state=NotOpened" />
+                  Hint="@(data.NotOpened == 0 ? "None waiting" : $"{data.NotOpened:N0} not opened yet")" Href="provider/tracking?tab=modules&state=NotPosted" />
         <StatCard Label="Posted to the students" Text="@(data.Sent == 0 ? "—" : $"{data.PostedPercent}%")" IconName="circle-check" Accent="AccentColor.Violet"
-                  Hint="@($"{data.Posted:N0} posted · {data.Scheduled:N0} scheduled")" Href="provider/tracking?state=Posted" />
+                  Hint="@($"{data.Posted:N0} posted · {data.Scheduled:N0} scheduled")" Href="provider/tracking?tab=modules&state=NotOpened" />
         <StatCard Label="Opened by the students" Text="@(data.StudentModuleExpected == 0 ? "—" : $"{data.StudentModulePercent}%")" IconName="users-round" Accent="AccentColor.Amber"
                   Hint="Of the modules posted" Href="provider/analytics" />
     </div>
@@ -46,7 +46,7 @@ else
                     @foreach (var row in data.Waiting)
                     {
                         <li>
-                            <a href="provider/tracking/@row.DeliveryId">
+                            <a href="provider/tracking?tab=@(row.IsSyllabus ? "syllabus" : "modules")&state=NotPosted">
                                 <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
                                 <span class="plist-sub">@row.TeacherName · @row.SectionLabel · sent @ProviderUi.Ago(row.SentAtUtc, nowUtc)</span>
                             </a>
@@ -61,7 +61,7 @@ else
                         </li>
                     }
                 </ul>
-                <p class="more-link"><a href="provider/tracking?state=NotOpened">All @data.NotOpened.ToString("N0") waiting <Icon Name="arrow-right" Size="14" /></a></p>
+                <p class="more-link"><a href="provider/tracking?tab=modules&state=NotPosted">All @data.NotOpened.ToString("N0") waiting <Icon Name="arrow-right" Size="14" /></a></p>
             }
         </Card>
 
@@ -78,7 +78,7 @@ else
                     @foreach (var row in data.RecentlyOpened)
                     {
                         <li>
-                            <a href="provider/tracking/@row.DeliveryId">
+                            <a href="provider/tracking?tab=@(row.IsSyllabus ? "syllabus" : "modules")&state=NotPosted">
                                 <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
                                 <span class="plist-sub">@row.TeacherName · @row.SectionLabel · opened @ProviderUi.Ago(row.OpenedAtUtc!.Value, nowUtc)</span>
                             </a>

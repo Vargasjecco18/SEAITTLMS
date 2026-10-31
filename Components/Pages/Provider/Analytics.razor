@@ -181,7 +181,7 @@ else
                     @foreach (var t in data.SlowestTeachers)
                     {
                         <li>
-                            <a href="provider/tracking/users/@t.UserId">
+                            <a href="provider/tracking?tab=modules&state=NotPosted&q=@Uri.EscapeDataString(t.Name)">
                                 <span class="plist-title">@t.Name</span>
                                 <span class="plist-sub">@t.Waiting waiting · the oldest @(t.LongestWaitingDays is { } d && d > 0 ? $"{d} days" : "from today")</span>
                             </a>
@@ -205,7 +205,7 @@ else
                     @foreach (var row in data.LeastOpened)
                     {
                         <li>
-                            <a href="provider/tracking/@row.DeliveryId">
+                            <a href="provider/tracking?tab=@(row.IsSyllabus ? "syllabus" : "modules")&state=NotPosted">
                                 <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
                                 <span class="plist-sub">@row.TeacherName · @row.SectionLabel · @row.ModuleOpens of @row.Audience opened it</span>
                             </a>

@@ -8,6 +8,7 @@
 @inject TimeProvider Clock
 
 <PageTitle>@(subject?.SubjectName ?? "Course") · SEAITT Legazpi LMS</PageTitle>
+<AutoRefresh Seconds="60" />
 
 @if (!loaded)
 {

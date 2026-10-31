@@ -93,16 +93,18 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var rows = await db.ModuleItems.AsNoTracking()
             .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now)
             .OrderBy(i => i.Module.Position).ThenBy(i => i.Module.Id).ThenBy(i => i.Position).ThenBy(i => i.Id)
-            .Select(i => new { i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder })
+            .Select(i => new { i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder, Summative = i.MaterialItemId != null })
             .ToListAsync(ct);
 
+        // E is an exam the teacher added in the gradebook; SE is a summative exam of the academic provider.
         var counters = new Dictionary<string, int>();
         var columns = new List<(GradebookColumn Column, int Order, int Index)>();
         for (var n = 0; n < rows.Count; n++)
         {
             var r = rows[n];
-            counters[r.Kind] = counters.GetValueOrDefault(r.Kind) + 1;
-            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle) { Code = $"{ItemKinds.Code(r.Kind)}{counters[r.Kind]}" }, r.GradebookOrder, n));
+            var letters = r.Kind == ItemKinds.Exam && r.Summative ? "SE" : ItemKinds.Code(r.Kind);
+            counters[letters] = counters.GetValueOrDefault(letters) + 1;
+            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle) { Code = $"{letters}{counters[letters]}" }, r.GradebookOrder, n));
         }
 
         return columns.OrderBy(c => c.Order == 0 ? 1 : 0).ThenBy(c => c.Order).ThenBy(c => c.Index).Select(c => c.Column).ToList();

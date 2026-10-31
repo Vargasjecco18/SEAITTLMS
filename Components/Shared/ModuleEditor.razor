@@ -14,7 +14,7 @@
     </Field>
     <AttachmentPicker @ref="filesPicker" Title="Files of the module" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => !f.IsSlides).ToList())" />
     <AttachmentPicker @ref="slidesPicker" @key="@("slides")" Slides="true" Title="Slides of the module (PowerPoint or PDF)" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => f.IsSlides).ToList())" />
-    <div class="modal-actions">
+    <div class="modal-actions save-center">
         @if (OnCancel.HasDelegate)
         {
             <Button Variant="ButtonVariant.Ghost" OnClick="OnCancel">Cancel</Button>

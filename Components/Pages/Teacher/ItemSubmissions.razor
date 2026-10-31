@@ -44,6 +44,29 @@ else
         <p class="late-hint" role="status"><Icon Name="alarm-clock" Size="16" /> <span>@lateWaiting @(lateWaiting == 1 ? "student handed in late" : "students handed in late"). Accept the work you want to grade, or decline it.</span></p>
     }
 
+    @* What the teacher gave (the question, the instructions, the file) is at the left, who handed in is at the right. The menu of the school folds to its icons so both have room. *@
+    <span data-side-rail hidden></span>
+    <div class="item-layout">
+    <div class="given">
+        <Card Title="@(data.Kind == ItemKinds.Quiz ? "The quiz" : "What you gave")" IconName="file-text">
+            @if (string.IsNullOrWhiteSpace(data.Instructions) && itemFiles.Count == 0)
+            {
+                <p class="muted">@(data.Kind == ItemKinds.Quiz && !isFileQuiz ? "The questions are in Questions, at the top." : "No instructions or file were added.")</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(data.Instructions))
+            {
+                <div class="text">@data.Instructions</div>
+            }
+
+            @if (itemFiles.Count > 0)
+            {
+                <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
+                <FilePreviewPane Items="itemFiles" Label="@($"Files of {data.Title}")" />
+            }
+        </Card>
+    </div>
+    <div class="work">
     <div class="summary">
         <div class="tile"><span class="tile-value">@handedIn / @data.Rows.Count</span><span class="tile-label">handed in</span></div>
         <div class="tile"><span class="tile-value">@toCheck</span><span class="tile-label">to check</span></div>
@@ -146,6 +169,8 @@ else
             </div>
         }
     </Card>
+    </div>
+    </div>
 }
 
 @* ===== One student's work ===== *@
@@ -328,6 +353,9 @@ else
 
     private bool isFileQuiz;
 
+    /// <summary>The files the teacher attached to the work.</summary>
+    private IReadOnlyList<AttachmentRow> itemFiles = [];
+
     /// <summary>The files each student handed in, by the number of the submission (the Files column of the list).</summary>
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> rowFiles = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
 
@@ -336,7 +364,8 @@ else
         data = teacherId == 0 ? null : await Work.GetItemSubmissionsAsync(teacherId, ItemId);
         rowFiles = data is null ? new Dictionary<int, IReadOnlyList<AttachmentRow>>()
             : await Files.ListForAsync(AttachmentOwnerKind.Submission, data.Rows.Where(r => r.SubmissionId != null).Select(r => r.SubmissionId!.Value).ToList());
-        isFileQuiz = data is { Kind: ItemKinds.Quiz, Questions: 0 } && (await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId))).Count > 0;
+        itemFiles = data is null ? [] : await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId));
+        isFileQuiz = data is { Kind: ItemKinds.Quiz, Questions: 0 } && itemFiles.Count > 0;
     }
 
     private void ClearMessage() => message = null;

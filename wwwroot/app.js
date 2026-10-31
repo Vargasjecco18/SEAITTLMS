@@ -1430,3 +1430,93 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         }
     }
 });
+
+// How much of a module has been read (the bar at the right of its title, <ReadProgress>). It counts the scrolling of the page and the files and slides that were in front of the person
+// for a few seconds, and it never goes back: the highest value is kept on this computer.
+(function () {
+    var state = null;
+
+    function storageKey(el) { return 'seaitt-read:' + (el.getAttribute('data-read-key') || ''); }
+
+    function load(el) {
+        try { return Math.min(100, Math.max(0, parseInt(window.localStorage.getItem(storageKey(el)) || '0', 10) || 0)); } catch (e) { return 0; }
+    }
+
+    function save(el, value) {
+        try { window.localStorage.setItem(storageKey(el), String(value)); } catch (e) { /* no storage: the bar only lives on this page */ }
+    }
+
+    function show(s) {
+        var text = s.el.querySelector('[data-rp-value]');
+        var bar = s.el.querySelector('[data-rp-bar]');
+        if (text) { text.textContent = s.value + '%'; }
+        if (bar) { bar.style.width = s.value + '%'; }
+        s.el.setAttribute('aria-valuenow', String(s.value));
+        s.el.classList.toggle('done', s.value >= 100);
+    }
+
+    function visibleShare(node) {
+        var r = node.getBoundingClientRect();
+        var h = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
+        return r.height > 0 ? Math.max(0, h) / Math.min(r.height, window.innerHeight) : 0;
+    }
+
+    function tick() {
+        var s = state;
+        if (!s || !document.body.contains(s.el)) { return; }
+        if (document.hidden) { return; }
+
+        // The scrolling of the page: how far down it has been.
+        var doc = document.scrollingElement || document.documentElement;
+        var max = doc.scrollHeight - window.innerHeight;
+        var scrollable = max > 24;
+        if (scrollable) { s.scroll = Math.max(s.scroll, Math.min(1, doc.scrollTop / max)); }
+
+        // The files and the slides: each one counts once it was in front of the person for a few seconds (or the pointer was on it).
+        var total = 0;
+        document.querySelectorAll('.pane').forEach(function (pane) {
+            var chips = pane.querySelectorAll('.chips .chip');
+            total += Math.max(1, chips.length);
+            var viewer = pane.querySelector('.viewer');
+            var shown = viewer && viewer.querySelector('iframe, img, video, audio, .none');
+            if (!viewer || !shown) { return; }
+            var id = (shown.getAttribute('src') || shown.textContent || '').slice(0, 200);
+            var share = visibleShare(viewer);
+            if (share >= 0.4) {
+                s.seen[id] = (s.seen[id] || 0) + 1;
+                if (pane.matches(':hover') || document.activeElement === shown) { s.seen[id] += 3; }
+            }
+        });
+        var viewed = Object.keys(s.seen).filter(function (k) { return s.seen[k] >= 5; }).length;
+        var files = total > 0 ? Math.min(1, viewed / total) : 0;
+
+        var fraction = total === 0 ? s.scroll : (scrollable ? (s.scroll + files) / 2 : files);
+        var value = Math.max(s.value, Math.min(100, Math.round(fraction * 100)));
+        if (value !== s.value) { s.value = value; save(s.el, value); show(s); }
+    }
+
+    function start(el) {
+        if (state && state.el === el) { return; }
+        stop();
+        state = { el: el, value: load(el), scroll: 0, seen: {}, timer: null };
+        show(state);
+        state.timer = window.setInterval(tick, 1000);
+        window.addEventListener('scroll', tick, { passive: true });
+    }
+
+    function stop() {
+        if (!state) { return; }
+        window.clearInterval(state.timer);
+        window.removeEventListener('scroll', tick);
+        state = null;
+    }
+
+    function sync() {
+        var el = document.querySelector('[data-read-progress]');
+        if (el) { start(el); } else { stop(); }
+    }
+
+    document.addEventListener('DOMContentLoaded', sync);
+    new MutationObserver(sync).observe(document.documentElement, { childList: true, subtree: true });
+    sync();
+})();

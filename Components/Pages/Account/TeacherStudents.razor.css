@@ -1,0 +1,124 @@
+.students {
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.students-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin-bottom: 0.9rem;
+}
+
+.students-head h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.08rem;
+}
+
+.count {
+    padding: 0.05rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.students-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.students-tools ::deep .field {
+    margin: 0;
+}
+
+.muted {
+    color: var(--text-muted);
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.65rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table thead th {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.num {
+    text-align: right !important;
+}
+
+.name {
+    display: block;
+    font-weight: 650;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.none-opened {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.cell-bar {
+    display: grid;
+    grid-template-columns: minmax(5rem, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 12rem;
+}
+
+.track {
+    display: block;
+    height: 0.625rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.track i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--brand);
+}
+
+.track i.good { background: var(--green); }
+.track i.warn { background: var(--amber); }
+.track i.bad { background: var(--danger-solid); }

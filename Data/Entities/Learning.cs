@@ -110,7 +110,7 @@ public static class ItemKinds
         _ => "Assignments",
     };
 
-    /// <summary>The short code of the column in the gradebook: A, Q, TP, S, R, E.</summary>
+    /// <summary>The short code of the column in the gradebook: A, Q, TP, S, R, E (an exam of the teacher). A summative exam of the academic provider is SE (the gradebook says so).</summary>
     public static string Code(string kind) => kind switch
     {
         Quiz => "Q",

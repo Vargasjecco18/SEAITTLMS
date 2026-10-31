@@ -206,12 +206,9 @@
 
     private static readonly IReadOnlyList<NavItem.Sub> ProviderTracking =
     [
-        new("Not opened", "provider/tracking?state=NotOpened", "mail"),
-        new("Opened · draft", "provider/tracking?state=Opened", "eye"),
-        new("Scheduled", "provider/tracking?state=Scheduled", "calendar-clock"),
-        new("Posted", "provider/tracking?state=Posted", "circle-check"),
-        new("Teachers", "provider/tracking?tab=teachers", "presentation"),
-        new("Students", "provider/tracking?tab=students", "graduation-cap"),
+        new("Syllabus", "provider/tracking?tab=syllabus", "book-open"),
+        new("Modules", "provider/tracking?tab=modules", "layers"),
+        new("Summative exams", "provider/tracking?tab=exams", "clipboard-list"),
     ];
 
     private static readonly IReadOnlyList<string> ProviderAnalytics = ["Teachers who open and post", "Students who open", "By course, kind and section", "Week by week"];

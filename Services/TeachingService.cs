@@ -10,7 +10,7 @@ namespace SEAITT_LMS.Services;
 public sealed record TeacherSubjectCard(
     int AssignmentId, int SubjectId, string SubjectName, int SectionId, string SectionLabel,
     int Students, int ModulesPosted, int ModulesTotal, int ToGrade, string? Meets = null,
-    int Activities = 0, int Quizzes = 0, int TaskPerformances = 0, string? StrandCode = null, string? StrandName = null);
+    int Activities = 0, int Quizzes = 0, int TaskPerformances = 0, string? StrandCode = null, string? StrandName = null, bool IsCompleted = false);
 
 /// <summary>One activity, quiz or task performance in the list a card opens: what a student still has to do, or what a teacher still has to check.</summary>
 /// <param name="Note">"Due Oct 9, 2026, 5:00 PM", or "3 to check".</param>
@@ -216,6 +216,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             .Select(a => new
             {
                 a.Id, a.SubjectId, SubjectName = a.Subject.Name, a.SectionId, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, StrandName = a.Section.Strand.Name, SectionName = a.Section.Name,
+                a.Section.StrandId, a.Section.SchoolYearId, YearEnd = a.Section.SchoolYear.EndDate,
                 Total = a.Modules.Count(m => !m.IsExamSet), Posted = a.Modules.Count(m => !m.IsExamSet && m.VisibleFromUtc != null && m.VisibleFromUtc <= now),
                 ToGrade = db.Submissions.Count(s => s.Item.Module.AssignmentId == a.Id && s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined),
             })
@@ -233,6 +234,17 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             .ToListAsync(ct);
         int KindCount(int assignmentId, string kind) => kinds.FirstOrDefault(k => k.AssignmentId == assignmentId && k.Kind == kind)?.Count ?? 0;
 
+        // A course is completed when its term is over (the term of the school year in which the strand takes the course), or its school year is.
+        var today = PhilippineTime.Today(clock);
+        var curriculum = await db.StrandSubjects.AsNoTracking().Select(x => new { x.StrandId, x.GradeLevel, x.SubjectId, x.TermNumber }).ToListAsync(ct);
+        var termEnds = await db.Terms.AsNoTracking().Select(t => new { t.SchoolYearId, t.TermNumber, t.EndDate }).ToListAsync(ct);
+        bool Completed(int strandId, byte grade, int subjectId, int yearId, DateOnly yearEnd)
+        {
+            var term = curriculum.Where(x => x.StrandId == strandId && x.GradeLevel == grade && x.SubjectId == subjectId).Select(x => (byte?)x.TermNumber).Min();
+            var end = term is { } n && termEnds.FirstOrDefault(t => t.SchoolYearId == yearId && t.TermNumber == n) is { } found ? found.EndDate : yearEnd;
+            return end < today;
+        }
+
         var cards = new List<TeacherSubjectCard>();
         foreach (var r in rows)
         {
@@ -240,7 +252,8 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             var meets = meetings.FirstOrDefault(m => m.SectionId == r.SectionId && m.SubjectId == r.SubjectId);
             cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
                 meets is null ? null : new MeetingInfo(meets.Days, meets.StartTime, meets.EndTime).Describe(),
-                KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName));
+                KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName,
+                Completed(r.StrandId, r.GradeLevel, r.SubjectId, r.SchoolYearId, r.YearEnd)));
         }
 
         return cards;

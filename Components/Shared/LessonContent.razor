@@ -7,7 +7,7 @@
 <div class="layout">
     @if (others.Count > 0)
     {
-        <Card Title="@(Title ?? (others.Count == 1 ? "File" : "Files"))" IconName="file-text">
+        <Card>
             @LinkLine
             <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this module" ModuleLabel="@ModuleLabel" />
         </Card>
@@ -15,7 +15,7 @@
 
     @if (slides.Count > 0)
     {
-        <Card Title="@(others.Count > 0 || Title is null ? "Slides" : Title)" IconName="presentation">
+        <Card>
             @if (others.Count == 0)
             {
                 @LinkLine
@@ -26,7 +26,7 @@
 
     @if (Files.Count == 0)
     {
-        <Card Title="@(Title ?? "Files")" IconName="paperclip">
+        <Card>
             @LinkLine
             <p class="muted">@(ShowText ? "This module has no file yet." : "This module has no file. Add one in Edit module, at the right.")</p>
         </Card>

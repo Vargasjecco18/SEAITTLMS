@@ -509,14 +509,14 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         input.RoomId is null ? old?.RoomId : input.RoomId == CourseTimeInput.NoRoom ? null : input.RoomId;
 
     /// <summary>
-    /// The part of the day (AM, MID or PM) of a class: it follows the time the class starts. The first part whose hours include the start; a start before the first part
-    /// is the first part, a start after the last is the last.
+    /// The part of the day (AM, MID or PM) of a class: it follows the time the class starts, not a choice and not the hours kept for each part: before noon is AM, the hour of noon is MID,
+    /// from 1:00 PM it is PM. (The rows of the schedules only give the part its number.)
     /// </summary>
     public static Schedule? PartFor(IEnumerable<Schedule> parts, TimeOnly start)
     {
-        var ordered = parts.OrderBy(p => p.StartTime).ToList();
-        return ordered.FirstOrDefault(p => start >= p.StartTime && start < p.EndTime)
-            ?? (ordered.Count > 0 ? (start < ordered[0].StartTime ? ordered[0] : ordered[^1]) : null);
+        var list = parts.ToList();
+        var code = start.Hour < 12 ? "AM" : start.Hour == 12 ? "MID" : "PM";
+        return list.FirstOrDefault(p => string.Equals(p.Code, code, StringComparison.OrdinalIgnoreCase)) ?? list.OrderBy(p => p.StartTime).FirstOrDefault();
     }
 
     /// <summary>What is wrong with one course's class time by itself (the days, the hours), or null.</summary>

@@ -18,3 +18,64 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+/* The bar at the top of the card: the search, the choices, the state, and the message button at the right. */
+.track-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.track-search {
+    flex: 1 1 18rem;
+    max-width: 28rem;
+}
+
+.track-bar ::deep .field {
+    margin: 0;
+}
+
+.state-choice {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid var(--border-strong, var(--border));
+    border-radius: var(--radius-sm);
+}
+
+.state {
+    padding: 0.5rem 0.9rem;
+    border: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.state:last-child {
+    border-right: 0;
+}
+
+.state.on {
+    background: var(--btn-bg);
+    color: var(--on-brand, #fff);
+}
+
+.track-message {
+    margin-left: auto;
+}
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.muted {
+    color: var(--text-muted);
+}

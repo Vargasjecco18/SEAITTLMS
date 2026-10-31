@@ -44,7 +44,7 @@ public sealed record ExistingStudent(
 /// The subjects are not chosen: a student takes all the subjects the strand has at that grade level and term (the curriculum, set
 /// by the administrator).
 /// </summary>
-/// <param name="SectionName">One of A to C (or a section that exists already). It is created when the strand and grade level don't have it yet in the school year.</param>
+/// <param name="SectionName">One of A and B (or a section that exists already). It is created when the strand and grade level don't have it yet in the school year.</param>
 /// <param name="PhoneNumber">The student's mobile number. Optional. A student who already has a number keeps it.</param>
 /// <param name="NameExtension">Jr., Sr., III ... Optional (up to 10 characters). A student who already has one keeps it.</param>
 public sealed record EnrollmentRequest(
@@ -293,7 +293,7 @@ public sealed partial class EnrollmentService(
         var sectionName = Clean(request.SectionName);
         if (sectionName.Length is 0 or > MaxSectionNameLength || !SectionNamePattern().IsMatch(sectionName))
         {
-            errors.Add("Choose the section: A, B or C.");
+            errors.Add("Choose the section: A or B.");
         }
 
         // The phone number is optional. When it is typed it must be a number we can read.
@@ -435,10 +435,10 @@ public sealed partial class EnrollmentService(
 
             if (section is null)
             {
-                // The registrar chooses the section (A to C), nobody types a new name. Other names only exist when the coordinator made them.
+                // The registrar chooses the section (A or B), nobody types a new name. Other names only exist when the coordinator made them.
                 if (!SectionNames.IsChoice(sectionName))
                 {
-                    return EnrollmentResult.Fail($"There is no section {sectionName} for this strand and grade level. Choose A, B or C.");
+                    return EnrollmentResult.Fail($"There is no section {sectionName} for this strand and grade level. Choose A or B.");
                 }
 
                 section = new Section

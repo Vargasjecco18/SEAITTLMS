@@ -23,6 +23,7 @@ else if (module is null)
 else
 {
     <PageHeader Title="@module.Title" IconName="layers">
+        <ReadProgress Key="@($"module-{ModuleId}")" />
         <ButtonLink Href="@($"student/subjects/{module.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @module.SubjectName</ButtonLink>
     </PageHeader>
 

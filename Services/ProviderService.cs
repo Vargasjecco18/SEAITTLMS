@@ -159,7 +159,7 @@ internal static class ProviderMath
 /// opened it. The pages that show it are for the academic provider. The numbers come from three records: the delivery (when the teacher first opened their
 /// copy), the module views (a student opened a module or a syllabus) and the item views (a student opened an activity, a quiz or a task performance).
 /// </summary>
-public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, MaterialService materials)
+public sealed partial class ProviderService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, MaterialService materials, NotificationService? notifications = null)
 {
     public const int PageSize = 20;
 
