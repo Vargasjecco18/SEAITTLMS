@@ -1,0 +1,172 @@
+@inherits SetupTabBase
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject TimeProvider Clock
+
+@* Step 1: the school years and their terms. They keep themselves: the school year that is running and the next two are always here, each with three terms, and a school year
+   that is over goes away by itself (everything that happened in it stays in the records). Every box is ready to type in: a change is saved when the box is left. *@
+<div class="calendar-step">
+    <FormErrors Errors="Errors" />
+    <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
+
+    @if (years is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (Shown.Count == 0)
+    {
+        <EmptyState IconName="@(years.Count == 0 ? "calendar-range" : "search-x")" Title="@(years.Count == 0 ? "No school year yet" : "No school year matches")" />
+    }
+    else
+    {
+        <div class="years">
+            @foreach (var year in Shown)
+            {
+                var yearTerms = TermsOf(year.Id);
+                var isCurrent = year.Id == currentYearId;
+                <article class="year @(isCurrent ? "is-current" : "")" data-year="@year.Name" aria-label="@($"School year {year.Name}")">
+                    <header class="year-head">
+                        <div class="year-name">
+                            <input class="cell strong" aria-label="@($"Name of the school year {year.Name}")" maxlength="20" value="@year.Name" @key="@($"yn-{year.Id}-{stamp}")"
+                                   @onchange="e => SaveYearAsync(year, name: e.Value?.ToString())" />
+                            @if (isCurrent)
+                            {
+                                <Badge Tone="Tone.Success">Current</Badge>
+                            }
+                            else
+                            {
+                                <Badge Tone="Tone.Info">Next</Badge>
+                            }
+                        </div>
+                        @* The first day and the last day of the school year, in the middle of its bar. *@
+                        <div class="year-days">
+                            <label>First day <input type="date" class="cell" aria-label="@($"First day of {year.Name}")" value="@Box(year.StartDate)" @key="@($"ys-{year.Id}-{stamp}")"
+                                                    @onchange="e => SaveYearAsync(year, start: e.Value?.ToString())" /></label>
+                            <label>Last day <input type="date" class="cell" aria-label="@($"Last day of {year.Name}")" value="@Box(year.EndDate)" @key="@($"ye-{year.Id}-{stamp}")"
+                                                   @onchange="e => SaveYearAsync(year, end: e.Value?.ToString())" /></label>
+                        </div>
+                        <span class="year-count">@year.Sections @(year.Sections == 1 ? "section" : "sections")</span>
+                    </header>
+
+                    <div class="terms">
+                        @foreach (var term in yearTerms)
+                        {
+                            <div class="term @(term.IsCurrent ? "is-current" : "") @(term.IsEnded ? "is-over" : "")" data-term="@($"{year.Name}-{term.TermNumber}")">
+                                <div class="term-top">
+                                    <input class="cell strong" aria-label="@($"Name of term {term.TermNumber} of {year.Name}")" maxlength="50" value="@term.Name" @key="@($"tn-{term.Id}-{stamp}")"
+                                           @onchange="e => SaveTermAsync(term, name: e.Value?.ToString())" />
+                                    @if (term.IsCurrent)
+                                    {
+                                        <Badge Tone="Tone.Success">Now</Badge>
+                                    }
+                                    else if (term.IsEnded)
+                                    {
+                                        <Badge Tone="Tone.Neutral">Over</Badge>
+                                    }
+                                </div>
+                                <div class="term-days">
+                                    <label>From <input type="date" class="cell" aria-label="@($"First day of {term.Name} of {year.Name}")" value="@Box(term.StartDate)" @key="@($"ts-{term.Id}-{stamp}")"
+                                                       @onchange="e => SaveTermAsync(term, start: e.Value?.ToString())" /></label>
+                                    <label>To <input type="date" class="cell" aria-label="@($"Last day of {term.Name} of {year.Name}")" value="@Box(term.EndDate)" @key="@($"te-{term.Id}-{stamp}")"
+                                                     @onchange="e => SaveTermAsync(term, end: e.Value?.ToString())" /></label>
+                                </div>
+                                <span class="term-count">@term.Enrollments @(term.Enrollments == 1 ? "student" : "students") enrolled</span>
+                            </div>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+
+    @if (Past.Count > 0)
+    {
+        <details class="ended">
+            <summary>School years that are over (@Past.Count)</summary>
+            <p class="muted">These are kept for the records. Nothing in them was deleted: the students enrolled, the grades and the attendance are still there.</p>
+            <ul class="ended-list">
+                @foreach (var year in Past)
+                {
+                    <li><span class="name">@year.Name</span> <span class="muted">@PhilippineTime.FormatDate(year.StartDate) to @PhilippineTime.FormatDate(year.EndDate) · @year.Terms @(year.Terms == 1 ? "term" : "terms") · @year.Sections @(year.Sections == 1 ? "section" : "sections")</span></li>
+                }
+            </ul>
+        </details>
+    }
+</div>
+
+@code {
+    /// <summary>What is typed in the search box of the page: it narrows the school years.</summary>
+    [Parameter] public string? Search { get; set; }
+
+    private IReadOnlyList<SchoolYearRow>? years;
+    private IReadOnlyList<TermRow> terms = [];
+    private int currentYearId;
+    private int stamp;
+    private System.Threading.Timer? fade;
+
+    private DateOnly Today => PhilippineTime.Today(Clock);
+
+    private IReadOnlyList<SchoolYearRow> Active => (years ?? []).Where(y => y.EndDate >= Today).OrderBy(y => y.StartDate).ToList();
+
+    private IReadOnlyList<SchoolYearRow> Past => (years ?? []).Where(y => y.EndDate < Today).OrderByDescending(y => y.StartDate).ToList();
+
+    private IReadOnlyList<SchoolYearRow> Shown => string.IsNullOrWhiteSpace(Search)
+        ? Active
+        : Active.Where(y => y.Name.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase) || TermsOf(y.Id).Any(t => t.Name.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase))).ToList();
+
+    private IReadOnlyList<TermRow> TermsOf(int yearId) => terms.Where(t => t.SchoolYearId == yearId).OrderBy(t => t.TermNumber).ToList();
+
+    private static string Box(DateOnly date) => date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+    protected override async Task OnInitializedAsync()
+    {
+        // The school years that are not there yet are made now, so the page never shows fewer than the running one and the next two.
+        await SchoolCalendar.EnsureAsync(DbFactory, Clock);
+        await LoadAsync();
+    }
+
+    protected override Task RefreshAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        years = await Setup.ListSchoolYearsAsync();
+        terms = await Setup.ListTermsAsync();
+
+        // The school year that is running now (or the next one when it is the holidays).
+        var active = Active;
+        currentYearId = active.FirstOrDefault(y => y.StartDate <= Today && Today <= y.EndDate)?.Id ?? active.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private static DateOnly? ParseDate(string? text) => DateOnly.TryParseExact(text, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d) ? d : null;
+
+    private async Task SaveYearAsync(SchoolYearRow year, string? name = null, string? start = null, string? end = null)
+    {
+        var input = new SchoolYearInput { Id = year.Id, Name = name ?? year.Name, StartDate = start is null ? year.StartDate : ParseDate(start), EndDate = end is null ? year.EndDate : ParseDate(end) };
+        await SaveAndShowAsync(userId => Setup.SaveSchoolYearAsync(input, userId));
+    }
+
+    private async Task SaveTermAsync(TermRow term, string? name = null, string? start = null, string? end = null)
+    {
+        var input = new TermInput
+        {
+            Id = term.Id, SchoolYearId = term.SchoolYearId, TermNumber = term.TermNumber, Name = name ?? term.Name,
+            StartDate = start is null ? term.StartDate : ParseDate(start), EndDate = end is null ? term.EndDate : ParseDate(end),
+        };
+        await SaveAndShowAsync(userId => Setup.SaveTermAsync(input, userId));
+    }
+
+    private async Task SaveAndShowAsync(Func<int, Task<ServiceResult>> save)
+    {
+        var result = await RunAsync(save);
+        await LoadAsync();
+
+        // A change that was refused puts the old value back in the box.
+        stamp++;
+        if (result.Succeeded)
+        {
+            fade?.Dispose();
+            fade = new System.Threading.Timer(_ => _ = InvokeAsync(() => { Message = null; StateHasChanged(); }), null, TimeSpan.FromSeconds(3), Timeout.InfiniteTimeSpan);
+        }
+    }
+}

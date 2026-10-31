@@ -810,7 +810,8 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         subject.Description = description;
         subject.IsActive = input.IsActive;
         subject.Units = input.Units;
-        return await SaveAsync(db, input.Id is null ? $"The course {name} was added. Put it in a strand's courses to use it." : $"The course {name} was saved.", ct);
+        var savedSubject = await SaveAsync(db, input.Id is null ? $"The course {name} was added. Put it in a strand's courses to use it." : $"The course {name} was saved.", ct);
+        return savedSubject.Succeeded ? ServiceResult.Ok(savedSubject.Message, subject.Id) : savedSubject;
     }
 
     public async Task<ServiceResult> DeleteSubjectAsync(int id, int actingUserId, CancellationToken ct = default)

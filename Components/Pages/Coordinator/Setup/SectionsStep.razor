@@ -1,0 +1,246 @@
+@inherits SetupTabBase
+@inject SystemSettingsService SystemSettings
+@inject TimeProvider Clock
+
+@* Step 3: the sections and the class schedule. The sections are listed by school year (A and B for each strand and grade level); a double click on a section opens its adviser and its students.
+   The class schedule is a page of its own (a spreadsheet of the week), and the button "View all class schedules" slides every schedule in from the right. *@
+<div class="sections-step">
+    <FormErrors Errors="Errors" />
+    <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
+
+    <div class="sections-tools">
+        <ButtonLink Href="coordinator/class-schedule" IconName="calendar-clock">Open the class schedule</ButtonLink>
+        <Button Variant="ButtonVariant.Secondary" IconName="panel-right-open" OnClick="() => drawerOpen = true">View all class schedules</Button>
+        <form class="capacity" @onsubmit="SaveCapacityAsync">
+            <label for="sec-capacity">Students in one section (the limit)</label>
+            <input id="sec-capacity" type="number" class="cell narrow" min="1" max="100" @bind="capacity" />
+            <Button Type="submit" Small="true" Variant="ButtonVariant.Secondary" IconName="save" Disabled="Busy">Save limit</Button>
+        </form>
+    </div>
+
+    @if (lookups is not null)
+    {
+        <div class="add-row add-section" role="group" aria-label="Add a section">
+            <select class="cell" aria-label="School year of the new section" @bind="form.SchoolYearId">
+                @foreach (var year in ActiveYears)
+                {
+                    <option value="@year.Id">@year.Name</option>
+                }
+            </select>
+            <select class="cell narrow" aria-label="Grade level of the new section" @bind="form.GradeLevel">
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+            </select>
+            <select class="cell" aria-label="Strand of the new section" @bind="form.StrandId">
+                <option value="0">Strand</option>
+                @foreach (var strand in lookups.Strands)
+                {
+                    <option value="@strand.Id">@strand.Code</option>
+                }
+            </select>
+            <select class="cell narrow" aria-label="Name of the new section" @bind="form.Name">
+                @foreach (var name in SectionNames.Choices)
+                {
+                    <option value="@name">Section @name</option>
+                }
+            </select>
+            <Button Small="true" IconName="plus" Disabled="Busy" OnClick="AddAsync">Add section</Button>
+        </div>
+    }
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (Shown.Count == 0)
+    {
+        <EmptyState IconName="@(rows.Count == 0 ? "users" : "search-x")" Title="@(rows.Count == 0 ? "No section yet" : "No section matches")" />
+    }
+    else
+    {
+        @foreach (var year in Shown.GroupBy(r => r.SchoolYear))
+        {
+            <section class="year-sections" aria-label="@($"Sections of {year.Key}")">
+                <h3>@year.Key <span class="count">@year.Count()</span></h3>
+                <div class="table-wrap">
+                    <table class="table sections-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Section</th>
+                                <th scope="col" class="col-more">Adviser</th>
+                                <th scope="col">Students</th>
+                                <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in year)
+                            {
+                                <tr class="section-row" data-section="@row.Label" title="Double click to see the adviser and the students" @ondblclick="() => dialogSection = row">
+                                    <td class="name nowrap">
+                                        <span class="section-label">@row.GradeLevel-@row.StrandCode-</span>
+                                        <select class="cell narrow" aria-label="@($"Name of the section {row.Label}")" @key="@($"sn-{row.Id}-{stamp}")" @onchange="e => RenameAsync(row, e.Value?.ToString())">
+                                            @foreach (var name in NamesFor(row))
+                                            {
+                                                <option value="@name" selected="@(name == row.Name)">@name</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="col-more">@(row.Adviser ?? "—")</td>
+                                    <td>@(row.Students == 1 ? "1 student" : $"{row.Students} students")</td>
+                                    <td class="col-actions">
+                                        <div class="row-actions">
+                                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="users-round" Title="@($"Adviser and students of {row.Label}")" OnClick="() => dialogSection = row">Adviser and students</Button>
+                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {row.Label}")" OnClick="() => OpenDelete(row)" />
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        }
+    }
+
+    @if (PastRows.Count > 0)
+    {
+        <details class="ended">
+            <summary>Sections of school years that are over (@PastRows.Count)</summary>
+            <p class="muted">These are kept for the records, with their students.</p>
+            <ul class="ended-list">
+                @foreach (var row in PastRows)
+                {
+                    <li><span class="name">@row.Label</span> <span class="muted">@row.SchoolYear · @row.Students @(row.Students == 1 ? "student" : "students")</span></li>
+                }
+            </ul>
+        </details>
+    }
+</div>
+
+<SectionDialog Section="dialogSection" OnClose="CloseDialogAsync" />
+<ScheduleDrawer Open="drawerOpen" OnClose="() => drawerOpen = false" />
+
+<Modal Open="deleting is not null" Title="Delete this section?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        <p class="delete-text">You are about to delete the section <strong>@deleting.Label</strong> (@deleting.SchoolYear). <strong>This can't be undone.</strong></p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    /// <summary>What is typed in the search box of the page.</summary>
+    [Parameter] public string? Search { get; set; }
+
+    private IReadOnlyList<SectionRow>? rows;
+    private SetupLookups? lookups;
+    private readonly SectionInput form = new() { GradeLevel = 11, Name = SectionNames.Choices[0] };
+    private SectionRow? deleting;
+    private SectionRow? dialogSection;
+    private bool drawerOpen;
+    private int capacity;
+    private int stamp;
+    private System.Threading.Timer? fade;
+
+    private DateOnly Today => PhilippineTime.Today(Clock);
+
+    private IEnumerable<YearOption> ActiveYears => (lookups?.Years ?? []).Where(y => y.EndDate >= Today).OrderBy(y => y.StartDate);
+
+    private HashSet<int> ActiveYearIds => ActiveYears.Select(y => y.Id).ToHashSet();
+
+    private IReadOnlyList<SectionRow> Shown => rows is null ? [] : rows.Where(r => ActiveYearIds.Contains(r.SchoolYearId) && Matches(r))
+        .OrderBy(r => (lookups?.Years.FirstOrDefault(y => y.Id == r.SchoolYearId)?.StartDate) ?? DateOnly.MinValue).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name).ToList();
+
+    private IReadOnlyList<SectionRow> PastRows => rows is null ? [] : rows.Where(r => !ActiveYearIds.Contains(r.SchoolYearId)).OrderByDescending(r => r.SchoolYear).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name).ToList();
+
+    private bool Matches(SectionRow r) => string.IsNullOrWhiteSpace(Search)
+        || r.Label.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase) || (r.Adviser?.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false);
+
+    /// <summary>A and B for a section; a section that has another name (made before, or by the registrar) keeps it in its list.</summary>
+    private static IEnumerable<string> NamesFor(SectionRow row) => SectionNames.Choices.Contains(row.Name) ? SectionNames.Choices : SectionNames.Choices.Append(row.Name);
+
+    protected override async Task OnInitializedAsync()
+    {
+        capacity = SystemSettings.Current.SectionCapacity;
+        await LoadAsync();
+    }
+
+    protected override Task RefreshAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        lookups = await Setup.GetLookupsAsync();
+        rows = await Setup.ListSectionsAsync();
+        if (form.SchoolYearId == 0 || ActiveYears.All(y => y.Id != form.SchoolYearId))
+        {
+            form.SchoolYearId = ActiveYears.FirstOrDefault(y => y.StartDate <= Today && Today <= y.EndDate)?.Id ?? ActiveYears.FirstOrDefault()?.Id ?? 0;
+        }
+    }
+
+    private void Faded()
+    {
+        fade?.Dispose();
+        fade = new System.Threading.Timer(_ => _ = InvokeAsync(() => { Message = null; StateHasChanged(); }), null, TimeSpan.FromSeconds(3), Timeout.InfiniteTimeSpan);
+    }
+
+    private async Task AddAsync()
+    {
+        var input = new SectionInput { SchoolYearId = form.SchoolYearId, StrandId = form.StrandId, GradeLevel = form.GradeLevel, Name = form.Name };
+        var result = await RunAsync(userId => Setup.SaveSectionAsync(input, userId));
+        await LoadAsync();
+        if (result.Succeeded)
+        {
+            Faded();
+        }
+    }
+
+    private async Task RenameAsync(SectionRow row, string? name)
+    {
+        var input = new SectionInput { Id = row.Id, SchoolYearId = row.SchoolYearId, StrandId = row.StrandId, GradeLevel = row.GradeLevel, Name = name ?? row.Name, AdviserTeacherId = row.AdviserTeacherId };
+        var result = await RunAsync(userId => Setup.SaveSectionAsync(input, userId));
+        await LoadAsync();
+        stamp++;
+        if (result.Succeeded)
+        {
+            Faded();
+        }
+    }
+
+    private async Task SaveCapacityAsync()
+    {
+        var result = await RunAsync(userId => SystemSettings.SaveSectionCapacityAsync(userId, capacity));
+        if (!result.Succeeded)
+        {
+            capacity = SystemSettings.Current.SectionCapacity;
+        }
+    }
+
+    private async Task CloseDialogAsync()
+    {
+        dialogSection = null;
+        await LoadAsync();
+        await OnChanged.InvokeAsync();
+    }
+
+    private void OpenDelete(SectionRow row)
+    {
+        Errors = [];
+        deleting = row;
+    }
+
+    private void CloseDelete() => deleting = null;
+
+    private async Task DeleteAsync()
+    {
+        var result = await RunAsync(userId => Setup.DeleteSectionAsync(deleting!.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            await LoadAsync();
+        }
+    }
+}

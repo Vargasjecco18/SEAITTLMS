@@ -1,0 +1,578 @@
+@page "/coordinator/class-schedule"
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@using SEAITT_LMS.Components.Pages.Coordinator.Setup
+@using SEAITT_LMS.Services
+@inject CourseScheduleService Times
+@inject SchoolSetupService Setup
+@inject CurrentUser Me
+@inject TimeProvider Clock
+@inject IJSRuntime JS
+
+<PageTitle>Class schedule · SEAITT Legazpi LMS</PageTitle>
+
+@* The menu folds to its icons here: the week needs the room. *@
+<span data-side-rail hidden></span>
+
+<Notice Message="@message" IsError="messageIsError" OnDismiss="ClearMessage" />
+
+<div class="schedule-page" id="schedule-root" @ref="root">
+    <header class="bar">
+        <a class="back" href="coordinator/academic-setup#step-sections"><Icon Name="arrow-left" Size="18" /> Academic setup</a>
+        <h1><Icon Name="calendar-clock" Size="22" /> Class schedule</h1>
+
+        <div class="bar-fields">
+            <Field For="cs-year" Label="School year">
+                <select id="cs-year" @onchange="YearChangedAsync">
+                    @foreach (var y in years)
+                    {
+                        <option value="@y.Id" selected="@(y.Id == yearId)">@y.Name</option>
+                    }
+                </select>
+            </Field>
+            <Field For="cs-term" Label="Term">
+                <select id="cs-term" @onchange="TermChangedAsync">
+                    @for (var n = 1; n <= SchoolCalendar.TermsPerYear; n++)
+                    {
+                        <option value="@n" selected="@(n == term)">@SchoolCalendar.TermName(n)</option>
+                    }
+                </select>
+            </Field>
+
+            @* The rooms: every room has its own schedule. *@
+            <div class="room-picker">
+                <span class="room-label">Room</span>
+                <button type="button" id="room-button" class="room-button" aria-haspopup="listbox" aria-expanded="@(roomMenu ? "true" : "false")" @onclick="() => roomMenu = !roomMenu">
+                    <Icon Name="door-open" Size="18" /> <span>@RoomName</span> <Icon Name="chevron-down" Size="16" />
+                </button>
+                @if (roomMenu)
+                {
+                    <div class="room-menu" role="listbox" aria-label="Rooms">
+                        <button type="button" role="option" class="room-option @(roomId == 0 ? "is-picked" : "")" aria-selected="@(roomId == 0 ? "true" : "false")" data-room="0" @onclick="() => PickRoomAsync(0)">
+                            No room <span class="count">@NoRoomCount</span>
+                        </button>
+                        @foreach (var room in rooms)
+                        {
+                            <button type="button" role="option" class="room-option @(roomId == room.Id ? "is-picked" : "")" aria-selected="@(roomId == room.Id ? "true" : "false")" data-room="@room.Id" @onclick="() => PickRoomAsync(room.Id)">
+                                @room.Name <span class="count">@room.Classes</span>
+                            </button>
+                        }
+                        <div class="room-actions">
+                            @if (addingRoom)
+                            {
+                                <form class="add-room" @onsubmit="AddRoomAsync">
+                                    <input id="new-room" class="cell" maxlength="50" autocomplete="off" placeholder="Name of the room" aria-label="Name of the new room" @bind="newRoom" @bind:event="oninput" />
+                                    <Button Type="submit" Small="true" IconName="plus" Disabled="Busy">Add</Button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button type="button" class="room-action" id="add-room" @onclick="() => addingRoom = true"><Icon Name="plus" Size="16" /> Add room</button>
+                            }
+
+                            <button type="button" class="room-action danger" id="remove-room" disabled="@(roomId == 0)" @onclick="OpenRemoveRoom"><Icon Name="trash-2" Size="16" /> Remove room</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </header>
+
+    <div class="body">
+        <aside class="palette" aria-label="Sections and their courses">
+            <SearchField Id="schedule-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a section" AriaLabel="Search a section" />
+            <p class="palette-lead">Drag a course to a day and a time. <strong>Double click</strong> a section to choose its adviser and see its students.</p>
+
+            @if (sections.Count == 0)
+            {
+                <p class="muted">@(allSections.Count == 0 ? "No section yet. Add the sections in the academic setup first." : "No section matches.")</p>
+            }
+
+            @foreach (var sec in sections)
+            {
+                var open = IsOpen(sec.SectionId);
+                var courses = CoursesOf(sec.SectionId);
+                <section class="p-section" data-section="@sec.Label" @ondblclick="() => OpenDialogAsync(sec.SectionId)">
+                    <button type="button" class="p-head" aria-expanded="@(open ? "true" : "false")" @onclick="() => ToggleAsync(sec.SectionId)">
+                        <Icon Name="@(open ? "chevron-down" : "chevron-right")" Size="16" />
+                        <span class="p-name">@sec.Label</span>
+                        <span class="p-count">@(courses is null ? "" : $"{courses.Count(c => c.Meeting is not null)} of {courses.Count}")</span>
+                    </button>
+                    @if (open)
+                    {
+                        @if (courses is null)
+                        {
+                            <p class="muted">Loading…</p>
+                        }
+                        else if (courses.Count == 0)
+                        {
+                            <p class="muted">No course in @SchoolCalendar.TermName(term).</p>
+                        }
+                        else
+                        {
+                            <ul class="p-courses">
+                                @foreach (var c in courses)
+                                {
+                                    <li class="p-course @(c.Meeting is not null ? "is-placed" : "")" draggable="true" data-drag="@($"p:{sec.SectionId}:{c.SubjectId}")" data-course="@c.Name" title="Drag it to a day and a time">
+                                        <Icon Name="grip-vertical" Size="14" />
+                                        <span class="c-name">@c.Name</span>
+                                        @if (c.Meeting is { } m)
+                                        {
+                                            <span class="c-when">@m.Days · @ClassTime.Label(m.Start) @(c.RoomName is null ? "" : $"· {c.RoomName}")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="c-when none">No time yet</span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                </section>
+            }
+        </aside>
+
+        <div class="week-wrap">
+            <div class="week" role="grid" aria-label="@($"Weekly schedule of {RoomName}")" data-room="@roomId">
+                <div class="week-head" role="row">
+                    <span class="corner" aria-hidden="true"></span>
+                    @foreach (var (day, name) in Days)
+                    {
+                        <div class="day-head" role="columnheader">@name</div>
+                    }
+                </div>
+                <div class="week-body">
+                    <div class="time-col" aria-hidden="true">
+                        @for (var slot = 0; slot < Slots; slot++)
+                        {
+                            var time = SlotTime(slot);
+                            <div class="time-cell @(time.Minute == 0 ? "hour" : "half")">@(time.Minute == 0 ? ClassTime.Label(time) : "")</div>
+                        }
+                    </div>
+                    @foreach (var (day, name) in Days)
+                    {
+                        <div class="day-col" role="gridcell" data-day="@day" aria-label="@name" style="--slots:@Slots">
+                            @for (var slot = 0; slot < Slots; slot++)
+                            {
+                                <div class="slot @(SlotTime(slot).Minute == 0 ? "hour" : "half")" data-slot="@slot"></div>
+                            }
+
+                            @foreach (var block in BlocksOf(day))
+                            {
+                                var c = block.Class;
+                                <div class="block kind-@(c.TermNumber % 6)" draggable="true" data-drag="@($"m:{c.SectionId}:{c.SubjectId}")" data-block="@c.Course" data-section="@c.SectionLabel"
+                                     style="top: calc(var(--row) * @block.Top); height: calc(var(--row) * @block.Height - 2px); left: @(block.Left)%; width: calc(@(block.Width)% - 2px);"
+                                     @ondblclick="() => OpenDialogAsync(c.SectionId)" @ondblclick:stopPropagation="true"
+                                     title="@($"{c.Course} · {c.SectionLabel} · {ClassTime.Label(c.Start)} – {ClassTime.Label(c.End)}")">
+                                    <span class="b-course">@c.Course</span>
+                                    <span class="b-section">@c.SectionLabel</span>
+                                    <span class="b-time">@ClassTime.Label(c.Start) – @ClassTime.Label(c.End)</span>
+                                    @if (c.Teacher is not null && block.Height >= 4)
+                                    {
+                                        <span class="b-teacher">@c.Teacher</span>
+                                    }
+                                    <div class="b-tools">
+                                        <select class="b-length" aria-label="@($"Length of {c.Course} of {c.SectionLabel}")" @onchange="e => ChangeLengthAsync(c, e.Value?.ToString())">
+                                            @foreach (var minutes in Lengths)
+                                            {
+                                                <option value="@minutes" selected="@(Minutes(c) == minutes)">@Hours(minutes)</option>
+                                            }
+                                        </select>
+                                        <button type="button" class="b-remove" aria-label="@($"Take {c.Course} of {c.SectionLabel} off the schedule")" title="Take it off the schedule" @onclick="() => RemoveAsync(c)"><Icon Name="x" Size="14" /></button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <p class="week-note">@(rooms.Count == 0 ? "There is no room yet: press the Room box above and add one. Every room has its own schedule." : roomId == 0 ? "These classes have no room yet. Pick a room above and drag them into it." : $"Classes in {RoomName}.") MWF classes show on Monday, Wednesday and Friday; TTH classes on Tuesday and Thursday. A class dropped on a Monday, Wednesday or Friday is MWF, on a Tuesday or Thursday it is TTH.</p>
+        </div>
+    </div>
+</div>
+
+<SectionDialog Section="dialogSection" OnClose="CloseDialogAsync" />
+
+<Modal Open="removingRoom" Title="Remove this room?" OnClose="CloseRemoveRoom">
+    @if (removingRoom)
+    {
+        var room = rooms.FirstOrDefault(r => r.Id == roomId);
+        <p class="delete-text">You are about to remove the room <strong>@room?.Name</strong>. @(room is { Classes: > 0 } ? $"Its {room.Classes} {(room.Classes == 1 ? "class keeps" : "classes keep")} the day and the time, and has no room." : "No class is in it.")</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseRemoveRoom">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="RemoveRoomAsync">@(Busy ? "Removing…" : "Remove room")</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private const int FirstHour = 7;
+    private const int LastHour = 18;
+    private static readonly int Slots = (LastHour - FirstHour) * 2;
+
+    private static readonly (int Day, string Name)[] Days = [(1, "Monday"), (2, "Tuesday"), (3, "Wednesday"), (4, "Thursday"), (5, "Friday")];
+    private static readonly int[] Lengths = [60, 90, 120, 150, 180];
+
+    private sealed record Block(PlacedClass Class, double Top, double Height, double Left, double Width);
+
+    private ElementReference root;
+    private DotNetObjectReference<ClassSchedule>? self;
+
+    private IReadOnlyList<YearOption> years = [];
+    private IReadOnlyList<ScheduleSection> allSections = [];
+    private IReadOnlyList<RoomRow> rooms = [];
+    private IReadOnlyList<PlacedClass> placed = [];
+    private IReadOnlyList<SectionRow> sectionRows = [];
+    private readonly Dictionary<int, IReadOnlyList<CourseTimeRow>> courseCache = [];
+    private readonly HashSet<int> openSections = [];
+
+    private int yearId;
+    private int term = 1;
+    private int roomId;
+    private string search = "";
+    private bool roomMenu;
+    private bool addingRoom;
+    private string newRoom = "";
+    private bool removingRoom;
+    private bool Busy;
+    private string? message;
+    private bool messageIsError;
+    private SectionRow? dialogSection;
+    private bool wired;
+
+    private string RoomName => roomId == 0 ? "No room" : rooms.FirstOrDefault(r => r.Id == roomId)?.Name ?? "No room";
+
+    private int NoRoomCount => noRoomCount;
+    private int noRoomCount;
+
+    private IReadOnlyList<ScheduleSection> sections => allSections
+        .Where(s => s.SchoolYearId == yearId && (string.IsNullOrWhiteSpace(search) || s.Label.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)))
+        .OrderBy(s => s.GradeLevel).ThenBy(s => s.Label, StringComparer.OrdinalIgnoreCase).ToList();
+
+    private static TimeOnly SlotTime(int slot) => new TimeOnly(FirstHour, 0).AddMinutes(slot * 30);
+
+    protected override async Task OnInitializedAsync()
+    {
+        allSections = await Times.ListSectionsAsync();
+        var today = PhilippineTime.Today(Clock);
+        var lookups = await Setup.GetLookupsAsync();
+        years = [.. lookups.Years.Where(y => y.EndDate >= today).OrderBy(y => y.StartDate)];
+        yearId = years.FirstOrDefault(y => y.StartDate <= today && today <= y.EndDate)?.Id ?? years.FirstOrDefault()?.Id ?? 0;
+
+        var terms = await Setup.ListTermsAsync();
+        term = terms.FirstOrDefault(t => t.IsCurrent && t.SchoolYearId == yearId)?.TermNumber ?? 1;
+        if (term is < 1 or > SchoolCalendar.TermsPerYear)
+        {
+            term = 1;
+        }
+
+        sectionRows = await Setup.ListSectionsAsync();
+        rooms = await Times.ListRoomsAsync();
+        roomId = rooms.FirstOrDefault()?.Id ?? 0;
+        if (sections.Count > 0)
+        {
+            openSections.Add(sections[0].SectionId);
+        }
+
+        await ReloadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !wired)
+        {
+            wired = true;
+            self = DotNetObjectReference.Create(this);
+            try
+            {
+                await JS.InvokeVoidAsync("seaitt.scheduleGrid.init", root, self);
+            }
+            catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
+            {
+            }
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        allSections = await Times.ListSectionsAsync();
+        rooms = await Times.ListRoomsAsync();
+        if (roomId != 0 && rooms.All(r => r.Id != roomId))
+        {
+            roomId = 0;
+        }
+
+        placed = yearId == 0 ? [] : await Times.ListPlacedAsync(roomId, yearId, term);
+        noRoomCount = yearId == 0 ? 0 : (await Times.ListPlacedAsync(0, yearId, term)).Count;
+        courseCache.Clear();
+        foreach (var id in openSections.ToList())
+        {
+            courseCache[id] = await TermCoursesAsync(id);
+        }
+    }
+
+    private async Task<IReadOnlyList<CourseTimeRow>> TermCoursesAsync(int sectionId) => [.. (await Times.ListCoursesAsync(sectionId)).Where(c => c.TermNumber == term)];
+
+    private IReadOnlyList<CourseTimeRow>? CoursesOf(int sectionId) => courseCache.GetValueOrDefault(sectionId);
+
+    private bool IsOpen(int sectionId) => openSections.Contains(sectionId) || !string.IsNullOrWhiteSpace(search) && sections.Count <= 3;
+
+    private async Task ToggleAsync(int sectionId)
+    {
+        if (!openSections.Remove(sectionId))
+        {
+            openSections.Add(sectionId);
+            courseCache[sectionId] = await TermCoursesAsync(sectionId);
+        }
+    }
+
+    private async Task YearChangedAsync(ChangeEventArgs e)
+    {
+        yearId = int.TryParse(e.Value?.ToString(), out var id) ? id : yearId;
+        openSections.Clear();
+        await ReloadAsync();
+    }
+
+    private async Task TermChangedAsync(ChangeEventArgs e)
+    {
+        term = int.TryParse(e.Value?.ToString(), out var n) ? n : term;
+        await ReloadAsync();
+    }
+
+    private async Task PickRoomAsync(int id)
+    {
+        roomId = id;
+        roomMenu = false;
+        addingRoom = false;
+        await ReloadAsync();
+    }
+
+    // ---- the rooms
+    private async Task AddRoomAsync()
+    {
+        var result = await RunAsync(userId => Times.AddRoomAsync(userId, newRoom), quiet: true);
+        if (result.Succeeded)
+        {
+            newRoom = "";
+            addingRoom = false;
+            rooms = await Times.ListRoomsAsync();
+            var added = rooms.OrderByDescending(r => r.Id).FirstOrDefault();
+            if (added is not null)
+            {
+                roomId = added.Id;
+            }
+
+            roomMenu = false;
+            await ReloadAsync();
+        }
+    }
+
+    private void OpenRemoveRoom()
+    {
+        if (roomId != 0)
+        {
+            removingRoom = true;
+            roomMenu = false;
+        }
+    }
+
+    private void CloseRemoveRoom() => removingRoom = false;
+
+    private async Task RemoveRoomAsync()
+    {
+        var id = roomId;
+        var result = await RunAsync(userId => Times.RemoveRoomAsync(userId, id));
+        if (result.Succeeded)
+        {
+            removingRoom = false;
+            roomId = 0;
+            await ReloadAsync();
+        }
+    }
+
+    // ---- the classes on the grid
+    private static string DaysOf(int day) => day is 1 or 3 or 5 ? MeetingDays.Mwf : MeetingDays.Tth;
+
+    private static int Minutes(PlacedClass c) => (int)(c.End - c.Start).TotalMinutes;
+
+    private static string Hours(int minutes) => minutes % 60 == 0 ? $"{minutes / 60} h" : $"{minutes / 60}.5 h";
+
+    private IReadOnlyList<Block> BlocksOf(int day)
+    {
+        var pattern = DaysOf(day);
+        var list = placed.Where(c => c.Days == pattern).OrderBy(c => c.Start).ThenBy(c => c.SectionLabel).ToList();
+
+        // Classes at the same time (only possible without a room) stand side by side.
+        var blocks = new List<Block>();
+        var cluster = new List<PlacedClass>();
+        var clusterEnd = TimeOnly.MinValue;
+        void Flush()
+        {
+            var lanes = new List<TimeOnly>();
+            var laneOf = new Dictionary<PlacedClass, int>();
+            foreach (var c in cluster)
+            {
+                var lane = lanes.FindIndex(end => end <= c.Start);
+                if (lane < 0)
+                {
+                    lanes.Add(c.End);
+                    lane = lanes.Count - 1;
+                }
+                else
+                {
+                    lanes[lane] = c.End;
+                }
+
+                laneOf[c] = lane;
+            }
+
+            foreach (var c in cluster)
+            {
+                var top = (c.Start.Hour - FirstHour) * 2 + c.Start.Minute / 30.0;
+                var height = Math.Max(1, (c.End - c.Start).TotalMinutes / 30.0);
+                blocks.Add(new Block(c, top, height, laneOf[c] * 100.0 / lanes.Count, 100.0 / lanes.Count));
+            }
+
+            cluster.Clear();
+        }
+
+        foreach (var c in list)
+        {
+            if (cluster.Count > 0 && c.Start >= clusterEnd)
+            {
+                Flush();
+            }
+
+            cluster.Add(c);
+            clusterEnd = cluster.Count == 1 ? c.End : (c.End > clusterEnd ? c.End : clusterEnd);
+        }
+
+        if (cluster.Count > 0)
+        {
+            Flush();
+        }
+
+        return blocks;
+    }
+
+    /// <summary>A course was dropped on a day at a half hour (the page's script says where): it is put there, or moved there.</summary>
+    [JSInvokable]
+    public async Task OnDrop(string payload, int day, int slot)
+    {
+        var parts = payload.Split(':');
+        if (parts.Length != 3 || !int.TryParse(parts[1], out var sectionId) || !int.TryParse(parts[2], out var subjectId) || day is < 1 or > 5)
+        {
+            return;
+        }
+
+        slot = Math.Clamp(slot, 0, Slots - 1);
+        var existing = placed.FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId)
+                       ?? (await Times.ListPlacedAsync(-1, yearId, 0)).FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId);
+        var length = existing is null ? 90 : Math.Max(30, Minutes(existing));
+        var start = SlotTime(slot);
+        var latestStart = new TimeOnly(LastHour, 0).AddMinutes(-length);
+        if (start > latestStart)
+        {
+            start = latestStart;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            var room = roomId == 0 ? (int?)null : roomId;
+            var result = await RunAsync(userId => Times.PlaceAsync(userId, sectionId, subjectId, room, DaysOf(day), start, start.AddMinutes(length)), quiet: true);
+            await ReloadAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ChangeLengthAsync(PlacedClass c, string? value)
+    {
+        if (!int.TryParse(value, out var minutes))
+        {
+            return;
+        }
+
+        var end = c.Start.AddMinutes(minutes);
+        if (end > new TimeOnly(LastHour, 0) || end <= c.Start)
+        {
+            message = $"A class ends at {ClassTime.Label(new TimeOnly(LastHour, 0))} at the latest.";
+            messageIsError = true;
+            await ReloadAsync();
+            return;
+        }
+
+        await RunAsync(userId => Times.PlaceAsync(userId, c.SectionId, c.SubjectId, c.RoomId, c.Days, c.Start, end), quiet: true);
+        await ReloadAsync();
+    }
+
+    private async Task RemoveAsync(PlacedClass c)
+    {
+        await RunAsync(userId => Times.ClearAsync(userId, c.SectionId, c.SubjectId), quiet: true);
+        await ReloadAsync();
+    }
+
+    // ---- the box of a section (adviser and students)
+    private Task OpenDialogAsync(int sectionId)
+    {
+        dialogSection = sectionRows.FirstOrDefault(s => s.Id == sectionId);
+        return Task.CompletedTask;
+    }
+
+    private async Task CloseDialogAsync()
+    {
+        dialogSection = null;
+        sectionRows = await Setup.ListSectionsAsync();
+    }
+
+    // ---- helpers
+    private void ClearMessage() => message = null;
+
+    private async Task<ServiceResult> RunAsync(Func<int, Task<ServiceResult>> action, bool quiet = false)
+    {
+        if (Busy)
+        {
+            return ServiceResult.Fail("Please wait a moment.");
+        }
+
+        Busy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await action(me.UserId);
+            if (!result.Succeeded)
+            {
+                message = result.Errors.Count == 1 ? result.Errors[0] : string.Join(" ", result.Errors);
+                messageIsError = true;
+            }
+            else if (!quiet)
+            {
+                message = result.Message;
+                messageIsError = false;
+            }
+
+            return result;
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (wired)
+            {
+                await JS.InvokeVoidAsync("seaitt.scheduleGrid.dispose");
+            }
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or InvalidOperationException)
+        {
+        }
+
+        self?.Dispose();
+    }
+}

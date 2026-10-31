@@ -1,0 +1,108 @@
+@inherits SetupTabBase
+
+@* The box of one section: who its adviser is (a teacher of the same strand) and the students who are in it. Opened with a double click on the section. *@
+<Modal Open="Section is not null" Title="@(Section is null ? "Section" : $"Section {Section.Label}")" OnClose="CloseAsync" Large="true">
+    @if (Section is not null)
+    {
+        <div class="section-dialog" data-section="@Section.Label">
+            <FormErrors Errors="Errors" />
+            <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
+
+            <Field For="sd-adviser" Label="Adviser" Hint="@($"Only teachers of the same strand ({Section.StrandCode}) can be the adviser.")">
+                <select id="sd-adviser" @key="@($"adv-{Section.Id}-{stamp}")" @onchange="SaveAdviserAsync">
+                    <option value="0" selected="@(adviserId == 0)">No adviser</option>
+                    @foreach (var teacher in choices)
+                    {
+                        <option value="@teacher.Id" selected="@(adviserId == teacher.Id)">@teacher.Name@(teacher.GradeLevel is null ? "" : $" · {teacher.GradeLevel}")</option>
+                    }
+                </select>
+            </Field>
+            @if (choices.Count == 0)
+            {
+                <p class="muted">No teacher of the strand @Section.StrandCode yet. Give a teacher the strand under Users Management.</p>
+            }
+
+            <h3 class="students-title">Students in this section <span class="count">@(students?.Count ?? 0)</span></h3>
+            @if (students is null)
+            {
+                <p class="muted">Loading…</p>
+            }
+            else if (students.Count == 0)
+            {
+                <p class="muted">No student is in section @Section.Label yet. The registrar puts students in a section when enrolling them.</p>
+            }
+            else
+            {
+                <ol class="students-list">
+                    @foreach (var student in students)
+                    {
+                        <li>
+                            <span class="s-name">@student.Name</span>
+                            <span class="s-lrn mono">@student.Lrn</span>
+                            <span class="s-term">@student.Term</span>
+                            <Badge Tone="@(student.Status == "Dropped" ? Tone.Neutral : Tone.Success)">@student.Status</Badge>
+                        </li>
+                    }
+                </ol>
+            }
+
+            <div class="modal-actions">
+                <Button Variant="ButtonVariant.Secondary" OnClick="CloseAsync">Close</Button>
+            </div>
+        </div>
+    }
+</Modal>
+
+@code {
+    /// <summary>The section to show; null keeps the box closed.</summary>
+    [Parameter] public SectionRow? Section { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private IReadOnlyList<TeacherChoice> choices = [];
+    private IReadOnlyList<SectionStudentRow>? students;
+    private int adviserId;
+    private int loadedFor;
+    private int stamp;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if (Section is null)
+        {
+            loadedFor = 0;
+            return;
+        }
+
+        if (loadedFor != Section.Id)
+        {
+            loadedFor = Section.Id;
+            Message = null;
+            Errors = [];
+            adviserId = Section.AdviserTeacherId ?? 0;
+            students = null;
+            choices = await Setup.ListAdviserChoicesAsync(Section.Id);
+            students = await Setup.ListSectionStudentsAsync(Section.Id);
+        }
+    }
+
+    private async Task SaveAdviserAsync(ChangeEventArgs e)
+    {
+        var id = int.TryParse(e.Value?.ToString(), out var picked) ? picked : 0;
+        var result = await RunAsync(userId => Setup.SetAdviserAsync(Section!.Id, id == 0 ? null : id, userId));
+        if (result.Succeeded)
+        {
+            adviserId = id;
+        }
+        else
+        {
+            stamp++;
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        loadedFor = 0;
+        await OnClose.InvokeAsync();
+    }
+}

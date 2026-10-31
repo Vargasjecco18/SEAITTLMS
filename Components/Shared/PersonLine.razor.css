@@ -11,7 +11,7 @@
     display: inline-flex;
 }
 
-/* The little dot at the corner of the picture: green when the person has a page open, grey when not. */
+/* The little dot at the corner of the picture: green when the person has a page open, red when not. */
 .dot {
     position: absolute;
     right: -0.05rem;
@@ -20,7 +20,7 @@
     height: 0.8rem;
     border: 2px solid var(--surface);
     border-radius: 50%;
-    background: var(--border);
+    background: #dc2626;   /* offline: red */
 }
 
 .dot.on {

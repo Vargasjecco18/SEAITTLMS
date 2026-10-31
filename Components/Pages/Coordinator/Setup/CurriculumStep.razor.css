@@ -1,0 +1,137 @@
+.tree-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+}
+
+.tree-tools ::deep .tree-search {
+    flex: 1 1 18rem;
+    max-width: 30rem;
+}
+
+.tree,
+.children {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Every level steps in a little: the strands under their track, the courses under their strand. */
+.children {
+    margin: 0.5rem 0 0 1.35rem;
+    padding-left: 0.9rem;
+    border-left: 2px solid var(--border);
+}
+
+.node-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.track > .node-row {
+    background: var(--surface-2);
+    font-weight: 650;
+}
+
+.chevron {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.chevron:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.chevron:focus-visible {
+    outline: 2px solid var(--brand);
+}
+
+.offered {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.course-group {
+    margin: 0 0 0.6rem;
+}
+
+.course-group h4 {
+    margin: 0 0 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.courses {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.course {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: var(--radius-sm);
+}
+
+.course:hover {
+    background: var(--surface-2);
+}
+
+.shared {
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.none {
+    padding: 0.5rem 0.2rem;
+}
+
+.add-track {
+    margin-top: 0.9rem;
+}
+
+@media (max-width: 700px) {
+    .children {
+        margin-left: 0.5rem;
+        padding-left: 0.5rem;
+    }
+
+    .node-row {
+        padding: 0.4rem;
+    }
+}

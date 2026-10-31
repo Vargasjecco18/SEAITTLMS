@@ -1,0 +1,126 @@
+.years {
+    display: grid;
+    gap: 1rem;
+}
+
+.year {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.year.is-current {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 1px var(--brand-soft);
+}
+
+/* The bar of a school year: its name at the left, its first and last day in the middle, how many sections it has at the right. */
+.year-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.year-name {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+.year-name .cell {
+    width: 9rem;
+    font-size: 1rem;
+}
+
+.year-days {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 1.1rem;
+}
+
+.year-days label,
+.term-days label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.year-count {
+    justify-self: end;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.terms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.75rem;
+    padding: 0.9rem 1rem 1rem;
+}
+
+.term {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.term.is-current {
+    border-color: var(--green);
+    background: color-mix(in srgb, var(--green) 6%, var(--surface));
+}
+
+.term.is-over {
+    opacity: 0.75;
+}
+
+.term-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.term-top .cell {
+    flex: 1;
+}
+
+.term-days {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.term-days label {
+    justify-content: space-between;
+}
+
+.term-count {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+@media (max-width: 760px) {
+    .year-head {
+        grid-template-columns: 1fr;
+    }
+
+    .year-count {
+        justify-self: start;
+    }
+
+    .year-days {
+        justify-content: flex-start;
+    }
+}

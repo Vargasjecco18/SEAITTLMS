@@ -641,6 +641,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("time(6)")
                         .HasColumnName("end_time");
 
+                    b.Property<int?>("RoomId")
+                        .HasColumnType("int")
+                        .HasColumnName("room_id");
+
                     b.Property<int>("ScheduleId")
                         .HasColumnType("int")
                         .HasColumnName("schedule_id");
@@ -663,6 +667,9 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_course_schedules");
+
+                    b.HasIndex("RoomId")
+                        .HasDatabaseName("ix_course_schedules_room_id");
 
                     b.HasIndex("ScheduleId")
                         .HasDatabaseName("ix_course_schedules_schedule_id");
@@ -2245,6 +2252,39 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.Room", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rooms");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_rooms_name");
+
+                    b.ToTable("rooms", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Schedule", b =>
                 {
                     b.Property<int>("Id")
@@ -3752,6 +3792,12 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.CourseSchedule", b =>
                 {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_course_schedules_rooms_room_id");
+
                     b.HasOne("SEAITT_LMS.Data.Entities.Schedule", "Schedule")
                         .WithMany()
                         .HasForeignKey("ScheduleId")
@@ -3772,6 +3818,8 @@ namespace SEAITT_LMS.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_course_schedules_subjects_subject_id");
+
+                    b.Navigation("Room");
 
                     b.Navigation("Schedule");
 

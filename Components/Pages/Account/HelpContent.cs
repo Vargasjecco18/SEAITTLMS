@@ -292,7 +292,7 @@ public static class HelpContent
         ], "registrar/student-accounts", "Open Student's Accounts"),
         new("The section I need is not in the list.",
         [
-            "Sections A, B and C exist for each strand and schedule, for Grade 11 and Grade 12. If one is missing, ask the academic coordinator to make it in Academic setup.",
+            "Sections A and B exist for each strand, for Grade 11 and Grade 12. If one is missing, ask the academic coordinator to make it in Academic setup.",
         ]),
     ]);
 
@@ -300,16 +300,18 @@ public static class HelpContent
     [
         new("How do I set up the school year, terms and sections?",
         [
-            "Open Academic setup. Everything is on one page, in seven steps: 1 School years, 2 Terms, 3 Tracks, 4 Strands, 5 Courses, 6 Sections and 7 Class schedule. Press a step at the top to go to it. The boxes of every step are always open: fill them in and press the button. Press Edit on a line to change it. Press the name of a section to see its students.",
-            "To fill many rows at once press “Template and import (Excel)” at the top: the workbook has a sheet for each step, the courses of each strand, and the hours of the day. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
-            "The calendar decides the current term: it is the term whose first and last day include today, so you only type the dates. A term that is over is put away (its students, grades and attendance stay). Make the term first, then the sections.",
+            "Open Academic setup. Everything is on one page, in three steps: 1 School years and terms, 2 Tracks, strands and courses, and 3 Sections and class schedule. The search box at the top finds a school year, a strand, a course or a section.",
+            "School years and terms keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and it is saved when you leave the box.",
+            "Tracks, strands and courses is a list in three levels: press a track to see its strands, press a strand to see its courses. Change a name in place, or use the row at the bottom of a level to add one. Sections are A and B for each strand and grade level.",
+            "To fill many rows at once press “Template and import (Excel)” at the top: the workbook has a sheet for each step. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
         [
-            "Open Academic setup, then the Class schedule tab. The first card has the hours of AM, MID and PM; the class times of a section must be inside the hours of its schedule.",
-            "In the second card choose a section. For each of its courses choose the days, MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday), and when the class starts and ends, then press Save.",
-            "A section can't have two classes at the same time in the same term, and a teacher can't have two classes at the same time. Students and teachers see the days and the time on their courses.",
-        ], "coordinator/academic-setup/class-schedule", "Open the class schedule"),
+            "Open the Class schedule (in step 3, or in the menu). It is a week like a spreadsheet: the days are the columns and the hours, 7:00 AM to 6:00 PM, are the rows. Choose the school year, the term and the room at the top.",
+            "At the left are the sections with their courses. Drag a course to a day and a time: dropped on a Monday, Wednesday or Friday it meets MWF, dropped on a Tuesday or Thursday it meets TTH. Use the box on a class to change how long it is, the X to take it off, or drag it to move it.",
+            "Every room has its own schedule: press the room box to pick a room, add a room or remove one. Two classes can't be in one room at the same time, a section can't have two classes at the same time, and a teacher can't have two classes at the same time.",
+            "Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it. “View all class schedules” in step 3 slides every schedule in from the right.",
+        ], "coordinator/class-schedule", "Open the class schedule"),
         new("Who sends the syllabus, modules and assignments to the teachers?",
         [
             "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",

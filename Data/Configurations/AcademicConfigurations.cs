@@ -107,6 +107,16 @@ internal sealed class ScheduleConfiguration : IEntityTypeConfiguration<Schedule>
     }
 }
 
+internal sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
+{
+    public void Configure(EntityTypeBuilder<Room> b)
+    {
+        b.ToTable("rooms");
+        b.Property(r => r.Name).HasMaxLength(50).IsRequired();
+        b.HasIndex(r => r.Name).IsUnique();
+    }
+}
+
 internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<CourseSchedule>
 {
     public void Configure(EntityTypeBuilder<CourseSchedule> b)
@@ -118,6 +128,9 @@ internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<Cou
         b.HasOne(c => c.Section).WithMany().HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(c => c.Subject).WithMany().HasForeignKey(c => c.SubjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(c => c.Schedule).WithMany().HasForeignKey(c => c.ScheduleId).OnDelete(DeleteBehavior.Restrict);
+
+        // A room that is removed leaves its classes without a room (they keep their days and times).
+        b.HasOne(c => c.Room).WithMany().HasForeignKey(c => c.RoomId).OnDelete(DeleteBehavior.SetNull);
 
         // A course of a section meets at one time.
         b.HasIndex(c => new { c.SectionId, c.SubjectId }).IsUnique();

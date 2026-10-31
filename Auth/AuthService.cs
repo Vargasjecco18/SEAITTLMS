@@ -133,7 +133,7 @@ public sealed class AuthService(
         // One sign-in at a time: the update below only happens when nobody else is using the account (no sign-in is open, or it was not seen for a few minutes). It is one statement
         // in the database, so two people signing in at the same moment can't both get in.
         var single = settings.SingleSession;
-        var sessionId = single ? Guid.NewGuid().ToString("N") : null;
+        var sessionId = Guid.NewGuid().ToString("N");   // every sign-in has a number (the system ends it when no page of it is open any more); the account keeps it only when one sign-in at a time is on
         var seenAfter = now.AddMinutes(-Math.Max(1, settings.SessionIdleMinutes));
         var updated = await db.Users
             .Where(u => u.Id == user.Id && (!single || u.ActiveSessionId == null || u.ActiveSessionSeenUtc == null || u.ActiveSessionSeenUtc < seenAfter))
@@ -141,7 +141,7 @@ public sealed class AuthService(
                 .SetProperty(u => u.FailedLoginCount, 0)
                 .SetProperty(u => u.LockoutEndUtc, (DateTime?)null)
                 .SetProperty(u => u.LastLoginAtUtc, now)
-                .SetProperty(u => u.ActiveSessionId, sessionId)
+                .SetProperty(u => u.ActiveSessionId, single ? sessionId : null)
                 .SetProperty(u => u.ActiveSessionSeenUtc, single ? now : (DateTime?)null)
                 .SetProperty(u => u.PasswordHash, u => newHash ?? u.PasswordHash), ct);
         if (updated == 0)

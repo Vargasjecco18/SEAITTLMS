@@ -1367,3 +1367,66 @@ document.addEventListener('toggle', function (event) {
         if (window.Blazor && typeof window.Blazor.navigateTo === 'function') { window.Blazor.navigateTo(url.pathname + url.search); } else { location.href = url.href; }
     });
 })();
+
+// Going back to a page the browser kept (the back and forward buttons) shows an old page whose connection is gone: it is asked for again, so a sign-in that ended shows the login page.
+(function () {
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) { window.location.reload(); }
+    });
+})();
+
+// The class schedule (Academic setup): a course or a class is dragged to a day and a half hour of the week. The page says where it landed (the day, and which half hour counted from 7:00 AM).
+window.seaitt = Object.assign(window.seaitt || {}, {
+    scheduleGrid: {
+        state: null,
+        init: function (root, ref) {
+            this.dispose();
+            if (!root) { return; }
+            var state = { root: root, ref: ref, grab: 0, hot: null, handlers: {} };
+            function clearHot() { if (state.hot) { state.hot.classList.remove('hot'); state.hot = null; } }
+            function slotOf(col, clientY, grab) {
+                var first = col.querySelector('.slot');
+                var row = first ? first.getBoundingClientRect().height : 24;
+                var y = clientY - col.getBoundingClientRect().top - grab;
+                return Math.max(0, Math.round(y / row - 0.0001));
+            }
+            state.handlers.dragstart = function (e) {
+                var el = e.target instanceof Element ? e.target.closest('[data-drag]') : null;
+                if (!el) { return; }
+                state.payload = el.getAttribute('data-drag');
+                // A class that is moved is held at the spot where it was grabbed: its top is what lands on a half hour.
+                state.grab = state.payload.charAt(0) === 'm' ? e.clientY - el.getBoundingClientRect().top : 0;
+                if (e.dataTransfer) { e.dataTransfer.setData('text/plain', state.payload); e.dataTransfer.effectAllowed = 'move'; }
+                root.classList.add('is-dragging');
+            };
+            state.handlers.dragend = function () { state.payload = null; root.classList.remove('is-dragging'); clearHot(); };
+            state.handlers.dragover = function (e) {
+                var col = e.target instanceof Element ? e.target.closest('.day-col') : null;
+                if (!col || !state.payload) { return; }
+                e.preventDefault();
+                if (e.dataTransfer) { e.dataTransfer.dropEffect = 'move'; }
+                var slot = col.querySelectorAll('.slot')[Math.min(slotOf(col, e.clientY, state.grab), col.querySelectorAll('.slot').length - 1)];
+                if (slot && slot !== state.hot) { clearHot(); slot.classList.add('hot'); state.hot = slot; }
+            };
+            state.handlers.drop = function (e) {
+                var col = e.target instanceof Element ? e.target.closest('.day-col') : null;
+                if (!col || !state.payload) { return; }
+                e.preventDefault();
+                var payload = state.payload;
+                var slot = slotOf(col, e.clientY, state.grab);
+                state.payload = null;
+                root.classList.remove('is-dragging');
+                clearHot();
+                state.ref.invokeMethodAsync('OnDrop', payload, parseInt(col.getAttribute('data-day'), 10), slot);
+            };
+            Object.keys(state.handlers).forEach(function (name) { root.addEventListener(name, state.handlers[name]); });
+            this.state = state;
+        },
+        dispose: function () {
+            var state = this.state;
+            if (!state) { return; }
+            Object.keys(state.handlers).forEach(function (name) { state.root.removeEventListener(name, state.handlers[name]); });
+            this.state = null;
+        }
+    }
+});

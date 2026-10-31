@@ -92,6 +92,12 @@ builder.Services.AddSingleton<ProfilePhotoService>();
 builder.Services.AddSingleton<SystemSettingsService>();
 builder.Services.AddSingleton<SecurityLogService>();
 builder.Services.AddSingleton<PresenceService>();
+// A sign-in ends 30 seconds after its last page went away (the browser was closed, or the person went back out of the system).
+builder.Services.AddSingleton<SessionWatcher>();
+builder.Services.AddScoped<CircuitLink>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler, SessionCircuitHandler>();
+builder.Services.AddSingleton<SessionWatcherWorker>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SessionWatcherWorker>());
 builder.Services.AddScoped<MessageLauncher>();
 builder.Services.AddScoped<PeopleService>();
 builder.Services.AddScoped<FriendService>();
@@ -155,6 +161,21 @@ app.UseStatusCodePagesWithReExecute("/not-found");
 
 app.UseAuthentication();
 
+// A page of the system is never kept by the browser: going back to it after logging out, or after the sign-in ended, asks the server again (and so shows the login page).
+app.Use(async (http, next) =>
+{
+    http.Response.OnStarting(() =>
+    {
+        if (http.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true && !http.Response.Headers.ContainsKey("Cache-Control"))
+        {
+            http.Response.Headers.CacheControl = "no-store";
+        }
+
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 // The upload of a backup file may be as big as the multipart limit above (the server's own limit of 30 MB is lifted for this one address).
 app.Use(async (http, next) =>
 {
@@ -197,7 +218,7 @@ app.MapRazorComponents<App>()
 
 // Signing out has to clear a cookie, which a Blazor component can't do from inside a live circuit,
 // so it is a plain form post. The form carries an antiforgery token, checked here.
-app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery, AuthService auth) =>
+app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery, AuthService auth, SessionWatcher watcher) =>
 {
     try
     {
@@ -211,7 +232,9 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
     // The account is free for the next sign-in (one sign-in at a time).
     if (int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
     {
-        await auth.EndSessionAsync(id, http.User.FindFirstValue(AppClaimTypes.SessionId), http.RequestAborted);
+        var session = http.User.FindFirstValue(AppClaimTypes.SessionId);
+        await auth.EndSessionAsync(id, session, http.RequestAborted);
+        watcher.End(id, session);   // offline at once, and the cookie of this sign-in is not good any more
     }
 
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -220,8 +243,15 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
 }).AllowAnonymous();
 
 // A page that is open found that its sign-in is not the open one any more (the account was signed in somewhere else): the sign-in is ended here and the login page says why.
-app.MapGet("/account/session-ended", async (HttpContext http, AuthService auth) =>
+app.MapGet("/account/session-ended", async (HttpContext http, AuthService auth, SessionWatcher watcher) =>
 {
+    // The sign-in was ended because no page of it was open for 30 seconds (the browser was closed or left): log in again.
+    if (watcher.IsEnded(http.User.FindFirstValue(AppClaimTypes.SessionId)))
+    {
+        await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return Results.LocalRedirect("/login");
+    }
+
     if (int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
         && !await auth.TouchSessionAsync(id, http.User.FindFirstValue(AppClaimTypes.SessionId), http.RequestAborted))
     {

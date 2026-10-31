@@ -9,6 +9,8 @@
 @inject LiveUpdates Live
 @inject ProfilePhotoService Photos
 @inject PresenceService Presence
+@inject SessionWatcher Watcher
+@inject CircuitLink Link
 @inject MessageLauncher Launcher
 @inject PopupGate Gate
 @inject IJSRuntime JS
@@ -334,8 +336,21 @@
     {
         try
         {
+            // A page that was closed stays in memory for a few minutes: it must not say that its person is online (it also does not look for news).
+            if (!Link.IsUp)
+            {
+                return;
+            }
+
             if (user is not null)
             {
+                // The sign-in was ended (no page of it was open for 30 seconds): log in again.
+                if (Watcher.IsEnded(user.SessionId))
+                {
+                    Navigation.NavigateTo("/account/session-ended", forceLoad: true);
+                    return;
+                }
+
                 Presence.Touch(user.UserId);
 
                 // The sign-in says it is still in use (once a minute); when the account was signed in somewhere else it is over and this page goes to the login page.

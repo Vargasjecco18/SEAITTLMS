@@ -32,6 +32,9 @@ public sealed class PresenceService(TimeProvider clock)
         }
     }
 
+    /// <summary>The person has no page open any more (they closed the browser or logged out): offline from now on, not after the wait.</summary>
+    public void Forget(int userId) => lastSeen.TryRemove(userId, out _);
+
     public bool IsOnline(int userId) =>
         lastSeen.TryGetValue(userId, out var seen) && clock.GetUtcNow().UtcDateTime - seen <= OnlineWindow;
 

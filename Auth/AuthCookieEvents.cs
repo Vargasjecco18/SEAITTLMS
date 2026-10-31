@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SEAITT_LMS.Data;
+using SEAITT_LMS.Services;
 
 namespace SEAITT_LMS.Auth;
 
@@ -19,6 +20,14 @@ public static class AuthCookieEvents
         var services = context.HttpContext.RequestServices;
         var settings = services.GetRequiredService<IOptions<AuthOptions>>().Value;
         var clock = services.GetRequiredService<TimeProvider>();
+
+        // A sign-in that was ended (Log out, or no page of it for 30 seconds after the browser was closed) is not good any more, at once.
+        var endedSession = context.Principal?.FindFirstValue(AppClaimTypes.SessionId);
+        if (!string.IsNullOrEmpty(endedSession) && services.GetRequiredService<SessionWatcher>().IsEnded(endedSession))
+        {
+            await RejectAsync(context);
+            return;
+        }
 
         var issuedUtc = context.Properties.IssuedUtc;
         if (issuedUtc is not null && clock.GetUtcNow() - issuedUtc.Value < TimeSpan.FromMinutes(settings.RevalidateMinutes))

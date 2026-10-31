@@ -20,55 +20,47 @@
 <Notice Message="@message" IsError="false" OnDismiss="ClearMessage" />
 
 <div class="setup">
-    <p class="setup-lead">Everything the school needs is here, in order. <strong>Press a name to open it</strong>: you see what is inside and the fields to add something new. Press <strong>Edit</strong> on a line to change it.</p>
+    <form class="setup-search" role="search" @onsubmit="() => { }">
+        <SearchField Id="setup-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a school year, a track, a strand, a course or a section" AriaLabel="Search the academic setup" />
+    </form>
 
-    @* Each step is a dropdown: the page stays short, and a step reads its lines only when it is open. A new key makes the open steps read their rows again (after an import). *@
+    @* Three steps, all on one page. Every box in them is ready to type in: a change is saved when the box is left. A new key makes the steps read their rows again (after an import). *@
     <div @key="reloadKey" class="steps">
-        @foreach (var (t, place) in Tabs.Select((t, i) => (t, i + 1)))
-        {
-            var isOpen = openSteps.Contains(t.Key);
-            <section class="step @(isOpen ? "open" : "")" id="@($"step-{t.Key}")">
-                <h2 class="step-title">
-                    <button type="button" class="step-head" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"step-{t.Key}-body")" @onclick="() => ToggleStep(t.Key)">
-                        <span class="step-num">@place</span>
-                        <Icon Name="@t.Icon" Size="20" />
-                        <span class="step-name">@t.Label</span>
-                        <span class="step-hint">@t.Hint</span>
-                        <span class="count">@CountOf(t.Key)</span>
-                        <span class="step-chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-up" : "chevron-down")" Size="18" /></span>
-                    </button>
-                </h2>
-                @if (isOpen)
-                {
-                    <div class="step-body" id="@($"step-{t.Key}-body")">
-                        @switch (t.Key)
-                        {
-                            case "school-years":
-                                <SchoolYearsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                            case "terms":
-                                <TermsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                            case "tracks":
-                                <TracksTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                            case "strands":
-                                <StrandsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                            case "subjects":
-                                <SubjectsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                            case "sections":
-                                <SectionsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                            case "class-schedule":
-                                <ScheduleTab OnChanged="ReloadCountsAsync" Version="changes" />
-                                break;
-                        }
-                    </div>
-                }
-            </section>
-        }
+        <section class="step" id="step-calendar" aria-labelledby="step-calendar-title">
+            <header class="step-bar">
+                <span class="step-num">1</span>
+                <h2 id="step-calendar-title" class="step-name"><Icon Name="calendar-range" Size="20" /> School years and terms</h2>
+                <span class="step-hint">The running school year and the next two, with three terms each</span>
+                <span class="count">@CountOf("calendar")</span>
+            </header>
+            <div class="step-body">
+                <CalendarStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+            </div>
+        </section>
+
+        <section class="step" id="step-curriculum" aria-labelledby="step-curriculum-title">
+            <header class="step-bar">
+                <span class="step-num">2</span>
+                <h2 id="step-curriculum-title" class="step-name"><Icon Name="layers" Size="20" /> Tracks, strands and courses</h2>
+                <span class="step-hint">A track has strands, a strand has its courses</span>
+                <span class="count">@CountOf("curriculum")</span>
+            </header>
+            <div class="step-body">
+                <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+            </div>
+        </section>
+
+        <section class="step" id="step-sections" aria-labelledby="step-sections-title">
+            <header class="step-bar">
+                <span class="step-num">3</span>
+                <h2 id="step-sections-title" class="step-name"><Icon Name="users" Size="20" /> Sections and class schedule</h2>
+                <span class="step-hint">A and B for each strand and grade level</span>
+                <span class="count">@CountOf("sections")</span>
+            </header>
+            <div class="step-body">
+                <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+            </div>
+        </section>
     </div>
 </div>
 
@@ -80,30 +72,6 @@
                    Read="ReadSheet" OnImport="ImportSheetAsync" OnClose="CloseExcel" />
 
 @code {
-    private sealed record SetupTab(string Key, string Label, string Icon, string Hint);
-
-    private static readonly SetupTab[] Tabs =
-    [
-        new("school-years", "School years", "calendar-range", "Like 2026-2027"),
-        new("terms", "Terms", "calendar-days", "1st term, 2nd term ..."),
-        new("tracks", "Tracks", "layers", "Academic, Technical-Professional"),
-        new("strands", "Strands", "layout-grid", "And the courses of each"),
-        new("subjects", "Courses", "book-open", "The subjects"),
-        new("sections", "Sections", "users", "And the students in them"),
-        new("class-schedule", "Class schedule", "clock", "Days and hours of each course"),
-    ];
-
-    // The steps that are open. The step the address names (academic-setup/sections) is open at the start.
-    private readonly HashSet<string> openSteps = [];
-
-    private void ToggleStep(string key)
-    {
-        if (!openSteps.Remove(key))
-        {
-            openSteps.Add(key);
-        }
-    }
-
     [Parameter] public string? TabKey { get; set; }
 
     private SetupCounts? counts;
@@ -111,21 +79,28 @@
     private string? message;
     private bool excelOpen;
     private SetupSnapshot? snapshot;
+    private string search = "";
 
     protected override async Task OnParametersSetAsync()
     {
         counts ??= await Setup.GetCountsAsync();
 
-        // An address like academic-setup/sections opens that step (the links of the menu use them).
-        if (Tabs.FirstOrDefault(t => string.Equals(t.Key, TabKey, StringComparison.OrdinalIgnoreCase)) is { } wanted && openedFor != wanted.Key)
+        // An address like academic-setup/sections goes to that step (the old names of the steps still work).
+        var wanted = (TabKey ?? "").ToLowerInvariant() switch
         {
-            openedFor = wanted.Key;
-            openSteps.Add(wanted.Key);
-            scrollTo = wanted.Key;
+            "school-years" or "terms" or "calendar" => "calendar",
+            "tracks" or "strands" or "subjects" or "curriculum" => "curriculum",
+            "sections" => "sections",
+            _ => null,
+        };
+        if (wanted is not null && scrolledTo != wanted)
+        {
+            scrolledTo = wanted;
+            scrollTo = wanted;
         }
     }
 
-    private string? openedFor;
+    private string? scrolledTo;
     private string? scrollTo;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -139,7 +114,7 @@
 
     private int changes;
 
-    /// <summary>Something was saved or deleted in one step: the numbers are read again, and the other steps read their lists again (a new school year is a choice in Terms and Sections).</summary>
+    /// <summary>Something was saved or deleted in one step: the numbers are read again, and the other steps read their lists again (a new strand is a choice in Sections).</summary>
     private async Task ReloadCountsAsync()
     {
         counts = await Setup.GetCountsAsync();
@@ -172,7 +147,7 @@
         return new SheetImportDialog.SheetPreview([.. book.Lines.Select(l => new SheetImportDialog.SheetPreviewRow(l.Place, l.Title, l.IsReady ? null : string.Join(" ", l.Errors)))], book.FileError);
     }
 
-    /// <summary>The rows without problems are saved by the same rules as the tabs; then the tabs and their numbers are read again.</summary>
+    /// <summary>The rows without problems are saved by the same rules as the steps; then the steps and their numbers are read again.</summary>
     private async Task<ItemImportSummary> ImportSheetAsync(byte[] data)
     {
         var user = await Me.GetAsync();
@@ -194,13 +169,9 @@
 
     private string CountOf(string key) => counts is null ? "" : key switch
     {
-        "school-years" => counts.SchoolYears.ToString(),
-        "terms" => counts.Terms.ToString(),
-        "tracks" => counts.Tracks.ToString(),
-        "strands" => counts.Strands.ToString(),
-        "subjects" => counts.Subjects.ToString(),
-        "sections" => counts.Sections.ToString(),
-        "class-schedule" => counts.CourseTimes.ToString(),
+        "calendar" => $"{counts.SchoolYears} {(counts.SchoolYears == 1 ? "school year" : "school years")} · {counts.Terms} {(counts.Terms == 1 ? "term" : "terms")}",
+        "curriculum" => $"{counts.Tracks} {(counts.Tracks == 1 ? "track" : "tracks")} · {counts.Strands} {(counts.Strands == 1 ? "strand" : "strands")} · {counts.Subjects} {(counts.Subjects == 1 ? "course" : "courses")}",
+        "sections" => $"{counts.Sections} {(counts.Sections == 1 ? "section" : "sections")} · {counts.CourseTimes} {(counts.CourseTimes == 1 ? "class time" : "class times")}",
         _ => "",
     };
 }

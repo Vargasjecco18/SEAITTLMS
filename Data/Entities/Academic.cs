@@ -78,6 +78,12 @@ public class Schedule : AuditableEntity
     public TimeOnly EndTime { get; set; }
 }
 
+/// <summary>A room where classes meet ("Room 101", "Computer lab"). Each room has its own class schedule: two classes can't be in one room at the same time.</summary>
+public class Room : AuditableEntity
+{
+    public string Name { get; set; } = "";
+}
+
 /// <summary>The days a course meets: MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday).</summary>
 public static class MeetingDays
 {
@@ -126,6 +132,10 @@ public class CourseSchedule : AuditableEntity
 
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
+
+    /// <summary>The room the class meets in; null when no room was chosen yet.</summary>
+    public int? RoomId { get; set; }
+    public Room? Room { get; set; }
 }
 
 /// <summary>
@@ -147,10 +157,10 @@ public class StrandSubject
     public Subject Subject { get; set; } = null!;
 }
 
-/// <summary>The section names the registrar can choose when enrolling a student: A to C. (Sections with other names can exist; the registrar can still pick those.)</summary>
+/// <summary>The section names the registrar can choose when enrolling a student: A and B. (Sections with other names can exist; the registrar can still pick those.)</summary>
 public static class SectionNames
 {
-    public static readonly IReadOnlyList<string> Choices = ["A", "B", "C"];
+    public static readonly IReadOnlyList<string> Choices = ["A", "B"];
 
     public static bool IsChoice(string name) => Choices.Contains(name, StringComparer.Ordinal);
 }

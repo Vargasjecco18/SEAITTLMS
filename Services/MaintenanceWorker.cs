@@ -22,6 +22,7 @@ public sealed class MaintenanceWorker(BackupService backups, SystemSettingsServi
         {
             try
             {
+                await SchoolCalendar.EnsureAsync(dbFactory, clock, stoppingToken);
                 await RunOnceAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

@@ -293,8 +293,8 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             concernTitle = "Primary concern categories";
             var reasons = await db.Referrals.AsNoTracking().GroupBy(r => r.Reason).Select(g => new { Reason = g.Key, Count = g.Count() }).ToListAsync(ct);
 
-            // The guidance counselor looks after attendance and violations only; the administrator sees every kind (failing grades and students at risk are the teachers').
-            var shown = user.Role == AppRoles.GuidanceCounselor ? ReferralReasons.All : [ReferralReasons.FailingGrades, ReferralReasons.AtRisk, ReferralReasons.LowAttendance, ReferralReasons.Violation];
+            // The concerns are attendance and violations (failing grades and students at risk are the teachers', in their own Analytics).
+            var shown = ReferralReasons.All;
             concerns = shown.Select(r => new ConcernCount(r, reasons.FirstOrDefault(x => x.Reason == r)?.Count ?? 0)).ToList();
             openReferrals = user.Role == AppRoles.GuidanceCounselor
                 ? await db.Referrals.Where(r => r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation).Select(r => r.StudentId).Distinct().CountAsync(ct)

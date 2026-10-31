@@ -192,12 +192,10 @@
 
     private static readonly IReadOnlyList<NavItem.Sub> CoordinatorSetup =
     [
-        new("School years", "coordinator/academic-setup/school-years", "calendar-range"),
-        new("Terms", "coordinator/academic-setup/terms", "calendar-days"),
-        new("Tracks", "coordinator/academic-setup/tracks", "layers"),
-        new("Strands", "coordinator/academic-setup/strands", "layout-grid"),
-        new("Courses", "coordinator/academic-setup/subjects", "book-open"),
+        new("School years and terms", "coordinator/academic-setup/calendar", "calendar-range"),
+        new("Tracks, strands and courses", "coordinator/academic-setup/curriculum", "layers"),
         new("Sections", "coordinator/academic-setup/sections", "users"),
+        new("Class schedule", "coordinator/class-schedule", "calendar-clock"),
     ];
 
     private static readonly IReadOnlyList<string> CoordinatorDashboard = ["Evaluations that are open", "Announcements", "The school setup"];

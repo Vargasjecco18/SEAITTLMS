@@ -30,6 +30,9 @@ public sealed class DatabaseInitializer(
             await AllowBigFilesAsync(ct);
             await EnsureAdministratorAsync(ct);
             await Services.TermClock.SyncAsync(dbFactory, clock ?? TimeProvider.System, ct);
+
+            // The school year that is running and the next two, each with its three terms, keep themselves.
+            await Services.SchoolCalendar.EnsureAsync(dbFactory, clock ?? TimeProvider.System, ct);
         }
         catch (Exception ex)
         {

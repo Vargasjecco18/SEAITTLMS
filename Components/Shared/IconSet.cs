@@ -175,5 +175,13 @@ internal static class IconSet
             ["panel-left"] = """<rect width="18" height="18" x="3" y="3" rx="2" /><path d="M9 3v18" />""",
             ["layout-list"] = """<rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /><path d="M14 4h7" /><path d="M14 9h7" /><path d="M14 15h7" /><path d="M14 20h7" />""",
             ["message-square-text"] = """<path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /><path d="M7 11h10" /><path d="M7 15h6" /><path d="M7 7h8" />""",
+            ["chevrons-down"] = """<path d="m7 6 5 5 5-5" /><path d="m7 13 5 5 5-5" />""",
+            ["chevrons-up"] = """<path d="m17 11-5-5-5 5" /><path d="m17 18-5-5-5 5" />""",
+            ["door-open"] = """<path d="M10 21H2" /><path d="M10 3H7a2 2 0 00-2 2v16" /><path d="M14 12h.01" /><path d="M19 21V5a2 2 0 00-1.675-1.974l-6.163-1.013A1 1 0 0010 3v18a1 1 0 001.124.992z" /><path d="M22 21h-3" />""",
+            ["door-closed"] = """<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16" /><path d="M2 21h20" /><path d="M9 12h.01" />""",
+            ["bell-ring"] = """<path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M22 8c0-2.3-.8-4.3-2-6" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /><path d="M4 2C2.8 3.7 2 5.7 2 8" />""",
+            ["panel-right-open"] = """<rect width="18" height="18" x="3" y="3" rx="2" /><path d="M15 3v18" /><path d="m10 15-3-3 3-3" />""",
+            ["arrow-left"] = """<path d="m12 19-7-7 7-7" /><path d="M19 12H5" />""",
+            ["grip-horizontal"] = """<circle cx="12" cy="9" r="1" /><circle cx="19" cy="9" r="1" /><circle cx="5" cy="9" r="1" /><circle cx="12" cy="15" r="1" /><circle cx="19" cy="15" r="1" /><circle cx="5" cy="15" r="1" />""",
     };
 }

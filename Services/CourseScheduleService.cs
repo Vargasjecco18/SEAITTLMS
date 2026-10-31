@@ -10,6 +10,14 @@ public static class ClassTime
 {
     public static string Format(TimeOnly time) => time.ToString("h:mm tt", CultureInfo.InvariantCulture);
 
+    /// <summary>"7:00 AM", "12:00 MID", "1:30 PM": the part of the day follows the time (before noon AM, the hour of noon MID, after it PM).</summary>
+    public static string Label(TimeOnly time)
+    {
+        var hour = time.Hour is 0 ? 12 : time.Hour > 12 ? time.Hour - 12 : time.Hour;
+        var part = time.Hour < 12 ? "AM" : time.Hour == 12 ? "MID" : "PM";
+        return $"{hour}:{time.Minute:00} {part}";
+    }
+
     /// <summary>"07:30" (what a time box sends) to a time, or null when it is empty or not a time.</summary>
     public static TimeOnly? Parse(string? text) =>
         TimeOnly.TryParseExact(text?.Trim(), ["HH:mm", "HH:mm:ss"], CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) ? new TimeOnly(time.Hour, time.Minute) : null;
@@ -39,18 +47,30 @@ public sealed record DayPart(int ScheduleId, string Code, string Name, TimeOnly 
 public sealed record DayPartInput(int ScheduleId, TimeOnly Start, TimeOnly End);
 
 /// <summary>A section in the list of the class schedule, with how many of its courses have class times.</summary>
-public sealed record ScheduleSection(int SectionId, string Label, string Year, bool CurrentYear, int Courses, int Scheduled)
+public sealed record ScheduleSection(int SectionId, string Label, string Year, bool CurrentYear, int Courses, int Scheduled, int SchoolYearId = 0, int StrandId = 0, int GradeLevel = 0)
 {
     public string Text => $"{Label} · {Year}";
 }
 
-/// <summary>One course of a section with its class time (when set), its term and its teacher (when it has one).</summary>
-public sealed record CourseTimeRow(int SubjectId, string Code, string Name, byte TermNumber, string TermName, string? TeacherName, MeetingInfo? Meeting, int? ScheduleId = null);
+/// <summary>One course of a section with its class time (when set), its term, its teacher (when it has one) and its room (when it has one).</summary>
+public sealed record CourseTimeRow(int SubjectId, string Code, string Name, byte TermNumber, string TermName, string? TeacherName, MeetingInfo? Meeting, int? ScheduleId = null, int? RoomId = null, string? RoomName = null);
 
-/// <summary>What the coordinator typed for one course: nothing at all clears its class time.</summary>
-public sealed record CourseTimeInput(int SubjectId, int? ScheduleId, string? Days, TimeOnly? Start, TimeOnly? End)
+/// <summary>What the coordinator typed for one course: nothing at all clears its class time. The part of the day (AM, MID, PM) is not typed: it follows the time the class starts.</summary>
+public sealed record CourseTimeInput(int SubjectId, int? ScheduleId, string? Days, TimeOnly? Start, TimeOnly? End, int? RoomId = null)
 {
-    public bool IsEmpty => ScheduleId is null && string.IsNullOrEmpty(Days) && Start is null && End is null;
+    /// <summary><see cref="RoomId"/> of 0: the class has no room. Null: the room it has stays (a class that is new has none).</summary>
+    public const int NoRoom = 0;
+
+    public bool IsEmpty => ScheduleId is null && string.IsNullOrEmpty(Days) && Start is null && End is null && RoomId is null;
+}
+
+/// <summary>A room with the number of classes that meet in it.</summary>
+public sealed record RoomRow(int Id, string Name, int Classes);
+
+/// <summary>A class on the schedule grid: which course of which section meets in the room, on which days and when.</summary>
+public sealed record PlacedClass(int SectionId, int SubjectId, string SectionLabel, string Course, string Days, TimeOnly Start, TimeOnly End, int? RoomId, byte TermNumber, string? Teacher, string? RoomName = null)
+{
+    public string Key => $"{SectionId}-{SubjectId}";
 }
 
 /// <summary>
@@ -161,7 +181,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         var sections = await db.Sections.AsNoTracking()
             .Select(s => new
             {
-                s.Id, s.GradeLevel, s.StrandId, Strand = s.Strand.Code, s.Name,
+                s.Id, s.GradeLevel, s.StrandId, Strand = s.Strand.Code, s.Name, s.SchoolYearId,
                 Year = s.SchoolYear.Name, s.SchoolYear.StartDate, s.SchoolYear.EndDate,
                 Scheduled = db.CourseSchedules.Count(c => c.SectionId == s.Id),
             })
@@ -176,7 +196,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
                 Courses = curriculum.Where(c => c.StrandId == s.StrandId && c.GradeLevel == s.GradeLevel).Select(c => c.SubjectId).Distinct().Count(),
             })
             .OrderByDescending(x => x.Running).ThenByDescending(x => x.Section.StartDate).ThenBy(x => x.Section.GradeLevel).ThenBy(x => x.Section.Strand).ThenBy(x => x.Section.Name)
-            .Select(x => new ScheduleSection(x.Section.Id, TeachingService.SectionLabel(x.Section.GradeLevel, x.Section.Strand, x.Section.Name), x.Section.Year, x.Running, x.Courses, x.Section.Scheduled))
+            .Select(x => new ScheduleSection(x.Section.Id, TeachingService.SectionLabel(x.Section.GradeLevel, x.Section.Strand, x.Section.Name), x.Section.Year, x.Running, x.Courses, x.Section.Scheduled, x.Section.SchoolYearId, x.Section.StrandId, x.Section.GradeLevel))
             .ToList();
     }
 
@@ -195,7 +215,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         var termNames = await db.Terms.AsNoTracking().Where(t => t.SchoolYearId == section.SchoolYearId).ToDictionaryAsync(t => t.TermNumber, t => t.Name, ct);
         var teachers = await db.TeachingAssignments.AsNoTracking().Where(a => a.SectionId == sectionId)
             .Select(a => new { a.SubjectId, Name = a.Teacher.LastName + ", " + a.Teacher.FirstName }).ToListAsync(ct);
-        var times = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => c.SectionId == sectionId).ToListAsync(ct);
+        var times = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Include(c => c.Room).Where(c => c.SectionId == sectionId).ToListAsync(ct);
 
         return courses
             .GroupBy(c => c.SubjectId).Select(g => g.OrderBy(x => x.TermNumber).First())
@@ -204,7 +224,94 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
                 c.SubjectId, c.Code, c.Name, c.TermNumber, termNames.GetValueOrDefault(c.TermNumber, $"Term {c.TermNumber}"),
                 teachers.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.Name,
                 times.FirstOrDefault(t => t.SubjectId == c.SubjectId) is { } t ? new MeetingInfo(t.Days, t.StartTime, t.EndTime, t.Schedule.Code) : null,
-                times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.ScheduleId))
+                times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.ScheduleId,
+                times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.RoomId, times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.Room?.Name))
+            .ToList();
+    }
+
+    // ======================================================================= the rooms and the schedule grid
+
+    public async Task<IReadOnlyList<RoomRow>> ListRoomsAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Rooms.AsNoTracking().OrderBy(r => r.Name).Select(r => new RoomRow(r.Id, r.Name, db.CourseSchedules.Count(c => c.RoomId == r.Id))).ToListAsync(ct);
+    }
+
+    public async Task<ServiceResult> AddRoomAsync(int actingUserId, string? name, CancellationToken ct = default)
+    {
+        var clean = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        if (clean.Length is 0 or > 50)
+        {
+            return ServiceResult.Fail("Type the name of the room, like Room 101 (up to 50 characters).");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        if (await db.Rooms.AnyAsync(r => r.Name == clean, ct))
+        {
+            return ServiceResult.Fail($"There is already a room called {clean}.");
+        }
+
+        db.Rooms.Add(new Room { Name = clean });
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return ServiceResult.Fail($"There is already a room called {clean}.");
+        }
+
+        return ServiceResult.Ok($"The room {clean} was added.");
+    }
+
+    /// <summary>A room is removed; its classes keep their days and times and have no room (they show under "No room" and can be put in another room).</summary>
+    public async Task<ServiceResult> RemoveRoomAsync(int actingUserId, int roomId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        var room = await db.Rooms.AsNoTracking().Where(r => r.Id == roomId).Select(r => new { r.Name, Classes = db.CourseSchedules.Count(c => c.RoomId == roomId) }).FirstOrDefaultAsync(ct);
+        if (room is null)
+        {
+            return ServiceResult.Fail("That room was already removed.");
+        }
+
+        await db.CourseSchedules.Where(c => c.RoomId == roomId).ExecuteUpdateAsync(set => set.SetProperty(c => c.RoomId, (int?)null), ct);
+        await db.Rooms.Where(r => r.Id == roomId).ExecuteDeleteAsync(ct);
+        return ServiceResult.Ok(room.Classes == 0 ? $"The room {room.Name} was removed." : $"The room {room.Name} was removed. Its {room.Classes} {(room.Classes == 1 ? "class has" : "classes have")} no room now.");
+    }
+
+    /// <summary>
+    /// The classes of one room in one school year (room 0: the classes that have no room; a negative number: every room), for the schedule grid. A term number narrows it to the courses of that term (0: every term).
+    /// </summary>
+    public async Task<IReadOnlyList<PlacedClass>> ListPlacedAsync(int roomId, int schoolYearId, int termNumber = 0, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.CourseSchedules.AsNoTracking()
+            .Where(c => c.Section.SchoolYearId == schoolYearId && (roomId < 0 || (roomId == 0 ? c.RoomId == null : c.RoomId == roomId)))
+            .Select(c => new
+            {
+                c.SectionId, c.SubjectId, Subject = c.Subject.Name, c.Section.GradeLevel, Strand = c.Section.Strand.Code, c.Section.StrandId, SectionName = c.Section.Name,
+                c.Days, c.StartTime, c.EndTime, c.RoomId, RoomName = c.Room != null ? c.Room.Name : null,
+                Teacher = db.TeachingAssignments.Where(a => a.SectionId == c.SectionId && a.SubjectId == c.SubjectId).Select(a => a.Teacher.LastName + ", " + a.Teacher.FirstName).FirstOrDefault(),
+            })
+            .ToListAsync(ct);
+        var curriculum = await db.StrandSubjects.AsNoTracking().Select(x => new { x.StrandId, x.GradeLevel, x.SubjectId, x.TermNumber }).ToListAsync(ct);
+
+        return rows
+            .Select(c => new PlacedClass(
+                c.SectionId, c.SubjectId, TeachingService.SectionLabel(c.GradeLevel, c.Strand, c.SectionName), c.Subject, c.Days, c.StartTime, c.EndTime, c.RoomId,
+                curriculum.Where(x => x.StrandId == c.StrandId && x.GradeLevel == c.GradeLevel && x.SubjectId == c.SubjectId).Select(x => (byte?)x.TermNumber).Min() ?? 0, c.Teacher, c.RoomName))
+            .Where(c => termNumber == 0 || c.TermNumber == termNumber)
+            .OrderBy(c => c.Start).ThenBy(c => c.SectionLabel)
             .ToList();
     }
 
@@ -213,6 +320,10 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
     /// <summary>The class time of one course (the other courses of the section are left as they are).</summary>
     public Task<ServiceResult> SaveAsync(int actingUserId, int sectionId, int subjectId, int? scheduleId, string? days, TimeOnly? start, TimeOnly? end, CancellationToken ct = default) =>
         SaveSectionAsync(actingUserId, sectionId, [new CourseTimeInput(subjectId, scheduleId, days, start, end)], ct);
+
+    /// <summary>Puts a course on the schedule grid (or moves it): the days, the time and the room (null for no room).</summary>
+    public Task<ServiceResult> PlaceAsync(int actingUserId, int sectionId, int subjectId, int? roomId, string days, TimeOnly start, TimeOnly end, CancellationToken ct = default) =>
+        SaveSectionAsync(actingUserId, sectionId, [new CourseTimeInput(subjectId, null, days, start, end, roomId ?? CourseTimeInput.NoRoom)], ct);
 
     /// <summary>
     /// The class times of the courses of a section, all with one Save. A course with nothing chosen has its class time cleared. Everything is checked
@@ -259,7 +370,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
                 continue;
             }
 
-            var problem = Check(row, parts);
+            var problem = Check(row);
             if (problem is not null)
             {
                 errors.Add($"{entry.Name}: {problem}");
@@ -310,6 +421,20 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             }
         }
 
+        // ---- a room can't hold two classes at the same time
+        foreach (var p in plan.Where(p => p.Input is not null && EffectiveRoom(p.Input, p.Old) is not null))
+        {
+            var roomId = EffectiveRoom(p.Input!, p.Old)!.Value;
+            if (!await db.Rooms.AnyAsync(r => r.Id == roomId, ct))
+            {
+                errors.Add($"{p.Name}: that room no longer exists.");
+            }
+            else if (await RoomConflictAsync(db, roomId, sectionId, p.SubjectId, p.Input!.Days!, p.Input.Start!.Value, p.Input.End!.Value, ct) is { } roomProblem)
+            {
+                errors.Add($"{p.Name}: {roomProblem}");
+            }
+        }
+
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);
@@ -331,17 +456,19 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
                 continue;
             }
 
+            var partId = PartFor(parts.Values, p.Input.Start!.Value)?.Id ?? p.Input.ScheduleId ?? parts.Keys.First();
             if (p.Old is null)
             {
-                db.CourseSchedules.Add(new CourseSchedule { SectionId = sectionId, SubjectId = p.SubjectId, ScheduleId = p.Input.ScheduleId!.Value, Days = p.Input.Days!, StartTime = p.Input.Start!.Value, EndTime = p.Input.End!.Value });
+                db.CourseSchedules.Add(new CourseSchedule { SectionId = sectionId, SubjectId = p.SubjectId, ScheduleId = partId, Days = p.Input.Days!, StartTime = p.Input.Start!.Value, EndTime = p.Input.End!.Value, RoomId = EffectiveRoom(p.Input, null) });
                 set++;
             }
-            else if (p.Old.ScheduleId != p.Input.ScheduleId || p.Old.Days != p.Input.Days || p.Old.StartTime != p.Input.Start || p.Old.EndTime != p.Input.End)
+            else if (p.Old.ScheduleId != partId || p.Old.Days != p.Input.Days || p.Old.StartTime != p.Input.Start || p.Old.EndTime != p.Input.End || p.Old.RoomId != EffectiveRoom(p.Input, p.Old))
             {
-                p.Old.ScheduleId = p.Input.ScheduleId!.Value;
+                p.Old.ScheduleId = partId;
                 p.Old.Days = p.Input.Days!;
                 p.Old.StartTime = p.Input.Start!.Value;
                 p.Old.EndTime = p.Input.End!.Value;
+                p.Old.RoomId = EffectiveRoom(p.Input, p.Old);
                 set++;
             }
         }
@@ -360,7 +487,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             return ServiceResult.Ok($"Nothing changed in the class schedule of {label}.");
         }
 
-        var onlyOne = plan.Count == 1 && plan[0].Input is { } one ? $"{plan[0].Name} of {label} meets {new MeetingInfo(one.Days!, one.Start!.Value, one.End!.Value, parts[one.ScheduleId!.Value].Code).DescribeFull()}." : null;
+        var onlyOne = plan.Count == 1 && plan[0].Input is { } one ? $"{plan[0].Name} of {label} meets {new MeetingInfo(one.Days!, one.Start!.Value, one.End!.Value, PartFor(parts.Values, one.Start!.Value)?.Code).DescribeFull()}." : null;
         return ServiceResult.Ok(onlyOne ?? $"The class schedule of {label} was saved ({set} set, {cleared} cleared).");
     }
 
@@ -377,14 +504,24 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         return removed == 0 ? ServiceResult.Fail("That course had no class time.") : ServiceResult.Ok($"The class time of {name} was removed.");
     }
 
-    /// <summary>What is wrong with one course's class time by itself (the part of the day, the days, the hours), or null.</summary>
-    private static string? Check(CourseTimeInput row, IReadOnlyDictionary<int, Schedule> parts)
-    {
-        if (row.ScheduleId is not { } scheduleId || !parts.TryGetValue(scheduleId, out var part))
-        {
-            return "choose the schedule: AM, MID or PM.";
-        }
+    /// <summary>The room a class ends up in: the one typed, none when <see cref="CourseTimeInput.NoRoom"/> was typed, and the one it has when nothing was typed.</summary>
+    private static int? EffectiveRoom(CourseTimeInput input, CourseSchedule? old) =>
+        input.RoomId is null ? old?.RoomId : input.RoomId == CourseTimeInput.NoRoom ? null : input.RoomId;
 
+    /// <summary>
+    /// The part of the day (AM, MID or PM) of a class: it follows the time the class starts. The first part whose hours include the start; a start before the first part
+    /// is the first part, a start after the last is the last.
+    /// </summary>
+    public static Schedule? PartFor(IEnumerable<Schedule> parts, TimeOnly start)
+    {
+        var ordered = parts.OrderBy(p => p.StartTime).ToList();
+        return ordered.FirstOrDefault(p => start >= p.StartTime && start < p.EndTime)
+            ?? (ordered.Count > 0 ? (start < ordered[0].StartTime ? ordered[0] : ordered[^1]) : null);
+    }
+
+    /// <summary>What is wrong with one course's class time by itself (the days, the hours), or null.</summary>
+    private static string? Check(CourseTimeInput row)
+    {
         if (!MeetingDays.IsValid(row.Days))
         {
             return "choose the days: MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday).";
@@ -406,9 +543,9 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             return $"a class is from {(int)MinLength.TotalMinutes} minutes to {(int)MaxLength.TotalHours} hours long.";
         }
 
-        if (start < part.StartTime || end > part.EndTime)
+        if (start < EarliestHour || end > LatestHour)
         {
-            return $"the {part.Code} schedule is {ClassTime.Format(part.StartTime)} – {ClassTime.Format(part.EndTime)}: the class must start and end inside it.";
+            return $"a class is between {ClassTime.Format(EarliestHour)} and {ClassTime.Format(LatestHour)}.";
         }
 
         return null;
@@ -462,6 +599,34 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             }
 
             return $"{other.Teacher} already teaches {other.Subject} to {TeachingService.SectionLabel(other.GradeLevel, other.Strand, other.SectionName)} on {days} {ClassTime.Format(other.StartTime)} – {ClassTime.Format(other.EndTime)}. A teacher can't be in two classes at the same time.";
+        }
+
+        return null;
+    }
+
+    /// <summary>A sentence that says why the room can't hold this class at this time (another class of the same school year and term is there then), or null when it is free.</summary>
+    internal static async Task<string?> RoomConflictAsync(AppDbContext db, int roomId, int sectionId, int subjectId, string days, TimeOnly start, TimeOnly end, CancellationToken ct)
+    {
+        var mine = await db.Sections.AsNoTracking().Where(s => s.Id == sectionId).Select(s => new { s.StrandId, s.GradeLevel, s.SchoolYearId }).FirstOrDefaultAsync(ct);
+        if (mine is null)
+        {
+            return null;
+        }
+
+        var myTerm = await TermOfAsync(db, mine.StrandId, mine.GradeLevel, subjectId, ct);
+        var others = await db.CourseSchedules.AsNoTracking()
+            .Where(c => c.RoomId == roomId && c.Days == days && !(c.SectionId == sectionId && c.SubjectId == subjectId) && c.Section.SchoolYearId == mine.SchoolYearId)
+            .Select(c => new { c.SubjectId, Subject = c.Subject.Name, c.StartTime, c.EndTime, c.Section.StrandId, c.Section.GradeLevel, Strand = c.Section.Strand.Code, SectionName = c.Section.Name, Room = c.Room!.Name })
+            .ToListAsync(ct);
+
+        foreach (var other in others.Where(o => Overlaps(start, end, o.StartTime, o.EndTime)))
+        {
+            if (myTerm is not null && await TermOfAsync(db, other.StrandId, other.GradeLevel, other.SubjectId, ct) != myTerm)
+            {
+                continue;
+            }
+
+            return $"{other.Room} is already used by {other.Subject} of {TeachingService.SectionLabel(other.GradeLevel, other.Strand, other.SectionName)} on {days} {ClassTime.Format(other.StartTime)} – {ClassTime.Format(other.EndTime)}. Two classes can't be in one room at the same time.";
         }
 
         return null;
