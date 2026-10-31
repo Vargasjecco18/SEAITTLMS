@@ -1,12 +1,14 @@
+using Microsoft.EntityFrameworkCore;
 using SEAITT_LMS.Components.Shared;
+using SEAITT_LMS.Data;
 
 namespace SEAITT_LMS.Services;
 
 /// <summary>
-/// Looks every few minutes at what the administrator asked for in System Settings: makes the automatic backup once a day (from the chosen hour,
+/// Looks every few minutes at which term the calendar is in (and makes it the current term), and at what the administrator asked for in System Settings: makes the automatic backup once a day (from the chosen hour,
 /// Philippine time) and keeps only the newest ones, and deletes the lines of the security log that are older than the days it is kept.
 /// </summary>
-public sealed class MaintenanceWorker(BackupService backups, SystemSettingsService settings, SecurityLogService securityLog, TimeProvider clock, ILogger<MaintenanceWorker> log) : BackgroundService
+public sealed class MaintenanceWorker(BackupService backups, SystemSettingsService settings, SecurityLogService securityLog, IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, ILogger<MaintenanceWorker> log) : BackgroundService
 {
     private DateOnly lastPurge;
 
@@ -38,6 +40,9 @@ public sealed class MaintenanceWorker(BackupService backups, SystemSettingsServi
     /// <summary>One look (the worker does this every 5 minutes). Public so that a test can run it.</summary>
     public async Task RunOnceAsync(CancellationToken ct = default)
     {
+        // The current term follows the calendar: when a term ends the next one becomes current by itself.
+        await TermClock.SyncAsync(dbFactory, clock, ct);
+
         var current = settings.Current;
         var now = PhilippineTime.Now(clock);
         var today = DateOnly.FromDateTime(now.DateTime);

@@ -2,7 +2,7 @@
 
 <Card>
     <div class="tab-head">
-        <p class="grow">The terms of a school year (1st Term, 2nd Term ...). One term is the <strong>current term</strong>, the one the school is running now; the term after it is the <strong>next term</strong>, which the registrar enrolls students for.</p>
+        <p class="grow">The terms of a school year (1st Term, 2nd Term ...). Which term the school is in is decided by the <strong>first day and the last day</strong> you type: the term that includes today is the <strong>current term</strong>, and the registrar enrolls students for it by itself. When a term ends it is put away here (the students, grades and attendance of that term stay in the records).</p>
     </div>
 
     <Notice Message="@Message" IsError="MessageIsError" OnDismiss="ClearMessage" />
@@ -39,13 +39,6 @@
                     <input id="t-end" type="date" @bind="form.EndDate" />
                 </Field>
             </div>
-            <label class="switch">
-                <input id="t-current" type="checkbox" @bind="form.IsCurrent" />
-                <span>
-                    <strong>This is the current term</strong>
-                    <small>The school runs one term at a time. Making this the current term takes it away from the term that is current now.</small>
-                </span>
-            </label>
             <div class="entry-actions">
                     @if (form.Id is not null)
                     {
@@ -61,12 +54,18 @@
     {
         <p class="muted">Loading…</p>
     }
-    else if (rows.Count == 0)
+    else if (Active.Count == 0 && Ended.Count == 0)
     {
         <EmptyState IconName="calendar-days" Title="No term yet"><p>Add a school year first, then its terms.</p></EmptyState>
     }
     else
     {
+        @if (Active.Count == 0)
+        {
+            <p class="muted">Every term is over. Add the terms of the next school year.</p>
+        }
+        else
+        {
         <div class="table-wrap">
             <table class="table">
                 <thead>
@@ -80,7 +79,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var row in rows)
+                    @foreach (var row in Active)
                     {
                         <tr>
                             <td>
@@ -110,6 +109,21 @@
                 </tbody>
             </table>
         </div>
+        }
+
+        @if (Ended.Count > 0)
+        {
+            <details class="ended">
+                <summary>Terms that are over (@Ended.Count)</summary>
+                <p class="muted">These terms are kept for the records. Nothing in them was deleted: the students enrolled, the grades and the attendance are still there.</p>
+                <ul class="ended-list">
+                    @foreach (var row in Ended)
+                    {
+                        <li><span class="name">@row.Name</span> <span class="muted">@row.SchoolYear · @PhilippineTime.FormatDate(row.StartDate) to @PhilippineTime.FormatDate(row.EndDate) · @row.Enrollments @(row.Enrollments == 1 ? "enrollment" : "enrollments")</span></li>
+                    }
+                </ul>
+            </details>
+        }
     }
 </Card>
 
@@ -127,6 +141,8 @@
 
 @code {
     private IReadOnlyList<TermRow>? rows;
+    private IReadOnlyList<TermRow> Active => rows?.Where(r => !r.IsEnded).ToList() ?? [];
+    private IReadOnlyList<TermRow> Ended => rows?.Where(r => r.IsEnded).ToList() ?? [];
     private IReadOnlyList<YearOption>? years;
     private int? nextId;
     private TermInput? form;
@@ -150,7 +166,7 @@
         rows = await Setup.ListTermsAsync();
 
         // The term after the current one: the list is newest school year first, so walk it the other way round.
-        var ordered = rows.OrderBy(r => r.StartDate).ThenBy(r => r.TermNumber).ToList();
+        var ordered = rows.Where(r => !r.IsEnded).OrderBy(r => r.StartDate).ThenBy(r => r.TermNumber).ToList();
         var current = ordered.FindIndex(r => r.IsCurrent);
         nextId = current >= 0 && current + 1 < ordered.Count ? ordered[current + 1].Id : null;
     }
@@ -164,7 +180,7 @@
     private async Task OpenEdit(TermRow row)
     {
         Errors = [];
-        form = new TermInput { Id = row.Id, SchoolYearId = row.SchoolYearId, TermNumber = row.TermNumber, Name = row.Name, StartDate = row.StartDate, EndDate = row.EndDate, IsCurrent = row.IsCurrent };
+        form = new TermInput { Id = row.Id, SchoolYearId = row.SchoolYearId, TermNumber = row.TermNumber, Name = row.Name, StartDate = row.StartDate, EndDate = row.EndDate };
         await ShowFormAsync();
     }
 

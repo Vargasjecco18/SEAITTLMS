@@ -12,73 +12,91 @@
     color: var(--text-muted);
 }
 
-.steps-nav {
-    position: sticky;
-    top: 0;
-    z-index: 5;
+.steps {
+    display: grid;
+    gap: 0.75rem;
+}
+
+/* One step is one dropdown: a bar to press, and what is inside under it. */
+.step {
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.step-title {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.step-head {
     display: flex;
-    gap: 0.35rem;
-    margin: 0 0 1.25rem;
-    padding: 0.5rem 0;
-    overflow-x: auto;
-    background: var(--bg);
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.9rem 1.1rem;
+    border: 0;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.step-head:hover {
+    background: var(--surface-2);
+}
+
+.step-head:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+}
+
+.step.open > .step-title .step-head {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
     border-bottom: 1px solid var(--border);
 }
 
-.step-link {
-    display: inline-flex;
+.step-name {
     flex: none;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.4rem 0.7rem;
-    border-radius: 999px;
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-decoration: none;
+}
+
+.step-hint {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.step-link:hover {
-    background: var(--brand-soft);
-    color: var(--brand-strong);
+.step-chevron {
+    display: inline-flex;
+    color: var(--text-muted);
 }
 
-.step-link:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 1px;
+.step-body {
+    padding: 1.1rem 1.1rem 1.25rem;
 }
 
 .step-num {
     display: inline-grid;
     flex: none;
     place-items: center;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.6rem;
+    height: 1.6rem;
     border-radius: 50%;
     background: var(--btn-bg);
-    color: var(--btn-text, #fff);
+    color: var(--on-brand, #fff);
     font-size: 0.8rem;
     font-weight: 700;
-}
-
-.steps {
-    display: grid;
-    gap: 2rem;
-}
-
-.step {
-    min-width: 0;
-    scroll-margin-top: 4rem;
-}
-
-.step-title {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin: 0 0 0.75rem;
-    font-size: 1.15rem;
 }
 
 .count {
@@ -92,16 +110,11 @@
     text-align: center;
 }
 
-.step-link .count {
-    background: var(--surface);
-}
-
 /* ---------- the fields of a step: always on the page ---------- */
 .setup ::deep .entry {
     margin: 0 0 1.25rem;
     padding: 0.9rem 1rem 1rem;
     border: 1px solid var(--border);
-    border-left: 4px solid var(--brand);
     border-radius: var(--radius-sm);
     background: var(--surface-2);
 }
@@ -752,4 +765,56 @@
     height: 1px;
     overflow: hidden;
     clip: rect(0 0 0 0);
+}
+
+/* The tabs inside a step were cards of their own; inside the step they are plain, so there is no box inside a box. */
+.step-body ::deep .card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.step-body ::deep .card-body {
+    padding: 0;
+}
+
+.setup .step-body ::deep .table-wrap {
+    margin: 0;
+}
+
+.setup .step-body ::deep .table th:first-child,
+.setup .step-body ::deep .table td:first-child {
+    padding-left: 0.6rem;
+}
+
+.setup .step-body ::deep .table th:last-child,
+.setup .step-body ::deep .table td:last-child {
+    padding-right: 0.6rem;
+}
+
+@media (max-width: 720px) {
+    .step-hint {
+        display: none;
+    }
+}
+
+.setup ::deep .ended {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.setup ::deep .ended summary {
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.setup ::deep .ended-list {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
 }

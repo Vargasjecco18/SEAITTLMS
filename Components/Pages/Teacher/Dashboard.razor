@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = AppRoles.Teacher)]
 @inject CurrentUser Me
 @inject DashboardService Dashboards
+@inject AnnouncementService Announcements
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT Legazpi LMS</PageTitle>
@@ -29,6 +30,27 @@ else
             <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Last 30 days. See who on the calendar." Href="calendar" />
             <StatCard Label="Not posted yet" Value="@data.DraftCount" IconName="eye-off" Accent="AccentColor.Violet" Hint="Drafts and scheduled modules" />
             <StatCard Label="Due this week" Value="@data.DueSoon" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="@($"{data.SubjectCount} courses · {data.StudentCount} students")" />
+        </div>
+
+        <div class="notices">
+            <Card Title="Announcements" IconName="megaphone">
+                @if (announcements.Count == 0)
+                {
+                    <EmptyState IconName="megaphone" Title="No announcement now">
+                        <p>The notices of the school for the teachers, and the ones you write for your classes, show up here.</p>
+                    </EmptyState>
+                }
+                else
+                {
+                    <div class="notice-list">
+                        @foreach (var item in announcements)
+                        {
+                            <AnnouncementCard Item="item" Today="@PhilippineTime.Today(Clock)" />
+                        }
+                    </div>
+                    <p class="notice-more"><a href="teacher/announcements">All announcements</a></p>
+                }
+            </Card>
         </div>
 
         <div class="cards">
@@ -92,10 +114,15 @@ else
 
 @code {
     private TeacherDashboard? data;
+    private IReadOnlyList<AnnouncementView> announcements = [];
 
     protected override async Task OnInitializedAsync()
     {
         var teacherId = await Me.GetTeacherIdAsync();
         data = teacherId is { } id ? await Dashboards.GetTeacherAsync(id) : null;
+        if (data is not null && await Me.GetAsync() is { } user)
+        {
+            announcements = await Announcements.GetForUserAsync(user, 3);
+        }
     }
 }

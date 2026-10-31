@@ -40,13 +40,8 @@
             <Field For="ed-phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567."><input id="ed-phone" type="tel" maxlength="20" autocomplete="off" @bind="phone" /></Field>
 
             <div class="two">
-                <Field For="ed-term" Label="Term" Required="true">
-                    <select id="ed-term" @bind="termId" @bind:after="PlaceChangedAsync">
-                        @foreach (var term in lookups.Terms)
-                        {
-                            <option value="@term.Id">@term.SchoolYear · @term.Name@(term.IsCurrent ? " (current)" : "")</option>
-                        }
-                    </select>
+                <Field For="ed-term" Label="Term" Hint="The term of this enrollment (the calendar sets it).">
+                    <input id="ed-term" readonly value="@TermText" />
                 </Field>
                 <Field For="ed-grade" Label="Grade level" Required="true">
                     <select id="ed-grade" @bind="grade" @bind:after="PlaceChangedAsync">
@@ -157,6 +152,8 @@
     private string first = "", middle = "", last = "", extension = "", phone = "", sectionName = "", dropNote = "";
     private int termId, trackId, strandId;
     private byte grade = 11;
+
+    private string TermText => lookups?.Terms.FirstOrDefault(t => t.Id == termId) is { } term ? $"{term.SchoolYear} · {term.Name}" : "A term that is over";
 
     private string SectionHint => strandId == 0 ? "Choose the section, A, B or C." : loads.FirstOrDefault(l => l.Name == sectionName) is { } load
         ? $"Section {load.Name} has {load.Text}. {(load.IsFull ? "It is full." : load.SeatsLeft == 1 ? "1 seat is left." : $"{load.SeatsLeft} seats are left.")}"

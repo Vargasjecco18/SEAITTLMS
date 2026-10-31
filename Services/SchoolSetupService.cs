@@ -11,7 +11,7 @@ namespace SEAITT_LMS.Services;
 // ---- what the lists show
 public sealed record SchoolYearRow(int Id, string Name, DateOnly StartDate, DateOnly EndDate, int Terms, int Sections);
 
-public sealed record TermRow(int Id, int SchoolYearId, string SchoolYear, int TermNumber, string Name, DateOnly StartDate, DateOnly EndDate, bool IsCurrent, int Enrollments);
+public sealed record TermRow(int Id, int SchoolYearId, string SchoolYear, int TermNumber, string Name, DateOnly StartDate, DateOnly EndDate, bool IsCurrent, int Enrollments, bool IsEnded = false);
 
 public sealed record TrackRow(int Id, string Code, string Name, bool IsActive, int Strands);
 
@@ -129,7 +129,7 @@ public sealed class SectionInput
 /// Every change checks again, in the database, that the person doing it is an active academic coordinator, and refuses what would leave
 /// the records inconsistent (a strand with students can't move to another track, a section with students can't move to another strand, ...).
 /// </summary>
-public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> dbFactory)
+public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider? clock = null)
 {
     [GeneratedRegex(@"^[\p{L}\p{N}][\p{L}\p{N} \-]*$")]
     private static partial Regex SectionNamePattern();
@@ -285,13 +285,20 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
     // ======================================================================= terms
 
+    /// <summary>
+    /// The terms, newest school year first. Which one is current and which ones are over comes from the calendar (the first day and the last day of each term), not from a switch.
+    /// A term that is over is still listed (with <see cref="TermRow.IsEnded"/>): its enrollments, grades and attendance stay in the records, but the setup page puts it away.
+    /// </summary>
     public async Task<IReadOnlyList<TermRow>> ListTermsAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Terms.AsNoTracking().OrderByDescending(t => t.SchoolYear.StartDate).ThenBy(t => t.TermNumber)
+        var rows = await db.Terms.AsNoTracking().OrderByDescending(t => t.SchoolYear.StartDate).ThenBy(t => t.TermNumber)
             .Select(t => new TermRow(t.Id, t.SchoolYearId, t.SchoolYear.Name, t.TermNumber, t.Name, t.StartDate, t.EndDate, t.IsCurrent,
-                db.Enrollments.Count(e => e.TermId == t.Id)))
+                db.Enrollments.Count(e => e.TermId == t.Id), false))
             .ToListAsync(ct);
+        var today = PhilippineTime.Today(clock ?? TimeProvider.System);
+        var current = TermClock.CurrentId(rows.Select(r => (r.Id, r.StartDate, r.EndDate)), today);
+        return [.. rows.Select(r => r with { IsCurrent = r.Id == current, IsEnded = TermClock.IsEnded(r.EndDate, today) })];
     }
 
     public async Task<ServiceResult> SaveTermAsync(TermInput input, int actingUserId, CancellationToken ct = default)
@@ -392,13 +399,10 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             termId = term.Id;
         }
 
-        // Only one term is the current one.
-        if (input.IsCurrent)
-        {
-            await db.Terms.Where(t => t.Id != termId && t.IsCurrent).ExecuteUpdateAsync(set => set.SetProperty(t => t.IsCurrent, false), ct);
-        }
-
         await transaction.CommitAsync(ct);
+
+        // The current term follows the calendar: the term that includes today (see TermClock).
+        await TermClock.SyncAsync(dbFactory, clock ?? TimeProvider.System, ct);
         return ServiceResult.Ok(input.Id is null ? $"The term {name} of {year.Name} was added." : $"The term {name} of {year.Name} was saved.");
     }
 

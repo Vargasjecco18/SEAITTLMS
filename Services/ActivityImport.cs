@@ -6,14 +6,14 @@ namespace SEAITT_LMS.Services;
 public sealed record ActivityToSave(ActivityWork Work, IReadOnlyList<NewAttachment> Files, string Sheet, int Row);
 
 /// <summary>
-/// Saves what the Excel workbook of activities describes into a module. The teacher's course page and the provider's course library both use it, each giving the three steps
-/// with its own rules (who may save, where the files go): the item, its questions (a quiz) and its files.
+/// Saves what the Excel workbook of activities describes into the modules of a course: the item (the page puts it in the module the work names), its questions (a quiz) and its files,
+/// each with the rules of the page (who may save, where the files go).
 /// </summary>
 public static class ActivityImport
 {
     public static async Task<ItemImportSummary> RunAsync(
         IReadOnlyList<ActivityToSave> list,
-        Func<ItemInput, Task<ServiceResult>> saveItem,
+        Func<ActivityWork, Task<ServiceResult>> saveItem,
         Func<int, IReadOnlyList<QuestionInput>, Task<ServiceResult>> saveQuestions,
         Func<int, IReadOnlyList<NewAttachment>, Task<ServiceResult>> attach)
     {
@@ -23,7 +23,7 @@ public static class ActivityImport
         {
             var work = entry.Work;
             var where = $"{entry.Sheet}, row {entry.Row} ({work.Input.Title})";
-            var saved = await saveItem(work.Input);
+            var saved = await saveItem(work);
             if (!saved.Succeeded || saved.Id is not { } id)
             {
                 problems.Add($"{where}: {string.Join(" ", saved.Errors)}");

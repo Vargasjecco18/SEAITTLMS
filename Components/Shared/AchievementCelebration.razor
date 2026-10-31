@@ -3,6 +3,7 @@
 @inject CurrentUser Me
 @inject AchievementService Achievements
 @inject PopupGate Gate
+@inject IJSRuntime JS
 
 @* The box in the middle of the screen when a student has earned an achievement. One box for each new achievement; it is shown once
    (the dashboard writes down that it was seen when the student closes it). It is its own live island, so it works on a page that is otherwise plain. *@
@@ -49,6 +50,26 @@
     }
 
     private bool holding;
+    private bool soundPlayed;
+
+    // The sound plays once when the box opens, however many achievements were earned together.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!soundPlayed && queue.Count > 0)
+        {
+            soundPlayed = true;
+            try
+            {
+                await JS.InvokeVoidAsync("seaitt.playAchievementSound");
+            }
+            catch (JSException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+    }
 
     public void Dispose() => Release();
 

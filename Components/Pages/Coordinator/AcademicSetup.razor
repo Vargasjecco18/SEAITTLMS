@@ -20,54 +20,52 @@
 <Notice Message="@message" IsError="false" OnDismiss="ClearMessage" />
 
 <div class="setup">
-    <p class="setup-lead">Everything the school needs is on this page. Go from <strong>1</strong> to <strong>@Tabs.Length</strong>: the fields of each step are always open, so type and press the button. Press <strong>Edit</strong> on a line to change it.</p>
+    <p class="setup-lead">Everything the school needs is here, in order. <strong>Press a name to open it</strong>: you see what is inside and the fields to add something new. Press <strong>Edit</strong> on a line to change it.</p>
 
-    @* The steps on one line: a click goes to that step. The number is how many lines the step has. *@
-    <nav class="steps-nav" aria-label="Steps of the academic setup">
-        @foreach (var (t, place) in Tabs.Select((t, i) => (t, i + 1)))
-        {
-            <a class="step-link" href="@($"coordinator/academic-setup/{t.Key}")" data-goto="@($"step-{t.Key}")">
-                <span class="step-num">@place</span>
-                <span>@t.Label</span>
-                <span class="count">@CountOf(t.Key)</span>
-            </a>
-        }
-    </nav>
-
-    @* A new key makes the steps read their rows again (after an import). *@
+    @* Each step is a dropdown: the page stays short, and a step reads its lines only when it is open. A new key makes the open steps read their rows again (after an import). *@
     <div @key="reloadKey" class="steps">
         @foreach (var (t, place) in Tabs.Select((t, i) => (t, i + 1)))
         {
-            <section class="step" id="@($"step-{t.Key}")" aria-labelledby="@($"step-{t.Key}-title")">
-                <h2 class="step-title" id="@($"step-{t.Key}-title")">
-                    <span class="step-num">@place</span>
-                    <Icon Name="@t.Icon" Size="20" />
-                    <span>@t.Label</span>
-                    <span class="count">@CountOf(t.Key)</span>
+            var isOpen = openSteps.Contains(t.Key);
+            <section class="step @(isOpen ? "open" : "")" id="@($"step-{t.Key}")">
+                <h2 class="step-title">
+                    <button type="button" class="step-head" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"step-{t.Key}-body")" @onclick="() => ToggleStep(t.Key)">
+                        <span class="step-num">@place</span>
+                        <Icon Name="@t.Icon" Size="20" />
+                        <span class="step-name">@t.Label</span>
+                        <span class="step-hint">@t.Hint</span>
+                        <span class="count">@CountOf(t.Key)</span>
+                        <span class="step-chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-up" : "chevron-down")" Size="18" /></span>
+                    </button>
                 </h2>
-                @switch (t.Key)
+                @if (isOpen)
                 {
-                    case "school-years":
-                        <SchoolYearsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
-                    case "terms":
-                        <TermsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
-                    case "tracks":
-                        <TracksTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
-                    case "strands":
-                        <StrandsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
-                    case "subjects":
-                        <SubjectsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
-                    case "sections":
-                        <SectionsTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
-                    case "class-schedule":
-                        <ScheduleTab OnChanged="ReloadCountsAsync" Version="changes" />
-                        break;
+                    <div class="step-body" id="@($"step-{t.Key}-body")">
+                        @switch (t.Key)
+                        {
+                            case "school-years":
+                                <SchoolYearsTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                            case "terms":
+                                <TermsTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                            case "tracks":
+                                <TracksTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                            case "strands":
+                                <StrandsTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                            case "subjects":
+                                <SubjectsTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                            case "sections":
+                                <SectionsTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                            case "class-schedule":
+                                <ScheduleTab OnChanged="ReloadCountsAsync" Version="changes" />
+                                break;
+                        }
+                    </div>
                 }
             </section>
         }
@@ -82,18 +80,29 @@
                    Read="ReadSheet" OnImport="ImportSheetAsync" OnClose="CloseExcel" />
 
 @code {
-    private sealed record SetupTab(string Key, string Label, string Icon);
+    private sealed record SetupTab(string Key, string Label, string Icon, string Hint);
 
     private static readonly SetupTab[] Tabs =
     [
-        new("school-years", "School years", "calendar-range"),
-        new("terms", "Terms", "calendar-days"),
-        new("tracks", "Tracks", "layers"),
-        new("strands", "Strands", "layout-grid"),
-        new("subjects", "Courses", "book-open"),
-        new("sections", "Sections", "users"),
-        new("class-schedule", "Class schedule", "clock"),
+        new("school-years", "School years", "calendar-range", "Like 2026-2027"),
+        new("terms", "Terms", "calendar-days", "1st term, 2nd term ..."),
+        new("tracks", "Tracks", "layers", "Academic, Technical-Professional"),
+        new("strands", "Strands", "layout-grid", "And the courses of each"),
+        new("subjects", "Courses", "book-open", "The subjects"),
+        new("sections", "Sections", "users", "And the students in them"),
+        new("class-schedule", "Class schedule", "clock", "Days and hours of each course"),
     ];
+
+    // The steps that are open. The step the address names (academic-setup/sections) is open at the start.
+    private readonly HashSet<string> openSteps = [];
+
+    private void ToggleStep(string key)
+    {
+        if (!openSteps.Remove(key))
+        {
+            openSteps.Add(key);
+        }
+    }
 
     [Parameter] public string? TabKey { get; set; }
 
@@ -103,14 +112,28 @@
     private bool excelOpen;
     private SetupSnapshot? snapshot;
 
-    protected override async Task OnParametersSetAsync() => counts ??= await Setup.GetCountsAsync();
+    protected override async Task OnParametersSetAsync()
+    {
+        counts ??= await Setup.GetCountsAsync();
+
+        // An address like academic-setup/sections opens that step (the links of the menu use them).
+        if (Tabs.FirstOrDefault(t => string.Equals(t.Key, TabKey, StringComparison.OrdinalIgnoreCase)) is { } wanted && openedFor != wanted.Key)
+        {
+            openedFor = wanted.Key;
+            openSteps.Add(wanted.Key);
+            scrollTo = wanted.Key;
+        }
+    }
+
+    private string? openedFor;
+    private string? scrollTo;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // An address like academic-setup/sections goes to that step.
-        if (firstRender && Tabs.FirstOrDefault(t => string.Equals(t.Key, TabKey, StringComparison.OrdinalIgnoreCase)) is { } wanted)
+        if (scrollTo is { } key)
         {
-            await JS.InvokeVoidAsync("seaitt.goToId", $"step-{wanted.Key}");
+            scrollTo = null;
+            await JS.InvokeVoidAsync("seaitt.goToId", $"step-{key}");
         }
     }
 

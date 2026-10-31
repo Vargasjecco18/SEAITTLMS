@@ -5,6 +5,8 @@
 @using SEAITT_LMS.Data.Queries
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject TimeProvider Clock
+@inject SystemSettingsService Settings
+@inject BackupService Backups
 
 <PageTitle>Admin · SEAITT Legazpi LMS</PageTitle>
 <AutoRefresh />
@@ -33,7 +35,7 @@
         </div>
     </section>
 
-    <div class="stack">
+    <div class="stack two-columns">
         <Card Title="Latest accounts" IconName="users">
             @if (overview.LatestAccounts.Count == 0)
             {
@@ -96,16 +98,45 @@
                 </div>
             }
         </Card>
+
+        <div class="side">
+            <Card Title="The system" IconName="settings-2">
+                <ul class="facts">
+                    <li class="@(Settings.Current.MaintenanceOn ? "warn" : "ok")">
+                        <Icon Name="@(Settings.Current.MaintenanceOn ? "triangle-alert" : "circle-check")" Size="18" />
+                        <span><strong>@(Settings.Current.MaintenanceOn ? "Closed for maintenance" : "Open for everybody")</strong><small>@(Settings.Current.MaintenanceOn ? "Only administrators can use it" : "The system is working")</small></span>
+                    </li>
+                    <li>
+                        <Icon Name="database-backup" Size="18" />
+                        <span>
+                            <strong>@(lastBackup is { } backup ? $"Last backup {PhilippineTime.FormatDateTime(backup.CreatedAtUtc)}" : "No backup yet")</strong>
+                            <small>@(Settings.Current.AutoBackupOn ? $"One every day from {PhilippineTime.HourText(Settings.Current.AutoBackupHour)}" : "Not made by itself")</small>
+                        </span>
+                    </li>
+                </ul>
+            </Card>
+
+            <Card Title="Go to" IconName="arrow-right">
+                <ul class="quick">
+                    <li><a href="admin/users"><Icon Name="users" Size="18" /> <span>Users Management</span></a></li>
+                    <li><a href="admin/security-logs"><Icon Name="scroll-text" Size="18" /> <span>Security Logs</span></a></li>
+                    <li><a href="admin/backups"><Icon Name="database-backup" Size="18" /> <span>Database Backup &amp; Restore</span></a></li>
+                    <li><a href="admin/settings"><Icon Name="settings-2" Size="18" /> <span>System Settings</span></a></li>
+                </ul>
+            </Card>
+        </div>
     </div>
 }
 
 @code {
     private AdminOverview? overview;
+    private BackupInfo? lastBackup;
 
     protected override async Task OnInitializedAsync()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
         overview = await AdminOverview.LoadAsync(db, Clock.GetUtcNow().UtcDateTime);
+        lastBackup = Backups.List().OrderByDescending(b => b.CreatedAtUtc).FirstOrDefault();
     }
 
     private static string? InactiveHint(int inactive) => inactive > 0 ? $"{inactive} inactive" : null;

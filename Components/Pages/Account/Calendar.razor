@@ -104,6 +104,12 @@
     <CalendarDayDialog @key="@($"day-{dayToOpen:yyyy-MM-dd}")" Day="dayToOpen" View="@view" CloseUrl="@Url(view, anchor)" />
 }
 
+@* A double click on a day: what can be added on it. *@
+@if (addDay is { } dayToAdd)
+{
+    <CalendarAddDialog @key="@($"add-{dayToAdd:yyyy-MM-dd}")" Day="dayToAdd" View="@view" CloseUrl="@Url(view, anchor)" />
+}
+
 @* "Add event", or a click on an event of the person's own calendar: the box to write or change it. *@
 @if (eventMode is not null)
 {
@@ -135,6 +141,9 @@
 
     [SupplyParameterFromQuery(Name = "event")] private string? EventText { get; set; }
 
+    // A double click on a day: ?add=<date> asks what to add on that day.
+    [SupplyParameterFromQuery(Name = "add")] private string? AddText { get; set; }
+
     // A teacher clicked a piece of work: ?work=<item>.
     [SupplyParameterFromQuery(Name = "work")] private string? WorkText { get; set; }
 
@@ -149,6 +158,7 @@
     private int? workItemId;
     private DateOnly? editDay;
     private DateOnly? openDay;
+    private DateOnly? addDay;
     private string? eventMode;
 
     /// <summary>The widgets at the right: a student's assignments (no separate due dates card), or the teacher's unchecked assignments and then the ones that have no due date yet.</summary>
@@ -187,6 +197,7 @@
         workItemId = isTeacher && int.TryParse(WorkText, out var workId) && workId > 0 ? workId : null;
         editDay = DateOnly.TryParseExact(OnText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var on) && on.Year is > 2000 and < 2100 ? on : null;
         openDay = DateOnly.TryParseExact(DayText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) && day.Year is > 2000 and < 2100 ? day : null;
+        addDay = DateOnly.TryParseExact(AddText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var add) && add.Year is > 2000 and < 2100 ? add : null;
         eventMode = EventText == "new" ? "new" : int.TryParse(EventText, out var entryId) && entryId > 0 ? entryId.ToString() : null;
     }
 

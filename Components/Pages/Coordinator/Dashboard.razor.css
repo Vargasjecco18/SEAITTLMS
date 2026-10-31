@@ -91,3 +91,68 @@
     color: var(--brand-strong);
     font-weight: 600;
 }
+
+/* The school now: the term at the left, the numbers of the setup at the right. */
+.school {
+    display: grid;
+    gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+    .school {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+        align-items: center;
+    }
+}
+
+.term-now {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 1rem 1.1rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+}
+
+.term-label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.term-name {
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+.term-sub {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.numbers div {
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.numbers dt {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.numbers dd {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}

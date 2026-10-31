@@ -31,19 +31,16 @@ else
     <div class="stats">
         <StatCard Label="Students" Value="@report.Students" IconName="users" Accent="AccentColor.Blue" Hint="@report.ScopeText" />
         <StatCard Label="Average grade" Text="@(report.AverageGrade is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="AccentColor.Violet" Hint="@(report.AverageGrade is { } a2 ? GradeRules.Descriptor(a2) : "No grades yet")" />
-        @if (Role != AppRoles.Teacher)
+        @if (Role == AppRoles.Teacher)
+        {
+            <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" />
+            <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing assignments" />
+        }
+        else
         {
             <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
-            @if (Role != AppRoles.GuidanceCounselor)
-            {
-                <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students" : null)" />
-            }
-            @if (Role != AppRoles.GuidanceCounselor)
-            {
-                <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing assignments" Href="@(report.SchoolWide && Role == AppRoles.GuidanceCounselor ? "guidance/students?kind=AtRisk" : null)" />
-            }
+            <StatCard Label="@(Role == AppRoles.GuidanceCounselor ? "Students with concerns" : "Open referrals")" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your courses")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
         }
-        <StatCard Label="@(Role == AppRoles.GuidanceCounselor ? "Students with concerns" : "Open referrals")" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="@(report.SchoolWide ? "With the guidance counselor" : "In your courses")" Href="@(Role == AppRoles.GuidanceCounselor ? "guidance/referrals" : null)" />
     </div>
 
     <div class="grid two">
@@ -124,8 +121,9 @@ else
 
     @if (Role == AppRoles.Teacher)
     {
-        @* The students who need attention are at the bottom. *@
+        @* The students who need attention, then every student with what they opened. *@
         @ConcernCard(report)
+        @StudentsCard
     }
     else
     {
@@ -246,13 +244,84 @@ else
 
     private AnalyticsReport? report;
     private string Role { get; set; } = "";
+    private IReadOnlyList<StudentActivityRow> students = [];
+    private string courseFilter = "";
 
     protected override async Task OnInitializedAsync()
     {
         var user = await Me.GetAsync();
         Role = user?.Role ?? "";
         report = user is null ? null : await Reports.GetAsync(user);
+        if (user is not null && Role == AppRoles.Teacher && await Me.GetTeacherIdAsync() is { } teacherId)
+        {
+            students = await Reports.GetTeacherStudentsAsync(teacherId);
+        }
     }
+
+    private IEnumerable<StudentActivityRow> ShownStudents => students.Where(s => courseFilter == "" || $"{s.Course} · {s.Section}" == courseFilter);
+
+    private IEnumerable<string> CourseChoices => students.Select(s => $"{s.Course} · {s.Section}").Distinct().OrderBy(x => x);
+
+    /// <summary>Every student of the teacher's courses: did they open the modules, did they open the activities, how far are they.</summary>
+    private RenderFragment StudentsCard => @<text>
+        <Card Title="Students" IconName="users-round">
+            @if (students.Count == 0)
+            {
+                <p class="muted">The students of your courses show here once they are enrolled.</p>
+            }
+            else
+            {
+                <div class="students-bar">
+                    <Field For="an-course" Label="Course">
+                        <select id="an-course" value="@courseFilter" @onchange="e => courseFilter = e.Value?.ToString() ?? string.Empty">
+                            <option value="">All my courses (@students.Count lines)</option>
+                            @foreach (var choice in CourseChoices)
+                            {
+                                <option value="@choice" selected="@(courseFilter == choice)">@choice</option>
+                            }
+                        </select>
+                    </Field>
+                </div>
+                <div class="table-wrap">
+                    <table class="table students-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Student</th>
+                                <th scope="col">Course</th>
+                                <th scope="col" class="num">Modules opened</th>
+                                <th scope="col" class="num">Activities opened</th>
+                                <th scope="col">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var st in ShownStudents)
+                            {
+                                <tr>
+                                    <td><span class="name">@st.Student</span><span class="sub">@st.Lrn</span></td>
+                                    <td>@st.Course<span class="sub">@st.Section</span></td>
+                                    <td class="num"><span class="@(st.Modules > 0 && st.ModulesOpened == 0 ? "none-opened" : "")">@st.ModulesOpened of @st.Modules</span></td>
+                                    <td class="num"><span class="@(st.Items > 0 && st.ItemsOpened == 0 ? "none-opened" : "")">@st.ItemsOpened of @st.Items</span></td>
+                                    <td>
+                                        @if (st.Progress is { } progress)
+                                        {
+                                            <div class="cell-bar">
+                                                <span class="track"><i class="@(progress < 50 ? "bad" : progress < 80 ? "warn" : "good")" style="width: @progress%"></i></span>
+                                                <span>@progress% <small class="muted">(@st.HandedIn of @st.Items handed in)</small></span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">Nothing to do yet</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </Card>
+    </text>;
 
     private static string Band(decimal? percent) => percent switch
     {

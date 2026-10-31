@@ -3,28 +3,28 @@
 @inject AttachmentService Attachments
 @inject SystemSettingsService Settings
 
-@* The box for the Excel workbook of a module: the template with the sheets Assignments, Quizzes, Quiz Questions, Task Performances, Seatwork and Recitations, an export of what the module has, and the import.
+@* The box for the Excel workbook of a course ("Add activities"): the template with a block for each module (Seatwork, Assignment, Quiz, Task performance) and the sheet Quiz Questions, an export of what the course has, and the import.
    The Files column of the workbook names files; they are chosen here and each one is attached to the row that names it. The page that opens the box saves the activities (OnImport),
    so the rules of the teacher and the rules of the academic provider each apply. *@
-<Modal Open="Open" Title="Add Activities in Excel" Large="true" OnClose="CloseAsync">
+<Modal Open="Open" Title="Add activities" Large="true" OnClose="CloseAsync">
     @if (Open)
     {
         @if (result is null)
         {
-            <p class="xl-lead">For <strong>@ModuleTitle</strong>. One workbook has a sheet for the assignments, the quizzes (and their questions) and the task performances: every row becomes one activity of the module.</p>
+            <p class="xl-lead">For <strong>@CourseName</strong>. One workbook goes module by module: for each module it has a row for the <strong>seatwork</strong>, the <strong>assignment</strong>, the <strong>quiz</strong> and the <strong>task performance</strong>. Every row you fill in becomes one activity of its module.</p>
             <ol class="xl-steps">
                 <li>
-                    <strong>Get the template.</strong> It has the sheets Assignments, Quizzes, Quiz Questions, Task Performances, Seatwork and Recitations, an example and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
+                    <strong>Get the template.</strong> It lists the modules of this course, with the sheet Quiz Questions, an example and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
                     <div class="xl-row">
                         <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
-                        @if (Existing.Count > 0)
+                        @if (ExistingCount > 0)
                         {
-                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export what the module has (@Existing.Count)</Button>
+                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export what the course has (@ExistingCount)</Button>
                         }
                     </div>
                 </li>
                 <li>
-                    <strong>Fill the yellow cells</strong> and save with Ctrl+S as .xlsx. A question goes in the sheet Quiz Questions: choose its quiz from the list in the column Quiz. Type the names of the files of an activity in the column Files.
+                    <strong>Fill the yellow cells</strong> of the rows you want (a row with no title adds nothing) and save with Ctrl+S as .xlsx. The questions of a quiz go in the sheet Quiz Questions, with the title of the quiz in the column Quiz. Type the names of the files of an activity in the column Files.
                 </li>
                 <li>
                     <strong>Choose the workbook.</strong>
@@ -68,13 +68,13 @@
                 </p>
                 <div class="xl-table-wrap">
                     <table class="xl-table">
-                        <thead><tr><th scope="col">Sheet</th><th scope="col">Row</th><th scope="col">Title</th><th scope="col">Result</th></tr></thead>
+                        <thead><tr><th scope="col">Module</th><th scope="col">Row</th><th scope="col">Title</th><th scope="col">Result</th></tr></thead>
                         <tbody>
                             @foreach (var row in parsed.Rows)
                             {
                                 var problems = ProblemsOf(row);
                                 <tr class="@(problems.Count > 0 ? "failed" : "ok")">
-                                    <td>@row.Sheet</td>
+                                    <td>@(row.Work?.Module ?? row.Sheet)</td>
                                     <td>@row.Row</td>
                                     <td>@row.Title</td>
                                     <td>@(problems.Count > 0 ? string.Join(" ", problems) : Describe(row))</td>
@@ -93,7 +93,7 @@
         else
         {
             <p class="xl-summary" role="status">
-                <strong>@result.Created</strong> @(result.Created == 1 ? "activity was" : "activities were") added to the module.
+                <strong>@result.Created</strong> @(result.Created == 1 ? "activity was" : "activities were") added.
                 @if (result.Errors.Count > 0)
                 {
                     <span class="bad">@result.Errors.Count @(result.Errors.Count == 1 ? "problem" : "problems").</span>
@@ -131,11 +131,13 @@
 
     [Parameter] public bool Open { get; set; }
 
-    /// <summary>The module the activities go to, for the heading ("Module 2: Journal entries").</summary>
-    [Parameter] public string ModuleTitle { get; set; } = "";
+    /// <summary>The course the activities go to, for the heading.</summary>
+    [Parameter] public string CourseName { get; set; } = "";
 
-    /// <summary>What the module has now (the export).</summary>
-    [Parameter] public IReadOnlyList<ActivityExportItem> Existing { get; set; } = [];
+    /// <summary>The modules of the course with what they have now (the template lists the modules, the export has the work).</summary>
+    [Parameter] public IReadOnlyList<ActivityModuleExport> Modules { get; set; } = [];
+
+    private int ExistingCount => Modules.Sum(m => m.Items.Count);
 
     /// <summary>Saves the activities and says how many were added and what went wrong.</summary>
     [Parameter, EditorRequired] public Func<IReadOnlyList<ActivityToSave>, Task<ItemImportSummary>> OnImport { get; set; } = _ => Task.FromResult(new ItemImportSummary(0, []));
@@ -212,9 +214,9 @@
         return string.Join(" · ", parts);
     }
 
-    private async Task DownloadTemplateAsync() => await Downloads.SaveAsync(ActivitySheets.FileName("Template"), ActivitySheets.Template());
+    private async Task DownloadTemplateAsync() => await Downloads.SaveAsync(ActivitySheets.FileName("Template"), ActivitySheets.Template([.. Modules.Select(m => m.Title)]));
 
-    private async Task ExportAsync() => await Downloads.SaveAsync(ActivitySheets.FileName(ModuleTitle.Length == 0 ? "Module" : ModuleTitle), ActivitySheets.Export(Existing));
+    private async Task ExportAsync() => await Downloads.SaveAsync(ActivitySheets.FileName(CourseName.Length == 0 ? "Course" : CourseName), ActivitySheets.Export(Modules));
 
     private async Task FileChosenAsync(InputFileChangeEventArgs e)
     {

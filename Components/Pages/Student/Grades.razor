@@ -93,6 +93,19 @@ else
                         {
                             <p class="final-grade">Final grade from your teacher: <strong>@finalGrade.ToString("0.##")</strong> <Badge Tone="@GradeRules.ToneOf(finalGrade)">@GradeRules.Descriptor(finalGrade)</Badge></p>
                         }
+                        @if (s.HasExam)
+                        {
+                            <p class="final-grade">Summative exam:
+                                @if (s.ExamPercent is { } examGrade)
+                                {
+                                    <strong>@examGrade.ToString("0.#")%</strong> <Badge Tone="@GradeRules.ToneOf(examGrade)">@GradeRules.Descriptor(examGrade)</Badge>
+                                }
+                                else
+                                {
+                                    <span class="muted">not graded yet</span>
+                                }
+                            </p>
+                        }
                         <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
 
                         <h3 class="work-title">Assignments</h3>

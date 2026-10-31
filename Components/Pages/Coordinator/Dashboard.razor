@@ -88,6 +88,35 @@
             <p class="more"><a href="coordinator/announcements">All the announcements <Icon Name="arrow-right" Size="14" /></a></p>
         </Card>
     </div>
+
+    @* The school at a glance: which term it is (the calendar decides), and what the setup holds. *@
+    <Card Title="The school now" IconName="school">
+        <div class="school">
+            <div class="term-now">
+                @if (currentTerm is { } term)
+                {
+                    <span class="term-label">Current term</span>
+                    <strong class="term-name">@term.Name</strong>
+                    <span class="term-sub">@term.SchoolYear · @PhilippineTime.FormatDate(term.StartDate) to @PhilippineTime.FormatDate(term.EndDate)</span>
+                    <span class="term-sub">@TermProgress(term)</span>
+                }
+                else
+                {
+                    <span class="term-label">Current term</span>
+                    <strong class="term-name">No term yet</strong>
+                    <span class="term-sub">Add a school year and its terms in the academic setup.</span>
+                }
+            </div>
+            <dl class="numbers">
+                <div><dt>Tracks</dt><dd>@counts.Tracks</dd></div>
+                <div><dt>Strands</dt><dd>@counts.Strands</dd></div>
+                <div><dt>Courses</dt><dd>@counts.Subjects</dd></div>
+                <div><dt>Sections</dt><dd>@counts.Sections</dd></div>
+                <div><dt>Enrolled</dt><dd>@counts.Enrollments</dd></div>
+            </dl>
+        </div>
+        <p class="more"><a href="coordinator/academic-setup">Open the academic setup <Icon Name="arrow-right" Size="14" /></a></p>
+    </Card>
 }
 
 @code {
@@ -95,6 +124,19 @@
     private IReadOnlyList<EvaluationRow>? evaluations;
     private IReadOnlyList<AnnouncementView>? notices;
     private SetupCounts? counts;
+    private TermRow? currentTerm;
+
+    private string TermProgress(TermRow term)
+    {
+        var today = PhilippineTime.Today(Clock);
+        if (today < term.StartDate)
+        {
+            return $"Starts in {term.StartDate.DayNumber - today.DayNumber} days";
+        }
+
+        var left = term.EndDate.DayNumber - today.DayNumber;
+        return left < 0 ? "Over" : left == 0 ? "Its last day is today" : $"{left} days left";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -103,5 +145,6 @@
         evaluations = await Evaluations.ListAsync();
         notices = user is null ? [] : await Announcements.ListManagedAsync(user);
         counts = await Setup.GetCountsAsync();
+        currentTerm = (await Setup.ListTermsAsync()).FirstOrDefault(t => t.IsCurrent);
     }
 }

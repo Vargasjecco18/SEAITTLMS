@@ -9,15 +9,11 @@
     margin-bottom: 1.25rem;
 }
 
+/* Always four cards, in one row on a computer. */
 @media (min-width: 900px) {
     .stats {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1700px) {
-    .stats {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
     }
 }
 
@@ -30,6 +26,12 @@
 @media (min-width: 1000px) {
     .grid.two {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+
+    /* The cards of a row are as tall as each other, so there is no empty block under the shorter one. */
+    .grid.two ::deep > .card {
+        height: 100%;
     }
 }
 
@@ -72,15 +74,17 @@
 
 .stack-row {
     display: grid;
-    grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) 2rem;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) 2rem;
     align-items: center;
     gap: 0.75rem;
 }
 
 .stack-label {
+    overflow: hidden;
     font-size: 0.88rem;
     font-weight: 600;
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .stack {
@@ -297,4 +301,19 @@
         grid-column: 1 / -1;
         grid-row: 2;
     }
+}
+
+.students-bar {
+    max-width: 24rem;
+}
+
+.students-table .sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.students-table .none-opened {
+    color: var(--danger);
+    font-weight: 700;
 }

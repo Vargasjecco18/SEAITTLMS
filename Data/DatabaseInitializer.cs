@@ -13,7 +13,8 @@ public sealed class DatabaseInitializer(
     IDbContextFactory<AppDbContext> dbFactory,
     UserAccountService accounts,
     IConfiguration configuration,
-    ILogger<DatabaseInitializer> logger)
+    ILogger<DatabaseInitializer> logger,
+    TimeProvider? clock = null)
 {
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -28,6 +29,7 @@ public sealed class DatabaseInitializer(
 
             await AllowBigFilesAsync(ct);
             await EnsureAdministratorAsync(ct);
+            await Services.TermClock.SyncAsync(dbFactory, clock ?? TimeProvider.System, ct);
         }
         catch (Exception ex)
         {

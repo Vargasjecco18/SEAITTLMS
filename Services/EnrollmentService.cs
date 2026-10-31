@@ -97,7 +97,8 @@ public sealed partial class EnrollmentService(
     IDbContextFactory<AppDbContext> dbFactory,
     PasswordHasher hasher,
     IOptions<EnrollmentOptions> options,
-    SystemSettingsService? settings = null)
+    SystemSettingsService? settings = null,
+    TimeProvider? clock = null)
 {
     /// <summary>How many students one section can have (System Settings; 40 until the administrator changes it).</summary>
     public int SectionCapacity => settings?.Current.SectionCapacity ?? new SystemSettingsValues().SectionCapacity;
@@ -115,10 +116,16 @@ public sealed partial class EnrollmentService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
-        var terms = await db.Terms.AsNoTracking()
+        // The term is decided by the calendar: the registrar enrolls for the term that is running (or the one that starts next). A term that is over is not offered any more;
+        // its enrollments stay in the lists.
+        var today = Components.Shared.PhilippineTime.Today(clock ?? TimeProvider.System);
+        var all = await db.Terms.AsNoTracking()
             .OrderByDescending(t => t.SchoolYear.StartDate).ThenBy(t => t.TermNumber)
-            .Select(t => new TermOption(t.Id, t.Name, t.TermNumber, t.SchoolYear.Name, t.IsCurrent))
+            .Select(t => new { t.Id, t.Name, t.TermNumber, SchoolYear = t.SchoolYear.Name, t.StartDate, t.EndDate })
             .ToListAsync(ct);
+        var currentId = TermClock.CurrentId(all.Select(t => (t.Id, t.StartDate, t.EndDate)), today);
+        var terms = all.Where(t => !TermClock.IsEnded(t.EndDate, today) || t.Id == currentId)
+            .Select(t => new TermOption(t.Id, t.Name, t.TermNumber, t.SchoolYear, t.Id == currentId)).ToList();
 
         var tracks = await db.Tracks.AsNoTracking().Where(t => t.IsActive).OrderBy(t => t.Id)
             .Select(t => new TrackOption(t.Id, t.Code, t.Name))

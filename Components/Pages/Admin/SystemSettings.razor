@@ -14,19 +14,36 @@
 
 @if (form is not null)
 {
+    @* What is true now: is the system open for everybody, and how are backups made. The cards below change it. *@
+    <div class="status-strip">
+        <span class="status @(Settings.Current.MaintenanceOn ? "closed" : "open")" id="s-status">
+            <Icon Name="@(Settings.Current.MaintenanceOn ? "triangle-alert" : "circle-check")" Size="18" />
+            <span><strong>@(Settings.Current.MaintenanceOn ? "Closed for maintenance" : "The system is open")</strong><small>@(Settings.Current.MaintenanceOn ? "Only administrators can use it" : "Everybody can sign in")</small></span>
+        </span>
+        <span class="status neutral">
+            <Icon Name="database-backup" Size="18" />
+            <span><strong>@(Settings.Current.AutoBackupOn ? $"Backup every day from {PhilippineTime.HourText(Settings.Current.AutoBackupHour)}" : "No automatic backup")</strong><small>Keeps the newest @Settings.Current.BackupsToKeep</small></span>
+        </span>
+        <span class="status neutral">
+            <Icon Name="folder-open" Size="18" />
+            <span><strong>@Settings.Current.MaxFileMegabytes MB a file</strong><small>@Settings.Current.LockerMegabytes MB a locker</small></span>
+        </span>
+    </div>
+
     <form id="settings-form" class="grid" @onsubmit="SaveAsync">
-        <Card Title="Maintenance" IconName="settings-2">
+        <Card Title="Maintenance" IconName="settings-2" Class="setting">
             <p class="note">While maintenance is on, only administrators can sign in or use the system. Everybody else sees the message below.</p>
-            <label class="check">
-                <input id="s-maintenance" type="checkbox" @bind="form.MaintenanceOn" />
-                <span><strong>Close the system for maintenance</strong><small>People who are signed in are sent to the message when they open another page.</small></span>
+            <label class="check toggle">
+                <input id="s-maintenance" type="checkbox" role="switch" @bind="form.MaintenanceOn" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="check-text"><strong>Close the system for maintenance</strong><small>People who are signed in are sent to the message when they open another page.</small></span>
             </label>
             <Field For="s-message" Label="Message">
                 <textarea id="s-message" class="input" rows="3" maxlength="300" @bind="form.MaintenanceMessage"></textarea>
             </Field>
         </Card>
 
-        <Card Title="Files and lockers" IconName="folder-open">
+        <Card Title="Files and lockers" IconName="folder-open" Class="setting">
             <p class="note">What people can upload: a file in a locker, an attachment of a module or a file sent in a message.</p>
             <div class="two">
                 <Field For="s-max-file" Label="Biggest file (MB)" Hint="From 1 to 1000. Each file can be this big.">
@@ -45,7 +62,7 @@
             }
         </Card>
 
-        <Card Title="Notification sound of the school" IconName="bell">
+        <Card Title="Notification sound of the school" IconName="bell" Class="setting">
             <p class="note">The sound people hear when a new message or notification arrives, unless they chose another one in their Settings. Without a file, the browser plays two short tones.</p>
             @if (schoolSound is { } current)
             {
@@ -73,11 +90,12 @@
             }
         </Card>
 
-        <Card Title="Backups and the log" IconName="database-backup">
+        <Card Title="Backups and the log" IconName="database-backup" Class="setting">
             <p class="note">The backups themselves are made on the <a href="admin/backups">Database Backup &amp; Restore</a> page.</p>
-            <label class="check">
-                <input id="s-auto" type="checkbox" @bind="form.AutoBackupOn" />
-                <span><strong>Make a backup by itself every day</strong><small>The system must be running at that time.</small></span>
+            <label class="check toggle">
+                <input id="s-auto" type="checkbox" role="switch" @bind="form.AutoBackupOn" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="check-text"><strong>Make a backup by itself every day</strong><small>The system must be running at that time.</small></span>
             </label>
             <div class="two">
                 <Field For="s-auto-hour" Label="From this hour (Philippine time)">
@@ -98,8 +116,9 @@
         </Card>
 
         <div class="save-bar">
-            <Button Type="submit" IconName="save" Disabled="@busy">@(busy ? "Saving…" : "Save settings")</Button>
+            <span class="save-hint">Changes count once you press Save settings.</span>
             <Button Variant="ButtonVariant.Ghost" IconName="rotate-ccw" Disabled="@busy" OnClick="Reload">Undo my changes</Button>
+            <Button Type="submit" IconName="save" Disabled="@busy">@(busy ? "Saving…" : "Save settings")</Button>
         </div>
     </form>
 }

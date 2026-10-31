@@ -37,6 +37,13 @@ public sealed record AnalyticsReport(
     string PerformanceTitle, IReadOnlyList<GroupPerformance> Performance);
 
 /// <summary>One student in one course, as the analytics file lists them: the grade, how it is, the work missed and the attendance.</summary>
+/// <summary>
+/// One student in one course of a teacher: how many of the posted modules the student opened, how many of the activities that are open the student opened, how many were handed in, and the
+/// progress (handed in of what is open).
+/// </summary>
+public sealed record StudentActivityRow(
+    int StudentId, string Student, string Lrn, string Section, string Course, int ModulesOpened, int Modules, int ItemsOpened, int Items, int HandedIn, int? Progress);
+
 public sealed record StudentResultRow(string Student, string Lrn, string Section, string Course, decimal? Grade, string Status, int Missing, int Present, int Late, int Absent, decimal? Attendance);
 
 /// <summary>
@@ -70,6 +77,64 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
     {
         var list = metrics.ToList();
         return AttendanceService.Rate(list.Sum(m => m.Present), list.Sum(m => m.Late), list.Sum(m => m.Absent));
+    }
+
+    /// <summary>
+    /// Every student of a teacher's courses, course by course, with what they opened and how far they are: the modules opened, the activities (seatwork, assignments, quizzes, task performances and
+    /// exams that are open now) opened, and the progress. They are the students the teacher teaches, so the teacher sees at once who has not even opened the lessons.
+    /// </summary>
+    public async Task<IReadOnlyList<StudentActivityRow>> GetTeacherStudentsAsync(int teacherId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var assignments = await db.TeachingAssignments.AsNoTracking().Where(a => a.TeacherId == teacherId)
+            .Select(a => new { a.Id, a.SectionId, a.SubjectId, Subject = a.Subject.Name, a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
+            .ToListAsync(ct);
+        if (assignments.Count == 0)
+        {
+            return [];
+        }
+
+        var assignmentIds = assignments.Select(a => a.Id).ToList();
+        var sectionIds = assignments.Select(a => a.SectionId).Distinct().ToList();
+        var roster = (await db.EnrollmentSubjects.AsNoTracking()
+            .Where(x => x.Enrollment.Status == EnrollmentStatus.Enrolled && sectionIds.Contains(x.Enrollment.SectionId))
+            .Select(x => new { x.Enrollment.SectionId, x.SubjectId, x.Enrollment.StudentId, x.Enrollment.Student.FirstName, x.Enrollment.Student.LastName, x.Enrollment.Student.Lrn, x.Enrollment.Student.User.IsActive })
+            .ToListAsync(ct)).Where(x => x.IsActive).ToList();
+
+        var modules = await db.Modules.AsNoTracking()
+            .Where(m => assignmentIds.Contains(m.AssignmentId) && !m.IsExamSet && m.VisibleFromUtc != null && m.VisibleFromUtc <= now)
+            .Select(m => new { m.Id, m.AssignmentId, m.IsSyllabus }).ToListAsync(ct);
+        var moduleIds = modules.Select(m => m.Id).ToList();
+        var moduleViews = (await db.ModuleViews.AsNoTracking().Where(v => moduleIds.Contains(v.ModuleId)).Select(v => new { v.StudentId, v.ModuleId }).ToListAsync(ct))
+            .GroupBy(v => v.ModuleId).ToDictionary(g => g.Key, g => g.Select(v => v.StudentId).ToHashSet());
+
+        var items = await db.ModuleItems.AsNoTracking()
+            .Where(i => assignmentIds.Contains(i.Module.AssignmentId) && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now && (i.VisibleFromUtc == null || i.VisibleFromUtc <= now))
+            .Select(i => new { i.Id, i.Module.AssignmentId }).ToListAsync(ct);
+        var itemIds = items.Select(i => i.Id).ToList();
+        var itemViews = (await db.ItemViews.AsNoTracking().Where(v => itemIds.Contains(v.ItemId)).Select(v => new { v.StudentId, v.ItemId }).ToListAsync(ct))
+            .GroupBy(v => v.ItemId).ToDictionary(g => g.Key, g => g.Select(v => v.StudentId).ToHashSet());
+        var handedIn = (await db.Submissions.AsNoTracking().Where(s => itemIds.Contains(s.ItemId) && s.Status != SubmissionStatus.InProgress).Select(s => new { s.StudentId, s.ItemId }).ToListAsync(ct))
+            .GroupBy(s => s.ItemId).ToDictionary(g => g.Key, g => g.Select(s => s.StudentId).ToHashSet());
+
+        var rows = new List<StudentActivityRow>();
+        foreach (var a in assignments)
+        {
+            var section = TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section);
+            var myModules = modules.Where(m => m.AssignmentId == a.Id).Select(m => m.Id).ToList();
+            var myItems = items.Where(i => i.AssignmentId == a.Id).Select(i => i.Id).ToList();
+            foreach (var st in roster.Where(r => r.SectionId == a.SectionId && r.SubjectId == a.SubjectId).DistinctBy(r => r.StudentId))
+            {
+                var modulesOpened = myModules.Count(id => moduleViews.TryGetValue(id, out var who) && who.Contains(st.StudentId));
+                var itemsOpened = myItems.Count(id => itemViews.TryGetValue(id, out var who) && who.Contains(st.StudentId));
+                var done = myItems.Count(id => handedIn.TryGetValue(id, out var who) && who.Contains(st.StudentId));
+                rows.Add(new StudentActivityRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, section, a.Subject, modulesOpened, myModules.Count, itemsOpened, myItems.Count, done,
+                    myItems.Count == 0 ? null : (int)Math.Round(100.0 * done / myItems.Count, MidpointRounding.AwayFromZero)));
+            }
+        }
+
+        return [.. rows.OrderBy(r => r.Course).ThenBy(r => r.Section).ThenBy(r => r.Student)];
     }
 
     /// <summary>

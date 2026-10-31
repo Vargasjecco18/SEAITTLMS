@@ -29,12 +29,11 @@ else if (data.Sent == 0)
 }
 else
 {
-    <div class="kpis five">
-        <StatCard Label="Opened by the teachers" Text="@($"{data.TeacherOpenedPercent}%")" IconName="eye" Accent="@Level(data.TeacherOpenedPercent)" Hint="@($"of {data.Sent:N0} sent")" />
-        <StatCard Label="Teachers open it in" Text="@ProviderUi.Duration(data.AverageHoursToOpen)" IconName="timer" Accent="AccentColor.Slate" Hint="On average" />
+    <div class="kpis">
+        <StatCard Label="Opened by the teachers" Text="@($"{data.TeacherOpenedPercent}%")" IconName="eye" Accent="@Level(data.TeacherOpenedPercent)" Hint="@($"of {data.Sent:N0} sent · in {ProviderUi.Duration(data.AverageHoursToOpen)} on average")" />
         <StatCard Label="Posted to the students" Text="@($"{data.PostedPercent}%")" IconName="circle-check" Accent="@Level(data.PostedPercent)" Hint="@(data.AverageHoursToPost is null ? "None posted" : $"after {ProviderUi.Duration(data.AverageHoursToPost)}")" />
         <StatCard Label="Modules opened by students" Text="@($"{data.StudentModulePercent}%")" IconName="book-open" Accent="@Level(data.StudentModulePercent)" Hint="Syllabi and modules posted" />
-        <StatCard Label="Assignments opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Assignments, quizzes and tasks" />
+        <StatCard Label="Activities opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Posted exams and activities" />
     </div>
 
     <div class="pcards">

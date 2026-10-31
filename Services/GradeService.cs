@@ -39,7 +39,21 @@ public sealed record GradedWork(int ItemId, string Title, string Kind, decimal S
 
 public sealed record SubjectGrade(
     int AssignmentId, string SubjectName, string TeacherName, string SectionLabel, decimal? Percent,
-    int GradedCount, int TotalItems, int OpenItems, int Missing, IReadOnlyList<GradedWork> Graded, decimal? FinalGrade = null);
+    int GradedCount, int TotalItems, int OpenItems, int Missing, IReadOnlyList<GradedWork> Graded, decimal? FinalGrade = null)
+{
+    /// <summary>The grade of the summative exam (the percent of its points; the average when there is more than one), or nothing until an exam is graded.</summary>
+    public decimal? ExamPercent
+    {
+        get
+        {
+            var exams = Graded.Where(g => g.Kind == ItemKinds.Exam && g.Max > 0).ToList();
+            return exams.Count == 0 ? null : Math.Round(exams.Sum(e => e.Score) / exams.Sum(e => e.Max) * 100, 1);
+        }
+    }
+
+    /// <summary>True when the course has a summative exam (graded or not).</summary>
+    public bool HasExam { get; init; }
+}
 
 public sealed record StudentGradeSummary(IReadOnlyList<SubjectGrade> Subjects, decimal? Overall, int FailingSubjects, int GradedCount)
 {
@@ -94,7 +108,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
             var open = mine.Count(i => i.Mine is null or { Status: SubmissionStatus.InProgress });
             var missing = mine.Count(i => (i.Mine is null or { Status: SubmissionStatus.InProgress }) && i.DueAtUtc is { } due && due < now);
 
-            subjects.Add(new SubjectGrade(a.Id, a.SubjectName, a.Teacher, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), percent, graded.Count, mine.Count, open, missing, graded, finals.TryGetValue(a.Id, out var final) ? final : null));
+            subjects.Add(new SubjectGrade(a.Id, a.SubjectName, a.Teacher, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), percent, graded.Count, mine.Count, open, missing, graded, finals.TryGetValue(a.Id, out var final) ? final : null) { HasExam = mine.Any(i => i.Kind == ItemKinds.Exam) });
         }
 
         var withGrade = subjects.Where(s => s.Percent is not null).ToList();

@@ -76,7 +76,7 @@
                             <td>@(student.Strand ?? "—")</td>
                             <td>@(student.Placement ?? "—")</td>
                             <td>
-                                @if (student.Referrals.Count == 0)
+                                @if (!student.HasOpen)
                                 {
                                     <span class="muted">None</span>
                                 }
@@ -91,7 +91,7 @@
                                 }
                             </td>
                             <td class="col-actions">
-                                <Button Small="true" Variant="@(student.Referrals.Count == 0 ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="shield-alert" OnClick="() => ViewAll(student)">At risk</Button>
+                                <Button Small="true" Variant="@(student.HasOpen ? ButtonVariant.Danger : ButtonVariant.Secondary)" IconName="shield-alert" Title="@(student.HasOpen ? "A concern is open: press to see it" : "No concern now: press to add one")" OnClick="() => ViewAll(student)">At risk</Button>
                             </td>
                         </tr>
                     }
@@ -110,15 +110,23 @@
     }
 </Card>
 
-@* ===== One student: their concerns, and a place to add one ===== *@
+@* ===== One student: their concerns (Notes and Solved at the top right), the earlier ones, and a place to add one ===== *@
 <Modal Open="viewing is not null" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
     @if (viewing is not null)
     {
-        <p class="sub all-sub">@viewing.Lrn@(viewing.GradeLevel is { } viewLevel ? $" · Grade {viewLevel}" : "")@(viewing.Strand is null ? "" : " · " + viewing.Strand)@(viewing.Placement is null ? "" : " · " + viewing.Placement)</p>
+        <div class="modal-top">
+            <p class="sub all-sub">@viewing.Lrn@(viewing.GradeLevel is { } viewLevel ? $" · Grade {viewLevel}" : "")@(viewing.Strand is null ? "" : " · " + viewing.Strand)@(viewing.Placement is null ? "" : " · " + viewing.Placement)</p>
+            <div class="top-actions">
+                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Disabled="@(!viewing.HasOpen)" OnClick="OpenNotes">Notes</Button>
+                <Button Small="true" IconName="circle-check" Disabled="@(busy || !viewing.HasOpen)" OnClick="SolveAsync">Solved</Button>
+            </div>
+        </div>
 
-        @if (viewing.Referrals.Count == 0)
+        <FormErrors Errors="formErrors" />
+
+        @if (viewing.OpenReferrals.Count == 0)
         {
-            <p class="muted none-yet">No concern yet.</p>
+            <p class="muted none-yet">No concern now.</p>
         }
         else
         {
@@ -129,31 +137,42 @@
                             <th scope="col">Concern</th>
                             <th scope="col">What was found or what happened</th>
                             <th scope="col" class="col-more">Since</th>
-                            <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var r in viewing.Referrals)
+                        @foreach (var group in Grouped(viewing.OpenReferrals))
                         {
+                            var first = group.Rows[0];
                             <tr>
                                 <td>
-                                    <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r.Reason)">@ReferralReasons.Display(r.Reason)</Badge>
-                                    @if (r.SubjectName is not null)
-                                    {
-                                        <span class="sub">@r.SubjectName@(r.TeacherName is null ? "" : " · " + r.TeacherName)</span>
-                                    }
+                                    <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(group.Reason)">@ReferralReasons.Display(group.Reason)</Badge>
                                 </td>
                                 <td>
-                                    <span class="detail">@r.Detail</span>
-                                    @if (!string.IsNullOrWhiteSpace(r.Intervention))
+                                    @if (group.Rows.Count > 1)
                                     {
-                                        <span class="sub">Help: @r.Intervention</span>
+                                        @* Several attendance concerns found on the same day: one line with a button that shows each course. *@
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="@(openGroups.Contains(group.Key) ? "chevron-up" : "eye")" OnClick="() => ToggleGroup(group.Key)">@(openGroups.Contains(group.Key) ? "Hide attendance" : $"View attendance ({group.Rows.Count} courses)")</Button>
+                                        @if (openGroups.Contains(group.Key))
+                                        {
+                                            <ul class="attendance-list">
+                                                @foreach (var line in group.Rows)
+                                                {
+                                                    <li>@line.Detail</li>
+                                                }
+                                            </ul>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="detail">@first.Detail</span>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(first.Intervention))
+                                    {
+                                        <span class="sub">Help: @first.Intervention</span>
                                     }
                                 </td>
-                                <td class="col-more">@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
-                                <td class="col-actions">
-                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenAsync(r)">Notes</Button>
-                                </td>
+                                <td class="col-more">@PhilippineTime.FormatDate(group.Since)</td>
                             </tr>
                         }
                     </tbody>
@@ -161,20 +180,53 @@
             </div>
         }
 
+        @if (viewing.PreviousReferrals.Count > 0)
+        {
+            <div class="previous-bar">
+                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="history" OnClick="() => showPrevious = !showPrevious">@(showPrevious ? "Hide previous concerns" : $"Previous concerns ({viewing.PreviousReferrals.Count})")</Button>
+            </div>
+            @if (showPrevious)
+            {
+                <ul class="previous-list">
+                    @foreach (var old in viewing.PreviousReferrals)
+                    {
+                        <li>
+                            <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(old.Reason)">@ReferralReasons.Display(old.Reason)</Badge>
+                            <span class="detail">@old.Detail</span>
+                            <span class="sub">Since @PhilippineTime.FormatDate(old.CreatedAtUtc)@(old.ResolvedAtUtc is { } solved ? $" · solved {PhilippineTime.FormatDate(solved)}" : "")@(string.IsNullOrWhiteSpace(old.Intervention) ? "" : $" · help: {old.Intervention}")</span>
+                            @if (!string.IsNullOrWhiteSpace(old.Notes))
+                            {
+                                <span class="sub">Notes: @old.Notes</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        }
+
         <h3 class="add-title">Add a concern</h3>
-        <FormErrors Errors="formErrors" />
         <div class="two">
             <Field For="a-reason" Label="What is it?" Required="true">
-                <select id="a-reason" value="@newReason" @onchange="e => newReason = e.Value?.ToString() ?? ReferralReasons.Violation">
+                <select id="a-reason" value="@newReason" @onchange="ReasonPicked">
+                    <option value="">None</option>
                     @foreach (var r in ReferralReasons.All)
                     {
                         <option value="@r" selected="@(newReason == r)">@ReferralReasons.Display(r)</option>
                     }
                 </select>
             </Field>
+            <Field For="a-happened" Label="What happened?" Required="true">
+                <select id="a-happened" value="@newHappened" disabled="@(newReason == "")" @onchange="e => newHappened = e.Value?.ToString() ?? string.Empty">
+                    <option value="">@(newReason == "" ? "Choose what it is first" : "Choose what happened")</option>
+                    @foreach (var choice in newReason == "" ? [] : ReferralService.HappenedChoices(newReason))
+                    {
+                        <option value="@choice" selected="@(newHappened == choice)">@choice</option>
+                    }
+                </select>
+            </Field>
         </div>
-        <Field For="a-detail" Label="What happened?" Required="true" Hint="Only you can read this.">
-            <textarea id="a-detail" rows="3" maxlength="500" value="@newDetail" @onchange="e => newDetail = e.Value?.ToString() ?? string.Empty"></textarea>
+        <Field For="a-more" Label="More about it" Hint="Optional. Only you can read this.">
+            <textarea id="a-more" rows="2" maxlength="400" value="@newMore" @onchange="e => newMore = e.Value?.ToString() ?? string.Empty"></textarea>
         </Field>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseViewAll">Close</Button>
@@ -183,16 +235,10 @@
     }
 </Modal>
 
-@* ===== The help given and the notes of one concern ===== *@
-<Modal Open="current is not null" Title="@(current?.StudentName ?? "")" OnClose="Close" Large="true">
-    @if (current is not null)
+@* ===== The help given and the notes of the student ===== *@
+<Modal Open="notesOpen" Title="@($"Notes · {viewing?.StudentName}")" OnClose="CloseNotes">
+    @if (notesOpen && viewing is not null)
     {
-        <div class="facts">
-            <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(current.Reason)">@ReferralReasons.Display(current.Reason)</Badge>
-            <span>@current.Detail</span>
-        </div>
-        <p class="sub">@current.Lrn@(current.GradeLevel is { } level ? $" · Grade {level}" : "")@(current.Strand is null ? "" : " · " + current.Strand)@(current.Placement is null ? "" : " · " + current.Placement)@(current.SubjectName is null ? "" : " · " + current.SubjectName)@(current.TeacherName is null ? "" : " · teacher " + current.TeacherName) · since @PhilippineTime.FormatDate(current.CreatedAtUtc)</p>
-
         <FormErrors Errors="formErrors" />
 
         <Field For="w-help" Label="Help given">
@@ -210,7 +256,7 @@
         </Field>
 
         <div class="modal-actions">
-            <Button Variant="ButtonVariant.Ghost" OnClick="Close">Cancel</Button>
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseNotes">Cancel</Button>
             <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save")</Button>
         </div>
     }
@@ -226,15 +272,18 @@
     private int userId;
     private string show = "all";
     private string reason = "";
-    private string newReason = ReferralReasons.Violation;
-    private string newDetail = "";
+    private string newReason = "";
+    private string newHappened = "";
+    private string newMore = "";
+    private bool showPrevious;
+    private bool notesOpen;
+    private readonly HashSet<string> openGroups = [];
     private string grade = "";
     private string searchText = "";
     private string appliedSearch = "";
     private int pageNumber = 1;
     private ReferralStudentPage? result;
     private ReferralStudentRow? viewing;
-    private ReferralRow? current;
     private string editIntervention = "";
     private string editNotes = "";
     private string? message;
@@ -277,12 +326,41 @@
     private void ViewAll(ReferralStudentRow student)
     {
         formErrors = [];
-        newReason = ReferralReasons.Violation;
-        newDetail = "";
+        newReason = "";
+        newHappened = "";
+        newMore = "";
+        showPrevious = false;
+        openGroups.Clear();
         viewing = student;
     }
 
-    private void CloseViewAll() => viewing = null;
+    private void CloseViewAll()
+    {
+        viewing = null;
+        notesOpen = false;
+    }
+
+    private void ReasonPicked(ChangeEventArgs e)
+    {
+        newReason = e.Value?.ToString() ?? "";
+        newHappened = "";
+    }
+
+    private void ToggleGroup(string key)
+    {
+        if (!openGroups.Remove(key))
+        {
+            openGroups.Add(key);
+        }
+    }
+
+    /// <summary>One line of the list of concerns: attendance concerns found on the same day are one line (View attendance shows each course); a violation is a line of its own.</summary>
+    private sealed record ConcernGroup(string Key, string Reason, DateTime Since, IReadOnlyList<ReferralRow> Rows);
+
+    private static IReadOnlyList<ConcernGroup> Grouped(IReadOnlyList<ReferralRow> open) =>
+        [.. open.GroupBy(r => r.Reason == ReferralReasons.LowAttendance ? $"{r.Reason}-{PhilippineTime.DayOf(r.CreatedAtUtc):yyyyMMdd}" : $"{r.Reason}-{r.Id}")
+            .Select(g => new ConcernGroup(g.Key, g.First().Reason, g.Min(r => r.CreatedAtUtc), [.. g.OrderBy(r => r.SubjectName)]))
+            .OrderByDescending(g => g.Since)];
 
     private async Task ShowChanged(ChangeEventArgs e)
     {
@@ -301,7 +379,7 @@
         busy = true;
         try
         {
-            var saved = await Desk.AddConcernAsync(viewing.StudentId, newReason, newDetail, userId);
+            var saved = await Desk.AddConcernAsync(viewing.StudentId, newReason, newHappened, newMore, userId);
             if (!saved.Succeeded)
             {
                 formErrors = [.. saved.Errors];
@@ -309,7 +387,9 @@
             }
 
             formErrors = [];
-            newDetail = "";
+            newReason = "";
+            newHappened = "";
+            newMore = "";
             messageIsError = false;
             message = saved.Message;
             await LoadAsync();
@@ -354,22 +434,25 @@
         await LoadAsync();
     }
 
-    private async Task OpenAsync(ReferralRow row)
+    private void OpenNotes()
     {
-        formErrors = [];
-        current = await Desk.GetAsync(row.Id);
-        if (current is not null)
+        if (viewing is null)
         {
-            editIntervention = current.Intervention ?? "";
-            editNotes = current.Notes ?? "";
+            return;
         }
+
+        formErrors = [];
+        var latest = viewing.OpenReferrals.OrderByDescending(r => r.CreatedAtUtc).FirstOrDefault();
+        editIntervention = latest?.Intervention ?? "";
+        editNotes = latest?.Notes ?? "";
+        notesOpen = true;
     }
 
-    private void Close() => current = null;
+    private void CloseNotes() => notesOpen = false;
 
     private async Task SaveAsync()
     {
-        if (current is null || busy)
+        if (viewing is null || busy)
         {
             return;
         }
@@ -377,17 +460,46 @@
         busy = true;
         try
         {
-            var saved = await Desk.UpdateAsync(current.Id, ReferralStatus.InProgress, editIntervention, editNotes, null, userId);
+            var saved = await Desk.SaveStudentNotesAsync(viewing.StudentId, editIntervention, editNotes, userId);
             if (!saved.Succeeded)
             {
                 formErrors = [.. saved.Errors];
                 return;
             }
 
-            var name = current.StudentName;
-            current = null;
+            notesOpen = false;
             messageIsError = false;
-            message = $"{name}: {saved.Message}";
+            message = $"{viewing.StudentName}: {saved.Message}";
+            await LoadAsync();
+            await RefreshViewingAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    /// <summary>Solved: the concerns move to Previous concerns and the At risk button of the student is white again.</summary>
+    private async Task SolveAsync()
+    {
+        if (viewing is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var solved = await Desk.SolveStudentAsync(viewing.StudentId, userId);
+            if (!solved.Succeeded)
+            {
+                formErrors = [.. solved.Errors];
+                return;
+            }
+
+            formErrors = [];
+            messageIsError = false;
+            message = solved.Message;
             await LoadAsync();
             await RefreshViewingAsync();
         }

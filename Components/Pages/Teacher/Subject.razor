@@ -28,7 +28,7 @@ else
     <PageHeader Title="@($"{subject.SubjectName} · {subject.SectionLabel}")"
                 IconName="book-open">
         <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
-        <AddItemMenu Modules="AddMenuModules" OnPick="PickNew" />
+        <Button IconName="plus" OnClick="OpenActivitiesAsync">Add activities</Button>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
@@ -211,7 +211,7 @@ else
             <FormErrors Errors="formErrors" />
             @if (editingItemId is null)
             {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExcelFromForm">Fill many from an Excel file instead</Button></p>
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExcelFromForm">Fill many from an Excel file instead (Add activities)</Button></p>
             }
 
             <Field For="i-title" Label="Title" Required="true">
@@ -260,9 +260,8 @@ else
     }
 </Modal>
 
-@* ===== Excel: template, import, export of the assignments, quizzes or task performances of a module ===== *@
-<ItemExcelDialog Open="excelModule is not null" Kind="@excelKind" ModuleTitle="@(excelModule?.Title ?? "")" Existing="ExcelExisting" OnImport="ImportItemsAsync" OnClose="CloseExcel" />
-<ActivitiesExcelDialog Open="activitiesModule is not null" ModuleTitle="@(activitiesModule?.Title ?? "")" Existing="activitiesExisting" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
+@* ===== Add activities: the Excel template and import for the seatwork, assignments, quizzes and task performances of all the modules ===== *@
+<ActivitiesExcelDialog Open="activitiesOpen" CourseName="@(subject?.SubjectName ?? "")" Modules="activitiesModules" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
 
 @* ===== Delete ===== *@
 <Modal Open="deleteTarget is not null" Title="@(deleteTarget?.Title ?? "")" OnClose="CloseDelete">
@@ -332,88 +331,78 @@ else
     /// <summary>The page where the module is read inside the system, with the file pressed shown (a file the browser can't show is saved instead).</summary>
     private string? ReaderHref(int moduleId, AttachmentRow file) => file.CanPreview ? $"teacher/subjects/{AssignmentId}/modules/{moduleId}?file={file.Id}" : null;
 
-    // ---------------------------------------------------------------- Excel
+    // ---------------------------------------------------------------- Add activities (the Excel workbook of the course)
 
-    private TeacherModule? excelModule;
-    private string excelKind = ItemKinds.Activity;
+    private bool activitiesOpen;
+    private IReadOnlyList<ActivityModuleExport> activitiesModules = [];
 
-    private IReadOnlyList<ItemExportRow> ExcelExisting => excelModule is null ? [] :
-        [.. excelModule.Items.Where(i => i.Kind == excelKind).Select(i => new ItemExportRow(i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, i.TimeLimitMinutes))];
-
-    private void OpenExcel(TeacherModule module, string kind)
+    /// <summary>The modules of the course (not the syllabus, not the box of the exams) as the workbook lists them, with the work they have now.</summary>
+    private async Task OpenActivitiesAsync()
     {
-        excelModule = module;
-        excelKind = kind;
-    }
-
-    private void CloseExcel() => excelModule = null;
-
-    // ---- the workbook of activities (assignments, quizzes with their questions, task performances) of a module
-
-    private TeacherModule? activitiesModule;
-    private IReadOnlyList<ActivityExportItem> activitiesExisting = [];
-
-    private async Task OpenActivitiesAsync(TeacherModule module)
-    {
-        var list = new List<ActivityExportItem>();
-        foreach (var i in module.Items.Where(i => ItemKinds.All.Contains(i.Kind)))
-        {
-            var questions = i.Kind == ItemKinds.Quiz ? await Modules.GetQuestionsAsync(teacherId, i.Id) ?? [] : [];
-            list.Add(new ActivityExportItem(i.Kind, new ItemExportRow(i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, i.TimeLimitMinutes), questions, [.. FilesOf(itemFiles, i.Id).Select(f => f.Name)]));
-        }
-
-        activitiesExisting = list;
-        activitiesModule = module;
-    }
-
-    private void CloseActivities() => activitiesModule = null;
-
-    /// <summary>Every row of the workbook is saved like the box saves one item, so the same rules hold; the questions of a quiz and the files follow it.</summary>
-    private async Task<ItemImportSummary> ImportActivitiesAsync(IReadOnlyList<ActivityToSave> list)
-    {
-        var moduleId = activitiesModule?.Id ?? 0;
-        var userId = await UserIdAsync();
-        var summary = await ActivityImport.RunAsync(list,
-            input => Modules.SaveItemAsync(teacherId, moduleId, null, input),
-            (id, questions) => Modules.SaveQuestionsAsync(teacherId, id, questions),
-            (id, files) => Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.Item, id), files));
-        await LoadAsync();
-        return summary;
-    }
-
-    private void OpenExcelFromForm()
-    {
-        if (itemForm is null || subject?.Modules.FirstOrDefault(m => m.Id == itemModuleId) is not { } module)
+        if (subject is null)
         {
             return;
         }
 
-        var kind = itemForm.Kind;
-        itemForm = null;
-        OpenExcel(module, kind);
+        var list = new List<ActivityModuleExport>();
+        foreach (var module in subject.Modules.Where(m => !m.IsSyllabus && !m.IsExamSet))
+        {
+            var items = new List<ActivityExportItem>();
+            foreach (var i in module.Items.Where(i => ItemKinds.All.Contains(i.Kind)))
+            {
+                var questions = i.Kind == ItemKinds.Quiz ? await Modules.GetQuestionsAsync(teacherId, i.Id) ?? [] : [];
+                items.Add(new ActivityExportItem(i.Kind, new ItemExportRow(i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, i.TimeLimitMinutes), questions, [.. FilesOf(itemFiles, i.Id).Select(f => f.Name)]));
+            }
+
+            list.Add(new ActivityModuleExport(module.Title, items));
+        }
+
+        activitiesModules = list;
+        activitiesOpen = true;
     }
 
-    /// <summary>Every row of the Excel file is saved like the box saves one item, so the same rules hold (title, score, dates).</summary>
-    private async Task<ItemImportSummary> ImportItemsAsync(IReadOnlyList<ItemInput> inputs)
+    private void CloseActivities() => activitiesOpen = false;
+
+    /// <summary>The module a row of the workbook names: its title, its label ("Module 2: Ledgers") or just "Module 2".</summary>
+    private TeacherModule? ModuleNamed(string name)
     {
-        var moduleId = excelModule?.Id ?? 0;
-        var created = 0;
-        var problems = new List<string>();
-        foreach (var input in inputs)
+        var modules = subject?.Modules.Where(m => !m.IsSyllabus && !m.IsExamSet).ToList() ?? [];
+        name = name.Trim();
+        return modules.FirstOrDefault(m => string.Equals(m.Title.Trim(), name, StringComparison.OrdinalIgnoreCase))
+            ?? modules.Select((m, n) => (Module: m, Label: AddItemMenuLabels.ModuleLabel(n + 1, m.Title))).FirstOrDefault(x => string.Equals(x.Label, name, StringComparison.OrdinalIgnoreCase)).Module
+            ?? modules.FirstOrDefault(m => m.Title.StartsWith(name + ":", StringComparison.OrdinalIgnoreCase) || m.Title.StartsWith(name + " ", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Every row of the workbook is saved like the box saves one item, in the module the row names, so the same rules hold; the questions of a quiz and the files follow it.</summary>
+    private async Task<ItemImportSummary> ImportActivitiesAsync(IReadOnlyList<ActivityToSave> list)
+    {
+        var userId = await UserIdAsync();
+        var missing = new List<string>();
+        var ready = new List<ActivityToSave>();
+        foreach (var entry in list)
         {
-            var saved = await Modules.SaveItemAsync(teacherId, moduleId, null, input);
-            if (saved.Succeeded)
+            if (ModuleNamed(entry.Work.Module) is null)
             {
-                created++;
+                missing.Add($"{entry.Sheet}, row {entry.Row} ({entry.Work.Input.Title}): this course has no module called \"{entry.Work.Module}\".");
             }
             else
             {
-                problems.Add($"{input.Title}: {string.Join(" ", saved.Errors)}");
+                ready.Add(entry);
             }
         }
 
+        var summary = await ActivityImport.RunAsync(ready,
+            work => Modules.SaveItemAsync(teacherId, ModuleNamed(work.Module)!.Id, null, work.Input),
+            (id, questions) => Modules.SaveQuestionsAsync(teacherId, id, questions),
+            (id, files) => Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.Item, id), files));
         await LoadAsync();
-        return new ItemImportSummary(created, problems);
+        return summary with { Errors = [.. missing, .. summary.Errors] };
+    }
+
+    private async Task OpenExcelFromForm()
+    {
+        itemForm = null;
+        await OpenActivitiesAsync();
     }
 
     /// <summary>A quiz that has a file and no questions: the students answer with a file, so there is no question editor for it.</summary>
@@ -603,7 +592,7 @@ else
         {
             if (pick.Kind == AddItemMenuLabels.ExcelKind)
             {
-                await OpenActivitiesAsync(module);
+                await OpenActivitiesAsync();
             }
             else
             {

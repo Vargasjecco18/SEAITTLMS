@@ -156,13 +156,9 @@ else
             </Card>
 
             <Card Title="Enrollment" IconName="clipboard-list">
-                <Field For="term" Label="Term" Required="true">
-                    <select id="term" required @bind="form.TermId" @bind:after="OnPlacementChangedAsync">
-                        @foreach (var term in lookups.Terms)
-                        {
-                            <option value="@term.Id">@term.SchoolYear · @term.Name@(term.IsCurrent ? " (current)" : "")</option>
-                        }
-                    </select>
+                @* The term is set by the calendar (the first day and the last day of each term): the registrar does not choose it. *@
+                <Field For="term" Label="Term" Hint="Set by itself from the first day and the last day of the term.">
+                    <input id="term" readonly value="@TermText(form.TermId)" />
                 </Field>
 
                 <div class="two">
@@ -305,15 +301,10 @@ else
                     <strong>Fill the yellow cells</strong> with the students (type, choose from the list, or paste them from another file) and save with Ctrl+S as an Excel file (.xlsx).
                 </li>
                 <li>
-                    <strong>Choose the term and the file.</strong>
+                    <strong>Choose the file.</strong> The term is set by the calendar.
                     <div class="two">
-                        <Field For="imp-term" Label="Term" Required="true">
-                            <select id="imp-term" @bind="importTermId">
-                                @foreach (var term in lookups.Terms)
-                                {
-                                    <option value="@term.Id">@term.SchoolYear · @term.Name@(term.IsCurrent ? " (current)" : "")</option>
-                                }
-                            </select>
+                        <Field For="imp-term" Label="Term" Hint="Set by itself from the calendar.">
+                            <input id="imp-term" readonly value="@TermText(importTermId)" />
                         </Field>
                         <Field For="imp-file" Label="Excel file (.xlsx)" Required="true">
                             <InputFile id="imp-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
@@ -463,6 +454,8 @@ else
     [SupplyParameterFromQuery(Name = "lrn")] private string? LrnQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = "term")] private string? TermQuery { get; set; }
+
+    private string TermText(int termId) => lookups?.Terms.FirstOrDefault(t => t.Id == termId) is { } term ? $"{term.SchoolYear} · {term.Name}{(term.IsCurrent ? " (current)" : "")}" : "No term is running";
 
     protected override async Task OnInitializedAsync()
     {

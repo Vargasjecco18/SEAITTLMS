@@ -176,3 +176,54 @@ th.col-level {
 .none-yet {
     margin: 0 0 0.5rem;
 }
+
+/* The top of the box of a student: who they are at the left, Notes and Solved at the right. */
+.modal-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.modal-top .all-sub {
+    margin: 0.2rem 0 0;
+}
+
+.top-actions {
+    display: inline-flex;
+    gap: 0.5rem;
+}
+
+.attendance-list {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0.5rem 0 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    list-style: none;
+}
+
+.previous-bar {
+    margin: 0.75rem 0 0;
+}
+
+.previous-list {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.previous-list li {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}

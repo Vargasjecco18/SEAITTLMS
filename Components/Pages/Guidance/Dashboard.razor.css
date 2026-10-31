@@ -9,15 +9,11 @@
     margin-bottom: 1.25rem;
 }
 
+/* Always four cards: two by two on a phone, four in a row on a computer. */
 @media (min-width: 900px) {
     .stats {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1700px) {
-    .stats {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
     }
 }
 

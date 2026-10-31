@@ -1253,6 +1253,22 @@ document.addEventListener('toggle', function (event) {
     window.seaitt = window.seaitt || {};
     window.seaitt.playNotificationSound = play;
 
+    // The sound of an achievement: a short rising run of notes that ends on a long one. It plays once when the box of new achievements opens, however many were earned at the same time
+    // (the box shows them one after the other without playing it again). It follows the same switch as the other sounds (Settings), and it is made by the browser, so it needs no file.
+    var achievementPlayedAt = 0;
+    window.seaitt.playAchievementSound = function () {
+        if (root.getAttribute('data-sound') === 'off') { return; }
+        var nowMs = Date.now();
+        if (nowMs - achievementPlayedAt < 3000) { return; }
+        achievementPlayedAt = nowMs;
+        withSound(function (made) {
+            var start = made.currentTime;
+            [523.25, 659.25, 783.99, 1046.5].forEach(function (frequency, n) { tone(made, frequency, start + n * 0.12, 0.28, 0.2); });
+            tone(made, 1318.5, start + 0.5, 0.9, 0.22);
+            tone(made, 1046.5, start + 0.5, 0.9, 0.14);
+        }, false);
+    };
+
     // The header calls this when a page opens (a person who is signed in): when nobody has clicked on the page yet, the browser will not let a sound play when a message
     // comes in, so the button that asks for the click is shown now, not only when a sound has failed.
     window.seaitt.prepareSound = function () {
@@ -1334,4 +1350,20 @@ document.addEventListener('toggle', function (event) {
     if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
         window.Blazor.addEventListener('enhancednavigationend', function () { sync(); setTimeout(sync, 800); });
     }
+})();
+
+// The calendar: a double click on a day (a cell of the month, a column of the week) opens the box that asks what to add on that day (?add=<date>).
+(function () {
+    document.addEventListener('dblclick', function (event) {
+        var target = event.target;
+        if (!(target instanceof Element) || target.closest('a, button, input, select, textarea, [data-unassigned-item]')) { return; }
+        var day = target.closest('[data-day]');
+        if (!day || !day.closest('.month, .week')) { return; }
+        var date = day.getAttribute('data-day');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) { return; }
+        var url = new URL(location.href);
+        ['day', 'event', 'work', 'edit', 'on'].forEach(function (name) { url.searchParams.delete(name); });
+        url.searchParams.set('add', date);
+        if (window.Blazor && typeof window.Blazor.navigateTo === 'function') { window.Blazor.navigateTo(url.pathname + url.search); } else { location.href = url.href; }
+    });
 })();

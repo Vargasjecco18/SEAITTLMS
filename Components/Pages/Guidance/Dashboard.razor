@@ -22,6 +22,7 @@ else
         <StatCard Label="Students with concerns" Value="@overview.Students" IconName="flag" Accent="@(overview.Students > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="Attendance or violation" Href="guidance/referrals?show=concerns" />
         <StatCard Label="Attendance" Value="@overview.Attendance" IconName="user-x" Accent="AccentColor.Violet" Hint="@($"Attendance under {AttendanceService.LowAttendancePercent:0}%")" Href="guidance/referrals?reason=LowAttendance" />
         <StatCard Label="Violations" Value="@overview.Violations" IconName="shield-alert" Accent="@(overview.Violations > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Broke a school rule" Href="guidance/referrals?reason=Violation" />
+        <StatCard Label="Solved" Value="@overview.Solved" IconName="circle-check" Accent="AccentColor.Green" Hint="Students helped, last 30 days" Href="guidance/referrals" />
     </div>
 
     <div class="cards">

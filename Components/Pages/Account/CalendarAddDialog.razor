@@ -1,0 +1,82 @@
+@rendermode InteractiveServer
+@using System.Globalization
+@inject CurrentUser Me
+@inject CalendarService Events
+@inject NavigationManager Navigation
+
+@* The box a double click on a day opens: what can be added on that day. A student (and a teacher) can add an event to their own calendar; a teacher can also give a day to a piece of work that has no
+   due date yet (each one is a link that opens the box with its settings), or go to the courses to add activities. *@
+<Modal Open="loaded" Title="@($"Add on {Day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)}")" OnClose="Close">
+    @if (loaded)
+    {
+        <p class="dialog-text">What do you want to add on this day?</p>
+        <ul class="add-list">
+            <li>
+                <a class="add-choice" href="@($"calendar?view={View}&date={Day:yyyy-MM-dd}&event=new&on={Day:yyyy-MM-dd}")">
+                    <span class="add-icon"><Icon Name="calendar-plus" Size="20" /></span>
+                    <span class="add-text"><strong>An event</strong><small>A reminder or a plan of your own, only you can see it.</small></span>
+                    <Icon Name="chevron-right" Size="16" />
+                </a>
+            </li>
+            @if (isTeacher)
+            {
+                <li>
+                    <a class="add-choice" href="teacher/subjects">
+                        <span class="add-icon"><Icon Name="clipboard-list" Size="20" /></span>
+                        <span class="add-text"><strong>Activities</strong><small>Open a course and press Add activities (seatwork, assignments, quizzes, task performance).</small></span>
+                        <Icon Name="chevron-right" Size="16" />
+                    </a>
+                </li>
+            }
+        </ul>
+
+        @if (isTeacher && unassigned.Count > 0)
+        {
+            <h3 class="add-sub">Give this day to a work that has no due date</h3>
+            <ul class="add-list">
+                @foreach (var u in unassigned.Take(6))
+                {
+                    <li>
+                        <a class="add-choice small" href="@($"calendar?view={View}&date={Day:yyyy-MM-dd}&edit={u.ItemId}&on={Day:yyyy-MM-dd}")">
+                            <span class="add-icon"><Icon Name="@SubjectStyle.KindIcon(u.Kind)" Size="18" /></span>
+                            <span class="add-text"><strong>@u.Title</strong><small>@u.SubjectName · @u.SectionLabel</small></span>
+                            <Icon Name="chevron-right" Size="16" />
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public DateOnly Day { get; set; }
+
+    /// <summary>"month" or "week": the view of the page behind the box.</summary>
+    [Parameter] public string View { get; set; } = "week";
+
+    /// <summary>Where the calendar is again when the box is closed.</summary>
+    [Parameter, EditorRequired] public string CloseUrl { get; set; } = "calendar";
+
+    private IReadOnlyList<UnassignedItem> unassigned = [];
+    private bool isTeacher;
+    private bool loaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Me.GetAsync();
+        isTeacher = user?.Role == AppRoles.Teacher;
+        if (isTeacher && await Me.GetTeacherIdAsync() is { } teacherId)
+        {
+            unassigned = await Events.GetUnassignedAsync(teacherId);
+        }
+
+        loaded = true;
+    }
+
+    private void Close() => Navigation.NavigateTo(CloseUrl);
+}
