@@ -8,6 +8,7 @@
     @if (others.Count > 0)
     {
         <Card Title="@(Title ?? (others.Count == 1 ? "File" : "Files"))" IconName="file-text">
+            @LinkLine
             <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this module" ModuleLabel="@ModuleLabel" />
         </Card>
     }
@@ -15,6 +16,10 @@
     @if (slides.Count > 0)
     {
         <Card Title="@(others.Count > 0 || Title is null ? "Slides" : Title)" IconName="presentation">
+            @if (others.Count == 0)
+            {
+                @LinkLine
+            }
             <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this module" ModuleLabel="@ModuleLabel" />
         </Card>
     }
@@ -22,17 +27,22 @@
     @if (Files.Count == 0)
     {
         <Card Title="@(Title ?? "Files")" IconName="paperclip">
+            @LinkLine
             <p class="muted">@(ShowText ? "This module has no file yet." : "This module has no file. Add one in Edit module, at the right.")</p>
         </Card>
     }
 
-    @if (!string.IsNullOrWhiteSpace(LinkUrl))
-    {
-        <p class="link"><Icon Name="link" Size="16" /> <a href="@LinkUrl" target="_blank" rel="noopener noreferrer">@LinkUrl <Icon Name="external-link" Size="14" /></a></p>
-    }
 </div>
 
 @code {
+    /// <summary>The link of the module (when it has one), inside the card of its file.</summary>
+    private RenderFragment LinkLine => @<text>
+        @if (!string.IsNullOrWhiteSpace(LinkUrl))
+        {
+            <p class="link"><Icon Name="link" Size="16" /> <a href="@LinkUrl" target="_blank" rel="noopener noreferrer">@LinkUrl <Icon Name="external-link" Size="14" /></a></p>
+        }
+    </text>;
+
     /// <summary>The title of the module: it is the title shown over its file.</summary>
     [Parameter] public string? Title { get; set; }
 

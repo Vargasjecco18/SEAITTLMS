@@ -44,7 +44,10 @@ else
             }
             <div class="kind-head">
                 <p class="muted">@(listed.Count == 0 ? $"No {ItemKinds.Plural(listKind).ToLowerInvariant()} in this course yet." : $"All the {ItemKinds.Plural(listKind).ToLowerInvariant()} of the course, module by module.")</p>
-                <AddItemMenu Kind="@listKind" Label="@($"Add {ItemKinds.Display(listKind).ToLowerInvariant()}")" Modules="AddMenuModules" OnPick="PickNew" />
+                @if (ItemKinds.All.Contains(listKind))
+                {
+                    <AddItemMenu Kind="@listKind" Label="@($"Add {ItemKinds.Display(listKind).ToLowerInvariant()}")" Modules="AddMenuModules" OnPick="PickNew" />
+                }
             </div>
             @if (listed.Count > 0)
             {

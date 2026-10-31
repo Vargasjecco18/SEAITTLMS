@@ -65,7 +65,7 @@ public static class HelpContent
         ]),
         new("What is the menu on the left?",
         [
-            "It lists the pages for your role. Rest the pointer on a page and a small box opens beside it showing what is inside, with links to its parts (for example, Courses shows Enrolled and Completed).",
+            "It lists the pages for your role. Rest the pointer on a page and a small box opens beside it showing what is inside, with links to its parts (for example, Courses shows your courses, and a click opens one).",
             "On a phone, the menu button at the top left opens it.",
         ]),
         new("How do I change the look, or my picture?",
@@ -165,7 +165,7 @@ public static class HelpContent
             "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Template and import (Excel)” in the same box.",
             "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Press “Add Activities” at the top right of the course: choose the module, then Assignment, Quiz, Task performance, Seatwork or Recitation. Each has its points, the day it appears and its due date. Seatwork and recitations get their own tab in the course menu once the course has one.",
+            "Press “Add activities” at the top right of the course. It opens the Excel template and the import: one workbook lists every module with a row for Seatwork, Assignment, Quiz and Task performance. Fill the rows you want, save it and import it. To add one at a time, open a list in the course menu (for example “See all quizzes”) and press its Add button.",
         ]),
         new("What is the menu inside a course?",
         [
@@ -174,7 +174,7 @@ public static class HelpContent
         ]),
         new("Can I fill many assignments or questions from Excel?",
         [
-            "Yes. Press “Add Activities”, choose the module and then “Template and import (Excel)”. The template is one workbook with a sheet for the Assignments, the Quizzes, the Quiz questions (each row says which quiz it belongs to) and the Task performances, and a column to name the files to attach. Fill it in, import it, and every row becomes one item. The same box can export what the module has.",
+            "Yes. Press “Add activities”: the template has the sheet Activities (module by module: Seatwork, Assignment, Quiz, Task performance) and the sheet Quiz Questions. Fill it, save it as .xlsx, choose it in the box, choose the files it names and press Import.",
             "Every template has a sheet “How to fill”: for each column it says what to write and what to use in Excel. The cells that take a fixed answer (a quiz, a type, Yes or No) have a drop-down list, and a tip shows when you select a cell. Type a day like 2026-11-19.",
             "In the questions of a quiz, use Template, Export the questions and Import from Excel. The imported questions appear in the list; press Save questions to keep them.",
         ]),
@@ -243,7 +243,7 @@ public static class HelpContent
         new("How do I make a new staff role, like Assistant Registrar?",
         [
             "Open Users Management, the Staff tab, and press Add staff. Next to the Role list press “Add role”.",
-            "Type the name of the role, and choose the role it works like (for example Registrar). It uses the same pages and permissions as that role. Press “Add this role”: it is chosen in the Role list, so you can finish adding the person.",
+            "Type the name of the role (for example Librarian) and press “Add this role”: it is chosen in the Role list, so you can finish adding the person.",
             "Many people can have a role you made. The staff list and the person's card show its name.",
         ], "admin/users/staff", "Open the staff list"),
         new("A teacher needs courses.",
@@ -302,7 +302,7 @@ public static class HelpContent
         [
             "Open Academic setup. Everything is on one page, in seven steps: 1 School years, 2 Terms, 3 Tracks, 4 Strands, 5 Courses, 6 Sections and 7 Class schedule. Press a step at the top to go to it. The boxes of every step are always open: fill them in and press the button. Press Edit on a line to change it. Press the name of a section to see its students.",
             "To fill many rows at once press “Template and import (Excel)” at the top: the workbook has a sheet for each step, the courses of each strand, and the hours of the day. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
-            "The current term is the one students are enrolled in. Make the term first, then the sections.",
+            "The calendar decides the current term: it is the term whose first and last day include today, so you only type the dates. A term that is over is put away (its students, grades and attendance stay). Make the term first, then the sections.",
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
         [
@@ -339,7 +339,7 @@ public static class HelpContent
         new("How do I send a syllabus and modules to the teachers?",
         [
             "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once). Press a syllabus or a module to open it and see its text and files.",
-            "You send the syllabus, the modules and the summative exams. The teacher makes the activities (assignments, quizzes, task performances) in their own copy of the course.",
+            "You send the syllabus and the modules to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
             "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
             "Each teacher gets their own copy as a draft, with the files: they edit the text and the dates and post it to their students when they are ready. A PDF or a picture opens in a box in the middle of the screen, where it can be downloaded.",
@@ -349,7 +349,7 @@ public static class HelpContent
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
             "Write the title, the instructions, attach the paper if you have it, and the highest score. Choose when it opens and when it closes. It must close after it opens.",
             "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file.",
-            "Press “Send to teachers” and choose the exam. Each teacher gets it in a draft module called Summative exams, with its schedule, and gives the scores.",
+            "Add its questions with the Excel button (the sheet Questions) and choose the quiz settings (time limit, anti-cheating watch). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("How do I know if the teachers opened what I sent?",
         [
@@ -386,8 +386,8 @@ public static class HelpContent
         ], "guidance/referrals?show=concerns", "Open the students with a concern"),
         new("How do I write a violation or follow up a concern?",
         [
-            "Press the “At risk” button on a student. A box shows the student's concerns. To write a new one, choose what it is (Violation or Attendance), write what happened (only you can read it) and press “Add the concern”.",
-            "Press “Notes” on a concern to choose the help you gave (talked with the student, called the parents, talked with the teacher, other) and write your notes. When the case is over, choose how it ended: the student Improved or had No change. That closes the concern.",
+            "Press the “At risk” button on a student (it is red while the student has a concern and white when there is none). A box shows the concerns. To write a new one choose “What is it?” (it starts on None), then choose “What happened?” from the list, add more words if you want, and press “Add the concern”.",
+            "Press “Notes” (top right) to choose the help you gave (talked with the student, called the parents, talked with the teacher, other) and write your notes. When the case is over press “Solved”: the concerns move to “Previous concerns” and the button is white again. Several attendance concerns found on the same day are one line: press “View attendance” to see each course.",
         ]),
     ]);
 }

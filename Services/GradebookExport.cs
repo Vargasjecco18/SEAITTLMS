@@ -10,7 +10,7 @@ namespace SEAITT_LMS.Services;
 /// </summary>
 public static class GradebookExport
 {
-    private static readonly string[] Kinds = ItemKinds.Listed;
+    private static readonly string[] Kinds = [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam];
 
     private const int KindRow = 5;
     private const int TitleRow = 6;
