@@ -1926,5 +1926,30 @@ UPDATE modules m JOIN material_deliveries d ON d.module_id = m.id JOIN material_
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261031062102_ExamBoxAndQuizLikeExams', '9.0.20');
 
+ALTER TABLE `course_schedules` ADD `room_id` int NULL;
+
+CREATE TABLE `rooms` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_rooms` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_course_schedules_room_id` ON `course_schedules` (`room_id`);
+
+CREATE UNIQUE INDEX `ix_rooms_name` ON `rooms` (`name`);
+
+ALTER TABLE `course_schedules` ADD CONSTRAINT `fk_course_schedules_rooms_room_id` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE SET NULL;
+
+INSERT INTO `terms` (`school_year_id`, `term_number`, `name`, `start_date`, `end_date`, `is_current`, `created_at_utc`, `updated_at_utc`) SELECT y.`id`, 3, '3rd Term', '2027-02-01', '2027-03-31', 0, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM `school_years` y WHERE y.`name` = '2026-2027' AND y.`end_date` = '2027-03-31' AND EXISTS (SELECT 1 FROM `terms` t WHERE t.`school_year_id` = y.`id` AND t.`term_number` = 2 AND t.`start_date` = '2026-11-02' AND t.`end_date` = '2027-03-31') AND NOT EXISTS (SELECT 1 FROM `terms` t WHERE t.`school_year_id` = y.`id` AND t.`term_number` = 3);
+
+UPDATE `terms` SET `end_date` = '2027-01-29' WHERE `id` > 0 AND `term_number` = 2 AND `start_date` = '2026-11-02' AND `end_date` = '2027-03-31' AND `school_year_id` IN (SELECT y.`id` FROM (SELECT `id` FROM `school_years` WHERE `name` = '2026-2027') y) AND `school_year_id` IN (SELECT z.`school_year_id` FROM (SELECT `school_year_id` FROM `terms` WHERE `term_number` = 3 AND `start_date` = '2027-02-01') z);
+
+DELETE FROM `sections` WHERE `id` > 0 AND `name` = 'C' AND NOT EXISTS (SELECT 1 FROM `enrollments` e WHERE e.`section_id` = `sections`.`id`) AND NOT EXISTS (SELECT 1 FROM `teaching_assignments` a WHERE a.`section_id` = `sections`.`id`) AND NOT EXISTS (SELECT 1 FROM `students` x WHERE x.`section_id` = `sections`.`id`) AND NOT EXISTS (SELECT 1 FROM `teachers` x WHERE x.`section_id` = `sections`.`id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261031145448_RoomsAndThreeTerms', '9.0.20');
+
 COMMIT;
 
