@@ -85,7 +85,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
         {
             var mine = items.Where(i => i.AssignmentId == a.Id).ToList();
             var graded = mine
-                .Where(i => i.Mine is { Status: SubmissionStatus.Graded, Score: not null } && !(i.Kind == ItemKinds.Quiz && !i.ShowResult))
+                .Where(i => i.Mine is { Status: SubmissionStatus.Graded, Score: not null } && !(ItemKinds.IsQuizLike(i.Kind) && !i.ShowResult))
                 .Select(i => new GradedWork(i.Id, i.Title, i.Kind, i.Mine!.Score!.Value, i.MaxScore, i.Mine.GradedAtUtc, i.Mine.IsLate))
                 .OrderByDescending(g => g.GradedAtUtc)
                 .ToList();

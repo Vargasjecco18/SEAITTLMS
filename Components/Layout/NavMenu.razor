@@ -1,3 +1,5 @@
+@inject CurrentUser Me
+@inject NavCourseService NavCourses
 <nav class="nav" aria-label="Main menu">
     @* Each role sees only its own pages. When the pointer rests on a page, a box shows what is inside it (see NavItem). *@
     <AuthorizeView Roles="@AppRoles.Admin">
@@ -64,7 +66,7 @@
         <NavItem Href="teacher" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
                  Contents="TeacherDashboard" />
         <NavItem Href="teacher/subjects" Icon="book-open" Label="Courses"
-                 Items="TeacherCourses" />
+                 Items="teacherCourses" />
         <NavItem Href="teacher/attendance" Icon="calendar-check" Label="Attendance"
                  Contents="TeacherAttendance" />
         <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
@@ -89,7 +91,7 @@
         <NavItem Href="student" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
                  Contents="StudentDashboard" />
         <NavItem Href="student/subjects" Icon="book-open" Label="Courses"
-                 Items="StudentCourses" />
+                 Items="studentCourses" />
         <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
                  Items="CalendarViews" />
         <NavItem Href="student/grades" Icon="trending-up" Label="Grades"
@@ -115,6 +117,28 @@
 </nav>
 
 @code {
+    // The box that opens at Courses lists the courses themselves (a teacher: the course and its section, a student: the course).
+    private IReadOnlyList<NavItem.Sub>? teacherCourses;
+    private IReadOnlyList<NavItem.Sub>? studentCourses;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Me.GetAsync();
+        if (user is null)
+        {
+            return;
+        }
+
+        if (user.Role == AppRoles.Teacher && await Me.GetTeacherIdAsync() is { } teacherId)
+        {
+            teacherCourses = [.. (await NavCourses.ForTeacherAsync(teacherId)).Select(c => new NavItem.Sub($"{c.Name} · {c.Section}", $"teacher/subjects/{c.AssignmentId}", "book-open"))];
+        }
+        else if (user.Role == AppRoles.Student && await Me.GetStudentIdAsync() is { } studentId)
+        {
+            studentCourses = [.. (await NavCourses.ForStudentAsync(studentId)).Select(c => new NavItem.Sub(c.Name, $"student/subjects/{c.AssignmentId}", "book-open"))];
+        }
+    }
+
     // What each page has inside, for the box that opens beside the menu. A link goes to a part of the page (a tab, a filter);
     // a plain line only says what is on the page.
 
@@ -214,12 +238,6 @@
 
     private static readonly IReadOnlyList<string> TeacherDashboard = ["Assignments to check", "Drafts waiting to be posted", "Your calendar", "Online students"];
 
-    private static readonly IReadOnlyList<NavItem.Sub> TeacherCourses =
-    [
-        new("Cards", "teacher/subjects?view=cards", "layout-grid"),
-        new("List", "teacher/subjects?view=list", "list"),
-    ];
-
     private static readonly IReadOnlyList<string> TeacherAttendance = ["Choose a course and a day", "Present, late or absent", "The summary"];
 
     private static readonly IReadOnlyList<string> TeacherGradebook = ["One course at a time", "Every assignment, quiz and task", "The average of each student"];
@@ -232,12 +250,6 @@
     ];
 
     private static readonly IReadOnlyList<string> StudentDashboard = ["Assignments to do and overdue", "Assignments and due dates", "New modules", "Recent grades", "Online classmates"];
-
-    private static readonly IReadOnlyList<NavItem.Sub> StudentCourses =
-    [
-        new("Enrolled", "student/subjects?show=enrolled", "book-open"),
-        new("Completed", "student/subjects?show=completed", "circle-check"),
-    ];
 
     private static readonly IReadOnlyList<string> StudentGrades = ["Your grade in each course", "Your progress", "Courses below 70"];
 

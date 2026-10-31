@@ -29,8 +29,8 @@
         <ul class="items">
             @foreach (var item in items)
             {
-                var hidden = item.Kind == ItemKinds.Quiz && item.Status == SubmissionStatus.Graded && item.Score is null;
-                var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, item.Kind == ItemKinds.Quiz, hidden, item.LateDecision);
+                var hidden = ItemKinds.IsQuizLike(item.Kind) && item.Status == SubmissionStatus.Graded && item.Score is null;
+                var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, ItemKinds.IsQuizLike(item.Kind), hidden, item.LateDecision);
                 <li class="item">
                     <a class="item-link" href="student/items/@item.Id">
                         <span class="item-icon"><Icon Name="@SubjectStyle.KindIcon(item.Kind)" Size="18" /></span>

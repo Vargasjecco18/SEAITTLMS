@@ -1,22 +1,12 @@
 .course-menu {
     display: flex;
-    gap: 0.35rem;
-    padding: 0.35rem;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.4rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    background:
-        linear-gradient(to right, var(--surface) 30%, transparent) left center / 1.6rem 100% no-repeat local,
-        linear-gradient(to left, var(--surface) 30%, transparent) right center / 1.6rem 100% no-repeat local,
-        radial-gradient(farthest-side at 0 50%, rgba(15, 23, 42, 0.2), transparent) left center / 0.7rem 100% no-repeat scroll,
-        radial-gradient(farthest-side at 100% 50%, rgba(15, 23, 42, 0.2), transparent) right center / 0.7rem 100% no-repeat scroll,
-        var(--surface);
+    background: var(--surface);
     box-shadow: var(--shadow);
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.course-menu::-webkit-scrollbar {
-    display: none;
 }
 
 .cm-item {
@@ -26,9 +16,14 @@
     padding: 0.55rem 0.7rem;
     border-radius: var(--radius-sm);
     color: var(--text);
-    font-weight: 500;
+    font-weight: 600;
     text-decoration: none;
-    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
+}
+
+.cm-item::-webkit-details-marker {
+    display: none;
 }
 
 .cm-item:hover {
@@ -44,8 +39,6 @@
 .cm-label {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .cm-count {
@@ -64,23 +57,78 @@
     color: var(--brand-strong);
 }
 
+.cm-chevron {
+    display: inline-flex;
+    color: var(--text-muted);
+    transition: transform 0.15s;
+}
+
+.cm-group[open] > summary .cm-chevron {
+    transform: rotate(180deg);
+}
+
+/* What is inside a dropdown: one line each, under the name. */
+.cm-list {
+    display: grid;
+    gap: 0.1rem;
+    margin: 0.15rem 0 0.35rem 1.1rem;
+    padding: 0 0 0 0.6rem;
+    border-left: 2px solid var(--border);
+    list-style: none;
+    max-height: 18rem;
+    overflow-y: auto;
+}
+
+.cm-list a {
+    display: block;
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+/* A long title takes two lines instead of being cut. */
+.cm-list a span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+}
+
+.cm-list a:hover {
+    background: var(--surface-2);
+}
+
+.cm-list a.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.cm-list .cm-all {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.cm-none {
+    padding: 0.35rem 0.55rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
 .cm-rule {
-    flex: 0 0 1px;
-    margin: 0.3rem 0.25rem;
+    height: 1px;
+    margin: 0.3rem 0.5rem;
     background: var(--border);
 }
 
-/* Beside the page on a wide screen: a menu down the left side. */
-@media (min-width: 1000px) {
-    .course-menu {
-        flex-direction: column;
-        align-self: start;
-        overflow: visible;
-        background: var(--surface);
-    }
-
-    .cm-rule {
-        flex: 0 0 1px;
-        margin: 0.25rem 0.5rem;
-    }
+.cm-extra {
+    font-weight: 500;
 }

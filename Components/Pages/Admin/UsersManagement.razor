@@ -418,24 +418,13 @@
             @if (addingRole)
             {
                 <section class="role-box" aria-label="Add a role">
-                    <p class="note-box">Make a role like <em>Assistant Registrar</em>. It works like one of the roles below: the same pages and the same permissions. Many people can have it.</p>
                     @if (roleError is not null)
                     {
                         <p class="error" role="alert">@roleError</p>
                     }
-                    <div class="two">
-                        <Field For="r-name" Label="Name of the role" Required="true">
-                            <input id="r-name" maxlength="40" autocomplete="off" @bind="newRoleName" @bind:event="oninput" @onkeydown="RoleNameKeyAsync" />
-                        </Field>
-                        <Field For="r-base" Label="Works like" Required="true">
-                            <select id="r-base" @bind="newRoleBase">
-                                @foreach (var baseRole in UserManagementService.NonTeachingRoles)
-                                {
-                                    <option value="@baseRole">@AppRoles.DisplayName(baseRole)</option>
-                                }
-                            </select>
-                        </Field>
-                    </div>
+                    <Field For="r-name" Label="Name of the new role" Required="true" Hint="Like Librarian or Assistant Registrar. Many people can have it.">
+                        <input id="r-name" maxlength="40" autocomplete="off" @bind="newRoleName" @bind:event="oninput" @onkeydown="RoleNameKeyAsync" />
+                    </Field>
                     <div class="role-actions">
                         <Button Variant="ButtonVariant.Ghost" OnClick="CloseAddRole">Cancel</Button>
                         <Button IconName="plus" Disabled="@(busy || string.IsNullOrWhiteSpace(newRoleName))" OnClick="SaveRoleAsync">Add this role</Button>
@@ -786,7 +775,6 @@
     private IReadOnlyList<CustomRole> customRoles = [];
     private bool addingRole;
     private string newRoleName = "";
-    private string newRoleBase = AppRoles.AcademicProvider;
     private string? roleError;
 
     private string RoleChoice => add is null ? "" : add.CustomRoleId is { } id ? $"custom:{id}" : add.Role;
@@ -844,7 +832,7 @@
         busy = true;
         try
         {
-            var result = await Management.AddRoleAsync(newRoleName, newRoleBase, currentUserId);
+            var result = await Management.AddRoleAsync(newRoleName, currentUserId);
             if (!result.Succeeded)
             {
                 roleError = result.Errors.FirstOrDefault() ?? "The role could not be added.";

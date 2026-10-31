@@ -72,7 +72,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             {
                 a.Id, a.SubjectId, SubjectName = a.Subject.Name, a.SectionId, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code,
                 SectionName = a.Section.Name,
-                Modules = a.Modules.Count,
+                Modules = a.Modules.Count(m => !m.IsExamSet),
             })
             .ToListAsync(ct);
 
@@ -216,7 +216,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             .Select(a => new
             {
                 a.Id, a.SubjectId, SubjectName = a.Subject.Name, a.SectionId, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code, StrandName = a.Section.Strand.Name, SectionName = a.Section.Name,
-                Total = a.Modules.Count, Posted = a.Modules.Count(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= now),
+                Total = a.Modules.Count(m => !m.IsExamSet), Posted = a.Modules.Count(m => !m.IsExamSet && m.VisibleFromUtc != null && m.VisibleFromUtc <= now),
                 ToGrade = db.Submissions.Count(s => s.Item.Module.AssignmentId == a.Id && s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined),
             })
             .ToListAsync(ct);
@@ -314,7 +314,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
 
         var assignmentIds = assignments.Select(a => a.Id).ToList();
         var modules = await db.Modules.AsNoTracking()
-            .Where(m => assignmentIds.Contains(m.AssignmentId) && m.VisibleFromUtc != null && m.VisibleFromUtc <= now)
+            .Where(m => assignmentIds.Contains(m.AssignmentId) && !m.IsExamSet && m.VisibleFromUtc != null && m.VisibleFromUtc <= now)
             .Select(m => new { m.Id, m.AssignmentId })
             .ToListAsync(ct);
         var opened = (await db.ModuleViews.AsNoTracking().Where(v => v.StudentId == studentId).Select(v => v.ModuleId).ToListAsync(ct)).ToHashSet();

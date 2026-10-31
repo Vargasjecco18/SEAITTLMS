@@ -23,11 +23,11 @@ else if (subject is null)
 }
 else
 {
-    <PageHeader Title="@($"Teachers · {subject.SubjectName}")" IconName="presentation">
+    <PageHeader Title="@($"Teacher · {subject.SubjectName}")" IconName="presentation">
         <ButtonLink Href="@($"student/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
     </PageHeader>
 
-    <CourseLayout PageHref="@($"student/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
+    <CourseLayout Student="subject" CurrentExtra="teachers">
         <Card Title="@($"Teachers of {subject.SubjectName}")" IconName="presentation">
             <p class="hint">Press <strong>Message</strong> to write to your teacher.</p>
             <CoursePeopleList People="teachers" Singular="teacher" Plural="teachers" EmptyText="This course has no teacher yet." />
@@ -41,14 +41,6 @@ else
     private bool loaded;
     private StudentSubject? subject;
     private IReadOnlyList<PersonCard> teachers = [];
-
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
-
-    private IReadOnlyList<CourseMenuLink> MenuLinks =>
-    [
-        new("Grades", "trending-up", "student/grades"),
-        new("Teachers", "presentation", $"student/subjects/{AssignmentId}/teachers", true),
-    ];
 
     protected override async Task OnParametersSetAsync()
     {

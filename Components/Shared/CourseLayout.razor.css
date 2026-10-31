@@ -66,11 +66,11 @@ html[data-course-menu="hidden"] .course-menu-box ::deep .course-menu {
 
 @media (min-width: 1000px) {
     .course-layout {
-        grid-template-columns: 15.5rem minmax(0, 1fr);
+        grid-template-columns: 17rem minmax(0, 1fr);
     }
 
     .course-layout.with-aside {
-        grid-template-columns: 15.5rem minmax(0, 1fr) 23rem;
+        grid-template-columns: 17rem minmax(0, 1fr) 23rem;
     }
 
     html[data-course-menu="hidden"] .course-layout {
@@ -99,5 +99,67 @@ html[data-course-menu="hidden"] .course-menu-box ::deep .course-menu {
         padding: 0.4rem 0.75rem;
         background: var(--bg);
         border-bottom: 1px solid var(--border);
+    }
+}
+
+/*
+  The page of a module of the teacher: the file (at the left) and Edit module (at the right) are as tall as each other. The row takes the height of the taller one, and the
+  viewer of the file fills the card down to the bottom, so no card ends before the other.
+*/
+@media (min-width: 1000px) {
+    .course-layout.with-aside {
+        align-items: stretch;
+    }
+
+    .course-layout.with-aside .course-aside {
+        position: static;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .course-layout.with-aside .course-aside ::deep > .card {
+        flex: 1;
+    }
+
+    .course-layout.with-aside .course-menu-box {
+        align-self: start;
+    }
+
+    .course-layout.with-aside .course-main {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .course-layout.with-aside .course-main ::deep > .layout {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .course-layout.with-aside .course-main ::deep .layout > .card {
+        flex: 1;
+    }
+
+    .course-layout.with-aside .course-main ::deep .layout > .card > .card-body {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .course-layout.with-aside .course-main ::deep .pane {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .course-layout.with-aside .course-main ::deep .viewer {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .course-layout.with-aside .course-main ::deep .viewer iframe {
+        flex: 1;
+        height: auto;
+        min-height: 26rem;
     }
 }

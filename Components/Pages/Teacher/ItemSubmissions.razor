@@ -136,7 +136,7 @@ else
                                     else
                                     {
                                         <Button Small="true" Variant="@(row.Status == SubmissionStatus.Submitted ? ButtonVariant.Primary : ButtonVariant.Secondary)" IconName="@(row.Status == SubmissionStatus.Submitted ? "pencil" : "eye")"
-                                                OnClick="() => OpenAsync(row)">@(row.Status == SubmissionStatus.Submitted ? "Grade" : data.Kind == ItemKinds.Quiz || row.Status == SubmissionStatus.Graded ? "Open" : "Give score")</Button>
+                                                OnClick="() => OpenAsync(row)">@(row.Status == SubmissionStatus.Submitted ? "Grade" : ItemKinds.IsQuizLike(data.Kind) || row.Status == SubmissionStatus.Graded ? "Open" : "Give score")</Button>
                                     }
                                 </td>
                             </tr>
@@ -174,7 +174,7 @@ else
             </div>
         }
 
-        @if (data.Kind == ItemKinds.Quiz && data.Questions > 0)
+        @if (ItemKinds.IsQuizLike(data.Kind) && data.Questions > 0)
         {
             @if (detail.Answers.Count == 0)
             {

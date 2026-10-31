@@ -1,5 +1,8 @@
 @* A page of a course: the second menu of the course at the left (it can be hidden and shown again, and it stays in view under the header while the page scrolls),
    the page in the middle and, when the page has one, a column at the right. The choice to hide the menu is kept on this computer (wwwroot/app.js, data-cm-toggle). *@
+@* The Courses link of the school menu goes back to this course (wwwroot/app.js remembers it), until the list of the courses is opened again. *@
+<span data-last-course="@PageHref" hidden></span>
+
 @if (CollapseMenu)
 {
     @* The page where a lesson is read asks for the main menu to be folded to its icons (wwwroot/app.js looks for this). *@
@@ -12,7 +15,7 @@
             <span class="cm-when-shown"><Icon Name="panel-left-close" Size="18" /> <span>Hide menu</span></span>
             <span class="cm-when-hidden"><Icon Name="panel-left-open" Size="18" /> <span>Course menu</span></span>
         </button>
-        <CourseMenu Id="course-menu-nav" PageHref="@PageHref" Selected="@Selected" ModuleCount="@ModuleCount" Counts="@Counts" Extra="@Extra" />
+        <CourseMenu Id="course-menu-nav" Groups="Groups" Selected="@Selected" Extra="Extra" />
     </div>
 
     <div class="course-main">@ChildContent</div>
@@ -24,17 +27,19 @@
 </div>
 
 @code {
-    /// <summary>The address of the course page (without the tab).</summary>
-    [Parameter, EditorRequired] public string PageHref { get; set; } = "";
+    /// <summary>The course of a teacher (the page loads it anyway). Give this or <see cref="Student"/>: the menu, its counts and the links under it are made from it.</summary>
+    [Parameter] public TeacherSubject? Teacher { get; set; }
 
-    /// <summary>The tab of the menu that is open: "" for the modules, or assignments, quizzes, tasks.</summary>
+    [Parameter] public StudentSubject? Student { get; set; }
+
+    /// <summary>The group of the menu that is open: modules, seatwork, assignments, quizzes, tasks (empty on a module page).</summary>
     [Parameter] public string Selected { get; set; } = "";
 
-    [Parameter] public int ModuleCount { get; set; }
+    /// <summary>The module that is open (its line is marked in the dropdown of Modules).</summary>
+    [Parameter] public int? CurrentModuleId { get; set; }
 
-    [Parameter] public IReadOnlyDictionary<string, int> Counts { get; set; } = new Dictionary<string, int>();
-
-    [Parameter] public IReadOnlyList<CourseMenuLink> Extra { get; set; } = [];
+    /// <summary>The page under the line that is open: students, gradebook, attendance (teacher), classmates, teachers, grades (student).</summary>
+    [Parameter] public string CurrentExtra { get; set; } = "";
 
     /// <summary>True on the pages where a lesson is read: the main menu of the school is folded to its icons (a button shows it again).</summary>
     [Parameter] public bool CollapseMenu { get; set; }
@@ -43,4 +48,25 @@
 
     /// <summary>A column at the right of the page (for the teacher's module page: Edit module).</summary>
     [Parameter] public RenderFragment? Aside { get; set; }
+
+    /// <summary>The address of the course page (the list of its modules).</summary>
+    private string PageHref => Teacher is { } t ? $"teacher/subjects/{t.AssignmentId}" : Student is { } s ? $"student/subjects/{s.AssignmentId}" : "";
+
+    private int AssignmentId => Teacher?.AssignmentId ?? Student?.AssignmentId ?? 0;
+
+    private IReadOnlyList<CourseMenuGroup> Groups => Teacher is { } t ? CourseMenuBuilder.ForTeacher(t, CurrentModuleId) : Student is { } s ? CourseMenuBuilder.ForStudent(s, CurrentModuleId) : [];
+
+    private IReadOnlyList<CourseMenuLink> Extra => Teacher is not null
+        ?
+        [
+            new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students", CurrentExtra == "students"),
+            new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}", CurrentExtra == "gradebook"),
+            new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}", CurrentExtra == "attendance"),
+        ]
+        :
+        [
+            new("Classmates", "users-round", $"student/subjects/{AssignmentId}/classmates", CurrentExtra == "classmates"),
+            new("Teacher", "presentation", $"student/subjects/{AssignmentId}/teachers", CurrentExtra == "teachers"),
+            new("Grades", "trending-up", "student/grades", CurrentExtra == "grades"),
+        ];
 }

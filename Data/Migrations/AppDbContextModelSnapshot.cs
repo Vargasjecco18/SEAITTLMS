@@ -1297,6 +1297,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(1000)")
                         .HasColumnName("description");
 
+                    b.Property<bool>("IsExamSet")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_exam_set");
+
                     b.Property<bool>("IsSyllabus")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("tinyint(1)")

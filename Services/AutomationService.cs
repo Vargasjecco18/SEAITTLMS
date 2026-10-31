@@ -26,7 +26,7 @@ public static class AutomationService
 
         // ---- modules that appeared (marked, not told)
         var modules = await db.Modules.AsNoTracking()
-            .Where(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= nowUtc && m.NotifiedAtUtc == null)
+            .Where(m => m.VisibleFromUtc != null && m.VisibleFromUtc <= nowUtc && m.NotifiedAtUtc == null && !m.IsExamSet)
             .Select(m => new { m.Id })
             .ToListAsync(ct);
 

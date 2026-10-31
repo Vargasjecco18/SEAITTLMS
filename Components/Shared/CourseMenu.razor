@@ -1,15 +1,27 @@
-@* The second menu of a course: next to the course page it lists Modules, Assignments, Quizzes and Task performances (each opens the list of that kind for the whole course) and
-   the pages that belong to the course (the attendance, the gradebook and the students for a teacher, the grades and the teachers for a student). The menu of the school stays as it is. *@
+@* The second menu of a course: Modules, Seatwork, Assignments, Quizzes and Task performance, each a dropdown that lists what is inside (press Modules and the modules show, press
+   Quizzes and the quizzes show), and, under a line, the pages that belong to the course (for a teacher the students, the gradebook and the attendance, for a student the classmates,
+   the teacher and the grades). The menu of the school stays as it is. The dropdowns are plain HTML (details), so they work without scripts. *@
 <nav class="course-menu" id="@Id" aria-label="Menu of the course">
-    <a class="cm-item @(Selected == "" ? "on" : "")" href="@PageHref" aria-current="@(Selected == "" ? "page" : null)" data-course-menu="modules">
-        <Icon Name="layers" Size="18" /> <span class="cm-label">Modules</span> <span class="cm-count">@ModuleCount</span>
-    </a>
-    @foreach (var kind in ItemKinds.Listed.Where(k => !ItemKinds.IsOptionalTab(k) || Counts.GetValueOrDefault(k) > 0 || Selected == KeyOf(k)))
+    @foreach (var group in Groups)
     {
-        var key = KeyOf(kind);
-        <a class="cm-item @(Selected == key ? "on" : "")" href="@($"{PageHref}?tab={key}")" aria-current="@(Selected == key ? "page" : null)" data-course-menu="@key">
-            <Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> <span class="cm-label">@ItemKinds.Plural(kind)</span> <span class="cm-count">@Counts.GetValueOrDefault(kind)</span>
-        </a>
+        var isOpen = group.Key == Selected || group.Entries.Any(e => e.Current);
+        <details class="cm-group" open="@isOpen" data-course-group="@group.Key">
+            <summary class="cm-item @(isOpen ? "on" : "")">
+                <Icon Name="@group.Icon" Size="18" /> <span class="cm-label">@group.Label</span> <span class="cm-count">@group.Count</span>
+                <span class="cm-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="16" /></span>
+            </summary>
+            <ul class="cm-list">
+                <li><a class="cm-all @(group.Key == Selected ? "on" : "")" href="@group.SeeAllHref" data-course-menu="@group.Key"><Icon Name="list" Size="14" /> <span>See all @group.Label.ToLowerInvariant()</span></a></li>
+                @foreach (var entry in group.Entries)
+                {
+                    <li><a class="cm-entry @(entry.Current ? "on" : "")" href="@entry.Href" aria-current="@(entry.Current ? "page" : null)" title="@entry.Title"><span>@entry.Title</span></a></li>
+                }
+                @if (group.Entries.Count == 0)
+                {
+                    <li class="cm-none">None yet.</li>
+                }
+            </ul>
+        </details>
     }
 
     @if (Extra.Count > 0)
@@ -26,18 +38,13 @@
     /// <summary>The id of the menu (the button that hides it points to it).</summary>
     [Parameter] public string? Id { get; set; }
 
-    /// <summary>The address of the course page (without the tab).</summary>
-    [Parameter, EditorRequired] public string PageHref { get; set; } = "";
+    /// <summary>The dropdowns: Modules and the kinds of work.</summary>
+    [Parameter] public IReadOnlyList<CourseMenuGroup> Groups { get; set; } = [];
 
-    /// <summary>The tab that is open: "" for the modules, or assignments, quizzes, tasks.</summary>
+    /// <summary>The group that is open: modules, seatwork, assignments, quizzes, tasks (empty on a module page, where the module that is open opens its group).</summary>
     [Parameter] public string Selected { get; set; } = "";
 
-    [Parameter] public int ModuleCount { get; set; }
-
-    /// <summary>How many assignments, quizzes and task performances the course has, by kind.</summary>
-    [Parameter] public IReadOnlyDictionary<string, int> Counts { get; set; } = new Dictionary<string, int>();
-
-    /// <summary>The other pages of the course (the gradebook, the attendance ...).</summary>
+    /// <summary>The other pages of the course, under the line (the students, the gradebook ...).</summary>
     [Parameter] public IReadOnlyList<CourseMenuLink> Extra { get; set; } = [];
 
     /// <summary>The word in the address for a kind: assignments, quizzes or tasks.</summary>

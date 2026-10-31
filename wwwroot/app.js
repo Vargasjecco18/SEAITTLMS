@@ -1297,3 +1297,41 @@ document.addEventListener('toggle', function (event) {
         setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
     };
 })();
+
+// The Courses link of the main menu goes back to the course the person was in (the pages of a course carry <span data-last-course="teacher/subjects/5">),
+// until the list of the courses is opened again (that page carries the same span, empty). It is remembered for this tab only.
+(function () {
+    var KEY = 'seaitt-last-course';
+
+    function sync() {
+        var marker = document.querySelector('[data-last-course]');
+        if (!marker) { return; }
+        try {
+            var value = marker.getAttribute('data-last-course');
+            if (value) { sessionStorage.setItem(KEY, value); } else { sessionStorage.removeItem(KEY); }
+        } catch (error) { }
+    }
+
+    document.addEventListener('click', function (event) {
+        if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) { return; }
+        var target = event.target;
+        var link = target instanceof Element ? target.closest('.nav a[href]') : null;
+        if (!link) { return; }
+        var stored = null;
+        try { stored = sessionStorage.getItem(KEY); } catch (error) { }
+        if (!stored) { return; }
+        var path = new URL(link.href, document.baseURI).pathname.replace(/\/+$/, '');
+        if (!/\/(teacher|student)\/subjects$/.test(path) || new URL(link.href, document.baseURI).search) { return; }
+        // Only the course of the same kind of person (a teacher does not get a student's address).
+        if (stored.split('/')[0] !== path.split('/').filter(Boolean).slice(-2)[0]) { return; }
+        event.preventDefault();
+        event.stopPropagation();
+        var address = new URL(stored, document.baseURI).href;
+        if (window.Blazor && typeof window.Blazor.navigateTo === 'function') { window.Blazor.navigateTo(address); } else { location.href = address; }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () { sync(); setTimeout(sync, 800); });
+    if (window.Blazor && typeof window.Blazor.addEventListener === 'function') {
+        window.Blazor.addEventListener('enhancednavigationend', function () { sync(); setTimeout(sync, 800); });
+    }
+})();

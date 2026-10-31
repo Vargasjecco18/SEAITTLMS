@@ -64,7 +64,7 @@ public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, 
 
         var opened = db.ModuleViews.Where(v => v.StudentId == studentId).Select(v => v.ModuleId);
         var unopenedQuery = db.Modules.AsNoTracking()
-            .Where(m => assignmentIds.Contains(m.AssignmentId) && m.VisibleFromUtc != null && m.VisibleFromUtc <= now && !opened.Contains(m.Id));
+            .Where(m => assignmentIds.Contains(m.AssignmentId) && !m.IsExamSet && m.VisibleFromUtc != null && m.VisibleFromUtc <= now && !opened.Contains(m.Id));
         var unopenedCount = await unopenedQuery.CountAsync(ct);
         var unopened = await unopenedQuery.OrderByDescending(m => m.VisibleFromUtc).Take(6)
             .Select(m => new DashboardModule(m.Id, m.Title, m.Assignment.Subject.Name, m.VisibleFromUtc!.Value)).ToListAsync(ct);
@@ -115,7 +115,7 @@ public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, 
         var dueSoon = await db.ModuleItems.CountAsync(i => i.Module.Assignment.TeacherId == teacherId && i.DueAtUtc != null && i.DueAtUtc >= now && i.DueAtUtc <= now.AddDays(7), ct);
 
         // Modules that students can't see yet.
-        var draftsQuery = db.Modules.AsNoTracking().Where(m => m.Assignment.TeacherId == teacherId && (m.VisibleFromUtc == null || m.VisibleFromUtc > now));
+        var draftsQuery = db.Modules.AsNoTracking().Where(m => m.Assignment.TeacherId == teacherId && !m.IsExamSet && (m.VisibleFromUtc == null || m.VisibleFromUtc > now));
         var draftCount = await draftsQuery.CountAsync(ct);
         var drafts = (await draftsQuery.OrderBy(m => m.VisibleFromUtc == null).ThenBy(m => m.VisibleFromUtc).ThenByDescending(m => m.Id).Take(5)
                 .Select(m => new { m.Id, m.AssignmentId, m.Title, Subject = m.Assignment.Subject.Name, m.VisibleFromUtc }).ToListAsync(ct))

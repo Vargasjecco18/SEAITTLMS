@@ -13,7 +13,7 @@
     <Button Variant="ButtonVariant.Secondary" IconName="refresh-cw" OnClick="RefreshAsync">Refresh</Button>
 </PageHeader>
 
-@* What was sent, one tab for each kind (the syllabi and modules, the assignments, the quizzes, the task performances), then the teachers who got it and the students who see it. *@
+@* Four parts: the syllabi and modules that were sent to the teachers, the summative exams posted to the students, the teachers who got them and the students who see them. *@
 <PillTabs Items="PartTabs" Selected="@part" SelectedChanged="PartChangedAsync" Label="Part of the tracking" />
 <p class="part-hint">@PartHint</p>
 
@@ -21,9 +21,69 @@
 {
     <TrackingUsers @ref="usersPanel" Tab="@part" />
 }
-else if (IsItemPart(part))
+else if (part == "exams")
 {
-    <TrackingItems @ref="itemsPanel" Kind="@KindOfPart" />
+    <Card>
+        <form class="filter-bar one-row" role="search" @onsubmit="LoadExamsAsync">
+            <SearchField Id="exam-search" @bind-Value="search" Label="Search" SubmitText="" Placeholder="Exam, course, teacher, section…" AriaLabel="Search the exams" OnClear="LoadExamsAsync" />
+        </form>
+
+        @if (exams is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (exams.Count == 0)
+        {
+            <EmptyState IconName="clipboard-list" Title="No exam posted yet">
+                <p>Open the Course library, choose a course, add a summative exam and press “Post to students”.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table tracking">
+                    <thead>
+                        <tr>
+                            <th scope="col">Exam</th>
+                            <th scope="col">Section</th>
+                            <th scope="col">Schedule</th>
+                            <th scope="col" class="bar-cell">Opened it</th>
+                            <th scope="col" class="bar-cell">Handed in</th>
+                            <th scope="col" class="right">Average</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in exams)
+                        {
+                            <tr>
+                                <td class="what">
+                                    <span class="name">@row.Title</span>
+                                    <span class="muted-line">@row.SubjectName</span>
+                                </td>
+                                <td>
+                                    <span class="name">@row.SectionLabel</span>
+                                    <span class="muted-line">@row.TeacherName</span>
+                                </td>
+                                <td>
+                                    <span>@(row.OpensAtUtc is { } o ? PhilippineTime.FormatDateTime(o) : "—")</span>
+                                    <span class="muted-line">to @(row.ClosesAtUtc is { } c ? PhilippineTime.FormatDateTime(c) : "—")</span>
+                                </td>
+                                <td class="bar-cell">
+                                    <ProgressBar Percent="@ProviderMath.Percent(row.Opened, row.Students)" Title="@($"{row.Opened} of {row.Students} students opened it")" />
+                                    <span class="muted-line">@row.Opened of @row.Students</span>
+                                </td>
+                                <td class="bar-cell">
+                                    <ProgressBar Percent="@ProviderMath.Percent(row.HandedIn, row.Students)" Title="@($"{row.HandedIn} of {row.Students} students handed it in")" />
+                                    <span class="muted-line">@row.HandedIn of @row.Students</span>
+                                </td>
+                                <td class="right">@(row.AveragePercent is { } avg ? $"{avg}%" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
 }
 else
 {
@@ -37,33 +97,6 @@ else
                 <option value="">All</option>
                 <option value="Syllabus">Syllabi</option>
                 <option value="Module">Modules</option>
-            </select>
-        </Field>
-        <Field For="track-teacher" Label="Teacher">
-            <select id="track-teacher" class="input" @bind="teacherId" @bind:after="ApplyAsync">
-                <option value="0">All</option>
-                @foreach (var t in options?.Teachers ?? [])
-                {
-                    <option value="@t.UserId">@t.Name</option>
-                }
-            </select>
-        </Field>
-        <Field For="track-grade" Label="Grade level">
-            <select id="track-grade" class="input" @bind="gradeLevel" @bind:after="ApplyAsync">
-                <option value="0">All</option>
-                @foreach (var g in options?.GradeLevels ?? [])
-                {
-                    <option value="@g">Grade @g</option>
-                }
-            </select>
-        </Field>
-        <Field For="track-section" Label="Section">
-            <select id="track-section" class="input" @bind="section" @bind:after="ApplyAsync">
-                <option value="">All</option>
-                @foreach (var x in options?.Sections ?? [])
-                {
-                    <option value="@x">@x</option>
-                }
             </select>
         </Field>
         <Field For="track-course" Label="Course">
@@ -103,7 +136,6 @@ else
                         <th scope="col">Teacher</th>
                         <th scope="col">State</th>
                         <th scope="col" class="bar-cell">Students opened it</th>
-                        <th scope="col" class="bar-cell col-more">Assignments opened</th>
                         <th scope="col"><span class="sr-only">Details</span></th>
                     </tr>
                 </thead>
@@ -141,17 +173,6 @@ else
                                     <span class="na">@(row.State == DeliveryStates.Scheduled ? "Not yet: scheduled" : "Not posted yet")</span>
                                 }
                             </td>
-                            <td class="bar-cell col-more">
-                                @if (row.ItemPercent is { } ip)
-                                {
-                                    <ProgressBar Percent="ip" Title="@($"{row.ItemOpens} of {row.ItemExpected} opens")" />
-                                    <span class="muted-line">@ProviderUi.Plural(row.Items, "assignment", "assignments")</span>
-                                }
-                                else
-                                {
-                                    <span class="na">@(row.IsPosted ? "No assignments" : "—")</span>
-                                }
-                            </td>
                             <td class="right"><ButtonLink Href="@($"provider/tracking/{row.DeliveryId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="arrow-right" IconAfter="true">Details</ButtonLink></td>
                         </tr>
                     }
@@ -173,16 +194,12 @@ else
 
 @code {
     private TrackingUsers? usersPanel;
-    private TrackingItems? itemsPanel;
-    private IReadOnlyDictionary<string, int> itemCounts = new Dictionary<string, int>();
     private string part = "modules";
     private TrackingPage? data;
+    private IReadOnlyList<ExamTrackRow>? exams;
     private string state = "";
     private string search = "";
     private string kind = "";
-    private int teacherId;
-    private int gradeLevel;
-    private string section = "";
     private int subjectId;
     private TrackingOptions? options;
     private int pageNumber = 1;
@@ -198,56 +215,20 @@ else
 
     private int PageCount => data is null ? 1 : Math.Max(1, (int)Math.Ceiling(data.Total / (double)data.PageSize));
 
-    private static readonly string[] Parts = ["modules", "activities", "quizzes", "tasks", "seatwork", "recitations", "teachers", "students"];
+    private static readonly string[] Parts = ["modules", "exams", "teachers", "students"];
 
-    private static bool IsItemPart(string? part) => part is "activities" or "quizzes" or "tasks" or "seatwork" or "recitations";
-
-    /// <summary>
-    /// The provider sends the syllabus, modules and summative exams only (the teacher makes the activities), so the tabs of the kinds of work are there once something of that kind
-    /// was sent (by an older version of the library) or when the address asks for one.
-    /// </summary>
-    private IReadOnlyList<PillTabs.Tab> PartTabs
-    {
-        get
-        {
-            var tabs = new List<PillTabs.Tab> { new("modules", "Modules", "eye") };
-            void KindTab(string key, string label, string kind)
-            {
-                if (itemCounts.GetValueOrDefault(kind) > 0 || part == key)
-                {
-                    tabs.Add(new(key, label, SubjectStyle.KindIcon(kind), itemCounts.GetValueOrDefault(kind)));
-                }
-            }
-
-            KindTab("activities", "Assignments", ItemKinds.Activity);
-            KindTab("quizzes", "Quizzes", ItemKinds.Quiz);
-            KindTab("tasks", "Task performance", ItemKinds.TaskPerformance);
-            KindTab("seatwork", "Seatwork", ItemKinds.Seatwork);
-            KindTab("recitations", "Recitations", ItemKinds.Recitation);
-
-            tabs.Add(new("teachers", "Teachers", "presentation"));
-            tabs.Add(new("students", "Students", "graduation-cap"));
-            return tabs;
-        }
-    }
-
-    /// <summary>The kind of work the chosen tab is about (when it is one of the kinds of work).</summary>
-    private string KindOfPart => part switch
-    {
-        "quizzes" => ItemKinds.Quiz,
-        "tasks" => ItemKinds.TaskPerformance,
-        "seatwork" => ItemKinds.Seatwork,
-        "recitations" => ItemKinds.Recitation,
-        _ => ItemKinds.Activity,
-    };
+    /// <summary>The provider sends the syllabus, the modules and the summative exams only (the teacher makes the activities), so these are the parts to look at.</summary>
+    private static readonly IReadOnlyList<PillTabs.Tab> PartTabs =
+    [
+        new("modules", "Syllabus and modules", "eye"),
+        new("exams", "Summative exams", "clipboard-list"),
+        new("teachers", "Teachers", "presentation"),
+        new("students", "Students", "graduation-cap"),
+    ];
 
     private string PartHint => part switch
     {
-        "activities" => "The assignments that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
-        "quizzes" => "The quizzes that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
-        "tasks" => "The task performances that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
-        "seatwork" => "The seatwork that was sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
-        "recitations" => "The recitations that were sent inside the modules: where each one is with the teacher, and how many students opened it and handed it in.",
+        "exams" => "The summative exams posted to the students: when each one opens, how many students opened it and handed it in, and their average.",
         "teachers" => "Each teacher who has a course this school year: what they were sent and what they did with it.",
         "students" => "Each student: what was posted to them and how much of it they opened.",
         _ => "The syllabi and the modules that were sent: did the teacher open it, post it, and did the students open it.",
@@ -294,21 +275,21 @@ else
         {
             await ReloadAsync();
         }
+        else if (part == "exams")
+        {
+            await LoadExamsAsync();
+        }
     }
 
     private async Task RefreshAsync()
     {
-        itemCounts = await Provider.CountItemsSentAsync();
         if (part == "modules")
         {
             await ReloadAsync();
         }
-        else if (IsItemPart(part))
+        else if (part == "exams")
         {
-            if (itemsPanel is not null)
-            {
-                await itemsPanel.ReloadAsync();
-            }
+            await LoadExamsAsync();
         }
         else if (usersPanel is not null)
         {
@@ -320,10 +301,15 @@ else
     {
         nowUtc = Clock.GetUtcNow().UtcDateTime;
         options ??= await Provider.GetTrackingOptionsAsync();
-        itemCounts = await Provider.CountItemsSentAsync();
-        data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber, TeacherUserId: teacherId, GradeLevel: gradeLevel, Section: section, SubjectId: subjectId));
+        data = await Provider.ListTrackingAsync(new TrackingFilter(search, state, kind, pageNumber, SubjectId: subjectId));
         pageNumber = data.Page;
+        if (part == "exams")
+        {
+            await LoadExamsAsync();
+        }
     }
+
+    private async Task LoadExamsAsync() => exams = await Provider.ListExamTrackingAsync(search);
 
     private async Task StateChangedAsync(string? key)
     {
@@ -338,12 +324,11 @@ else
         await ReloadAsync();
     }
 
-    private bool HasChoice => teacherId != 0 || gradeLevel != 0 || !string.IsNullOrEmpty(section) || subjectId != 0;
+    private bool HasChoice => subjectId != 0;
 
     private async Task ClearChoicesAsync()
     {
-        teacherId = gradeLevel = subjectId = 0;
-        section = "";
+        subjectId = 0;
         await ApplyAsync();
     }
 

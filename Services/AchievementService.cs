@@ -53,7 +53,7 @@ public sealed class AchievementService(IDbContextFactory<AppDbContext> dbFactory
 
         // Modules: opened every posted module (at least 3 so far).
         var assignmentIds = await Roster.AssignmentsOf(db, studentId).Select(a => a.Id).ToListAsync(ct);
-        var posted = await db.Modules.AsNoTracking().Where(m => assignmentIds.Contains(m.AssignmentId) && m.VisibleFromUtc != null && m.VisibleFromUtc <= now).Select(m => m.Id).ToListAsync(ct);
+        var posted = await db.Modules.AsNoTracking().Where(m => assignmentIds.Contains(m.AssignmentId) && !m.IsExamSet && m.VisibleFromUtc != null && m.VisibleFromUtc <= now).Select(m => m.Id).ToListAsync(ct);
         var opened = await db.ModuleViews.AsNoTracking().Where(v => v.StudentId == studentId && posted.Contains(v.ModuleId)).CountAsync(ct);
 
         var days = await attendance.GetStudentAsync(studentId, ct);

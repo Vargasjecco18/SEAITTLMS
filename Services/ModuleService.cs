@@ -74,7 +74,7 @@ public sealed record ItemForEdit(
 
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
-    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false);
+    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false);
 
 public sealed record TeacherSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, int Students, IReadOnlyList<TeacherModule> Modules);
@@ -86,7 +86,7 @@ public sealed record StudentItem(
 
 public sealed record StudentModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
-    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false);
+    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false);
 
 public sealed record StudentSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string TeacherName, IReadOnlyList<StudentModule> Modules);
@@ -137,7 +137,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
-            m.IsSyllabus, fromProvider.Contains(m.Id))).ToList();
+            m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet)).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students, result);
     }
@@ -356,7 +356,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         item.MaxScore = input.MaxScore;
         item.DueAtUtc = input.DueAtUtc;
         item.VisibleFromUtc = input.VisibleFromUtc;
-        item.TimeLimitMinutes = input.Kind == ItemKinds.Quiz ? input.TimeLimitMinutes : null;
+        item.TimeLimitMinutes = ItemKinds.IsQuizLike(input.Kind) ? input.TimeLimitMinutes : null;
         item.ShuffleQuestions = input.ShuffleQuestions;
         item.ShuffleOptions = input.ShuffleOptions;
         item.AntiCheat = input.AntiCheat;
@@ -555,7 +555,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         return new StudentSubject(
             a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Teacher,
             modules.Select(m => new StudentModule(m.Id, m.Title, m.Description, null, null, m.Position, m.VisibleFromUtc!.Value, opened.Contains(m.Id),
-                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus)).ToList());
+                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet)).ToList());
     }
 
     /// <summary>A module with its text. Opening it is remembered, so it is no longer listed as not opened yet.</summary>
@@ -606,7 +606,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         {
             var status = r.Mine is null ? "NotStarted" : r.Mine.Status;
             var overdue = r.DueAtUtc is { } due && due < now && (r.Mine is null || r.Mine.Status == SubmissionStatus.InProgress);
-            var score = r.Kind == ItemKinds.Quiz && !r.ShowResult ? null : r.Mine?.Score;
+            var score = ItemKinds.IsQuizLike(r.Kind) && !r.ShowResult ? null : r.Mine?.Score;
             return new StudentItem(r.Id, r.Kind, r.Title, r.MaxScore, r.DueAtUtc, status, score, r.Mine?.IsLate ?? false, overdue, r.ModuleId, r.ModuleTitle, r.Mine?.LateDecision);
         }).ToList();
     }
@@ -662,12 +662,12 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             errors.Add("The instructions can have at most 10,000 characters.");
         }
 
-        if (input.Kind != ItemKinds.Quiz && (input.MaxScore <= 0 || input.MaxScore > 1000))
+        if (!ItemKinds.IsQuizLike(input.Kind) && (input.MaxScore <= 0 || input.MaxScore > 1000))
         {
             errors.Add("The highest score must be between 1 and 1000.");
         }
 
-        if (input.Kind == ItemKinds.Quiz)
+        if (ItemKinds.IsQuizLike(input.Kind))
         {
             if (input.TimeLimitMinutes is { } limit && (limit < 1 || limit > 600))
             {

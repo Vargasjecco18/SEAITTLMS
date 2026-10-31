@@ -27,7 +27,7 @@ else
         <ButtonLink Href="@($"teacher/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
     </PageHeader>
 
-    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
+    <CourseLayout Teacher="subject" CurrentExtra="students">
         <Card Title="@($"Students of {subject.SectionLabel}")" IconName="users-round">
             <p class="hint">Press <strong>Message</strong> to write to a student.</p>
             <CoursePeopleList People="students" Singular="student" Plural="students" EmptyText="No student is enrolled in this course yet." />
@@ -41,15 +41,6 @@ else
     private bool loaded;
     private TeacherSubject? subject;
     private IReadOnlyList<PersonCard> students = [];
-
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
-
-    private IReadOnlyList<CourseMenuLink> MenuLinks =>
-    [
-        new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
-        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
-        new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students", true),
-    ];
 
     protected override async Task OnParametersSetAsync()
     {

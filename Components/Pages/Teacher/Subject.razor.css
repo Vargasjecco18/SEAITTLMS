@@ -366,3 +366,88 @@ h3 {
 .kind-head p {
     margin: 0;
 }
+
+/* The first page of a course: the syllabus and the modules, one line each. A click on the title opens it; the Status button posts, schedules or hides it. */
+.course-rows {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.course-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.course-row:hover {
+    border-color: var(--brand);
+    box-shadow: var(--shadow);
+}
+
+.course-row.draft {
+    background: var(--surface-2);
+}
+
+.row-open {
+    display: flex;
+    flex: 1 1 18rem;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.row-number {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.row-text {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.row-title {
+    font-weight: 700;
+}
+
+.row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.row-status {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}

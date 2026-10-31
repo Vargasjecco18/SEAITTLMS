@@ -10,6 +10,9 @@
 
 <PageHeader Title="Courses" IconName="book-open" />
 
+@* The list of the courses is open: the Courses link of the menu stops going back to a course (wwwroot/app.js). *@
+<span data-last-course="" hidden></span>
+
 <PageWithAside Show="calendar,upnext">@Body</PageWithAside>
 
 

@@ -262,20 +262,15 @@ public sealed class UserManagementService(
     }
 
     /// <summary>
-    /// Makes a new role for the staff, like "Assistant Registrar". It works like <paramref name="baseRole"/> (one of the roles of the non-teaching staff): the same pages and the same
-    /// permissions. The name is 2 to 40 letters, numbers, spaces and dashes, and is not the name of a role that is there already.
+    /// Makes a new role for the staff, like "Librarian". Many people can have it. The administrator only gives the name; underneath the people of the role sign in to the pages of
+    /// <see cref="CustomRole.DefaultBaseRole"/> (the account needs one of the real roles to have pages to land on). The name is 2 to 40 letters, numbers, spaces and dashes, and is not the name of a role that is there already.
     /// </summary>
-    public async Task<ServiceResult> AddRoleAsync(string? name, string? baseRole, int actingUserId, CancellationToken ct = default)
+    public async Task<ServiceResult> AddRoleAsync(string? name, int actingUserId, CancellationToken ct = default)
     {
         name = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         if (name.Length is < 2 or > 40 || !name.All(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '\''))
         {
             return ServiceResult.Fail("Write the name of the role: 2 to 40 letters, numbers, spaces or dashes.");
-        }
-
-        if (baseRole is null || !NonTeachingRoles.Contains(baseRole))
-        {
-            return ServiceResult.Fail("Choose the role it works like.");
         }
 
         // The name is also not one of the usual roles (with or without the space: "Academic Provider", "AcademicProvider").
@@ -301,7 +296,7 @@ public sealed class UserManagementService(
             return ServiceResult.Fail("There are 30 roles already. That is the most.");
         }
 
-        var role = new CustomRole { Name = name, BaseRole = baseRole };
+        var role = new CustomRole { Name = name, BaseRole = CustomRole.DefaultBaseRole };
         db.CustomRoles.Add(role);
         try
         {
@@ -314,10 +309,10 @@ public sealed class UserManagementService(
 
         if (securityLog is not null)
         {
-            await securityLog.AddAsync(SecurityEvents.AccountCreated, null, details: $"The role {name} was added. It works like {AppRoles.DisplayName(baseRole).ToLowerInvariant()}.", actorUserId: actingUserId, ct: ct);
+            await securityLog.AddAsync(SecurityEvents.AccountCreated, null, details: $"The role {name} was added.", actorUserId: actingUserId, ct: ct);
         }
 
-        return ServiceResult.Ok($"The role {name} was added. It works like {AppRoles.DisplayName(baseRole).ToLowerInvariant()}.", role.Id);
+        return ServiceResult.Ok($"The role {name} was added.", role.Id);
     }
 
     private async Task<ServiceResult> CreateStaffAsync(NewAccount account, int actingUserId, CancellationToken ct)

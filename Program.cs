@@ -66,6 +66,8 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<NotificationSoundService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<TeachingService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<NavCourseService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<WorkService>();
 builder.Services.AddScoped<QuizService>();

@@ -1919,5 +1919,12 @@ ALTER TABLE `users` ADD CONSTRAINT `fk_users_custom_roles_custom_role_id` FOREIG
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261030183207_CustomStaffRoles', '9.0.20');
 
+ALTER TABLE `modules` ADD `is_exam_set` tinyint(1) NOT NULL DEFAULT FALSE;
+
+UPDATE modules m JOIN material_deliveries d ON d.module_id = m.id JOIN material_modules mm ON mm.id = d.material_module_id SET m.is_exam_set = 1 WHERE mm.is_exam_set = 1 AND m.id > 0;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261031062102_ExamBoxAndQuizLikeExams', '9.0.20');
+
 COMMIT;
 

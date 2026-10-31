@@ -67,22 +67,11 @@ public sealed record TrackingOptions(
 public sealed record ItemTrack(int ItemId, string Kind, string Title, int Opens, int Submitted, int Audience);
 
 /// <summary>
-/// One activity, quiz or task performance that the provider sent (inside a module), with where it is: with the teacher (not opened, draft, scheduled) or posted,
-/// and how many of the students of the course opened it and handed it in.
+/// One summative exam the provider posted to a section: when it opens and closes, how many of the students opened it and handed it in, and their average.
 /// </summary>
-/// <param name="State">One of <see cref="DeliveryStates"/>: the state of the module it is in, and "Scheduled" too while the item itself waits for a later time.</param>
-public sealed record ItemTrackingRow(
-    int DeliveryId, int ItemId, string Kind, string Title, string ModuleTitle, int SubjectId, string SubjectName, int TeacherUserId, string TeacherName,
-    string SectionLabel, DateTime SentAtUtc, string State, DateTime? DueAtUtc, int Audience, int Opens, int Submitted)
-{
-    public bool IsPosted => State == DeliveryStates.Posted;
-
-    public int? OpenedPercent => IsPosted && Audience > 0 ? ProviderMath.Percent(Opens, Audience) : null;
-
-    public int? SubmittedPercent => IsPosted && Audience > 0 ? ProviderMath.Percent(Submitted, Audience) : null;
-}
-
-public sealed record ItemTrackingPage(IReadOnlyList<ItemTrackingRow> Rows, int Total, int Page, int PageSize, int NotOpened, int Opened, int Scheduled, int Posted);
+public sealed record ExamTrackRow(
+    int ItemId, string Title, int SubjectId, string SubjectName, string TeacherName, string SectionLabel, DateTime? OpensAtUtc, DateTime? ClosesAtUtc,
+    int Students, int Opened, int HandedIn, int? AveragePercent);
 
 public sealed record StudentTrack(int StudentId, int UserId, string Name, DateTime? ModuleOpenedAtUtc, int ItemsOpened, int ItemsVisible, int Submitted);
 
@@ -247,7 +236,7 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
         var now = clock.GetUtcNow().UtcDateTime;
         var yearId = await MaterialService.CurrentYearIdAsync(db, ct);
 
-        var query = db.MaterialDeliveries.AsNoTracking().Where(d => d.Assignment.Section.SchoolYearId == yearId);
+        var query = db.MaterialDeliveries.AsNoTracking().Where(d => d.Assignment.Section.SchoolYearId == yearId && !d.MaterialModule.IsExamSet);
         if (narrow is not null)
         {
             query = narrow(query);
@@ -393,76 +382,46 @@ public sealed class ProviderService(IDbContextFactory<AppDbContext> dbFactory, T
             counted.Count(r => r.State == DeliveryStates.Scheduled), counted.Count(r => r.State == DeliveryStates.Posted));
     }
 
-    /// <summary>
-    /// The activities, quizzes or task performances (<paramref name="kind"/>) that were sent, one line for each, with who has it and how many students opened and handed it in.
-    /// The same filters as the modules apply (the search, the teacher, the grade level, the section and the course), and the state.
-    /// </summary>
-    public async Task<ItemTrackingPage> ListItemTrackingAsync(string kind, TrackingFilter filter, CancellationToken ct = default)
+    /// <summary>The summative exams the provider posted, section by section: who opened them, who handed them in, and the average score of those who did.</summary>
+    public async Task<IReadOnlyList<ExamTrackRow>> ListExamTrackingAsync(string? search = null, CancellationToken ct = default)
     {
-        var snap = await LoadAsync(ct: ct);
-        var all = new List<ItemTrackingRow>();
-        foreach (var d in snap.Deliveries.Where(d => !d.IsSyllabus))
-        {
-            var students = snap.StudentsOf(d);
-            var deliveryState = d.State(snap.Now);
-            foreach (var item in d.Items.Where(i => i.Kind == kind))
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.ModuleItems.AsNoTracking()
+            .Where(i => i.Kind == ItemKinds.Exam && i.MaterialItemId != null)
+            .Select(i => new
             {
-                // While the module is posted, an item with a later time of its own is still scheduled; the students see it only then.
-                var visible = deliveryState == DeliveryStates.Posted && (item.VisibleFromUtc is null || item.VisibleFromUtc <= snap.Now);
-                var state = deliveryState == DeliveryStates.Posted && !visible ? DeliveryStates.Scheduled : deliveryState;
-                all.Add(new ItemTrackingRow(
-                    d.Id, item.Id, item.Kind, item.Title, d.Title, d.SubjectId, d.SubjectName, d.TeacherUserId, d.TeacherName, d.SectionLabel, d.SentAtUtc, state, item.DueAtUtc,
-                    students.Count,
-                    visible ? students.Count(s => snap.ItemViews.ContainsKey((item.Id, s))) : 0,
-                    visible ? students.Count(s => snap.Submitted.Contains((item.Id, s))) : 0));
-            }
-        }
-
-        IEnumerable<ItemTrackingRow> rows = all;
-        foreach (var token in (filter.Search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                i.Id, i.Title, i.VisibleFromUtc, i.DueAtUtc, i.MaxScore, i.Module.AssignmentId, i.Module.Assignment.SectionId, i.Module.Assignment.SubjectId,
+                SubjectName = i.Module.Assignment.Subject.Name, Teacher = i.Module.Assignment.Teacher.FirstName + " " + i.Module.Assignment.Teacher.LastName,
+                i.Module.Assignment.Section.GradeLevel, StrandCode = i.Module.Assignment.Section.Strand.Code, SectionName = i.Module.Assignment.Section.Name,
+            })
+            .ToListAsync(ct);
+        if (rows.Count == 0)
         {
-            var t = token;
-            rows = rows.Where(r => r.SubjectName.Contains(t, StringComparison.OrdinalIgnoreCase) || r.Title.Contains(t, StringComparison.OrdinalIgnoreCase)
-                                   || r.ModuleTitle.Contains(t, StringComparison.OrdinalIgnoreCase) || r.TeacherName.Contains(t, StringComparison.OrdinalIgnoreCase)
-                                   || r.SectionLabel.Contains(t, StringComparison.OrdinalIgnoreCase));
+            return [];
         }
 
-        if (filter.TeacherUserId > 0)
-        {
-            rows = rows.Where(r => r.TeacherUserId == filter.TeacherUserId);
-        }
+        var ids = rows.Select(r => r.Id).ToList();
+        var opens = (await db.ItemViews.AsNoTracking().Where(v => ids.Contains(v.ItemId)).GroupBy(v => v.ItemId).Select(g => new { Id = g.Key, N = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Id, x => x.N);
+        var handed = (await db.Submissions.AsNoTracking().Where(s => ids.Contains(s.ItemId) && s.Status != SubmissionStatus.InProgress)
+            .Select(s => new { s.ItemId, s.Score }).ToListAsync(ct)).GroupBy(s => s.ItemId).ToDictionary(g => g.Key, g => g.ToList());
+        var students = (await db.EnrollmentSubjects.AsNoTracking().Where(x => x.Enrollment.Status == EnrollmentStatus.Enrolled)
+            .Select(x => new { x.Enrollment.SectionId, x.SubjectId, x.Enrollment.StudentId }).Distinct().ToListAsync(ct))
+            .GroupBy(x => (x.SectionId, x.SubjectId)).ToDictionary(g => g.Key, g => g.Count());
 
-        if (filter.GradeLevel > 0)
-        {
-            rows = rows.Where(r => ProviderMath.GradeOf(r.SectionLabel) == filter.GradeLevel);
-        }
-
-        if (!string.IsNullOrWhiteSpace(filter.Section))
-        {
-            rows = rows.Where(r => string.Equals(r.SectionLabel, filter.Section, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (filter.SubjectId > 0)
-        {
-            rows = rows.Where(r => r.SubjectId == filter.SubjectId);
-        }
-
-        var counted = rows.ToList();
-        var shown = DeliveryStates.All.Contains(filter.State ?? "") ? counted.Where(r => r.State == filter.State).ToList() : counted;
-        var page = Math.Max(1, filter.Page);
-        var size = Math.Clamp(filter.PageSize, 5, 100);
-        return new ItemTrackingPage(
-            shown.Skip((page - 1) * size).Take(size).ToList(), shown.Count, page, size,
-            counted.Count(r => r.State == DeliveryStates.NotOpened), counted.Count(r => r.State == DeliveryStates.Opened),
-            counted.Count(r => r.State == DeliveryStates.Scheduled), counted.Count(r => r.State == DeliveryStates.Posted));
-    }
-
-    /// <summary>How many activities, quizzes and task performances were sent (for the numbers on the tabs of the tracking page).</summary>
-    public async Task<IReadOnlyDictionary<string, int>> CountItemsSentAsync(CancellationToken ct = default)
-    {
-        var snap = await LoadAsync(ct: ct);
-        var items = snap.Deliveries.Where(d => !d.IsSyllabus).SelectMany(d => d.Items).ToList();
-        return ItemKinds.All.ToDictionary(k => k, k => items.Count(i => i.Kind == k));
+        var tokens = (search ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return rows
+            .Select(r =>
+            {
+                var list = handed.GetValueOrDefault(r.Id) ?? [];
+                var scored = list.Where(x => x.Score is not null).Select(x => x.Score!.Value).ToList();
+                int? average = scored.Count == 0 || r.MaxScore <= 0 ? null : (int)Math.Round(scored.Average() / r.MaxScore * 100, MidpointRounding.AwayFromZero);
+                return new ExamTrackRow(r.Id, r.Title, r.SubjectId, r.SubjectName, r.Teacher, TeachingService.SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName),
+                    r.VisibleFromUtc, r.DueAtUtc, students.GetValueOrDefault((r.SectionId, r.SubjectId)), opens.GetValueOrDefault(r.Id), list.Count, average);
+            })
+            .Where(r => tokens.All(t => r.Title.Contains(t, StringComparison.OrdinalIgnoreCase) || r.SubjectName.Contains(t, StringComparison.OrdinalIgnoreCase)
+                                        || r.TeacherName.Contains(t, StringComparison.OrdinalIgnoreCase) || r.SectionLabel.Contains(t, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(r => r.OpensAtUtc).ThenBy(r => r.SubjectName).ThenBy(r => r.SectionLabel)
+            .ToList();
     }
 
     /// <summary>The choices of the filters of the tracking page: everything that was sent, by teacher, grade level, section and course.</summary>

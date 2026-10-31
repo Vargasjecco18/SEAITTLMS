@@ -30,9 +30,9 @@ else
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
-    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks" CollapseMenu="true">
+    <CourseLayout Teacher="subject" CurrentModuleId="ModuleId" CollapseMenu="true">
         <ChildContent>
-            <LessonContent Description="@module.Description" Body="@module.Body" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" ModuleLabel="@FileLabel.OfModule(module.Title)" />
+            <LessonContent Title="@module.Title" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" ModuleLabel="@FileLabel.OfModule(module.Title)" />
         </ChildContent>
         <Aside>
             <Card Title="Edit module" IconName="pencil">
@@ -72,15 +72,6 @@ else
     private string? message;
     private bool messageIsError;
 
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
-
-    private IReadOnlyList<CourseMenuLink> MenuLinks =>
-    [
-        new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
-        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
-        new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students"),
-    ];
-
     protected override async Task OnParametersSetAsync()
     {
         teacherId = await Me.GetTeacherIdAsync() ?? 0;
@@ -93,6 +84,10 @@ else
         subject = teacherId == 0 ? null : await Modules.GetTeacherSubjectAsync(teacherId, AssignmentId);
         module = subject?.Modules.FirstOrDefault(m => m.Id == ModuleId);
         files = module is null ? [] : await Attachments.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Module, ModuleId));
+        if (module is { FromProvider: true })
+        {
+            await Modules.MarkDeliveryOpenedAsync(teacherId, module.Id);
+        }
     }
 
     private async Task SavedAsync(ModuleEditor.EditorResult result)

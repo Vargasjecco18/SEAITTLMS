@@ -1,0 +1,53 @@
+@page "/student/subjects/{AssignmentId:int}/classmates"
+@attribute [Authorize(Roles = AppRoles.Student)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ModuleService Modules
+@inject PeopleService People
+
+<PageTitle>Classmates · SEAITT Legazpi LMS</PageTitle>
+
+@* The students who take one course with the student, with the course menu at the left. A button opens the messages with a classmate. *@
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (subject is null)
+{
+    <Card>
+        <EmptyState IconName="users-round" Title="Course not found" IsPage="true">
+            <p>This is not one of your courses.</p>
+            <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <PageHeader Title="@($"Classmates · {subject.SubjectName}")" IconName="users-round">
+        <ButtonLink Href="@($"student/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
+    </PageHeader>
+
+    <CourseLayout Student="subject" CurrentExtra="classmates">
+        <Card Title="@($"Classmates in {subject.SubjectName}")" IconName="users-round">
+            <p class="hint">Press <strong>Message</strong> to write to a classmate.</p>
+            <CoursePeopleList People="classmates" Singular="classmate" Plural="classmates" EmptyText="You have no classmate in this course yet." />
+        </Card>
+    </CourseLayout>
+}
+
+@code {
+    [Parameter] public int AssignmentId { get; set; }
+
+    private bool loaded;
+    private StudentSubject? subject;
+    private IReadOnlyList<PersonCard> classmates = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var me = await Me.GetAsync();
+        var studentId = await Me.GetStudentIdAsync();
+        subject = studentId is { } id ? await Modules.GetStudentSubjectAsync(id, AssignmentId) : null;
+        classmates = subject is null || me is null ? [] : await People.GetCourseClassmatesAsync(me.UserId, AssignmentId);
+        loaded = true;
+    }
+}

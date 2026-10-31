@@ -28,37 +28,23 @@ else
         <ButtonLink Href="student/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
     </PageHeader>
 
-    @* What was on the card of the course in the list is here, after the click: the attendance, the work and the grade of this course. *@
-    <div class="kpis three">
-        <StatCard Label="Attendance" Text="@(attendanceOf?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
-                  Accent="@(attendanceOf?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
-                  Hint="@(attendanceOf is { Percent: not null } ? $"{attendanceOf.Present} present · {attendanceOf.Late} late · {attendanceOf.Absent} absent" : "Nothing marked yet")" />
-        <StatCard Label="Assignments" Text="@(gradeOf is null ? "—" : $"{gradeOf.GradedCount} of {gradeOf.TotalItems}")" IconName="clipboard-check" Accent="AccentColor.Violet"
-                  Hint="@(gradeOf is null ? "" : $"graded · {gradeOf.OpenItems} to do" + (gradeOf.Missing > 0 ? $" · {gradeOf.Missing} missing" : ""))" />
-        <StatCard Label="Grade" Text="@(gradeOf?.Percent is { } pct ? $"{pct:0.#}%" : "—")" IconName="trending-up"
-                  Accent="@(gradeOf?.Percent is { } p2 && p2 < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
-                  Hint="@(gradeOf?.Percent is { } p3 ? GradeRules.Descriptor(p3) : "No grade yet")" />
-    </div>
-
-    <PageWithAside Show="calendar,upnext">
-    @* The second menu of the course (modules, assignments, quizzes, task performances) next to its content. *@
-    <CourseLayout PageHref="@($"student/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
     @if (shownKind is { } listKind)
     {
         var listNow = PhilippineTime.Now(Clock);
         var listed = subject.Modules.SelectMany(m => m.Items.Where(i => i.Kind == listKind)).ToList();
-        <Card Title="@ItemKinds.Plural(listKind)" IconName="@SubjectStyle.KindIcon(listKind)">
+        <CourseLayout Student="subject" Selected="@CourseMenu.KeyOf(listKind)">
+        <Card Title="@CourseMenuBuilder.Label(listKind)" IconName="@SubjectStyle.KindIcon(listKind)">
             @if (listed.Count == 0)
             {
-                <p class="muted">No @ItemKinds.Plural(listKind).ToLowerInvariant() in this course yet.</p>
+                <p class="muted">No @CourseMenuBuilder.Label(listKind).ToLowerInvariant() in this course yet.</p>
             }
             else
             {
                 <ul class="kind-list">
                     @foreach (var item in listed)
                     {
-                        var hidden = item.Kind == ItemKinds.Quiz && item.Status == SubmissionStatus.Graded && item.Score is null;
-                        var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, item.Kind == ItemKinds.Quiz, hidden, item.LateDecision);
+                        var hidden = ItemKinds.IsQuizLike(item.Kind) && item.Status == SubmissionStatus.Graded && item.Score is null;
+                        var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, ItemKinds.IsQuizLike(item.Kind), hidden, item.LateDecision);
                         <li>
                             <a class="kind-link" href="student/items/@item.Id">
                                 <span class="kind-text">
@@ -89,64 +75,64 @@ else
                 </ul>
             }
         </Card>
+        </CourseLayout>
     }
     else
     {
-    @if (subject.Modules.Count == 0)
-    {
-        <Card>
-            <EmptyState IconName="layers" Title="No modules yet">
-                <p>Your teacher has not posted any module for this course. You will be told when one appears.</p>
-            </EmptyState>
-        </Card>
-    }
-    else
-    {
-        var now = PhilippineTime.Now(Clock);
-        <div class="modules">
-            @for (var n = 0; n < subject.Modules.Count; n++)
-            {
-                var module = subject.Modules[n];
-                var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus);
-                var moduleId = module.Id;
-                var isOpen = openModules.Contains(moduleId);
-                <section class="module @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
-                    @* A click on the title opens the module: then its assignments, quizzes and task performances show. *@
-                    <header class="module-head">
-                        <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{moduleId}")" @onclick="() => ToggleModule(moduleId)">
-                            <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
-                            <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
-                            <span class="module-text">
-                                <span class="module-name">@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</span>
-                                @if (!string.IsNullOrWhiteSpace(module.Description))
-                                {
-                                    <span class="module-desc">@module.Description</span>
-                                }
-                            </span>
-                        </button>
-                        <ButtonLink Href="@($"student/modules/{module.Id}")" Variant="@(module.Opened ? ButtonVariant.Secondary : ButtonVariant.Primary)" IconName="book-open">@(module.IsSyllabus ? (module.Opened ? "Read again" : "Read syllabus") : module.Opened ? "Read again" : "Read lesson")</ButtonLink>
-                    </header>
-
-                    @if (isOpen)
-                    {
-                        <div class="module-body" id="@($"module-{moduleId}")">
-                            @if (!module.IsSyllabus || module.Items.Count > 0)
-                            {
-                                <ModuleTabs Module="module" Now="now" />
-                            }
-                            else
-                            {
-                                <p class="muted">Open the syllabus to read it.</p>
-                            }
-                        </div>
-                    }
-                </section>
-            }
+        @* What was on the card of the course in the list is here, after the click: the attendance, the work and the grade of this course. *@
+        <div class="kpis">
+            <StatCard Label="Attendance" Text="@(attendanceOf?.Percent is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check"
+                      Accent="@(attendanceOf?.Percent is { } r2 && r2 < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Blue)"
+                      Hint="@(attendanceOf is { Percent: not null } ? $"{attendanceOf.Present} present · {attendanceOf.Late} late · {attendanceOf.Absent} absent" : "Nothing marked yet")" />
+            <StatCard Label="Graded" Text="@(gradeOf is null ? "—" : $"{gradeOf.GradedCount} of {gradeOf.TotalItems}")" IconName="clipboard-check" Accent="AccentColor.Violet"
+                      Hint="works checked by the teacher" />
+            <StatCard Label="To do" Text="@(gradeOf is null ? "—" : gradeOf.OpenItems.ToString())" IconName="clipboard-list" Accent="@(gradeOf?.Missing > 0 ? AccentColor.Amber : AccentColor.Green)"
+                      Hint="@(gradeOf is null ? "" : gradeOf.Missing > 0 ? $"{gradeOf.Missing} missing" : "Nothing missing")" />
+            <StatCard Label="Grade" Text="@(gradeOf?.Percent is { } pct ? $"{pct:0.#}%" : "—")" IconName="trending-up"
+                      Accent="@(gradeOf?.Percent is { } p2 && p2 < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
+                      Hint="@(gradeOf?.Percent is { } p3 ? GradeRules.Descriptor(p3) : "No grade yet")" />
         </div>
+
+        @* The first page of a course: only the syllabus and the modules, one line each. A click on the line opens it. *@
+        @if (subject.Modules.All(m => m.IsExamSet))
+        {
+            <Card>
+                <EmptyState IconName="layers" Title="No modules yet">
+                    <p>Your teacher has not posted any module for this course. You will be told when one appears.</p>
+                </EmptyState>
+            </Card>
+        }
+        else
+        {
+            <Card Title="Syllabus and modules" IconName="layers">
+                <ul class="course-rows">
+                    @for (var n = 0; n < subject.Modules.Count; n++)
+                    {
+                        var module = subject.Modules[n];
+                        if (module.IsExamSet)
+                        {
+                            continue;
+                        }
+
+                        var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus && !m.IsExamSet);
+                        <li>
+                            <a class="course-row" href="@($"student/modules/{module.Id}")" aria-label="@(module.IsSyllabus ? $"Open the syllabus" : $"Open {module.Title}")">
+                                <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
+                                <span class="row-text">
+                                    <span class="row-title">@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</span>
+                                    <span class="row-meta">@ModuleSummary(module)</span>
+                                </span>
+                                <span class="row-go @(module.Opened ? "again" : "")">
+                                    <Icon Name="book-open" Size="16" />
+                                    @(module.IsSyllabus ? (module.Opened ? "Read again" : "Read syllabus") : module.Opened ? "Read again" : "Read lesson")
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </Card>
+        }
     }
-    }
-    </CourseLayout>
-    </PageWithAside>
 }
 
 @code {
@@ -157,21 +143,28 @@ else
 
     private string? shownKind => CourseMenu.KindOfKey(Tab);
 
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
-
-    private IReadOnlyList<CourseMenuLink> MenuLinks => [new("Grades", "trending-up", "student/grades"), new("Teachers", "presentation", $"student/subjects/{AssignmentId}/teachers")];
-
-    private bool loaded;
-    private readonly HashSet<int> openModules = [];
-
-    private void ToggleModule(int id)
+    /// <summary>"2 assignments · 1 quiz" under the title of a module.</summary>
+    private static string ModuleSummary(StudentModule module)
     {
-        if (!openModules.Remove(id))
+        if (module.IsSyllabus)
         {
-            openModules.Add(id);
+            return "How the course is taught and graded";
         }
+
+        var parts = new List<string>();
+        foreach (var kind in ItemKinds.Listed)
+        {
+            var count = module.Items.Count(i => i.Kind == kind);
+            if (count > 0)
+            {
+                parts.Add($"{count} {(count == 1 ? ItemKinds.Display(kind).ToLowerInvariant() : ItemKinds.Plural(kind).ToLowerInvariant())}");
+            }
+        }
+
+        return parts.Count == 0 ? "Lesson only" : string.Join(" · ", parts);
     }
 
+    private bool loaded;
     private StudentSubject? subject;
     private SubjectGrade? gradeOf;
     private SubjectAttendance? attendanceOf;

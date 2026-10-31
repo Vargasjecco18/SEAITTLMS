@@ -33,15 +33,15 @@ else
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
+        <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
         <Button Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
-        <Button IconName="send" Disabled="@(course.Modules.Count == 0 && course.Exams.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span>You send the <strong>syllabus</strong>, the <strong>modules</strong> and the <strong>summative exams</strong>. What you send, with its files, reaches each teacher as a <strong>draft</strong> in their course. The teacher decides when to post it to the students, and writes the assignments, quizzes and task performances.</span>
+        <span>You send the <strong>syllabus</strong> and the <strong>modules</strong> to the teachers: they reach each teacher as a <strong>draft</strong> that the teacher posts. The <strong>summative exams</strong> are posted <strong>straight to the students</strong> and open and close at the times you set. The teachers write the seatwork, assignments, quizzes and task performances.</span>
     </p>
 
     <div class="tiles">
@@ -70,9 +70,15 @@ else
                             }
                             else
                             {
-                                var total = course.Modules.Count + course.Exams.Count;
-                                var gotAll = got + Math.Min(t.ExamsGot, course.Exams.Count);
-                                <Badge Tone="@(gotAll == 0 ? Tone.Neutral : gotAll >= total ? Tone.Success : Tone.Info)">Got @gotAll of @total</Badge>
+                                @if (course.Modules.Count > 0)
+                                {
+                                    <Badge Tone="@(got == 0 ? Tone.Neutral : got >= course.Modules.Count ? Tone.Success : Tone.Info)">Modules @got of @course.Modules.Count</Badge>
+                                }
+                                @if (course.Exams.Count > 0)
+                                {
+                                    var posted = Math.Min(t.ExamsGot, course.Exams.Count);
+                                    <Badge Tone="@(posted == 0 ? Tone.Neutral : posted >= course.Exams.Count ? Tone.Success : Tone.Info)">Exams posted @posted of @course.Exams.Count</Badge>
+                                }
                             }
                         </li>
                     }
@@ -149,23 +155,11 @@ else
                     @if (isOpen)
                     {
                         <div class="module-body" id="@($"module-{id}")">
-                            @if (!string.IsNullOrWhiteSpace(module.Description))
-                            {
-                                <p class="module-description">@module.Description</p>
-                            }
-
-                            @if (!string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl))
+                            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
                             {
                                 <p class="module-lesson">
-                                    <Icon Name="file-text" Size="16" />
-                                    @if (!string.IsNullOrWhiteSpace(module.Body))
-                                    {
-                                        <span>Text (@module.Body.Length.ToString("N0") characters)</span>
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
-                                    {
-                                        <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer"><Icon Name="link" Size="14" /> Link to the file</a>
-                                    }
+                                    <Icon Name="link" Size="16" />
+                                    <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">Link to the file</a>
                                 </p>
                             }
 
@@ -190,9 +184,10 @@ else
             <span class="exams-actions">
                 <Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" Title="Template, import and export in Excel" OnClick="OpenExamsExcel">Excel</Button>
                 <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewExam">Add summative exam</Button>
+                <Button Small="true" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
             </span>
         </header>
-        <p class="exams-note">A summative exam has its paper (instructions and files), its highest score and its <strong>schedule</strong>: when it opens and when it closes. It goes to the teachers like a module, and they give the scores in the gradebook.</p>
+        <p class="exams-note">A summative exam has its <strong>questions</strong> (from the Excel file), the settings of a quiz (time limit and the <strong>anti-cheating watch</strong>) and its <strong>schedule</strong>: when it opens and when it closes. When you press <strong>Post to students</strong> it goes straight to the students of the sections you choose. The system gives the score and it goes to the gradebook of the teacher by itself.</p>
         @if (course.Exams.Count == 0)
         {
             <p class="none">No summative exam yet.</p>
@@ -209,7 +204,16 @@ else
                             <div class="item-meta">
                                 <span><Icon Name="calendar-clock" Size="14" /> @ScheduleText(exam)</span>
                                 <span>@exam.MaxScore.ToString("0.##") points</span>
-                                <Badge Tone="@(exam.SentTo == 0 ? Tone.Neutral : Tone.Success)">@(exam.SentTo == 0 ? "Not sent yet" : $"Sent to {exam.SentTo} {(exam.SentTo == 1 ? "course" : "courses")}")</Badge>
+                                <span><Icon Name="list-checks" Size="14" /> @(exam.Questions == 0 ? "No questions yet" : exam.Questions == 1 ? "1 question" : $"{exam.Questions} questions")</span>
+                                @if (exam.TimeLimitMinutes is { } minutes)
+                                {
+                                    <span><Icon Name="timer" Size="14" /> @minutes min</span>
+                                }
+                                @if (exam.AntiCheat)
+                                {
+                                    <span title="Warns after @exam.MaxViolations leaves of the exam, copies, pastes, prints or screenshots"><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
+                                }
+                                <Badge Tone="@(exam.SentTo == 0 ? Tone.Neutral : Tone.Success)">@(exam.SentTo == 0 ? "Not posted yet" : $"Posted to {exam.SentTo} {(exam.SentTo == 1 ? "section" : "sections")}")</Badge>
                             </div>
                             @if (!string.IsNullOrWhiteSpace(exam.Instructions))
                             {
@@ -241,12 +245,6 @@ else
 
             <Field For="m-title" Label="Title" Required="true">
                 <InputText id="m-title" @bind-Value="moduleForm.Title" maxlength="200" autocomplete="off" />
-            </Field>
-            <Field For="m-desc" Label="Short description" Hint="One or two lines the students see in the list.">
-                <InputText id="m-desc" @bind-Value="moduleForm.Description" maxlength="1000" autocomplete="off" />
-            </Field>
-            <Field For="m-body" Label="@(editingIsSyllabus ? "Syllabus" : "Lesson")" Hint="The text. Line breaks are kept.">
-                <InputTextArea id="m-body" @bind-Value="moduleForm.Body" rows="9" />
             </Field>
             <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
@@ -286,9 +284,22 @@ else
                     <input id="x-closes" type="datetime-local" value="@examForm.DueText" @onchange="SetCloses" />
                 </Field>
             </div>
-            <Field For="x-score" Label="Highest score" Required="true">
-                <InputNumber id="x-score" @bind-Value="examForm.MaxScore" />
-            </Field>
+            @if (examQuestions.Count == 0)
+            {
+                <Field For="x-score" Label="Highest score" Required="true" Hint="With questions, the highest score is the total of their points.">
+                    <InputNumber id="x-score" @bind-Value="examForm.MaxScore" />
+                </Field>
+            }
+
+            <section class="exam-questions" aria-label="Questions of the exam">
+                <h3><Icon Name="list-checks" Size="16" /> Questions <span class="count">@examQuestions.Count</span></h3>
+                <p class="exams-note">@(examQuestions.Count == 0 ? "No question yet. Download the template, write the questions in it and import it here." : $"The exam is worth {examQuestions.Sum(q => q.Points):0.##} points. Import a new file to replace the questions.")</p>
+                <QuestionExcelTools QuizTitle="@examForm.Title" Questions="examQuestions" OnImported="QuestionsImported" />
+            </section>
+
+            <QuizSettings IdPrefix="x" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
+                          @bind-TimeLimit="examForm.TimeLimitMinutes" @bind-MaxViolations="examForm.MaxViolations" @bind-AntiCheat="examForm.AntiCheat"
+                          @bind-ShuffleQuestions="examForm.ShuffleQuestions" @bind-ShuffleOptions="examForm.ShuffleOptions" @bind-ShowResult="examForm.ShowResult" />
             <AttachmentPicker @ref="examPicker" @key="examFormKey" Title="Files of the exam (the paper)" Existing="@FilesOf(itemAttachments, editingExamId)" />
 
             <div class="modal-actions">
@@ -308,15 +319,68 @@ else
                    Read="ReadExams" OnImport="ImportExamsAsync" OnClose="CloseExamsExcel" />
 <ModulesExcelDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" Existing="ModulesExisting" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
 
-@* ===== Send to teachers ===== *@
-<Modal Open="sending" Title="Send to teachers" OnClose="CloseSend" Large="true">
-    @if (sending && course is not null)
+@* ===== Send to teachers (syllabus and modules) / Post to students (summative exams) ===== *@
+<Modal Open="sending" Title="@(postingExams ? "Post to students" : "Send to teachers")" OnClose="CloseSend" Large="true">
+    @if (sending && course is not null && postingExams)
     {
-        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A module or an exam that a teacher's course already got is not sent again.</p>
+        <p class="dialog-text">The exam goes <strong>straight to the students</strong> of the sections you choose, and opens and closes at the times you set. The students and the teacher are told. An exam that a section already got is not posted again.</p>
+        <FormErrors Errors="formErrors" />
+
+        <p class="pick-title">Which exams</p>
+        <button type="button" class="link-button" @onclick="ToggleAllExams">@(sendExams.Count == course.Exams.Count ? "Clear all" : "Select all")</button>
+        <ul class="picks">
+            @foreach (var exam in course.Exams)
+            {
+                var id = exam.Id;
+                <li>
+                    <label class="pick">
+                        <input type="checkbox" checked="@sendExams.Contains(id)" @onchange="e => TogglePick(sendExams, id, e)" />
+                        <span>
+                            <strong>@exam.Title</strong>
+                            <small>@ScheduleText(exam) · @(exam.Questions == 1 ? "1 question" : $"{exam.Questions} questions") · posted to @exam.SentTo of @course.Teachers.Count</small>
+                        </span>
+                    </label>
+                </li>
+            }
+        </ul>
+
+        <p class="pick-title">Which sections</p>
+        @if (course.Teachers.Count == 0)
+        {
+            <p class="muted">No section has this course this school year.</p>
+        }
+        else
+        {
+            <button type="button" class="link-button" @onclick="ToggleAllTeachers">@(sendTargets.Count == course.Teachers.Count ? "Clear all" : "Select all")</button>
+            <ul class="picks">
+                @foreach (var t in course.Teachers)
+                {
+                    var id = t.AssignmentId;
+                    <li>
+                        <label class="pick">
+                            <input type="checkbox" checked="@sendTargets.Contains(id)" @onchange="e => TogglePick(sendTargets, id, e)" />
+                            <span>
+                                <strong>@t.SectionLabel</strong>
+                                <small>@t.TeacherName · @t.Students @(t.Students == 1 ? "student" : "students")</small>
+                            </span>
+                        </label>
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSend">Cancel</Button>
+            <Button IconName="send" Disabled="@(busy || course.Teachers.Count == 0)" OnClick="PostExamsAsync">@(busy ? "Posting…" : "Post to students")</Button>
+        </div>
+    }
+    else if (sending && course is not null)
+    {
+        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A module that a teacher's course already got is not sent again.</p>
         <FormErrors Errors="formErrors" />
 
         <p class="pick-title">What to send</p>
-        <button type="button" class="link-button" @onclick="ToggleAllModules">@(sendModules.Count == course.Modules.Count && sendExams.Count == course.Exams.Count ? "Clear all" : "Select all")</button>
+        <button type="button" class="link-button" @onclick="ToggleAllModules">@(sendModules.Count == course.Modules.Count ? "Clear all" : "Select all")</button>
         <ul class="picks">
             @* The syllabus is the first thing on the list (and the first thing the teacher sees in the course). *@
             @if (!course.Modules.Any(m => m.IsSyllabus))
@@ -341,19 +405,6 @@ else
                         <span>
                             <strong>@(module.IsSyllabus ? "Syllabus: " : "")@module.Title</strong>
                             <small>@(module.IsSyllabus ? "Syllabus" : "Module") · sent to @module.SentTo of @course.Teachers.Count</small>
-                        </span>
-                    </label>
-                </li>
-            }
-            @foreach (var exam in course.Exams)
-            {
-                var id = exam.Id;
-                <li>
-                    <label class="pick">
-                        <input type="checkbox" checked="@sendExams.Contains(id)" @onchange="e => TogglePick(sendExams, id, e)" />
-                        <span>
-                            <strong>Summative exam: @exam.Title</strong>
-                            <small>@ScheduleText(exam) · sent to @exam.SentTo of @course.Teachers.Count</small>
                         </span>
                     </label>
                 </li>
@@ -424,7 +475,13 @@ else
     private ExamInput? examForm;
     private int? editingExamId;
 
+    // the questions of the exam in the box (imported from Excel; saved with the exam), and the questions of every exam of the course (for the export)
+    private List<QuestionInput> examQuestions = [];
+    private bool examQuestionsChanged;
+    private IReadOnlyDictionary<int, IReadOnlyList<QuestionInput>> questionsByExam = new Dictionary<int, IReadOnlyList<QuestionInput>>();
+
     private bool sending;
+    private bool postingExams;
     private readonly HashSet<int> sendModules = [];
     private readonly HashSet<int> sendExams = [];
     private readonly HashSet<int> sendTargets = [];
@@ -504,6 +561,7 @@ else
         var modules = course?.Modules ?? [];
         moduleAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialModule, modules.Select(m => m.Id).ToList());
         itemAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialItem, (course?.Exams ?? []).Select(e => e.Id).ToList());
+        questionsByExam = await Library.GetExamQuestionsAsync((course?.Exams ?? []).Select(e => e.Id).ToList());
     }
 
     private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>
@@ -637,6 +695,8 @@ else
         formErrors = [];
         editingExamId = null;
         examFormKey++;
+        examQuestions = [];
+        examQuestionsChanged = false;
         examForm = new ExamInput();
     }
 
@@ -649,7 +709,22 @@ else
         {
             Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
             OpensText = PhilippineTime.ToInputValue(exam.OpensAtUtc), DueText = PhilippineTime.ToInputValue(exam.DueAtUtc),
+            TimeLimitMinutes = exam.TimeLimitMinutes, AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations,
+            ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions, ShowResult = exam.ShowResult,
         };
+        examQuestions = [.. questionsByExam.GetValueOrDefault(exam.Id) ?? []];
+        examQuestionsChanged = false;
+    }
+
+    /// <summary>The questions of the Excel file replace the ones in the box (the exam is worth their total).</summary>
+    private void QuestionsImported(IReadOnlyList<QuestionInput> imported)
+    {
+        examQuestions = [.. imported];
+        examQuestionsChanged = true;
+        if (examForm is not null)
+        {
+            examForm.MaxScore = examQuestions.Sum(q => q.Points);
+        }
     }
 
     private void CloseExamForm() => examForm = null;
@@ -671,6 +746,12 @@ else
             // The date boxes are written out (not @bind) because their text is converted by PhilippineTime, not by Blazor.
             examForm.OpensAtUtc = PhilippineTime.FromInputValue(examForm.OpensText);
             examForm.DueAtUtc = PhilippineTime.FromInputValue(examForm.DueText);
+            examForm.Questions = examQuestionsChanged ? examQuestions : null;
+            if (examQuestions.Count > 0)
+            {
+                examForm.MaxScore = examQuestions.Sum(q => q.Points);
+            }
+
             var result = await Library.SaveExamAsync(userId, SubjectId, editingExamId, examForm);
             if (!result.Succeeded)
             {
@@ -710,7 +791,7 @@ else
     private void CloseExamsExcel() => examsExcelOpen = false;
 
     private byte[] ExamsExportBytes() =>
-        ExamSheets.Export((course?.Exams ?? []).Select(e => new ExamExportRow(e.Title, e.Instructions, e.MaxScore, e.OpensAtUtc, e.DueAtUtc)));
+        ExamSheets.Export((course?.Exams ?? []).Select(e => new ExamExportRow(e.Title, e.Instructions, e.MaxScore, e.OpensAtUtc, e.DueAtUtc, e.TimeLimitMinutes, e.AntiCheat, questionsByExam.GetValueOrDefault(e.Id))));
 
     private static SheetImportDialog.SheetPreview ReadExams(byte[] data)
     {
@@ -755,6 +836,7 @@ else
         }
 
         formErrors = [];
+        postingExams = false;
         sendModules.Clear();
         sendExams.Clear();
         sendTargets.Clear();
@@ -765,6 +847,27 @@ else
             sendModules.Add(module.Id);
         }
 
+        foreach (var teacher in course.Teachers)
+        {
+            sendTargets.Add(teacher.AssignmentId);
+        }
+
+        sending = true;
+    }
+
+    /// <summary>The summative exams go straight to the students of the sections that are chosen.</summary>
+    private void OpenPostExams()
+    {
+        if (course is null)
+        {
+            return;
+        }
+
+        formErrors = [];
+        postingExams = true;
+        sendModules.Clear();
+        sendExams.Clear();
+        sendTargets.Clear();
         foreach (var exam in course.Exams.Where(e => e.SentTo < course.Teachers.Count || course.Teachers.Count == 0))
         {
             sendExams.Add(exam.Id);
@@ -806,14 +909,29 @@ else
             return;
         }
 
-        if (sendModules.Count == course.Modules.Count && sendExams.Count == course.Exams.Count)
+        if (sendModules.Count == course.Modules.Count)
         {
             sendModules.Clear();
-            sendExams.Clear();
         }
         else
         {
             sendModules.UnionWith(course.Modules.Select(m => m.Id));
+        }
+    }
+
+    private void ToggleAllExams()
+    {
+        if (course is null)
+        {
+            return;
+        }
+
+        if (sendExams.Count == course.Exams.Count)
+        {
+            sendExams.Clear();
+        }
+        else
+        {
             sendExams.UnionWith(course.Exams.Select(e => e.Id));
         }
     }
@@ -845,7 +963,34 @@ else
         busy = true;
         try
         {
-            var result = await Library.SendAsync(userId, SubjectId, [.. sendModules], [.. sendTargets], [.. sendExams]);
+            var result = await Library.SendAsync(userId, SubjectId, [.. sendModules], [.. sendTargets]);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            sending = false;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task PostExamsAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Library.PostExamsAsync(userId, SubjectId, [.. sendExams], [.. sendTargets]);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

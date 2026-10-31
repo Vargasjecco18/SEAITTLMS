@@ -74,7 +74,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var now = Now;
         var context = await ItemAccess.ForStudentAsync(db, studentId, itemId, now, tracking: true, ct);
-        if (context is null || context.Item.Kind != ItemKinds.Quiz)
+        if (context is null || !ItemKinds.IsQuizLike(context.Item.Kind))
         {
             return new StartResult(null, "This quiz was not found.");
         }
@@ -280,7 +280,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var open = await db.Submissions.Include(s => s.Item)
-            .Where(s => s.Status == SubmissionStatus.InProgress && s.Item.Kind == ItemKinds.Quiz)
+            .Where(s => s.Status == SubmissionStatus.InProgress && (s.Item.Kind == ItemKinds.Quiz || s.Item.Kind == ItemKinds.Exam))
             .ToListAsync(ct);
 
         var done = 0;
@@ -327,7 +327,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var context = await ItemAccess.ForStudentAsync(db, studentId, itemId, Now, tracking: false, ct);
-        if (context is null || context.Item.Kind != ItemKinds.Quiz || !context.Item.ShowResult)
+        if (context is null || !ItemKinds.IsQuizLike(context.Item.Kind) || !context.Item.ShowResult)
         {
             return null;
         }
@@ -340,7 +340,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
     private async Task<(Submission Submission, ModuleItem Item, List<QuizQuestion> Questions)?> LoadOpenAsync(AppDbContext db, int studentId, int itemId, CancellationToken ct)
     {
-        var submission = await db.Submissions.Include(s => s.Item).FirstOrDefaultAsync(s => s.ItemId == itemId && s.StudentId == studentId && s.Status == SubmissionStatus.InProgress && s.Item.Kind == ItemKinds.Quiz, ct);
+        var submission = await db.Submissions.Include(s => s.Item).FirstOrDefaultAsync(s => s.ItemId == itemId && s.StudentId == studentId && s.Status == SubmissionStatus.InProgress && (s.Item.Kind == ItemKinds.Quiz || s.Item.Kind == ItemKinds.Exam), ct);
         if (submission is null)
         {
             return null;

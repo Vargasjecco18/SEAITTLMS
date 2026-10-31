@@ -13,7 +13,7 @@ public sealed record StudentItemView(
     int Questions, int? TimeLimitMinutes, bool AntiCheat, int MaxViolations, bool ShowResult, int ViolationCount, string? AutoSubmitReason, int? SubmissionId = null,
     string? LateDecision = null)
 {
-    public bool IsQuiz => Kind == ItemKinds.Quiz;
+    public bool IsQuiz => ItemKinds.IsQuizLike(Kind);
 
     /// <summary>The score may be shown (a quiz can hide it until the teacher says so).</summary>
     public bool ScoreVisible => Score is not null && (!IsQuiz || ShowResult);
@@ -109,7 +109,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         var i = context.Item;
         var s = await db.Submissions.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId && x.StudentId == studentId, ct);
-        var questions = i.Kind == ItemKinds.Quiz ? await db.QuizQuestions.CountAsync(q => q.ItemId == itemId, ct) : 0;
+        var questions = ItemKinds.IsQuizLike(i.Kind) ? await db.QuizQuestions.CountAsync(q => q.ItemId == itemId, ct) : 0;
 
         return new StudentItemView(
             i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName,
@@ -125,7 +125,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var context = await ItemAccess.ForStudentAsync(db, studentId, itemId, Now, tracking: false, ct);
-        if (context is null || (context.Item.Kind == ItemKinds.Quiz && await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct)))
+        if (context is null || (ItemKinds.IsQuizLike(context.Item.Kind) && await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct)))
         {
             return null;
         }
@@ -229,7 +229,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         }
 
         // A quiz with questions is taken on its own page. A quiz that is only a file (no questions) is answered here, like an activity, and the teacher gives the score.
-        if (context.Item.Kind == ItemKinds.Quiz && await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct))
+        if (ItemKinds.IsQuizLike(context.Item.Kind) && await db.QuizQuestions.AnyAsync(q => q.ItemId == itemId, ct))
         {
             return ServiceResult.Fail("A quiz is taken on its own page.");
         }
@@ -321,7 +321,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         }).ToList();
 
         var i = context.Item;
-        var questions = i.Kind == ItemKinds.Quiz ? await db.QuizQuestions.CountAsync(q => q.ItemId == itemId, ct) : 0;
+        var questions = ItemKinds.IsQuizLike(i.Kind) ? await db.QuizQuestions.CountAsync(q => q.ItemId == itemId, ct) : 0;
         return new ItemSubmissionList(i.Id, i.Kind, i.Title, i.MaxScore, i.DueAtUtc, context.ModuleId, context.ModuleTitle, context.AssignmentId, context.SubjectName, context.SectionLabel, i.AntiCheat, questions, rows);
     }
 
@@ -342,7 +342,7 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         }
 
         var s = await db.Submissions.AsNoTracking().FirstOrDefaultAsync(x => x.ItemId == itemId && x.StudentId == studentId, ct);
-        var answers = context.Item.Kind == ItemKinds.Quiz && s is not null ? await QuizService.ReviewAsync(db, itemId, s, ct) : [];
+        var answers = ItemKinds.IsQuizLike(context.Item.Kind) && s is not null ? await QuizService.ReviewAsync(db, itemId, s, ct) : [];
 
         return new SubmissionDetail(
             studentId, student, context.Item.Kind, context.Item.Title, context.Item.MaxScore, s?.Status ?? "NotStarted",

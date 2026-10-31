@@ -34,10 +34,10 @@ else
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     @* The second menu of the course (modules, assignments, quizzes, task performances) next to its content. *@
-    <CourseLayout PageHref="@($"teacher/subjects/{AssignmentId}")" Selected="@(shownKind is null ? "" : CourseMenu.KeyOf(shownKind))" ModuleCount="@subject.Modules.Count(m => !m.IsSyllabus)" Counts="KindCounts" Extra="MenuLinks">
     @if (shownKind is { } listKind)
     {
-        <Card Title="@ItemKinds.Plural(listKind)" IconName="@SubjectStyle.KindIcon(listKind)">
+        <CourseLayout Teacher="subject" Selected="@CourseMenu.KeyOf(listKind)">
+        <Card Title="@CourseMenuBuilder.Label(listKind)" IconName="@SubjectStyle.KindIcon(listKind)">
             @{
                 var listed = subject.Modules.Where(m => !m.IsSyllabus || m.Items.Any(i => i.Kind == listKind))
                     .SelectMany(m => m.Items.Where(i => i.Kind == listKind).Select(i => (Module: m, Item: i))).ToList();
@@ -85,218 +85,121 @@ else
                 </ul>
             }
         </Card>
+        </CourseLayout>
     }
     else
     {
-    <p class="hint-line">
-        <Icon Name="eye-off" Size="16" />
-        <span>The modules the academic provider sends you are <strong>drafts</strong>: students can't see them until you post them. Change the text and the due dates, then post a module now, or schedule the time it appears.</span>
-    </p>
+        @* The first page of a course: only the syllabus and the modules, one line each. A click on the line opens it (its lesson, its files and, at the right, Edit module). *@
+        <p class="hint-line">
+            <Icon Name="eye-off" Size="16" />
+            <span>The modules the academic provider sends you are <strong>drafts</strong>: students can't see them until you post them. Open a module to change it, and press <strong>Status</strong> to post it, schedule the time it appears, or hide it.</span>
+        </p>
 
-    @if (subject.Modules.Count == 0)
-    {
-        <Card>
-            <EmptyState IconName="layers" Title="No modules yet">
-                <p>A module is a lesson with its assignments, quizzes and task performances. The academic provider sends the modules of this course.</p>
-            </EmptyState>
-        </Card>
-    }
-    else
-    {
-        <div class="modules">
-            @for (var n = 0; n < subject.Modules.Count; n++)
-            {
-                var module = subject.Modules[n];
-                var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus);
-                var moduleId = module.Id;
-                var isOpen = openModules.Contains(moduleId);
-                <section class="module @module.State.ToLowerInvariant() @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
-                    @* A click on the title opens the syllabus or the module: its text, its files and its assignments, quizzes and task performances. *@
-                    <header class="module-head">
-                        <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{moduleId}")" @onclick="() => ToggleModule(moduleId)">
-                            <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
-                            <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
-                            <span class="module-heading">
-                                <span class="module-name">@module.Title</span>
-                                <span class="module-state">
-                                    @if (module.IsSyllabus)
-                                    {
-                                        <Badge Tone="Tone.Info">Syllabus</Badge>
-                                    }
-                                    @if (module.FromProvider)
-                                    {
-                                        <Badge Tone="Tone.Info">From the academic provider</Badge>
-                                    }
-                                    @if (module.State == Visibility.Posted)
-                                    {
-                                        <Badge Tone="Tone.Success">Posted @PhilippineTime.FormatDate(module.VisibleFromUtc!.Value)</Badge>
-                                    }
-                                    else if (module.State == Visibility.Scheduled)
-                                    {
-                                        <Badge Tone="Tone.Warning">Scheduled for @PhilippineTime.FormatDateTime(module.VisibleFromUtc!.Value)</Badge>
-                                    }
-                                    else
-                                    {
-                                        <Badge>Draft · hidden from students</Badge>
-                                    }
-                                    @if (!module.IsSyllabus)
-                                    {
-                                        <span class="count-chip">@ModuleSummary(module)</span>
-                                    }
-                                </span>
-                            </span>
-                        </button>
-
-                        <div class="module-actions">
-                            @if (module.State != Visibility.Posted)
-                            {
-                                <Button Small="true" IconName="send" OnClick="() => PostNowAsync(module)">Post now</Button>
-                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="calendar-clock" OnClick="() => OpenSchedule(module)">@(module.State == Visibility.Scheduled ? "Change time" : "Schedule")</Button>
-                            }
-
-                            @if (module.State != Visibility.Draft)
-                            {
-                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye-off" OnClick="() => HideAsync(module)">Hide</Button>
-                            }
-
-                            <ButtonLink Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Href="@($"teacher/subjects/{AssignmentId}/modules/{module.Id}")">Open</ButtonLink>
-                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
-                        </div>
-                    </header>
-
-                    @if (isOpen)
+        @if (subject.Modules.All(m => m.IsExamSet))
+        {
+            <Card>
+                <EmptyState IconName="layers" Title="No modules yet">
+                    <p>A module is a lesson with its files. The academic provider sends the syllabus and the modules of this course.</p>
+                </EmptyState>
+            </Card>
+        }
+        else
+        {
+            <Card Title="Syllabus and modules" IconName="layers">
+                <ul class="course-rows">
+                    @for (var n = 0; n < subject.Modules.Count; n++)
                     {
-                    <div class="module-body" id="@($"module-{moduleId}")">
-                    @if (!string.IsNullOrWhiteSpace(module.Description))
-                    {
-                        <p class="module-description">@module.Description</p>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(module.Body) || !string.IsNullOrWhiteSpace(module.LinkUrl))
-                    {
-                        <p class="module-lesson">
-                            <Icon Name="file-text" Size="16" />
-                            @if (!string.IsNullOrWhiteSpace(module.Body))
-                            {
-                                <span>Lesson text (@module.Body.Length.ToString("N0") characters)</span>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
-                            {
-                                <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer"><Icon Name="link" Size="14" /> Link</a>
-                            }
-                        </p>
-                    }
-
-                    @{
-                        var allModuleFiles = FilesOf(moduleFiles, module.Id);
-                    }
-                    <AttachmentList Items="allModuleFiles.Where(f => !f.IsSlides).ToList()" PageHref="@(f => ReaderHref(module.Id, f))" Label="@($"Files of {module.Title}")" />
-                    @if (allModuleFiles.Any(f => f.IsSlides))
-                    {
-                        <h3 class="slides-title"><Icon Name="presentation" Size="16" /> Slides</h3>
-                        <AttachmentList Items="allModuleFiles.Where(f => f.IsSlides).ToList()" PageHref="@(f => ReaderHref(module.Id, f))" Label="@($"Slides of {module.Title}")" />
-                    }
-
-                    <div class="groups">
-                        @foreach (var kind in ItemKinds.Listed.Where(k => ItemKinds.IsOptionalTab(k) ? module.Items.Any(i => i.Kind == k) : !module.IsSyllabus || module.Items.Any(i => i.Kind == k)))
+                        var module = subject.Modules[n];
+                        if (module.IsExamSet)
                         {
-                            var items = module.Items.Where(i => i.Kind == kind).ToList();
-                            <div class="group">
-                                <div class="group-head">
-                                    <h3><Icon Name="@SubjectStyle.KindIcon(kind)" Size="18" /> @ItemKinds.Plural(kind) <span class="count">@items.Count</span></h3>
-                                    <span class="group-actions">
-                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" Title="Template, import and export in Excel" OnClick="() => OpenExcel(module, kind)">Excel</Button>
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenNewItem(module, kind)">Add @ItemKinds.Display(kind).ToLowerInvariant()</Button>
-                                    </span>
-                                </div>
+                            continue;
+                        }
 
-                                @if (items.Count == 0)
+                        var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus && !m.IsExamSet);
+                        <li class="course-row @module.State.ToLowerInvariant()">
+                            <a class="row-open" href="@($"teacher/subjects/{AssignmentId}/modules/{module.Id}")">
+                                <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
+                                <span class="row-text">
+                                    <span class="row-title">@module.Title</span>
+                                    <span class="row-meta">
+                                        @if (module.IsSyllabus)
+                                        {
+                                            <Badge Tone="Tone.Info">Syllabus</Badge>
+                                        }
+                                        @if (module.FromProvider)
+                                        {
+                                            <Badge Tone="Tone.Info">From the academic provider</Badge>
+                                        }
+                                        @if (!module.IsSyllabus)
+                                        {
+                                            <span class="count-chip">@ModuleSummary(module)</span>
+                                        }
+                                    </span>
+                                </span>
+                            </a>
+                            <span class="row-status">
+                                @if (module.State == Visibility.Posted)
                                 {
-                                    <p class="none">None yet.</p>
+                                    <Badge Tone="Tone.Success">Posted @PhilippineTime.FormatDate(module.VisibleFromUtc!.Value)</Badge>
+                                }
+                                else if (module.State == Visibility.Scheduled)
+                                {
+                                    <Badge Tone="Tone.Warning">Scheduled for @PhilippineTime.FormatDateTime(module.VisibleFromUtc!.Value)</Badge>
                                 }
                                 else
                                 {
-                                    <ul class="items">
-                                        @foreach (var item in items)
-                                        {
-                                            <li class="item">
-                                                <div class="item-main">
-                                                    <a class="item-title" href="teacher/items/@item.Id">@item.Title</a>
-                                                    <div class="item-meta">
-                                                        @if (item.DueAtUtc is { } due)
-                                                        {
-                                                            <span title="@PhilippineTime.FormatDateTime(due)"><Icon Name="calendar-clock" Size="14" /> Due @PhilippineTime.FormatDateTime(due)</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span>No due date</span>
-                                                        }
-                                                        <span>@item.MaxScore.ToString("0.##") points</span>
-                                                        @if (item.Kind == ItemKinds.Quiz && IsFileQuiz(item))
-                                                        {
-                                                            <span><Icon Name="file-text" Size="14" /> File quiz · no questions</span>
-                                                        }
-                                                        else if (item.Kind == ItemKinds.Quiz)
-                                                        {
-                                                            <span>@item.Questions @(item.Questions == 1 ? "question" : "questions")</span>
-                                                            @if (item.TimeLimitMinutes is { } minutes)
-                                                            {
-                                                                <span><Icon Name="timer" Size="14" /> @minutes min</span>
-                                                            }
-                                                            @if (item.AntiCheat)
-                                                            {
-                                                                <span title="Warns after @item.MaxViolations leaves of the quiz, copies, pastes, prints or screenshots"><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
-                                                            }
-                                                        }
-                                                        @if (item.State == Visibility.Scheduled && item.VisibleFromUtc is { } appears)
-                                                        {
-                                                            <Badge Tone="Tone.Warning">Appears @PhilippineTime.FormatDateTime(appears)</Badge>
-                                                        }
-                                                    </div>
-                                                    <AttachmentList Items="FilesOf(itemFiles, item.Id)" Label="@($"Files of {item.Title}")" />
-                                                </div>
-                                                <div class="item-side">
-                                                    <span class="handed" title="Handed in of the students in this course">@item.Submitted / @item.Students handed in</span>
-                                                    @if (item.Kind != ItemKinds.Quiz && item.Submitted - item.Graded > 0)
-                                                    {
-                                                        <Badge Tone="Tone.Warning">@(item.Submitted - item.Graded) to check</Badge>
-                                                    }
-                                                    @if (item.Flagged > 0)
-                                                    {
-                                                        <Badge Tone="Tone.Danger"><Icon Name="flag" Size="12" /> @item.Flagged flagged</Badge>
-                                                    }
-                                                </div>
-                                                <div class="item-actions">
-                                                    @if (item.Kind == ItemKinds.Quiz && !IsFileQuiz(item))
-                                                    {
-                                                        <ButtonLink Href="@($"teacher/items/{item.Id}/questions")" Variant="ButtonVariant.Secondary" Small="true" IconName="list-checks">Questions</ButtonLink>
-                                                    }
-                                                    <ButtonLink Href="@($"teacher/items/{item.Id}")" Variant="ButtonVariant.Secondary" Small="true" IconName="eye">Open</ButtonLink>
-                                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="pencil" Title="Edit" OnClick="() => OpenEditItem(module, item)" />
-                                                    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteItem(item)" />
-                                                </div>
-                                            </li>
-                                        }
-                                    </ul>
+                                    <Badge>Draft · hidden</Badge>
                                 }
-                            </div>
-                        }
-                    </div>
-                    </div>
+                                <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Title="@($"Post, schedule or hide {module.Title}")" OnClick="() => OpenStatus(module)">Status</Button>
+                            </span>
+                        </li>
                     }
-                </section>
-            }
-        </div>
+                </ul>
+            </Card>
+        }
     }
-    }
-    </CourseLayout>
 }
 
-@* ===== Module: add or edit ===== *@
-<Modal Open="editingModule is not null" Title="Edit module" OnClose="CloseModuleForm">
-    @if (editingModule is not null)
+@* ===== Status of a module: post it now, schedule the time it appears, or hide it ===== *@
+<Modal Open="statusModule is not null" Title="@($"Status of {statusModule?.Title}")" OnClose="CloseStatus">
+    @if (statusModule is not null)
     {
-        <ModuleEditor @key="editingModule.Id" TeacherId="teacherId" Module="editingModule" Files="FilesOf(moduleFiles, editingModule.Id)" OnSaved="ModuleSavedAsync" OnCancel="CloseModuleForm" />
+        <p class="dialog-text">
+            Now:
+            @if (statusModule.State == Visibility.Posted)
+            {
+                <Badge Tone="Tone.Success">Posted @PhilippineTime.FormatDate(statusModule.VisibleFromUtc!.Value)</Badge>
+                <span>The students can read it.</span>
+            }
+            else if (statusModule.State == Visibility.Scheduled)
+            {
+                <Badge Tone="Tone.Warning">Scheduled for @PhilippineTime.FormatDateTime(statusModule.VisibleFromUtc!.Value)</Badge>
+                <span>It appears for the students by itself at that time.</span>
+            }
+            else
+            {
+                <Badge>Draft · hidden</Badge>
+                <span>The students can't see it.</span>
+            }
+        </p>
+        <FormErrors Errors="formErrors" />
+        <div class="status-actions">
+            @if (statusModule.State != Visibility.Posted)
+            {
+                <Button IconName="send" Disabled="busy" OnClick="PostStatusAsync">Post now</Button>
+            }
+            @if (statusModule.State != Visibility.Draft)
+            {
+                <Button Variant="ButtonVariant.Secondary" IconName="eye-off" Disabled="busy" OnClick="HideStatusAsync">Hide from the students</Button>
+            }
+        </div>
+        <Field For="s-at" Label="Or choose the time it appears" Hint="Philippine time. The students are told when it appears.">
+            <input id="s-at" type="datetime-local" value="@scheduleText" @onchange="SetSchedule" />
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseStatus">Close</Button>
+            <Button IconName="calendar-clock" Disabled="busy" OnClick="SaveScheduleAsync">Schedule</Button>
+        </div>
     }
 </Modal>
 
@@ -361,22 +264,6 @@ else
 <ItemExcelDialog Open="excelModule is not null" Kind="@excelKind" ModuleTitle="@(excelModule?.Title ?? "")" Existing="ExcelExisting" OnImport="ImportItemsAsync" OnClose="CloseExcel" />
 <ActivitiesExcelDialog Open="activitiesModule is not null" ModuleTitle="@(activitiesModule?.Title ?? "")" Existing="activitiesExisting" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
 
-@* ===== Schedule ===== *@
-<Modal Open="scheduleModule is not null" Title="Schedule the module" OnClose="CloseSchedule">
-    @if (scheduleModule is not null)
-    {
-        <p class="dialog-text"><strong>@scheduleModule.Title</strong> stays hidden until the time you choose, then appears for the students by itself and they are told.</p>
-        <FormErrors Errors="formErrors" />
-        <Field For="s-at" Label="Appears on" Required="true" Hint="Philippine time.">
-            <input id="s-at" type="datetime-local" value="@scheduleText" @onchange="SetSchedule" />
-        </Field>
-        <div class="modal-actions">
-            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSchedule">Cancel</Button>
-            <Button IconName="calendar-clock" Disabled="busy" OnClick="SaveScheduleAsync">Schedule</Button>
-        </div>
-    }
-</Modal>
-
 @* ===== Delete ===== *@
 <Modal Open="deleteTarget is not null" Title="@(deleteTarget?.Title ?? "")" OnClose="CloseDelete">
     @if (deleteTarget is not null)
@@ -415,15 +302,6 @@ else
 
     private string? shownKind => CourseMenu.KindOfKey(Tab);
 
-    private IReadOnlyDictionary<string, int> KindCounts => ItemKinds.Listed.ToDictionary(k => k, k => subject?.Modules.Sum(m => m.Items.Count(i => i.Kind == k)) ?? 0);
-
-    private IReadOnlyList<CourseMenuLink> MenuLinks =>
-    [
-        new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}"),
-        new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}"),
-        new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students"),
-    ];
-
     private int teacherId;
     private bool loaded;
     private TeacherSubject? subject;
@@ -431,8 +309,6 @@ else
     private bool messageIsError;
     private bool busy;
     private List<string> formErrors = [];
-
-    private TeacherModule? editingModule;
 
     private ItemForm? itemForm;
     private int? editingItemId;
@@ -443,7 +319,7 @@ else
     private AttachmentPicker? itemPicker;
     private int itemFormKey;
 
-    private TeacherModule? scheduleModule;
+    private TeacherModule? statusModule;
     private string scheduleText = "";
 
     private DeleteTarget? deleteTarget;
@@ -501,11 +377,6 @@ else
             input => Modules.SaveItemAsync(teacherId, moduleId, null, input),
             (id, questions) => Modules.SaveQuestionsAsync(teacherId, id, questions),
             (id, files) => Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.Item, id), files));
-        if (moduleId != 0)
-        {
-            openModules.Add(moduleId);
-        }
-
         await LoadAsync();
         return summary;
     }
@@ -539,11 +410,6 @@ else
             {
                 problems.Add($"{input.Title}: {string.Join(" ", saved.Errors)}");
             }
-        }
-
-        if (moduleId != 0)
-        {
-            openModules.Add(moduleId);
         }
 
         await LoadAsync();
@@ -609,54 +475,75 @@ else
 
     // ---------------------------------------------------------------- modules
 
-    private async Task OpenEditModule(TeacherModule module)
-    {
-        if (module.FromProvider)
-        {
-            await Modules.MarkDeliveryOpenedAsync(teacherId, module.Id);
-        }
-
-        formErrors = [];
-        editingModule = module;
-    }
-
-    private void CloseModuleForm() => editingModule = null;
-
-    private async Task ModuleSavedAsync(ModuleEditor.EditorResult result)
-    {
-        editingModule = null;
-        messageIsError = !result.Ok;
-        message = result.Message;
-        await LoadAsync();
-    }
-
-    private async Task PostNowAsync(TeacherModule module)
-    {
-        Say(await Modules.PostModuleAsync(teacherId, module.Id, null));
-        await LoadAsync();
-    }
-
-    private async Task HideAsync(TeacherModule module)
-    {
-        Say(await Modules.HideModuleAsync(teacherId, module.Id));
-        await LoadAsync();
-    }
-
-    private void OpenSchedule(TeacherModule module)
+    private void OpenStatus(TeacherModule module)
     {
         formErrors = [];
-        scheduleModule = module;
+        statusModule = module;
         var suggestion = module.VisibleFromUtc is { } at && at > Clock.GetUtcNow().UtcDateTime
             ? at
             : Clock.GetUtcNow().UtcDateTime.AddDays(1);
         scheduleText = PhilippineTime.ToInputValue(suggestion);
     }
 
-    private void CloseSchedule() => scheduleModule = null;
+    private void CloseStatus() => statusModule = null;
+
+    private async Task PostStatusAsync()
+    {
+        if (statusModule is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Modules.PostModuleAsync(teacherId, statusModule.Id, null);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            statusModule = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task HideStatusAsync()
+    {
+        if (statusModule is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Modules.HideModuleAsync(teacherId, statusModule.Id);
+            if (!result.Succeeded)
+            {
+                formErrors = [.. result.Errors];
+                return;
+            }
+
+            statusModule = null;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     private async Task SaveScheduleAsync()
     {
-        if (scheduleModule is null || busy)
+        if (statusModule is null || busy)
         {
             return;
         }
@@ -671,14 +558,14 @@ else
         busy = true;
         try
         {
-            var result = await Modules.PostModuleAsync(teacherId, scheduleModule.Id, at);
+            var result = await Modules.PostModuleAsync(teacherId, statusModule.Id, at);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];
                 return;
             }
 
-            scheduleModule = null;
+            statusModule = null;
             Say(result);
             await LoadAsync();
         }
@@ -689,16 +576,6 @@ else
     }
 
     // ---------------------------------------------------------------- items
-
-    private readonly HashSet<int> openModules = [];
-
-    private void ToggleModule(int id)
-    {
-        if (!openModules.Remove(id))
-        {
-            openModules.Add(id);
-        }
-    }
 
     /// <summary>"2 assignments · 1 quiz" under the title of a closed module.</summary>
     private static string ModuleSummary(TeacherModule module)
@@ -737,7 +614,6 @@ else
 
     private void OpenNewItem(TeacherModule module, string kind)
     {
-        openModules.Add(module.Id);
         formErrors = [];
         editingItemId = null;
         itemModuleId = module.Id;

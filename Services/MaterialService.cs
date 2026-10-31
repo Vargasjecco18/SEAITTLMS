@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEAITT_LMS.Components.Shared;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
 
@@ -19,18 +20,33 @@ public sealed record LibraryTerm(int TermNumber, string Name, int Courses, int W
 public sealed record LibraryTrack(int TrackId, string Code, string Name, int Courses, int WithSyllabus, IReadOnlyList<LibraryStrand> Strands);
 
 /// <summary>A summative exam of the library: the schedule it runs in (from <paramref name="OpensAtUtc"/> to <paramref name="DueAtUtc"/>) and to how many teachers' courses it was sent.</summary>
-public sealed record MaterialExamView(int Id, string Title, string? Instructions, decimal MaxScore, DateTime? OpensAtUtc, DateTime? DueAtUtc, int SentTo);
+public sealed record MaterialExamView(
+    int Id, string Title, string? Instructions, decimal MaxScore, DateTime? OpensAtUtc, DateTime? DueAtUtc, int SentTo,
+    int Questions = 0, int? TimeLimitMinutes = null, bool AntiCheat = true, int MaxViolations = 3, bool ShuffleQuestions = true, bool ShuffleOptions = true, bool ShowResult = true);
 
 /// <param name="SentTo">To how many teachers' courses it was sent.</param>
 public sealed record MaterialModuleView(
     int Id, bool IsSyllabus, string Title, string? Description, string? Body, string? LinkUrl, int Position, int SentTo);
 
-/// <summary>What the provider writes for a summative exam: the paper (instructions and files), the highest score and the schedule.</summary>
+/// <summary>
+/// What the provider writes for a summative exam: the paper (instructions and files), the questions (from the Excel file; the students answer them on the screen and the system
+/// gives the score), the settings of a quiz (time limit, the anti-cheating watch ...) and the schedule.
+/// </summary>
 public sealed class ExamInput
 {
     public string Title { get; set; } = "";
     public string? Instructions { get; set; }
     public decimal MaxScore { get; set; } = 100;
+
+    /// <summary>The questions. Empty (null) leaves the questions the exam has as they are; a list replaces them (the highest score then is the total of their points).</summary>
+    public IReadOnlyList<QuestionInput>? Questions { get; set; }
+
+    public int? TimeLimitMinutes { get; set; }
+    public bool AntiCheat { get; set; } = true;
+    public int MaxViolations { get; set; } = 3;
+    public bool ShuffleQuestions { get; set; } = true;
+    public bool ShuffleOptions { get; set; } = true;
+    public bool ShowResult { get; set; } = true;
 
     /// <summary>When the exam opens (UTC). Both ends of the schedule are needed.</summary>
     public DateTime? OpensAtUtc { get; set; }
@@ -193,13 +209,14 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         // The summative exams, and in which teachers' courses each one is already.
         var examRows = await db.MaterialItems.AsNoTracking().Where(i => i.Kind == ItemKinds.Exam && i.Module.SubjectId == subjectId && i.Module.IsExamSet)
             .OrderBy(i => i.VisibleFromUtc).ThenBy(i => i.Position).ThenBy(i => i.Id)
-            .Select(i => new { i.Id, i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc })
+            .Select(i => new { i.Id, i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, Questions = i.Questions.Count, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShuffleQuestions, i.ShuffleOptions, i.ShowResult })
             .ToListAsync(ct);
         var examIds = examRows.Select(e => e.Id).ToList();
         var examCopies = await db.ModuleItems.AsNoTracking().Where(i => i.MaterialItemId != null && examIds.Contains(i.MaterialItemId.Value))
             .Select(i => new { ExamId = i.MaterialItemId!.Value, i.Module.AssignmentId })
             .ToListAsync(ct);
-        var exams = examRows.Select(e => new MaterialExamView(e.Id, e.Title, e.Instructions, e.MaxScore, e.VisibleFromUtc, e.DueAtUtc, examCopies.Count(c => c.ExamId == e.Id))).ToList();
+        var exams = examRows.Select(e => new MaterialExamView(e.Id, e.Title, e.Instructions, e.MaxScore, e.VisibleFromUtc, e.DueAtUtc, examCopies.Count(c => c.ExamId == e.Id),
+            e.Questions, e.TimeLimitMinutes, e.AntiCheat, e.MaxViolations, e.ShuffleQuestions, e.ShuffleOptions, e.ShowResult)).ToList();
 
         var yearId = await CurrentYearIdAsync(db, ct);
         var assignments = await db.TeachingAssignments.AsNoTracking()
@@ -334,9 +351,24 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             errors.Add("Enter the title of the exam (up to 200 characters).");
         }
 
-        if (input.MaxScore is <= 0 or > 1000)
+        if (input.Questions is not { Count: > 0 } && input.MaxScore is <= 0 or > 1000)
         {
             errors.Add("The highest score must be between 1 and 1000.");
+        }
+
+        if (input.Questions is { Count: > 0 } questions)
+        {
+            errors.AddRange(ModuleService.ValidateQuestions(questions));
+        }
+
+        if (input.TimeLimitMinutes is { } limit && (limit < 1 || limit > 600))
+        {
+            errors.Add("The time limit must be between 1 and 600 minutes.");
+        }
+
+        if (input.MaxViolations is < 1 or > 10)
+        {
+            errors.Add("The number of warnings before the exam is handed in must be between 1 and 10.");
         }
 
         if ((input.Instructions ?? "").Length > 5000)
@@ -408,8 +440,56 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         item.MaxScore = input.MaxScore;
         item.VisibleFromUtc = input.OpensAtUtc;
         item.DueAtUtc = input.DueAtUtc;
+        item.TimeLimitMinutes = input.TimeLimitMinutes;
+        item.AntiCheat = input.AntiCheat;
+        item.MaxViolations = input.MaxViolations;
+        item.ShuffleQuestions = input.ShuffleQuestions;
+        item.ShuffleOptions = input.ShuffleOptions;
+        item.ShowResult = input.ShowResult;
         await db.SaveChangesAsync(ct);
+
+        // New questions replace the old ones; the exam is then worth the total of their points.
+        if (input.Questions is { } questions)
+        {
+            await db.MaterialQuestions.Where(q => q.ItemId == item.Id).ExecuteDeleteAsync(ct);
+            var position = 0;
+            foreach (var q in questions)
+            {
+                var options = q.Kind == QuestionKinds.MultipleChoice ? ModuleService.SplitOptions(q.OptionsText) : [];
+                db.MaterialQuestions.Add(new MaterialQuestion
+                {
+                    ItemId = item.Id, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
+                    OptionsText = q.Kind == QuestionKinds.MultipleChoice ? string.Join('\n', options) : null,
+                    CorrectAnswer = q.Kind == QuestionKinds.MultipleChoice
+                        ? options.First(o => string.Equals(o, q.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
+                        : q.CorrectAnswer.Trim(),
+                    Points = q.Points,
+                });
+            }
+
+            if (questions.Count > 0)
+            {
+                item.MaxScore = questions.Sum(q => q.Points);
+            }
+
+            await db.SaveChangesAsync(ct);
+        }
+
         return ServiceResult.Ok(isNew ? "The exam was added." : "Saved.", item.Id);
+    }
+
+    /// <summary>The questions of a summative exam of the library (for the export and for the edit box).</summary>
+    public async Task<IReadOnlyList<QuestionInput>> GetExamQuestionsAsync(int examId, CancellationToken ct = default) =>
+        (await GetExamQuestionsAsync([examId], ct)).GetValueOrDefault(examId) ?? [];
+
+    /// <summary>The questions of several exams at once, by exam.</summary>
+    public async Task<IReadOnlyDictionary<int, IReadOnlyList<QuestionInput>>> GetExamQuestionsAsync(IReadOnlyCollection<int> examIds, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.MaterialQuestions.AsNoTracking().Where(q => examIds.Contains(q.ItemId)).OrderBy(q => q.Position).ThenBy(q => q.Id)
+            .Select(q => new { q.ItemId, Question = new QuestionInput { Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points } })
+            .ToListAsync(ct);
+        return rows.GroupBy(r => r.ItemId).ToDictionary(g => g.Key, g => (IReadOnlyList<QuestionInput>)[.. g.Select(r => r.Question)]);
     }
 
     public async Task<ServiceResult> DeleteExamAsync(int userId, int examId, CancellationToken ct = default)
@@ -427,14 +507,12 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     // ======================================================================= sending
 
     /// <summary>
-    /// Sends the syllabus, modules and summative exams of the course to the courses of some teachers. Each teacher's course gets a copy of each module (its text and files)
-    /// as a draft that is not posted, and the exams in a draft module called "Summative exams", each with its schedule and files. A module or an exam that was sent to
-    /// that course before is skipped. Each teacher is told once.
+    /// Sends the syllabus and the modules of the course to the courses of some teachers. Each teacher's course gets a copy of each module (its title, its link and its files) as a
+    /// draft that is not posted: the teacher decides when to post it. A module that was sent to that course before is skipped. Each teacher is told once.
     /// </summary>
-    public async Task<ServiceResult> SendAsync(int userId, int subjectId, IReadOnlyCollection<int> moduleIds, IReadOnlyCollection<int> assignmentIds, IReadOnlyCollection<int>? examIds = null, CancellationToken ct = default)
+    public async Task<ServiceResult> SendAsync(int userId, int subjectId, IReadOnlyCollection<int> moduleIds, IReadOnlyCollection<int> assignmentIds, CancellationToken ct = default)
     {
-        examIds ??= [];
-        if (moduleIds.Count == 0 && examIds.Count == 0)
+        if (moduleIds.Count == 0)
         {
             return ServiceResult.Fail("Choose what to send.");
         }
@@ -462,20 +540,11 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             .AsSplitQuery()
             .OrderBy(m => m.Position).ThenBy(m => m.Id)
             .ToListAsync(ct);
-        var exams = examIds.Count == 0
-            ? []
-            : await db.MaterialItems.AsNoTracking()
-                .Where(i => i.Kind == ItemKinds.Exam && i.Module.SubjectId == subjectId && i.Module.IsExamSet && examIds.Contains(i.Id))
-                .Include(i => i.Attachments).ThenInclude(a => a.Content)
-                .AsSplitQuery()
-                .OrderBy(i => i.VisibleFromUtc).ThenBy(i => i.Position).ThenBy(i => i.Id)
-                .ToListAsync(ct);
-        if (library.Count == 0 && exams.Count == 0)
+        if (library.Count == 0)
         {
             return ServiceResult.Fail("What you chose is not in the library of this course any more.");
         }
 
-        var examBoxId = exams.Count == 0 ? 0 : exams[0].ModuleId;
         var yearId = await CurrentYearIdAsync(db, ct);
         var targets = await db.TeachingAssignments.AsNoTracking()
             .Where(a => a.SubjectId == subjectId && assignmentIds.Contains(a.Id) && a.Section.SchoolYearId == yearId)
@@ -518,41 +587,6 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                 copied++;
             }
 
-            // The exams go into one draft module of the course, "Summative exams" (made the first time, and used again after).
-            if (exams.Count > 0)
-            {
-                var sentBefore = (await db.ModuleItems.AsNoTracking()
-                    .Where(i => i.Module.AssignmentId == target.Id && i.MaterialItemId != null)
-                    .Select(i => i.MaterialItemId!.Value).ToListAsync(ct)).ToHashSet();
-                var fresh = exams.Where(e => !sentBefore.Contains(e.Id)).ToList();
-                skipped += exams.Count - fresh.Count;
-                if (fresh.Count > 0)
-                {
-                    var hostId = await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == target.Id && d.MaterialModuleId == examBoxId).Select(d => (int?)d.ModuleId).FirstOrDefaultAsync(ct);
-                    LearningModule? host = hostId is { } existingHost ? await db.Modules.FirstOrDefaultAsync(m => m.Id == existingHost, ct) : null;
-                    if (host is null)
-                    {
-                        host = new LearningModule { AssignmentId = target.Id, Title = "Summative exams", Description = "The summative exams of this course, with their schedules.", Position = nextPosition++, VisibleFromUtc = null };
-                        db.Modules.Add(host);
-                        db.MaterialDeliveries.Add(new MaterialDelivery { MaterialModuleId = examBoxId, AssignmentId = target.Id, Module = host, SentByUserId = userId });
-                    }
-
-                    var itemPosition = host.Id == 0 ? 0 : await db.ModuleItems.Where(i => i.ModuleId == host.Id).MaxAsync(i => (int?)i.Position, ct) ?? 0;
-                    foreach (var exam in fresh)
-                    {
-                        var copy = new ModuleItem
-                        {
-                            Module = host, Kind = ItemKinds.Exam, Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
-                            VisibleFromUtc = exam.VisibleFromUtc, DueAtUtc = exam.DueAtUtc, Position = ++itemPosition, MaterialItemId = exam.Id,
-                        };
-                        copy.Attachments.AddRange(exam.Attachments.Select(a => CopyOf(a, userId)));
-                        db.ModuleItems.Add(copy);
-                        titles.Add($"{exam.Title} (exam)");
-                        copied++;
-                    }
-                }
-            }
-
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             db.ChangeTracker.Clear();
@@ -568,7 +602,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var list = string.Join(", ", teacher.Titles);
             await notifications.AddAsync(
                 teacher.UserId, "materials", "Course materials from the academic provider",
-                $"{subject} · {teacher.Section}: {list}. They are drafts: set when to post them and the due dates.",
+                $"{subject} · {teacher.Section}: {list}. They are drafts: set when to post them.",
                 $"teacher/subjects/{teacher.AssignmentId}", ct);
         }
 
@@ -578,20 +612,136 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             return ServiceResult.Ok("Nothing new to send: the teachers you chose already have those.", 0);
         }
 
-        var what = new List<string>();
-        if (library.Count > 0)
+        return ServiceResult.Ok(
+            $"Sent {Plural(library.Count, "module")} to {Plural(teachersTold, "teacher")}"
+            + (skipped > 0 ? $" ({skipped} already sent before were skipped)." : ". They are drafts in the teachers' courses."), copied);
+    }
+
+    /// <summary>
+    /// Posts summative exams straight to the students of some courses (a section and its teacher). Nothing waits for the teacher: each course gets a copy of the exam in its
+    /// "Summative exams" box (posted at once, not listed as a module) with the questions and the settings of the exam, and it opens and closes at the times the provider chose.
+    /// The students are told, the teacher too. The score of each student goes to the gradebook of the teacher by itself. An exam that a course got before is skipped.
+    /// </summary>
+    public async Task<ServiceResult> PostExamsAsync(int userId, int subjectId, IReadOnlyCollection<int> examIds, IReadOnlyCollection<int> assignmentIds, CancellationToken ct = default)
+    {
+        if (examIds.Count == 0)
         {
-            what.Add(Plural(library.Count, "module"));
+            return ServiceResult.Fail("Choose the exams to post.");
         }
 
-        if (exams.Count > 0)
+        if (assignmentIds.Count == 0)
         {
-            what.Add(Plural(exams.Count, "exam"));
+            return ServiceResult.Fail("Choose the sections that get it.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsProviderAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(ProviderOnly);
+        }
+
+        var subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct);
+        if (subject is null)
+        {
+            return ServiceResult.Fail("This course no longer exists.");
+        }
+
+        var exams = await db.MaterialItems.AsNoTracking()
+            .Where(i => i.Kind == ItemKinds.Exam && i.Module.SubjectId == subjectId && i.Module.IsExamSet && examIds.Contains(i.Id))
+            .Include(i => i.Attachments).ThenInclude(a => a.Content)
+            .Include(i => i.Questions)
+            .AsSplitQuery()
+            .OrderBy(i => i.VisibleFromUtc).ThenBy(i => i.Position).ThenBy(i => i.Id)
+            .ToListAsync(ct);
+        if (exams.Count == 0)
+        {
+            return ServiceResult.Fail("What you chose is not in the library of this course any more.");
+        }
+
+        var yearId = await CurrentYearIdAsync(db, ct);
+        var targets = await db.TeachingAssignments.AsNoTracking()
+            .Where(a => a.SubjectId == subjectId && assignmentIds.Contains(a.Id) && a.Section.SchoolYearId == yearId)
+            .Select(a => new { a.Id, a.SectionId, TeacherUserId = a.Teacher.UserId, SectionName = a.Section.Name, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code })
+            .ToListAsync(ct);
+        if (targets.Count == 0)
+        {
+            return ServiceResult.Fail("None of those sections has this course any more. Reload and look again.");
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        var posted = 0;
+        var skipped = 0;
+        var students = new HashSet<int>();
+        foreach (var target in targets)
+        {
+            var sentBefore = (await db.ModuleItems.AsNoTracking()
+                .Where(i => i.Module.AssignmentId == target.Id && i.MaterialItemId != null)
+                .Select(i => i.MaterialItemId!.Value).ToListAsync(ct)).ToHashSet();
+            var fresh = exams.Where(e => !sentBefore.Contains(e.Id)).ToList();
+            skipped += exams.Count - fresh.Count;
+            if (fresh.Count == 0)
+            {
+                continue;
+            }
+
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            // The box that holds the exams of this course: made the first time, posted at once, and used again after.
+            var host = await db.Modules.FirstOrDefaultAsync(m => m.AssignmentId == target.Id && m.IsExamSet, ct);
+            if (host is null)
+            {
+                var position = (await db.Modules.Where(m => m.AssignmentId == target.Id).MaxAsync(m => (int?)m.Position, ct) ?? 0) + 1;
+                host = new LearningModule
+                {
+                    AssignmentId = target.Id, Title = "Summative exams", IsExamSet = true, Position = position, VisibleFromUtc = now, NotifiedAtUtc = now,
+                };
+                db.Modules.Add(host);
+                await db.SaveChangesAsync(ct);
+            }
+
+            var itemPosition = await db.ModuleItems.Where(i => i.ModuleId == host.Id).MaxAsync(i => (int?)i.Position, ct) ?? 0;
+            foreach (var exam in fresh)
+            {
+                var copy = new ModuleItem
+                {
+                    ModuleId = host.Id, Kind = ItemKinds.Exam, Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
+                    VisibleFromUtc = exam.VisibleFromUtc, DueAtUtc = exam.DueAtUtc, Position = ++itemPosition, MaterialItemId = exam.Id,
+                    TimeLimitMinutes = exam.TimeLimitMinutes, ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions,
+                    AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations, ShowResult = exam.ShowResult,
+                };
+                copy.Attachments.AddRange(exam.Attachments.Select(a => CopyOf(a, userId)));
+                copy.Questions.AddRange(exam.Questions.OrderBy(q => q.Position).ThenBy(q => q.Id).Select((q, n) => new QuizQuestion
+                {
+                    Position = n + 1, Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points,
+                }));
+                db.ModuleItems.Add(copy);
+                posted++;
+            }
+
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            var studentUserIds = await Roster.Enrollments(db, target.SectionId, subjectId).AsNoTracking().Where(e => e.Student.User.IsActive).Select(e => e.Student.UserId).ToListAsync(ct);
+            var section = TeachingService.SectionLabel(target.GradeLevel, target.StrandCode, target.SectionName);
+            var list = string.Join(", ", fresh.Select(e => $"{e.Title} (opens {PhilippineTime.FormatDateTime(e.VisibleFromUtc ?? now)})"));
+            foreach (var studentUserId in studentUserIds)
+            {
+                students.Add(studentUserId);
+                await notifications.AddAsync(studentUserId, "materials", "Summative exam posted", $"{subject}: {list}.", $"student/subjects/{target.Id}?tab=exams", ct);
+            }
+
+            await notifications.AddAsync(target.TeacherUserId, "materials", "Summative exam posted to your students",
+                $"{subject} · {section}: {list}. The scores go to your gradebook by themselves.", $"teacher/subjects/{target.Id}?tab=exams", ct);
+            db.ChangeTracker.Clear();
+        }
+
+        if (posted == 0)
+        {
+            return ServiceResult.Ok("Nothing new to post: those sections already have the exams.", 0);
         }
 
         return ServiceResult.Ok(
-            $"Sent {string.Join(" and ", what)} to {Plural(teachersTold, "teacher")}"
-            + (skipped > 0 ? $" ({skipped} already sent before were skipped)." : ". They are drafts in the teachers' courses."), copied);
+            $"Posted {Plural(exams.Count, "exam")} to {Plural(students.Count, "student")}"
+            + (skipped > 0 ? $" ({skipped} already posted before were skipped)." : ". They open at the times you set."), posted);
     }
 
     // ======================================================================= helpers

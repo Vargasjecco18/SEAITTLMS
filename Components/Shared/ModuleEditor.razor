@@ -2,18 +2,12 @@
 @inject ModuleService Modules
 @inject AttachmentService Attachments
 
-@* The form that edits a module of a teacher: the title, the description, the lesson, the link, the files and the slides. It is in the box of the course page and at the right of the
+@* The form that edits a module of a teacher: the title, the link, the files and the slides. It is in the box of the course page and at the right of the
    page where the module is read (a PDF at the left, this form at the right). It saves by itself and says so with OnSaved. *@
 <EditForm Model="form" OnValidSubmit="SaveAsync">
     <FormErrors Errors="errors" />
     <Field For="m-title" Label="Title" Required="true">
         <InputText id="m-title" @bind-Value="form.Title" maxlength="200" autocomplete="off" />
-    </Field>
-    <Field For="m-desc" Label="Short description" Hint="One or two lines students see in the list.">
-        <InputText id="m-desc" @bind-Value="form.Description" maxlength="1000" autocomplete="off" />
-    </Field>
-    <Field For="m-body" Label="Lesson" Hint="The text of the lesson. Line breaks are kept.">
-        <InputTextArea id="m-body" @bind-Value="form.Body" rows="@BodyRows" />
     </Field>
     <Field For="m-link" Label="Link" Hint="A file or video the lesson uses (starts with https://).">
         <InputText id="m-link" @bind-Value="form.LinkUrl" maxlength="500" autocomplete="off" />
