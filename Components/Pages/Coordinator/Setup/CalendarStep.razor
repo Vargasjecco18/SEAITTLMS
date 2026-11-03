@@ -28,7 +28,7 @@
                 <article class="year @(isCurrent ? "is-current" : "")" data-year="@year.Name" aria-label="@($"School year {year.Name}")">
                     <header class="year-head">
                         <div class="year-name">
-                            <input class="cell strong" aria-label="@($"Name of the school year {year.Name}")" maxlength="20" value="@year.Name" @key="@($"yn-{year.Id}-{stamp}")"
+                            <input class="ghost strong" aria-label="@($"Name of the school year {year.Name}")" maxlength="20" value="@year.Name" @key="@($"yn-{year.Id}-{stamp}")"
                                    @onchange="e => SaveYearAsync(year, name: e.Value?.ToString())" />
                             @if (isCurrent)
                             {
@@ -41,9 +41,9 @@
                         </div>
                         @* The first day and the last day of the school year, in the middle of its bar. *@
                         <div class="year-days">
-                            <label>First day <input type="date" class="cell" aria-label="@($"First day of {year.Name}")" value="@Box(year.StartDate)" @key="@($"ys-{year.Id}-{stamp}")"
+                            <label>First day <input type="date" class="ghost date" aria-label="@($"First day of {year.Name}")" value="@Box(year.StartDate)" @key="@($"ys-{year.Id}-{stamp}")"
                                                     @onchange="e => SaveYearAsync(year, start: e.Value?.ToString())" /></label>
-                            <label>Last day <input type="date" class="cell" aria-label="@($"Last day of {year.Name}")" value="@Box(year.EndDate)" @key="@($"ye-{year.Id}-{stamp}")"
+                            <label>Last day <input type="date" class="ghost date" aria-label="@($"Last day of {year.Name}")" value="@Box(year.EndDate)" @key="@($"ye-{year.Id}-{stamp}")"
                                                    @onchange="e => SaveYearAsync(year, end: e.Value?.ToString())" /></label>
                         </div>
                         <span class="year-count">@year.Sections @(year.Sections == 1 ? "section" : "sections")</span>
@@ -54,7 +54,7 @@
                         {
                             <div class="term @(term.IsCurrent ? "is-current" : "") @(term.IsEnded ? "is-over" : "")" data-term="@($"{year.Name}-{term.TermNumber}")">
                                 <div class="term-top">
-                                    <input class="cell strong" aria-label="@($"Name of term {term.TermNumber} of {year.Name}")" maxlength="50" value="@term.Name" @key="@($"tn-{term.Id}-{stamp}")"
+                                    <input class="ghost strong" aria-label="@($"Name of term {term.TermNumber} of {year.Name}")" maxlength="50" value="@term.Name" @key="@($"tn-{term.Id}-{stamp}")"
                                            @onchange="e => SaveTermAsync(term, name: e.Value?.ToString())" />
                                     @if (term.IsCurrent)
                                     {
@@ -66,9 +66,9 @@
                                     }
                                 </div>
                                 <div class="term-days">
-                                    <label>From <input type="date" class="cell" aria-label="@($"First day of {term.Name} of {year.Name}")" value="@Box(term.StartDate)" @key="@($"ts-{term.Id}-{stamp}")"
+                                    <label>From <input type="date" class="ghost date" aria-label="@($"First day of {term.Name} of {year.Name}")" value="@Box(term.StartDate)" @key="@($"ts-{term.Id}-{stamp}")"
                                                        @onchange="e => SaveTermAsync(term, start: e.Value?.ToString())" /></label>
-                                    <label>To <input type="date" class="cell" aria-label="@($"Last day of {term.Name} of {year.Name}")" value="@Box(term.EndDate)" @key="@($"te-{term.Id}-{stamp}")"
+                                    <label>To <input type="date" class="ghost date" aria-label="@($"Last day of {term.Name} of {year.Name}")" value="@Box(term.EndDate)" @key="@($"te-{term.Id}-{stamp}")"
                                                      @onchange="e => SaveTermAsync(term, end: e.Value?.ToString())" /></label>
                                 </div>
                                 <span class="term-count">@term.Enrollments @(term.Enrollments == 1 ? "student" : "students") enrolled</span>

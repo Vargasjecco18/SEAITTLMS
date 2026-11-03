@@ -16,17 +16,28 @@
         <Badge Tone="Tone.Success">Friends</Badge>
         <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="user-round-x" Title="@($"Unfriend {Person.Name}")" Disabled="Busy" OnClick="() => OnUnfriend.InvokeAsync(Person)" />
     }
-    else
+    else if (Person.Role is AppRoles.Student or AppRoles.Teacher)
     {
         <Button Small="true" Variant="ButtonVariant.Secondary" IconName="user-round-plus" Disabled="Busy" OnClick="() => OnAdd.InvokeAsync(Person)">Add friend</Button>
     }
-    <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="message-square" Title="@($"Write to {Person.Name}")" OnClick="() => OnMessage.InvokeAsync(Person)" />
+    else
+    {
+        @* A member of the staff: not a friend to add, only a role. *@
+        <Badge Tone="Tone.Info">@PeopleService.RoleLabel(Person.Role)</Badge>
+    }
+    @if (CanWrite)
+    {
+        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="message-square" Title="@($"Write to {Person.Name}")" OnClick="() => OnMessage.InvokeAsync(Person)" />
+    }
 </PersonLine>
 
 @code {
     [Parameter, EditorRequired] public PersonCard Person { get; set; } = default!;
 
     [Parameter] public bool Busy { get; set; }
+
+    /// <summary>False when the role of the viewer may not write to this person: the button to write is left out.</summary>
+    [Parameter] public bool CanWrite { get; set; } = true;
 
     [Parameter] public EventCallback<PersonCard> OnMessage { get; set; }
 

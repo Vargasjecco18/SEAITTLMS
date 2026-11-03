@@ -7,6 +7,7 @@
 @inject AttachmentService Files
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
+@inject ModuleService Modules
 
 <PageTitle>@(item?.Title ?? "Assignment") · SEAITT Legazpi LMS</PageTitle>
 
@@ -32,6 +33,11 @@ else
     var closedQuiz = item.IsQuiz && !fileQuiz && overdue && item.Status == "NotStarted";
 
     <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
+        @if (course is not null)
+        {
+            @* The menu of the course is in the title too, so the student can go to another activity or module without going back. *@
+            <CourseMenuPop Student="course" CurrentItemId="item.ItemId" Selected="@CourseMenu.KeyOf(item.Kind)" />
+        }
         <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the module</ButtonLink>
     </PageHeader>
 
@@ -241,6 +247,7 @@ else
     private bool loaded;
     private int studentId;
     private StudentItemView? item;
+    private StudentSubject? course;
     private IReadOnlyList<AnswerReview>? review;
     private IReadOnlyList<AttachmentRow> files = [];
     private RichTextEditor? editor;
@@ -271,6 +278,7 @@ else
         if (item is not null)
         {
             await Work.RecordViewAsync(studentId, ItemId);
+            course = await Modules.GetStudentSubjectAsync(studentId, item.AssignmentId);
             files = await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId));
             // Work handed in before the editor existed was plain text: it opens as paragraphs.
             answerHtml = string.IsNullOrWhiteSpace(item.AnswerHtml) ? RichText.FromPlainText(item.AnswerText) : item.AnswerHtml;

@@ -54,7 +54,7 @@
         </div>
 
         <div class="track-message">
-            <Button Variant="ButtonVariant.Secondary" IconName="bell-ring" Disabled="@(Total == 0)" OnClick="OpenMessage">Message @(Total == 0 ? "" : WhoText)</Button>
+            <Button Variant="ButtonVariant.Secondary" IconName="bell-ring" Disabled="@(Total == 0 || !CanMessage)" OnClick="OpenMessage">Message @(Total == 0 || !CanMessage ? "" : WhoText)</Button>
         </div>
     </div>
 
@@ -102,7 +102,7 @@
         </div>
         <Pager Page="examRows.Page" Total="examRows.Total" PageSize="examRows.PageSize" Unit="students" OnPrevious="PreviousAsync" OnNext="NextAsync" />
     }
-    else if (state == TrackStates.NotPosted)
+    else if (state is TrackStates.NotPosted or TrackStates.Scheduled)
     {
         <div class="data-wrap">
             <table class="data-table tracking">
@@ -110,7 +110,7 @@
                     <tr>
                         <th scope="col">@(part == "syllabus" ? "Syllabus" : "Module")</th>
                         <th scope="col">Teacher</th>
-                        <th scope="col">What the teacher did</th>
+                        <th scope="col">@(state == TrackStates.Scheduled ? "Appears for the students" : "What the teacher did")</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -126,10 +126,14 @@
                                 <span class="muted-line">@row.SectionLabel</span>
                             </td>
                             <td>
-                                <Badge Tone="@ProviderUi.StateTone(row.State)">@(row.State == DeliveryStates.Scheduled ? "Scheduled" : DeliveryStates.Display(row.State))</Badge>
-                                @if (row.State == DeliveryStates.Scheduled && row.ScheduledForUtc is { } at)
+                                @if (state == TrackStates.Scheduled && row.ScheduledForUtc is { } at)
                                 {
-                                    <span class="muted-line">appears @PhilippineTime.FormatDateTime(at)</span>
+                                    <Badge Tone="@ProviderUi.StateTone(row.State)">Scheduled</Badge>
+                                    <span class="muted-line">@PhilippineTime.FormatDateTime(at)</span>
+                                }
+                                else
+                                {
+                                    <Badge Tone="@ProviderUi.StateTone(row.State)">@DeliveryStates.Display(row.State)</Badge>
                                 }
                             </td>
                         </tr>
@@ -224,30 +228,42 @@
         new("exams", "Summative exams", "clipboard-list"),
     ];
 
+    // The order of the buttons is the order of the work: first the teacher posts (or schedules), then the students open, then (for an exam) they hand in.
     private IReadOnlyList<StateOption> StateOptions => part == "exams"
-        ? [new(TrackStates.All, "All students"), new(TrackStates.NotOpened, "Not opened"), new(TrackStates.NotHandedIn, "Not handed in")]
-        : [new(TrackStates.NotPosted, "Not posted"), new(TrackStates.NotOpened, "Not opened")];
+        ? [new(TrackStates.NotOpened, "Not opened"), new(TrackStates.NotHandedIn, "Not handed in"), new(TrackStates.HandedIn, "Handed in")]
+        : [new(TrackStates.NotPosted, "Not posted"), new(TrackStates.Scheduled, "Scheduled"), new(TrackStates.NotOpened, "Not opened")];
+
+    /// <summary>The message is for the people who are late: not for a list of what is on its way (scheduled) or of the students who handed in.</summary>
+    private bool CanMessage => state is not (TrackStates.Scheduled or TrackStates.HandedIn);
 
     private string PartHint => part switch
     {
-        "exams" => "Every student of a summative exam, with whether they opened it, handed it in and their score.",
+        "exams" when state == TrackStates.NotOpened => "The students who have not opened a summative exam that is posted.",
+        "exams" when state == TrackStates.NotHandedIn => "The students who opened a summative exam that is posted but have not handed it in.",
+        "exams" => "The students who handed in a summative exam, with their score. An exam that is not posted yet has no students here.",
+        _ when state == TrackStates.Scheduled => $"The {(part == "syllabus" ? "syllabus" : "modules")} that the teacher scheduled: the students will see {(part == "syllabus" ? "it" : "them")} at the time shown.",
         _ when state == TrackStates.NotPosted => $"The teachers who were sent the {(part == "syllabus" ? "syllabus" : "modules")} and have not posted {(part == "syllabus" ? "it" : "them")} for the students yet.",
         _ => $"The students who have not opened the {(part == "syllabus" ? "syllabus" : "modules")} their teacher posted. A student shows here only once the teacher posted it.",
     };
 
-    private string SearchHint => part == "exams" ? "Student, course, section…" : state == TrackStates.NotPosted ? "Course, teacher, module…" : "Student, course, teacher…";
+    private string SearchHint => part == "exams" ? "Student, course, section…" : ShowsTeachers ? "Course, teacher, module…" : "Student, course, teacher…";
 
-    private int Total => part == "exams" ? examRows?.Total ?? 0 : state == TrackStates.NotPosted ? postedRows?.Total ?? 0 : openedRows?.Total ?? 0;
+    private bool ShowsTeachers => state is TrackStates.NotPosted or TrackStates.Scheduled;
+
+    private int Total => part == "exams" ? examRows?.Total ?? 0 : ShowsTeachers ? postedRows?.Total ?? 0 : openedRows?.Total ?? 0;
 
     private string WhoText => people == 1 ? "1 person" : $"{people:N0} people";
 
-    private string EmptyTitle => part == "exams" ? "No student here" : state == TrackStates.NotPosted ? "Everything is posted" : "Everybody opened it";
+    private string EmptyTitle => part == "exams"
+        ? (state == TrackStates.HandedIn ? "Nobody handed in yet" : state == TrackStates.NotHandedIn ? "Nobody is late" : "Everybody opened it")
+        : state == TrackStates.Scheduled ? "Nothing is scheduled" : state == TrackStates.NotPosted ? "Everything is posted" : "Everybody opened it";
 
     private string EmptyText => (part, state) switch
     {
-        ("exams", _) => string.IsNullOrWhiteSpace(search) && state == TrackStates.All && grade == 0 && subjectId == 0
-            ? "No summative exam was posted yet. Open the Course library, choose a course, add a summative exam and press “Post to students”."
+        ("exams", _) => string.IsNullOrWhiteSpace(search) && grade == 0 && subjectId == 0
+            ? "No summative exam is posted yet, or the exams that are posted have no student on this list. Open the Course library, choose a course, add a summative exam and press “Post to students”."
             : "Nothing matches. Change the words you searched or the choices.",
+        (_, TrackStates.Scheduled) => string.IsNullOrWhiteSpace(search) ? "The teachers have not scheduled anything." : "Nothing matches the words you searched.",
         (_, TrackStates.NotPosted) => string.IsNullOrWhiteSpace(search) ? "Every teacher posted what was sent to them." : "Nothing matches the words you searched.",
         _ => string.IsNullOrWhiteSpace(search) ? "Every student opened what was posted for them." : "Nothing matches the words you searched.",
     };
@@ -337,10 +353,15 @@
         loading = true;
         if (part == "exams")
         {
-            var exam = state is TrackStates.NotOpened or TrackStates.NotHandedIn ? state : null;
-            examRows = await Provider.ListExamStudentsAsync(exam, grade, subjectId, search, pageNumber);
+            examRows = await Provider.ListExamStudentsAsync(state, grade, subjectId, search, pageNumber);
             pageNumber = examRows.Page;
-            people = (await Provider.GetExamStudentsAsync(exam, grade, subjectId, search)).Select(r => r.StudentUserId).Distinct().Count();
+            people = (await Provider.GetExamStudentsAsync(state, grade, subjectId, search)).Select(r => r.StudentUserId).Distinct().Count();
+        }
+        else if (state == TrackStates.Scheduled)
+        {
+            postedRows = await Provider.ListScheduledAsync(IsSyllabus, search, pageNumber);
+            pageNumber = postedRows.Page;
+            people = (await Provider.GetScheduledAsync(IsSyllabus, search)).Select(r => r.TeacherUserId).Distinct().Count();
         }
         else if (state == TrackStates.NotPosted)
         {

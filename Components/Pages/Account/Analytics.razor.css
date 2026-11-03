@@ -286,22 +286,27 @@
 }
 
 /* ---------- the layout: a row of four numbers, one big part that differs by person, and a board of cards that fills the page without empty places ---------- */
+/* The cards stand in rows of one or two (never three): two cards side by side when there is room, and a card that has no partner (the last one, or a wide one) takes the whole row, so nothing leaves an empty place at its right. */
 .board {
-    column-count: 2;
-    column-gap: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
     margin-bottom: 1.25rem;
 }
 
 .board ::deep > .card {
-    display: inline-block;
-    width: 100%;
-    margin: 0 0 1.25rem;
-    break-inside: avoid;
+    flex: 1 1 calc(50% - 0.625rem);
+    min-width: 0;
+    margin: 0;
+}
+
+.board ::deep > .card.wide {
+    flex-basis: 100%;
 }
 
 @media (max-width: 999px) {
-    .board {
-        column-count: 1;
+    .board ::deep > .card {
+        flex-basis: 100%;
     }
 }
 
@@ -334,8 +339,26 @@ h2 {
 
 .level-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.9rem;
+}
+
+@media (min-width: 640px) {
+    .level-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* An odd one at the end takes the whole row. */
+    .level-grid > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Four, eight ... of them stand four in a row on a wide screen. */
+@media (min-width: 1100px) {
+    .level-grid:has(> :nth-child(4n):last-child) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 .level {
@@ -370,8 +393,26 @@ h2 {
 
 .tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* An odd one at the end takes the whole row. */
+    .tiles > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Four, eight ... of them stand four in a row on a wide screen. */
+@media (min-width: 1100px) {
+    .tiles:has(> :nth-child(4n):last-child) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 .tile {
@@ -427,8 +468,26 @@ h2 {
 
 .course-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .course-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* An odd one at the end takes the whole row. */
+    .course-tiles > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Four, eight ... of them stand four in a row on a wide screen. */
+@media (min-width: 1100px) {
+    .course-tiles:has(> :nth-child(4n):last-child) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 .course-tile {
@@ -470,4 +529,36 @@ h2 {
 
 .meter-line b {
     text-align: right;
+}
+
+/* The students who need attention, by name (the teacher's page). */
+.who {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+    padding: 0.9rem 0 0;
+    border-top: 1px solid var(--border);
+    list-style: none;
+}
+
+.who li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.who-name {
+    min-width: 0;
+    font-weight: 650;
+}
+
+.who-name small {
+    display: block;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

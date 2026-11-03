@@ -15,7 +15,7 @@
             <span class="cm-when-shown"><Icon Name="panel-left-close" Size="18" /> <span>Hide menu</span></span>
             <span class="cm-when-hidden"><Icon Name="panel-left-open" Size="18" /> <span>Course menu</span></span>
         </button>
-        <CourseMenu Id="course-menu-nav" Groups="Groups" Selected="@Selected" Extra="Extra" />
+        <CourseMenu Id="course-menu-nav" Groups="Groups" Selected="@Selected" Extra="Extra" CanAdd="@(Teacher is not null)" />
     </div>
 
     <div class="course-main">@ChildContent</div>
@@ -56,17 +56,5 @@
 
     private IReadOnlyList<CourseMenuGroup> Groups => Teacher is { } t ? CourseMenuBuilder.ForTeacher(t, CurrentModuleId) : Student is { } s ? CourseMenuBuilder.ForStudent(s, CurrentModuleId) : [];
 
-    private IReadOnlyList<CourseMenuLink> Extra => Teacher is not null
-        ?
-        [
-            new("Students", "users-round", $"teacher/subjects/{AssignmentId}/students", CurrentExtra == "students"),
-            new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={AssignmentId}", CurrentExtra == "gradebook"),
-            new("Attendance", "calendar-check", $"teacher/attendance?subject={AssignmentId}", CurrentExtra == "attendance"),
-        ]
-        :
-        [
-            new("Classmates", "users-round", $"student/subjects/{AssignmentId}/classmates", CurrentExtra == "classmates"),
-            new("Teacher", "presentation", $"student/subjects/{AssignmentId}/teachers", CurrentExtra == "teachers"),
-            new("Grades", "trending-up", "student/grades", CurrentExtra == "grades"),
-        ];
+    private IReadOnlyList<CourseMenuLink> Extra => CourseMenuBuilder.ExtraLinks(Teacher is not null, AssignmentId, CurrentExtra);
 }

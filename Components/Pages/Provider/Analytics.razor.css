@@ -3,23 +3,3 @@
         display: none;
     }
 }
-
-/* The cards fill the page like a wall: the wide ones take the whole row and the others share the columns between them, so no card leaves an empty place beside it. */
-@media (min-width: 1000px) {
-    .pcards {
-        display: block;
-        column-count: 2;
-        column-gap: 1.25rem;
-    }
-
-    .pcards ::deep > .card {
-        display: inline-block;
-        width: 100%;
-        margin: 0 0 1.25rem;
-        break-inside: avoid;
-    }
-
-    .pcards ::deep > .card.wide {
-        column-span: all;
-    }
-}

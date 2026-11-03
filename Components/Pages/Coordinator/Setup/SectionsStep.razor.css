@@ -1,3 +1,4 @@
+/* The sections: the limit and the schedules button on top, a card to add a section, and a card for each school year. */
 .sections-tools {
     display: flex;
     flex-wrap: wrap;
@@ -18,18 +19,64 @@
 
 .capacity input {
     width: 5.5rem;
+    border-color: var(--border);
+}
+
+.saved-line {
+    min-height: 1.2rem;
+    margin: 0 0 0.5rem;
+    color: var(--success);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.add-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.add-section .ghost {
+    border-color: var(--border);
+    background: var(--surface-2);
 }
 
 .year-sections {
-    margin-top: 1.1rem;
+    margin-top: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
 }
 
 .year-sections h3 {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin: 0 0 0.4rem;
+    margin: 0;
+    padding: 0.7rem 1rem;
+    background: var(--surface-2);
     font-size: 1rem;
+}
+
+.year-sections .count {
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.year-sections .table-wrap {
+    margin: 0;
 }
 
 .section-row {
@@ -42,10 +89,80 @@
 
 .section-label {
     font-variant-numeric: tabular-nums;
+    font-weight: 650;
 }
 
-.name {
+span.name {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+}
+
+td.name {
+    white-space: nowrap;
+}
+
+.ended {
+    margin-top: 1rem;
+    padding: 0.7rem 1rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+}
+
+.ended summary {
+    cursor: pointer;
+    font-weight: 650;
+}
+
+.ended-list {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.sections-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.sections-table th,
+.sections-table td {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.sections-table th {
+    border-top: 0;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.sections-table .col-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .col-more {
+        display: none;
+    }
 }

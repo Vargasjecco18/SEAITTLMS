@@ -48,7 +48,7 @@ public static class CourseMenuBuilder
         _ => ItemKinds.Plural(kind),
     };
 
-    public static IReadOnlyList<CourseMenuGroup> ForTeacher(TeacherSubject subject, int? currentModuleId = null)
+    public static IReadOnlyList<CourseMenuGroup> ForTeacher(TeacherSubject subject, int? currentModuleId = null, int? currentItemId = null)
     {
         var page = $"teacher/subjects/{subject.AssignmentId}";
         var groups = new List<CourseMenuGroup>();
@@ -64,13 +64,13 @@ public static class CourseMenuBuilder
             }
 
             groups.Add(new CourseMenuGroup(CourseMenu.KeyOf(kind), Label(kind), SubjectStyle.KindIcon(kind), items.Count, $"{page}?tab={CourseMenu.KeyOf(kind)}",
-                [.. items.Select(i => new CourseMenuEntry(i.Title, $"teacher/items/{i.Id}"))]));
+                [.. items.Select(i => new CourseMenuEntry(i.Title, $"teacher/items/{i.Id}", i.Id == currentItemId))]));
         }
 
         return groups;
     }
 
-    public static IReadOnlyList<CourseMenuGroup> ForStudent(StudentSubject subject, int? currentModuleId = null)
+    public static IReadOnlyList<CourseMenuGroup> ForStudent(StudentSubject subject, int? currentModuleId = null, int? currentItemId = null)
     {
         var page = $"student/subjects/{subject.AssignmentId}";
         var groups = new List<CourseMenuGroup>();
@@ -86,11 +86,26 @@ public static class CourseMenuBuilder
             }
 
             groups.Add(new CourseMenuGroup(CourseMenu.KeyOf(kind), Label(kind), SubjectStyle.KindIcon(kind), items.Count, $"{page}?tab={CourseMenu.KeyOf(kind)}",
-                [.. items.Select(i => new CourseMenuEntry(i.Title, $"student/items/{i.Id}"))]));
+                [.. items.Select(i => new CourseMenuEntry(i.Title, $"student/items/{i.Id}", i.Id == currentItemId))]));
         }
 
         return groups;
     }
+
+    /// <summary>The pages of the course under the line of the menu: the students, the gradebook and the attendance (teacher), the classmates, the teacher and the grades (student).</summary>
+    public static IReadOnlyList<CourseMenuLink> ExtraLinks(bool teacher, int assignmentId, string current) => teacher
+        ?
+        [
+            new("Students", "users-round", $"teacher/subjects/{assignmentId}/students", current == "students"),
+            new("Gradebook", "clipboard-list", $"teacher/gradebook?subject={assignmentId}", current == "gradebook"),
+            new("Attendance", "calendar-check", $"teacher/attendance?subject={assignmentId}", current == "attendance"),
+        ]
+        :
+        [
+            new("Classmates", "users-round", $"student/subjects/{assignmentId}/classmates", current == "classmates"),
+            new("Teacher", "presentation", $"student/subjects/{assignmentId}/teachers", current == "teachers"),
+            new("Grades", "trending-up", "student/grades", current == "grades"),
+        ];
 
     /// <summary>"Module 2: Ledgers" for a module that is called Ledgers; a title that already starts with "Module" stays as it is.</summary>
     private static string Titled(int number, string title) => AddItemMenuLabels.ModuleLabel(number, title);

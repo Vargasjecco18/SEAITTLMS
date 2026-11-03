@@ -28,12 +28,20 @@
                  Contents="CoordinatorDashboard" />
         <NavItem Href="coordinator/academic-setup" Icon="school" Label="Academic setup"
                  Items="CoordinatorSetup" />
+        <NavItem Href="coordinator/sections" Icon="users" Label="Sections"
+                 Contents="CoordinatorSections" />
+        <NavItem Href="coordinator/class-schedule" Icon="calendar-clock" Label="Class schedule"
+                 Contents="CoordinatorSchedule" />
         <NavItem Href="coordinator/evaluations" Icon="clipboard-check" Label="Teacher evaluation"
                  Contents="CoordinatorEvaluations" />
         <NavItem Href="coordinator/announcements" Icon="megaphone" Label="Announcements"
                  Contents="CoordinatorAnnouncements" />
         <NavItem Href="coordinator/analytics" Icon="chart-column" Label="Analytics"
                  Contents="CoordinatorAnalytics" />
+        <NavItem Href="users" Icon="users-round" Label="Users"
+                 Items="StaffUsers" />
+        <NavItem Href="groups" Icon="users" Label="Groups"
+                 Contents="StaffGroups" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.AcademicProvider">
@@ -47,6 +55,10 @@
                  Items="ProviderTracking" />
         <NavItem Href="provider/analytics" Icon="chart-column" Label="Analytics"
                  Contents="ProviderAnalytics" />
+        <NavItem Href="users" Icon="users-round" Label="Users"
+                 Items="StaffUsers" />
+        <NavItem Href="groups" Icon="users" Label="Groups"
+                 Contents="StaffGroups" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Registrar">
@@ -58,6 +70,10 @@
                  Contents="RegistrarEnrollments" />
         <NavItem Href="registrar/student-accounts" Icon="graduation-cap" Label="Student's Accounts"
                  Contents="RegistrarAccounts" />
+        <NavItem Href="users" Icon="users-round" Label="Users"
+                 Items="StaffUsers" />
+        <NavItem Href="groups" Icon="users" Label="Groups"
+                 Contents="StaffGroups" />
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Teacher">
@@ -113,6 +129,10 @@
                  Items="GuidanceReferrals" />
         <NavItem Href="analytics" Icon="chart-column" Label="Analytics"
                  Contents="AnalyticsContents" />
+        <NavItem Href="users" Icon="users-round" Label="Users"
+                 Items="StaffUsers" />
+        <NavItem Href="groups" Icon="users" Label="Groups"
+                 Contents="StaffGroups" />
     </AuthorizeView>
 </nav>
 
@@ -192,11 +212,14 @@
 
     private static readonly IReadOnlyList<NavItem.Sub> CoordinatorSetup =
     [
-        new("School years and terms", "coordinator/academic-setup/calendar", "calendar-range"),
+        new("School years", "coordinator/academic-setup/school-years", "calendar-range"),
         new("Tracks, strands and courses", "coordinator/academic-setup/curriculum", "layers"),
-        new("Sections", "coordinator/academic-setup/sections", "users"),
-        new("Class schedule", "coordinator/class-schedule", "calendar-clock"),
+        new("Rooms", "coordinator/academic-setup/rooms", "door-open"),
     ];
+
+    private static readonly IReadOnlyList<string> CoordinatorSections = ["A and B of each strand and grade", "The adviser and the students"];
+
+    private static readonly IReadOnlyList<string> CoordinatorSchedule = ["A week like a spreadsheet", "Drag a course to a day and a time", "A room for each class"];
 
     private static readonly IReadOnlyList<string> CoordinatorDashboard = ["Evaluations that are open", "Announcements", "The school setup"];
 
@@ -242,7 +265,18 @@
         new("Friends", "users?tab=friends", "handshake"),
         new("Students", "users?tab=students", "graduation-cap"),
         new("Teachers", "users?tab=teachers", "presentation"),
+        new("Staff / Non-teaching", "users?tab=staff", "id-card"),
     ];
+
+    /// <summary>The Users list of the staff (registrar, guidance counselor, coordinator, provider): everybody of the school, no friends.</summary>
+    private static readonly IReadOnlyList<NavItem.Sub> StaffUsers =
+    [
+        new("Students", "users?tab=students", "graduation-cap"),
+        new("Teachers", "users?tab=teachers", "presentation"),
+        new("Staff / Non-teaching", "users?tab=staff", "id-card"),
+    ];
+
+    private static readonly IReadOnlyList<string> StaffGroups = ["Your groups", "Make a group", "Write in a group"];
 
     private static readonly IReadOnlyList<string> StudentDashboard = ["Assignments to do and overdue", "Assignments and due dates", "New modules", "Recent grades", "Online classmates"];
 
@@ -254,6 +288,7 @@
         new("Students", "users?tab=students", "graduation-cap"),
         new("Friends", "users?tab=friends", "handshake"),
         new("Teachers", "users?tab=teachers", "presentation"),
+        new("Staff / Non-teaching", "users?tab=staff", "id-card"),
     ];
 
     private static readonly IReadOnlyList<string> GuidanceDashboard = ["New concerns", "Students not attending class"];

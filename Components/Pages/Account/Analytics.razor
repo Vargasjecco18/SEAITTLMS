@@ -170,6 +170,7 @@ else
     ];
 
     private AnalyticsReport? report;
+    private IReadOnlyList<StudentResultRow> attention = [];
     private string Role { get; set; } = "";
 
     private string Title => Role switch
@@ -184,6 +185,15 @@ else
         var user = await Me.GetAsync();
         Role = user?.Role ?? "";
         report = user is null ? null : await Reports.GetAsync(user);
+
+        // A teacher sees who the students are who need attention (failing first, then the ones at risk), not only how many.
+        if (user is not null && user.Role == AppRoles.Teacher)
+        {
+            attention = [.. (await Reports.GetStudentResultsAsync(user))
+                .Where(r => r.Status is "Failing" or "At risk")
+                .OrderBy(r => r.Status == "Failing" ? 0 : 1).ThenBy(r => r.Grade ?? 0)
+                .Take(6)];
+        }
     }
 
     private RenderFragment Legend => @<ul class="legend" aria-label="Legend">
@@ -291,6 +301,19 @@ else
                         <span class="bar-name">@ReferralReasons.Display(c.Reason)</span>
                         <span class="track"><i class="concern @c.Reason.ToLowerInvariant()" style="width: @(c.Count * 100 / maxConcern)%"></i></span>
                         <span class="bar-value">@c.Count</span>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (attention.Count > 0)
+        {
+            <ul class="who" aria-label="Students who need attention">
+                @foreach (var a in attention)
+                {
+                    <li>
+                        <span class="who-name">@a.Student <small>@a.Course · @a.Section</small></span>
+                        <Badge Tone="@(a.Status == "Failing" ? Tone.Danger : Tone.Warning)">@(a.Grade is { } g ? $"{g:0.#}%" : a.Status)</Badge>
                     </li>
                 }
             </ul>

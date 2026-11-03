@@ -1432,92 +1432,311 @@ window.seaitt = Object.assign(window.seaitt || {}, {
     }
 });
 
-// How much of a module has been read (the bar at the right of its title, <ReadProgress>). It counts the scrolling of the page and the files and slides that were in front of the person
-// for a few seconds, and it never goes back: the highest value is kept on this computer.
+// How much of a module has been read (the bar at the right of its title, <ReadProgress>), and the viewer of the PDF files.
+// Only what happens INSIDE the files of the module counts: the pages of a PDF that were in front of the reader for a moment and how far the reader scrolled inside the PDF, the part of a
+// sound or a video that was played, how far a text file was scrolled, a picture that was looked at. Scrolling the page around the files counts for nothing.
+// Each file of the module is a share of the bar (a file that was not opened is 0), the bar never goes back, and what was read is kept on this computer for each module.
 (function () {
-    var state = null;
+    var PDFJS = 'lib/pdfjs/pdf.min.js';
+    var PDFJS_WORKER = 'lib/pdfjs/pdf.worker.min.js';
+    var PAGE_SECONDS = 1.5;     // how long a page has to be in front of the reader to count as seen
+    var LOOK_SECONDS = 2.5;     // a picture, or a text that does not scroll
+    var state = null;           // { el, key, data: { files: {} }, best, timer }
+    var pdfLoader = null;
 
-    function storageKey(el) { return 'seaitt-read:' + (el.getAttribute('data-read-key') || ''); }
+    function abs(url) { return new URL(url, document.baseURI).href; }
 
-    function load(el) {
-        try { return Math.min(100, Math.max(0, parseInt(window.localStorage.getItem(storageKey(el)) || '0', 10) || 0)); } catch (e) { return 0; }
+    // ---------------------------------------------------------------- what is remembered
+    function storageKey(key) { return 'seaitt-read2:' + key; }
+
+    function load(key) {
+        try {
+            var raw = window.localStorage.getItem(storageKey(key));
+            if (raw) { var d = JSON.parse(raw); if (d && d.files) { return d; } }
+        } catch (error) { }
+        return { files: {}, best: 0 };
     }
 
-    function save(el, value) {
-        try { window.localStorage.setItem(storageKey(el), String(value)); } catch (e) { /* no storage: the bar only lives on this page */ }
-    }
-
-    function show(s) {
-        var text = s.el.querySelector('[data-rp-value]');
-        var bar = s.el.querySelector('[data-rp-bar]');
-        if (text) { text.textContent = s.value + '%'; }
-        if (bar) { bar.style.width = s.value + '%'; }
-        s.el.setAttribute('aria-valuenow', String(s.value));
-        s.el.classList.toggle('done', s.value >= 100);
-    }
-
-    function visibleShare(node) {
-        var r = node.getBoundingClientRect();
-        var h = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
-        return r.height > 0 ? Math.max(0, h) / Math.min(r.height, window.innerHeight) : 0;
-    }
-
-    function tick() {
-        var s = state;
-        if (!s || !document.body.contains(s.el)) { return; }
-        if (document.hidden) { return; }
-
-        // The scrolling of the page: how far down it has been.
-        var doc = document.scrollingElement || document.documentElement;
-        var max = doc.scrollHeight - window.innerHeight;
-        var scrollable = max > 24;
-        if (scrollable) { s.scroll = Math.max(s.scroll, Math.min(1, doc.scrollTop / max)); }
-
-        // The files and the slides: each one counts once it was in front of the person for a few seconds (or the pointer was on it).
-        var total = 0;
-        document.querySelectorAll('.pane').forEach(function (pane) {
-            var chips = pane.querySelectorAll('.chips .chip');
-            total += Math.max(1, chips.length);
-            var viewer = pane.querySelector('.viewer');
-            var shown = viewer && viewer.querySelector('iframe, img, video, audio, .none');
-            if (!viewer || !shown) { return; }
-            var id = (shown.getAttribute('src') || shown.textContent || '').slice(0, 200);
-            var share = visibleShare(viewer);
-            if (share >= 0.4) {
-                s.seen[id] = (s.seen[id] || 0) + 1;
-                if (pane.matches(':hover') || document.activeElement === shown) { s.seen[id] += 3; }
-            }
-        });
-        var viewed = Object.keys(s.seen).filter(function (k) { return s.seen[k] >= 5; }).length;
-        var files = total > 0 ? Math.min(1, viewed / total) : 0;
-
-        var fraction = total === 0 ? s.scroll : (scrollable ? (s.scroll + files) / 2 : files);
-        var value = Math.max(s.value, Math.min(100, Math.round(fraction * 100)));
-        if (value !== s.value) { s.value = value; save(s.el, value); show(s); }
-    }
-
-    function start(el) {
-        if (state && state.el === el) { return; }
-        stop();
-        state = { el: el, value: load(el), scroll: 0, seen: {}, timer: null };
-        show(state);
-        state.timer = window.setInterval(tick, 1000);
-        window.addEventListener('scroll', tick, { passive: true });
-    }
-
-    function stop() {
+    function save() {
         if (!state) { return; }
-        window.clearInterval(state.timer);
-        window.removeEventListener('scroll', tick);
-        state = null;
+        try { window.localStorage.setItem(storageKey(state.key), JSON.stringify(state.data)); } catch (error) { /* no storage: the bar only lives on this page */ }
+    }
+
+    // The record of one file: { p: pages seen, n: pages, s: the furthest scroll 0..1, sc: it scrolls, t: the part played 0..1, d: it was looked at }.
+    function rec(id) {
+        if (!state) { return null; }
+        var files = state.data.files;
+        if (!files[id]) { files[id] = { p: [], n: 0, s: 0, sc: 0, t: null, d: 0 }; }
+        return files[id];
+    }
+
+    function fraction(f) {
+        if (!f) { return 0; }
+        if (f.n > 0) {
+            var seen = Math.min(1, f.p.length / f.n);
+            return f.sc ? (seen + Math.min(1, f.s)) / 2 : seen;
+        }
+        if (f.t !== null && f.t !== undefined) { return Math.min(1, f.t); }
+        if (f.sc) { return (Math.min(1, f.s) + (f.d ? 1 : 0)) / 2; }
+        return f.d ? 1 : 0;
+    }
+
+    function fileIds() {
+        var ids = {};
+        document.querySelectorAll('.pane[data-file-ids]').forEach(function (pane) {
+            pane.getAttribute('data-file-ids').split(',').forEach(function (id) { if (id) { ids[id] = true; } });
+        });
+        return Object.keys(ids);
+    }
+
+    function show() {
+        if (!state) { return; }
+        var ids = fileIds();
+        var total = 0;
+        ids.forEach(function (id) { total += fraction(state.data.files[id]); });
+        var value = ids.length === 0 ? 0 : Math.round(100 * total / ids.length);
+        value = Math.max(state.data.best || 0, Math.min(100, value));
+        if (value !== state.data.best) { state.data.best = value; save(); }
+        var text = state.el.querySelector('[data-rp-value]');
+        var bar = state.el.querySelector('[data-rp-bar]');
+        if (text) { text.textContent = value + '%'; }
+        if (bar) { bar.style.width = value + '%'; }
+        state.el.setAttribute('aria-valuenow', String(value));
+        state.el.classList.toggle('done', value >= 100);
+    }
+
+    function touch() { show(); }
+
+    // Is the box of a file in front of the reader (the window is open and at least a third of the box is on the screen)?
+    function inFront(el) {
+        if (document.hidden) { return false; }
+        var r = el.getBoundingClientRect();
+        var h = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
+        return r.height > 0 && h >= Math.min(r.height, window.innerHeight) * 0.35;
+    }
+
+    // ---------------------------------------------------------------- the PDF viewer (PDF.js draws the pages)
+    function loadPdfJs() {
+        if (window.pdfjsLib) { return Promise.resolve(window.pdfjsLib); }
+        if (!pdfLoader) {
+            pdfLoader = new Promise(function (resolve, reject) {
+                var script = document.createElement('script');
+                script.src = abs(PDFJS);
+                script.onload = function () {
+                    if (window.pdfjsLib) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = abs(PDFJS_WORKER); resolve(window.pdfjsLib); } else { reject(new Error('PDF.js')); }
+                };
+                script.onerror = function () { pdfLoader = null; reject(new Error('PDF.js')); };
+                document.head.appendChild(script);
+            });
+        }
+        return pdfLoader;
+    }
+
+    function startPdf(box) {
+        box.setAttribute('data-pdf-ready', '1');
+        var id = box.getAttribute('data-file-id');
+        var url = abs(box.getAttribute('data-pdf-src'));
+        box.innerHTML = '<div class="pdf-badge" aria-live="polite">Loading…</div><div class="pdf-scroll" tabindex="0"><div class="pdf-pages"></div></div>';
+        var badge = box.querySelector('.pdf-badge');
+        var scroller = box.querySelector('.pdf-scroll');
+        var holder = box.querySelector('.pdf-pages');
+        var pages = [];          // the box of each page
+        var dwell = {};          // seconds each page was in front of the reader
+        var visible = {};        // pages that are on the screen now
+        var rendered = {};
+        var total = 0;
+        var timer = null;
+
+        function fail() {
+            if (timer) { window.clearInterval(timer); }
+            box.innerHTML = '<p class="pdf-message">This PDF can\'t be shown here. Use “Open in a new tab” or Download.</p>';
+        }
+
+        function setBadge() {
+            var top = 1;
+            var c = scroller.getBoundingClientRect();
+            for (var i = 0; i < pages.length; i++) {
+                var r = pages[i].getBoundingClientRect();
+                if (r.bottom - c.top > c.height * 0.3) { top = i + 1; break; }
+                top = i + 1;
+            }
+            badge.textContent = 'Page ' + top + ' of ' + total;
+        }
+
+        function onScroll() {
+            var f = rec(id);
+            var range = scroller.scrollHeight - scroller.clientHeight;
+            if (f && range > 24) {
+                f.sc = 1;
+                f.s = Math.max(f.s, Math.min(1, scroller.scrollTop / range));
+                touch();
+            }
+            setBadge();
+        }
+
+        function step() {
+            if (!document.body.contains(box)) { window.clearInterval(timer); return; }
+            var f = rec(id);
+            if (!f || !inFront(box)) { return; }
+            var c = scroller.getBoundingClientRect();
+            Object.keys(visible).forEach(function (n) {
+                var r = pages[n - 1].getBoundingClientRect();
+                var shown = Math.min(r.bottom, c.bottom) - Math.max(r.top, c.top);
+                // a page counts while at least half of it (or half of the box, for a page taller than the box) is on the screen
+                if (shown >= Math.min(r.height, c.height) * 0.5) {
+                    dwell[n] = (dwell[n] || 0) + 0.5;
+                    if (dwell[n] >= PAGE_SECONDS && f.p.indexOf(Number(n)) < 0) { f.p.push(Number(n)); touch(); }
+                }
+            });
+        }
+
+        function draw(n) {
+            if (rendered[n]) { return; }
+            rendered[n] = true;
+            pdfDoc.getPage(n).then(function (page) {
+                var dpr = Math.min(2, window.devicePixelRatio || 1);
+                var width = Math.max(300, pages[n - 1].clientWidth);
+                var base = page.getViewport({ scale: 1 });
+                var viewport = page.getViewport({ scale: (width / base.width) * dpr });
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.floor(viewport.width);
+                canvas.height = Math.floor(viewport.height);
+                var wait = pages[n - 1].querySelector('.pdf-wait');
+                return page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(function () {
+                    pages[n - 1].appendChild(canvas);
+                    if (wait) { wait.remove(); }
+                });
+            }).catch(function () { rendered[n] = false; });
+        }
+
+        var pdfDoc = null;
+        loadPdfJs().then(function (lib) {
+            return lib.getDocument({ url: url, withCredentials: true }).promise;
+        }).then(function (doc) {
+            pdfDoc = doc;
+            total = doc.numPages;
+            var f = rec(id);
+            if (f) { f.n = total; }
+            return doc.getPage(1);
+        }).then(function (first) {
+            var size = first.getViewport({ scale: 1 });
+            for (var n = 1; n <= total; n++) {
+                var page = document.createElement('div');
+                page.className = 'pdf-page';
+                page.style.aspectRatio = size.width + ' / ' + size.height;
+                page.setAttribute('data-page', String(n));
+                page.innerHTML = '<span class="pdf-wait">Page ' + n + '</span>';
+                holder.appendChild(page);
+                pages.push(page);
+            }
+
+            // the pages near the screen are drawn, the others wait
+            var drawObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) { if (e.isIntersecting) { draw(Number(e.target.getAttribute('data-page'))); } });
+            }, { root: scroller, rootMargin: '700px 0px' });
+            var seenObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    var n = Number(e.target.getAttribute('data-page'));
+                    if (e.isIntersecting) { visible[n] = true; } else { delete visible[n]; }
+                });
+            }, { root: scroller, threshold: [0, 0.25, 0.5, 0.75, 1] });
+            pages.forEach(function (p) { drawObserver.observe(p); seenObserver.observe(p); });
+
+            scroller.addEventListener('scroll', onScroll, { passive: true });
+            timer = window.setInterval(step, 500);
+            setBadge();
+            touch();
+        }).catch(fail);
+    }
+
+    // ---------------------------------------------------------------- the other files
+    function watchImage(img) {
+        img.setAttribute('data-read-watch', '1');
+        var seconds = 0;
+        var timer = window.setInterval(function () {
+            if (!document.body.contains(img)) { window.clearInterval(timer); return; }
+            var f = rec(img.getAttribute('data-file-id'));
+            if (!f || f.d) { return; }
+            if (inFront(img)) { seconds += 0.5; if (seconds >= LOOK_SECONDS) { f.d = 1; touch(); } }
+        }, 500);
+    }
+
+    function watchMedia(media) {
+        media.setAttribute('data-read-watch', '1');
+        var id = media.getAttribute('data-file-id');
+        media.addEventListener('timeupdate', function () {
+            var f = rec(id);
+            if (!f || !(media.duration > 0)) { return; }
+            f.t = Math.max(f.t || 0, media.currentTime / media.duration);
+            touch();
+        });
+        media.addEventListener('ended', function () { var f = rec(id); if (f) { f.t = 1; touch(); } });
+    }
+
+    function watchFrame(frame) {
+        // A text file in a frame of this site: how far it was scrolled (and that it was looked at for a moment).
+        frame.setAttribute('data-read-watch', '1');
+        var id = frame.getAttribute('data-file-id');
+        var seconds = 0;
+        function attach() {
+            try {
+                var w = frame.contentWindow;
+                w.addEventListener('scroll', function () {
+                    var f = rec(id);
+                    var d = w.document.scrollingElement || w.document.documentElement;
+                    var range = d.scrollHeight - w.innerHeight;
+                    if (f && range > 24) { f.sc = 1; f.s = Math.max(f.s, Math.min(1, d.scrollTop / range)); touch(); }
+                }, { passive: true });
+            } catch (error) { /* a frame that can't be read only counts as looked at */ }
+        }
+        frame.addEventListener('load', attach);
+        if (frame.contentDocument && frame.contentDocument.readyState === 'complete') { attach(); }
+        var timer = window.setInterval(function () {
+            if (!document.body.contains(frame)) { window.clearInterval(timer); return; }
+            var f = rec(id);
+            if (!f || f.d) { return; }
+            if (inFront(frame)) { seconds += 0.5; if (seconds >= LOOK_SECONDS) { f.d = 1; touch(); } }
+        }, 500);
+    }
+
+    // A file the browser can't show is read when it is saved (Download).
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest && event.target.closest('.pane a[download][data-file-id]');
+        if (!link || !state) { return; }
+        var f = rec(link.getAttribute('data-file-id'));
+        if (f && !f.n && f.t === null && !link.closest('.pane').querySelector('.viewer img, .viewer iframe, .viewer audio, .viewer video, .viewer .pdf-view')) { f.d = 1; touch(); }
+    });
+
+    // ---------------------------------------------------------------- the page
+    function attachViewers() {
+        document.querySelectorAll('.pdf-view[data-pdf-src]:not([data-pdf-ready])').forEach(startPdf);
+        if (!state) { return; }
+        document.querySelectorAll('.viewer img[data-file-id]:not([data-read-watch])').forEach(watchImage);
+        document.querySelectorAll('.viewer iframe[data-file-id]:not([data-read-watch])').forEach(watchFrame);
+        document.querySelectorAll('.viewer audio[data-file-id]:not([data-read-watch]), .viewer video[data-file-id]:not([data-read-watch])').forEach(watchMedia);
     }
 
     function sync() {
         var el = document.querySelector('[data-read-progress]');
-        if (el) { start(el); } else { stop(); }
+        if (el && (!state || state.el !== el)) {
+            var key = el.getAttribute('data-read-key') || '';
+            state = { el: el, key: key, data: load(key) };
+            show();
+        } else if (!el && state) {
+            state = null;
+        }
+        attachViewers();
+        if (state) { show(); }
+    }
+
+    var queued = false;
+    function later() {
+        if (queued) { return; }
+        queued = true;
+        window.requestAnimationFrame(function () { queued = false; sync(); });
     }
 
     document.addEventListener('DOMContentLoaded', sync);
-    new MutationObserver(sync).observe(document.documentElement, { childList: true, subtree: true });
+    new MutationObserver(later).observe(document.documentElement, { childList: true, subtree: true });
     sync();
 })();

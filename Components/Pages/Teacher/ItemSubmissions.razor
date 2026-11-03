@@ -31,6 +31,7 @@ else
 
     <PageHeader Title="@data.Title" IconName="@SubjectStyle.KindIcon(data.Kind)">
         <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
+        <Button Variant="ButtonVariant.Secondary" IconName="eye" OnClick="OpenGiven">View @(data.Kind == ItemKinds.Quiz ? "quiz" : "activity")</Button>
         @if (data.Kind == ItemKinds.Quiz && !isFileQuiz)
         {
             <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">Questions</ButtonLink>
@@ -44,29 +45,8 @@ else
         <p class="late-hint" role="status"><Icon Name="alarm-clock" Size="16" /> <span>@lateWaiting @(lateWaiting == 1 ? "student handed in late" : "students handed in late"). Accept the work you want to grade, or decline it.</span></p>
     }
 
-    @* What the teacher gave (the question, the instructions, the file) is at the left, who handed in is at the right. The menu of the school folds to its icons so both have room. *@
-    <span data-side-rail hidden></span>
-    <div class="item-layout">
-    <div class="given">
-        <Card Title="@(data.Kind == ItemKinds.Quiz ? "The quiz" : "What you gave")" IconName="file-text">
-            @if (string.IsNullOrWhiteSpace(data.Instructions) && itemFiles.Count == 0)
-            {
-                <p class="muted">@(data.Kind == ItemKinds.Quiz && !isFileQuiz ? "The questions are in Questions, at the top." : "No instructions or file were added.")</p>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(data.Instructions))
-            {
-                <div class="text">@data.Instructions</div>
-            }
-
-            @if (itemFiles.Count > 0)
-            {
-                <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
-                <FilePreviewPane Items="itemFiles" Label="@($"Files of {data.Title}")" />
-            }
-        </Card>
-    </div>
-    <div class="work">
+    @* What the teacher gave (the question, the instructions, the file) is in the box that View activity opens, in the middle of the screen. *@
+    <div class="submissions">
     <div class="summary">
         <div class="tile"><span class="tile-value">@handedIn / @data.Rows.Count</span><span class="tile-label">handed in</span></div>
         <div class="tile"><span class="tile-value">@toCheck</span><span class="tile-label">to check</span></div>
@@ -170,8 +150,34 @@ else
         }
     </Card>
     </div>
-    </div>
 }
+
+@* ===== What the teacher gave: the instructions and the files, in the middle of the screen ===== *@
+<Modal Open="givenOpen && data is not null" Title="@(data is null ? "" : data.Title)" OnClose="CloseGiven" Large="true">
+    @if (data is not null)
+    {
+        <p class="given-kind"><Icon Name="@SubjectStyle.KindIcon(data.Kind)" Size="16" /> @(data.Kind == ItemKinds.Quiz ? "The quiz" : "What you gave")</p>
+        @if (string.IsNullOrWhiteSpace(data.Instructions) && itemFiles.Count == 0)
+        {
+            <p class="muted">@(data.Kind == ItemKinds.Quiz && !isFileQuiz ? "The questions are in Questions, at the top." : "No instructions or file were added.")</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(data.Instructions))
+        {
+            <div class="text">@data.Instructions</div>
+        }
+
+        @if (itemFiles.Count > 0)
+        {
+            <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
+            <FilePreviewPane Items="itemFiles" Label="@($"Files of {data.Title}")" />
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Secondary" OnClick="CloseGiven">Close</Button>
+        </div>
+    }
+</Modal>
 
 @* ===== One student's work ===== *@
 <Modal Open="detail is not null" Title="@(detail?.StudentName ?? "")" OnClose="CloseDetail" Large="true">
@@ -295,6 +301,11 @@ else
     private bool loaded;
     private ItemSubmissionList? data;
     private SubmissionDetail? detail;
+    private bool givenOpen;
+
+    private void OpenGiven() => givenOpen = true;
+
+    private void CloseGiven() => givenOpen = false;
     private IReadOnlyList<AttachmentRow> detailFiles = [];
     private decimal? scoreInput;
     private string? feedbackInput;

@@ -72,6 +72,11 @@
     private bool open;
     private int? chosen;
 
+    /// <summary>True when the menu is open as soon as the page is (the person came from "Add seatwork" in the menu of the course).</summary>
+    [Parameter] public bool StartOpen { get; set; }
+
+    protected override void OnInitialized() => open = StartOpen;
+
     /// <summary>The words on the button.</summary>
     [Parameter] public string Label { get; set; } = "Add";
 

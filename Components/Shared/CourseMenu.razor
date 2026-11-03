@@ -18,7 +18,15 @@
                 }
                 @if (group.Entries.Count == 0)
                 {
-                    <li class="cm-none">None yet.</li>
+                    @if (CanAdd && KindOfKey(group.Key) is { } kind)
+                    {
+                        @* The teacher of the course has none of this kind yet: the line says what to do (the list of the kind opens its Add menu). *@
+                        <li class="cm-none"><a class="cm-add" href="@($"{group.SeeAllHref}&add=1")"><Icon Name="plus" Size="14" /> <span>Add @ItemKinds.Display(kind).ToLowerInvariant()</span></a></li>
+                    }
+                    else
+                    {
+                        <li class="cm-none">None yet.</li>
+                    }
                 }
             </ul>
         </details>
@@ -40,6 +48,9 @@
 
     /// <summary>The dropdowns: Modules and the kinds of work.</summary>
     [Parameter] public IReadOnlyList<CourseMenuGroup> Groups { get; set; } = [];
+
+    /// <summary>True for the teacher of the course: a kind with nothing in it says "Add seatwork" (and so on) instead of "None yet".</summary>
+    [Parameter] public bool CanAdd { get; set; }
 
     /// <summary>The group that is open: modules, seatwork, assignments, quizzes, tasks (empty on a module page, where the module that is open opens its group).</summary>
     [Parameter] public string Selected { get; set; } = "";

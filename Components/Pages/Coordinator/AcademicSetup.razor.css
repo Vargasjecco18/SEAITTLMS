@@ -1,261 +1,278 @@
 /*
-  The page and its three steps. The steps are other components, so their elements are reached with ::deep from .setup.
+  The page: the parts of the setup as tabs at the left, one part at a time at the right.
+  The parts are other components, so their elements are reached with ::deep from .setup-shell.
 */
-.setup {
-    min-width: 0;
-}
-
-.setup-search {
-    margin: 0 0 1rem;
-}
-
-.setup-search ::deep .search-field {
-    max-width: 38rem;
-}
-
-/* ---------- the steps of the setup, all on one page ---------- */
-.steps {
+.setup-shell {
     display: grid;
     gap: 1.25rem;
+    align-items: start;
 }
 
-.step {
-    min-width: 0;
-    background: var(--surface);
+@media (min-width: 960px) {
+    .setup-shell {
+        grid-template-columns: 15.5rem minmax(0, 1fr);
+    }
+}
+
+/* ---------- the tabs (a list at the left; a row that scrolls on a small screen) ---------- */
+.setup-tabs {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.5rem;
+    overflow-x: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    background: var(--surface);
     box-shadow: var(--shadow);
 }
 
-.step-bar {
+@media (min-width: 960px) {
+    .setup-tabs {
+        position: sticky;
+        top: calc(var(--header-h) + 0.75rem);
+        flex-direction: column;
+        gap: 0.2rem;
+        overflow: visible;
+    }
+}
+
+.tab {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.7rem;
-    padding: 0.9rem 1.15rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.step-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
     flex: none;
-    margin: 0;
-    font-size: 1.08rem;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.7rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
 }
 
-.step-hint {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.tab:hover {
+    background: var(--surface-2);
 }
 
-.step-body {
-    padding: 1.1rem 1.15rem 1.25rem;
+.tab.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
 }
 
-.step-num {
-    display: inline-grid;
+.tab-icon {
+    display: grid;
     flex: none;
     place-items: center;
-    width: 1.7rem;
-    height: 1.7rem;
-    border-radius: 50%;
-    background: var(--btn-bg);
-    color: var(--on-brand, #fff);
-    font-size: 0.82rem;
-    font-weight: 700;
-}
-
-.count {
-    padding: 0.05rem 0.55rem;
-    border-radius: 999px;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9px;
     background: var(--surface-2);
     color: var(--text-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    white-space: nowrap;
 }
 
-/* ---------- shared by the steps ---------- */
-.setup ::deep .muted {
-    color: var(--text-muted);
+.tab.on .tab-icon {
+    background: var(--brand);
+    color: var(--on-brand);
 }
 
-.setup ::deep .mono {
-    font-variant-numeric: tabular-nums;
-}
-
-.setup ::deep .count {
-    padding: 0.05rem 0.55rem;
-    border-radius: 999px;
-    background: var(--surface-2);
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-/* A box that is ready to type in: it looks like a box (a darker border), without the weight of a form. */
-.setup ::deep .cell {
-    min-width: 0;
-    padding: 0.32rem 0.5rem;
-    font: inherit;
-    font-size: 0.92rem;
-}
-
-.setup ::deep .cell.strong {
-    font-weight: 700;
-}
-
-.setup ::deep .cell.code {
-    width: 7.5rem;
-    flex: none;
-    font-variant-numeric: tabular-nums;
-}
-
-.setup ::deep .cell.units {
-    width: 4.6rem;
-    flex: none;
-}
-
-.setup ::deep .cell.narrow {
-    width: auto;
-    flex: none;
-}
-
-.setup ::deep .grow {
-    flex: 1 1 10rem;
-    min-width: 0;
-}
-
-.setup ::deep .saved-line {
-    min-height: 1.3rem;
-    margin: 0 0 0.5rem;
-    color: var(--green);
-    font-size: 0.88rem;
-    font-weight: 650;
-}
-
-.setup ::deep .add-row {
+.tab-text {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.7rem;
-    padding: 0.55rem 0.7rem;
-    border: 1px dashed var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    list-style: none;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
 }
 
-.setup ::deep .filter-count {
-    color: var(--text-muted);
-    font-size: 0.88rem;
-}
-
-.setup ::deep .table-wrap {
-    overflow-x: auto;
-}
-
-.setup ::deep .table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.setup ::deep .table th {
-    padding: 0.5rem 0.6rem;
-    border-top: 1px solid var(--border);
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-align: left;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.setup ::deep .table td {
-    padding: 0.55rem 0.6rem;
-    border-top: 1px solid var(--border);
-    vertical-align: middle;
+.tab-text strong {
     font-size: 0.92rem;
-}
-
-.setup ::deep .table td.nowrap {
-    white-space: nowrap;
-}
-
-.setup ::deep .table .name {
     font-weight: 650;
 }
 
-.setup ::deep .col-actions {
-    text-align: right;
-    white-space: nowrap;
+.tab-text small {
+    color: var(--text-muted);
+    font-size: 0.78rem;
 }
 
-.setup ::deep .row-actions {
+.tab-link {
+    color: var(--text-muted);
+}
+
+.tab-link .tab-text strong {
+    color: var(--text);
+}
+
+.tabs-rule,
+.tabs-note {
+    display: none;
+}
+
+@media (min-width: 960px) {
+    .tabs-rule {
+        display: block;
+        height: 1px;
+        margin: 0.5rem 0.5rem 0.25rem;
+        background: var(--border);
+    }
+
+    .tabs-note {
+        display: block;
+        margin: 0 0.7rem 0.2rem;
+        color: var(--text-muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+}
+
+/* ---------- the part that is open ---------- */
+.setup-main {
+    min-width: 0;
+}
+
+.setup-top {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.setup-search ::deep .search-field {
+    max-width: 36rem;
+}
+
+.setup-lead {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.setup-panel {
+    min-width: 0;
+}
+
+/* ---------- the Excel button ---------- */
+.excel-pop {
+    position: relative;
+}
+
+.excel-button {
     display: inline-flex;
-    gap: 0.35rem;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
 }
 
-.setup ::deep .modal-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.6rem;
-    margin-top: 1.25rem;
+.excel-button::-webkit-details-marker {
+    display: none;
 }
 
-.setup ::deep .delete-text {
-    margin: 0 0 0.75rem;
+.excel-button:hover,
+.excel-pop[open] .excel-button {
+    background: var(--surface-2);
 }
 
-.setup ::deep .sr-only {
+.excel-panel {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    min-width: 17rem;
+    padding: 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
 }
 
-.setup ::deep .ended {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--border);
-}
-
-.setup ::deep .ended summary {
-    color: var(--text-muted);
-    font-weight: 600;
+.excel-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
     cursor: pointer;
 }
 
-.setup ::deep .ended-list {
+.excel-item:hover {
+    background: var(--surface-2);
+}
+
+/* ---------- the rooms ---------- */
+.setup-shell ::deep .room-add {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+.setup-shell ::deep .room-grid {
     display: grid;
-    gap: 0.3rem;
-    margin: 0.5rem 0 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    margin: 0;
     padding: 0;
     list-style: none;
 }
 
-@media (max-width: 720px) {
-    .step-hint {
-        display: none;
+@media (min-width: 700px) {
+    .setup-shell ::deep .room-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .step-bar {
-        padding: 0.75rem 0.9rem;
+    .setup-shell ::deep .room-grid > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
     }
+}
 
-    .step-body {
-        padding: 0.9rem;
-    }
+.setup-shell ::deep .room-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.setup-shell ::deep .room-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9px;
+    background: var(--blue-soft);
+    color: var(--blue);
+}
+
+.setup-shell ::deep .room-count {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.setup-shell ::deep .saved-line {
+    min-height: 1.2rem;
+    margin: 0 0 0.5rem;
+    color: var(--success);
+    font-size: 0.85rem;
+    font-weight: 600;
 }

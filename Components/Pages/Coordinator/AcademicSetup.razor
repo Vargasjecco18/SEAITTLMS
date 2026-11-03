@@ -5,62 +5,80 @@
 @using SEAITT_LMS.Components.Pages.Coordinator.Setup
 @using SEAITT_LMS.Services
 @inject SchoolSetupService Setup
+@inject CourseScheduleService Times
 @inject SetupWorkbookService Workbook
 @inject CurrentUser Me
 @inject FileDownloads Downloads
-@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <PageTitle>Academic setup · SEAITT Legazpi LMS</PageTitle>
 
 <PageHeader Title="Academic setup" IconName="school">
-    <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
-    <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenExcelAsync">Template and import (Excel)</Button>
+    @* One button for the Excel file of the whole setup. *@
+    <details class="pop excel-pop">
+        <summary class="excel-button"><Icon Name="file-spreadsheet" Size="16" /> <span>Excel</span> <Icon Name="chevron-down" Size="14" /></summary>
+        <div class="excel-panel">
+            <button type="button" class="excel-item" @onclick="ExportAsync"><Icon Name="download" Size="16" /> Export to Excel</button>
+            <button type="button" class="excel-item" @onclick="OpenExcelAsync"><Icon Name="upload" Size="16" /> Template and import (Excel)</button>
+        </div>
+    </details>
 </PageHeader>
 
 <Notice Message="@message" IsError="false" OnDismiss="ClearMessage" />
 
-<div class="setup">
-    <form class="setup-search" role="search" @onsubmit="() => { }">
-        <SearchField Id="setup-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a school year, a track, a strand, a course or a section" AriaLabel="Search the academic setup" />
-    </form>
+<div class="setup-shell">
+    @* The parts of the setup, one at a time (the tabs at the left). The sections and the class schedule have their own places in the menu of the school. *@
+    <nav class="setup-tabs" aria-label="Parts of the academic setup">
+        <a class="tab @(tab == "school-years" ? "on" : "")" href="coordinator/academic-setup/school-years" aria-current="@(tab == "school-years" ? "page" : null)">
+            <span class="tab-icon"><Icon Name="calendar-range" Size="18" /></span>
+            <span class="tab-text"><strong>School years</strong><small>@CountOf("school-years")</small></span>
+        </a>
+        <a class="tab @(tab == "curriculum" ? "on" : "")" href="coordinator/academic-setup/curriculum" aria-current="@(tab == "curriculum" ? "page" : null)">
+            <span class="tab-icon"><Icon Name="layers" Size="18" /></span>
+            <span class="tab-text"><strong>Tracks, strands and courses</strong><small>@CountOf("curriculum")</small></span>
+        </a>
+        <a class="tab @(tab == "rooms" ? "on" : "")" href="coordinator/academic-setup/rooms" aria-current="@(tab == "rooms" ? "page" : null)">
+            <span class="tab-icon"><Icon Name="door-open" Size="18" /></span>
+            <span class="tab-text"><strong>Rooms</strong><small>@CountOf("rooms")</small></span>
+        </a>
 
-    @* Three steps, all on one page. Every box in them is ready to type in: a change is saved when the box is left. A new key makes the steps read their rows again (after an import). *@
-    <div @key="reloadKey" class="steps">
-        <section class="step" id="step-calendar" aria-labelledby="step-calendar-title">
-            <header class="step-bar">
-                <span class="step-num">1</span>
-                <h2 id="step-calendar-title" class="step-name"><Icon Name="calendar-range" Size="20" /> School years and terms</h2>
-                <span class="step-hint">The running school year and the next two, with three terms each</span>
-                <span class="count">@CountOf("calendar")</span>
-            </header>
-            <div class="step-body">
-                <CalendarStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
-            </div>
-        </section>
+        <span class="tabs-rule" aria-hidden="true"></span>
+        <p class="tabs-note">Also in the menu</p>
+        <a class="tab tab-link" href="coordinator/sections">
+            <span class="tab-icon"><Icon Name="users" Size="18" /></span>
+            <span class="tab-text"><strong>Sections</strong><small>@CountOf("sections")</small></span>
+            <Icon Name="chevron-right" Size="16" />
+        </a>
+        <a class="tab tab-link" href="coordinator/class-schedule">
+            <span class="tab-icon"><Icon Name="calendar-clock" Size="18" /></span>
+            <span class="tab-text"><strong>Class schedule</strong><small>@CountOf("classes")</small></span>
+            <Icon Name="chevron-right" Size="16" />
+        </a>
+    </nav>
 
-        <section class="step" id="step-curriculum" aria-labelledby="step-curriculum-title">
-            <header class="step-bar">
-                <span class="step-num">2</span>
-                <h2 id="step-curriculum-title" class="step-name"><Icon Name="layers" Size="20" /> Tracks, strands and courses</h2>
-                <span class="step-hint">A track has strands, a strand has its courses</span>
-                <span class="count">@CountOf("curriculum")</span>
-            </header>
-            <div class="step-body">
-                <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
-            </div>
-        </section>
+    <div class="setup-main">
+        <div class="setup-top">
+            <form class="setup-search" role="search" @onsubmit="() => { }">
+                <SearchField Id="setup-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="@SearchHint" AriaLabel="Search the academic setup" />
+            </form>
+            <p class="setup-lead">@Lead</p>
+        </div>
 
-        <section class="step" id="step-sections" aria-labelledby="step-sections-title">
-            <header class="step-bar">
-                <span class="step-num">3</span>
-                <h2 id="step-sections-title" class="step-name"><Icon Name="users" Size="20" /> Sections and class schedule</h2>
-                <span class="step-hint">A and B for each strand and grade level</span>
-                <span class="count">@CountOf("sections")</span>
-            </header>
-            <div class="step-body">
-                <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
-            </div>
-        </section>
+        @* A new key makes the part read its rows again (after an import). *@
+        <div @key="@($"{tab}-{reloadKey}")" class="setup-panel" id="@($"step-{tab}")">
+            @switch (tab)
+            {
+                case "curriculum":
+                    <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+                    break;
+                case "rooms":
+                    <RoomsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+                    break;
+                default:
+                    <CalendarStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+                    break;
+            }
+        </div>
     </div>
 </div>
 
@@ -75,42 +93,55 @@
     [Parameter] public string? TabKey { get; set; }
 
     private SetupCounts? counts;
+    private int roomCount;
     private int reloadKey;
     private string? message;
     private bool excelOpen;
     private SetupSnapshot? snapshot;
     private string search = "";
+    private string tab = "school-years";
 
     protected override async Task OnParametersSetAsync()
     {
         counts ??= await Setup.GetCountsAsync();
+        roomCount = (await Times.ListRoomsAsync()).Count;
 
-        // An address like academic-setup/sections goes to that step (the old names of the steps still work).
+        // An address like academic-setup/curriculum goes to that part (the old names of the parts still work; the sections have a page of their own now).
         var wanted = (TabKey ?? "").ToLowerInvariant() switch
         {
-            "school-years" or "terms" or "calendar" => "calendar",
+            "school-years" or "terms" or "calendar" or "" => "school-years",
             "tracks" or "strands" or "subjects" or "curriculum" => "curriculum",
+            "rooms" => "rooms",
             "sections" => "sections",
-            _ => null,
+            _ => "school-years",
         };
-        if (wanted is not null && scrolledTo != wanted)
+
+        if (wanted == "sections")
         {
-            scrolledTo = wanted;
-            scrollTo = wanted;
+            Navigation.NavigateTo("coordinator/sections", replace: true);
+            return;
+        }
+
+        if (wanted != tab)
+        {
+            tab = wanted;
+            search = "";
         }
     }
 
-    private string? scrolledTo;
-    private string? scrollTo;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private string SearchHint => tab switch
     {
-        if (scrollTo is { } key)
-        {
-            scrollTo = null;
-            await JS.InvokeVoidAsync("seaitt.goToId", $"step-{key}");
-        }
-    }
+        "curriculum" => "Search a track, a strand or a course",
+        "rooms" => "Search a room",
+        _ => "Search a school year or a term",
+    };
+
+    private string Lead => tab switch
+    {
+        "curriculum" => "Press a track to see its strands, and a strand to see its courses. Everything can be typed over: it is saved when you leave the box.",
+        "rooms" => "The rooms of the school. A class gets its room in the class schedule.",
+        _ => "The school year that is running and the next two are always here, with three terms each. A school year that is over goes away by itself.",
+    };
 
     private int changes;
 
@@ -118,6 +149,7 @@
     private async Task ReloadCountsAsync()
     {
         counts = await Setup.GetCountsAsync();
+        roomCount = (await Times.ListRoomsAsync()).Count;
         changes++;
     }
 
@@ -169,9 +201,11 @@
 
     private string CountOf(string key) => counts is null ? "" : key switch
     {
-        "calendar" => $"{counts.SchoolYears} {(counts.SchoolYears == 1 ? "school year" : "school years")} · {counts.Terms} {(counts.Terms == 1 ? "term" : "terms")}",
+        "school-years" => $"{counts.SchoolYears} {(counts.SchoolYears == 1 ? "school year" : "school years")} · {counts.Terms} {(counts.Terms == 1 ? "term" : "terms")}",
         "curriculum" => $"{counts.Tracks} {(counts.Tracks == 1 ? "track" : "tracks")} · {counts.Strands} {(counts.Strands == 1 ? "strand" : "strands")} · {counts.Subjects} {(counts.Subjects == 1 ? "course" : "courses")}",
-        "sections" => $"{counts.Sections} {(counts.Sections == 1 ? "section" : "sections")} · {counts.CourseTimes} {(counts.CourseTimes == 1 ? "class time" : "class times")}",
+        "rooms" => $"{roomCount} {(roomCount == 1 ? "room" : "rooms")}",
+        "sections" => $"{counts.Sections} {(counts.Sections == 1 ? "section" : "sections")}",
+        "classes" => $"{counts.CourseTimes} {(counts.CourseTimes == 1 ? "class time" : "class times")}",
         _ => "",
     };
 }

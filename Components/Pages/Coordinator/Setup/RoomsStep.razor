@@ -1,0 +1,111 @@
+@inherits SetupTabBase
+@inject CourseScheduleService Times
+
+@* The rooms of the school. A room is chosen for a class in the class schedule; here they are named, added and removed. Every name is ready to type in: a change is saved when the box is left. *@
+<div class="rooms-step">
+    <FormErrors Errors="Errors" />
+    <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
+
+    @if (rooms is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else
+    {
+        <form class="room-add" @onsubmit="AddAsync">
+            <Icon Name="door-open" Size="20" />
+            <input id="new-room-name" class="ghost grow" placeholder="Add a room, like Room 101" aria-label="Name of the new room" maxlength="50" autocomplete="off" @bind="newName" @bind:event="oninput" />
+            <Button Type="submit" Small="true" IconName="plus" Disabled="Busy">Add room</Button>
+        </form>
+
+        @if (Shown.Count == 0)
+        {
+            <EmptyState IconName="@(rooms.Count == 0 ? "door-open" : "search-x")" Title="@(rooms.Count == 0 ? "No room yet" : "No room matches")">
+                @if (rooms.Count == 0)
+                {
+                    <p>Add the first room above. A class in the class schedule can be put in a room, and a room can't have two classes at the same time.</p>
+                }
+            </EmptyState>
+        }
+        else
+        {
+            <ul class="room-grid" aria-label="Rooms">
+                @foreach (var room in Shown)
+                {
+                    <li class="room-card" data-room="@room.Name">
+                        <span class="room-icon"><Icon Name="door-open" Size="18" /></span>
+                        <input class="ghost grow" aria-label="@($"Name of the room {room.Name}")" maxlength="50" value="@room.Name" @key="@($"rn-{room.Id}-{stamp}")"
+                               @onchange="e => RenameAsync(room, e.Value?.ToString())" />
+                        <span class="room-count">@room.Classes @(room.Classes == 1 ? "class" : "classes")</span>
+                        <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="@($"Remove the room {room.Name}")" OnClick="() => removing = room" />
+                    </li>
+                }
+            </ul>
+        }
+    }
+</div>
+
+<Modal Open="removing is not null" Title="Remove this room?" OnClose="() => removing = null">
+    @if (removing is not null)
+    {
+        <p>The room <strong>@removing.Name</strong> will be removed. @(removing.Classes == 0 ? "No class is in it." : $"Its {removing.Classes} {(removing.Classes == 1 ? "class keeps" : "classes keep")} the day and the time and {(removing.Classes == 1 ? "has" : "have")} no room.")</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="() => removing = null">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="RemoveAsync">Remove</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    /// <summary>What is typed in the search box of the page.</summary>
+    [Parameter] public string? Search { get; set; }
+
+    private IReadOnlyList<RoomRow>? rooms;
+    private string newName = "";
+    private RoomRow? removing;
+    private int stamp;
+    private System.Threading.Timer? fade;
+
+    private IReadOnlyList<RoomRow> Shown => string.IsNullOrWhiteSpace(Search) ? rooms ?? [] : (rooms ?? []).Where(r => r.Name.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override async Task OnInitializedAsync() => rooms = await Times.ListRoomsAsync();
+
+    protected override async Task RefreshAsync() => rooms = await Times.ListRoomsAsync();
+
+    private async Task DoAsync(Func<int, Task<ServiceResult>> action)
+    {
+        var result = await RunAsync(action);
+        rooms = await Times.ListRoomsAsync();
+
+        // A change that was refused puts the old name back in the box.
+        stamp++;
+        if (result.Succeeded)
+        {
+            fade?.Dispose();
+            fade = new System.Threading.Timer(_ => _ = InvokeAsync(() => { Message = null; StateHasChanged(); }), null, TimeSpan.FromSeconds(3), Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        var name = newName;
+        await DoAsync(userId => Times.AddRoomAsync(userId, name));
+        if (Errors.Count == 0)
+        {
+            newName = "";
+        }
+    }
+
+    private Task RenameAsync(RoomRow room, string? name) => DoAsync(userId => Times.RenameRoomAsync(userId, room.Id, name));
+
+    private async Task RemoveAsync()
+    {
+        if (removing is not { } room)
+        {
+            return;
+        }
+
+        await DoAsync(userId => Times.RemoveRoomAsync(userId, room.Id));
+        removing = null;
+    }
+}

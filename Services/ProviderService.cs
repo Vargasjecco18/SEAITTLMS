@@ -26,7 +26,7 @@ public static class DeliveryStates
     public static string Display(string state) => state switch
     {
         NotOpened => "Not opened",
-        Opened => "Opened · draft",
+        Opened => "Opened",
         Scheduled => "Scheduled",
         Posted => "Posted",
         _ => state,

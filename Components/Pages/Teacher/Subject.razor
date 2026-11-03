@@ -47,7 +47,7 @@ else
                 <p class="muted">@(listed.Count == 0 ? $"No {ItemKinds.Plural(listKind).ToLowerInvariant()} in this course yet." : $"All the {ItemKinds.Plural(listKind).ToLowerInvariant()} of the course, module by module.")</p>
                 @if (ItemKinds.All.Contains(listKind))
                 {
-                    <AddItemMenu Kind="@listKind" Label="@($"Add {ItemKinds.Display(listKind).ToLowerInvariant()}")" Modules="AddMenuModules" OnPick="PickNew" />
+                    <AddItemMenu @key="@($"{listKind}-{AddQuery}")" Kind="@listKind" Label="@($"Add {ItemKinds.Display(listKind).ToLowerInvariant()}")" Modules="AddMenuModules" OnPick="PickNew" StartOpen="@(AddQuery == "1")" />
                 }
             </div>
             @if (listed.Count > 0)
@@ -328,6 +328,9 @@ else
 
     /// <summary>The tab of the second menu: assignments, quizzes or tasks (the modules when empty).</summary>
     [SupplyParameterFromQuery(Name = "tab")] public string? Tab { get; set; }
+
+    /// <summary>"1" when the person came from "Add seatwork" (and so on) in the menu of the course: the Add menu of the list is open.</summary>
+    [SupplyParameterFromQuery(Name = "add")] public string? AddQuery { get; set; }
 
     private string? shownKind => CourseMenu.KindOfKey(Tab);
 

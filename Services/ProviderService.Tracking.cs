@@ -27,6 +27,10 @@ public static class TrackStates
     public const string NotPosted = "NotPosted";
     public const string NotOpened = "NotOpened";
     public const string NotHandedIn = "NotHandedIn";
+
+    /// <summary>Modules and syllabi: the teacher has set a time for the students to see them. Exams: the students who handed the exam in.</summary>
+    public const string Scheduled = "Scheduled";
+    public const string HandedIn = "HandedIn";
     public const string All = "All";
 }
 
@@ -48,22 +52,32 @@ public sealed partial class ProviderService
     // ======================================================================= the teachers who did not post
 
     /// <summary>
-    /// The syllabi (or the modules) that were sent and that the teacher has not posted yet. A module scheduled for a time that has come is posted (the clock decides, not a switch),
-    /// so it is not here.
+    /// The syllabi (or the modules) that were sent and that the teacher has not posted yet and has not scheduled either (the teacher has not opened them, or has them as a draft). A module
+    /// scheduled for a time that has come is posted (the clock decides, not a switch), so it is not here; one scheduled for later is in <see cref="GetScheduledAsync"/>.
     /// </summary>
-    public async Task<IReadOnlyList<NotPostedRow>> GetNotPostedAsync(bool syllabus, string? search = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<NotPostedRow>> GetNotPostedAsync(bool syllabus, string? search = null, CancellationToken ct = default) =>
+        await NotPostedRowsAsync(syllabus, search, scheduled: false, ct);
+
+    /// <summary>The syllabi (or the modules) that the teacher has scheduled: the students will see them at the time the teacher chose.</summary>
+    public async Task<IReadOnlyList<NotPostedRow>> GetScheduledAsync(bool syllabus, string? search = null, CancellationToken ct = default) =>
+        await NotPostedRowsAsync(syllabus, search, scheduled: true, ct);
+
+    private async Task<IReadOnlyList<NotPostedRow>> NotPostedRowsAsync(bool syllabus, string? search, bool scheduled, CancellationToken ct)
     {
         var snap = await LoadAsync(ct: ct);
         return snap.Deliveries
-            .Where(d => d.IsSyllabus == syllabus && !d.IsPosted(snap.Now))
+            .Where(d => d.IsSyllabus == syllabus && !d.IsPosted(snap.Now) && (d.State(snap.Now) == DeliveryStates.Scheduled) == scheduled)
             .Where(d => Matches(search, d.SubjectName, d.Title, d.TeacherName, d.SectionLabel))
-            .OrderBy(d => d.SentAtUtc)
+            .OrderBy(d => scheduled ? d.VisibleFromUtc : d.SentAtUtc)
             .Select(d => new NotPostedRow(d.Id, d.TeacherUserId, d.TeacherName, d.SectionLabel, d.SubjectId, d.SubjectName, d.Title, d.IsSyllabus, d.SentAtUtc, d.State(snap.Now), d.VisibleFromUtc))
             .ToList();
     }
 
     public async Task<TrackPage<NotPostedRow>> ListNotPostedAsync(bool syllabus, string? search, int page, CancellationToken ct = default) =>
         Page(await GetNotPostedAsync(syllabus, search, ct), page, PageSize);
+
+    public async Task<TrackPage<NotPostedRow>> ListScheduledAsync(bool syllabus, string? search, int page, CancellationToken ct = default) =>
+        Page(await GetScheduledAsync(syllabus, search, ct), page, PageSize);
 
     // ======================================================================= the students who did not open
 
@@ -108,8 +122,9 @@ public sealed partial class ProviderService
     // ======================================================================= the students of the summative exams
 
     /// <summary>
-    /// Every student of every summative exam that was posted, with whether they opened it, handed it in and the score. <paramref name="state"/> is
-    /// <see cref="TrackStates.NotOpened"/> or <see cref="TrackStates.NotHandedIn"/> to keep only those, or empty for everybody. Grade level 0 and course 0 mean all.
+    /// The students of the summative exams that are posted (an exam that opens later is not posted yet: nobody of it is listed), with whether they opened it, handed it in and the score.
+    /// <paramref name="state"/> is <see cref="TrackStates.NotOpened"/>, <see cref="TrackStates.NotHandedIn"/> or <see cref="TrackStates.HandedIn"/> to keep only those, or empty for everybody.
+    /// Grade level 0 and course 0 mean all.
     /// </summary>
     public async Task<IReadOnlyList<ExamStudentRow>> GetExamStudentsAsync(string? state = null, int gradeLevel = 0, int subjectId = 0, string? search = null, CancellationToken ct = default)
     {
@@ -149,6 +164,12 @@ public sealed partial class ProviderService
                 continue;
             }
 
+            // An exam that opens later is not posted yet: its students are not listed.
+            if (e.VisibleFromUtc is { } opensAt && opensAt > now)
+            {
+                continue;
+            }
+
             foreach (var studentId in roster.GetValueOrDefault((e.SectionId, e.SubjectId)) ?? [])
             {
                 if (!names.TryGetValue(studentId, out var who))
@@ -161,13 +182,7 @@ public sealed partial class ProviderService
                 var row = new ExamStudentRow(
                     e.Id, studentId, who.UserId, who.Name, TeachingService.SectionLabel(e.GradeLevel, e.StrandCode, e.SectionName), e.GradeLevel, e.SubjectId, e.SubjectName, e.Title,
                     e.VisibleFromUtc, e.DueAtUtc, didOpen, didHandIn, didHandIn ? handed[(e.Id, studentId)] : null, e.MaxScore);
-                if (state == TrackStates.NotOpened && didOpen || state == TrackStates.NotHandedIn && didHandIn)
-                {
-                    continue;
-                }
-
-                // An exam that has not opened yet has nobody who is late with it.
-                if (state is TrackStates.NotOpened or TrackStates.NotHandedIn && e.VisibleFromUtc is { } opens && opens > now)
+                if (state == TrackStates.NotOpened && didOpen || state == TrackStates.NotHandedIn && didHandIn || state == TrackStates.HandedIn && !didHandIn)
                 {
                     continue;
                 }
@@ -214,11 +229,17 @@ public sealed partial class ProviderService
         string body;
         if (exams)
         {
-            var rows = await GetExamStudentsAsync(state is TrackStates.NotOpened or TrackStates.NotHandedIn ? state : null, gradeLevel, subjectId, search, ct);
+            // Only the students who are late are told: the ones who did not open or did not hand in. Nobody is told about an exam they handed in.
+            var rows = state is TrackStates.NotOpened or TrackStates.NotHandedIn ? await GetExamStudentsAsync(state, gradeLevel, subjectId, search, ct) : [];
             users = rows.Select(r => r.StudentUserId).Distinct().ToList();
-            title = state == TrackStates.NotHandedIn ? "You have not handed in your summative exam" : state == TrackStates.NotOpened ? "You have not opened your summative exam" : "About your summative exam";
+            title = state == TrackStates.NotHandedIn ? "You have not handed in your summative exam" : "You have not opened your summative exam";
             body = string.IsNullOrWhiteSpace(message) ? "Open your course, find the summative exam and take it before it closes." : message.Trim();
             link = "student/subjects";
+        }
+        else if (state == TrackStates.Scheduled)
+        {
+            // What the teacher has scheduled is on its way: nobody has to be reminded.
+            return 0;
         }
         else if (state == TrackStates.NotPosted)
         {

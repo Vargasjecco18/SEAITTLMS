@@ -2,18 +2,17 @@
 @inject SystemSettingsService SystemSettings
 @inject TimeProvider Clock
 
-@* Step 3: the sections and the class schedule. The sections are listed by school year (A and B for each strand and grade level); a double click on a section opens its adviser and its students.
+@* The sections page: the sections are listed by school year (A and B for each strand and grade level); a double click on a section opens its adviser and its students.
    The class schedule is a page of its own (a spreadsheet of the week), and the button "View all class schedules" slides every schedule in from the right. *@
 <div class="sections-step">
     <FormErrors Errors="Errors" />
     <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
 
     <div class="sections-tools">
-        <ButtonLink Href="coordinator/class-schedule" IconName="calendar-clock">Open the class schedule</ButtonLink>
         <Button Variant="ButtonVariant.Secondary" IconName="panel-right-open" OnClick="() => drawerOpen = true">View all class schedules</Button>
         <form class="capacity" @onsubmit="SaveCapacityAsync">
             <label for="sec-capacity">Students in one section (the limit)</label>
-            <input id="sec-capacity" type="number" class="cell narrow" min="1" max="100" @bind="capacity" />
+            <input id="sec-capacity" type="number" class="ghost narrow" min="1" max="100" @bind="capacity" />
             <Button Type="submit" Small="true" Variant="ButtonVariant.Secondary" IconName="save" Disabled="Busy">Save limit</Button>
         </form>
     </div>
@@ -21,24 +20,24 @@
     @if (lookups is not null)
     {
         <div class="add-row add-section" role="group" aria-label="Add a section">
-            <select class="cell" aria-label="School year of the new section" @bind="form.SchoolYearId">
+            <select class="ghost" aria-label="School year of the new section" @bind="form.SchoolYearId">
                 @foreach (var year in ActiveYears)
                 {
                     <option value="@year.Id">@year.Name</option>
                 }
             </select>
-            <select class="cell narrow" aria-label="Grade level of the new section" @bind="form.GradeLevel">
+            <select class="ghost narrow" aria-label="Grade level of the new section" @bind="form.GradeLevel">
                 <option value="11">Grade 11</option>
                 <option value="12">Grade 12</option>
             </select>
-            <select class="cell" aria-label="Strand of the new section" @bind="form.StrandId">
+            <select class="ghost" aria-label="Strand of the new section" @bind="form.StrandId">
                 <option value="0">Strand</option>
                 @foreach (var strand in lookups.Strands)
                 {
                     <option value="@strand.Id">@strand.Code</option>
                 }
             </select>
-            <select class="cell narrow" aria-label="Name of the new section" @bind="form.Name">
+            <select class="ghost narrow" aria-label="Name of the new section" @bind="form.Name">
                 @foreach (var name in SectionNames.Choices)
                 {
                     <option value="@name">Section @name</option>
@@ -78,7 +77,7 @@
                                 <tr class="section-row" data-section="@row.Label" title="Double click to see the adviser and the students" @ondblclick="() => dialogSection = row">
                                     <td class="name nowrap">
                                         <span class="section-label">@row.GradeLevel-@row.StrandCode-</span>
-                                        <select class="cell narrow" aria-label="@($"Name of the section {row.Label}")" @key="@($"sn-{row.Id}-{stamp}")" @onchange="e => RenameAsync(row, e.Value?.ToString())">
+                                        <select class="ghost narrow" aria-label="@($"Name of the section {row.Label}")" @key="@($"sn-{row.Id}-{stamp}")" @onchange="e => RenameAsync(row, e.Value?.ToString())">
                                             @foreach (var name in NamesFor(row))
                                             {
                                                 <option value="@name" selected="@(name == row.Name)">@name</option>

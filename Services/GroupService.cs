@@ -138,7 +138,7 @@ public sealed class GroupService(IDbContextFactory<AppDbContext> dbFactory, Peop
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         if (!await IsStudentOrTeacherAsync(db, userId, ct))
         {
-            return ServiceResult.Fail("Only students and teachers have groups.");
+            return ServiceResult.Fail("Only students, teachers and the staff of the school have groups.");
         }
 
         if (await db.StudyGroups.CountAsync(g => g.OwnerUserId == userId, ct) >= MaxGroupsOwned)
@@ -475,8 +475,9 @@ public sealed class GroupService(IDbContextFactory<AppDbContext> dbFactory, Peop
 
     private static string Clean(string text) => string.Join(' ', text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
 
+    /// <summary>Students, teachers and the staff of the school (registrar, guidance counselor, academic coordinator, academic provider) have groups; the administrator manages the accounts and has none.</summary>
     private static async Task<bool> IsStudentOrTeacherAsync(AppDbContext db, int userId, CancellationToken ct) =>
-        await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && (u.RoleId == AppRoles.StudentId || u.RoleId == AppRoles.TeacherId), ct);
+        await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId != AppRoles.AdminId, ct);
 
     private async Task TellAddedAsync(AppDbContext db, int ownerUserId, int groupId, string groupName, IReadOnlyCollection<int> added, CancellationToken ct)
     {

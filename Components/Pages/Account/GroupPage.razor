@@ -1,5 +1,5 @@
 @page "/groups/{Id:int}"
-@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher + "," + AppRoles.Registrar + "," + AppRoles.GuidanceCounselor + "," + AppRoles.AcademicCoordinator + "," + AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @implements IDisposable
 @inject CurrentUser Me
@@ -78,7 +78,7 @@ else
                 {
                     var p = post;
                     <article class="post" aria-label="@($"Post of {p.AuthorName}")">
-                        <PersonLine UserId="p.AuthorUserId" Name="@p.AuthorName" Detail="@((p.AuthorRole == AppRoles.Teacher ? "Teacher · " : "") + PostTime(p.AtUtc))" Size="36">
+                        <PersonLine UserId="p.AuthorUserId" Name="@p.AuthorName" Detail="@((p.AuthorRole == AppRoles.Teacher ? "Teacher · " : p.AuthorRole == AppRoles.Student ? "" : PeopleService.RoleLabel(p.AuthorRole) + " · ") + PostTime(p.AtUtc))" Size="36">
                             @if (p.CanDelete)
                             {
                                 <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete this post" Disabled="@busy" OnClick="() => DeletePostAsync(p.Id)" />
@@ -140,7 +140,7 @@ else
                 {
                     var member = m;
                     <li>
-                        <PersonLine UserId="member.UserId" Name="@member.Name" Detail="@(member.Role == AppRoles.Teacher ? "Teacher" : "Student")" Online="Presence.IsOnline(member.UserId)">
+                        <PersonLine UserId="member.UserId" Name="@member.Name" Detail="@PeopleService.RoleLabel(member.Role)" Online="Presence.IsOnline(member.UserId)">
                             @if (member.IsOwner)
                             {
                                 <Badge Tone="Tone.Info">Owner</Badge>

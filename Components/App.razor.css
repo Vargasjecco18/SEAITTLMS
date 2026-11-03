@@ -287,7 +287,7 @@ html ::deep .input {
 
 /* Every box people type in or choose from has a darker border than the cards and lines around it, so it is easy to see where to type.
    (The long selector wins over the border each page gives its own boxes; focus and a wrong value keep their own colors.) */
-html ::deep :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]), select, textarea):not(:focus):not(:user-invalid):not(.invalid) {
+html ::deep :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]), select, textarea):not(:focus):not(:user-invalid):not(.invalid):not(.ghost) {
     border-color: var(--field-border);
 }
 
@@ -414,19 +414,23 @@ html ::deep .kpis {
     }
 }
 
+/* The cards of the provider pages stand in rows of one or two: two side by side when there is room, and a wide card (or one without a partner) takes the whole row, so there is no empty place at its right. */
 html ::deep .pcards {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.25rem;
 }
 
-@media (min-width: 1000px) {
-    html ::deep .pcards {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+html ::deep .pcards > .card {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin: 0;
 }
 
-html ::deep .pcards .wide {
-    grid-column: 1 / -1;
+@media (min-width: 1000px) {
+    html ::deep .pcards > .card:not(.wide) {
+        flex-basis: calc(50% - 0.625rem);
+    }
 }
 
 html ::deep .plist {
@@ -705,4 +709,68 @@ html ::deep .search-help {
         flex: 1 1 100%;
         max-width: none;
     }
+}
+
+/* ---- the boxes of the academic setup, the sections and the class schedule: they look like plain text until the pointer is on them, and show a soft frame when they are typed in ---- */
+html ::deep .ghost {
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.92rem;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+}
+
+html ::deep .ghost:hover {
+    background: var(--surface-2);
+}
+
+html ::deep .ghost:focus {
+    border-color: var(--brand);
+    background: var(--surface);
+    outline: 0;
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+html ::deep .ghost.strong {
+    font-weight: 700;
+}
+
+html ::deep .ghost.code {
+    flex: none;
+    width: 6.2rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+html ::deep .ghost.grow {
+    flex: 1 1 8rem;
+}
+
+html ::deep .ghost.units {
+    flex: none;
+    width: 3.6rem;
+    text-align: right;
+}
+
+html ::deep .ghost.narrow {
+    flex: none;
+    width: auto;
+    max-width: 8rem;
+}
+
+html ::deep .ghost.date {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+}
+
+html ::deep select.ghost {
+    cursor: pointer;
 }

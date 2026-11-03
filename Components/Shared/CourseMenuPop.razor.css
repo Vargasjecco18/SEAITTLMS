@@ -1,0 +1,45 @@
+.course-pop {
+    position: relative;
+}
+
+.cp-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.cp-button::-webkit-details-marker {
+    display: none;
+}
+
+.cp-button:hover,
+.course-pop[open] .cp-button {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+    color: var(--brand-strong);
+}
+
+.cp-panel {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 30;
+    width: min(20rem, calc(100vw - 2rem));
+    max-height: min(70vh, 34rem);
+    padding: 0.5rem;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.18));
+}

@@ -1,0 +1,29 @@
+@* The menu of the course in a pop-up that a button opens, for a page that uses the whole width (an activity: the instructions at the left, the answer at the right). It is the same
+   menu as the one at the left of the other pages of the course, with the activity that is open marked. A click outside it, or Escape, closes it (wwwroot/app.js, details.pop). *@
+<details class="pop course-pop">
+    <summary class="cp-button" aria-label="Menu of the course" title="Menu of the course"><Icon Name="layers" Size="16" /> <span>Course menu</span> <Icon Name="chevron-down" Size="14" /></summary>
+    <div class="cp-panel">
+        <CourseMenu Id="@MenuId" Groups="Groups" Selected="@Selected" Extra="Extra" CanAdd="@(Teacher is not null)" />
+    </div>
+</details>
+
+@code {
+    private static int counter;
+    private readonly string MenuId = $"course-pop-nav-{Interlocked.Increment(ref counter)}";
+
+    [Parameter] public TeacherSubject? Teacher { get; set; }
+
+    [Parameter] public StudentSubject? Student { get; set; }
+
+    /// <summary>The activity that is open: its line is marked in the menu.</summary>
+    [Parameter] public int? CurrentItemId { get; set; }
+
+    /// <summary>The group of the menu that is open (seatwork, assignments, quizzes ...).</summary>
+    [Parameter] public string Selected { get; set; } = "";
+
+    private int AssignmentId => Teacher?.AssignmentId ?? Student?.AssignmentId ?? 0;
+
+    private IReadOnlyList<CourseMenuGroup> Groups => Teacher is { } t ? CourseMenuBuilder.ForTeacher(t, null, CurrentItemId) : Student is { } s ? CourseMenuBuilder.ForStudent(s, null, CurrentItemId) : [];
+
+    private IReadOnlyList<CourseMenuLink> Extra => CourseMenuBuilder.ExtraLinks(Teacher is not null, AssignmentId, "");
+}

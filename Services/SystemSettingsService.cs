@@ -342,6 +342,9 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     private void Apply(SystemSettingsValues values)
     {
         current = values;
+
+        // The Excel files that are read are never bigger than the file size the settings allow to upload.
+        XlsxReader.MaxFileBytes = values.MaxFileMegabytes * 1024L * 1024;
         Changed?.Invoke();
     }
 }

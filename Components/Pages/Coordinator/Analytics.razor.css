@@ -32,29 +32,27 @@
     }
 }
 
-/* The cards fill the page like a wall: the wide ones (the teachers, the questions) take the whole row, and the small ones share the columns between them, so no card leaves an empty place beside it. */
+/* The cards stand in rows of one or two: two side by side when there is room, and a wide card or one without a partner takes the whole row (no empty place at its right). */
 .grid {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.25rem;
 }
 
+.grid > .wide {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+.grid ::deep > .card {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin: 0;
+}
+
 @media (min-width: 1000px) {
-    .grid {
-        display: block;
-        column-count: 2;
-        column-gap: 1.25rem;
-    }
-
-    .grid ::deep > .card {
-        display: inline-block;
-        width: 100%;
-        margin: 0 0 1.25rem;
-        break-inside: avoid;
-    }
-
-    .grid .wide {
-        column-span: all;
-        margin-bottom: 1.25rem;
+    .grid ::deep > .card:not(.wide) {
+        flex-basis: calc(50% - 0.625rem);
     }
 }
 

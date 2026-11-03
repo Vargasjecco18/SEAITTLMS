@@ -1,10 +1,10 @@
 @* The files of a lesson shown right in the page: a PDF or a text file in a viewer, a picture, a sound or a video in its player. When there are several files, a button for each
-   one switches the viewer. A file the browser can't show (a Word or PowerPoint file, for example) says so and offers the download. The browser's own PDF viewer has the print
-   and download buttons; the links above the viewer open the file in its own tab or save it. *@
+   one switches the viewer. A file the browser can't show (a Word or PowerPoint file, for example) says so and offers the download. A PDF is drawn page by page in the page itself (so the reading progress
+   knows which pages were seen); "Open in a new tab" opens it in the browser's own viewer, which has the print button, and Download saves it. *@
 @if (Items.Count > 0)
 {
     var current = Current;
-    <div class="pane">
+    <div class="pane" data-file-ids="@string.Join(',', Items.Select(i => i.Id))">
         @if (Items.Count > 1)
         {
             <div class="chips" role="group" aria-label="@Label">
@@ -26,24 +26,28 @@
                     <a href="files/a/@current.Id" target="_blank" rel="noopener noreferrer"><Icon Name="external-link" Size="14" /> Open in a new tab</a>
                 }
 
-                <a href="files/a/@current.Id?download=1" download="@current.Name"><Icon Name="download" Size="14" /> Download</a>
+                <a href="files/a/@current.Id?download=1" download="@current.Name" data-file-id="@current.Id"><Icon Name="download" Size="14" /> Download</a>
             </span>
         </div>
 
         <div class="viewer">
             @switch (KindOf(current.Name))
             {
+                case "pdf":
+                    @* The pages of the PDF are drawn here by wwwroot/app.js (PDF.js): what was scrolled and the pages that were seen inside this box count for the reading progress. *@
+                    <div class="pdf-view" @key="current.Id" data-pdf-src="files/a/@current.Id" data-file-id="@current.Id" data-file-name="@current.Name" role="document" aria-label="@current.Name"></div>
+                    break;
                 case "frame":
-                    <iframe title="@current.Name" src="files/a/@current.Id" loading="lazy"></iframe>
+                    <iframe title="@current.Name" src="files/a/@current.Id" loading="lazy" data-file-id="@current.Id"></iframe>
                     break;
                 case "image":
-                    <img src="files/a/@current.Id" alt="@current.Name" />
+                    <img src="files/a/@current.Id" alt="@current.Name" data-file-id="@current.Id" />
                     break;
                 case "audio":
-                    <audio controls src="files/a/@current.Id" aria-label="@current.Name"></audio>
+                    <audio controls src="files/a/@current.Id" aria-label="@current.Name" data-file-id="@current.Id"></audio>
                     break;
                 case "video":
-                    <video controls src="files/a/@current.Id" aria-label="@current.Name"></video>
+                    <video controls src="files/a/@current.Id" aria-label="@current.Name" data-file-id="@current.Id"></video>
                     break;
                 default:
                     <p class="none"><Icon Name="file" Size="20" /> This kind of file can't be shown here. Download it to read it.</p>
@@ -75,7 +79,8 @@
 
     private static string KindOf(string name) => Path.GetExtension(name).ToLowerInvariant() switch
     {
-        ".pdf" or ".txt" or ".csv" or ".md" or ".log" => "frame",
+        ".pdf" => "pdf",
+        ".txt" or ".csv" or ".md" or ".log" => "frame",
         ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" => "image",
         ".mp3" or ".wav" or ".ogg" => "audio",
         ".mp4" or ".webm" => "video",

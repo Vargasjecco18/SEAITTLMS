@@ -258,6 +258,32 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
         return await WithStatesAsync(db, userId, cards, ct);
     }
 
+    /// <summary>The name of a role as a person reads it ("Guidance counselor").</summary>
+    public static string RoleLabel(string role) => role switch
+    {
+        AppRoles.Student => "Student",
+        AppRoles.Teacher => "Teacher",
+        AppRoles.Registrar => "Registrar",
+        AppRoles.GuidanceCounselor => "Guidance counselor",
+        AppRoles.AcademicCoordinator => "Academic coordinator",
+        AppRoles.AcademicProvider => "Academic provider",
+        AppRoles.Admin => "Administrator",
+        _ => role,
+    };
+
+    /// <summary>The non-teaching staff of the school (registrar, guidance counselor, academic coordinator, academic provider), with their role. For the "Staff / Non-teaching" list of the Users page.</summary>
+    public async Task<IReadOnlyList<PersonCard>> GetStaffAsync(int userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var roleIds = UserManagementService.NonTeachingRoles.Select(r => AppRoles.Ids[r]).ToList();
+        var ids = await db.Users.AsNoTracking().Where(u => u.IsActive && u.Id != userId && roleIds.Contains(u.RoleId)).Select(u => u.Id).ToListAsync(ct);
+        var named = await UserDirectory.LoadAsync(db, ids, ct);
+        var order = UserManagementService.NonTeachingRoles.ToList();
+        return [.. named.Values
+            .OrderBy(p => order.IndexOf(p.Role)).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, RoleLabel(p.Role)))];
+    }
+
     /// <summary>The people who are friends with the person (accepted).</summary>
     public async Task<IReadOnlyList<PersonCard>> GetFriendsAsync(int userId, CancellationToken ct = default)
     {
@@ -341,6 +367,14 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
         {
             lists.Add(await GetMyStudentsAsync(userId, ct));
             lists.Add(await GetColleaguesAsync(userId, ct));
+        }
+        else if (role != AppRoles.AdminId)
+        {
+            // The staff (registrar, guidance counselor, academic coordinator, academic provider): the teachers and the other staff, and the students they may write to.
+            var myRole = AppRoles.Ids.FirstOrDefault(kv => kv.Value == role).Key;
+            lists.Add(await GetColleaguesAsync(userId, ct));
+            lists.Add(await GetStaffAsync(userId, ct));
+            lists.Add((await GetAllStudentsAsync(userId, ct)).Where(_ => MessageService.CanWrite(myRole, AppRoles.Student)).ToList());
         }
 
         return lists.SelectMany(l => l).GroupBy(c => c.UserId).Select(g => g.First()).OrderBy(c => c.Name).ToList();

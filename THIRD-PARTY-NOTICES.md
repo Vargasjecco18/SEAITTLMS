@@ -50,3 +50,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## PDF.js
+
+The PDF viewer of the modules (the pages of a PDF are drawn in the page, so the reading progress can count the pages that were seen and the scrolling) uses PDF.js, version 3.11.174
+(`wwwroot/lib/pdfjs/pdf.min.js` and `pdf.worker.min.js`), from https://github.com/mozilla/pdf.js (npm package `pdfjs-dist`).
+
+Licensed under the Apache License, Version 2.0. The license text is in `wwwroot/lib/pdfjs/LICENSE.txt`.

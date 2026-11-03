@@ -123,6 +123,22 @@
     font-size: 0.85rem;
 }
 
+/* A kind with nothing in it: the teacher is told what to do, "Add seatwork". */
+.cm-none .cm-add {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.1rem 0;
+    background: none;
+    color: var(--brand-strong);
+    font-weight: 650;
+}
+
+.cm-none .cm-add:hover {
+    text-decoration: underline;
+    background: none;
+}
+
 .cm-rule {
     height: 1px;
     margin: 0.3rem 0.5rem;

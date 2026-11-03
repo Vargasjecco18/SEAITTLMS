@@ -31,6 +31,9 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
         _ => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
     };
 
+    /// <summary>True when a person of the role <paramref name="fromRole"/> may write to a person of the role <paramref name="toRole"/> (friends may always write to each other).</summary>
+    public static bool CanWrite(string fromRole, string toRole) => AllowedRoles(fromRole).Contains(toRole);
+
     /// <summary>The people this person may write to (active accounts only), by name, optionally filtered by a search text.</summary>
     public async Task<IReadOnlyList<Contact>> GetContactsAsync(int userId, string? search = null, int take = 40, CancellationToken ct = default)
     {

@@ -1,5 +1,5 @@
 @page "/users"
-@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher)]
+@attribute [Authorize(Roles = AppRoles.Student + "," + AppRoles.Teacher + "," + AppRoles.Registrar + "," + AppRoles.GuidanceCounselor + "," + AppRoles.AcademicCoordinator + "," + AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @implements IDisposable
 @inject CurrentUser Me
@@ -11,7 +11,9 @@
 
 <PageTitle>Users · SEAITT Legazpi LMS</PageTitle>
 
-<PageHeader Title="Users" IconName="users-round" />
+<PageHeader Title="Users" IconName="users-round">
+    <ButtonLink Href="groups" Variant="ButtonVariant.Secondary" IconName="users">Groups</ButtonLink>
+</PageHeader>
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
@@ -23,7 +25,7 @@
         <div class="filter-bar">
             @if (tab != "friends")
             {
-                <SearchField Id="u-search" @bind-Value="filter" Live="true" SubmitText="" MaxLength="80" Placeholder="@(tab is "students" or "classmates" ? "A name or a section" : "A name")" AriaLabel="Search people" />
+                <SearchField Id="u-search" @bind-Value="filter" Live="true" SubmitText="" MaxLength="80" Placeholder="@(tab is "students" or "classmates" ? "A name or a section" : tab == "staff" ? "A name or a role" : "A name")" AriaLabel="Search people" />
             }
 
             <label class="online-only">
@@ -83,7 +85,7 @@
                 <ul class="people">
                     @foreach (var p in shownFriends)
                     {
-                        <li><PersonRow Person="p" Busy="busy" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
+                        <li><PersonRow Person="p" Busy="busy" CanWrite="CanWrite(p)" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
                     }
                 </ul>
             }
@@ -103,7 +105,7 @@
                     <ul class="people">
                         @foreach (var p in found)
                         {
-                            <li><PersonRow Person="p" Busy="busy" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
+                            <li><PersonRow Person="p" Busy="busy" CanWrite="CanWrite(p)" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
                         }
                     </ul>
                 }
@@ -127,7 +129,7 @@
                 <ul class="people">
                     @foreach (var p in list)
                     {
-                        <li><PersonRow Person="p" Busy="busy" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
+                        <li><PersonRow Person="p" Busy="busy" CanWrite="CanWrite(p)" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
                     }
                 </ul>
             }
@@ -148,7 +150,9 @@
 
 @code {
     private int userId;
+    private string myRole = "";
     private bool isStudent;
+    private bool canFriend;
     private bool loaded;
     private string tab = "";
     private string filter = "";
@@ -163,6 +167,7 @@
     private IReadOnlyList<PersonCard> students = [];
     private IReadOnlyList<PersonCard> colleagues = [];
     private IReadOnlyList<PersonCard> friends = [];
+    private IReadOnlyList<PersonCard> staff = [];
     private FriendRequests requests = new([], []);
     private PersonCard? unfriendTarget;
     private Timer? timer;
@@ -178,16 +183,26 @@
             new("students", "Students", "graduation-cap", students.Count),
             new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
             new("teachers", "Teachers", "presentation", teachers.Count),
+            new("staff", "Staff / Non-teaching", "id-card", staff.Count),
         ]
-        :
+        : canFriend
+        ?
         [
             new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
             new("students", "Students", "graduation-cap", students.Count),
             new("teachers", "Teachers", "presentation", colleagues.Count),
+            new("staff", "Staff / Non-teaching", "id-card", staff.Count),
+        ]
+        :
+        [
+            new("students", "Students", "graduation-cap", students.Count),
+            new("teachers", "Teachers", "presentation", colleagues.Count),
+            new("staff", "Staff / Non-teaching", "id-card", staff.Count),
         ];
 
     private string EmptyTitle => tab switch
     {
+        "staff" => "No other staff",
         "classmates" => "No classmates yet",
         "students" => isStudent ? "No other students" : "No students yet",
         _ => isStudent ? "No teachers yet" : "No other teachers",
@@ -195,6 +210,7 @@
 
     private string EmptyText => tab switch
     {
+        "staff" => "The registrar, the guidance counselor, the academic coordinator and the academic provider are listed here.",
         "classmates" => "When you are enrolled in a section, the students of it are listed here.",
         "students" => isStudent ? "The other students of the school are listed here." : "The students of the courses you teach are listed here.",
         _ => isStudent ? "The teachers of your courses are listed here once you are enrolled." : "All the other teachers of the school are listed here.",
@@ -206,8 +222,10 @@
     {
         var me = await Me.GetAsync();
         userId = me?.UserId ?? 0;
-        isStudent = me?.Role == AppRoles.Student;
-        tab = isStudent ? "classmates" : "friends";
+        myRole = me?.Role ?? "";
+        isStudent = myRole == AppRoles.Student;
+        canFriend = isStudent || myRole == AppRoles.Teacher;
+        tab = isStudent ? "classmates" : canFriend ? "friends" : "students";
         onlineOnly = OnlineQuery == "1";
         await LoadAsync();
 
@@ -239,17 +257,28 @@
 
     private async Task LoadAsync()
     {
-        friends = await People.GetFriendsAsync(userId);
-        requests = await People.GetRequestsAsync(userId);
+        staff = await People.GetStaffAsync(userId);
+        if (canFriend)
+        {
+            friends = await People.GetFriendsAsync(userId);
+            requests = await People.GetRequestsAsync(userId);
+        }
+
         if (isStudent)
         {
             classmates = await People.GetClassmatesAsync(userId);
             students = await People.GetAllStudentsAsync(userId);
             teachers = await People.GetMyTeachersAsync(userId);
         }
-        else
+        else if (canFriend)
         {
             students = await People.GetMyStudentsAsync(userId);
+            colleagues = await People.GetColleaguesAsync(userId);
+        }
+        else
+        {
+            // The staff see every student and every teacher of the school.
+            students = await People.GetAllStudentsAsync(userId);
             colleagues = await People.GetColleaguesAsync(userId);
         }
 
@@ -273,6 +302,7 @@
         "classmates" => classmates,
         "teachers" => isStudent ? teachers : colleagues,
         "students" => students,
+        "staff" => staff,
         _ => friends,
     };
 
@@ -289,7 +319,10 @@
             .ToList();
     }
 
-    private static string RoleText(PersonCard p) => p.IsStudent ? "Student" : "Teacher";
+    private static string RoleText(PersonCard p) => PeopleService.RoleLabel(p.Role);
+
+    /// <summary>The button to write is only there when the person's role may write to that person (a student can write to a teacher, the guidance counselor and the registrar).</summary>
+    private bool CanWrite(PersonCard p) => p.State == FriendState.Friends || MessageService.CanWrite(myRole, p.Role);
 
     private void OpenMessage(PersonCard person) => Launcher.Open(person.UserId);
 

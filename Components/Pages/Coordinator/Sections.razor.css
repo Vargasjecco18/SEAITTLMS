@@ -1,0 +1,7 @@
+.sections-search {
+    margin: 0 0 1rem;
+}
+
+.sections-search ::deep .search-field {
+    max-width: 36rem;
+}

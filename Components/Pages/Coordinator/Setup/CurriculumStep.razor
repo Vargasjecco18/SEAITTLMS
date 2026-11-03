@@ -1,17 +1,10 @@
 @inherits SetupTabBase
 
-@* Step 2: the tracks, their strands and the courses of each strand, as a list in three levels. Press a track to see its strands, press a strand to see its courses.
-   Every box is ready to type in: a change is saved when the box is left. The search box finds a strand or a course and opens the way to it. *@
+@* The tracks, their strands and the courses of each strand, as three cards side by side: press a track and its strands show in the next card, press a strand and its courses show
+   in the last one. Every box is ready to type in: a change is saved when the box is left. Each card has a search box. *@
 <div class="curriculum-step">
     <FormErrors Errors="Errors" />
     <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
-
-    <div class="tree-tools">
-        <SearchField Id="tree-search" @bind-Value="treeSearch" Live="true" SubmitText="" Placeholder="Search a track, a strand or a course" AriaLabel="Search tracks, strands and courses" Class="tree-search" />
-        <span class="filter-count">@Summary</span>
-        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevrons-down" OnClick="ExpandAll">Open all</Button>
-        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevrons-up" OnClick="CollapseAll">Close all</Button>
-    </div>
 
     @if (tracks is null)
     {
@@ -19,147 +12,162 @@
     }
     else
     {
-        <ul class="tree" role="tree" aria-label="Tracks, strands and courses">
-            @foreach (var track in ShownTracks)
-            {
-                var trackOpen = IsOpen("t" + track.Id);
-                var strands = StrandsOf(track.Id);
-                <li class="node track" role="treeitem" aria-expanded="@(trackOpen ? "true" : "false")" data-track="@track.Code">
-                    <div class="node-row">
-                        <button type="button" class="chevron" aria-label="@($"{(trackOpen ? "Close" : "Open")} the track {track.Code}")" @onclick='() => Toggle("t" + track.Id)'>
-                            <Icon Name="@(trackOpen ? "chevron-down" : "chevron-right")" Size="18" />
-                        </button>
-                        <Icon Name="layers" Size="18" />
-                        <input class="cell code" aria-label="@($"Code of the track {track.Code}")" maxlength="20" value="@track.Code" @key="@($"tc-{track.Id}-{stamp}")"
-                               @onchange="e => SaveTrackAsync(track, code: e.Value?.ToString())" />
-                        <input class="cell grow" aria-label="@($"Name of the track {track.Code}")" maxlength="100" value="@track.Name" @key="@($"tm-{track.Id}-{stamp}")"
-                               @onchange="e => SaveTrackAsync(track, name: e.Value?.ToString())" />
-                        <span class="count">@track.Strands @(track.Strands == 1 ? "strand" : "strands")</span>
-                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the track {track.Code}")" OnClick='() => OpenDelete(track.Id, track.Code, "track")' />
+        var track = CurrentTrack;
+        var strandList = StrandsShown(track);
+        var strand = CurrentStrand(strandList);
+        <div class="cols">
+            @* ---------------- the tracks ---------------- *@
+            <section class="col col-tracks" aria-label="Tracks">
+                <header class="col-head">
+                    <h3>Tracks</h3>
+                    <span class="col-count">@tracks.Count</span>
+                    <label class="col-search"><Icon Name="search" Size="15" /><input id="track-search" type="search" placeholder="Search" aria-label="Search the tracks" maxlength="60" autocomplete="off" @bind="trackSearch" @bind:event="oninput" /></label>
+                </header>
+                <ul class="col-list" role="listbox" aria-label="Tracks">
+                    @foreach (var t in ShownTracks)
+                    {
+                        <li class="row @(track?.Id == t.Id ? "on" : "")" role="option" aria-selected="@(track?.Id == t.Id ? "true" : "false")" data-track="@t.Code" @onclick="() => SelectTrack(t.Id)">
+                            <input class="ghost code" aria-label="@($"Code of the track {t.Code}")" maxlength="20" value="@t.Code" @key="@($"tc-{t.Id}-{stamp}")"
+                                   @onchange="e => SaveTrackAsync(t, code: e.Value?.ToString())" />
+                            <input class="ghost grow" aria-label="@($"Name of the track {t.Code}")" maxlength="100" value="@t.Name" @key="@($"tm-{t.Id}-{stamp}")"
+                                   @onchange="e => SaveTrackAsync(t, name: e.Value?.ToString())" />
+                            <span class="meta">@t.Strands</span>
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the track {t.Code}")" OnClick='() => OpenDelete(t.Id, t.Code, "track")' />
+                        </li>
+                    }
+
+                    @if (!ShownTracks.Any())
+                    {
+                        <li class="none">@(tracks.Count == 0 ? "No track yet." : "Nothing matches.")</li>
+                    }
+                </ul>
+                <div class="add-row" role="group" aria-label="Add a track">
+                    <input class="ghost code" placeholder="Code" aria-label="Code of the new track" maxlength="20" autocomplete="off" @bind="newTrack.Code" @bind:event="oninput" />
+                    <input class="ghost grow" placeholder="Add a track" aria-label="Name of the new track" maxlength="100" autocomplete="off" @bind="newTrack.Name" @bind:event="oninput" />
+                    <Button Small="true" IconName="plus" Disabled="Busy" OnClick="AddTrackAsync">Add track</Button>
+                </div>
+            </section>
+
+            @* ---------------- the strands of the track ---------------- *@
+            <section class="col col-strands" aria-label="Strands">
+                <header class="col-head">
+                    <h3>Strands <small>@(track?.Code)</small></h3>
+                    <span class="col-count">@strandList.Count</span>
+                    <label class="col-search"><Icon Name="search" Size="15" /><input id="strand-search" type="search" placeholder="Search" aria-label="Search the strands" maxlength="60" autocomplete="off" @bind="strandSearch" @bind:event="oninput" /></label>
+                </header>
+                @if (track is null)
+                {
+                    <p class="col-empty">Choose a track.</p>
+                }
+                else
+                {
+                    <ul class="col-list" role="listbox" aria-label="@($"Strands of {track.Code}")">
+                        @foreach (var st in strandList)
+                        {
+                            <li class="row @(strand?.Id == st.Id ? "on" : "")" role="option" aria-selected="@(strand?.Id == st.Id ? "true" : "false")" data-strand="@st.Code" @onclick="() => SelectStrand(st.Id)">
+                                <input class="ghost code" aria-label="@($"Code of the strand {st.Code}")" maxlength="20" value="@st.Code" @key="@($"sc-{st.Id}-{stamp}")"
+                                       @onchange="e => SaveStrandAsync(st, code: e.Value?.ToString())" />
+                                <input class="ghost grow" aria-label="@($"Name of the strand {st.Code}")" maxlength="150" value="@st.Name" @key="@($"sm-{st.Id}-{stamp}")"
+                                       @onchange="e => SaveStrandAsync(st, name: e.Value?.ToString())" />
+                                <label class="offered" title="Switch it off for a strand that is not offered now. The registrar can't enroll students in it.">
+                                    <input type="checkbox" aria-label="@($"{st.Code} is offered")" checked="@st.IsActive" @key="@($"sa-{st.Id}-{stamp}")"
+                                           @onchange="e => SaveStrandAsync(st, active: (bool?)e.Value)" /> <span>Offered</span>
+                                </label>
+                                <span class="meta">@st.Subjects</span>
+                                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the strand {st.Code}")" OnClick='() => OpenDelete(st.Id, st.Code, "strand")' />
+                            </li>
+                        }
+
+                        @if (strandList.Count == 0)
+                        {
+                            <li class="none">@(Searching ? "Nothing matches." : "No strand yet.")</li>
+                        }
+                    </ul>
+                    var newStrand = NewStrandOf(track.Id);
+                    <div class="add-row" role="group" aria-label="@($"Add a strand to {track.Code}")">
+                        <input class="ghost code" placeholder="Code" aria-label="@($"Code of the new strand of {track.Code}")" maxlength="20" autocomplete="off" @bind="newStrand.Code" @bind:event="oninput" />
+                        <input class="ghost grow" placeholder="Add a strand" aria-label="@($"Name of the new strand of {track.Code}")" maxlength="150" autocomplete="off" @bind="newStrand.Name" @bind:event="oninput" />
+                        <Button Small="true" IconName="plus" Disabled="Busy" OnClick="() => AddStrandAsync(track, newStrand)">Add strand</Button>
+                    </div>
+                }
+            </section>
+
+            @* ---------------- the courses of the strand ---------------- *@
+            <section class="col col-courses" aria-label="Courses">
+                <header class="col-head">
+                    <h3>Courses <small>@(strand?.Code)</small></h3>
+                    <span class="col-count">@(strand is null ? 0 : CoursesShown(strand).Count())</span>
+                    <label class="col-search"><Icon Name="search" Size="15" /><input id="course-search" type="search" placeholder="Search" aria-label="Search the courses" maxlength="60" autocomplete="off" @bind="courseSearch" @bind:event="oninput" /></label>
+                </header>
+                @if (strand is null)
+                {
+                    <p class="col-empty">Choose a strand.</p>
+                }
+                else
+                {
+                    var lines = CoursesShown(strand).ToList();
+                    <div class="col-list courses-box">
+                        @foreach (var group in lines.GroupBy(l => (l.GradeLevel, l.TermNumber)).OrderBy(g => g.Key.GradeLevel).ThenBy(g => g.Key.TermNumber))
+                        {
+                            <section class="course-group" aria-label="@($"Grade {group.Key.GradeLevel}, term {group.Key.TermNumber} of {strand.Code}")">
+                                <h4>Grade @group.Key.GradeLevel · @SchoolCalendar.TermName(group.Key.TermNumber)</h4>
+                                <ul class="courses">
+                                    @foreach (var line in group)
+                                    {
+                                        var others = StrandsUsing(line.SubjectId, strand.Id);
+                                        <li class="course" data-course="@line.SubjectCode">
+                                            <input class="ghost code" aria-label="@($"Code of {line.SubjectName}")" maxlength="30" value="@line.SubjectCode" @key="@($"cc-{line.SubjectId}-{stamp}")"
+                                                   @onchange="e => SaveCourseAsync(line, code: e.Value?.ToString())" />
+                                            <input class="ghost grow" aria-label="@($"Name of {line.SubjectName}")" maxlength="150" value="@line.SubjectName" @key="@($"cn-{line.SubjectId}-{stamp}")"
+                                                   @onchange="e => SaveCourseAsync(line, name: e.Value?.ToString())" />
+                                            <input class="ghost units" type="number" min="0.5" max="12" step="0.5" aria-label="@($"Units of {line.SubjectName}")" value="@line.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" @key="@($"cu-{line.SubjectId}-{stamp}")"
+                                                   @onchange="e => SaveCourseAsync(line, units: e.Value?.ToString())" />
+                                            @if (others > 0)
+                                            {
+                                                <span class="shared" title="A change of this course is a change in the other strands that take it too.">+@others</span>
+                                            }
+                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="x" IconOnly="true" Title="@($"Take {line.SubjectName} out of {strand.Code}")" OnClick="() => RemoveCourseAsync(strand.Id, line)" />
+                                        </li>
+                                    }
+                                </ul>
+                            </section>
+                        }
+
+                        @if (lines.Count == 0)
+                        {
+                            <p class="none">@(Searching ? "Nothing matches." : "No courses yet. Add the first one below.")</p>
+                        }
                     </div>
 
-                    @if (trackOpen)
-                    {
-                        <ul class="children" role="group">
-                            @foreach (var strand in strands)
+                    var add = AddOf(strand.Id);
+                    <div class="add-row add-course" role="group" aria-label="@($"Add a course to {strand.Code}")">
+                        <select class="ghost grow" aria-label="@($"Course to add to {strand.Code}")" @onchange="e => add.SubjectId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0">
+                            <option value="0" selected="@(add.SubjectId == 0)">A new course…</option>
+                            @foreach (var pick in activeSubjects)
                             {
-                                var strandOpen = IsOpen("s" + strand.Id);
-                                var lines = LinesOf(strand.Id);
-                                <li class="node strand" role="treeitem" aria-expanded="@(strandOpen ? "true" : "false")" data-strand="@strand.Code">
-                                    <div class="node-row">
-                                        <button type="button" class="chevron" aria-label="@($"{(strandOpen ? "Close" : "Open")} the strand {strand.Code}")" @onclick='() => Toggle("s" + strand.Id)'>
-                                            <Icon Name="@(strandOpen ? "chevron-down" : "chevron-right")" Size="18" />
-                                        </button>
-                                        <Icon Name="layout-grid" Size="18" />
-                                        <input class="cell code" aria-label="@($"Code of the strand {strand.Code}")" maxlength="20" value="@strand.Code" @key="@($"sc-{strand.Id}-{stamp}")"
-                                               @onchange="e => SaveStrandAsync(strand, code: e.Value?.ToString())" />
-                                        <input class="cell grow" aria-label="@($"Name of the strand {strand.Code}")" maxlength="150" value="@strand.Name" @key="@($"sm-{strand.Id}-{stamp}")"
-                                               @onchange="e => SaveStrandAsync(strand, name: e.Value?.ToString())" />
-                                        <label class="offered" title="Switch it off for a strand that is not offered now. The registrar can't enroll students in it.">
-                                            <input type="checkbox" aria-label="@($"{strand.Code} is offered")" checked="@strand.IsActive" @key="@($"sa-{strand.Id}-{stamp}")"
-                                                   @onchange="e => SaveStrandAsync(strand, active: (bool?)e.Value)" /> Offered
-                                        </label>
-                                        <span class="count">@strand.Subjects @(strand.Subjects == 1 ? "course" : "courses")</span>
-                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the strand {strand.Code}")" OnClick='() => OpenDelete(strand.Id, strand.Code, "strand")' />
-                                    </div>
-
-                                    @if (strandOpen)
-                                    {
-                                        <div class="children courses-box">
-                                            @foreach (var group in lines.GroupBy(l => (l.GradeLevel, l.TermNumber)).OrderBy(g => g.Key.GradeLevel).ThenBy(g => g.Key.TermNumber))
-                                            {
-                                                <section class="course-group" aria-label="@($"Grade {group.Key.GradeLevel}, term {group.Key.TermNumber} of {strand.Code}")">
-                                                    <h4>Grade @group.Key.GradeLevel · @SchoolCalendar.TermName(group.Key.TermNumber)</h4>
-                                                    <ul class="courses">
-                                                        @foreach (var line in group)
-                                                        {
-                                                            var subject = subjects.GetValueOrDefault(line.SubjectId);
-                                                            var others = StrandsUsing(line.SubjectId, strand.Id);
-                                                            <li class="course" data-course="@line.SubjectCode">
-                                                                <input class="cell code" aria-label="@($"Code of {line.SubjectName}")" maxlength="30" value="@line.SubjectCode" @key="@($"cc-{line.SubjectId}-{stamp}")"
-                                                                       @onchange="e => SaveCourseAsync(line, code: e.Value?.ToString())" />
-                                                                <input class="cell grow" aria-label="@($"Name of {line.SubjectName}")" maxlength="150" value="@line.SubjectName" @key="@($"cn-{line.SubjectId}-{stamp}")"
-                                                                       @onchange="e => SaveCourseAsync(line, name: e.Value?.ToString())" />
-                                                                <input class="cell units" type="number" min="0.5" max="12" step="0.5" aria-label="@($"Units of {line.SubjectName}")" value="@line.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" @key="@($"cu-{line.SubjectId}-{stamp}")"
-                                                                       @onchange="e => SaveCourseAsync(line, units: e.Value?.ToString())" />
-                                                                @if (others > 0)
-                                                                {
-                                                                    <span class="shared" title="A change of this course is a change in the other strands that take it too.">+@others @(others == 1 ? "strand" : "strands")</span>
-                                                                }
-                                                                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="x" IconOnly="true" Title="@($"Take {line.SubjectName} out of {strand.Code}")" OnClick="() => RemoveCourseAsync(strand.Id, line)" />
-                                                            </li>
-                                                        }
-                                                    </ul>
-                                                </section>
-                                            }
-
-                                            @if (!lines.Any() && string.IsNullOrWhiteSpace(EffectiveSearch))
-                                            {
-                                                <p class="muted">No courses yet. Add the first one below.</p>
-                                            }
-
-                                            @if (string.IsNullOrWhiteSpace(EffectiveSearch))
-                                            {
-                                                var add = AddOf(strand.Id);
-                                                <div class="add-row" role="group" aria-label="@($"Add a course to {strand.Code}")">
-                                                    <select class="cell" aria-label="@($"Course to add to {strand.Code}")" @onchange="e => add.SubjectId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0">
-                                                        <option value="0" selected="@(add.SubjectId == 0)">A new course…</option>
-                                                        @foreach (var pick in activeSubjects)
-                                                        {
-                                                            <option value="@pick.Id" selected="@(add.SubjectId == pick.Id)">@pick.Name</option>
-                                                        }
-                                                    </select>
-                                                    @if (add.SubjectId == 0)
-                                                    {
-                                                        <input class="cell code" placeholder="Code" aria-label="@($"Code of the new course for {strand.Code}")" maxlength="30" autocomplete="off" @bind="add.Code" @bind:event="oninput" />
-                                                        <input class="cell grow" placeholder="Name of the new course" aria-label="@($"Name of the new course for {strand.Code}")" maxlength="150" autocomplete="off" @bind="add.Name" @bind:event="oninput" />
-                                                    }
-                                                    <select class="cell narrow" aria-label="@($"Grade level of the new course for {strand.Code}")" @bind="add.Grade">
-                                                        <option value="11">Grade 11</option>
-                                                        <option value="12">Grade 12</option>
-                                                    </select>
-                                                    <select class="cell narrow" aria-label="@($"Term of the new course for {strand.Code}")" @bind="add.Term">
-                                                        @for (var n = 1; n <= SchoolCalendar.TermsPerYear; n++)
-                                                        {
-                                                            <option value="@n">@SchoolCalendar.TermName(n)</option>
-                                                        }
-                                                    </select>
-                                                    <Button Small="true" IconName="plus" Disabled="Busy" OnClick="() => AddCourseAsync(strand, add)">Add course</Button>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                </li>
+                                <option value="@pick.Id" selected="@(add.SubjectId == pick.Id)">@pick.Name</option>
                             }
-
-                            @if (string.IsNullOrWhiteSpace(EffectiveSearch))
+                        </select>
+                        @if (add.SubjectId == 0)
+                        {
+                            <input class="ghost code" placeholder="Code" aria-label="@($"Code of the new course for {strand.Code}")" maxlength="30" autocomplete="off" @bind="add.Code" @bind:event="oninput" />
+                            <input class="ghost grow wide" placeholder="Name of the new course" aria-label="@($"Name of the new course for {strand.Code}")" maxlength="150" autocomplete="off" @bind="add.Name" @bind:event="oninput" />
+                        }
+                        <select class="ghost narrow" aria-label="@($"Grade level of the new course for {strand.Code}")" @bind="add.Grade">
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                        <select class="ghost narrow" aria-label="@($"Term of the new course for {strand.Code}")" @bind="add.Term">
+                            @for (var n = 1; n <= SchoolCalendar.TermsPerYear; n++)
                             {
-                                var newStrand = NewStrandOf(track.Id);
-                                <li class="add-row" role="group" aria-label="@($"Add a strand to {track.Code}")">
-                                    <input class="cell code" placeholder="Code" aria-label="@($"Code of the new strand of {track.Code}")" maxlength="20" autocomplete="off" @bind="newStrand.Code" @bind:event="oninput" />
-                                    <input class="cell grow" placeholder="Name of the new strand" aria-label="@($"Name of the new strand of {track.Code}")" maxlength="150" autocomplete="off" @bind="newStrand.Name" @bind:event="oninput" />
-                                    <Button Small="true" IconName="plus" Disabled="Busy" OnClick="() => AddStrandAsync(track, newStrand)">Add strand</Button>
-                                </li>
+                                <option value="@n">@SchoolCalendar.TermName(n)</option>
                             }
-                        </ul>
-                    }
-                </li>
-            }
-
-            @if (!ShownTracks.Any())
-            {
-                <li class="muted none">@(tracks.Count == 0 ? "No track yet. Add the first one below." : "Nothing matches.")</li>
-            }
-        </ul>
-
-        @if (string.IsNullOrWhiteSpace(EffectiveSearch))
-        {
-            <div class="add-row add-track" role="group" aria-label="Add a track">
-                <input class="cell code" placeholder="Code" aria-label="Code of the new track" maxlength="20" autocomplete="off" @bind="newTrack.Code" @bind:event="oninput" />
-                <input class="cell grow" placeholder="Name of the new track" aria-label="Name of the new track" maxlength="100" autocomplete="off" @bind="newTrack.Name" @bind:event="oninput" />
-                <Button Small="true" IconName="plus" Disabled="Busy" OnClick="AddTrackAsync">Add track</Button>
-            </div>
-        }
+                        </select>
+                        <Button Small="true" IconName="plus" Disabled="Busy" OnClick="() => AddCourseAsync(strand, add)">Add course</Button>
+                    </div>
+                }
+            </section>
+        </div>
     }
 </div>
 
@@ -201,43 +209,66 @@
     private IReadOnlyList<CurriculumLine> curriculum = [];
     private Dictionary<int, SubjectRow> subjects = [];
     private List<SubjectRow> activeSubjects = [];
-    private readonly HashSet<string> open = [];
     private readonly Dictionary<int, AddState> adds = [];
     private readonly Dictionary<int, NewNode> newStrands = [];
     private readonly NewNode newTrack = new();
-    private string treeSearch = "";
+    private string trackSearch = "";
+    private string strandSearch = "";
+    private string courseSearch = "";
+    private int? selectedTrackId;
+    private int? selectedStrandId;
     private DeleteTarget? deleting;
     private int stamp;
     private System.Threading.Timer? fade;
 
-    private string EffectiveSearch => string.IsNullOrWhiteSpace(treeSearch) ? (Search ?? "").Trim() : treeSearch.Trim();
+    private string PageSearch => (Search ?? "").Trim();
 
-    private bool Searching => !string.IsNullOrWhiteSpace(EffectiveSearch);
+    private bool Searching => PageSearch.Length > 0 || !string.IsNullOrWhiteSpace(trackSearch) || !string.IsNullOrWhiteSpace(strandSearch) || !string.IsNullOrWhiteSpace(courseSearch);
 
-    private bool IsOpen(string key) => Searching || open.Contains(key);
+    private static bool Has(string? text, string query) => text?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false;
 
-    private void Toggle(string key)
+    private void SelectTrack(int id)
     {
-        if (!open.Remove(key))
+        if (selectedTrackId != id)
         {
-            open.Add(key);
+            selectedTrackId = id;
+            selectedStrandId = null;
         }
     }
 
-    private void ExpandAll()
+    private void SelectStrand(int id) => selectedStrandId = id;
+
+    /// <summary>The tracks that the search keeps: the ones whose own words match, or that have a strand or a course that matches the page search.</summary>
+    private IEnumerable<TrackRow> ShownTracks => (tracks ?? []).Where(t =>
+        (string.IsNullOrWhiteSpace(trackSearch) || Has(t.Code, trackSearch.Trim()) || Has(t.Name, trackSearch.Trim()))
+        && (PageSearch.Length == 0 || Has(t.Code, PageSearch) || Has(t.Name, PageSearch) || StrandsOfTrack(t.Id).Any(s => StrandMatchesPage(s))));
+
+    private TrackRow? CurrentTrack => ShownTracks.FirstOrDefault(t => t.Id == selectedTrackId) ?? ShownTracks.FirstOrDefault();
+
+    private IEnumerable<StrandRow> StrandsOfTrack(int trackId) => strands.Where(s => s.TrackId == trackId);
+
+    private bool StrandMatchesPage(StrandRow s) =>
+        PageSearch.Length == 0 || Has(s.Code, PageSearch) || Has(s.Name, PageSearch) || curriculum.Any(l => l.StrandId == s.Id && (Has(l.SubjectName, PageSearch) || Has(l.SubjectCode, PageSearch)));
+
+    private IReadOnlyList<StrandRow> StrandsShown(TrackRow? track) => track is null ? [] :
+        [.. StrandsOfTrack(track.Id).Where(s => StrandMatchesPage(s) && (string.IsNullOrWhiteSpace(strandSearch) || Has(s.Code, strandSearch.Trim()) || Has(s.Name, strandSearch.Trim())
+                                                                      || curriculum.Any(l => l.StrandId == s.Id && (Has(l.SubjectName, strandSearch.Trim()) || Has(l.SubjectCode, strandSearch.Trim())))))];
+
+    private StrandRow? CurrentStrand(IReadOnlyList<StrandRow> shown) => shown.FirstOrDefault(s => s.Id == selectedStrandId) ?? shown.FirstOrDefault();
+
+    /// <summary>The courses of a strand that the search keeps (a strand that matches by itself shows all its courses).</summary>
+    private IEnumerable<CurriculumLine> CoursesShown(StrandRow strand)
     {
-        foreach (var t in tracks ?? [])
+        var all = curriculum.Where(l => l.StrandId == strand.Id);
+        var page = PageSearch;
+        if (page.Length > 0 && !(Has(strand.Code, page) || Has(strand.Name, page)))
         {
-            open.Add("t" + t.Id);
+            all = all.Where(l => Has(l.SubjectName, page) || Has(l.SubjectCode, page));
         }
 
-        foreach (var s in strands)
-        {
-            open.Add("s" + s.Id);
-        }
+        var own = courseSearch.Trim();
+        return own.Length == 0 ? all : all.Where(l => Has(l.SubjectName, own) || Has(l.SubjectCode, own));
     }
-
-    private void CollapseAll() => open.Clear();
 
     private AddState AddOf(int strandId)
     {
@@ -258,44 +289,6 @@
 
         return node;
     }
-
-    private static bool Has(string? text, string query) => text?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false;
-
-    private IEnumerable<CurriculumLine> LinesOf(int strandId)
-    {
-        var all = curriculum.Where(l => l.StrandId == strandId);
-        if (!Searching)
-        {
-            return all;
-        }
-
-        // A strand that matches by itself shows all its courses; otherwise only the courses that match.
-        var strand = strands.FirstOrDefault(s => s.Id == strandId);
-        var query = EffectiveSearch;
-        return strand is not null && (Has(strand.Code, query) || Has(strand.Name, query)) ? all : all.Where(l => Has(l.SubjectName, query) || Has(l.SubjectCode, query));
-    }
-
-    private IEnumerable<StrandRow> StrandsOf(int trackId)
-    {
-        var inTrack = strands.Where(s => s.TrackId == trackId);
-        if (!Searching)
-        {
-            return inTrack;
-        }
-
-        var track = tracks?.FirstOrDefault(t => t.Id == trackId);
-        var query = EffectiveSearch;
-        if (track is not null && (Has(track.Code, query) || Has(track.Name, query)))
-        {
-            return inTrack;
-        }
-
-        return inTrack.Where(s => Has(s.Code, query) || Has(s.Name, query) || curriculum.Any(l => l.StrandId == s.Id && (Has(l.SubjectName, query) || Has(l.SubjectCode, query))));
-    }
-
-    private IEnumerable<TrackRow> ShownTracks => (tracks ?? []).Where(t => !Searching || Has(t.Code, EffectiveSearch) || Has(t.Name, EffectiveSearch) || StrandsOf(t.Id).Any());
-
-    private string Summary => tracks is null ? "" : $"{tracks.Count} {(tracks.Count == 1 ? "track" : "tracks")} · {strands.Count} {(strands.Count == 1 ? "strand" : "strands")} · {subjects.Count} {(subjects.Count == 1 ? "course" : "courses")}";
 
     private int StrandsUsing(int subjectId, int exceptStrandId) => curriculum.Where(l => l.SubjectId == subjectId && l.StrandId != exceptStrandId).Select(l => l.StrandId).Distinct().Count();
 
@@ -339,6 +332,11 @@
         {
             newTrack.Code = "";
             newTrack.Name = "";
+            if (result.Id is { } id)
+            {
+                selectedTrackId = id;
+                selectedStrandId = null;
+            }
         }
 
         await LoadAsync();
@@ -357,10 +355,10 @@
         {
             node.Code = "";
             node.Name = "";
-            open.Add("t" + track.Id);
+            selectedTrackId = track.Id;
             if (result.Id is { } id)
             {
-                open.Add("s" + id);
+                selectedStrandId = id;
             }
         }
 

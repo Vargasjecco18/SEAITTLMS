@@ -269,6 +269,50 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         return ServiceResult.Ok($"The room {clean} was added.");
     }
 
+    /// <summary>A room gets another name (the classes in it stay in it).</summary>
+    public async Task<ServiceResult> RenameRoomAsync(int actingUserId, int roomId, string? name, CancellationToken ct = default)
+    {
+        var clean = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        if (clean.Length is 0 or > 50)
+        {
+            return ServiceResult.Fail("Type the name of the room, like Room 101 (up to 50 characters).");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        var room = await db.Rooms.FirstOrDefaultAsync(r => r.Id == roomId, ct);
+        if (room is null)
+        {
+            return ServiceResult.Fail("That room was removed.");
+        }
+
+        if (room.Name == clean)
+        {
+            return ServiceResult.Ok(null);
+        }
+
+        if (await db.Rooms.AnyAsync(r => r.Name == clean && r.Id != roomId, ct))
+        {
+            return ServiceResult.Fail($"There is already a room called {clean}.");
+        }
+
+        room.Name = clean;
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return ServiceResult.Fail($"There is already a room called {clean}.");
+        }
+
+        return ServiceResult.Ok($"The room is now called {clean}.");
+    }
+
     /// <summary>A room is removed; its classes keep their days and times and have no room (they show under "No room" and can be put in another room).</summary>
     public async Task<ServiceResult> RemoveRoomAsync(int actingUserId, int roomId, CancellationToken ct = default)
     {
