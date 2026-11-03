@@ -91,6 +91,8 @@
 .dot.seatwork, .kind-dot.seatwork { background: var(--green); }
 .dot.recitation, .kind-dot.recitation { background: var(--blue); }
 .dot.exam, .kind-dot.exam { background: var(--rose); }
+.dot.summative, .kind-dot.summative { background: var(--teal); }
+.dot.announcement, .kind-dot.announcement { background: var(--slate); }
 .dot.module, .kind-dot.module { background: var(--green); }
 .dot.late { background: var(--danger-solid); }
 

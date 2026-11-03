@@ -13,6 +13,12 @@ public static class CalendarKinds
     /// <summary>An event the person wrote on their own calendar ("Add event").</summary>
     public const string Personal = "Personal";
 
+    /// <summary>A summative exam of the academic provider (it has its own color on the calendar, apart from the exams a teacher adds).</summary>
+    public const string Summative = "Summative";
+
+    /// <summary>An announcement with a Start or an End day: it is on the calendar of the people it is for on every day from Start to End.</summary>
+    public const string Announcement = "Announcement";
+
     // The kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance, Seatwork, Recitation (and Exam).
 
     public static string Label(string kind) => kind switch
@@ -22,6 +28,8 @@ public static class CalendarKinds
         ItemKinds.Seatwork => "Seatwork",
         ItemKinds.Recitation => "Recitation",
         ItemKinds.Exam => "Exam",
+        Summative => "Summative exam",
+        Announcement => "Announcement",
         ItemKinds.Activity => "Assignment",
         Module => "Module",
         Personal => "Event",
@@ -32,6 +40,8 @@ public static class CalendarKinds
     {
         Module => "layers",
         Personal => "calendar-clock",
+        Summative => "clipboard-list",
+        Announcement => "megaphone",
         _ => SubjectStyle.KindIcon(kind),
     };
 }
@@ -104,14 +114,14 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                                 && assignments.Any(a => a.Id == i.Module.AssignmentId))
                     .Select(i => new
                     {
-                        i.Id, i.Title, i.Kind, Due = i.DueAtUtc!.Value, Subject = i.Module.Assignment.Subject.Name,
+                        i.Id, i.Title, i.Kind, Summative = i.MaterialItemId != null, Due = i.DueAtUtc!.Value, Subject = i.Module.Assignment.Subject.Name,
                         Status = i.Submissions.Where(s => s.StudentId == sid).Select(s => s.Status).FirstOrDefault(),
                     })
                     .ToListAsync(ct);
                 foreach (var i in due)
                 {
                     var done = i.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded;
-                    events.Add(new CalendarEvent($"item-{i.Id}", PhilippineTime.DayOf(i.Due), i.Due, i.Title, $"{i.Subject} · due {PhilippineTime.FormatTime(i.Due)}", i.Kind, $"student/items/{i.Id}", done, !done && i.Due < now));
+                    events.Add(new CalendarEvent($"item-{i.Id}", PhilippineTime.DayOf(i.Due), i.Due, i.Title, $"{i.Subject} · due {PhilippineTime.FormatTime(i.Due)}", i.Summative ? CalendarKinds.Summative : i.Kind, $"student/items/{i.Id}", done, !done && i.Due < now));
                 }
 
                 var modules = await db.Modules.AsNoTracking()
@@ -131,13 +141,13 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                     .Where(i => i.DueAtUtc != null && i.DueAtUtc >= fromUtc && i.DueAtUtc < toUtc && i.Module.Assignment.TeacherId == tid)
                     .Select(i => new
                     {
-                        i.Id, i.Title, i.Kind, Due = i.DueAtUtc!.Value, Subject = i.Module.Assignment.Subject.Name,
+                        i.Id, i.Title, i.Kind, Summative = i.MaterialItemId != null, Due = i.DueAtUtc!.Value, Subject = i.Module.Assignment.Subject.Name,
                         i.Module.Assignment.Section.GradeLevel, Strand = i.Module.Assignment.Section.Strand.Code, Section = i.Module.Assignment.Section.Name,
                         Handed = i.Submissions.Count(s => s.Status != SubmissionStatus.InProgress),
                     })
                     .ToListAsync(ct);
                 events.AddRange(due.Select(i => new CalendarEvent($"item-{i.Id}", PhilippineTime.DayOf(i.Due), i.Due, i.Title,
-                    $"{i.Subject} · {TeachingService.SectionLabel(i.GradeLevel, i.Strand, i.Section)} · {i.Handed} handed in", i.Kind, $"teacher/items/{i.Id}", false, false)));
+                    $"{i.Subject} · {TeachingService.SectionLabel(i.GradeLevel, i.Strand, i.Section)} · {i.Handed} handed in", i.Summative ? CalendarKinds.Summative : i.Kind, $"teacher/items/{i.Id}", false, false)));
 
                 var modules = await db.Modules.AsNoTracking()
                     .Where(m => m.VisibleFromUtc != null && m.VisibleFromUtc >= fromUtc && m.VisibleFromUtc < toUtc && m.Assignment.TeacherId == tid)
@@ -150,6 +160,8 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                     (m.At > now ? "Module posts: " : "Module posted: ") + m.Title, m.Subject, CalendarKinds.Module, $"teacher/subjects/{m.AssignmentId}", m.At <= now, false)));
             }
         }
+
+        events.AddRange(await GetAnnouncementEventsAsync(db, user, from, to, ct));
 
         // The events the person wrote on their own calendar.
         var entries = await db.CalendarEntries.AsNoTracking().Where(e => e.UserId == user.UserId && e.Day >= from && e.Day <= to).ToListAsync(ct);
@@ -170,6 +182,43 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
         }
 
         return events.OrderBy(e => e.Day).ThenBy(e => e.AtUtc ?? DateTime.MinValue).ThenBy(e => e.Title).ToList();
+    }
+
+    /// <summary>
+    /// The announcements meant for the person that have a Start or an End day, one event for each day from Start to End (only the days between <paramref name="from"/> and
+    /// <paramref name="to"/>). With only a Start or only an End it is that one day. They are on the calendar before they start, so people can plan.
+    /// </summary>
+    private static async Task<IReadOnlyList<CalendarEvent>> GetAnnouncementEventsAsync(AppDbContext db, CurrentUserInfo user, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var meant = await AnnouncementService.MeantForAsync(db, user, ct);
+        var notices = await meant
+            .Where(a => (a.StartsOn != null || a.ExpiresOn != null)
+                        && (a.StartsOn == null || a.StartsOn <= to) && (a.ExpiresOn == null || a.ExpiresOn >= from)
+                        && (a.ExpiresOn != null || a.StartsOn >= from) && (a.StartsOn != null || a.ExpiresOn <= to))
+            .OrderBy(a => a.Id).Take(200)
+            .Select(a => new { a.Id, a.Title, a.Category, a.StartsOn, a.ExpiresOn, Course = a.Assignment != null ? a.Assignment.Subject.Name : null })
+            .ToListAsync(ct);
+
+        var events = new List<CalendarEvent>();
+        foreach (var n in notices)
+        {
+            var first = n.StartsOn ?? n.ExpiresOn!.Value;
+            var last = n.ExpiresOn ?? n.StartsOn!.Value;
+            var range = first == last ? PhilippineTime.FormatDate(first) : $"{PhilippineTime.FormatDate(first)} – {PhilippineTime.FormatDate(last)}";
+            var href = user.Role switch
+            {
+                AppRoles.AcademicCoordinator => "coordinator/announcements",
+                AppRoles.Teacher => "teacher/announcements",
+                _ => null,
+            };
+            for (var day = first < from ? from : first; day <= last && day <= to; day = day.AddDays(1))
+            {
+                events.Add(new CalendarEvent($"notice-{n.Id}-{day:yyyyMMdd}", day, null, n.Title,
+                    $"{AnnouncementCategories.Display(n.Category)}{(n.Course is null ? "" : " · " + n.Course)} · {range}", CalendarKinds.Announcement, href, false, false));
+            }
+        }
+
+        return events;
     }
 
     // ======================================================================= the person's own events ("Add event")

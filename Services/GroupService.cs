@@ -17,7 +17,8 @@ public sealed record GroupDetail(
 /// <summary>
 /// Groups of students and teachers. The system makes some by itself and keeps who is in them (see <see cref="SyncAutomaticAsync"/>): for a
 /// student "Grade 11 students" (their grade level), the students of their course (strand) and "All students"; for a teacher "Grade 11
-/// teachers" (each grade level they teach in) and "All teachers". Nobody owns those and nobody leaves them.
+/// teachers" (each grade level they teach in) and "All teachers"; for the staff "All staff" (registrar, guidance counselor, academic coordinator
+/// and academic provider) and, with the teachers, "Teachers and staff". Nobody owns those and nobody leaves them.
 /// People can also make their own group (a study group, a project team, a club): whoever makes it owns it and can add and remove members,
 /// change its name and delete it; every member can write on its wall, share files with it, and leave. A group is only seen by its members.
 /// People can only be added when they are people the owner can see in the Users page (classmates, teachers, students, friends).
@@ -369,6 +370,10 @@ public sealed class GroupService(IDbContextFactory<AppDbContext> dbFactory, Peop
                 .Select(a => new { a.Teacher.UserId, Grade = (int)a.Section.GradeLevel })
                 .Distinct().ToListAsync(ct);
             var teacherUsers = await db.Teachers.AsNoTracking().Where(t => t.User.IsActive).Select(t => t.UserId).ToListAsync(ct);
+            var staffUsers = await db.Users.AsNoTracking()
+                .Where(u => u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.GuidanceCounselorId
+                                           || u.RoleId == AppRoles.AcademicCoordinatorId || u.RoleId == AppRoles.AcademicProviderId))
+                .Select(u => u.Id).ToListAsync(ct);
 
             // kind, key -> name, description, members
             var wanted = new Dictionary<(string Kind, int Key), (string Name, string Description, HashSet<int> Members)>();
@@ -399,6 +404,9 @@ public sealed class GroupService(IDbContextFactory<AppDbContext> dbFactory, Peop
             {
                 Want(AutoGroupKinds.GradeTeachers, grade, $"Grade {grade} teachers", $"The teachers who teach Grade {grade}.", taught.Where(t => t.Grade == grade).Select(t => t.UserId));
             }
+
+            Want(AutoGroupKinds.AllStaff, 0, "All staff", "The registrar, guidance counselor, academic coordinator and academic provider.", staffUsers);
+            Want(AutoGroupKinds.TeachersAndStaff, 0, "Teachers and staff", "Every teacher and every staff member of the school.", teacherUsers.Concat(staffUsers));
 
             // ---- what is there now
             var autoGroups = await db.StudyGroups.Where(g => g.AutoKind != null).Include(g => g.Members).ToListAsync(ct);

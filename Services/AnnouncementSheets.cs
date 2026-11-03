@@ -16,7 +16,7 @@ public static class AnnouncementSheets
 {
     public const int MaxRows = 100;
     private const int TemplateRows = 20;
-    private static readonly string[] Headers = ["Title", "Message", "About", "For", "Last day to show"];
+    private static readonly string[] Headers = ["Title", "Message", "About", "For", "Start", "End"];
 
     public static string FileName(string what) => FileDownloads.CleanName($"{what} - Announcements.xlsx");
 
@@ -29,19 +29,22 @@ public static class AnnouncementSheets
         var book = new XlsxBook();
         var sheet = book.AddSheet("Announcements");
         sheet.Row(1, Headers, XlsxStyle.Header);
-        sheet.Width(1, 34).Width(2, 60).Width(3, 18).Width(4, 14).Width(5, 18);
+        sheet.Width(1, 34).Width(2, 60).Width(3, 18).Width(4, 14).Width(5, 14).Width(6, 14);
         var row = 2;
         foreach (var a in items)
         {
             sheet.Set(row, 1, a.Title, XlsxStyle.InputText).Set(row, 2, a.Body, XlsxStyle.Wrap).Set(row, 3, AnnouncementCategories.Display(a.Category), XlsxStyle.InputText)
-                .Set(row, 4, a.Audience, XlsxStyle.InputText).Set(row, 5, a.ExpiresOn is { } on ? on.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "", XlsxStyle.InputText);
+                .Set(row, 4, a.Audience, XlsxStyle.InputText)
+                .Set(row, 5, a.StartsOn is { } from ? from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "", XlsxStyle.InputText)
+                .Set(row, 6, a.ExpiresOn is { } on ? on.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "", XlsxStyle.InputText);
             row++;
         }
 
         if (example)
         {
             sheet.Set(row, 1, "Midterm exams", XlsxStyle.InputText).Set(row, 2, "The midterm exams are on November 18 and 19. Bring a pen and your school ID.", XlsxStyle.Wrap)
-                .Set(row, 3, "Exam", XlsxStyle.InputText).Set(row, 4, "Students", XlsxStyle.InputText).Set(row, 5, "2026-11-19", XlsxStyle.InputText);
+                .Set(row, 3, "Exam", XlsxStyle.InputText).Set(row, 4, "Students", XlsxStyle.InputText)
+                .Set(row, 5, "2026-11-18", XlsxStyle.InputText).Set(row, 6, "2026-11-19", XlsxStyle.InputText);
             row++;
         }
 
@@ -57,7 +60,8 @@ public static class AnnouncementSheets
         sheet.FrozenRows = 1;
         sheet.ListChoice($"C2:C{last}", AnnouncementCategories.All.Select(AnnouncementCategories.Display).ToArray(), "Choose what the announcement is about from the list.");
         sheet.ListChoice($"D2:D{last}", AnnouncementAudiences.All, "Choose who reads it from the list (Everyone, Students or Teachers).");
-        sheet.Tip($"A2:A{last}", "Type the title (needed).").Tip($"B2:B{last}", "Type the message people read (needed).").Tip($"E2:E{last}", "Type the last day it is shown, like 2026-11-19. Leave it empty to show it until you delete it.");
+        sheet.Tip($"A2:A{last}", "Type the title (needed).").Tip($"B2:B{last}", "Type the message people read (needed).").Tip($"E2:E{last}", "Type the first day it is about, like 2026-11-18. Leave it empty if it is about one day (the End).")
+            .Tip($"F2:F{last}", "Type the last day it is shown, like 2026-11-19. Leave it empty to show it until you delete it.");
 
         TemplateGuide.Add(book, "How to fill the Announcements sheet",
         [
@@ -65,9 +69,11 @@ public static class AnnouncementSheets
             new("Announcements", "Message", "Needed", $"What people read (up to {AnnouncementService.MaxBodyLength} characters).", TemplateGuide.TypeIt),
             new("Announcements", "About", "Optional", "Exam, Holiday, Semester break, Teachers' meeting or Other. Empty: Other. A teachers' meeting is for the teachers only.", "Choose it from the list."),
             new("Announcements", "For", "Optional", "Everyone, Students or Teachers. Empty: Everyone.", "Choose it from the list."),
-            new("Announcements", "Last day to show", "Optional", "The day after which it is not shown any more. Empty: it is shown until you delete it.", "Type it like 2026-11-19 (year-month-day)."),
+            new("Announcements", "Start", "Optional", "The first day it is about (an exam week, a holiday). Empty: it is about the End day only.", "Type it like 2026-11-18 (year-month-day)."),
+            new("Announcements", "End", "Optional", "The last day it is about and shown. Empty: it is shown until you delete it.", "Type it like 2026-11-19 (year-month-day)."),
         ],
             $"At most {MaxRows} rows.",
+            "People see the days from Start to End in their calendar.",
             "The people each one is for are told, as when you write one by hand.");
         return book.ToBytes();
     }
@@ -92,7 +98,7 @@ public static class AnnouncementSheets
             return new AnnouncementImportParse([], "The file has no rows.");
         }
 
-        var headers = Enumerable.Range(1, 8).Select(c => sheet.Cell(1, c).Trim().ToLowerInvariant()).ToList();
+        var headers = Enumerable.Range(1, 9).Select(c => sheet.Cell(1, c).Trim().ToLowerInvariant()).ToList();
         if (!headers.Contains("title") || !headers.Contains("message"))
         {
             return new AnnouncementImportParse([], "This is not the template: the first row must have the column titles (Title, Message, About ...). Download the template again.");
@@ -103,14 +109,22 @@ public static class AnnouncementSheets
         var message = Column("message", 2);
         var about = Column("about", 3);
         var audience = Column("for", 4);
-        var until = Column("last day to show", 5);
+        var start = Column("start", 5);
+
+        // the first template had one column, "Last day to show", where End is now
+        var until = headers.Contains("end") ? Column("end", 6) : headers.Contains("last day to show") ? Column("last day to show", 5) : 6;
+        if (!headers.Contains("start") && headers.Contains("last day to show"))
+        {
+            start = 0;
+        }
+
         var categories = AnnouncementCategories.All.ToDictionary(c => Key(AnnouncementCategories.Display(c)), c => c);
         var audiences = AnnouncementAudiences.All.ToDictionary(a => Key(a), a => a);
 
         var rows = new List<AnnouncementImportRow>();
         for (var r = 2; r <= sheet.Rows.Count; r++)
         {
-            var cells = new[] { title, message, about, audience, until }.Select(c => sheet.Cell(r, c).Trim()).ToList();
+            var cells = new[] { title, message, about, audience, until, start }.Select(c => c == 0 ? "" : sheet.Cell(r, c).Trim()).ToList();
             if (cells.All(c => c.Length == 0))
             {
                 continue;
@@ -165,8 +179,25 @@ public static class AnnouncementSheets
                 }
                 else
                 {
-                    errors.Add("Last day to show: write the day like 2026-11-19.");
+                    errors.Add("End: write the day like 2026-11-19.");
                 }
+            }
+
+            if (cells[5].Length > 0)
+            {
+                if (XlsxReader.ToDate(cells[5]) is { } first)
+                {
+                    input.StartsOn = DateOnly.FromDateTime(first);
+                }
+                else
+                {
+                    errors.Add("Start: write the day like 2026-11-18.");
+                }
+            }
+
+            if (input.StartsOn is { } begins && input.ExpiresOn is { } ends && ends < begins)
+            {
+                errors.Add("End can't be before Start.");
             }
 
             rows.Add(new AnnouncementImportRow(r, cells[0], errors.Count == 0 ? input : null, errors));

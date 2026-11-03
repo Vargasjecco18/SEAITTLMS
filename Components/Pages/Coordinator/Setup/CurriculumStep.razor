@@ -106,6 +106,11 @@
                 else
                 {
                     var lines = CoursesShown(strand).ToList();
+                    <div class="course-columns" aria-hidden="true">
+                        <span class="cc-code">Code</span>
+                        <span class="cc-name">Course</span>
+                        <span class="cc-units">Units offered</span>
+                    </div>
                     <div class="col-list courses-box">
                         @foreach (var group in lines.GroupBy(l => (l.GradeLevel, l.TermNumber)).OrderBy(g => g.Key.GradeLevel).ThenBy(g => g.Key.TermNumber))
                         {
@@ -114,7 +119,6 @@
                                 <ul class="courses">
                                     @foreach (var line in group)
                                     {
-                                        var others = StrandsUsing(line.SubjectId, strand.Id);
                                         <li class="course" data-course="@line.SubjectCode">
                                             <input class="ghost code" aria-label="@($"Code of {line.SubjectName}")" maxlength="30" value="@line.SubjectCode" @key="@($"cc-{line.SubjectId}-{stamp}")"
                                                    @onchange="e => SaveCourseAsync(line, code: e.Value?.ToString())" />
@@ -122,11 +126,7 @@
                                                    @onchange="e => SaveCourseAsync(line, name: e.Value?.ToString())" />
                                             <input class="ghost units" type="number" min="0.5" max="12" step="0.5" aria-label="@($"Units of {line.SubjectName}")" value="@line.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" @key="@($"cu-{line.SubjectId}-{stamp}")"
                                                    @onchange="e => SaveCourseAsync(line, units: e.Value?.ToString())" />
-                                            @if (others > 0)
-                                            {
-                                                <span class="shared" title="A change of this course is a change in the other strands that take it too.">+@others</span>
-                                            }
-                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="x" IconOnly="true" Title="@($"Take {line.SubjectName} out of {strand.Code}")" OnClick="() => RemoveCourseAsync(strand.Id, line)" />
+                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="x" IconOnly="true" Title="@($"Take {line.SubjectName} out of {strand.Code}")" OnClick="() => AskRemoveCourse(strand, line)" />
                                         </li>
                                     }
                                 </ul>
@@ -170,6 +170,18 @@
         </div>
     }
 </div>
+
+<Modal Open="removingCourse is not null" Title="Take this course out of the strand?" OnClose="CloseRemoveCourse">
+    @if (removingCourse is { } rc)
+    {
+        <p class="delete-text"><strong>@rc.Line.SubjectName</strong> will be taken out of <strong>@rc.Strand.Code</strong> (Grade @rc.Line.GradeLevel, @SchoolCalendar.TermName(rc.Line.TermNumber)). The course stays in the other strands that have it.</p>
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseRemoveCourse">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="x" Disabled="Busy" OnClick="RemoveCourseConfirmedAsync">@(Busy ? "Taking out…" : "Take it out")</Button>
+        </div>
+    }
+</Modal>
 
 <Modal Open="deleting is not null" Title="@($"Delete this {deleting?.Kind}?")" OnClose="CloseDelete">
     @if (deleting is not null)
@@ -289,8 +301,6 @@
 
         return node;
     }
-
-    private int StrandsUsing(int subjectId, int exceptStrandId) => curriculum.Where(l => l.SubjectId == subjectId && l.StrandId != exceptStrandId).Select(l => l.StrandId).Distinct().Count();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -412,8 +422,28 @@
         stamp++;
     }
 
-    private Task RemoveCourseAsync(int strandId, CurriculumLine line) =>
-        DoAsync(userId => Setup.RemoveCurriculumSubjectAsync(strandId, line.GradeLevel, line.TermNumber, line.SubjectId, userId));
+    private sealed record RemoveCourseTarget(StrandRow Strand, CurriculumLine Line);
+
+    private RemoveCourseTarget? removingCourse;
+
+    private void AskRemoveCourse(StrandRow strand, CurriculumLine line)
+    {
+        Errors = [];
+        removingCourse = new RemoveCourseTarget(strand, line);
+    }
+
+    private void CloseRemoveCourse() => removingCourse = null;
+
+    private async Task RemoveCourseConfirmedAsync()
+    {
+        if (removingCourse is not { } target)
+        {
+            return;
+        }
+
+        await DoAsync(userId => Setup.RemoveCurriculumSubjectAsync(target.Strand.Id, target.Line.GradeLevel, target.Line.TermNumber, target.Line.SubjectId, userId));
+        removingCourse = null;
+    }
 
     // ---- deleting a track or a strand
     private void OpenDelete(int id, string code, string kind)

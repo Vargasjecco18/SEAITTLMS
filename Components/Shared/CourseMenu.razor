@@ -16,17 +16,14 @@
                 {
                     <li><a class="cm-entry @(entry.Current ? "on" : "")" href="@entry.Href" aria-current="@(entry.Current ? "page" : null)" title="@entry.Title"><span>@entry.Title</span></a></li>
                 }
-                @if (group.Entries.Count == 0)
+                @if (CanAdd && KindOfKey(group.Key) is { } kind)
                 {
-                    @if (CanAdd && KindOfKey(group.Key) is { } kind)
-                    {
-                        @* The teacher of the course has none of this kind yet: the line says what to do (the list of the kind opens its Add menu). *@
-                        <li class="cm-none"><a class="cm-add" href="@($"{group.SeeAllHref}&add=1")"><Icon Name="plus" Size="14" /> <span>Add @ItemKinds.Display(kind).ToLowerInvariant()</span></a></li>
-                    }
-                    else
-                    {
-                        <li class="cm-none">None yet.</li>
-                    }
+                    @* The teacher can always add one more of this kind (the list of the kind opens with its Add menu open). *@
+                    <li class="cm-none"><a class="cm-add" href="@($"{group.SeeAllHref}&add=1")"><Icon Name="plus" Size="14" /> <span>Add @ItemKinds.Display(kind).ToLowerInvariant()</span></a></li>
+                }
+                else if (group.Entries.Count == 0)
+                {
+                    <li class="cm-none">None yet.</li>
                 }
             </ul>
         </details>

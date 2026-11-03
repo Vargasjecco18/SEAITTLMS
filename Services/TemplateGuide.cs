@@ -50,6 +50,25 @@ public static class TemplateGuide
         how.Width(1, 20).Width(2, 24).Width(3, 14).Width(4, 64).Width(5, 40);
     }
 
+    /// <summary>
+    /// Writes the steps in a band at the right of the table of the main sheet (a heading and one block of two rows for each step, so the rows of the table keep their height).
+    /// <paramref name="column"/> is the first column of the band; the one before it is left empty.
+    /// </summary>
+    public static void StepsAtRight(XlsxSheet sheet, int column, string title, params string[] steps)
+    {
+        var letter = ((char)('A' + column - 1)).ToString();
+        sheet.Width(column, 66);
+        sheet.Set(1, column, title, XlsxStyle.Header);
+        var row = 2;
+        foreach (var step in steps)
+        {
+            sheet.Merge($"{letter}{row}:{letter}{row + 1}");
+            sheet.Set(row, column, step, XlsxStyle.Wrap);
+            sheet.Set(row + 1, column, null, XlsxStyle.Wrap);
+            row += 2;
+        }
+    }
+
     public const string TypeIt = "Type it.";
     public const string TypeNumber = "Type a number.";
     public const string Semicolons = "Type them with a semicolon (;) between them.";

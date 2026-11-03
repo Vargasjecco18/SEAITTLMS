@@ -126,7 +126,8 @@ public static class HelpContent
         new("How do I see my deadlines?",
         [
             "Open Calendar. Switch between month and week. A dot on a day is something due.",
-            "Press an assignment to go to it.",
+            "Press an assignment to go to it. The colors tell the kinds apart: the summative exams are teal, the exams a teacher adds are red, an announcement is gray (it is on every day from its Start to its End) and your own events are violet.",
+            "Double click a day to add an event on it.",
         ], "calendar", "Open Calendar"),
         new("How do I evaluate a teacher?",
         [
@@ -171,6 +172,7 @@ public static class HelpContent
         [
             "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams, once you added one). Each one lists that kind of work for the whole course. Below them are Attendance, Gradebook and Students: the students of the course, each with a Message button to write to them.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
+            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. At the left of “Add activities” (and of “View activity” inside an activity) is the Activities button: it lists your activities by kind, each one a link, with an Add line for each kind.",
         ]),
         new("Can I fill many assignments or questions from Excel?",
         [
@@ -195,7 +197,7 @@ public static class HelpContent
         ]),
         new("How do I check and grade the assignments of my students?",
         [
-            "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press Grade (or Give score) on a student's row, read the answer and save the score with a comment.",
+            "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press the row of a student: the answer opens with the score and the comment at its right. Read it and save the score.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
             "“Assignments to check” on your dashboard lists what waits for you.",
         ]),
@@ -211,12 +213,13 @@ public static class HelpContent
         new("How do I give a due date with the calendar?",
         [
             "Open Calendar. Assignments without a due date are listed at the right: drag one onto a day, or press “Set date”.",
-            "Press an assignment on the calendar to see who has handed it in.",
+            "Press an assignment on the calendar to see who has handed it in. Double click a day to add an event on it.",
         ], "calendar", "Open Calendar"),
         new("How do I find my students, and make friends?",
         [
             "Open Users. Students are the students of your courses (with the course and section they share); Teachers are all the other teachers of the school; Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider; Friends are the people who accepted your request.",
             "Green dots show who is online. The dashboard also lists your students who are online.",
+            "Open Groups for the groups made for you: the teachers of each grade level you teach in, All teachers and Teachers and staff.",
         ], "users", "Open Users"),
         new("How do I write to my class?",
         [
@@ -282,9 +285,9 @@ public static class HelpContent
     [
         new("How do I enroll a student?",
         [
-            "Open Enrollments. Type the 12-digit LRN. If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "Choose the term, the grade level, the track and strand, the schedule and the section (A, B or C), then the courses. Press Enroll.",
-        ], "registrar/enrollments", "Open Enrollments"),
+            "Open Enrollment. Type the 12-digit LRN. If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
+            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. Press Enroll.",
+        ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
             "Open Student's Accounts. Filter by term, strand, schedule or search by name or LRN. Press a student's courses to see them.",
@@ -292,12 +295,12 @@ public static class HelpContent
         ], "registrar/student-accounts", "Open Student's Accounts"),
         new("The section I need is not in the list.",
         [
-            "Sections A and B exist for each strand, for Grade 11 and Grade 12. If one is missing, ask the academic coordinator to make it in Academic setup.",
+            "Sections A and B exist for each strand, for Grade 11 and Grade 12. If one is missing, open the Section list in Enrollment and choose “+ Add a section…”: type its name and it is added.",
         ]),
         new("How do I find people and make a group?",
         [
             "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
-            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it.",
+            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
     ]);
 
@@ -307,19 +310,20 @@ public static class HelpContent
         [
             "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses, and Rooms. The search box at the top searches the tab that is open.",
             "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button.",
-            "Tracks, strands and courses are three cards side by side: press a track to see its strands, press a strand to see its courses. Change a name in place, or use the row at the bottom of a card to add one. Each card has its own search box.",
+            "Tracks, strands and courses are three cards side by side: press a track to see its strands, press a strand to see its courses. Change a name, the code or the units in place, or use the row at the bottom of a card to add one. The X takes a course out of a strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
             "To fill many rows at once press the Excel button at the top and choose “Template and import (Excel)”: the workbook has a sheet for each step. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
         ], "coordinator/academic-setup", "Open Academic setup"),
-        new("Where are the sections?",
+        new("Where are the class sections?",
         [
-            "Sections has its own place in the menu. A section is A or B for each strand and grade level. Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it. “View all class schedules” slides every schedule in from the right.",
-        ], "coordinator/sections", "Open Sections"),
+            "Class sections has its own place in the menu. There is a tab for each class (Grade 11, Grade 12), the strands are inside it, and inside each strand the sections A and B are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
+            "A card that says “Add section” makes the section that is missing. The bin on a card deletes the section, after asking.",
+        ], "coordinator/sections", "Open Class sections"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
         [
             "Open the Class schedule (in the menu of the school). It is a week like a spreadsheet: the days are the columns and the hours, 7:00 AM to 6:00 PM, are the rows. Choose the school year, the term and the room at the top.",
-            "At the left are the sections with their courses. Drag a course to a day and a time: dropped on a Monday, Wednesday or Friday it meets MWF, dropped on a Tuesday or Thursday it meets TTH. Use the box on a class to change how long it is, the X to take it off, or drag it to move it.",
+            "At the left are the sections with the courses that have no time yet. Drag a course to a day and a time: dropped on a Monday, Wednesday or Friday it meets MWF, dropped on a Tuesday or Thursday it meets TTH. Once it is on the week the course leaves the list; use the box on a class to change how long it is, the X to take it off (it goes back to the list), or drag it to move it. When a section already has a class in another room at that time, the room shows it as Occupied.",
             "Every room has its own schedule: press the room box to pick a room, add a room or remove one. Two classes can't be in one room at the same time, a section can't have two classes at the same time, and a teacher can't have two classes at the same time.",
-            "Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it. Sections has the button “View all class schedules”.",
+            "Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it.",
         ], "coordinator/class-schedule", "Open the class schedule"),
         new("Who sends the syllabus, modules and assignments to the teachers?",
         [
@@ -339,14 +343,13 @@ public static class HelpContent
         ], "coordinator/analytics", "Open Analytics"),
         new("How do I write an announcement?",
         [
-            "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody, the students, the teachers; a teachers' meeting is for the teachers) and, if you want, the last day it is shown.",
+            "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody, the students, the teachers; a teachers' meeting is for the teachers) and, if you want, its Start and its End (the days it is about). It is shown until its End, and the people it is for see every day from Start to End in their calendar.",
             "To write many announcements at once press “Template and import (Excel)”; “Export” makes the same file from the announcements you have.",
-            "The megaphone button at the top, next to Messages, shows the latest announcements to everybody.",
         ], "coordinator/announcements", "Open Announcements"),
         new("How do I find people and make a group?",
         [
             "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
-            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it.",
+            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
     ]);
 
@@ -354,9 +357,9 @@ public static class HelpContent
     [
         new("How do I send a syllabus and modules to the teachers?",
         [
-            "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once). Press a syllabus or a module to open it and see its text and files.",
+            "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once: the steps are at the right of the first sheet, and each module needs a title and at least one file; a link is optional). Press a syllabus or a module to open it and see its text and files.",
             "You send the syllabus and the modules to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
-            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam.",
+            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam. There is no limit in MB for them. The path at the top (Library › Academic › the strand › the term) takes you back one step at a time.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
             "Each teacher gets their own copy as a draft, with the files: they edit the text and the dates and post it to their students when they are ready. A PDF or a picture opens in a box in the middle of the screen, where it can be downloaded.",
         ], "provider/library", "Open Course library"),
@@ -369,7 +372,7 @@ public static class HelpContent
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [
-            "Open Tracking. It has three parts: Syllabus, Modules and Summative exams. In the first two the buttons are Not posted, Scheduled and Not opened. “Not posted” shows the teachers who received a syllabus or a module and have not posted it to their students yet; “Scheduled” shows what a teacher has scheduled for later, with the time it will appear.",
+            "Open Tracking. It has three parts: Syllabus, Modules and Summative exams. In the first two the buttons are Not posted, Scheduled and Not opened. “Not posted” shows the teachers who received a syllabus or a module and have not posted it to their students yet; “Scheduled” shows what a teacher has scheduled for later, with the time it will appear; you can write to one teacher (or all of them) when it is scheduled too far away.",
             "Each line has the syllabus or module, the teacher and the section. The search box and the grade and course boxes narrow the list. A module that is scheduled to post later is not late: it is on “Scheduled” and is posted when its time comes.",
         ], "provider/tracking", "Open Tracking"),
         new("Who has not opened it?",
@@ -379,16 +382,16 @@ public static class HelpContent
         ]),
         new("Can I remind the people on the list?",
         [
-            "Yes. The button “Message” at the top right of the list tells everybody who is on it, and says how many people that is. The words are filled in for you and you can change them. The button is off when the list is empty.",
+            "Yes. The button “Message” at the top right of the list tells everybody who is on it, and says how many people that is (in “Scheduled” and “Not posted” you can choose one teacher). The words are filled in for you and you can change them. The button is off when the list is empty.",
         ]),
         new("What do the analytics show?",
         [
-            "Open Analytics to see how fast the teachers open and post, how many students open, and the numbers by course, by kind (syllabus, module, assignment, quiz, task performance), by section and week by week. “Export to Excel” puts everything of the page in one workbook: the numbers of the page, every teacher, every student and the result of each student in each course.",
+            "Open Analytics to see how fast the teachers open and post, how many students open, week by week, the teachers who have not opened what you sent, what the students open least, and the numbers by section and by course. “Export to Excel” puts everything of the page in one workbook: the numbers of the page, every teacher, every student and the result of each student in each course.",
         ], "provider/analytics", "Open Analytics"),
         new("How do I find people and make a group?",
         [
             "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
-            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it.",
+            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
     ]);
 
@@ -412,7 +415,7 @@ public static class HelpContent
         new("How do I find people and make a group?",
         [
             "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
-            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it.",
+            "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
     ]);
 }

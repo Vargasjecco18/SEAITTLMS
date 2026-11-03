@@ -343,6 +343,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("section_id");
 
+                    b.Property<DateOnly?>("StartsOn")
+                        .HasColumnType("date")
+                        .HasColumnName("starts_on");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -373,6 +377,8 @@ namespace SEAITT_LMS.Data.Migrations
                             t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
 
                             t.HasCheckConstraint("ck_announcements_category", "category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other')");
+
+                            t.HasCheckConstraint("ck_announcements_schedule", "starts_on IS NULL OR expires_on IS NULL OR starts_on <= expires_on");
                         });
                 });
 
@@ -2927,7 +2933,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("study_groups", null, t =>
                         {
-                            t.HasCheckConstraint("ck_study_groups_auto_kind", "auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers')");
+                            t.HasCheckConstraint("ck_study_groups_auto_kind", "auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers', 'AllStaff', 'TeachersAndStaff')");
                         });
                 });
 

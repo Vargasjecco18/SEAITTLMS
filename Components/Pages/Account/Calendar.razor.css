@@ -62,6 +62,8 @@
 .swatch.seatwork { background: var(--green); }
 .swatch.recitation { background: var(--blue); }
 .swatch.exam { background: var(--rose); }
+.swatch.summative { background: var(--teal); }
+.swatch.announcement { background: var(--slate); }
 .swatch.module { background: var(--green); }
 .swatch.personal { background: #7c3aed; }
 .swatch.late { background: var(--danger-solid); }
@@ -169,6 +171,8 @@ a.chip:hover {
 .chip.seatwork { background: var(--green-soft); color: var(--green); }
 .chip.recitation { background: var(--blue-soft); color: var(--blue); }
 .chip.exam { background: var(--rose-soft); color: var(--rose); }
+.chip.summative { background: var(--teal-soft); color: var(--teal); }
+.chip.announcement { background: var(--slate-soft); color: var(--slate); }
 .chip.module { background: var(--green-soft); color: var(--green); }
 .chip.personal { background: #ede9fe; color: #6d28d9; }
 .chip.late { background: var(--danger-soft); color: var(--danger); }
@@ -288,6 +292,8 @@ a.chip:hover {
 .sum.seatwork { background: var(--green-soft); color: var(--green); }
 .sum.recitation { background: var(--blue-soft); color: var(--blue); }
 .sum.exam { background: var(--rose-soft); color: var(--rose); }
+.sum.summative { background: var(--teal-soft); color: var(--teal); }
+.sum.announcement { background: var(--slate-soft); color: var(--slate); }
 .sum.module { background: var(--green-soft); color: var(--green); }
 .sum.personal { background: #ede9fe; color: #6d28d9; }
 .sum.late { background: var(--danger-soft); color: var(--danger); }

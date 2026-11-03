@@ -3,16 +3,18 @@
 @rendermode InteractiveServer
 @using SEAITT_LMS.Components.Pages.Coordinator.Setup
 
-<PageTitle>Sections · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>Class sections · SEAITT Legazpi LMS</PageTitle>
 
-<PageHeader Title="Sections" IconName="users">
+<PageHeader Title="Class sections" IconName="users">
     <ButtonLink Href="coordinator/academic-setup" Variant="ButtonVariant.Ghost" IconName="school">Academic setup</ButtonLink>
     <ButtonLink Href="coordinator/class-schedule" IconName="calendar-clock">Open the class schedule</ButtonLink>
 </PageHeader>
 
-@* The sections of each school year (A and B for each strand and grade level). A double click on a section opens its adviser and its students; the class schedule is its own page. *@
+@* The menu of the school folds to its icons here, so the cards have the room (wwwroot/app.js looks for this marker). *@
+<span data-side-rail hidden></span>
+
 <form class="sections-search" role="search" @onsubmit="() => { }">
-    <SearchField Id="sections-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a section, a strand or an adviser" AriaLabel="Search the sections" />
+    <SearchField Id="sections-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a strand, a section or an adviser" AriaLabel="Search the sections" />
 </form>
 
 <SectionsStep Search="@search" />

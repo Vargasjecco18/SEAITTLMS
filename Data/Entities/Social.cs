@@ -68,7 +68,13 @@ public static class AutoGroupKinds
 
     public const string AllTeachers = "AllTeachers";
 
-    public static readonly string[] All = [GradeStudents, CourseStudents, AllStudents, GradeTeachers, AllTeachers];
+    /// <summary>The staff who do not teach: the registrar, the guidance counselor, the academic coordinator and the academic provider.</summary>
+    public const string AllStaff = "AllStaff";
+
+    /// <summary>Every teacher and every staff member together.</summary>
+    public const string TeachersAndStaff = "TeachersAndStaff";
+
+    public static readonly string[] All = [GradeStudents, CourseStudents, AllStudents, GradeTeachers, AllTeachers, AllStaff, TeachersAndStaff];
 }
 
 /// <summary>

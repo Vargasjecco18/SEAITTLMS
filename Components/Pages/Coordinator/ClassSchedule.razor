@@ -19,7 +19,7 @@
 
 <div class="schedule-page" id="schedule-root" @ref="root">
     <header class="bar">
-        <a class="back" href="coordinator/sections"><Icon Name="arrow-left" Size="18" /> Sections</a>
+        <a class="back" href="coordinator/sections"><Icon Name="arrow-left" Size="18" /> Class sections</a>
         <h1><Icon Name="calendar-clock" Size="22" /> Class schedule</h1>
 
         <div class="bar-fields">
@@ -82,7 +82,7 @@
     <div class="body">
         <aside class="palette" aria-label="Sections and their courses">
             <SearchField Id="schedule-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a section" AriaLabel="Search a section" />
-            <p class="palette-lead">Drag a course to a day and a time. <strong>Double click</strong> a section to choose its adviser and see its students.</p>
+            <p class="palette-lead">Drag a course to a day and a time.</p>
 
             @if (sections.Count == 0)
             {
@@ -111,8 +111,14 @@
                         }
                         else
                         {
+                            var unplaced = courses.Where(c => c.Meeting is null).ToList();
+                            @if (unplaced.Count == 0)
+                            {
+                                <p class="muted all-placed"><Icon Name="circle-check" Size="14" /> Every course has its time.</p>
+                            }
+
                             <ul class="p-courses">
-                                @foreach (var c in courses)
+                                @foreach (var c in unplaced)
                                 {
                                     <li class="p-course @(c.Meeting is not null ? "is-placed" : "")" draggable="true" data-drag="@($"p:{sec.SectionId}:{c.SubjectId}")" data-course="@c.Name" title="Drag it to a day and a time">
                                         <Icon Name="grip-vertical" Size="14" />
@@ -159,6 +165,17 @@
                                 <div class="slot @(SlotTime(slot).Minute == 0 ? "hour" : "half")" data-slot="@slot"></div>
                             }
 
+                            @foreach (var mark in BusyOf(day))
+                            {
+                                var m = mark.Class;
+                                <div class="busy-mark" aria-hidden="true" data-busy="@m.SectionLabel"
+                                     style="top: calc(var(--row) * @mark.Top); height: calc(var(--row) * @mark.Height - 2px);"
+                                     title="@($"{m.SectionLabel} has {m.Course} at this time in {m.RoomName ?? "no room"}")">
+                                    <Icon Name="lock" Size="12" /> <span>Occupied · @(m.RoomName ?? "No room")</span>
+                                    <small>@m.SectionLabel · @m.Course</small>
+                                </div>
+                            }
+
                             @foreach (var block in BlocksOf(day))
                             {
                                 var c = block.Class;
@@ -188,7 +205,7 @@
                     }
                 </div>
             </div>
-            <p class="week-note">@(rooms.Count == 0 ? "There is no room yet: press the Room box above and add one. Every room has its own schedule." : roomId == 0 ? "These classes have no room yet. Pick a room above and drag them into it." : $"Classes in {RoomName}.") MWF classes show on Monday, Wednesday and Friday; TTH classes on Tuesday and Thursday. A class dropped on a Monday, Wednesday or Friday is MWF, on a Tuesday or Thursday it is TTH.</p>
+            <p class="week-note">@(rooms.Count == 0 ? "No room yet: press the Room box and add one." : roomId == 0 ? "These classes have no room yet. Pick a room and drag them in." : $"Classes in {RoomName}.") MWF is Monday, Wednesday, Friday; TTH is Tuesday, Thursday. <span class="busy-legend"><Icon Name="lock" Size="12" /> Hatched = the open section already has a class then in another room.</span></p>
         </div>
     </div>
 </div>
@@ -224,6 +241,7 @@
     private IReadOnlyList<ScheduleSection> allSections = [];
     private IReadOnlyList<RoomRow> rooms = [];
     private IReadOnlyList<PlacedClass> placed = [];
+    private IReadOnlyList<PlacedClass> busyElsewhere = [];
     private IReadOnlyList<SectionRow> sectionRows = [];
     private readonly Dictionary<int, IReadOnlyList<CourseTimeRow>> courseCache = [];
     private readonly HashSet<int> openSections = [];
@@ -306,6 +324,11 @@
 
         placed = yearId == 0 ? [] : await Times.ListPlacedAsync(roomId, yearId, term);
         noRoomCount = yearId == 0 ? 0 : (await Times.ListPlacedAsync(0, yearId, term)).Count;
+
+        // The sections that are open at the left already have classes in other rooms: those hours are marked as occupied in this room's week (a section can't be in two places).
+        var every = yearId == 0 ? [] : await Times.ListPlacedAsync(-1, yearId, term);
+        var thisRoom = roomId == 0 ? (int?)null : roomId;
+        busyElsewhere = [.. every.Where(c => openSections.Contains(c.SectionId) && c.RoomId != thisRoom)];
         courseCache.Clear();
         foreach (var id in openSections.ToList())
         {
@@ -326,6 +349,8 @@
             openSections.Add(sectionId);
             courseCache[sectionId] = await TermCoursesAsync(sectionId);
         }
+
+        await ReloadAsync();
     }
 
     private async Task YearChangedAsync(ChangeEventArgs e)
@@ -398,6 +423,16 @@
     private static int Minutes(PlacedClass c) => (int)(c.End - c.Start).TotalMinutes;
 
     private static string Hours(int minutes) => minutes % 60 == 0 ? $"{minutes / 60} h" : $"{minutes / 60}.5 h";
+
+    private sealed record BusyMark(PlacedClass Class, double Top, double Height);
+
+    /// <summary>The hours of this day that the open sections already have in another room.</summary>
+    private IReadOnlyList<BusyMark> BusyOf(int day)
+    {
+        var pattern = DaysOf(day);
+        return [.. busyElsewhere.Where(c => c.Days == pattern)
+            .Select(c => new BusyMark(c, (c.Start.Hour - FirstHour) * 2 + c.Start.Minute / 30.0, Math.Max(1, (c.End - c.Start).TotalMinutes / 30.0)))];
+    }
 
     private IReadOnlyList<Block> BlocksOf(int day)
     {

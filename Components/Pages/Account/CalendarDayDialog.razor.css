@@ -63,6 +63,16 @@
     color: var(--rose);
 }
 
+.line.summative .line-icon {
+    background: var(--teal-soft);
+    color: var(--teal);
+}
+
+.line.announcement .line-icon {
+    background: var(--slate-soft);
+    color: var(--slate);
+}
+
 .line.module .line-icon {
     background: var(--surface-2);
     color: var(--text-muted);

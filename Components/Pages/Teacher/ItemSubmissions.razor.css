@@ -313,3 +313,68 @@
     margin: 1rem 0 0.5rem;
     font-size: 0.95rem;
 }
+
+/* The work of the student at the left, the score at the right, side by side. */
+.detail-grid {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (min-width: 900px) {
+    .detail-grid {
+        grid-template-columns: minmax(0, 1fr) 20rem;
+    }
+
+    .detail-grade {
+        position: sticky;
+        top: 0;
+    }
+}
+
+.detail-answer {
+    min-width: 0;
+}
+
+.detail-grade {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+
+.grade-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.detail-grade .grade-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+}
+
+.detail-grade .modal-actions {
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
+
+/* A row of a student opens the work and the score. */
+.table tbody tr.clickable {
+    cursor: pointer;
+}
+
+.table tbody tr.clickable:hover,
+.table tbody tr.clickable:focus-visible {
+    background: var(--surface-2);
+    outline: 0;
+}
+
+.col-go {
+    width: 2.5rem;
+    color: var(--text-muted);
+    text-align: right;
+}

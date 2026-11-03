@@ -276,3 +276,43 @@
     font-size: 0.85rem;
     font-weight: 600;
 }
+
+/* ---------- the button that hides the menu: the tabs become a column of icons, and the menu of the school folds too ---------- */
+.tabs-toggle {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.7rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.tabs-toggle:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+@media (min-width: 960px) {
+    .setup-shell.is-compact {
+        grid-template-columns: 4.6rem minmax(0, 1fr);
+    }
+
+    .is-compact .tab-text,
+    .is-compact .tabs-note,
+    .is-compact .tab-label,
+    .is-compact .tab-link > svg {
+        display: none;
+    }
+
+    .is-compact .tab,
+    .is-compact .tabs-toggle {
+        justify-content: center;
+    }
+}

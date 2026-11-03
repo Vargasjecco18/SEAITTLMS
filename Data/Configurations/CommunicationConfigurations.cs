@@ -71,6 +71,7 @@ internal sealed class AnnouncementConfiguration : IEntityTypeConfiguration<Annou
         {
             t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
             t.HasCheckConstraint("ck_announcements_category", "category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other')");
+            t.HasCheckConstraint("ck_announcements_schedule", "starts_on IS NULL OR expires_on IS NULL OR starts_on <= expires_on");
         });
     }
 }

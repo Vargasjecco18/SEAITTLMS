@@ -12,7 +12,7 @@ else
         @for (var i = 0; i < Courses.Count; i++)
         {
             var course = Courses[i];
-            <LibraryRow Href="@($"provider/library/{course.SubjectId}")" Title="@course.Name" Code="@course.Code" Number="@(i + 1)"
+            <LibraryRow Href="@($"provider/library/{course.SubjectId}{Path}")" Title="@course.Name" Code="@course.Code" Number="@(i + 1)"
                         Description="@Studied(course)" Details="@Counts(course)" ActionText="Open library">
                 <Badges>
                     @if (course.HasSyllabus)
@@ -30,6 +30,9 @@ else
 }
 
 @code {
+    /// <summary>Where the list came from (?track=1&amp;strand=2&amp;term=1): the library of the course goes back to it.</summary>
+    [Parameter] public string? Path { get; set; }
+
     [Parameter, EditorRequired] public IReadOnlyList<MaterialCourseRow> Courses { get; set; } = [];
 
     /// <summary>Says where each subject is studied (grade level and term), for the subjects of one strand.</summary>

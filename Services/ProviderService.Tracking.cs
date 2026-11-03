@@ -216,7 +216,7 @@ public sealed partial class ProviderService
     /// a syllabus or a module (<see cref="TrackStates.NotOpened"/>) or, for the exams (<paramref name="exams"/>), the students who did not open or did not hand in. Each person gets one
     /// notification, whatever the number of lines they are on. Returns how many were told.
     /// </summary>
-    public async Task<int> NotifyAsync(string state, bool exams, bool syllabus, string? search, int gradeLevel, int subjectId, string? message, CancellationToken ct = default)
+    public async Task<int> NotifyAsync(string state, bool exams, bool syllabus, string? search, int gradeLevel, int subjectId, string? message, int teacherUserId = 0, CancellationToken ct = default)
     {
         if (notifications is null)
         {
@@ -238,13 +238,18 @@ public sealed partial class ProviderService
         }
         else if (state == TrackStates.Scheduled)
         {
-            // What the teacher has scheduled is on its way: nobody has to be reminded.
-            return 0;
+            // A teacher who scheduled the syllabus or the modules for too far away can be told to post sooner; one teacher can be chosen.
+            var rows = await GetScheduledAsync(syllabus, search, ct);
+            users = rows.Where(r => teacherUserId == 0 || r.TeacherUserId == teacherUserId).Select(r => r.TeacherUserId).Distinct().ToList();
+            var what = syllabus ? "syllabus" : "modules";
+            title = $"Please post the {what} sooner";
+            body = string.IsNullOrWhiteSpace(message) ? $"You scheduled the {what} for a later day. Please post {(syllabus ? "it" : "them")} sooner so the students can start reading." : message.Trim();
+            link = "teacher/subjects";
         }
         else if (state == TrackStates.NotPosted)
         {
             var rows = await GetNotPostedAsync(syllabus, search, ct);
-            users = rows.Select(r => r.TeacherUserId).Distinct().ToList();
+            users = rows.Where(r => teacherUserId == 0 || r.TeacherUserId == teacherUserId).Select(r => r.TeacherUserId).Distinct().ToList();
             var what = syllabus ? "syllabus" : "modules";
             title = $"Please post the {what} for your students";
             body = string.IsNullOrWhiteSpace(message) ? $"The {what} that the academic provider sent you is not posted yet. Open your course and post it." : message.Trim();

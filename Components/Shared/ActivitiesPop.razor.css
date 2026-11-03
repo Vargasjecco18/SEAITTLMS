@@ -1,0 +1,108 @@
+.activities-pop {
+    position: relative;
+}
+
+.ap-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.ap-button::-webkit-details-marker {
+    display: none;
+}
+
+.ap-button:hover,
+.activities-pop[open] .ap-button {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+    color: var(--brand-strong);
+}
+
+.ap-panel {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 30;
+    width: min(24rem, calc(100vw - 2rem));
+    max-height: min(70vh, 36rem);
+    padding: 0.4rem 0.6rem 0.6rem;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.ap-group + .ap-group {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.ap-group h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0.2rem 0 0.25rem;
+    font-size: 0.85rem;
+}
+
+.ap-count {
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.ap-group ul {
+    display: grid;
+    gap: 0.1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ap-entry,
+.ap-add {
+    display: block;
+    padding: 0.3rem 0.5rem;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.88rem;
+    text-decoration: none;
+}
+
+.ap-entry:hover {
+    background: var(--surface-2);
+}
+
+.ap-entry.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.ap-add {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--brand-strong);
+    font-weight: 650;
+}
+
+.ap-add:hover {
+    background: var(--brand-soft);
+}

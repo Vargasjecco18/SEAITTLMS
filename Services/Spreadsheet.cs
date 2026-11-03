@@ -674,17 +674,12 @@ public sealed record XlsxSheetData(string Name, IReadOnlyList<IReadOnlyList<stri
 /// <summary>Reads the Excel files (.xlsx) that people send in: the text and numbers of the cells, nothing else (no formulas are worked out, no macros run).</summary>
 public static class XlsxReader
 {
-    /// <summary>
-    /// The biggest Excel file that is read. It is the size of file the System settings allow to be uploaded (<see cref="SystemSettingsService"/> puts it here when the settings are
-    /// loaded and when they are saved), so there is one number for every file the people send in.
-    /// </summary>
-    public static long MaxFileBytes { get; set; } = 200L * 1024 * 1024;
+    /// <summary>There is no limit in MB for the Excel files that are imported (the safeguards are the rows and the columns below, and the size of what a part packs to).</summary>
+    public const long MaxFileBytes = long.MaxValue;
     private const int MaxRows = 20_000;
     private const int MaxColumns = 100;
-    private const long MinPartBytes = 40L * 1024 * 1024;
-
-    /// <summary>What one part of the file may be when it is opened: at least 40 MB, and twice the biggest file that is allowed (a file packs down to a part of that size).</summary>
-    private static long MaxPartBytes => Math.Max(MinPartBytes, MaxFileBytes * 2);
+    /// <summary>What one part of the file may be when it is opened (a file that packs down to much more than this is not an Excel file made by a person).</summary>
+    private const long MaxPartBytes = 1L << 30;
 
     /// <summary>Reads the first sheet (or every sheet). Throws <see cref="InvalidDataException"/> with a sentence a person can understand when the file is not an Excel file.</summary>
     public static IReadOnlyList<XlsxSheetData> Read(byte[] data)

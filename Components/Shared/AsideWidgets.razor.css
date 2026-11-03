@@ -41,6 +41,7 @@
 .kind.recitation { background: var(--blue-soft); color: var(--blue); }
 .kind.exam { background: var(--rose-soft); color: var(--rose); }
 .kind.module { background: var(--green-soft); color: var(--green); }
+.kind.announcement { background: var(--slate-soft); color: var(--slate); }
 
 .next-text {
     display: flex;

@@ -1,0 +1,33 @@
+@* The button "Activities" of the teacher: a pop-up with all the activities of the course (seatwork, assignments, quizzes, task performance ...), kind by kind, each with a line to add
+   one more. It is on the page of the course, next to Add activities, and on the page of an activity, next to View activity. A click outside it, or Escape, closes it. *@
+<details class="pop activities-pop">
+    <summary class="ap-button" aria-label="Activities of the course" title="Activities of the course"><Icon Name="list-checks" Size="16" /> <span>Activities</span> <Icon Name="chevron-down" Size="14" /></summary>
+    <div class="ap-panel">
+        @foreach (var group in Groups)
+        {
+            var kind = CourseMenu.KindOfKey(group.Key);
+            <section class="ap-group" data-kind="@group.Key">
+                <h3><Icon Name="@group.Icon" Size="16" /> @group.Label <span class="ap-count">@group.Count</span></h3>
+                <ul>
+                    @foreach (var entry in group.Entries)
+                    {
+                        <li><a class="ap-entry @(entry.Current ? "on" : "")" href="@entry.Href" aria-current="@(entry.Current ? "page" : null)">@entry.Title</a></li>
+                    }
+                    @if (kind is not null)
+                    {
+                        <li><a class="ap-add" href="@($"{group.SeeAllHref}&add=1")"><Icon Name="plus" Size="14" /> <span>Add @ItemKinds.Display(kind).ToLowerInvariant()</span></a></li>
+                    }
+                </ul>
+            </section>
+        }
+    </div>
+</details>
+
+@code {
+    [Parameter, EditorRequired] public TeacherSubject Teacher { get; set; } = default!;
+
+    /// <summary>The activity that is open: its line is marked.</summary>
+    [Parameter] public int? CurrentItemId { get; set; }
+
+    private IReadOnlyList<CourseMenuGroup> Groups => [.. CourseMenuBuilder.ForTeacher(Teacher, null, CurrentItemId).Where(g => g.Key != "modules")];
+}

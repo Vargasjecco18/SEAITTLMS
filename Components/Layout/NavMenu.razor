@@ -28,7 +28,7 @@
                  Contents="CoordinatorDashboard" />
         <NavItem Href="coordinator/academic-setup" Icon="school" Label="Academic setup"
                  Items="CoordinatorSetup" />
-        <NavItem Href="coordinator/sections" Icon="users" Label="Sections"
+        <NavItem Href="coordinator/sections" Icon="users" Label="Class sections"
                  Contents="CoordinatorSections" />
         <NavItem Href="coordinator/class-schedule" Icon="calendar-clock" Label="Class schedule"
                  Contents="CoordinatorSchedule" />
@@ -66,7 +66,7 @@
 
         <NavItem Href="registrar" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
                  Contents="RegistrarDashboard" />
-        <NavItem Href="registrar/enrollments" Icon="clipboard-list" Label="Enrollments"
+        <NavItem Href="registrar/enrollments" Icon="clipboard-list" Label="Enrollment"
                  Contents="RegistrarEnrollments" />
         <NavItem Href="registrar/student-accounts" Icon="graduation-cap" Label="Student's Accounts"
                  Contents="RegistrarAccounts" />
@@ -217,7 +217,7 @@
         new("Rooms", "coordinator/academic-setup/rooms", "door-open"),
     ];
 
-    private static readonly IReadOnlyList<string> CoordinatorSections = ["A and B of each strand and grade", "The adviser and the students"];
+    private static readonly IReadOnlyList<string> CoordinatorSections = ["Tabs for grade 11 and 12", "The sections of each strand", "The adviser and the students"];
 
     private static readonly IReadOnlyList<string> CoordinatorSchedule = ["A week like a spreadsheet", "Drag a course to a day and a time", "A room for each class"];
 
@@ -250,7 +250,7 @@
 
     private static readonly IReadOnlyList<string> RegistrarDashboard = ["Students by section", "Who is enrolled and who is not", "Latest enrollments"];
 
-    private static readonly IReadOnlyList<string> RegistrarEnrollments = ["Type the LRN", "Choose the section A or B", "Courses of the strand"];
+    private static readonly IReadOnlyList<string> RegistrarEnrollments = ["Type the LRN", "Choose the section, or add one", "Courses of the strand"];
 
     private static readonly IReadOnlyList<string> RegistrarAccounts = ["The enrolled students", "Their courses and final grades", "Next term"];
 

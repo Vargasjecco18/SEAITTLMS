@@ -66,20 +66,24 @@ else
                 <textarea id="a-body" rows="5" maxlength="@AnnouncementService.MaxBodyLength" @bind="form.Body"></textarea>
             </Field>
 
+            <Field For="a-audience" Label="For" Required="true" Hint="@(form.Category == AnnouncementCategories.TeachersMeeting ? "A teachers' meeting is for the teachers." : null)">
+                <select id="a-audience" @bind="form.Audience" disabled="@(form.Category == AnnouncementCategories.TeachersMeeting)">
+                    <option value="@AnnouncementAudiences.Everyone">Everybody (students and teachers)</option>
+                    <option value="@AnnouncementAudiences.Students">The students</option>
+                    <option value="@AnnouncementAudiences.Teachers">The teachers</option>
+                </select>
+            </Field>
+
             <div class="two">
-                <Field For="a-audience" Label="For" Required="true" Hint="@(form.Category == AnnouncementCategories.TeachersMeeting ? "A teachers' meeting is for the teachers." : null)">
-                    <select id="a-audience" @bind="form.Audience" disabled="@(form.Category == AnnouncementCategories.TeachersMeeting)">
-                        <option value="@AnnouncementAudiences.Everyone">Everybody (students and teachers)</option>
-                        <option value="@AnnouncementAudiences.Students">The students</option>
-                        <option value="@AnnouncementAudiences.Teachers">The teachers</option>
-                    </select>
+                <Field For="a-start" Label="Start" Hint="Optional. The first day it is about.">
+                    <input id="a-start" type="date" @bind="form.StartsOn" />
                 </Field>
 
-                <Field For="a-until" Label="Show until" Hint="Optional. Empty: until you delete it.">
+                <Field For="a-until" Label="End" Hint="Optional. Empty: until you delete it.">
                     <input id="a-until" type="date" @bind="form.ExpiresOn" />
                 </Field>
             </div>
-            <p class="hint-line">The people it is for are told with a notification when you post it.</p>
+            <p class="hint-line">The people it is for get a notification, and see the days from Start to End in their calendar.</p>
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
                 <Button Type="submit" IconName="send" Disabled="busy">@(busy ? "Saving…" : form.Id is null ? "Post" : "Save")</Button>
@@ -204,7 +208,7 @@ else
     private void OpenEdit(AnnouncementView row)
     {
         errors = [];
-        form = new AnnouncementInput { Id = row.Id, Title = row.Title, Body = row.Body, Audience = row.Audience, Category = row.Category, ExpiresOn = row.ExpiresOn };
+        form = new AnnouncementInput { Id = row.Id, Title = row.Title, Body = row.Body, Audience = row.Audience, Category = row.Category, StartsOn = row.StartsOn, ExpiresOn = row.ExpiresOn };
     }
 
     private void CloseForm() => form = null;

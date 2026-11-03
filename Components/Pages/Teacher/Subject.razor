@@ -29,6 +29,7 @@ else
     <PageHeader Title="@($"{subject.SubjectName} · {subject.SectionLabel}")"
                 IconName="book-open">
         <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
+        <ActivitiesPop Teacher="subject" />
         <Button IconName="plus" OnClick="OpenActivitiesAsync">Add activities</Button>
     </PageHeader>
 
@@ -122,7 +123,7 @@ else
         @* The first page of a course: only the syllabus and the modules, one line each. A click on the line opens it (its lesson, its files and, at the right, Edit module). *@
         <p class="hint-line">
             <Icon Name="eye-off" Size="16" />
-            <span>The modules the academic provider sends you are <strong>drafts</strong>: students can't see them until you post them. Open a module to change it, and press <strong>Status</strong> to post it, schedule the time it appears, or hide it.</span>
+            <span>Modules from the provider are <strong>drafts</strong>. Students see them when you post them.</span>
         </p>
 
         @if (subject.Modules.All(m => m.IsExamSet))

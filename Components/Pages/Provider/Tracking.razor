@@ -54,7 +54,7 @@
         </div>
 
         <div class="track-message">
-            <Button Variant="ButtonVariant.Secondary" IconName="bell-ring" Disabled="@(Total == 0 || !CanMessage)" OnClick="OpenMessage">Message @(Total == 0 || !CanMessage ? "" : WhoText)</Button>
+            <Button Variant="ButtonVariant.Secondary" IconName="bell-ring" Disabled="@(Total == 0 || !CanMessage)" OnClick="OpenMessageAsync">Message @(Total == 0 || !CanMessage ? "" : WhoText)</Button>
         </div>
     </div>
 
@@ -179,12 +179,24 @@
 <Modal Open="messaging" Title="@MessageTitle" OnClose="CloseMessage">
     <form @onsubmit="SendMessageAsync">
         <p class="muted">@MessageLead</p>
+        @if (ShowsTeachers && listTeachers.Count > 1)
+        {
+            <Field For="track-teacher" Label="Teacher" Hint="Everybody on the list, or one teacher.">
+                <select id="track-teacher" @bind="chosenTeacher">
+                    <option value="0">Everybody on the list (@listTeachers.Count teachers)</option>
+                    @foreach (var t in listTeachers)
+                    {
+                        <option value="@t.UserId">@t.Name (@(t.Lines == 1 ? "1 line" : $"{t.Lines} lines"))</option>
+                    }
+                </select>
+            </Field>
+        }
         <Field For="track-message" Label="Message" Hint="Leave it as it is, or write your own words.">
             <textarea id="track-message" rows="4" maxlength="500" @bind="messageText" @bind:event="oninput"></textarea>
         </Field>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseMessage">Cancel</Button>
-            <Button Type="submit" IconName="send" Disabled="sending">@(sending ? "Sending…" : $"Send to {WhoText}")</Button>
+            <Button Type="submit" IconName="send" Disabled="sending">@(sending ? "Sending…" : $"Send to {SendTo}")</Button>
         </div>
     </form>
 </Modal>
@@ -233,17 +245,17 @@
         ? [new(TrackStates.NotOpened, "Not opened"), new(TrackStates.NotHandedIn, "Not handed in"), new(TrackStates.HandedIn, "Handed in")]
         : [new(TrackStates.NotPosted, "Not posted"), new(TrackStates.Scheduled, "Scheduled"), new(TrackStates.NotOpened, "Not opened")];
 
-    /// <summary>The message is for the people who are late: not for a list of what is on its way (scheduled) or of the students who handed in.</summary>
-    private bool CanMessage => state is not (TrackStates.Scheduled or TrackStates.HandedIn);
+    /// <summary>The message is for the people who are late, or who scheduled it for too long: not for the students who handed in.</summary>
+    private bool CanMessage => state != TrackStates.HandedIn;
 
     private string PartHint => part switch
     {
-        "exams" when state == TrackStates.NotOpened => "The students who have not opened a summative exam that is posted.",
-        "exams" when state == TrackStates.NotHandedIn => "The students who opened a summative exam that is posted but have not handed it in.",
-        "exams" => "The students who handed in a summative exam, with their score. An exam that is not posted yet has no students here.",
-        _ when state == TrackStates.Scheduled => $"The {(part == "syllabus" ? "syllabus" : "modules")} that the teacher scheduled: the students will see {(part == "syllabus" ? "it" : "them")} at the time shown.",
-        _ when state == TrackStates.NotPosted => $"The teachers who were sent the {(part == "syllabus" ? "syllabus" : "modules")} and have not posted {(part == "syllabus" ? "it" : "them")} for the students yet.",
-        _ => $"The students who have not opened the {(part == "syllabus" ? "syllabus" : "modules")} their teacher posted. A student shows here only once the teacher posted it.",
+        "exams" when state == TrackStates.NotOpened => "Students who have not opened a posted exam.",
+        "exams" when state == TrackStates.NotHandedIn => "Students who opened an exam but have not handed it in.",
+        "exams" => "Students who handed in, with their scores.",
+        _ when state == TrackStates.Scheduled => "Teachers who scheduled it: it shows to students at the time given.",
+        _ when state == TrackStates.NotPosted => "Teachers who have not posted it to their students.",
+        _ => "Students who have not opened what the teacher posted.",
     };
 
     private string SearchHint => part == "exams" ? "Student, course, section…" : ShowsTeachers ? "Course, teacher, module…" : "Student, course, teacher…";
@@ -253,6 +265,12 @@
     private int Total => part == "exams" ? examRows?.Total ?? 0 : ShowsTeachers ? postedRows?.Total ?? 0 : openedRows?.Total ?? 0;
 
     private string WhoText => people == 1 ? "1 person" : $"{people:N0} people";
+
+    private int chosenTeacher;
+    private IReadOnlyList<(int UserId, string Name, int Lines)> listTeachers = [];
+
+    /// <summary>Who the message goes to now: the chosen teacher, or everybody on the list.</summary>
+    private string SendTo => ShowsTeachers && chosenTeacher != 0 ? (listTeachers.FirstOrDefault(t => t.UserId == chosenTeacher).Name ?? "1 person") : WhoText;
 
     private string EmptyTitle => part == "exams"
         ? (state == TrackStates.HandedIn ? "Nobody handed in yet" : state == TrackStates.NotHandedIn ? "Nobody is late" : "Everybody opened it")
@@ -272,6 +290,7 @@
 
     private string MessageLead => part == "exams"
         ? $"A notification goes to {WhoText}: the students on this list."
+        : state == TrackStates.Scheduled ? $"A notification goes to the teachers who scheduled the {(part == "syllabus" ? "syllabus" : "modules")}: choose one teacher, or everybody on the list. Use it when the day is too far."
         : state == TrackStates.NotPosted ? $"A notification goes to {WhoText}: the teachers who have not posted the {(part == "syllabus" ? "syllabus" : "modules")}." : $"A notification goes to {WhoText}: the students who have not opened it.";
 
     private System.Threading.Timer? refresher;
@@ -392,10 +411,19 @@
     }
 
     // ---- the message to everybody on the list
-    private void OpenMessage()
+    private async Task OpenMessageAsync()
     {
+        chosenTeacher = 0;
+        if (ShowsTeachers)
+        {
+            var rows = state == TrackStates.Scheduled ? await Provider.GetScheduledAsync(IsSyllabus, search) : await Provider.GetNotPostedAsync(IsSyllabus, search);
+            listTeachers = [.. rows.GroupBy(r => (r.TeacherUserId, r.TeacherName)).Select(g => (g.Key.TeacherUserId, g.Key.TeacherName, g.Count())).OrderBy(t => t.TeacherName, StringComparer.OrdinalIgnoreCase)];
+        }
+
         messageText = part == "exams"
             ? (state == TrackStates.NotHandedIn ? "You have not handed in your summative exam yet. Open your course and take it before it closes." : state == TrackStates.NotOpened ? "You have not opened your summative exam yet. Open your course and take it before it closes." : "A reminder about your summative exam: open your course and take it before it closes.")
+            : state == TrackStates.Scheduled
+                ? $"You scheduled the {(IsSyllabus ? "syllabus" : "modules")} for a day that is too far. Please post {(IsSyllabus ? "it" : "them")} sooner so the students can start reading."
             : state == TrackStates.NotPosted
                 ? $"The {(IsSyllabus ? "syllabus" : "modules")} that was sent to you is not posted yet. Please open your course and post {(IsSyllabus ? "it" : "them")} for the students."
                 : $"Your teacher posted the {(IsSyllabus ? "syllabus" : "modules")} for you. Please open your course and read {(IsSyllabus ? "it" : "them")}.";
@@ -409,7 +437,7 @@
         sending = true;
         try
         {
-            var told = await Provider.NotifyAsync(state, part == "exams", IsSyllabus, search, grade, subjectId, messageText);
+            var told = await Provider.NotifyAsync(state, part == "exams", IsSyllabus, search, grade, subjectId, messageText, ShowsTeachers ? chosenTeacher : 0);
             messaging = false;
             notice = told == 0 ? "Nobody was on the list, so nobody was told." : $"{(told == 1 ? "1 person was" : $"{told:N0} people were")} told.";
         }

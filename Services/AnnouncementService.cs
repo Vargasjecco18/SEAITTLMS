@@ -5,10 +5,10 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-/// <summary>An announcement as it is shown: who wrote it, for whom, and until when.</summary>
+/// <summary>An announcement as it is shown: who wrote it, for whom, and from when (<paramref name="StartsOn"/>) until when (<paramref name="ExpiresOn"/>, its End).</summary>
 public sealed record AnnouncementView(
     int Id, int AuthorUserId, string Title, string Body, string AuthorName, string AuthorRole, string Audience, int? SectionId, string? SectionLabel,
-    DateTime CreatedAtUtc, DateOnly? ExpiresOn, string Category = AnnouncementCategories.Other, int? AssignmentId = null, string? CourseName = null);
+    DateTime CreatedAtUtc, DateOnly? ExpiresOn, string Category = AnnouncementCategories.Other, int? AssignmentId = null, string? CourseName = null, DateOnly? StartsOn = null);
 
 public sealed class AnnouncementInput
 {
@@ -23,6 +23,10 @@ public sealed class AnnouncementInput
     /// <summary>A teacher's announcement: the course (teaching assignment) it is for. The coordinator's notices have none.</summary>
     public int? AssignmentId { get; set; }
 
+    /// <summary>Start of the schedule: the first day it is about. Empty: it is only about the End day. It is shown from the day it is posted.</summary>
+    public DateOnly? StartsOn { get; set; }
+
+    /// <summary>End of the schedule: the last day it is about and shown. Empty: until it is deleted.</summary>
     public DateOnly? ExpiresOn { get; set; }
 }
 
@@ -39,24 +43,12 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
 
     // ======================================================================= reading
 
-    /// <summary>What a student is meant to read: for everybody or the students, for the whole school or for one of their sections. Newest first.</summary>
+    /// <summary>What a student is meant to read: for everybody or the students, for the whole school or for one of their sections, until its End day. Newest first.</summary>
     public async Task<IReadOnlyList<AnnouncementView>> GetForStudentAsync(int studentId, int take = 5, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var today = PhilippineTime.Today(clock);
-
-        var sectionIds = await db.Enrollments.AsNoTracking()
-            .Where(e => e.StudentId == studentId && e.Status == EnrollmentStatus.Enrolled)
-            .Select(e => e.SectionId).Distinct().ToListAsync(ct);
-
-        var courseIds = await Roster.AssignmentsOf(db, studentId).Select(a => a.Id).ToListAsync(ct);
-
-        var query = db.Announcements.AsNoTracking()
-            .Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Students)
-                        && (a.SectionId == null || sectionIds.Contains(a.SectionId.Value))
-                        && (a.AssignmentId == null || courseIds.Contains(a.AssignmentId.Value))
-                        && (a.ExpiresOn == null || a.ExpiresOn >= today));
-        return await ViewsAsync(db, query, take, ct);
+        return await ViewsAsync(db, Live(await ForStudentAsync(db, studentId, ct), today), take, ct);
     }
 
     /// <summary>The notices of the school for the teachers (for everybody or for the teachers), newest first.</summary>
@@ -64,10 +56,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var today = PhilippineTime.Today(clock);
-        var query = db.Announcements.AsNoTracking()
-            .Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers)
-                        && a.SectionId == null && (a.ExpiresOn == null || a.ExpiresOn >= today));
-        return await ViewsAsync(db, query, take, ct);
+        return await ViewsAsync(db, Live(ForTeachers(db), today), take, ct);
     }
 
     /// <summary>
@@ -79,26 +68,57 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var today = PhilippineTime.Today(clock);
 
+        if (user.Role == AppRoles.AcademicCoordinator)
+        {
+            // the coordinator sees every notice they manage, the ones that are still to start and the ones that ended too
+            return await ViewsAsync(db, db.Announcements.AsNoTracking().Where(a => a.AssignmentId == null), take, ct);
+        }
+
+        return await ViewsAsync(db, Live(await MeantForAsync(db, user, ct), today), take, ct);
+    }
+
+    /// <summary>The announcements meant for the person whatever their dates: what the header, the dashboards and the calendar choose from.</summary>
+    public static async Task<IQueryable<Announcement>> MeantForAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct = default)
+    {
         switch (user.Role)
         {
             case AppRoles.Student:
                 var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == user.UserId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
-                return studentId is null ? [] : await GetForStudentAsync(studentId.Value, take, ct);
+                return studentId is null ? db.Announcements.AsNoTracking().Where(_ => false) : await ForStudentAsync(db, studentId.Value, ct);
 
             case AppRoles.Teacher:
-                return await ViewsAsync(db, db.Announcements.AsNoTracking()
-                    .Where(a => (a.ExpiresOn == null || a.ExpiresOn >= today)
-                                && (a.AuthorUserId == user.UserId
-                                    || ((a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers) && a.SectionId == null))), take, ct);
+                return db.Announcements.AsNoTracking()
+                    .Where(a => a.AuthorUserId == user.UserId
+                                || ((a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers) && a.SectionId == null));
 
             case AppRoles.AcademicCoordinator:
-                return await ViewsAsync(db, db.Announcements.AsNoTracking().Where(a => a.AssignmentId == null), take, ct);
+                return db.Announcements.AsNoTracking().Where(a => a.AssignmentId == null);
 
             default:
-                return await ViewsAsync(db, db.Announcements.AsNoTracking()
-                    .Where(a => a.Audience == AnnouncementAudiences.Everyone && a.SectionId == null && (a.ExpiresOn == null || a.ExpiresOn >= today)), take, ct);
+                return db.Announcements.AsNoTracking().Where(a => a.Audience == AnnouncementAudiences.Everyone && a.SectionId == null);
         }
     }
+
+    private static async Task<IQueryable<Announcement>> ForStudentAsync(AppDbContext db, int studentId, CancellationToken ct)
+    {
+        var sectionIds = await db.Enrollments.AsNoTracking()
+            .Where(e => e.StudentId == studentId && e.Status == EnrollmentStatus.Enrolled)
+            .Select(e => e.SectionId).Distinct().ToListAsync(ct);
+
+        var courseIds = await Roster.AssignmentsOf(db, studentId).Select(a => a.Id).ToListAsync(ct);
+
+        return db.Announcements.AsNoTracking()
+            .Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Students)
+                        && (a.SectionId == null || sectionIds.Contains(a.SectionId.Value))
+                        && (a.AssignmentId == null || courseIds.Contains(a.AssignmentId.Value)));
+    }
+
+    private static IQueryable<Announcement> ForTeachers(AppDbContext db) =>
+        db.Announcements.AsNoTracking().Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers) && a.SectionId == null);
+
+    /// <summary>What is still shown today: it has no End or its End is today or later. (An announcement is shown from the day it is posted, so people can plan for the days it is about.)</summary>
+    private static IQueryable<Announcement> Live(IQueryable<Announcement> query, DateOnly today) =>
+        query.Where(a => a.ExpiresOn == null || a.ExpiresOn >= today);
 
     /// <summary>The announcements the person manages, newest first: the coordinator the notices of the school (all but what teachers wrote to their classes), a teacher the ones to their classes.</summary>
     public async Task<IReadOnlyList<AnnouncementView>> ListManagedAsync(CurrentUserInfo user, CancellationToken ct = default)
@@ -155,7 +175,12 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
 
         if (input.ExpiresOn is { } expires && expires < PhilippineTime.Today(clock))
         {
-            errors.Add("The last day to show it can't be in the past.");
+            errors.Add("The End day can't be in the past.");
+        }
+
+        if (input.StartsOn is { } starts && input.ExpiresOn is { } ends && ends < starts)
+        {
+            errors.Add("The End day can't be before the Start day.");
         }
 
         if (errors.Count > 0)
@@ -209,6 +234,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         announcement.Category = category;
         announcement.AssignmentId = isTeacher ? input.AssignmentId : null;
         announcement.SectionId = isTeacher ? sectionId : announcement.SectionId;
+        announcement.StartsOn = input.StartsOn;
         announcement.ExpiresOn = input.ExpiresOn;
         await db.SaveChangesAsync(ct);
 
@@ -295,6 +321,6 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         return rows.Select(a => new AnnouncementView(
             a.Id, a.AuthorUserId, a.Title, a.Body, a.Author.DisplayName, AppRoles.DisplayName(a.Author.Role.Name), a.Audience, a.SectionId,
             a.Section is null ? null : TeachingService.SectionLabel(a.Section.GradeLevel, a.Section.Strand.Code, a.Section.Name),
-            a.CreatedAtUtc, a.ExpiresOn, a.Category, a.AssignmentId, a.Assignment?.Subject.Name)).ToList();
+            a.CreatedAtUtc, a.ExpiresOn, a.Category, a.AssignmentId, a.Assignment?.Subject.Name, a.StartsOn)).ToList();
     }
 }

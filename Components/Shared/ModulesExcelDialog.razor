@@ -23,7 +23,7 @@
                     </div>
                 </li>
                 <li>
-                    <strong>Fill the yellow cells</strong> (type, or choose from the list where a cell has an arrow) and save with Ctrl+S as an Excel file (.xlsx). Type the names of the files of a module in the column Files.
+                    <strong>Fill the yellow cells</strong> (type, or choose from the list where a cell has an arrow) and save with Ctrl+S as an Excel file (.xlsx). Type the name of each file of a module in File 1, File 2 and so on (File 1 is needed).
                 </li>
                 <li>
                     <strong>Choose the workbook.</strong>
@@ -117,7 +117,6 @@
 
 @code {
     private const int MaxChosenFiles = 40;
-    private const long MaxChosenBytes = 60L * 1024 * 1024;
 
     private bool importing;
     private bool reading;
@@ -176,7 +175,7 @@
             {
                 problems.Add($"Choose the file {name}.");
             }
-            else if (Attachments.Check([file]).FirstOrDefault(e => !e.StartsWith("At most", StringComparison.Ordinal)) is { } why)
+            else if (Attachments.Check([file], noSizeLimit: true).FirstOrDefault(e => !e.StartsWith("At most", StringComparison.Ordinal)) is { } why)
             {
                 problems.Add(why);
             }
@@ -239,22 +238,10 @@
         reading = true;
         try
         {
-            var maxBytes = Settings.Current.MaxFileMegabytes * 1024L * 1024;
+            // The files of a module have no limit in MB.
             foreach (var file in e.GetMultipleFiles(MaxChosenFiles))
             {
-                if (chosen.Values.Sum(f => (long)f.Data.Length) + file.Size > MaxChosenBytes)
-                {
-                    error = $"Too many files at once: choose at most {MaxChosenBytes / (1024 * 1024)} MB in one import.";
-                    break;
-                }
-
-                if (file.Size > maxBytes)
-                {
-                    error = $"{file.Name} is bigger than {maxBytes / (1024 * 1024)} MB.";
-                    continue;
-                }
-
-                await using var stream = file.OpenReadStream(maxBytes);
+                await using var stream = file.OpenReadStream(long.MaxValue);
                 using var buffer = new MemoryStream();
                 await stream.CopyToAsync(buffer);
                 chosen[file.Name] = new NewAttachment(file.Name, file.ContentType, buffer.ToArray());

@@ -98,7 +98,7 @@ else
         <StatCard Label="Students" Value="@report.Students" IconName="users" Accent="AccentColor.Blue" Hint="@report.ScopeText" />
         <StatCard Label="Average grade" Text="@(report.AverageGrade is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="AccentColor.Violet" Hint="@(report.AverageGrade is { } a2 ? GradeRules.Descriptor(a2) : "No grades yet")" />
         <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" />
-        <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Close to failing, or missing assignments" />
+        <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Near failing or missing work" />
     </div>
 
     <section class="my-courses" aria-label="My courses">

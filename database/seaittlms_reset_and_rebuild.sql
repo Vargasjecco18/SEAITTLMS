@@ -1951,5 +1951,16 @@ DELETE FROM `sections` WHERE `id` > 0 AND `name` = 'C' AND NOT EXISTS (SELECT 1 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261031145448_RoomsAndThreeTerms', '9.0.20');
 
+ALTER TABLE `study_groups` DROP CONSTRAINT `ck_study_groups_auto_kind`;
+
+ALTER TABLE `announcements` ADD `starts_on` date NULL;
+
+ALTER TABLE `study_groups` ADD CONSTRAINT `ck_study_groups_auto_kind` CHECK (auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers', 'AllStaff', 'TeachersAndStaff'));
+
+ALTER TABLE `announcements` ADD CONSTRAINT `ck_announcements_schedule` CHECK (starts_on IS NULL OR expires_on IS NULL OR starts_on <= expires_on);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261103143951_AnnouncementDaysAndStaffGroups', '9.0.20');
+
 COMMIT;
 

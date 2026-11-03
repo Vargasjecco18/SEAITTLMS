@@ -19,7 +19,7 @@ html {
     --bg: #f5f7fb;
     --surface: #ffffff;
     --surface-2: #f1f4f9;
-    --border: #e2e8f0;
+    --border: #c7d1df;   /* the lines of the cards and tables: dark enough that every card shows on the page background */
     --field-border: #7b8aa0;   /* the border of the boxes people type in or choose from: darker than the other lines so the box is easy to see */
     --text: #162033;
     --text-muted: #5b6b82;
@@ -57,13 +57,15 @@ html {
     --violet-soft: #ede9fe;
     --rose: #be123c;
     --rose-soft: #ffe4e6;
+    --teal: #0f766e;
+    --teal-soft: #ccfbf1;
     --slate: #475569;
     --slate-soft: #e2e8f0;
 
     /* Shape and size */
     --radius: 14px;
     --radius-sm: 10px;
-    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 5px rgba(16, 24, 40, 0.08);
     --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.1);
     --header-h: 4rem;
     --sidebar-w: 17rem;
@@ -116,6 +118,8 @@ html[data-theme="dark"] {
     --violet-soft: rgba(139, 92, 246, 0.2);
     --rose: #fda4af;
     --rose-soft: rgba(244, 63, 94, 0.16);
+    --teal: #2dd4bf;
+    --teal-soft: rgba(45, 212, 191, 0.16);
     --slate: #cbd5e1;
     --slate-soft: rgba(148, 163, 184, 0.16);
 
@@ -167,6 +171,8 @@ html[data-theme="light"] {
         --violet-soft: rgba(139, 92, 246, 0.2);
         --rose: #fda4af;
         --rose-soft: rgba(244, 63, 94, 0.16);
+        --teal: #2dd4bf;
+        --teal-soft: rgba(45, 212, 191, 0.16);
         --slate: #cbd5e1;
         --slate-soft: rgba(148, 163, 184, 0.16);
 
@@ -756,7 +762,7 @@ html ::deep .ghost.grow {
 
 html ::deep .ghost.units {
     flex: none;
-    width: 3.6rem;
+    width: 3.9rem;
     text-align: right;
 }
 

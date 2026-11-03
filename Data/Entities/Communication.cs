@@ -133,6 +133,9 @@ public class Announcement : AuditableEntity
     public int? AssignmentId { get; set; }
     public TeachingAssignment? Assignment { get; set; }
 
-    /// <summary>The last day (a Philippine date) the announcement is shown. Empty: until it is deleted.</summary>
+    /// <summary>The first day (a Philippine date) the announcement is about (the Start of its schedule: a holiday, an exam week, the semester break). Empty: only the End day. The people it is for see the days from Start to End in their calendar.</summary>
+    public DateOnly? StartsOn { get; set; }
+
+    /// <summary>The last day (a Philippine date) the announcement is about and shown (the End of its schedule). Empty: until it is deleted.</summary>
     public DateOnly? ExpiresOn { get; set; }
 }

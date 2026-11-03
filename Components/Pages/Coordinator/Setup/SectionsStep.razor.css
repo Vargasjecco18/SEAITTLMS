@@ -1,10 +1,25 @@
-/* The sections: the limit and the schedules button on top, a card to add a section, and a card for each school year. */
-.sections-tools {
+/* The class sections: tabs for the classes, and for each strand the cards of its sections (a card has a plain border all around). */
+.sections-top {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.6rem 0.8rem;
-    margin-bottom: 0.9rem;
+    gap: 0.6rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.year-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.year-pick .ghost {
+    border-color: var(--border);
+    background: var(--surface);
+    font-weight: 700;
 }
 
 .capacity {
@@ -17,9 +32,10 @@
     font-size: 0.88rem;
 }
 
-.capacity input {
-    width: 5.5rem;
+.capacity .limit-box {
+    width: 5rem;
     border-color: var(--border);
+    background: var(--surface);
 }
 
 .saved-line {
@@ -30,76 +46,151 @@
     font-weight: 600;
 }
 
-.add-section {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
-    padding: 0.6rem 0.75rem;
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
+.strand-block {
+    margin-bottom: 1.4rem;
 }
 
-.add-section .ghost {
-    border-color: var(--border);
-    background: var(--surface-2);
-}
-
-.year-sections {
-    margin-top: 1rem;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-    box-shadow: var(--shadow);
-}
-
-.year-sections h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0.7rem 1rem;
-    background: var(--surface-2);
+.strand-head h3 {
+    margin: 0 0 0.6rem;
     font-size: 1rem;
 }
 
-.year-sections .count {
-    padding: 0.05rem 0.5rem;
-    border-radius: 999px;
-    background: var(--brand-soft);
-    color: var(--brand-strong);
-    font-size: 0.78rem;
-    font-weight: 700;
+.strand-head small {
+    margin-left: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
-.year-sections .table-wrap {
-    margin: 0;
+.section-cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
 }
 
-.section-row {
-    cursor: default;
+@media (min-width: 760px) {
+    .section-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
-.section-row:hover {
-    background: var(--surface-2);
+@media (min-width: 1500px) {
+    .section-cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
-.section-label {
-    font-variant-numeric: tabular-nums;
-    font-weight: 650;
+.section-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
 
-span.name {
+.section-card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.section-card:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.card-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 3.4rem;
+    height: 3.4rem;
+    border-radius: 16px;
+    color: #fff;
+}
+
+.card-icon.tone-0 { background: #2563eb; }
+.card-icon.tone-1 { background: #7c3aed; }
+.card-icon.tone-2 { background: #16a34a; }
+.card-icon.tone-3 { background: #ea580c; }
+
+.card-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.card-title {
+    font-size: 1.05rem;
+}
+
+.card-sub {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.9rem;
+    margin-top: 0.15rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.card-meta span {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
 }
 
-td.name {
-    white-space: nowrap;
+.card-chevron {
+    flex: none;
+    color: var(--text-muted);
+}
+
+.card-delete {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: none;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--danger-solid);
+    cursor: pointer;
+}
+
+.section-card:hover .card-delete,
+.section-card:focus-within .card-delete {
+    display: grid;
+}
+
+.add-card {
+    border-style: dashed;
+    background: transparent;
+    box-shadow: none;
+}
+
+.add-card:hover {
+    background: var(--surface);
+}
+
+.add-icon {
+    background: var(--surface-2);
+    color: var(--text-muted);
 }
 
 .ended {
@@ -123,46 +214,6 @@ td.name {
     list-style: none;
 }
 
-.sections-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.sections-table th,
-.sections-table td {
-    padding: 0.5rem 1rem;
-    border-top: 1px solid var(--border);
-    text-align: left;
-    vertical-align: middle;
-}
-
-.sections-table th {
-    border-top: 0;
-    color: var(--text-muted);
-    font-size: 0.74rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.sections-table .col-actions {
-    text-align: right;
-    white-space: nowrap;
-}
-
-.row-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.nowrap {
-    white-space: nowrap;
-}
-
-@media (max-width: 760px) {
-    .col-more {
-        display: none;
-    }
+.delete-text {
+    margin: 0 0 1rem;
 }

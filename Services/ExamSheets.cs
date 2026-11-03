@@ -76,6 +76,14 @@ public static class ExamSheets
         }
 
         sheet.FrozenRows = 1;
+        sheet.Width(8, 3);
+        TemplateGuide.StepsAtRight(sheet, 9, "Step by step",
+            "1. Type the title of the exam in Title and what the students must do in Instructions. The first row is an example: change it or delete it.",
+            "2. Type when the exam opens and when it closes, like 2026-12-14 08:00 (year-month-day hour:minute). Both are needed.",
+            "3. Leave Highest score empty when the exam has questions: it is the total of their points.",
+            "4. Type the minutes the student has in Time limit, and choose Yes or No for the anti-cheating watch.",
+            "5. Write the questions in the sheet Questions, with the same title in its first column.",
+            "6. Save with Ctrl+S as an Excel Workbook (.xlsx), then press Import in the system and choose the file.");
         sheet.Tip($"A2:A{last}", "Type the title of the exam (needed). Write the same title in the column Exam of the sheet Questions.").Tip($"B2:B{last}", "Type what the students must know or do.");
         sheet.Number($"C2:C{last}", 1, 1000, "Leave it empty when the exam has questions: the highest score is the total of their points. Without questions, type a number from 1 to 1000.");
         sheet.Tip($"D2:E{last}", "Type the day and the hour (Philippine time) like 2026-12-14 08:00. Both are needed.");

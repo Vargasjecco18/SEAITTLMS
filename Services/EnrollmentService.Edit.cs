@@ -53,6 +53,60 @@ public sealed partial class EnrollmentService
     }
 
     /// <summary>
+    /// The registrar adds a section for a strand and grade level (the school year is the one of the term), from the Section list of the enrollment form. The name is letters, numbers, spaces
+    /// and dashes (up to 50 characters); a single letter is written as a capital. The new section is a choice in the list at once.
+    /// </summary>
+    public async Task<ServiceResult> AddSectionAsync(int actingUserId, int termId, int strandId, byte gradeLevel, string? name, CancellationToken ct = default)
+    {
+        var clean = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        if (clean.Length == 1)
+        {
+            clean = clean.ToUpperInvariant();
+        }
+
+        if (clean.Length is 0 or > 50 || !System.Text.RegularExpressions.Regex.IsMatch(clean, @"^[A-Za-z0-9][A-Za-z0-9 \-]*$"))
+        {
+            return ServiceResult.Fail("Type the name of the section, like C. Use letters, numbers, spaces and dashes (up to 50 characters).");
+        }
+
+        if (gradeLevel is not (11 or 12))
+        {
+            return ServiceResult.Fail("Choose the grade level first.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.AcademicCoordinatorId), ct))
+        {
+            return ServiceResult.Fail("Only the registrar can add a section here.");
+        }
+
+        var term = await db.Terms.AsNoTracking().Where(t => t.Id == termId).Select(t => new { t.SchoolYearId }).FirstOrDefaultAsync(ct);
+        var strand = await db.Strands.AsNoTracking().Where(s => s.Id == strandId).Select(s => new { s.Id, s.Code }).FirstOrDefaultAsync(ct);
+        if (term is null || strand is null)
+        {
+            return ServiceResult.Fail("Choose the strand first.");
+        }
+
+        if (await db.Sections.AnyAsync(s => s.SchoolYearId == term.SchoolYearId && s.StrandId == strand.Id && s.GradeLevel == gradeLevel && s.Name == clean, ct))
+        {
+            return ServiceResult.Fail($"There is already a section {clean} for {gradeLevel}-{strand.Code}.");
+        }
+
+        var section = new Section { SchoolYearId = term.SchoolYearId, StrandId = strand.Id, GradeLevel = gradeLevel, Name = clean };
+        db.Sections.Add(section);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return ServiceResult.Fail($"There is already a section {clean} for {gradeLevel}-{strand.Code}.");
+        }
+
+        return ServiceResult.Ok($"The section {clean} was added.", section.Id);
+    }
+
+    /// <summary>
     /// Where a student starts when enrolled again for <paramref name="termId"/>. The second term of a school year keeps the grade level, track and strand of the
     /// first. The first term of a new school year moves a Grade 11 student up to Grade 12 (the strand and track stay). The section is chosen by the registrar.
     /// Null when the student has no earlier enrollment.

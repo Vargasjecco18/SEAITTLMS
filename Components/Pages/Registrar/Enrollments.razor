@@ -10,10 +10,10 @@
 @inject FileDownloads Downloads
 @using Microsoft.AspNetCore.Components.Forms
 
-<PageTitle>Enrollments · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>Enrollment · SEAITT Legazpi LMS</PageTitle>
 
 <div class="screen-only">
-    <PageHeader Title="Enrollments"
+    <PageHeader Title="Enrollment"
                 IconName="user-plus">
         <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="OpenImport">Import from Excel</Button>
     </PageHeader>
@@ -196,8 +196,20 @@ else
                             {
                                 <option value="@load.Name" disabled="@load.IsFull">@load.Name@(form.StrandId == 0 ? "" : $" · {load.Text}")@(load.IsFull ? " (full)" : "")</option>
                             }
+                            @if (form.StrandId != 0)
+                            {
+                                <option value="@AddSectionChoice">+ Add a section…</option>
+                            }
                         </select>
                 </Field>
+                @if (addingSection)
+                {
+                    <div class="add-section" role="group" aria-label="Add a section">
+                        <input id="new-section-name" type="text" maxlength="50" autocomplete="off" placeholder="Name, like C" aria-label="Name of the new section" @bind="newSectionName" @bind:event="oninput" />
+                        <Button Small="true" IconName="plus" Disabled="busy" OnClick="AddSectionAsync">Add section</Button>
+                        <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="() => addingSection = false">Cancel</Button>
+                    </div>
+                }
                 @if (strandShifted)
                 {
                     <p class="shift-note" role="status"><Icon Name="info" Size="16" /> The student changes strand, so the student starts again in Grade 11.</p>
@@ -258,7 +270,10 @@ else
             </Card>
         </div>
 
+        @* The sign-in details are shown until the courses of the strand appear; after that the form is about the enrollment, and the receipt has the sign-in. *@
         <div class="grid">
+            @if (plan.Count == 0)
+            {
             <Card Title="Sign-in details" IconName="key-round">
                 @if (existing is not null)
                 {
@@ -278,6 +293,7 @@ else
                     <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
                 }
             </Card>
+            }
         </div>
 
         <div class="submit-row">
@@ -393,7 +409,7 @@ else
 
     private string SectionHint => form.StrandId != 0 && sectionLoads.FirstOrDefault(l => l.Name == form.SectionName) is { } load
         ? $"Section {load.Name} has {load.Text}. {(load.IsFull ? "It is full." : load.SeatsLeft == 1 ? "1 seat is left." : $"{load.SeatsLeft} seats are left.")}"
-        : $"Choose the section, A, B or C. A section can have {Enrollment.SectionCapacity} students.";
+        : $"Choose the section, or add one. A section can have {Enrollment.SectionCapacity} students.";
     private List<string> errors = [];
     private EnrollmentReceipt? receipt;
     private bool busy;
@@ -537,7 +553,51 @@ else
 
     private async Task OnPlacementChangedAsync() => await ReloadChoicesAsync();
 
-    private async Task OnSectionChangedAsync() => await ReloadChoicesAsync();
+    private const string AddSectionChoice = "__add";
+
+    private bool addingSection;
+    private string newSectionName = "";
+
+    private async Task OnSectionChangedAsync()
+    {
+        // "+ Add a section…" is not a section: it opens the little box to type the name of a new one.
+        if (form.SectionName == AddSectionChoice)
+        {
+            form.SectionName = "";
+            addingSection = true;
+            newSectionName = "";
+            return;
+        }
+
+        await ReloadChoicesAsync();
+    }
+
+    private async Task AddSectionAsync()
+    {
+        busy = true;
+        try
+        {
+            var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+            var signedIn = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
+            var result = !signedIn ? ServiceResult.Fail("Please sign in again.") : await Enrollment.AddSectionAsync(userId, form.TermId, form.StrandId, form.GradeLevel, newSectionName);
+            if (result.Succeeded)
+            {
+                addingSection = false;
+                errors = [];
+                var added = string.Join(' ', newSectionName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                form.SectionName = added.Length == 1 ? added.ToUpperInvariant() : added;
+                await ReloadChoicesAsync();
+            }
+            else
+            {
+                errors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     /// <summary>The subjects and the existing sections depend on the term, grade level and strand.</summary>
     private async Task ReloadChoicesAsync()

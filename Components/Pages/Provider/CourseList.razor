@@ -37,7 +37,7 @@
             <span>@termName</span>
         </nav>
         <h2 class="level-title">@strand.Name <span class="code">@strand.Code</span> <span class="code">@termName</span></h2>
-        <CourseTable Courses="courses" ShowPlacement="true" />
+        <CourseTable Courses="courses" ShowPlacement="true" Path="@($"?track={track.TrackId}&strand={strand.StrandId}&term={chosenTerm}")" />
     }
     else if (strand is not null)
     {

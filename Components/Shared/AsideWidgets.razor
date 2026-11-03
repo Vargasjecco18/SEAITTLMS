@@ -296,6 +296,7 @@
             var now = Clock.GetUtcNow().UtcDateTime;
             upNext = (await Events.GetEventsAsync(user, today, today.AddDays(13)))
                 .Where(e => !e.Done && e.Kind != CalendarKinds.Module && (e.AtUtc is null || e.AtUtc >= now || e.Overdue))
+                .DistinctBy(e => e.Kind == CalendarKinds.Announcement ? "notice:" + e.Title : e.Key) // a notice of several days is listed once
                 .Take(30).ToList();
         }
 

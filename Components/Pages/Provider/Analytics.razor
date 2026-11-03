@@ -69,31 +69,52 @@ else
             </div>
         </Card>
 
-        <Card Title="By kind" IconName="layers">
-            <div class="data-wrap">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">What</th>
-                            <th scope="col" class="num">Sent</th>
-                            <th scope="col" class="bar-cell">Students opened</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var k in data.ByKind)
-                        {
-                            <tr>
-                                <td>@k.Kind</td>
-                                <td class="num">@k.Sent</td>
-                                <td class="bar-cell">
-                                    @if (k.Percent is { } kp) { <ProgressBar Percent="kp" Title="@($"{k.Opens:N0} of {k.Expected:N0} opens")" /> }
-                                    else { <span class="na">Not posted yet</span> }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+        <Card Title="Teachers who have not opened what was sent" IconName="mail">
+            @if (data.SlowestTeachers.Count == 0)
+            {
+                <EmptyState IconName="circle-check" Title="Every teacher opened everything">
+                    <p>Nothing is waiting.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var t in data.SlowestTeachers)
+                    {
+                        <li>
+                            <a href="provider/tracking?tab=modules&state=NotPosted&q=@Uri.EscapeDataString(t.Name)">
+                                <span class="plist-title">@t.Name</span>
+                                <span class="plist-sub">@t.Waiting waiting · the oldest @(t.LongestWaitingDays is { } d && d > 0 ? $"{d} days" : "from today")</span>
+                            </a>
+                            <Badge Tone="@(t.LongestWaitingDays >= 3 ? Tone.Danger : Tone.Warning)">@t.Waiting</Badge>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+
+        <Card Title="Least opened by the students" IconName="eye-off">
+            @if (data.LeastOpened.Count == 0)
+            {
+                <EmptyState IconName="eye-off" Title="Nothing is posted yet">
+                    <p>When the teachers post what you sent, the ones the students open least show here.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="plist">
+                    @foreach (var row in data.LeastOpened)
+                    {
+                        <li>
+                            <a href="provider/tracking?tab=@(row.IsSyllabus ? "syllabus" : "modules")&state=NotPosted">
+                                <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
+                                <span class="plist-sub">@row.TeacherName · @row.SectionLabel · @row.ModuleOpens of @row.Audience opened it</span>
+                            </a>
+                            <Badge Tone="@(row.ModulePercent >= 60 ? Tone.Success : row.ModulePercent >= 30 ? Tone.Warning : Tone.Danger)">@row.ModulePercent%</Badge>
+                        </li>
+                    }
+                </ul>
+            }
         </Card>
 
         <Card Title="By section" IconName="users">
@@ -166,54 +187,6 @@ else
                     </tbody>
                 </table>
             </div>
-        </Card>
-
-        <Card Title="Teachers who have not opened what was sent" IconName="mail">
-            @if (data.SlowestTeachers.Count == 0)
-            {
-                <EmptyState IconName="circle-check" Title="Every teacher opened everything">
-                    <p>Nothing is waiting.</p>
-                </EmptyState>
-            }
-            else
-            {
-                <ul class="plist">
-                    @foreach (var t in data.SlowestTeachers)
-                    {
-                        <li>
-                            <a href="provider/tracking?tab=modules&state=NotPosted&q=@Uri.EscapeDataString(t.Name)">
-                                <span class="plist-title">@t.Name</span>
-                                <span class="plist-sub">@t.Waiting waiting · the oldest @(t.LongestWaitingDays is { } d && d > 0 ? $"{d} days" : "from today")</span>
-                            </a>
-                            <Badge Tone="@(t.LongestWaitingDays >= 3 ? Tone.Danger : Tone.Warning)">@t.Waiting</Badge>
-                        </li>
-                    }
-                </ul>
-            }
-        </Card>
-
-        <Card Title="Least opened by the students" IconName="eye-off">
-            @if (data.LeastOpened.Count == 0)
-            {
-                <EmptyState IconName="eye-off" Title="Nothing is posted yet">
-                    <p>When the teachers post what you sent, the ones the students open least show here.</p>
-                </EmptyState>
-            }
-            else
-            {
-                <ul class="plist">
-                    @foreach (var row in data.LeastOpened)
-                    {
-                        <li>
-                            <a href="provider/tracking?tab=@(row.IsSyllabus ? "syllabus" : "modules")&state=NotPosted">
-                                <span class="plist-title">@(row.IsSyllabus ? "Syllabus" : row.Title) · @row.SubjectName</span>
-                                <span class="plist-sub">@row.TeacherName · @row.SectionLabel · @row.ModuleOpens of @row.Audience opened it</span>
-                            </a>
-                            <Badge Tone="@(row.ModulePercent >= 60 ? Tone.Success : row.ModulePercent >= 30 ? Tone.Warning : Tone.Danger)">@row.ModulePercent%</Badge>
-                        </li>
-                    }
-                </ul>
-            }
         </Card>
     </div>
 }

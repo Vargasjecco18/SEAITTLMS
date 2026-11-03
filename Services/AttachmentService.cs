@@ -178,9 +178,9 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
     public static bool IsSlideFile(string fileName) => SlideExtensions.Contains(Path.GetExtension(fileName).ToLowerInvariant());
 
     /// <summary>Checks the files chosen in a form (names, programs, empty, too big, too many) before anything is saved. Gives the problems, or none.</summary>
-    public IReadOnlyList<string> Check(IReadOnlyList<NewAttachment> files, int alreadyThere = 0, bool slides = false)
+    public IReadOnlyList<string> Check(IReadOnlyList<NewAttachment> files, int alreadyThere = 0, bool slides = false, bool noSizeLimit = false)
     {
-        var maxBytes = settings.Current.MaxFileMegabytes * 1024L * 1024;
+        var maxBytes = noSizeLimit ? long.MaxValue : settings.Current.MaxFileMegabytes * 1024L * 1024;
         var errors = new List<string>();
         foreach (var file in files)
         {
@@ -223,7 +223,9 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
             return ServiceResult.Ok("No file.");
         }
 
-        var errors = Check(files, slides: slides).Where(e => !e.StartsWith("At most", StringComparison.Ordinal)).ToList();
+        // The files of a module (or a syllabus) and its slides have no limit in MB; the others follow the biggest file of the System settings.
+        var noLimit = owner.Kind is AttachmentOwnerKind.Module or AttachmentOwnerKind.MaterialModule;
+        var errors = Check(files, slides: slides, noSizeLimit: noLimit).Where(e => !e.StartsWith("At most", StringComparison.Ordinal)).ToList();
         if (slides && owner.Kind is not (AttachmentOwnerKind.Module or AttachmentOwnerKind.MaterialModule))
         {
             return ServiceResult.Fail("Slides go with a module or a syllabus.");

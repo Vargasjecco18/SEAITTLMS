@@ -47,7 +47,7 @@
         <Icon Name="@(busy ? "loader" : "file-up")" Size="18" />
         <span class="drop-text">
             <strong>@(busy ? "Reading…" : Slides ? "Choose slides" : "Choose files")</strong>
-            <small>@(Slides ? "A PowerPoint file (.ppt, .pptx) or a PDF. " : "")Up to @Settings.Current.MaxFileMegabytes MB each, @AttachmentService.MaxPerOwner files at most. A PDF, a picture or a text file opens in the browser.</small>
+            <small>@(Slides ? "A PowerPoint file (.ppt, .pptx) or a PDF. " : "")@(NoSizeLimit ? "No size limit" : $"Up to {Settings.Current.MaxFileMegabytes} MB each"), @AttachmentService.MaxPerOwner files at most. A PDF, a picture or a text file opens in the browser.</small>
         </span>
     </label>
 
@@ -58,6 +58,9 @@
 </div>
 
 @code {
+    /// <summary>True for the files of a module and its slides: they have no limit in MB.</summary>
+    [Parameter] public bool NoSizeLimit { get; set; }
+
     private readonly List<NewAttachment> pending = [];
     private readonly HashSet<int> removed = [];
     private bool busy;
@@ -112,7 +115,8 @@
         problem = null;
         try
         {
-            var maxBytes = Settings.Current.MaxFileMegabytes * 1024L * 1024;
+            // The files of a module and its slides have no size limit; the others follow the biggest file of the System settings.
+            var maxBytes = NoSizeLimit ? long.MaxValue : Settings.Current.MaxFileMegabytes * 1024L * 1024;
             IReadOnlyList<IBrowserFile> chosen;
             try
             {

@@ -55,7 +55,7 @@ internal sealed class StudyGroupConfiguration : IEntityTypeConfiguration<StudyGr
 
         // The system makes one automatic group of each kind and number (more than one row with an empty kind is fine: those are the groups people made).
         b.HasIndex(g => new { g.AutoKind, g.AutoKey }).IsUnique();
-        b.ToTable(t => t.HasCheckConstraint("ck_study_groups_auto_kind", "auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers')"));
+        b.ToTable(t => t.HasCheckConstraint("ck_study_groups_auto_kind", "auto_kind IS NULL OR auto_kind IN ('GradeStudents', 'CourseStudents', 'AllStudents', 'GradeTeachers', 'AllTeachers', 'AllStaff', 'TeachersAndStaff')"));
     }
 }
 

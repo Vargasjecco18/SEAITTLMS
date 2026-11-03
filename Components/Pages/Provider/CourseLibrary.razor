@@ -26,14 +26,32 @@ else
     var syllabus = course.Modules.FirstOrDefault(m => m.IsSyllabus);
     var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
 
+    @* Where the person came from: Course library › Academic › Business and Entrepreneurship › 1st Term. The back button goes to that list, not to all the courses. *@
+    <nav class="crumbs" aria-label="Where you are">
+        <a href="provider/library">Course library</a>
+        @if (backTrack is not null)
+        {
+            <span aria-hidden="true">›</span><a href="@($"provider/library?track={backTrack.TrackId}")">@backTrack.Name</a>
+            @if (backStrand is not null)
+            {
+                <span aria-hidden="true">›</span><a href="@($"provider/library?track={backTrack.TrackId}&strand={backStrand.StrandId}")">@backStrand.Name</a>
+                @if (TermQuery is { } crumbTerm)
+                {
+                    <span aria-hidden="true">›</span><a href="@BackHref">@SchoolCalendar.TermName(crumbTerm)</a>
+                }
+            }
+        }
+        <span aria-hidden="true">›</span><span>@course.Name</span>
+    </nav>
+
     <PageHeader Title="@course.Name" IconName="folder-open">
-        <ButtonLink Href="provider/library" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
+        <ButtonLink Href="@BackHref" Variant="ButtonVariant.Ghost" IconName="chevron-left">@BackText</ButtonLink>
         @if (syllabus is null)
         {
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
-        <Button IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
+        <Button Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
         <Button Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
     </PageHeader>
 
@@ -41,7 +59,7 @@ else
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span>You send the <strong>syllabus</strong> and the <strong>modules</strong> to the teachers: they reach each teacher as a <strong>draft</strong> that the teacher posts. The <strong>summative exams</strong> are posted <strong>straight to the students</strong> and open and close at the times you set. The teachers write the seatwork, assignments, quizzes and task performances.</span>
+        <span><strong>Syllabus</strong> and <strong>modules</strong> go to the teachers as drafts. <strong>Summative exams</strong> go straight to the students.</span>
     </p>
 
     <div class="tiles">
@@ -187,7 +205,7 @@ else
                 <Button Small="true" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
             </span>
         </header>
-        <p class="exams-note">A summative exam has its <strong>questions</strong> (from the Excel file), the settings of a quiz (time limit and the <strong>anti-cheating watch</strong>) and its <strong>schedule</strong>: when it opens and when it closes. When you press <strong>Post to students</strong> it goes straight to the students of the sections you choose. The system gives the score and it goes to the gradebook of the teacher by itself.</p>
+        <p class="exams-note">Questions come from Excel. Set when it opens and closes, then <strong>Post to students</strong>. Scores go to the gradebook.</p>
         @if (course.Exams.Count == 0)
         {
             <p class="none">No summative exam yet.</p>
@@ -249,8 +267,8 @@ else
             <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
-            <AttachmentPicker @ref="modulePicker" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
-            <AttachmentPicker @ref="slidesPicker" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="modulePicker" NoSizeLimit="true" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
@@ -548,10 +566,41 @@ else
         return new ItemImportSummary(created, problems);
     }
 
+    [SupplyParameterFromQuery(Name = "track")] private int? TrackQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "strand")] private int? StrandQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "term")] private int? TermQuery { get; set; }
+
+    private LibraryTrack? backTrack;
+    private LibraryStrand? backStrand;
+
+    /// <summary>The list this page was opened from (the term of the strand, the strand or the track), or the whole library.</summary>
+    private string BackHref => backTrack is null ? "provider/library"
+        : backStrand is null ? $"provider/library?track={backTrack.TrackId}"
+        : TermQuery is { } term ? $"provider/library?track={backTrack.TrackId}&strand={backStrand.StrandId}&term={term}"
+        : $"provider/library?track={backTrack.TrackId}&strand={backStrand.StrandId}";
+
+    private string BackText => backTrack is null ? "All courses"
+        : backStrand is null ? $"Back to {backTrack.Name}"
+        : TermQuery is { } term ? $"Back to {SchoolCalendar.TermName(term)}" : $"Back to {backStrand.Name}";
+
     protected override async Task OnParametersSetAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
         await LoadAsync();
+        if (TrackQuery is { } trackId)
+        {
+            var tracks = await Library.ListTracksAsync();
+            backTrack = tracks.FirstOrDefault(t => t.TrackId == trackId);
+            backStrand = backTrack is not null && StrandQuery is { } strandId ? backTrack.Strands.FirstOrDefault(s => s.StrandId == strandId) : null;
+        }
+        else
+        {
+            backTrack = null;
+            backStrand = null;
+        }
+
         loaded = true;
     }
 

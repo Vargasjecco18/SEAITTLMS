@@ -10,9 +10,9 @@
         <p class="text">@Item.Body</p>
         <div class="meta">
             <span>@AudienceText</span>
-            @if (Item.ExpiresOn is { } until)
+            @if (ScheduleText is { } schedule)
             {
-                <Badge Tone="@(until < Today ? Tone.Neutral : Tone.Warning)">@(until < Today ? "Ended " : "Until ")@PhilippineTime.FormatDate(until)</Badge>
+                <Badge Tone="@ScheduleTone">@schedule</Badge>
             }
             <span class="who">@Item.AuthorName · @PhilippineTime.FormatDateTime(Item.CreatedAtUtc)</span>
         </div>
@@ -41,6 +41,32 @@
     [Parameter] public EventCallback<AnnouncementView> OnEdit { get; set; }
 
     [Parameter] public EventCallback<AnnouncementView> OnDelete { get; set; }
+
+    /// <summary>The days it is about: "Nov 10 – Nov 12", "From Nov 10", "Until Nov 12", with "Ended" for one that is over. Empty when it has no Start and no End.</summary>
+    private string? ScheduleText
+    {
+        get
+        {
+            var start = Item.StartsOn;
+            var end = Item.ExpiresOn;
+            if (start is null && end is null)
+            {
+                return null;
+            }
+
+            var range = (start, end) switch
+            {
+                ({ } a, { } b) when a == b => PhilippineTime.FormatDate(a),
+                ({ } a, { } b) => $"{PhilippineTime.FormatDate(a)} – {PhilippineTime.FormatDate(b)}",
+                ({ } a, null) => "From " + PhilippineTime.FormatDate(a),
+                (null, { } b) => "Until " + PhilippineTime.FormatDate(b),
+                _ => "",
+            };
+            return end is { } over && over < Today ? "Ended · " + range : range;
+        }
+    }
+
+    private Tone ScheduleTone => Item.ExpiresOn is { } over && over < Today ? Tone.Neutral : Item.StartsOn is { } later && later > Today ? Tone.Info : Tone.Warning;
 
     private string AudienceText =>
         Item.CourseName is { } course ? $"{course} · {Item.SectionLabel}"

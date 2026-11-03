@@ -1352,7 +1352,7 @@ document.addEventListener('toggle', function (event) {
     }
 })();
 
-// The calendar: a double click on a day (a cell of the month, a column of the week) opens the box that asks what to add on that day (?add=<date>).
+// The calendar: a double click on a day (a cell of the month, a column of the week) goes straight to the box that adds an event on that day (?event=new&on=<date>).
 (function () {
     document.addEventListener('dblclick', function (event) {
         var target = event.target;
@@ -1362,8 +1362,9 @@ document.addEventListener('toggle', function (event) {
         var date = day.getAttribute('data-day');
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) { return; }
         var url = new URL(location.href);
-        ['day', 'event', 'work', 'edit', 'on'].forEach(function (name) { url.searchParams.delete(name); });
-        url.searchParams.set('add', date);
+        ['day', 'add', 'work', 'edit'].forEach(function (name) { url.searchParams.delete(name); });
+        url.searchParams.set('event', 'new');
+        url.searchParams.set('on', date);
         if (window.Blazor && typeof window.Blazor.navigateTo === 'function') { window.Blazor.navigateTo(url.pathname + url.search); } else { location.href = url.href; }
     });
 })();
