@@ -1,0 +1,153 @@
+/* The dropdown of the library's Course Menu: Track, Strand, Course. The look follows the rest of the menu (rounded rows, the brand tint for where the provider is). */
+.lcm {
+    display: block;
+}
+
+.lcm-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-weight: 600;
+    list-style: none;
+    cursor: pointer;
+}
+
+.lcm-top::-webkit-details-marker,
+.lcm-row::-webkit-details-marker {
+    display: none;
+}
+
+.lcm-top:hover,
+.lcm-row:hover {
+    background: var(--surface-2);
+}
+
+.lcm[open] > .lcm-top {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.lcm-label {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.lcm-label small {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.lcm-chevron {
+    display: inline-flex;
+    color: var(--text-muted);
+    transition: transform 0.15s;
+}
+
+.lcm[open] > .lcm-top .lcm-chevron,
+.lcm-sub[open] > .lcm-row .lcm-chevron {
+    transform: rotate(180deg);
+}
+
+/* Each level is indented under the one before, with a line at its left. */
+.lcm-level {
+    display: grid;
+    gap: 0.1rem;
+    margin: 0.2rem 0 0.35rem 1rem;
+    padding: 0 0 0 0.55rem;
+    border-left: 2px solid var(--border);
+    list-style: none;
+}
+
+.lcm-tracks {
+    max-height: 26rem;
+    overflow-y: auto;
+}
+
+.lcm-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    list-style: none;
+    cursor: pointer;
+}
+
+.lcm-row.on {
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.lcm-code {
+    flex: none;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.lcm-row.on .lcm-code {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.lcm-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lcm-course {
+    display: flex;
+    flex-direction: column;
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.88rem;
+    text-decoration: none;
+}
+
+/* A long course name takes two lines instead of being cut. */
+.lcm-course span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+}
+
+.lcm-course small {
+    color: var(--text-muted);
+    font-size: 0.74rem;
+}
+
+.lcm-course:hover {
+    background: var(--surface-2);
+}
+
+.lcm-course.on {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.lcm-none {
+    padding: 0.3rem 0.55rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

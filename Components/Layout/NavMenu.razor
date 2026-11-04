@@ -30,8 +30,6 @@
                  Contents="CoordinatorDashboard" />
         <NavItem Href="coordinator/academic-setup" Icon="school" Label="Academic setup"
                  Items="CoordinatorSetup" />
-        <NavItem Href="coordinator/sections" Icon="users" Label="Class sections"
-                 Contents="CoordinatorSections" />
         <NavItem Href="coordinator/class-schedule" Icon="calendar-clock" Label="Class schedule"
                  Contents="CoordinatorSchedule" />
         <NavItem Href="coordinator/evaluations" Icon="clipboard-check" Label="Teacher evaluation"
@@ -40,8 +38,6 @@
                  Contents="CoordinatorAnnouncements" />
         <NavItem Href="coordinator/analytics" Icon="chart-column" Label="Analytics"
                  Contents="CoordinatorAnalytics" />
-        <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
-                 Items="CalendarViews" />
         <NavItem Href="users" Icon="users-round" Label="Users"
                  Items="StaffUsers" />
         <NavItem Href="groups" Icon="users" Label="Groups"
@@ -95,8 +91,6 @@
                  Contents="TeacherAttendance" />
         <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
                  Items="CalendarViews" />
-        <NavItem Href="teacher/announcements" Icon="megaphone" Label="Announcements"
-                 Items="TeacherAnnouncements" />
         <NavItem Href="teacher/gradebook" Icon="clipboard-list" Label="Gradebook"
                  Contents="TeacherGradebook" />
         <NavItem Href="analytics" Icon="chart-column" Label="Analytics"
@@ -227,7 +221,6 @@
         new("Rooms", "coordinator/academic-setup/rooms", "door-open"),
     ];
 
-    private static readonly IReadOnlyList<string> CoordinatorSections = ["Tabs for grade 11 and 12", "The sections of each strand", "The adviser and the students"];
 
     private static readonly IReadOnlyList<string> CoordinatorSchedule = ["A week like a spreadsheet", "Drag a course to a day and a time", "A room for each class"];
 
@@ -247,12 +240,6 @@
     private static readonly IReadOnlyList<string> ProviderAnalytics = ["Teachers who open and post", "Students who open", "By course, kind and section", "Week by week"];
 
     private static readonly IReadOnlyList<string> CoordinatorEvaluations = ["Make a questionnaire", "Send it with a due date", "Who has not answered yet"];
-
-    private static readonly IReadOnlyList<NavItem.Sub> TeacherAnnouncements =
-    [
-        new("To my classes", "teacher/announcements?tab=mine", "users"),
-        new("From the school", "teacher/announcements?tab=school", "megaphone"),
-    ];
 
     private static readonly IReadOnlyList<string> CoordinatorAnnouncements = ["Exams", "Holidays", "Semester break", "Teachers' meetings", "Others"];
 

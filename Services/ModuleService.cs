@@ -28,7 +28,7 @@ public sealed class ModuleInput
 }
 
 /// <summary>A module that is ready to be saved from the sheet of modules: its fields, its files and the row it was on.</summary>
-public sealed record ModuleToSave(ModuleInput Input, IReadOnlyList<NewAttachment> Files, int Row);
+public sealed record ModuleToSave(ModuleInput Input, IReadOnlyList<NewAttachment> Files, int Row, IReadOnlyList<NewAttachment>? Slides = null);
 
 public sealed class ItemInput
 {
@@ -77,7 +77,7 @@ public sealed record ItemForEdit(
 
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
-    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false);
+    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false, bool HasSlides = false);
 
 public sealed record TeacherSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, int Students, IReadOnlyList<TeacherModule> Modules);
@@ -89,7 +89,7 @@ public sealed record StudentItem(
 
 public sealed record StudentModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
-    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false);
+    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false, bool HasSlides = false);
 
 public sealed record StudentSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string TeacherName, IReadOnlyList<StudentModule> Modules);
@@ -137,10 +137,11 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .ToListAsync(ct);
 
         var fromProvider = (await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == assignmentId).Select(d => d.ModuleId).ToListAsync(ct)).ToHashSet();
+        var withSlides = await ModulesWithSlidesAsync(db, moduleIds, ct);
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
-            m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet)).ToList();
+            m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet, withSlides.Contains(m.Id))).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students, result);
     }
@@ -560,12 +561,17 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var ids = modules.Select(m => m.Id).ToList();
         var opened = (await db.ModuleViews.AsNoTracking().Where(v => v.StudentId == studentId && ids.Contains(v.ModuleId)).Select(v => v.ModuleId).ToListAsync(ct)).ToHashSet();
         var items = await LoadStudentItemsAsync(db, studentId, ids, now, ct);
+        var withSlides = await ModulesWithSlidesAsync(db, ids, ct);
 
         return new StudentSubject(
             a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Teacher,
             modules.Select(m => new StudentModule(m.Id, m.Title, m.Description, null, null, m.Position, m.VisibleFromUtc!.Value, opened.Contains(m.Id),
-                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet)).ToList());
+                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet, HasSlides: withSlides.Contains(m.Id))).ToList());
     }
+
+    /// <summary>The modules (of the ones given) that have slides, so the course page can offer a Slides button only where there are some.</summary>
+    private static async Task<HashSet<int>> ModulesWithSlidesAsync(AppDbContext db, List<int> moduleIds, CancellationToken ct) =>
+        (await db.Attachments.AsNoTracking().Where(a => a.IsSlides && a.ModuleId != null && moduleIds.Contains(a.ModuleId.Value)).Select(a => a.ModuleId!.Value).Distinct().ToListAsync(ct)).ToHashSet();
 
     /// <summary>A module with its text. Opening it is remembered, so it is no longer listed as not opened yet.</summary>
     public async Task<StudentModule?> OpenModuleAsync(int studentId, int moduleId, CancellationToken ct = default)

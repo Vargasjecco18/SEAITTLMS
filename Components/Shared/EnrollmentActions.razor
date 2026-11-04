@@ -30,14 +30,14 @@
 
             <p class="quiet">LRN @view.Lrn. A change of the name is written in all the enrollments of the student.</p>
             <div class="two">
-                <Field For="ed-first" Label="First name" Required="true"><input id="ed-first" type="text" maxlength="100" autocomplete="off" class="cap" @bind="first" /></Field>
-                <Field For="ed-middle" Label="Middle name"><input id="ed-middle" type="text" maxlength="100" autocomplete="off" class="cap" @bind="middle" /></Field>
+                <Field For="ed-first" Label="First name" Required="true"><input id="ed-first" type="text" maxlength="100" autocomplete="off" class="cap" data-letters @bind="first" /></Field>
+                <Field For="ed-middle" Label="Middle name"><input id="ed-middle" type="text" maxlength="100" autocomplete="off" class="cap" data-letters @bind="middle" /></Field>
             </div>
             <div class="two">
-                <Field For="ed-last" Label="Last name" Required="true"><input id="ed-last" type="text" maxlength="100" autocomplete="off" class="cap" @bind="last" /></Field>
-                <Field For="ed-ext" Label="Name extension"><input id="ed-ext" type="text" maxlength="10" autocomplete="off" placeholder="Jr." class="cap" @bind="extension" /></Field>
+                <Field For="ed-last" Label="Last name" Required="true"><input id="ed-last" type="text" maxlength="100" autocomplete="off" class="cap" data-letters @bind="last" /></Field>
+                <Field For="ed-ext" Label="Name extension"><input id="ed-ext" type="text" maxlength="10" autocomplete="off" placeholder="Jr." class="cap" data-letters @bind="extension" /></Field>
             </div>
-            <Field For="ed-phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567."><input id="ed-phone" type="tel" maxlength="20" autocomplete="off" @bind="phone" /></Field>
+            <Field For="ed-phone" Label="Phone number" Hint="Optional. Digits only, like 09171234567."><input id="ed-phone" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" @bind="PhoneBox" /></Field>
 
             <div class="two">
                 <Field For="ed-term" Label="Term" Hint="The term of this enrollment (the calendar sets it).">
@@ -130,6 +130,13 @@
     private IReadOnlyList<SectionLoad> loads = [];
     private HashSet<int> subjectIds = [];
     private string first = "", middle = "", last = "", extension = "", phone = "", sectionName = "", dropNote = "";
+
+    // Only digits in the phone number (the box drops the rest as it is typed; this keeps it when the box was not able to).
+    private string PhoneBox
+    {
+        get => phone;
+        set => phone = NameCase.KeepDigits(value);
+    }
     private int termId, trackId, strandId;
     private byte grade = 11;
 
@@ -151,7 +158,7 @@
             return;
         }
 
-        (first, middle, last, extension, phone) = (view.FirstName, view.MiddleName ?? "", view.LastName, view.NameExtension ?? "", view.PhoneNumber ?? "");
+        (first, middle, last, extension, phone) = (view.FirstName, view.MiddleName ?? "", view.LastName, view.NameExtension ?? "", SEAITT_LMS.Auth.PhoneNumbers.ToLocal(view.PhoneNumber));
         (termId, grade, trackId, strandId, sectionName) = (view.TermId, view.GradeLevel, view.TrackId, view.StrandId, view.SectionName);
         subjectIds = view.SubjectIds.ToHashSet();
         await ReloadAsync();

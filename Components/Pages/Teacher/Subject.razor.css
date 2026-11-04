@@ -397,16 +397,6 @@ h3 {
     background: var(--surface-2);
 }
 
-.row-open {
-    display: flex;
-    flex: 1 1 18rem;
-    align-items: center;
-    gap: 0.9rem;
-    min-width: 0;
-    color: var(--text);
-    text-decoration: none;
-}
-
 .row-number {
     display: grid;
     flex: none;
@@ -450,4 +440,55 @@ h3 {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1rem;
+}
+
+/* The row is a card: a click on it opens its body, with the Slides and the Module buttons. */
+.row-open {
+    display: flex;
+    flex: 1 1 18rem;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.row-open:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 4px;
+    border-radius: var(--radius-sm);
+}
+
+.row-chevron {
+    display: inline-flex;
+    margin-left: auto;
+    color: var(--text-muted);
+    transition: transform 0.15s;
+}
+
+.course-row.is-open .row-chevron {
+    transform: rotate(180deg);
+}
+
+.course-row.is-open {
+    border-color: var(--brand);
+}
+
+.row-progress {
+    display: inline-flex;
+    min-width: 7rem;
+}
+
+.row-body {
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
 }

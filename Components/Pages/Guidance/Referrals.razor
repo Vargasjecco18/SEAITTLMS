@@ -11,7 +11,6 @@
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
 <Card>
-    <p class="lead-line">You look after <strong>attendance</strong> and <strong>violations</strong>. Every student of the school is in the list: choose a <strong>concern</strong> on a student's row and what happened to record it, write the <strong>notes</strong>, and press <strong>Solved</strong> when it is over.</p>
     <form class="filter-bar one-row" role="search" @onsubmit="SearchAsync">
         <SearchField Id="r-search" @bind-Value="searchText" Label="Search" SubmitText="" Placeholder="Name, LRN, grade level, strand, section…"
                      AriaLabel="Search the students" OnClear="SearchAsync" />
@@ -69,20 +68,28 @@
                     {
                         var picked = ReasonOf(student);
                         var open = OpenOf(student, picked);
-                        <tr data-student="@student.Lrn">
+                        <tr data-student="@student.Lrn" class="@(student.HasOpen ? "has-open" : "")">
                             <td>
-                                <button type="button" class="name-link" title="Open the concerns of @student.StudentName, the earlier ones and where to add one" @onclick="() => ViewAll(student)">@student.StudentName</button>
-                                <span class="sub">@student.Lrn</span>
+                                <div class="who">
+                                    <Avatar Name="@student.StudentName" Size="36" />
+                                    <div class="who-text">
+                                        <button type="button" class="name-link" title="Open the concerns of @student.StudentName, the earlier ones and where to add one" @onclick="() => ViewAll(student)">@student.StudentName</button>
+                                        <span class="sub">@student.Lrn</span>
+                                    </div>
+                                </div>
                             </td>
-                            <td>@(student.Placement ?? "—")</td>
+                            <td><span class="place">@(student.Placement ?? "—")</span></td>
                             <td>
-                                <select class="concern-select" aria-label="@($"Concern of {student.StudentName}")" value="@picked" @onchange="e => PickReason(student, e.Value?.ToString())">
-                                    <option value="">None</option>
-                                    @foreach (var r in ReferralReasons.All)
-                                    {
-                                        <option value="@r" selected="@(picked == r)">@ReferralReasons.Display(r)@(student.OpenReferrals.Any(x => x.Reason == r) ? " ●" : "")</option>
-                                    }
-                                </select>
+                                <div class="pick @(picked != "" ? "is-set" : "")">
+                                    <Icon Name="flag" Size="16" />
+                                    <select class="concern-select" aria-label="@($"Concern of {student.StudentName}")" value="@picked" @onchange="e => PickReason(student, e.Value?.ToString())">
+                                        <option value="">None</option>
+                                        @foreach (var r in ReferralReasons.All)
+                                        {
+                                            <option value="@r" selected="@(picked == r)">@ReferralReasons.Display(r)@(student.OpenReferrals.Any(x => x.Reason == r) ? " ●" : "")</option>
+                                        }
+                                    </select>
+                                </div>
                             </td>
                             <td>
                                 @if (picked == "")
@@ -94,23 +101,26 @@
                                     @if (picked == ReferralReasons.LowAttendance)
                                     {
                                         @* Attendance concerns found on the same day are one line: View attendance shows each course in a box in the middle of the screen. *@
-                                        <span class="detail">@(open.Count == 1 ? open[0].Detail : $"{open.Count} courses with low attendance")</span>
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye" OnClick="() => OpenAttendance(student, open)">View attendance</Button>
+                                        <span class="detail"><Icon Name="info" Size="15" /><span>@(open.Count == 1 ? open[0].Detail : $"{open.Count} courses with low attendance")</span></span>
+                                        <button type="button" class="attendance-button" @onclick="() => OpenAttendance(student, open)"><Icon Name="eye" Size="15" /> View attendance</button>
                                     }
                                     else
                                     {
-                                        <span class="detail">@string.Join(" · ", open.Select(o => o.Detail).Distinct())</span>
+                                        <span class="detail"><Icon Name="info" Size="15" /><span>@string.Join(" · ", open.Select(o => o.Detail).Distinct())</span></span>
                                     }
                                 }
                                 else
                                 {
-                                    <select class="concern-select" aria-label="@($"What happened to {student.StudentName}")" @onchange="e => AddHereAsync(student, picked, e.Value?.ToString())" disabled="@busy">
-                                        <option value="">Choose what happened</option>
-                                        @foreach (var choice in ReferralService.HappenedChoices(picked))
-                                        {
-                                            <option value="@choice">@choice</option>
-                                        }
-                                    </select>
+                                    <div class="pick">
+                                        <Icon Name="message-square-text" Size="16" />
+                                        <select class="concern-select" aria-label="@($"What happened to {student.StudentName}")" @onchange="e => AddHereAsync(student, picked, e.Value?.ToString())" disabled="@busy">
+                                            <option value="">Choose what happened</option>
+                                            @foreach (var choice in ReferralService.HappenedChoices(picked))
+                                            {
+                                                <option value="@choice">@choice</option>
+                                            }
+                                        </select>
+                                    </div>
                                 }
                             </td>
                             <td class="col-notes">
@@ -121,7 +131,7 @@
                                 else
                                 {
                                     var noted = student.OpenReferrals.Any(r => !string.IsNullOrWhiteSpace(r.Notes));
-                                    <button type="button" class="notes-button @(noted ? "is-noted" : "")" title="@(noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)">@(noted ? "Noted" : "None")</button>
+                                    <button type="button" class="notes-button @(noted ? "is-noted" : "")" title="@(noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)"><Icon Name="@(noted ? "notebook-pen" : "pencil")" Size="14" /> @(noted ? "Noted" : "None")</button>
                                 }
                             </td>
                             <td class="col-actions">

@@ -103,7 +103,7 @@
     </Modal>
 
     @* The settings are a box: the picture, the password, the look of the pages and the sound. *@
-    <Modal Open="settingsOpen" Title="Settings" OnClose="CloseSettings">
+    <Modal Open="settingsOpen" Title="Settings" Cover="true" OnClose="CloseSettings">
         @if (settingsOpen)
         {
             <form class="settings-box" @onsubmit="SaveAsync" autocomplete="off">

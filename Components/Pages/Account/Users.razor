@@ -11,6 +11,9 @@
 
 <PageTitle>Users · SEAITT Legazpi LMS</PageTitle>
 
+@* The menu of the school folds to its icons here, so the table has the room (wwwroot/app.js looks for this marker). *@
+<span data-side-rail hidden></span>
+
 <PageHeader Title="Users" IconName="users-round">
     <ButtonLink Href="groups" Variant="ButtonVariant.Secondary" IconName="users">Groups</ButtonLink>
 </PageHeader>
@@ -82,12 +85,7 @@
             }
             else
             {
-                <ul class="people">
-                    @foreach (var p in shownFriends)
-                    {
-                        <li><PersonRow Person="p" Busy="busy" CanWrite="CanWrite(p)" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
-                    }
-                </ul>
+                <PeopleTable People="shownFriends" Placements="placements" ShowPlacement="true" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
             }
 
             <h2 class="section">Find people</h2>
@@ -102,12 +100,7 @@
                 }
                 else
                 {
-                    <ul class="people">
-                        @foreach (var p in found)
-                        {
-                            <li><PersonRow Person="p" Busy="busy" CanWrite="CanWrite(p)" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
-                        }
-                    </ul>
+                    <PeopleTable People="found" Placements="placements" ShowPlacement="true" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
                 }
             }
         }
@@ -126,12 +119,7 @@
             }
             else
             {
-                <ul class="people">
-                    @foreach (var p in list)
-                    {
-                        <li><PersonRow Person="p" Busy="busy" CanWrite="CanWrite(p)" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" /></li>
-                    }
-                </ul>
+                <PeopleTable People="list" Placements="placements" ShowPlacement="@(tab != "staff")" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
             }
         }
     </Card>
@@ -170,18 +158,20 @@
     private IReadOnlyList<PersonCard> staff = [];
     private FriendRequests requests = new([], []);
     private PersonCard? unfriendTarget;
+    private IReadOnlyDictionary<int, PersonPlacement> placements = new Dictionary<int, PersonPlacement>();
     private Timer? timer;
 
     [SupplyParameterFromQuery(Name = "tab")] private string? TabQuery { get; set; }
 
     [SupplyParameterFromQuery(Name = "online")] private string? OnlineQuery { get; set; }
 
+    /// <summary>The tabs in the order Friends, Students, Teachers, Staff / Non-teaching (a student also has Classmates, after Friends). The staff have no Friends.</summary>
     private IReadOnlyList<PillTabs.Tab> Tabs => isStudent
         ?
         [
+            new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
             new("classmates", "Classmates", "users-round", classmates.Count),
             new("students", "Students", "graduation-cap", students.Count),
-            new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
             new("teachers", "Teachers", "presentation", teachers.Count),
             new("staff", "Staff / Non-teaching", "id-card", staff.Count),
         ]
@@ -228,6 +218,16 @@
         tab = isStudent ? "classmates" : canFriend ? "friends" : "students";
         onlineOnly = OnlineQuery == "1";
         await LoadAsync();
+
+        // The first tab is Friends; a person with no friends and no request opens on the people of their class instead.
+        if (canFriend && (friends.Count > 0 || requests.Received.Count > 0 || requests.Sent.Count > 0))
+        {
+            tab = "friends";
+        }
+        else if (canFriend)
+        {
+            tab = isStudent ? "classmates" : "students";
+        }
 
         if (TabQuery is { } wanted && Tabs.Any(t => t.Key == wanted))
         {
@@ -286,6 +286,10 @@
         {
             found = await People.FindAsync(userId, findText);
         }
+
+        // Where each person is (grade level, strand, section and room): one lookup for everybody on the page.
+        var everybody = friends.Concat(students).Concat(colleagues).Concat(classmates).Concat(teachers).Concat(requests.Received).Concat(requests.Sent).Concat(found ?? []).Select(p => p.UserId).ToList();
+        placements = await People.GetPlacementsAsync(everybody);
     }
 
     private void ClearMessage() => message = null;
@@ -322,7 +326,7 @@
     private static string RoleText(PersonCard p) => PeopleService.RoleLabel(p.Role);
 
     /// <summary>The button to write is only there when the person's role may write to that person (a student can write to a teacher, the guidance counselor and the registrar).</summary>
-    private bool CanWrite(PersonCard p) => p.State == FriendState.Friends || MessageService.CanWrite(myRole, p.Role);
+    private bool CanWrite(PersonCard p) => p.State == FriendState.Friends || MessageService.CanWrite(myRole, p.Role);   // a person who is not a friend can be written to too
 
     private void OpenMessage(PersonCard person) => Launcher.Open(person.UserId);
 

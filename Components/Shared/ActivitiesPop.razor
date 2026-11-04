@@ -31,5 +31,5 @@
 
     private string Label => CurrentItemId is null ? "Activities" : "Course Menu";
 
-    private IReadOnlyList<CourseMenuGroup> Groups => [.. CourseMenuBuilder.ForTeacher(Teacher, null, CurrentItemId).Where(g => g.Key != "modules")];
+    private IReadOnlyList<CourseMenuGroup> Groups => [.. CourseMenuBuilder.Flatten(CourseMenuBuilder.ForTeacher(Teacher, null, CurrentItemId)).Where(g => g.Key != "modules")];
 }

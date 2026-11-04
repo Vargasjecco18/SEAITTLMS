@@ -25,7 +25,7 @@
             {
                 var yearTerms = TermsOf(year.Id);
                 var isCurrent = year.Id == currentYearId;
-                <article class="year @(isCurrent ? "is-current" : "")" data-year="@year.Name" aria-label="@($"School year {year.Name}")">
+                <article class="year @(isCurrent ? "is-current" : "")" id="@($"sy-{year.Id}")" data-year="@year.Name" aria-label="@($"School year {year.Name}")">
                     <header class="year-head">
                         <div class="year-name">
                             <input class="ghost strong" aria-label="@($"Name of the school year {year.Name}")" maxlength="20" value="@year.Name" @key="@($"yn-{year.Id}-{stamp}")"

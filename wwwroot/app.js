@@ -908,6 +908,21 @@ document.addEventListener('toggle', function (event) {
         else if (kind === 'formatBlock') { run(editor, 'formatBlock', box.value === 'p' ? 'p' : box.value); }
     });
 
+    // Boxes that take only digits (data-digits: the LRN, the phone number) or only letters (data-letters: the names): what else is typed or pasted is dropped at once.
+    // It listens first (capture), so the page already gets the clean text.
+    document.addEventListener('input', function (event) {
+        var box = event.target;
+        if (!box || box.tagName !== 'INPUT') { return; }
+        var wanted = box.hasAttribute('data-digits') ? /[^0-9]+/g : (box.hasAttribute('data-letters') ? /[^\p{L} .'\u2019-]+/gu : null);
+        if (!wanted) { return; }
+        var clean = box.value.replace(wanted, '');
+        if (clean === box.value) { return; }
+        var caret = box.selectionStart;
+        var kept = caret === null ? clean.length : box.value.slice(0, caret).replace(wanted, '').length;
+        box.value = clean;
+        try { box.setSelectionRange(kept, kept); } catch (e) { /* some input types have no caret */ }
+    }, true);
+
     document.addEventListener('input', function (event) {
         var color = event.target.closest && event.target.closest('[data-rte] .bar input[type="color"]');
         if (color) {

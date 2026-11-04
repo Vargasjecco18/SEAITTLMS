@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject AnnouncementService Service
+@inject CalendarService Calendars
 @inject TimeProvider Clock
 
 <PageTitle>Announcements · SEAITT Legazpi LMS</PageTitle>
@@ -31,7 +32,8 @@
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" OnClick="() => MoveMonth(1)">Next</Button>
             <strong class="month-name">@anchor.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</strong>
         </div>
-        <p class="muted calendar-hint">Double click a day to add an announcement on it.</p>
+        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="flag" OnClick="OpenDeletedHolidays">Deleted holidays (@deletedHolidays.Count)</Button>
+        <p class="muted calendar-hint">Double click a day to add an announcement on it. Press a holiday to delete it.</p>
     }
 </div>
 
@@ -53,8 +55,20 @@ else if (view == "calendar")
             <div class="ann-cell @(day.Month != anchor.Month ? "other" : "") @(day == today ? "today" : "")" role="gridcell" data-day="@day.ToString("yyyy-MM-dd")"
                  aria-label="@day.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture)" @ondblclick="() => OpenAdd(day)">
                 <span class="num">@day.Day</span>
+                @{
+                    var holidaysOn = HolidaysOn(day);
+                }
                 <ul class="chips">
-                    @foreach (var row in onDay.Take(3))
+                    @foreach (var holiday in holidaysOn)
+                    {
+                        <li>
+                            <button type="button" class="chip holiday" title="@($"{holiday.Name} · {holiday.Kind}")" @onclick="() => viewingHoliday = holiday" @ondblclick:stopPropagation="true">
+                                <Icon Name="flag" Size="12" /> <span>@holiday.Name</span>
+                            </button>
+                        </li>
+                    }
+
+                    @foreach (var row in onDay.Take(Math.Max(0, 3 - holidaysOn.Count)))
                     {
                         <li>
                             <button type="button" class="chip @row.Category" title="@row.Title" @onclick="() => viewing = row" @ondblclick:stopPropagation="true">
@@ -63,9 +77,9 @@ else if (view == "calendar")
                         </li>
                     }
 
-                    @if (onDay.Count > 3)
+                    @if (onDay.Count > Math.Max(0, 3 - holidaysOn.Count))
                     {
-                        <li><button type="button" class="more-chip" @onclick="() => listDay = day" @ondblclick:stopPropagation="true">+@(onDay.Count - 3) more</button></li>
+                        <li><button type="button" class="more-chip" @onclick="() => listDay = day" @ondblclick:stopPropagation="true">+@(onDay.Count - Math.Max(0, 3 - holidaysOn.Count)) more</button></li>
                     }
                 </ul>
             </div>
@@ -98,11 +112,51 @@ else
     }
 </Modal>
 
+@* A holiday of the Philippines: the academic coordinator can delete it from the calendars of all the years. *@
+<Modal Open="viewingHoliday is not null" Title="@(viewingHoliday?.Name ?? "Holiday")" Centered="true" OnClose="CloseHoliday">
+    @if (viewingHoliday is { } hol)
+    {
+        <p class="dialog-text"><Icon Name="flag" Size="16" /> <strong>@hol.Day.ToString("dddd, MMMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)</strong> · @hol.Kind@(hol.Estimated ? " · the day can change" : "")</p>
+        <p class="dialog-text">Delete it and it is taken off the calendar of everybody, <strong>in all the years</strong>. You can bring it back later from <em>Deleted holidays</em>.</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseHoliday">Keep it</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="() => DeleteHolidayAsync(hol.Name)">@(busy ? "Deleting…" : "Delete in all years")</Button>
+        </div>
+    }
+</Modal>
+
+<Modal Open="deletedOpen" Title="Deleted holidays" Centered="true" OnClose="CloseDeletedHolidays">
+    @if (deletedOpen)
+    {
+        @if (deletedHolidays.Count == 0)
+        {
+            <p class="muted">No holiday was deleted.</p>
+        }
+        else
+        {
+            <ul class="deleted-list">
+                @foreach (var name in deletedHolidays)
+                {
+                    var shown = name;
+                    <li><span><Icon Name="flag" Size="14" /> @shown</span> <Button Small="true" Variant="ButtonVariant.Secondary" IconName="undo-2" Disabled="busy" OnClick="() => RestoreHolidayAsync(shown)">Bring it back</Button></li>
+                }
+            </ul>
+        }
+
+        <div class="modal-actions"><Button Variant="ButtonVariant.Ghost" OnClick="CloseDeletedHolidays">Close</Button></div>
+    }
+</Modal>
+
 @* All the announcements of one day, when it has more than the cell shows. *@
 <Modal Open="listDay is not null" Title="@(listDay is { } d ? d.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture) : "")" OnClose="CloseDayList">
     @if (listDay is { } day)
     {
         <ul class="day-list">
+            @foreach (var holiday in HolidaysOn(day))
+            {
+                <li><button type="button" class="chip holiday" @onclick="() => { listDay = null; viewingHoliday = holiday; }"><Icon Name="flag" Size="12" /> <span>@holiday.Name</span></button></li>
+            }
+
             @foreach (var row in OnDay(day))
             {
                 <li><button type="button" class="chip @row.Category" @onclick="() => { listDay = null; viewing = row; }"><Icon Name="@AnnouncementCategories.Icon(row.Category)" Size="12" /> <span>@row.Title</span></button></li>
@@ -143,9 +197,11 @@ else
 
             <Field For="a-audience" Label="For" Required="true" Hint="@(form.Category == AnnouncementCategories.TeachersMeeting ? "A teachers' meeting is for the teachers." : null)">
                 <select id="a-audience" @bind="form.Audience" disabled="@(form.Category == AnnouncementCategories.TeachersMeeting)">
-                    <option value="@AnnouncementAudiences.Everyone">Everybody (students and teachers)</option>
+                    <option value="@AnnouncementAudiences.Everyone">Everybody (staff, teachers and students)</option>
                     <option value="@AnnouncementAudiences.Students">The students</option>
                     <option value="@AnnouncementAudiences.Teachers">The teachers</option>
+                    <option value="@AnnouncementAudiences.Staff">The staff</option>
+                    <option value="@AnnouncementAudiences.StaffTeachers">The staff and the teachers</option>
                 </select>
             </Field>
 
@@ -242,6 +298,59 @@ else
     private DateOnly anchor;
     private AnnouncementView? viewing;
     private DateOnly? listDay;
+    private IReadOnlyList<Holiday> holidays = [];
+    private IReadOnlyList<string> deletedHolidays = [];
+    private Holiday? viewingHoliday;
+    private bool deletedOpen;
+
+    private List<Holiday> HolidaysOn(DateOnly day) => [.. holidays.Where(h => h.Day == day)];
+
+    private async Task LoadHolidaysAsync()
+    {
+        var days = MonthDays.ToList();
+        holidays = days.Count == 0 ? [] : await Calendars.GetHolidaysAsync(days[0], days[^1]);
+        deletedHolidays = await Calendars.GetDeletedHolidaysAsync();
+    }
+
+    private void CloseHoliday() => viewingHoliday = null;
+
+    private async Task OpenDeletedHolidays()
+    {
+        deletedHolidays = await Calendars.GetDeletedHolidaysAsync();
+        deletedOpen = true;
+    }
+
+    private void CloseDeletedHolidays() => deletedOpen = false;
+
+    private async Task DeleteHolidayAsync(string name) => await SetHolidayAsync(name, true);
+
+    private async Task RestoreHolidayAsync(string name) => await SetHolidayAsync(name, false);
+
+    private async Task SetHolidayAsync(string name, bool deleted)
+    {
+        if (busy || me is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Calendars.SetHolidayDeletedAsync(me.UserId, name, deleted);
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            viewingHoliday = null;
+            await LoadHolidaysAsync();
+            if (deletedHolidays.Count == 0)
+            {
+                deletedOpen = false;
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     /// <summary>The weeks of the month on the screen: from the Sunday on or before the 1st to the Saturday on or after the last day.</summary>
     private IEnumerable<DateOnly> MonthDays
@@ -267,9 +376,17 @@ else
         return first <= day && day <= last;
     })];
 
-    private void MoveMonth(int by) => anchor = anchor.AddMonths(by);
+    private async Task MoveMonth(int by)
+    {
+        anchor = anchor.AddMonths(by);
+        await LoadHolidaysAsync();
+    }
 
-    private void GoToday() => anchor = new DateOnly(today.Year, today.Month, 1);
+    private async Task GoToday()
+    {
+        anchor = new DateOnly(today.Year, today.Month, 1);
+        await LoadHolidaysAsync();
+    }
 
     private void CloseViewing() => viewing = null;
 
@@ -317,6 +434,7 @@ else
         }
 
         await LoadAsync();
+        await LoadHolidaysAsync();
     }
 
     private async Task LoadAsync() => rows = me is null ? [] : await Service.ListManagedAsync(me);

@@ -451,3 +451,8 @@
     color: var(--text-muted);
     font-size: 0.75rem;
 }
+
+/* A double click on the title opens what was given. */
+.title-dbl {
+    cursor: default;
+}

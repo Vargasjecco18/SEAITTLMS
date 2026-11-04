@@ -28,8 +28,8 @@ public static class AddItemMenuLabels
 /// <summary>One line inside a dropdown of the course menu: a module, or a seatwork, assignment, quiz or task performance.</summary>
 public sealed record CourseMenuEntry(string Title, string Href, bool Current = false);
 
-/// <summary>A dropdown of the course menu (Modules, Seatwork, Assignments, Quizzes, Task performance): its name, how many it holds, the page that lists them all and the lines inside.</summary>
-public sealed record CourseMenuGroup(string Key, string Label, string Icon, int Count, string SeeAllHref, IReadOnlyList<CourseMenuEntry> Entries);
+/// <summary>A dropdown of the course menu (Courses, Modules, Activities, and inside Activities: Seatwork, Assignments, Quizzes, Task performance): its name, how many it holds, the page that lists them all (empty: none) and the lines inside. Activities holds the dropdowns of the kinds as its Children.</summary>
+public sealed record CourseMenuGroup(string Key, string Label, string Icon, int Count, string SeeAllHref, IReadOnlyList<CourseMenuEntry> Entries, IReadOnlyList<CourseMenuGroup>? Children = null);
 
 /// <summary>Builds the dropdowns of the course menu from a course the teacher or the student has loaded, so every page of the course shows the same menu.</summary>
 public static class CourseMenuBuilder
@@ -48,6 +48,9 @@ public static class CourseMenuBuilder
         _ => ItemKinds.Plural(kind),
     };
 
+    /// <summary>The dropdowns one level down: Activities is replaced by the dropdowns of the kinds inside it (for the pop-ups that list the kinds without the Activities parent).</summary>
+    public static IReadOnlyList<CourseMenuGroup> Flatten(IReadOnlyList<CourseMenuGroup> groups) => [.. groups.SelectMany(g => g.Children ?? [g])];
+
     public static IReadOnlyList<CourseMenuGroup> ForTeacher(TeacherSubject subject, int? currentModuleId = null, int? currentItemId = null)
     {
         var page = $"teacher/subjects/{subject.AssignmentId}";
@@ -55,6 +58,9 @@ public static class CourseMenuBuilder
         var number = 0;
         var modules = subject.Modules.Where(m => !m.IsExamSet).Select(m => new CourseMenuEntry(m.IsSyllabus ? "Syllabus" : Titled(++number, m.Title), $"{page}/modules/{m.Id}", m.Id == currentModuleId)).ToList();
         groups.Add(new CourseMenuGroup("modules", "Modules", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
+
+        // Activities: one dropdown with a dropdown of each kind inside it.
+        var kinds = new List<CourseMenuGroup>();
         foreach (var kind in KindOrder.Where(k => k != ItemKinds.Exam))   // the exams are the provider's: the teacher's menu has no Exams
         {
             var items = subject.Modules.SelectMany(m => m.Items.Where(i => i.Kind == kind)).ToList();
@@ -63,10 +69,11 @@ public static class CourseMenuBuilder
                 continue;
             }
 
-            groups.Add(new CourseMenuGroup(CourseMenu.KeyOf(kind), Label(kind), SubjectStyle.KindIcon(kind), items.Count, $"{page}?tab={CourseMenu.KeyOf(kind)}",
+            kinds.Add(new CourseMenuGroup(CourseMenu.KeyOf(kind), Label(kind), SubjectStyle.KindIcon(kind), items.Count, $"{page}?tab={CourseMenu.KeyOf(kind)}",
                 [.. items.Select(i => new CourseMenuEntry(i.Title, $"teacher/items/{i.Id}", i.Id == currentItemId))]));
         }
 
+        groups.Add(new CourseMenuGroup("activities", "Activities", "notebook-pen", kinds.Sum(k => k.Count), "", [], kinds));
         return groups;
     }
 
@@ -77,6 +84,8 @@ public static class CourseMenuBuilder
         var number = 0;
         var modules = subject.Modules.Where(m => !m.IsExamSet).Select(m => new CourseMenuEntry(m.IsSyllabus ? "Syllabus" : Titled(++number, m.Title), $"student/modules/{m.Id}", m.Id == currentModuleId)).ToList();
         groups.Add(new CourseMenuGroup("modules", "Modules", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
+
+        var kinds = new List<CourseMenuGroup>();
         foreach (var kind in KindOrder)
         {
             var items = subject.Modules.SelectMany(m => m.Items.Where(i => i.Kind == kind)).ToList();
@@ -85,14 +94,15 @@ public static class CourseMenuBuilder
                 continue;
             }
 
-            groups.Add(new CourseMenuGroup(CourseMenu.KeyOf(kind), Label(kind), SubjectStyle.KindIcon(kind), items.Count, $"{page}?tab={CourseMenu.KeyOf(kind)}",
+            kinds.Add(new CourseMenuGroup(CourseMenu.KeyOf(kind), Label(kind), SubjectStyle.KindIcon(kind), items.Count, $"{page}?tab={CourseMenu.KeyOf(kind)}",
                 [.. items.Select(i => new CourseMenuEntry(i.Title, $"student/items/{i.Id}", i.Id == currentItemId))]));
         }
 
+        groups.Add(new CourseMenuGroup("activities", "Activities", "notebook-pen", kinds.Sum(k => k.Count), "", [], kinds));
         return groups;
     }
 
-    /// <summary>The pages of the course under the line of the menu: the students, the gradebook and the attendance (teacher), the classmates, the teacher and the grades (student).</summary>
+    /// <summary>The pages of the course under the line of the menu: the students, the gradebook and the attendance (teacher), the classmates, the teachers and the grades (student).</summary>
     public static IReadOnlyList<CourseMenuLink> ExtraLinks(bool teacher, int assignmentId, string current) => teacher
         ?
         [
@@ -103,7 +113,7 @@ public static class CourseMenuBuilder
         :
         [
             new("Classmates", "users-round", $"student/subjects/{assignmentId}/classmates", current == "classmates"),
-            new("Teacher", "presentation", $"student/subjects/{assignmentId}/teachers", current == "teachers"),
+            new("Teachers", "presentation", $"student/subjects/{assignmentId}/teachers", current == "teachers"),
             new("Grades", "trending-up", "student/grades", current == "grades"),
         ];
 

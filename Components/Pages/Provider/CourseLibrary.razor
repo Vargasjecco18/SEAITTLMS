@@ -27,7 +27,12 @@ else
     var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
 
     @* The Course Menu at the left (Syllabus, Modules, Summative exams, each with what is inside) and the menu of the school folded to its icons: the page has the room. *@
-    <CourseLayout CustomGroups="LibraryMenu(syllabus, modules)" CustomExtra="LibraryLinks" CollapseMenu="true">
+    <CourseLayout CustomGroups="LibraryMenu(syllabus, modules)" CollapseMenu="true">
+    <CustomExtraContent>
+        @* Instead of "Back to 1st Term": Track, then Strand, then Course, to go to another course. *@
+        <LibraryCourseMenu CurrentSubjectId="SubjectId" TrackId="TrackQuery" StrandId="StrandQuery" />
+    </CustomExtraContent>
+    <ChildContent>
     @* Where the person came from: Course library › Academic › Business and Entrepreneurship › 1st Term. The back button goes to that list, not to all the courses. *@
     <nav class="crumbs" aria-label="Where you are">
         <a href="provider/library">Course library</a>
@@ -250,6 +255,7 @@ else
             </ul>
         }
     </section>
+    </ChildContent>
     </CourseLayout>
 }
 
@@ -294,7 +300,7 @@ else
             <Field For="x-title" Label="Title" Required="true" Hint="Like 1st Term summative exam.">
                 <InputText id="x-title" @bind-Value="examForm.Title" maxlength="200" autocomplete="off" />
             </Field>
-            <Field For="x-text" Label="Instructions" Hint="What the students must know or do. The paper itself can be a file below.">
+            <Field For="x-text" Label="Instructions" Hint="What the students must know or do.">
                 <InputTextArea id="x-text" @bind-Value="examForm.Instructions" rows="5" />
             </Field>
             <div class="two">
@@ -314,14 +320,13 @@ else
 
             <section class="exam-questions" aria-label="Questions of the exam">
                 <h3><Icon Name="list-checks" Size="16" /> Questions <span class="count">@examQuestions.Count</span></h3>
-                <p class="exams-note">@(examQuestions.Count == 0 ? "No question yet. Download the template, write the questions in it and import it here." : $"The exam is worth {examQuestions.Sum(q => q.Points):0.##} points. Import a new file to replace the questions.")</p>
-                <QuestionExcelTools QuizTitle="@examForm.Title" Questions="examQuestions" OnImported="QuestionsImported" />
+<p class="exams-note">@(examQuestions.Count == 0 ? "No question yet. Write them in the sheet: the type and the right answer are chosen from lists." : $"The exam is worth {examQuestions.Sum(q => q.Points):0.##} points.")</p>
+                <Button Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenQuestionsSheet">@(examQuestions.Count == 0 ? "Add questions" : "Edit the questions")</Button>
             </section>
 
             <QuizSettings IdPrefix="x" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
                           @bind-TimeLimit="examForm.TimeLimitMinutes" @bind-MaxViolations="examForm.MaxViolations" @bind-AntiCheat="examForm.AntiCheat"
                           @bind-ShuffleQuestions="examForm.ShuffleQuestions" @bind-ShuffleOptions="examForm.ShuffleOptions" @bind-ShowResult="examForm.ShowResult" />
-            <AttachmentPicker @ref="examPicker" @key="examFormKey" Title="Files of the exam (the paper)" Existing="@FilesOf(itemAttachments, editingExamId)" />
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseExamForm">Cancel</Button>
@@ -338,6 +343,8 @@ else
                    TemplateName="@ExamSheets.FileName("Template")" Template="ExamSheets.Template"
                    Export="ExamsExportBytes" ExportName="@ExamSheets.FileName(course?.Name ?? "Course")" ExportLabel="Export the exams of this course" ExportCount="@(course?.Exams.Count ?? 0)"
                    Read="ReadExams" OnImport="ImportExamsAsync" OnClose="CloseExamsExcel" />
+<QuestionsSheetDialog Open="questionsSheetOpen" ExamTitle="@(string.IsNullOrWhiteSpace(examForm?.Title) ? "Summative exam" : examForm!.Title)" Existing="examQuestions"
+                      OnSave="QuestionsSaved" OnClose="CloseQuestionsSheet" />
 <ModulesSheetDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
 
 @* ===== Send to teachers (syllabus and modules) / Post to students (summative exams) ===== *@
@@ -517,7 +524,6 @@ else
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> itemAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
     private AttachmentPicker? modulePicker;
     private AttachmentPicker? slidesPicker;
-    private AttachmentPicker? examPicker;
     private int moduleFormKey;
     private int examFormKey;
 
@@ -560,6 +566,15 @@ else
                     problems.Add($"Row {m.Row} ({m.Input.Title}): it was added, but not its files: {string.Join(" ", added.Errors)}");
                 }
             }
+
+            if (m.Slides is { Count: > 0 })
+            {
+                var addedSlides = await Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.MaterialModule, id), m.Slides, slides: true);
+                if (!addedSlides.Succeeded)
+                {
+                    problems.Add($"Row {m.Row} ({m.Input.Title}): it was added, but not its slides: {string.Join(" ", addedSlides.Errors)}");
+                }
+            }
         }
 
         await LoadAsync();
@@ -587,7 +602,6 @@ else
     /// <summary>This page's own address without the part after #: the page has a base address, so a link that is only "#exams" would go to the home page.</summary>
     private string PageBase => Navigation.ToBaseRelativePath(Navigation.Uri).Split('#')[0];
 
-    private IReadOnlyList<CourseMenuLink> LibraryLinks => [new CourseMenuLink(BackText, "arrow-left", BackHref)];
 
     private string BackHref => backTrack is null ? "provider/library"
         : backStrand is null ? $"provider/library?track={backTrack.TrackId}"
@@ -778,10 +792,17 @@ else
         examQuestionsChanged = false;
     }
 
-    /// <summary>The questions of the Excel file replace the ones in the box (the exam is worth their total).</summary>
-    private void QuestionsImported(IReadOnlyList<QuestionInput> imported)
+    private bool questionsSheetOpen;
+
+    private void OpenQuestionsSheet() => questionsSheetOpen = true;
+
+    private void CloseQuestionsSheet() => questionsSheetOpen = false;
+
+    /// <summary>The questions of the sheet are the questions of the exam (it is worth their total). They are saved with the exam.</summary>
+    private void QuestionsSaved(IReadOnlyList<QuestionInput> saved)
     {
-        examQuestions = [.. imported];
+        questionsSheetOpen = false;
+        examQuestions = [.. saved];
         examQuestionsChanged = true;
         if (examForm is not null)
         {
@@ -821,14 +842,8 @@ else
                 return;
             }
 
-            var fileProblems = result.Id is { } savedId ? await ApplyFilesAsync(examPicker, new AttachmentOwner(AttachmentOwnerKind.MaterialItem, savedId)) : [];
             examForm = null;
             Say(result);
-            if (fileProblems.Count > 0)
-            {
-                messageIsError = true;
-                message = $"{result.Message} But the files: {string.Join(" ", fileProblems)}";
-            }
 
             await LoadAsync();
         }

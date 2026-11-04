@@ -5,23 +5,24 @@
     var others = Files.Where(f => !f.IsSlides).ToList();
 }
 <div class="layout">
+    @* The reference link is in the bar of the first file shown (at the left of "Open in a new tab"). *@
     @if (others.Count > 0)
     {
-        <Card>
-            @LinkLine
-            <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this module" ModuleLabel="@ModuleLabel" />
-        </Card>
+        <div id="module-files">
+            <Card>
+                <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this module" ModuleLabel="@ModuleLabel" LinkUrl="@LinkUrl" />
+            </Card>
+        </div>
     }
 
     @if (slides.Count > 0)
     {
-        <Card>
-            @if (others.Count == 0)
-            {
-                @LinkLine
-            }
-            <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this module" ModuleLabel="@ModuleLabel" />
-        </Card>
+        @* The Slides button of the course page comes here (#slides). *@
+        <div id="slides">
+            <Card>
+                <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this module" ModuleLabel="@ModuleLabel" LinkUrl="@(others.Count == 0 ? LinkUrl : null)" />
+            </Card>
+        </div>
     }
 
     @if (Files.Count == 0)
@@ -39,7 +40,7 @@
     private RenderFragment LinkLine => @<text>
         @if (!string.IsNullOrWhiteSpace(LinkUrl))
         {
-            <p class="link"><Icon Name="link" Size="16" /> <a href="@LinkUrl" target="_blank" rel="noopener noreferrer">@LinkUrl <Icon Name="external-link" Size="14" /></a></p>
+            <p class="link"><Icon Name="link" Size="16" /> <a href="@LinkUrl" target="_blank" rel="noopener noreferrer" title="@LinkUrl">Reference link <Icon Name="external-link" Size="14" /></a></p>
         }
     </text>;
 

@@ -1,0 +1,102 @@
+@inject PresenceService Presence
+
+@* The people of the Users page as a table: the name, and for students and teachers the grade level, the strand, the section and the room (from the class schedule); then the Message button and
+   the friend status. A member of the staff has only the name, the message and the status. A person who is not a friend can be written to when the role allows it (a student to a student too). *@
+<div class="table-wrap">
+    <table class="people-table @(ShowPlacement ? "" : "staff-only")">
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+                @if (ShowPlacement)
+                {
+                    <th scope="col" class="c-grade">Grade level</th>
+                    <th scope="col" class="c-strand">Strand</th>
+                    <th scope="col" class="c-section">Section</th>
+                    <th scope="col" class="c-room">Room</th>
+                }
+                <th scope="col" class="c-message">Message</th>
+                <th scope="col" class="c-status">Friend status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var person in People)
+            {
+                var place = Placements.GetValueOrDefault(person.UserId);
+                var isStaff = person.Role is not (AppRoles.Student or AppRoles.Teacher);
+                <tr data-user="@person.UserId">
+                    <td class="c-name">
+                        <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@(isStaff ? PeopleService.RoleLabel(person.Role) : person.Role == AppRoles.Teacher && !ShowPlacement ? person.Detail : null)" Online="Presence.IsOnline(person.UserId)" />
+                    </td>
+                    @if (ShowPlacement)
+                    {
+                        <td class="c-grade">@(place?.GradeLevel is { } grade ? $"Grade {grade}" : "—")</td>
+                        <td class="c-strand">@(place?.Strand ?? "—")</td>
+                        <td class="c-section">@(place?.Section ?? "—")</td>
+                        <td class="c-room">@(place?.Room ?? "—")</td>
+                    }
+                    <td class="c-message">
+                        @if (CanWrite(person))
+                        {
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="message-square" Title="@($"Write to {person.Name}")" OnClick="() => OnMessage.InvokeAsync(person)">Message</Button>
+                        }
+                        else
+                        {
+                            <span class="muted">—</span>
+                        }
+                    </td>
+                    <td class="c-status">
+                        @if (person.State == FriendState.RequestReceived)
+                        {
+                            <Button Small="true" IconName="check" Disabled="Busy" OnClick="() => OnAccept.InvokeAsync(person)">Accept</Button>
+                            <Button Small="true" Variant="ButtonVariant.Secondary" Disabled="Busy" OnClick="() => OnDecline.InvokeAsync(person)">Decline</Button>
+                        }
+                        else if (person.State == FriendState.RequestSent)
+                        {
+                            <Button Small="true" Variant="ButtonVariant.Ghost" Disabled="Busy" OnClick="() => OnCancel.InvokeAsync(person)">Request sent · take back</Button>
+                        }
+                        else if (person.State == FriendState.Friends)
+                        {
+                            <Badge Tone="Tone.Success">Friends</Badge>
+                            <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="user-round-x" Title="@($"Unfriend {person.Name}")" Disabled="Busy" OnClick="() => OnUnfriend.InvokeAsync(person)" />
+                        }
+                        else if (!isStaff)
+                        {
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="user-round-plus" Disabled="Busy" OnClick="() => OnAdd.InvokeAsync(person)">Add friend</Button>
+                        }
+                        else
+                        {
+                            <span class="muted" title="The staff are not added as friends">—</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<PersonCard> People { get; set; } = [];
+
+    /// <summary>Where each person is (by account); empty for the staff.</summary>
+    [Parameter] public IReadOnlyDictionary<int, PersonPlacement> Placements { get; set; } = new Dictionary<int, PersonPlacement>();
+
+    /// <summary>True: the columns of the grade level, the strand, the section and the room (students and teachers). False: the staff.</summary>
+    [Parameter] public bool ShowPlacement { get; set; } = true;
+
+    [Parameter] public bool Busy { get; set; }
+
+    /// <summary>Tells if the button to write is shown for a person (the role of the viewer may write to that role, or they are friends).</summary>
+    [Parameter] public Func<PersonCard, bool> CanWrite { get; set; } = _ => true;
+
+    [Parameter] public EventCallback<PersonCard> OnMessage { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnAdd { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnAccept { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnDecline { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnCancel { get; set; }
+
+    [Parameter] public EventCallback<PersonCard> OnUnfriend { get; set; }
+}

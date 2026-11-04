@@ -59,7 +59,7 @@ public static class AnnouncementSheets
 
         sheet.FrozenRows = 1;
         sheet.ListChoice($"C2:C{last}", AnnouncementCategories.All.Select(AnnouncementCategories.Display).ToArray(), "Choose what the announcement is about from the list.");
-        sheet.ListChoice($"D2:D{last}", AnnouncementAudiences.All, "Choose who reads it from the list (Everyone, Students or Teachers).");
+        sheet.ListChoice($"D2:D{last}", AnnouncementAudiences.All, "Choose who reads it from the list (Everyone, Students, Teachers, Staff or StaffTeachers).");
         sheet.Tip($"A2:A{last}", "Type the title (needed).").Tip($"B2:B{last}", "Type the message people read (needed).").Tip($"E2:E{last}", "Type the first day it is about, like 2026-11-18. Leave it empty if it is about one day (the End).")
             .Tip($"F2:F{last}", "Type the last day it is shown, like 2026-11-19. Leave it empty to show it until you delete it.");
 
@@ -68,7 +68,7 @@ public static class AnnouncementSheets
             new("Announcements", "Title", "Needed", $"The title people see (up to {AnnouncementService.MaxTitleLength} characters).", TemplateGuide.TypeIt),
             new("Announcements", "Message", "Needed", $"What people read (up to {AnnouncementService.MaxBodyLength} characters).", TemplateGuide.TypeIt),
             new("Announcements", "About", "Optional", "Exam, Holiday, Semester break, Teachers' meeting or Other. Empty: Other. A teachers' meeting is for the teachers only.", "Choose it from the list."),
-            new("Announcements", "For", "Optional", "Everyone, Students or Teachers. Empty: Everyone.", "Choose it from the list."),
+            new("Announcements", "For", "Optional", "Everyone (staff, teachers and students), Students, Teachers, Staff or StaffTeachers (the staff and the teachers). Empty: Everyone.", "Choose it from the list."),
             new("Announcements", "Start", "Optional", "The first day it is about (an exam week, a holiday). Empty: it is about the End day only.", "Type it like 2026-11-18 (year-month-day)."),
             new("Announcements", "End", "Optional", "The last day it is about and shown. Empty: it is shown until you delete it.", "Type it like 2026-11-19 (year-month-day)."),
         ],
@@ -120,6 +120,7 @@ public static class AnnouncementSheets
 
         var categories = AnnouncementCategories.All.ToDictionary(c => Key(AnnouncementCategories.Display(c)), c => c);
         var audiences = AnnouncementAudiences.All.ToDictionary(a => Key(a), a => a);
+        audiences["staffandteachers"] = AnnouncementAudiences.StaffTeachers;
 
         var rows = new List<AnnouncementImportRow>();
         for (var r = 2; r <= sheet.Rows.Count; r++)
@@ -167,7 +168,7 @@ public static class AnnouncementSheets
                 }
                 else
                 {
-                    errors.Add("For must be Everyone, Students or Teachers.");
+                    errors.Add("For must be Everyone, Students, Teachers, Staff or StaffTeachers.");
                 }
             }
 

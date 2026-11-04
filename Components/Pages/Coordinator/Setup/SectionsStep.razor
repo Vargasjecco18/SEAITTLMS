@@ -122,6 +122,23 @@
     private int capacity;
     private int yearId;
     private string gradeTab = "11";
+
+    /// <summary>The class the dropdown of the tab asked for (the address has ?grade=12).</summary>
+    [Parameter] public int? InitialGrade { get; set; }
+
+    private int? askedGrade;
+
+    protected override void OnParametersSet()
+    {
+        if (InitialGrade != askedGrade)
+        {
+            askedGrade = InitialGrade;
+            if (InitialGrade is 11 or 12)
+            {
+                gradeTab = InitialGrade.ToString()!;
+            }
+        }
+    }
     private System.Threading.Timer? fade;
 
     private int Grade => gradeTab == "12" ? 12 : 11;

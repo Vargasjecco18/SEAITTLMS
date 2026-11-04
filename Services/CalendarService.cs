@@ -168,8 +168,8 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
 
         events.AddRange(await GetAnnouncementEventsAsync(db, user, from, to, ct));
 
-        // The holidays of the Philippines are on everybody's calendar.
-        events.AddRange(PhilippineHolidays.Between(from, to).Select((h, n) => new CalendarEvent($"holiday-{h.Day:yyyyMMdd}-{n}", h.Day, null, h.Name,
+        // The holidays of the Philippines are on everybody's calendar (except the ones the academic coordinator deleted).
+        events.AddRange((await HolidaysAsync(db, from, to, ct)).Select((h, n) => new CalendarEvent($"holiday-{h.Day:yyyyMMdd}-{n}", h.Day, null, h.Name,
             h.Kind + (h.Estimated ? " · the day can change" : ""), CalendarKinds.Holiday, null, false, false)));
 
         // The events the person wrote on their own calendar.
@@ -191,6 +191,78 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
         }
 
         return events.OrderBy(e => e.Day).ThenBy(e => e.AtUtc ?? DateTime.MinValue).ThenBy(e => e.Title).ToList();
+    }
+
+    // ======================================================================= the holidays the academic coordinator deleted
+
+    /// <summary>The holidays of the Philippines between two days (both included), without the ones the academic coordinator deleted from all the years.</summary>
+    private static async Task<IReadOnlyList<Holiday>> HolidaysAsync(AppDbContext db, DateOnly from, DateOnly to, CancellationToken ct)
+    {
+        var all = PhilippineHolidays.Between(from, to).ToList();
+        if (all.Count == 0)
+        {
+            return all;
+        }
+
+        var hidden = (await db.HolidayExclusions.AsNoTracking().Select(h => h.Name).ToListAsync(ct)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return hidden.Count == 0 ? all : [.. all.Where(h => !hidden.Contains(h.Name))];
+    }
+
+    /// <summary>The holidays between two days that are shown (the ones the coordinator did not delete), for the page of the announcements.</summary>
+    public async Task<IReadOnlyList<Holiday>> GetHolidaysAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await HolidaysAsync(db, from, to, ct);
+    }
+
+    /// <summary>The names of the holidays that were deleted (they can be brought back).</summary>
+    public async Task<IReadOnlyList<string>> GetDeletedHolidaysAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.HolidayExclusions.AsNoTracking().OrderBy(h => h.Name).Select(h => h.Name).ToListAsync(ct);
+    }
+
+    /// <summary>The academic coordinator deletes a holiday from the calendars of all the years (by its name), or brings it back.</summary>
+    public async Task<ServiceResult> SetHolidayDeletedAsync(int userId, string? name, bool deleted, CancellationToken ct = default)
+    {
+        name = name?.Trim();
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct))
+        {
+            return ServiceResult.Fail("Only the academic coordinator can delete a holiday.");
+        }
+
+        if (string.IsNullOrEmpty(name) || name.Length > 100)
+        {
+            return ServiceResult.Fail("Choose a holiday.");
+        }
+
+        var existing = await db.HolidayExclusions.FirstOrDefaultAsync(h => h.Name == name, ct);
+        if (deleted)
+        {
+            // only a holiday of the list can be deleted
+            var known = Enumerable.Range(2024, 8).SelectMany(PhilippineHolidays.ForYear).Any(h => string.Equals(h.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (!known)
+            {
+                return ServiceResult.Fail("This is not one of the holidays of the Philippines.");
+            }
+
+            if (existing is null)
+            {
+                db.HolidayExclusions.Add(new HolidayExclusion { Name = name });
+                await db.SaveChangesAsync(ct);
+            }
+
+            return ServiceResult.Ok($"{name} was deleted from all the years.");
+        }
+
+        if (existing is not null)
+        {
+            db.HolidayExclusions.Remove(existing);
+            await db.SaveChangesAsync(ct);
+        }
+
+        return ServiceResult.Ok($"{name} is back.");
     }
 
     /// <summary>

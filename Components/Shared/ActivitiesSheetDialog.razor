@@ -1,0 +1,393 @@
+@using Microsoft.AspNetCore.Components.Forms
+@inject AttachmentService Attachments
+
+@* The sheet for adding many activities of a course at once, inside the system (no Excel and no file to download): a row for each seatwork, assignment, quiz or task performance with its Module and
+   its Type (lists to choose from), its Title, its Instructions, its Points, when it is Due and its Files, and the step by step at the right. A box is read when it is left (not at every key), the files are
+   only remembered (they are read when Save is pressed, a few rows at a time) and nothing is built until the box is opened. The page saves the rows (OnImport), so the rules of the page apply. *@
+<Modal Open="Open" Title="@($"Add activities · {CourseName}")" Cover="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        @if (result is null)
+        {
+            <div class="sheet-layout">
+                <div class="sheet-main">
+                    <p class="sheet-summary" role="status">
+                        <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "row is" : "rows are") ready.
+                        @if (Filled.Count > ReadyCount)
+                        {
+                            <span class="bad">The rows with a problem are left out; the reason is on its line.</span>
+                        }
+                    </p>
+
+                    <div class="sheet-wrap">
+                        <table class="sheet" aria-label="Activities to add">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="c-n">#</th>
+                                    <th scope="col" class="c-module">Module</th>
+                                    <th scope="col" class="c-type">Type</th>
+                                    <th scope="col" class="c-title">Title</th>
+                                    <th scope="col" class="c-text">Instructions <small>(optional)</small></th>
+                                    <th scope="col" class="c-points">Points</th>
+                                    <th scope="col" class="c-due">Due <small>(optional)</small></th>
+                                    <th scope="col" class="c-files">Files <small>(optional)</small></th>
+                                    <th scope="col" class="c-state">Ready</th>
+                                    <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var (row, n) in rows.Select((r, i) => (r, i + 1)))
+                                {
+                                    var problems = ProblemsOf(row);
+                                    var filled = IsFilled(row);
+                                    <tr class="@(filled ? (problems.Count == 0 ? "ok" : "bad") : "empty")" data-row="@n">
+                                        <td class="c-n">@n</td>
+                                        <td class="c-module">
+                                            <select class="cell pick" aria-label="@($"Module of row {n}")" @onchange="e => SetModule(row, e.Value?.ToString() ?? string.Empty)">
+                                                <option value="" selected="@(row.Module.Length == 0)">Choose</option>
+                                                @foreach (var module in Modules)
+                                                {
+                                                    <option value="@module.Label" selected="@(row.Module == module.Label)">@module.Label</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td class="c-type">
+                                            <select class="cell pick" aria-label="@($"Type of row {n}")" @onchange="e => row.Kind = e.Value?.ToString() ?? ItemKinds.Seatwork">
+                                                @foreach (var kind in Kinds)
+                                                {
+                                                    <option value="@kind" selected="@(row.Kind == kind)">@ItemKinds.Display(kind)</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td class="c-title">
+                                            <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Title of row {n}")" placeholder="Title" value="@row.Title" @key="@($"t-{row.Id}")"
+                                                   @onchange="e => row.Title = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-text">
+                                            <input class="cell" type="text" maxlength="2000" autocomplete="off" aria-label="@($"Instructions of row {n}")" placeholder="What the students do" value="@row.Instructions" @key="@($"i-{row.Id}")"
+                                                   @onchange="e => row.Instructions = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-points">
+                                            <input class="cell cell-num" type="number" min="1" max="1000" step="any" autocomplete="off" aria-label="@($"Points of row {n}")" value="@row.Points" @key="@($"p-{row.Id}")"
+                                                   @onchange="e => row.Points = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-due">
+                                            <input class="cell" type="datetime-local" aria-label="@($"Due date of row {n}")" value="@row.Due" @key="@($"d-{row.Id}")"
+                                                   @onchange="e => row.Due = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-files">
+                                            <span class="file-chips">
+                                                @foreach (var file in row.Files)
+                                                {
+                                                    var shown = file;
+                                                    <span class="file-chip" title="@shown.Name"><Icon Name="paperclip" Size="13" /> <span class="chip-name">@shown.Name</span>
+                                                        <button type="button" class="chip-x" aria-label="@($"Take {shown.Name} out of row {n}")" @onclick="() => row.Files.Remove(shown)"><Icon Name="x" Size="12" /></button></span>
+                                                }
+                                            </span>
+                                            <label class="add-files" title="Choose the files that go with this activity">
+                                                <Icon Name="plus" Size="14" /> <span>@(row.Files.Count == 0 ? "Add files" : "More")</span>
+                                                <InputFile class="file-input" OnChange="e => FilesChosen(row, e)" multiple aria-label="@($"Files of row {n}")" />
+                                            </label>
+                                        </td>
+                                        <td class="c-state">
+                                            @if (!filled)
+                                            {
+                                                <span class="muted">—</span>
+                                            }
+                                            else if (problems.Count == 0)
+                                            {
+                                                <span class="state-ok"><Icon Name="circle-check" Size="15" /> Ready</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="state-bad" title="@string.Join(" ", problems)"><Icon Name="circle-alert" Size="15" /> @problems[0]</span>
+                                            }
+                                        </td>
+                                        <td class="c-x">
+                                            <button type="button" class="row-x" title="@($"Take row {n} out")" aria-label="@($"Take row {n} out")" disabled="@(rows.Count <= 1)" @onclick="() => RemoveRow(row)"><Icon Name="trash-2" Size="15" /></button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="sheet-tools">
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="() => AddRows(1)">Add a row</Button>
+                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="() => AddRows(5)">Add 5 rows</Button>
+                        <span class="muted">@rows.Count of @MaxRows rows</span>
+                    </div>
+
+                    <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
+
+                    <div class="sheet-actions">
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                        <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 activity" : $"Save {ReadyCount} activities")</Button>
+                    </div>
+                </div>
+
+                <aside class="sheet-steps" aria-label="Step by step">
+                    <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
+                    <ol>
+                        <li><strong>Choose the module</strong> of the row from the list, then <strong>the type</strong>: seatwork, assignment, quiz or task performance.</li>
+                        <li><strong>Type the title.</strong> Press Tab to go to the next box.</li>
+                        <li><strong>Write the instructions</strong> and the <strong>points</strong> (100 if you leave it). The due date is optional.</li>
+                        <li><strong>Add files</strong> to the row if the activity has some (a worksheet, a picture ...).</li>
+                        <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                        <li><strong>Press Save.</strong> Each row becomes an activity of its module. For a quiz, write its questions afterwards in <em>Questions</em>.</li>
+                    </ol>
+                </aside>
+            </div>
+        }
+        else
+        {
+            <p class="sheet-summary" role="status">
+                <strong>@result.Created</strong> @(result.Created == 1 ? "activity was" : "activities were") added to the course.
+                @if (result.Errors.Count > 0)
+                {
+                    <span class="bad">@result.Errors.Count @(result.Errors.Count == 1 ? "problem" : "problems").</span>
+                }
+            </p>
+            @if (result.Errors.Count > 0)
+            {
+                <ul class="sheet-errors">
+                    @foreach (var e in result.Errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+
+            <div class="sheet-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Add more activities</Button>
+                <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    public const int MaxRows = 30;
+
+    private static readonly string[] Kinds = [ItemKinds.Seatwork, ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance];
+
+    private sealed class SheetRow
+    {
+        public int Id { get; init; }
+        public string Module { get; set; } = "";
+        public string Kind { get; set; } = ItemKinds.Seatwork;
+        public string Title { get; set; } = "";
+        public string Instructions { get; set; } = "";
+        public string Points { get; set; } = "100";
+        public string Due { get; set; } = "";
+        public List<IBrowserFile> Files { get; } = [];
+    }
+
+    private readonly List<SheetRow> rows = [];
+    private int nextId;
+    private bool saving;
+    private int savedSoFar;
+    private string? error;
+    private ItemImportSummary? result;
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>The course the activities go to, for the heading.</summary>
+    [Parameter] public string CourseName { get; set; } = "";
+
+    /// <summary>The modules of the course (the syllabus has no activities), with the label the page finds them by ("Module 2: Ledgers").</summary>
+    [Parameter] public IReadOnlyList<AddMenuModule> Modules { get; set; } = [];
+
+    /// <summary>Saves the rows and says how many were added and what went wrong.</summary>
+    [Parameter, EditorRequired] public Func<IReadOnlyList<ActivityToSave>, Task<ItemImportSummary>> OnImport { get; set; } = _ => Task.FromResult(new ItemImportSummary(0, []));
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>The module the first rows start with (the one the teacher came from, when there is one).</summary>
+    [Parameter] public string? StartModule { get; set; }
+
+    private bool wasOpen;
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            rows.Clear();
+            result = null;
+            error = null;
+            saving = false;
+        }
+        else if (!wasOpen)
+        {
+            rows.Clear();
+            AddRows(5);
+        }
+
+        wasOpen = Open;
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void Another()
+    {
+        rows.Clear();
+        result = null;
+        error = null;
+        AddRows(5);
+    }
+
+    private void AddRows(int count)
+    {
+        for (var n = 0; n < count && rows.Count < MaxRows; n++)
+        {
+            // A new row starts in the module of the row before it (a teacher fills one module at a time) and with the same type.
+            var last = rows.Count > 0 ? rows[^1] : null;
+            rows.Add(new SheetRow { Id = ++nextId, Module = last?.Module ?? StartModule ?? (Modules.Count == 1 ? Modules[0].Label : ""), Kind = last?.Kind ?? ItemKinds.Seatwork });
+        }
+    }
+
+    /// <summary>A module chosen in a row is also the module of the empty rows under it that had the same one (a teacher fills one module at a time).</summary>
+    private void SetModule(SheetRow row, string module)
+    {
+        var old = row.Module;
+        row.Module = module;
+        foreach (var later in rows.SkipWhile(r => r != row).Skip(1).Where(r => !IsFilled(r) && r.Module == old))
+        {
+            later.Module = module;
+        }
+    }
+
+    private void RemoveRow(SheetRow row)
+    {
+        if (rows.Count > 1)
+        {
+            rows.Remove(row);
+        }
+    }
+
+    // A row that only has the module and the type that were filled in for it is still an empty row.
+    private static bool IsFilled(SheetRow row) =>
+        row.Title.Trim().Length > 0 || row.Instructions.Trim().Length > 0 || row.Due.Length > 0 || row.Files.Count > 0;
+
+    private IReadOnlyList<SheetRow> Filled => [.. rows.Where(IsFilled)];
+
+    private int ReadyCount => Filled.Count(r => ProblemsOf(r).Count == 0);
+
+    private List<string> ProblemsOf(SheetRow row)
+    {
+        var problems = new List<string>();
+        if (row.Module.Length == 0)
+        {
+            problems.Add("Choose the module.");
+        }
+
+        if (row.Title.Trim().Length == 0)
+        {
+            problems.Add("Type the title.");
+        }
+
+        if (row.Points.Trim().Length > 0 && (!decimal.TryParse(row.Points, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var points) || points <= 0 || points > 1000))
+        {
+            problems.Add("The points must be a number from 1 to 1000.");
+        }
+
+        if (row.Files.Count > AttachmentService.MaxPerOwner)
+        {
+            problems.Add($"At most {AttachmentService.MaxPerOwner} files.");
+        }
+        else if (row.Files.FirstOrDefault(f => FileService.CleanName(f.Name) is not { } name || FileService.IsBlocked(name)) is { } blocked)
+        {
+            problems.Add($"{blocked.Name}: programs and scripts can't be attached.");
+        }
+        else if (row.Files.Any(f => f.Size == 0))
+        {
+            problems.Add("A file is empty.");
+        }
+
+        return problems;
+    }
+
+    /// <summary>The files are only remembered here; they are read when Save is pressed.</summary>
+    private void FilesChosen(SheetRow row, InputFileChangeEventArgs e)
+    {
+        error = null;
+        foreach (var file in e.GetMultipleFiles(AttachmentService.MaxPerOwner + 1))
+        {
+            if (!row.Files.Any(f => f.Name == file.Name && f.Size == file.Size))
+            {
+                row.Files.Add(file);
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving)
+        {
+            return;
+        }
+
+        saving = true;
+        savedSoFar = 0;
+        error = null;
+        var created = 0;
+        var problems = new List<string>();
+        try
+        {
+            var numbered = rows.Select((r, i) => (Row: r, Number: i + 1)).Where(x => IsFilled(x.Row)).ToList();
+            foreach (var left in numbered.Where(x => ProblemsOf(x.Row).Count > 0))
+            {
+                problems.Add($"Row {left.Number}: {string.Join(" ", ProblemsOf(left.Row))}");
+            }
+
+            var maxBytes = long.MaxValue;
+            foreach (var batch in numbered.Where(x => ProblemsOf(x.Row).Count == 0).Chunk(3))
+            {
+                var list = new List<ActivityToSave>();
+                foreach (var (row, number) in batch)
+                {
+                    try
+                    {
+                        var files = new List<NewAttachment>();
+                        foreach (var file in row.Files)
+                        {
+                            await using var stream = file.OpenReadStream(maxBytes);
+                            using var buffer = new MemoryStream();
+                            await stream.CopyToAsync(buffer);
+                            files.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
+                        }
+
+                        var input = new ItemInput
+                        {
+                            Kind = row.Kind,
+                            Title = row.Title.Trim(),
+                            Instructions = row.Instructions.Trim().Length == 0 ? null : row.Instructions.Trim(),
+                            MaxScore = row.Points.Trim().Length == 0 ? 100 : decimal.Parse(row.Points, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture),
+                            DueAtUtc = PhilippineTime.FromInputValue(row.Due),
+                        };
+                        list.Add(new ActivityToSave(new ActivityWork(row.Kind, input, [], [], row.Module), files, "Sheet", number));
+                    }
+                    catch (IOException)
+                    {
+                        problems.Add($"Row {number} ({row.Title.Trim()}): a file could not be read. Add the files again.");
+                    }
+                }
+
+                if (list.Count > 0)
+                {
+                    var summary = await OnImport(list);
+                    created += summary.Created;
+                    problems.AddRange(summary.Errors);
+                    savedSoFar += list.Count;
+                    StateHasChanged();
+                }
+            }
+
+            result = new ItemImportSummary(created, problems);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

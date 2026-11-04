@@ -1,32 +1,17 @@
-@* The second menu of a course: Modules, Seatwork, Assignments, Quizzes and Task performance, each a dropdown that lists what is inside (press Modules and the modules show, press
-   Quizzes and the quizzes show), and, under a line, the pages that belong to the course (for a teacher the students, the gradebook and the attendance, for a student the classmates,
-   the teacher and the grades). The menu of the school stays as it is. The dropdowns are plain HTML (details), so they work without scripts. *@
+@* The second menu of a course: Courses (to go to another course), Modules, and Activities (which holds Seatwork, Assignments, Quizzes and Task performance), each a dropdown that
+   lists what is inside, and, under a line, the pages that belong to the course (for a teacher the students, the gradebook and the attendance, for a student the classmates, the
+   teachers and the grades). The menu of the school stays as it is. The dropdowns are plain HTML (details), so they work without scripts. *@
 <nav class="course-menu" id="@Id" aria-label="Menu of the course">
     @foreach (var group in Groups)
     {
-        var isOpen = group.Key == Selected || group.Entries.Any(e => e.Current);
-        <details class="cm-group" open="@isOpen" data-course-group="@group.Key">
-            <summary class="cm-item @(isOpen ? "on" : "")">
-                <Icon Name="@group.Icon" Size="18" /> <span class="cm-label">@group.Label</span> <span class="cm-count">@group.Count</span>
-                <span class="cm-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="16" /></span>
-            </summary>
-            <ul class="cm-list">
-                <li><a class="cm-all @(group.Key == Selected ? "on" : "")" href="@group.SeeAllHref" data-course-menu="@group.Key"><Icon Name="list" Size="14" /> <span>See all @group.Label.ToLowerInvariant()</span></a></li>
-                @foreach (var entry in group.Entries)
-                {
-                    <li><a class="cm-entry @(entry.Current ? "on" : "")" href="@entry.Href" aria-current="@(entry.Current ? "page" : null)" title="@entry.Title"><span>@entry.Title</span></a></li>
-                }
-                @if (CanAdd && KindOfKey(group.Key) is { } kind)
-                {
-                    @* The teacher can always add one more of this kind (the list of the kind opens with its Add menu open). *@
-                    <li class="cm-none"><a class="cm-add" href="@($"{group.SeeAllHref}&add=1")"><Icon Name="plus" Size="14" /> <span>Add @ItemKinds.Display(kind).ToLowerInvariant()</span></a></li>
-                }
-                else if (group.Entries.Count == 0)
-                {
-                    <li class="cm-none">None yet.</li>
-                }
-            </ul>
-        </details>
+        @GroupFragment(group, false)
+    }
+
+    @if (ExtraContent is not null)
+    {
+        @* More than links: the library's dropdown of tracks, strands and courses. *@
+        <span class="cm-rule" aria-hidden="true"></span>
+        @ExtraContent
     }
 
     @if (Extra.Count > 0)
@@ -40,6 +25,60 @@
 </nav>
 
 @code {
+    /// <summary>A dropdown. A dropdown that holds other dropdowns (Activities holds Seatwork, Assignments, Quizzes ...) draws them inside, one level down.</summary>
+    private RenderFragment GroupFragment(CourseMenuGroup group, bool nested) => @<text>
+        @{
+            var isOpen = IsOpen(group);
+        }
+        <details class="cm-group @(nested ? "cm-nested" : "")" open="@isOpen" data-course-group="@group.Key">
+            <summary class="cm-item @(isOpen ? "on" : "")">
+                <Icon Name="@group.Icon" Size="@(nested ? 16 : 18)" /> <span class="cm-label">@group.Label</span> <span class="cm-count">@group.Count</span>
+                <span class="cm-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="16" /></span>
+            </summary>
+            @if (group.Children is { Count: > 0 })
+            {
+                <ul class="cm-list cm-children">
+                    @foreach (var child in group.Children)
+                    {
+                        <li>@GroupFragment(child, true)</li>
+                    }
+                </ul>
+            }
+            else if (group.Children is not null)
+            {
+                <ul class="cm-list"><li class="cm-none">None yet.</li></ul>
+            }
+            else
+            {
+                <ul class="cm-list">
+                    @if (group.SeeAllHref.Length > 0)
+                    {
+                        <li><a class="cm-all @(group.Key == Selected ? "on" : "")" href="@group.SeeAllHref" data-course-menu="@group.Key"><Icon Name="list" Size="14" /> <span>See all @group.Label.ToLowerInvariant()</span></a></li>
+                    }
+                    @foreach (var entry in group.Entries)
+                    {
+                        <li><a class="cm-entry @(entry.Current ? "on" : "")" href="@entry.Href" aria-current="@(entry.Current ? "page" : null)" title="@entry.Title"><span>@entry.Title</span></a></li>
+                    }
+                    @if (CanAdd && KindOfKey(group.Key) is { } kind)
+                    {
+                        @* The teacher can always add one more of this kind (the list of the kind opens with its Add menu open). *@
+                        <li class="cm-none"><a class="cm-add" href="@($"{group.SeeAllHref}&add=1")"><Icon Name="plus" Size="14" /> <span>Add @ItemKinds.Display(kind).ToLowerInvariant()</span></a></li>
+                    }
+                    else if (group.Entries.Count == 0)
+                    {
+                        <li class="cm-none">None yet.</li>
+                    }
+                </ul>
+            }
+        </details>
+    </text>;
+
+    /// <summary>A dropdown is open when it is the chosen one, when a line in it is the page that is open, or when one of the dropdowns inside it is. (The list of the courses stays closed: the course that is open is in it anyway.)</summary>
+    private bool IsOpen(CourseMenuGroup group) =>
+        group.Key == Selected
+        || (group.Key != "courses" && group.Entries.Any(e => e.Current))
+        || (group.Children?.Any(IsOpen) ?? false);
+
     /// <summary>The id of the menu (the button that hides it points to it).</summary>
     [Parameter] public string? Id { get; set; }
 
@@ -54,6 +93,9 @@
 
     /// <summary>The other pages of the course, under the line (the students, the gradebook ...).</summary>
     [Parameter] public IReadOnlyList<CourseMenuLink> Extra { get; set; } = [];
+
+    /// <summary>Something more than links under the line (the dropdown of the library: track, strand, course).</summary>
+    [Parameter] public RenderFragment? ExtraContent { get; set; }
 
     /// <summary>The word in the address for a kind: assignments, quizzes or tasks.</summary>
     public static string KeyOf(string kind) => kind switch

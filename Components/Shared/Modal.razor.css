@@ -69,6 +69,25 @@
     padding: 0;
 }
 
+/* Nearly all the screen: a little space at the sides and the top. */
+.backdrop.cover {
+    padding: 1rem;
+}
+
+.dialog.cover {
+    display: flex;
+    flex-direction: column;
+    width: calc(100vw - 2rem);
+    max-width: none;
+    min-height: calc(100vh - 2rem);
+}
+
+.dialog.cover .dialog-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
 .dialog.full {
     display: flex;
     flex-direction: column;

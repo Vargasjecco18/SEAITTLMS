@@ -10,7 +10,7 @@
 
 @* The library is read from the top: the tracks, then (a click on a track) its strands, then (a click on a strand) the courses of the strand,
    and a course opens its library. Searching a course by name or code shows the matching courses of the whole school at once.
-   Every step is a plain link (/provider/library, ?track=..., ?track=...&strand=...), so the back button works. *@
+   Every step is a plain link (/provider/library, ?track=..., ?track=...&strand=...), so the back button works. Opening the library picks the first track and strand. *@
 <Card Class="search-card">
     <form method="get" action="provider/library" class="filter-bar" role="search">
         <SearchField Id="lib-search" Name="q" Static="true" Value="@Q" Placeholder="Search a course by name or code" AriaLabel="Search the courses" ClearHref="provider/library" />
@@ -159,6 +159,14 @@ else
         tracks = await Library.ListTracksAsync();
         track = TrackId is { } t ? tracks.FirstOrDefault(x => x.TrackId == t) : null;
         strand = track is not null && StrandId is { } sid ? track.Strands.FirstOrDefault(x => x.StrandId == sid) : null;
+
+        // Opening the course library (or only a track) picks by itself: the first track that has a strand, then the first strand of the track that has courses.
+        // The three cards are never empty, and a click still goes anywhere.
+        if (!searching)
+        {
+            track ??= tracks.FirstOrDefault(x => x.Strands.Count > 0) ?? tracks.FirstOrDefault();
+            strand ??= track?.Strands.FirstOrDefault(x => x.Courses > 0) ?? track?.Strands.FirstOrDefault();
+        }
         strandTerms = strand is null || searching ? [] : await Library.ListStrandTermsAsync(strand.StrandId);
         courses = searching ? await Library.ListCoursesAsync(Q) : [];
 

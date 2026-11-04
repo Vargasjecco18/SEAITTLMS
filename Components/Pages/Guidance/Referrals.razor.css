@@ -163,11 +163,6 @@ th.col-level {
     margin: 0 0 0.75rem;
 }
 
-.lead-line {
-    margin: 0 0 1rem;
-    color: var(--text-muted);
-}
-
 .add-title {
     margin: 1.25rem 0 0.5rem;
     font-size: 1rem;
@@ -245,53 +240,13 @@ th.col-level {
     text-decoration: underline;
 }
 
-.concern-select {
-    width: 100%;
-    min-width: 9rem;
-    padding: 0.4rem 0.5rem;
-    border: 1px solid var(--field-border);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
-    font-size: 0.88rem;
-}
-
 .referral-table td {
     vertical-align: middle;
-}
-
-.referral-table .detail {
-    display: block;
-    margin-bottom: 0.25rem;
 }
 
 .col-notes {
     width: 6.5rem;
     text-align: center;
-}
-
-.notes-button {
-    min-width: 4.5rem;
-    padding: 0.3rem 0.7rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--text-muted);
-    font: inherit;
-    font-size: 0.82rem;
-    font-weight: 650;
-    cursor: pointer;
-}
-
-.notes-button.is-noted {
-    border-color: var(--success);
-    background: var(--success-soft);
-    color: var(--success);
-}
-
-.notes-button:hover {
-    filter: brightness(0.97);
 }
 
 .attendance-list {
@@ -308,4 +263,199 @@ th.col-level {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface-2);
+}
+
+/* ---------- the rows come alive: a picture of initials, a chip for the section, rounded choices with an icon, a line at the left of a row with a concern ---------- */
+.referral-table thead th {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+
+.referral-table tbody tr {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.referral-table tbody tr.has-open {
+    background: color-mix(in srgb, var(--brand-soft) 45%, transparent);
+    box-shadow: inset 3px 0 0 var(--brand);
+}
+
+.referral-table tbody tr:hover {
+    background: var(--brand-soft);
+}
+
+.who {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.who-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.place {
+    display: inline-block;
+    padding: 0.15rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 0.82rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+/* A choice with an icon at the left and an arrow at the right. When a concern is picked it takes the brand tint. */
+.pick {
+    position: relative;
+    display: block;
+    color: var(--text-muted);
+}
+
+.pick > ::deep .icon {
+    position: absolute;
+    top: 50%;
+    left: 0.7rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.pick::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0.9rem;
+    width: 0.42rem;
+    height: 0.42rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+}
+
+.concern-select {
+    width: 100%;
+    min-width: 11rem;
+    padding: 0.5rem 2rem 0.5rem 2.2rem;
+    border: 1px solid var(--field-border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.concern-select:hover:not(:disabled) {
+    border-color: var(--brand);
+    box-shadow: var(--shadow);
+}
+
+.concern-select:focus-visible {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.pick.is-set {
+    color: var(--brand);
+}
+
+.pick.is-set .concern-select {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+/* What happened: a small card with the sentence, and View attendance as a button with an outline. */
+.detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 0 0 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 550;
+}
+
+.detail ::deep .icon {
+    flex: none;
+    margin-top: 0.1rem;
+    color: var(--brand);
+}
+
+.attendance-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--brand);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.attendance-button:hover {
+    background: var(--brand);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.attendance-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+/* Notes: a dashed pill with a pencil while there is nothing written, a filled pill with the notebook once there is. */
+.notes-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 5.5rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px dashed var(--field-border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.notes-button:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    transform: translateY(-1px);
+}
+
+.notes-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.notes-button.is-noted {
+    border-style: solid;
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--success);
 }

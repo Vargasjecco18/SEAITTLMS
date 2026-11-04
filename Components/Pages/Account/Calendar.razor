@@ -19,16 +19,23 @@
             <a class="switch-link @(view == "week" ? "on" : "")" href="@Url("week", anchor)" aria-current="@(view == "week" ? "page" : null)">Week</a>
         </span>
         <ButtonLink Href="@NewEventUrl" IconName="plus" Small="true">Add event</ButtonLink>
+        @if (isTeacher)
+        {
+            <ButtonLink Href="@AnnounceUrl" Variant="ButtonVariant.Secondary" IconName="megaphone" Small="true">Announcement to my class</ButtonLink>
+        }
     </nav>
 </PageHeader>
 
 <PageWithAside Show="@AsideShow" Stacked="@(view == "week")" ActivitiesTitle="Assignments">
     <ul class="legend" aria-label="Legend">
-        @foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal })
+        @foreach (var kind in LegendKinds)
         {
             <li><span class="swatch @kind.ToLowerInvariant()"></span> @CalendarKinds.Label(kind)</li>
         }
-        <li><span class="swatch late"></span> Overdue</li>
+        @if (isStudent || isTeacher)
+        {
+            <li><span class="swatch late"></span> Overdue</li>
+        }
     </ul>
 
     @if (view == "month")
@@ -116,6 +123,12 @@
     <CalendarEntryDialog @key="@($"event-{eventMode}-{editDay}")" EntryId="@(eventMode == "new" ? null : int.Parse(eventMode))" Day="@(editDay ?? NewEventDay)" View="@view" CloseUrl="@Url(view, anchor)" />
 }
 
+@* A teacher pressed "Announcement to my class": the box that writes an announcement for one of their classes. *@
+@if (isTeacher && AnnounceText == "1")
+{
+    <CalendarAnnouncementDialog @key="@("announce-" + OnText)" CloseUrl="@Url(view, anchor)" Day="NewAnnounceDay" />
+}
+
 @* A teacher dragged an unassigned assignment onto a day (or pressed "Set date"): the box to give it its due date and settings. *@
 @if (editItemId is { } itemId)
 {
@@ -141,6 +154,8 @@
 
     [SupplyParameterFromQuery(Name = "event")] private string? EventText { get; set; }
 
+    [SupplyParameterFromQuery(Name = "announce")] private string? AnnounceText { get; set; }
+
     // A double click on a day: ?add=<date> asks what to add on that day.
     [SupplyParameterFromQuery(Name = "add")] private string? AddText { get; set; }
 
@@ -163,7 +178,12 @@
     private string? eventMode;
 
     /// <summary>The widgets at the right: a student's assignments (no separate due dates card), or the teacher's unchecked assignments and then the ones that have no due date yet.</summary>
-    private string AsideShow => isTeacher ? "unchecked,unassigned" : isStudent ? "activities" : "upnext";
+    private string AsideShow => isTeacher ? "unchecked,unassigned" : isStudent ? "activities" : "notices,holidays";
+
+    /// <summary>What the legend says: the students and the teachers have the work; the staff only the announcements, the holidays and their own events.</summary>
+    private IReadOnlyList<string> LegendKinds => isStudent || isTeacher
+        ? [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal]
+        : [CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal];
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
 
@@ -206,6 +226,10 @@
     /// <summary>The day a new event starts on: today when it is on the page, else the first day of the page.</summary>
     private DateOnly NewEventDay => today >= rangeStart && today < rangeStart.AddDays(rangeDays) ? today : anchor;
 
+    private string AnnounceUrl => $"{Url(view, anchor)}&announce=1";
+
+    private DateOnly? NewAnnounceDay => DateOnly.TryParseExact(OnText, "yyyy-MM-dd", out var day) ? day : null;
+
     private string NewEventUrl => $"{Url(view, anchor)}&event=new&on={NewEventDay:yyyy-MM-dd}";
 
     private string DayUrl(DateOnly day) => $"{Url(view, anchor)}&day={day:yyyy-MM-dd}";
@@ -215,7 +239,7 @@
     /// <summary>"2 assignments", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
     private static IEnumerable<DaySummary> Summary(IReadOnlyList<CalendarEvent> onDay)
     {
-        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, CalendarKinds.Module, CalendarKinds.Personal })
+        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal })
         {
             var these = onDay.Where(e => e.Kind == kind).ToList();
             if (these.Count == 0)

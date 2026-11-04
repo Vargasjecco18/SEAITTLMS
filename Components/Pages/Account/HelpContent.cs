@@ -70,8 +70,8 @@ public static class HelpContent
         ]),
         new("Where is the calendar?",
         [
-            "Open Calendar in the menu (every role has it). It shows the days of the month or the week with what is due, the announcements from their start to their end, your own events and the holidays of the Philippines (a rose outline).",
-            "Double click a day to add an event on it. In the week view press the day to see everything on it.",
+            "Open Calendar in the menu (every role has it). It shows the days of the month or the week with what is due, the announcements from their start to their end, your own events and the holidays of the Philippines (a rose outline). The staff (the registrar, the guidance counselor and the academic provider) see announcements and holidays at the right of the calendar; the work of a course (assignments, quizzes and so on) is for the students and the teachers.",
+            "Double click a day to add an event on it. In the week view press the day to see everything on it. A teacher also has the button “Announcement to my class”. The academic coordinator writes announcements and manages the holidays in Announcements, so the coordinator has no Calendar.",
         ], "calendar", "Open Calendar"),
         new("How do I change the look, or my picture?",
         [
@@ -110,7 +110,9 @@ public static class HelpContent
             "Open a course, then a module. The syllabus of the course is the first thing in the list.",
             "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
-            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams when your teacher gave one), then Grades and Teachers (the teacher of the course, with a Message button to write to them). It stays in view while you scroll, and the button at its top hides it or shows it again.",
+            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, and Exams when your teacher gave one), then Classmates, Teachers (with a Message button to write to the teacher) and Grades. It stays in view while you scroll, and the button at its top hides it or shows it again.",
+            "Each line of the course (the syllabus and the modules) shows how far you are in it, at the left of its activities. Press a line to open its card: the Slides button (when the academic provider or your teacher added slides) and the Module button. A reference link of a module is at the left of “Open in a new tab”.",
+            "On an activity the Course Menu is at the left too, then the instructions, your answer, and at the right of your answer the Details and the Feedback of your teacher. “Hide details” closes that column to give the answer more room.",
             "When you read a lesson, or read it again, the main menu folds to its icons to give the lesson more room. The button at the top of the icons shows the names again.",
         ]),
         new("What if I hand in after the due date?",
@@ -142,7 +144,7 @@ public static class HelpContent
         ], "student/evaluations", "Open the evaluations"),
         new("How do I add friends and see my classmates?",
         [
-            "Open Users. Classmates are the students of your section; Students are all the students of the school; Teachers are the teachers of your courses; Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider.",
+            "Open Users. The tabs are Friends, Classmates, Students, Teachers and Staff / Non-teaching. Students and Teachers are tables with the name, the grade level, the strand, the section, the room (from the class schedule), a Message button and the friend status; Staff / Non-teaching have only the name, the Message button and the friend status. The Message button is there for everybody, friends or not.",
             "Press “Add friend” beside a person. They get a request and must accept. In Friends you can also find any student or teacher by name.",
             "Friends can write to each other, put each other in groups and share files.",
         ], "users", "Open Users"),
@@ -169,22 +171,22 @@ public static class HelpContent
         ], "teacher/subjects", "Open Courses"),
         new("How do I make a module and post it to my students?",
         [
-            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Template and import (Excel)” in the same box.",
+            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Add many modules in a sheet” in the same box: a row for each module with its Title, its Slides (optional), its Link and its Files. There is no Excel file to download.",
             "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Press “Add activities” at the top right of the course. It opens the Excel template and the import: one workbook lists every module with a row for Seatwork, Assignment, Quiz and Task performance. Fill the rows you want, save it and import it. To add one at a time, open a list in the course menu (for example “See all quizzes”) and press its Add button.",
+            "Press “Add activities” at the top right of the course. It opens a sheet inside the system: a row for each activity, with its Module and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files. Fill the rows you want and press Save. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
         ]),
         new("What is the menu inside a course?",
         [
-            "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams, once you added one). Each one lists that kind of work for the whole course. Below them are Attendance, Gradebook and Students: the students of the course, each with a Message button to write to them.",
+            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, each one listing that kind of work for the whole course), then Students (each with a Message button), Gradebook and Attendance. The first page of the course lists the syllabus and the modules: each line shows how far the class is (the works handed in), and pressing it opens its card with the Slides and the Module buttons.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
-            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. At the left of “Add activities” is the Activities button: it lists your activities by kind, each one a link, with an Add line for each kind. Inside an activity the same button is called Course Menu. There are no exams in your menu: the summative exams come from the academic provider.",
+            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. At the left of “Add activities” is the Activities button: it lists your activities by kind, each one a link, with an Add line for each kind. Inside an activity the Course Menu is at the left of the page, and a double click on the title of the activity shows what you gave (the instructions and the files). There are no exams in your menu: the summative exams come from the academic provider.",
         ]),
-        new("Can I fill many assignments or questions from Excel?",
+        new("Can I add many activities at once?",
         [
-            "Yes. Press “Add activities”: the template has the sheet Activities (module by module: Seatwork, Assignment, Quiz, Task performance) and the sheet Quiz Questions. Fill it, save it as .xlsx, choose it in the box, choose the files it names and press Import.",
-            "Every template has a sheet “How to fill”: for each column it says what to write and what to use in Excel. The cells that take a fixed answer (a quiz, a type, Yes or No) have a drop-down list, and a tip shows when you select a cell. Type a day like 2026-11-19.",
-            "In the questions of a quiz, use Template, Export the questions and Import from Excel. The imported questions appear in the list; press Save questions to keep them.",
+            "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment, quiz or task performance. Choose its module and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
+            "The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its module.",
+            "The questions of a quiz are written in the quiz itself (Questions). There, Template, Export the questions and Import from Excel still work.",
         ]),
         new("A student handed in after the due date. What do I do?",
         [
@@ -192,7 +194,7 @@ public static class HelpContent
         ]),
         new("What are the drafts that came from the academic provider?",
         [
-            "The academic provider (of the central team) can send you the syllabus and modules of a course, with their assignments and quizzes. They arrive in your course as drafts with a badge “From the academic provider”.",
+            "The academic provider (of the central team) can send you the syllabus and modules of a course, with their assignments and quizzes. They arrive in your course as drafts.",
             "The provider sees whether you opened what was sent and whether you posted it. Opening a draft to read it or to edit it is enough to count as opened.",
             "They are yours to change: edit the text, move the due dates, then post them when you are ready. The syllabus is always first.",
         ]),
@@ -214,7 +216,7 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no module to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
+            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no module to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
@@ -229,9 +231,9 @@ public static class HelpContent
         ], "users", "Open Users"),
         new("How do I write to my class?",
         [
-            "Open Announcements: it is a calendar. Double click a day, or press “New announcement”. Choose the class (one of your courses), what it is about (an exam or other), and write it. Only the students of that class see it, and they are told with a notification.",
+            "Open Calendar and press “Announcement to my class”, or double click a day and choose Announcement. Choose the class (one of your courses), what it is about (an exam or other), and write it. Only the students of that class see it, and they are told with a notification.",
             "“From the school” lists the notices of the academic coordinator for the teachers: exams, holidays, the semester break and teachers' meetings.",
-        ], "teacher/announcements", "Open Announcements"),
+        ], "calendar", "Open Calendar"),
         new("How do I share a file with my students?",
         [
             "Open Resources and add the file to your locker (Add files).",
@@ -291,8 +293,8 @@ public static class HelpContent
     [
         new("How do I enroll a student?",
         [
-            "Open Enrollment. Type the 12-digit LRN. If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. Press Enroll.",
+            "Open Enrollment. Type the 12-digit LRN (digits only, like the phone number) and the names (letters only). If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
+            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. Then press “View enrolling student” (at the left, under the student card): a box in the middle of the screen shows the information (you can still correct it there), the sign-in details, and the buttons Enroll student and Cancel.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
@@ -314,16 +316,16 @@ public static class HelpContent
     [
         new("How do I set up the school years, terms, tracks, strands and courses?",
         [
-            "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses, Class sections and Rooms. The menu of the school folds by itself on this page, and the button above the tabs (Hide tabs) hides only the tabs. The search box at the top searches the tab that is open.",
+            "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses, Class sections and Rooms; a tab opens a dropdown with what is inside (the school years, the tracks and strands, the grade levels, the rooms) to go straight to one. The menu of the school folds by itself on this page, and the button above the tabs (Hide tabs) hides only the tabs. The search box at the top searches the tab that is open.",
             "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button.",
-            "Tracks, strands and courses are three cards side by side: press a track to see its strands, press a strand to see its courses. Change a name, the code or the unit in place, or use the row at the bottom of a card to add one. A course has the columns Code, Course, Unit, Offered and Delete: uncheck Offered and the registrar can't enroll students in it; Delete takes it out of the strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
+            "Tracks, strands and courses are three cards side by side, each with its columns (tracks: Code, Name, Strands, Offered, Delete; strands: Code, Name, Courses, Offered, Delete): press a track to see its strands, press a strand to see its courses. Change a name, the code or the unit in place, or use the row at the bottom of a card to add one. A course has the columns Code, Course, Unit, Offered and Delete: uncheck Offered and the registrar can't enroll students in it; Delete takes it out of the strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
             "To fill many rows at once press the Excel button at the top and choose “Template and import (Excel)”: the workbook has a sheet for each step. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("Where are the class sections?",
         [
-            "Class sections has its own place in the menu. There is a tab for each class (Grade 11, Grade 12), the strands are inside it, and inside each strand the sections A and B are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
+            "Class sections is a tab of the Academic setup. There is a tab for each class (Grade 11, Grade 12), the strands are inside it, and inside each strand the sections A, B and C are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
             "A card that says “Add section” makes the section that is missing (A, B and C). The bin on a card deletes the section, after asking.",
-        ], "coordinator/sections", "Open Class sections"),
+        ], "coordinator/academic-setup/sections", "Open Class sections"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
         [
             "Open the Class schedule (in the menu of the school). It is a week like a spreadsheet: the days are the columns and the hours, 7:00 AM to 6:00 PM, are the rows. Choose the school year, the term and the room at the top (a school year or a term that is over is not in the lists). “View all class schedule” shows every class over all the screen.",
@@ -349,8 +351,9 @@ public static class HelpContent
         ], "coordinator/analytics", "Open Analytics"),
         new("How do I write an announcement?",
         [
-            "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody, the students, the teachers; a teachers' meeting is for the teachers) and, if you want, its Start and its End (the days it is about). It is shown until its End, and the people it is for see every day from Start to End in their calendar.",
+            "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody: the staff, the teachers and the students; the students; the teachers; the staff; or the staff and the teachers; a teachers' meeting is for the teachers) and, if you want, its Start and its End (the days it is about). It is shown until its End, and the people it is for see every day from Start to End in their calendar.",
             "To write many announcements at once press “Template and import (Excel)”; “Export” makes the same file from the announcements you have.",
+            "The Philippine holidays are on the calendar of the announcements. Press one to see it and to delete it: it is deleted from the calendars of all the years (under “Deleted holidays” you can bring it back).",
         ], "coordinator/announcements", "Open Announcements"),
         new("How do I find people and make a group?",
         [
@@ -363,7 +366,7 @@ public static class HelpContent
     [
         new("How do I send a syllabus and modules to the teachers?",
         [
-            "Open Course library: press a track, then a strand, then a course (the three cards stay side by side; a course opens with a Course Menu at the left). Add the syllabus first, then the modules (“Add many modules in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each module with its title, its link (optional) and its files (needed), and the step by step at the right; no Excel is needed). Press a syllabus or a module to open it and see its text and files.",
+            "Open Course library: a track and its first strand are chosen for you; press another track or strand, then a course (the three cards stay side by side; a course opens with a Course Menu at the left, where the Courses dropdown goes from track to strand to course without going back). Add the syllabus first, then the modules (“Add many modules in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each module with its title, its slides (optional), its link (optional) and its files (needed), and the step by step at the right; no Excel is needed. The teachers and the students get a Slides button when a module has slides). Press a syllabus or a module to open it and see its text and files.",
             "You send the syllabus and the modules to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
             "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam. There is no limit in MB for them. The path at the top (Library › Academic › the strand › the term) takes you back one step at a time.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
@@ -372,9 +375,9 @@ public static class HelpContent
         new("How do I make a summative exam?",
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
-            "Write the title, the instructions, attach the paper if you have it, and the highest score. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
+            "Write the title and the instructions, then press “Add questions”: a sheet opens where each row is a question, with its type and its right answer chosen from lists. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
             "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file.",
-            "Add its questions with the Excel button (the sheet Questions) and choose the quiz settings (time limit, anti-cheating watch). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
+            "Choose the quiz settings (time limit, anti-cheating watch). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [
@@ -406,7 +409,7 @@ public static class HelpContent
         new("What do I look after?",
         [
             "You look after two things only: attendance and violations. Failing grades and students at risk in a course are for the teacher.",
-            "Open Referrals. Every student of the school is in the list, one line each, so you can write a concern for anybody. Each line has the student, the section, the Concern, what happened, the Notes and a Solved button. Use the search box and the choices Show and Concern to find students.",
+            "Open Referrals. Every student of the school is in the list, one line each, so you can write a concern for anybody. Each line has the student, the section, the Concern, what happened (with View attendance for an attendance concern), the Notes and a Solved button. Use the search box and the choices Show and Concern to find students.",
         ], "guidance/referrals", "Open Referrals"),
         new("Where do the attendance concerns come from?",
         [

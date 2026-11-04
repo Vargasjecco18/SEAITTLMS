@@ -86,6 +86,7 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<NotificationSound> NotificationSounds => Set<NotificationSound>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<HolidayExclusion> HolidayExclusions => Set<HolidayExclusion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -32,7 +32,7 @@
             <ul class="room-grid" aria-label="Rooms">
                 @foreach (var room in Shown)
                 {
-                    <li class="room-card" data-room="@room.Name">
+                    <li class="room-card" id="@($"room-{room.Id}")" data-room="@room.Name">
                         <span class="room-icon"><Icon Name="door-open" Size="18" /></span>
                         <input class="ghost grow" aria-label="@($"Name of the room {room.Name}")" maxlength="50" value="@room.Name" @key="@($"rn-{room.Id}-{stamp}")"
                                @onchange="e => RenameAsync(room, e.Value?.ToString())" />

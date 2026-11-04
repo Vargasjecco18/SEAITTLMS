@@ -1973,5 +1973,28 @@ DELETE FROM `notifications` WHERE `id` > 0 AND `kind` = 'announcement' AND `titl
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261104014731_SectionsCAndOfferedCourses', '9.0.20');
 
+ALTER TABLE `announcements` DROP CONSTRAINT `ck_announcements_audience`;
+
+ALTER TABLE `announcements` MODIFY COLUMN `audience` varchar(20) CHARACTER SET utf8mb4 NOT NULL;
+
+CREATE TABLE `holiday_exclusions` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_holiday_exclusions` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+ALTER TABLE `announcements` ADD CONSTRAINT `ck_announcements_audience` CHECK (audience IN ('Everyone', 'Students', 'Teachers', 'Staff', 'StaffTeachers'));
+
+CREATE UNIQUE INDEX `ix_holiday_exclusions_name` ON `holiday_exclusions` (`name`);
+
+DELETE FROM `module_items` WHERE `id` > 0 AND `material_item_id` IN (SELECT `id` FROM (SELECT `id` FROM `material_items` WHERE `kind` = 'Exam' AND `title` = 'Summative exam 2') x);
+
+DELETE FROM `material_items` WHERE `id` > 0 AND `kind` = 'Exam' AND `title` = 'Summative exam 2';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261104044506_StaffAudiencesHolidaysAndOneExam', '9.0.20');
+
 COMMIT;
 

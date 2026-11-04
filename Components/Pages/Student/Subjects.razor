@@ -68,8 +68,8 @@ else
                             <th scope="col" class="col-more">Teacher</th>
                             <th scope="col">Status</th>
                             <th scope="col">Modules</th>
-                            <th scope="col">Assignments</th>
                             <th scope="col">Progress</th>
+                            <th scope="col">Assignments</th>
                             <th scope="col">Next due</th>
                             <th scope="col" class="col-more">Grade</th>
                             <th scope="col" class="col-more">Attendance</th>
@@ -100,6 +100,16 @@ else
                                         @if (card.ModulesUnopened > 0) { <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge> }
                                     }
                                 </td>
+                                <td class="progress-cell">
+                                    @if (card.ProgressPercent is { } percent)
+                                    {
+                                        <ProgressBar Percent="percent" Title="@card.ProgressText" />
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                </td>
                                 <td>
                                     @if (card.AssignmentId is not { } workId)
                                     {
@@ -121,16 +131,6 @@ else
                                             <Badge Tone="Tone.Success">All done</Badge>
                                         }
                                         <span class="sub" title="@WorkTitle(card)">@WorkSummary(card)</span>
-                                    }
-                                </td>
-                                <td class="progress-cell">
-                                    @if (card.ProgressPercent is { } percent)
-                                    {
-                                        <ProgressBar Percent="percent" Title="@card.ProgressText" />
-                                    }
-                                    else
-                                    {
-                                        <span class="muted">—</span>
                                     }
                                 </td>
                                 <td>

@@ -89,13 +89,14 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             case AppRoles.Teacher:
                 return db.Announcements.AsNoTracking()
                     .Where(a => a.AuthorUserId == user.UserId
-                                || ((a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers) && a.SectionId == null));
+                                || ((a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers || a.Audience == AnnouncementAudiences.StaffTeachers) && a.SectionId == null));
 
             case AppRoles.AcademicCoordinator:
                 return db.Announcements.AsNoTracking().Where(a => a.AssignmentId == null);
 
             default:
-                return db.Announcements.AsNoTracking().Where(a => a.Audience == AnnouncementAudiences.Everyone && a.SectionId == null);
+                // the staff (and the administrator): what is for everybody, for the staff, or for the staff and the teachers
+                return db.Announcements.AsNoTracking().Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Staff || a.Audience == AnnouncementAudiences.StaffTeachers) && a.SectionId == null);
         }
     }
 
@@ -114,7 +115,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     }
 
     private static IQueryable<Announcement> ForTeachers(AppDbContext db) =>
-        db.Announcements.AsNoTracking().Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers) && a.SectionId == null);
+        db.Announcements.AsNoTracking().Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers || a.Audience == AnnouncementAudiences.StaffTeachers) && a.SectionId == null);
 
     /// <summary>What is still shown today: it has no End or its End is today or later. (An announcement is shown from the day it is posted, so people can plan for the days it is about.)</summary>
     private static IQueryable<Announcement> Live(IQueryable<Announcement> query, DateOnly today) =>
@@ -276,7 +277,8 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
         var teachers = Array.Empty<int>();
 
         var forStudents = announcement.Audience is AnnouncementAudiences.Everyone or AnnouncementAudiences.Students;
-        var forTeachers = announcement.Audience is AnnouncementAudiences.Everyone or AnnouncementAudiences.Teachers;
+        var forTeachers = announcement.Audience is AnnouncementAudiences.Everyone or AnnouncementAudiences.Teachers or AnnouncementAudiences.StaffTeachers;
+        var forStaff = announcement.Audience is AnnouncementAudiences.Everyone or AnnouncementAudiences.Staff or AnnouncementAudiences.StaffTeachers;
 
         if (forStudents)
         {
@@ -299,9 +301,15 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
             teachers = (await db.Teachers.AsNoTracking().Where(t => t.User.IsActive).Select(t => t.UserId).ToListAsync(ct)).Where(id => id != announcement.AuthorUserId).ToArray();
         }
 
+        // the staff who do not teach: the registrar, the guidance counselor, the academic coordinator and the academic provider (the author is not told)
+        var staff = !forStaff || announcement.SectionId is not null ? [] : (await db.Users.AsNoTracking()
+            .Where(u => u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.GuidanceCounselorId || u.RoleId == AppRoles.AcademicCoordinatorId || u.RoleId == AppRoles.AcademicProviderId))
+            .Select(u => u.Id).ToListAsync(ct)).Where(id => id != announcement.AuthorUserId).ToArray();
+
         var snippet = announcement.Body.Length > 140 ? announcement.Body[..139] + "…" : announcement.Body;
         await notifications.AddForManyAsync(students, "announcement", announcement.Title, snippet, "student", ct);
         await notifications.AddForManyAsync(teachers, "announcement", announcement.Title, snippet, "teacher", ct);
+        await notifications.AddForManyAsync(staff, "announcement", announcement.Title, snippet, "calendar", ct);
     }
 
     private static async Task<IReadOnlyList<AnnouncementView>> ViewsAsync(AppDbContext db, IQueryable<Announcement> query, int take, CancellationToken ct)

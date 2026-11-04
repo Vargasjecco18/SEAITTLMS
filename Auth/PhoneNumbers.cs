@@ -11,6 +11,13 @@ public static partial class PhoneNumbers
     [GeneratedRegex(@"^\+[1-9]\d{7,14}$")]
     private static partial Regex E164();
 
+    /// <summary>A stored number as people type it: +639171234567 becomes 09171234567 (digits only, for the boxes that take digits). Another number keeps its digits.</summary>
+    public static string ToLocal(string? stored)
+    {
+        var digits = new string((stored ?? "").Where(char.IsAsciiDigit).ToArray());
+        return digits.StartsWith("63", StringComparison.Ordinal) && digits.Length == 12 ? "0" + digits[2..] : digits;
+    }
+
     /// <summary>Returns the E.164 number, or null when the input can't be understood.</summary>
     public static string? Normalize(string? input)
     {

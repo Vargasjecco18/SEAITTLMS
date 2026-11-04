@@ -54,7 +54,7 @@ internal sealed class AnnouncementConfiguration : IEntityTypeConfiguration<Annou
     {
         b.Property(a => a.Title).HasMaxLength(200).IsRequired();
         b.Property(a => a.Body).HasColumnType("text").IsRequired();
-        b.Property(a => a.Audience).HasMaxLength(10).IsRequired();
+        b.Property(a => a.Audience).HasMaxLength(20).IsRequired();
         b.Property(a => a.Category).HasMaxLength(20).IsRequired().HasDefaultValue(AnnouncementCategories.Other);
 
         // A deleted account takes its announcements with it, and so does a deleted section.
@@ -69,9 +69,19 @@ internal sealed class AnnouncementConfiguration : IEntityTypeConfiguration<Annou
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
+            t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers', 'Staff', 'StaffTeachers')");
             t.HasCheckConstraint("ck_announcements_category", "category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other')");
             t.HasCheckConstraint("ck_announcements_schedule", "starts_on IS NULL OR expires_on IS NULL OR starts_on <= expires_on");
         });
+    }
+}
+
+internal sealed class HolidayExclusionConfiguration : IEntityTypeConfiguration<HolidayExclusion>
+{
+    public void Configure(EntityTypeBuilder<HolidayExclusion> b)
+    {
+        b.ToTable("holiday_exclusions");
+        b.Property(h => h.Name).HasMaxLength(100).IsRequired();
+        b.HasIndex(h => h.Name).IsUnique();
     }
 }

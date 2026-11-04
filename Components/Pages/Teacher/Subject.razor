@@ -30,7 +30,7 @@ else
                 IconName="book-open">
         <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
         <ActivitiesPop Teacher="subject" />
-        <Button IconName="plus" OnClick="OpenActivitiesAsync">Add activities</Button>
+        <Button IconName="plus" OnClick="() => OpenActivitiesAsync()">Add activities</Button>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
@@ -120,7 +120,8 @@ else
     {
         @* The first page of the course counts as being in the course: the Courses link of the menu comes back here (wwwroot/app.js). *@
         <span data-last-course="@($"teacher/subjects/{AssignmentId}")" hidden></span>
-        @* The first page of a course: only the syllabus and the modules, one line each. A click on the line opens it (its lesson, its files and, at the right, Edit module). *@
+        @* The first page of a course: only the syllabus and the modules, one line each, with the Course Menu at the left. A click on the line opens its card: the Slides and the Module buttons. *@
+        <CourseLayout Teacher="subject">
         <p class="hint-line">
             <Icon Name="eye-off" Size="16" />
             <span>Modules from the provider are <strong>drafts</strong>. Students see them when you post them.</span>
@@ -147,8 +148,12 @@ else
                         }
 
                         var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus && !m.IsExamSet);
-                        <li class="course-row @module.State.ToLowerInvariant()">
-                            <a class="row-open" href="@($"teacher/subjects/{AssignmentId}/modules/{module.Id}")">
+                        var isOpen = openRows.Contains(module.Id);
+                        var progress = ProgressOf(module);
+                        var moduleHref = $"teacher/subjects/{AssignmentId}/modules/{module.Id}";
+                        <li class="course-row @module.State.ToLowerInvariant() @(isOpen ? "is-open" : "")" data-module="@module.Id">
+                            @* A click on the row opens its card, with the Slides (when there are slides) and the Module buttons. *@
+                            <button type="button" class="row-open" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"row-body-{module.Id}")" @onclick="() => ToggleRow(module.Id)">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">
                                     <span class="row-title">@module.Title</span>
@@ -157,17 +162,18 @@ else
                                         {
                                             <Badge Tone="Tone.Info">Syllabus</Badge>
                                         }
-                                        @if (module.FromProvider)
+                                        else
                                         {
-                                            <Badge Tone="Tone.Info">From the academic provider</Badge>
-                                        }
-                                        @if (!module.IsSyllabus)
-                                        {
+                                            @if (progress is { } done)
+                                            {
+                                                <span class="row-progress"><ProgressBar Percent="done.Percent" Title="@done.Text" /></span>
+                                            }
                                             <span class="count-chip">@ModuleSummary(module)</span>
                                         }
                                     </span>
                                 </span>
-                            </a>
+                                <span class="row-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="18" /></span>
+                            </button>
                             <span class="row-status">
                                 @if (module.State == Visibility.Posted)
                                 {
@@ -183,11 +189,22 @@ else
                                 }
                                 <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Title="@($"Post, schedule or hide {module.Title}")" OnClick="() => OpenStatus(module)">Status</Button>
                             </span>
+                            @if (isOpen)
+                            {
+                                <div class="row-body" id="@($"row-body-{module.Id}")">
+                                    @if (module.HasSlides)
+                                    {
+                                        <ButtonLink Href="@($"{moduleHref}#slides")" Variant="ButtonVariant.Secondary" IconName="presentation">Slides</ButtonLink>
+                                    }
+                                    <ButtonLink Href="@moduleHref" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
+                                </div>
+                            }
                         </li>
                     }
                 </ul>
             </Card>
         }
+        </CourseLayout>
     }
 }
 
@@ -242,7 +259,7 @@ else
             <FormErrors Errors="formErrors" />
             @if (editingItemId is null)
             {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExcelFromForm">Fill many from an Excel file instead (Add activities)</Button></p>
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExcelFromForm">Fill many in a sheet instead (Add activities)</Button></p>
             }
 
             <Field For="i-title" Label="Title" Required="true">
@@ -292,7 +309,7 @@ else
 </Modal>
 
 @* ===== Add activities: the Excel template and import for the seatwork, assignments, quizzes and task performances of all the modules ===== *@
-<ActivitiesExcelDialog Open="activitiesOpen" CourseName="@(subject?.SubjectName ?? "")" Modules="activitiesModules" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
+<ActivitiesSheetDialog Open="activitiesOpen" CourseName="@(subject?.SubjectName ?? "")" Modules="SheetModules" StartModule="@activitiesStartModule" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
 
 @* ===== Delete ===== *@
 <Modal Open="deleteTarget is not null" Title="@(deleteTarget?.Title ?? "")" OnClose="CloseDelete">
@@ -365,34 +382,26 @@ else
     /// <summary>The page where the module is read inside the system, with the file pressed shown (a file the browser can't show is saved instead).</summary>
     private string? ReaderHref(int moduleId, AttachmentRow file) => file.CanPreview ? $"teacher/subjects/{AssignmentId}/modules/{moduleId}?file={file.Id}" : null;
 
-    // ---------------------------------------------------------------- Add activities (the Excel workbook of the course)
+    // ---------------------------------------------------------------- Add activities (the sheet of the course, inside the system)
 
     private bool activitiesOpen;
-    private IReadOnlyList<ActivityModuleExport> activitiesModules = [];
+    private string? activitiesStartModule;
 
-    /// <summary>The modules of the course (not the syllabus, not the box of the exams) as the workbook lists them, with the work they have now.</summary>
-    private async Task OpenActivitiesAsync()
+    /// <summary>The modules of the course (not the syllabus, not the box of the exams) as the sheet lists them, with the label the rows find them by.</summary>
+    private IReadOnlyList<AddMenuModule> SheetModules => subject is null ? [] :
+        [.. subject.Modules.Where(m => !m.IsSyllabus && !m.IsExamSet).Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))];
+
+    /// <summary>Opens the sheet; the first rows start in the module the teacher came from (when there is one).</summary>
+    private Task OpenActivitiesAsync(int? fromModuleId = null)
     {
         if (subject is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var list = new List<ActivityModuleExport>();
-        foreach (var module in subject.Modules.Where(m => !m.IsSyllabus && !m.IsExamSet))
-        {
-            var items = new List<ActivityExportItem>();
-            foreach (var i in module.Items.Where(i => ItemKinds.All.Contains(i.Kind)))
-            {
-                var questions = i.Kind == ItemKinds.Quiz ? await Modules.GetQuestionsAsync(teacherId, i.Id) ?? [] : [];
-                items.Add(new ActivityExportItem(i.Kind, new ItemExportRow(i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, i.TimeLimitMinutes), questions, [.. FilesOf(itemFiles, i.Id).Select(f => f.Name)]));
-            }
-
-            list.Add(new ActivityModuleExport(module.Title, items));
-        }
-
-        activitiesModules = list;
+        activitiesStartModule = fromModuleId is { } id ? SheetModules.FirstOrDefault(m => m.Id == id)?.Label : null;
         activitiesOpen = true;
+        return Task.CompletedTask;
     }
 
     private void CloseActivities() => activitiesOpen = false;
@@ -407,7 +416,7 @@ else
             ?? modules.FirstOrDefault(m => m.Title.StartsWith(name + ":", StringComparison.OrdinalIgnoreCase) || m.Title.StartsWith(name + " ", StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>Every row of the workbook is saved like the box saves one item, in the module the row names, so the same rules hold; the questions of a quiz and the files follow it.</summary>
+    /// <summary>Every row of the sheet is saved like the box saves one item, in the module the row names, so the same rules hold; the questions of a quiz and the files follow it.</summary>
     private async Task<ItemImportSummary> ImportActivitiesAsync(IReadOnlyList<ActivityToSave> list)
     {
         var userId = await UserIdAsync();
@@ -600,6 +609,30 @@ else
 
     // ---------------------------------------------------------------- items
 
+    // The rows of the first page that are open (their card shows the buttons).
+    private readonly HashSet<int> openRows = [];
+
+    private void ToggleRow(int moduleId)
+    {
+        if (!openRows.Remove(moduleId))
+        {
+            openRows.Add(moduleId);
+        }
+    }
+
+    /// <summary>How far the class is in a module: the works handed in out of the works the students must hand in (the activities of the module times the students). None when the module has no activity.</summary>
+    private static (int Percent, string Text)? ProgressOf(TeacherModule module)
+    {
+        var expected = module.Items.Sum(i => i.Students);
+        if (expected == 0)
+        {
+            return null;
+        }
+
+        var received = module.Items.Sum(i => Math.Min(i.Submitted, i.Students));
+        return (received * 100 / expected, $"{received} of {expected} works handed in by the class");
+    }
+
     /// <summary>"2 assignments · 1 quiz" under the title of a closed module.</summary>
     private static string ModuleSummary(TeacherModule module)
     {
@@ -626,7 +659,7 @@ else
         {
             if (pick.Kind == AddItemMenuLabels.ExcelKind)
             {
-                await OpenActivitiesAsync();
+                await OpenActivitiesAsync(module.Id);
             }
             else
             {

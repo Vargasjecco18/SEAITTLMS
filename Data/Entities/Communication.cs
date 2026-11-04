@@ -60,7 +60,23 @@ public static class AnnouncementAudiences
     public const string Students = "Students";
     public const string Teachers = "Teachers";
 
-    public static readonly string[] All = [Everyone, Students, Teachers];
+    /// <summary>The staff who do not teach (the registrar, the guidance counselor, the academic coordinator and the academic provider).</summary>
+    public const string Staff = "Staff";
+
+    /// <summary>The staff and the teachers (not the students).</summary>
+    public const string StaffTeachers = "StaffTeachers";
+
+    /// <summary>Everybody: <see cref="Everyone"/> is the staff, the teachers and the students.</summary>
+    public static readonly string[] All = [Everyone, Students, Teachers, Staff, StaffTeachers];
+
+    public static string Display(string audience) => audience switch
+    {
+        Students => "The students",
+        Teachers => "The teachers",
+        Staff => "The staff",
+        StaffTeachers => "The staff and the teachers",
+        _ => "Everybody",
+    };
 }
 
 /// <summary>What an announcement is about. The coordinator can use all of them; a teacher's announcement for their class is an exam or other.</summary>
@@ -138,4 +154,14 @@ public class Announcement : AuditableEntity
 
     /// <summary>The last day (a Philippine date) the announcement is about and shown (the End of its schedule). Empty: until it is deleted.</summary>
     public DateOnly? ExpiresOn { get; set; }
+}
+
+
+/// <summary>
+/// A holiday of the Philippines (by its name, for example "All Saints' Day") that the academic coordinator deleted from the calendars of all the years: it is not shown to anybody until it is brought back.
+/// The holidays themselves are worked out in code (<c>PhilippineHolidays</c>); only the ones taken away are kept here.
+/// </summary>
+public class HolidayExclusion : AuditableEntity
+{
+    public string Name { get; set; } = "";
 }

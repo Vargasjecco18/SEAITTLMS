@@ -310,8 +310,8 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<string>("Audience")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
                         .HasColumnName("audience");
 
                     b.Property<int>("AuthorUserId")
@@ -374,7 +374,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("announcements", null, t =>
                         {
-                            t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers')");
+                            t.HasCheckConstraint("ck_announcements_audience", "audience IN ('Everyone', 'Students', 'Teachers', 'Staff', 'StaffTeachers')");
 
                             t.HasCheckConstraint("ck_announcements_category", "category IN ('Exam', 'Holiday', 'SemesterBreak', 'TeachersMeeting', 'Other')");
 
@@ -1259,6 +1259,39 @@ namespace SEAITT_LMS.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_guidance_counselors_status", "status IN ('Active', 'Inactive')");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.HolidayExclusion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_holiday_exclusions");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_holiday_exclusions_name");
+
+                    b.ToTable("holiday_exclusions", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.ItemView", b =>

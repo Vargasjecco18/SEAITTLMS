@@ -29,19 +29,19 @@ else
     var scored = data.Rows.Where(r => r.Score is not null).ToList();
     var flagged = data.Rows.Count(r => r.IsFlagged);
 
+    @* A double click on the title opens what was given (there is no View activity button any more). *@
+    <div class="title-dbl" @ondblclick="OpenGiven" title="@($"Double-click to view the {(data.Kind == ItemKinds.Quiz ? "quiz" : "activity")}")">
     <PageHeader Title="@data.Title" IconName="@SubjectStyle.KindIcon(data.Kind)">
         <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
-        @if (course is not null)
-        {
-            <ActivitiesPop Teacher="course" CurrentItemId="data.ItemId" />
-        }
-        <Button Variant="ButtonVariant.Secondary" IconName="eye" OnClick="OpenGiven">View @(data.Kind == ItemKinds.Quiz ? "quiz" : "activity")</Button>
         @if (data.Kind == ItemKinds.Quiz && !isFileQuiz)
         {
             <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">Questions</ButtonLink>
         }
     </PageHeader>
+    </div>
 
+    @* The Course Menu at the left (Courses, Modules, Activities, Students, Gradebook, Attendance); the menu of the school folds to its icons so the table has room. *@
+    <CourseLayout Teacher="course" CurrentItemId="data.ItemId" Selected="@CourseMenu.KeyOf(data.Kind)" CollapseMenu="true">
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     @if (lateWaiting > 0)
@@ -151,6 +151,7 @@ else
         }
     </Card>
     </div>
+    </CourseLayout>
 }
 
 @* ===== What the teacher gave: the instructions and the files, in the middle of the screen ===== *@

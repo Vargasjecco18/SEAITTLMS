@@ -17,6 +17,95 @@
     }
 }
 
+/* The enrollment form: the student's card at the left with its button under it, the enrollment card at the right. The button is in the second row, which takes
+   what is left of the height, so the courses that grow the card at the right never push it down. */
+.enroll-grid {
+    grid-template-areas: "student" "view" "enroll";
+}
+
+.enroll-grid ::deep .area-student { grid-area: student; }
+.enroll-grid .area-view { grid-area: view; }
+.enroll-grid ::deep .area-enroll { grid-area: enroll; }
+
+@media (min-width: 1000px) {
+    .enroll-grid {
+        grid-template-areas: "student enroll" "view enroll";
+        grid-template-rows: auto 1fr;
+    }
+}
+
+.area-view {
+    display: flex;
+    justify-content: flex-start;
+    align-self: start;
+}
+
+/* ---------- the box of the enrolling student ---------- */
+.view-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.view-part {
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.view-part h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.8rem;
+    font-size: 1rem;
+}
+
+.view-part h3 ::deep .icon {
+    color: var(--primary);
+}
+
+.view-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1rem;
+}
+
+.view-fields .notice {
+    grid-column: 1 / -1;
+}
+
+.view-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.view-summary dd {
+    font-weight: 600;
+}
+
+.view-note {
+    margin: 0.8rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.view-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .view-fields,
+    .view-summary {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .two {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -10,7 +10,7 @@
 
 @media (min-width: 960px) {
     .setup-shell {
-        grid-template-columns: 15.5rem minmax(0, 1fr);
+        grid-template-columns: 18.5rem minmax(0, 1fr);
     }
 }
 
@@ -81,7 +81,7 @@
 }
 
 .tab-text strong {
-    font-size: 0.92rem;
+    font-size: 0.84rem;
     font-weight: 650;
 }
 
@@ -305,6 +305,8 @@
     }
 
     .is-compact .tab-text,
+    .is-compact .tab-sub,
+    .is-compact .tab-chevron,
     .is-compact .tabs-note,
     .is-compact .tab-label,
     .is-compact .tab-link > svg {
@@ -315,4 +317,57 @@
     .is-compact .tabs-toggle {
         justify-content: center;
     }
+}
+
+/* The dropdown of the open tab: what is inside it, as small links under it. */
+.tab-chevron {
+    flex: none;
+    color: var(--text-muted);
+}
+
+.tab-sub {
+    display: none;
+    margin: -0.2rem 0 0.2rem 2.45rem;
+    padding: 0 0 0 0.6rem;
+    border-left: 1px solid var(--border);
+    list-style: none;
+}
+
+@media (min-width: 960px) {
+    .tab-sub {
+        display: grid;
+        gap: 0.05rem;
+    }
+}
+
+.tab-sub ul {
+    margin: 0 0 0.2rem 0.6rem;
+    padding: 0 0 0 0.6rem;
+    border-left: 1px solid var(--border);
+    list-style: none;
+}
+
+.tab-sub a {
+    display: block;
+    padding: 0.18rem 0.45rem;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.tab-sub a:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.tab-sub a.on {
+    background: var(--surface-2);
+    color: var(--text);
+    box-shadow: inset 2px 0 0 var(--text-muted);
+}
+
+.tab-sub .sub-track {
+    color: var(--text);
 }

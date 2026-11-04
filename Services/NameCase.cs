@@ -84,6 +84,20 @@ public static class NameCase
         return lower[..first] + char.ToUpperInvariant(lower[first]) + lower[(first + 1)..];
     }
 
+    /// <summary>
+    /// True when a name has letters only. The spaces, dots, dashes and apostrophes that real names have stay allowed ("Dela Cruz", "Jr.", "Anne-Marie", "O'Neil"):
+    /// digits and the other signs are not part of a name. An empty text is fine here (the caller decides whether the name is required).
+    /// </summary>
+    public static bool IsName(string? text) => string.IsNullOrWhiteSpace(text) || (text.Trim().Any(char.IsLetter) && text.All(IsNameCharacter));
+
+    /// <summary>Keeps what can be in a name: the letters and the spaces, dots, dashes and apostrophes between them.</summary>
+    public static string KeepLetters(string? text) => new((text ?? "").Where(IsNameCharacter).ToArray());
+
+    /// <summary>Keeps the digits only (for the LRN and the phone number).</summary>
+    public static string KeepDigits(string? text) => new((text ?? "").Where(char.IsAsciiDigit).ToArray());
+
+    private static bool IsNameCharacter(char c) => char.IsLetter(c) || c is ' ' or '.' or '-' or '\'' or '’';
+
     private static readonly HashSet<string> Numerals = new(StringComparer.OrdinalIgnoreCase) { "II", "III", "IV", "VI", "VII", "VIII", "IX" };
 
     private static bool IsRoman(string text) => Numerals.Contains(text) && (text.All(char.IsUpper) || text.All(char.IsLower));

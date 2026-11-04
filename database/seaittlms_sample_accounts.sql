@@ -1,4 +1,4 @@
--- Sample sign-ins for SEAITT Legazpi LMS: 1 administrator, 1 registrar, 1 guidance counselor, 1 academic coordinator, 1 academic provider (central team), 12 teachers and 40 students.
+-- Sample sign-ins for SEAITT Legazpi LMS: 1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 1 academic provider (central team), 12 teachers and 40 students.
 --
 -- The sign-in of each person is made from the name and the number they have at school, the same way the app makes the sign-in of a new person:
 --   * staff and teachers: the last name, a dot and the digits of the employee number     for example villanueva.001@legazpi.seaitt.edu.ph (employee number T-001);
@@ -13,8 +13,8 @@
 --   * a person who is not there yet is added;
 --   * a person who is there already (with the email of this file or of the earlier one) gets the email and the password of this file, and keeps
 --     everything else (courses, enrollment, grades). The sign-in of a locked account is opened.
--- The school has exactly ONE administrator, ONE registrar, ONE guidance counselor, ONE academic coordinator and ONE academic provider, so for those roles nothing is added when the role already
--- has an account (the app makes the first administrator by itself from the Seed:Admin settings in appsettings.Local.json, with the password you
+-- The school has ONE administrator, ONE registrar, ONE guidance counselor and ONE academic provider, and TWO academic coordinators, so for those roles nothing is added when the role already
+-- has its accounts (the app makes the first administrator by itself from the Seed:Admin settings in appsettings.Local.json, with the password you
 -- chose there). THE PASSWORD OF AN ADMINISTRATOR IS NEVER CHANGED by this file. To give that administrator the sample password of the list of sign-ins too, run the
 -- last statement of this file (it is written as a comment).
 --
@@ -41,6 +41,7 @@ INSERT INTO sample_people (role_id, email, old_email, password_hash, security_st
     (4, 'mendoza.021@legazpi.seaitt.edu.ph', 'registrar@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$3ire9vAoVfNA82+3gQkPEQ==$QHKMyvZPcn1K7YSOcwbKzD8U9oAt4xdtW1ud1yjIp70=', 'f4469f1182c644338c37089a70a2a563', 'Rosa', NULL, 'Mendoza', 'R-021', NULL, NULL),
     (5, 'reyes.022@legazpi.seaitt.edu.ph', 'guidance@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$zCqxlTkXDtJU13uem9E6ng==$gvMBiaossNl4bGWj+juIKseoUEvl7I5nkpVOJyItUbI=', 'e74423293b6e4e58b232040075e70e9a', 'Gloria', NULL, 'Reyes', 'G-022', NULL, NULL),
     (6, 'villareal.023@legazpi.seaitt.edu.ph', 'coordinator1@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$7OnvImMDOU5mi2SPN9IGQw==$FHCqwwL8djISRbrmX3lhxzdNA83kxhWIfgMZqVvIOG0=', 'ef1724406a544ec1a1c4c106f824b0c3', 'Lourdes', 'Garcia', 'Villareal', 'C-023', NULL, NULL),
+    (6, 'ramos.026@legazpi.seaitt.edu.ph', 'coordinator2@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$byjI0XhBJafcwzZ+SqisLA==$iWS637LWM4NO+x3i9y3jxajmyf8SBaSM5C+dGHH2KtI=', '9c8be15982473c6dc6d3d708c60a6f42', 'Marissa', 'Santos', 'Ramos', 'C-026', NULL, NULL),
     (7, 'pangilinan.024@legazpi.seaitt.edu.ph', 'provider1@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$4bRCt5aBUeqzgMqo6ZcB6w==$dMcm49R19nIrKUWSkGOtZ3xmwPJkswT2y6fp1ixSDas=', '70ac06d8b6ef4f38a003a36417059864', 'Elena', 'Cruz', 'Pangilinan', 'P-024', NULL, NULL),
     (2, 'vargas.013@legazpi.seaitt.edu.ph', 'vargas@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$sHC8daSgqvfjanx2Uc/5tg==$AUI1uMNUiFV3i9k1EhRf/KVjJqxlxmLSjwS97s7ZJKM=', '11c4c5d178f241b6a57c88e0c23ebe43', 'Rafael', 'Mendoza', 'Vargas', 'T-013', NULL, NULL),
     (2, 'villanueva.001@legazpi.seaitt.edu.ph', 'villanueva@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$p2KAcyDfrKqcZXw4bb+w/g==$iGRbgaujDbEBDZTVTxiydzy49zoSAISbBY8Ww7iRz48=', '5e90eff5b5c241bb90735eb13d15c97d', 'Ricardo', 'Dizon', 'Villanueva', 'T-001', NULL, NULL),
@@ -100,7 +101,8 @@ INSERT INTO users (email, password_hash, phone_number, role_id, is_active, secur
 SELECT p.email, p.password_hash, NULL, p.role_id, 1, p.security_stamp, 0, @now, @now
 FROM sample_people p
 WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.email = p.email OR u.email = p.old_email)
-  AND (p.role_id NOT IN (1, 4, 5, 6, 7) OR NOT EXISTS (SELECT 1 FROM users u WHERE u.role_id = p.role_id))
+  AND (p.role_id NOT IN (1, 4, 5, 6, 7) OR NOT EXISTS (SELECT 1 FROM users u WHERE u.role_id = p.role_id)
+       OR (p.role_id = 6 AND (SELECT COUNT(*) FROM users u WHERE u.role_id = 6) < 2))
   AND (p.lrn IS NULL OR NOT EXISTS (SELECT 1 FROM students s WHERE s.lrn = p.lrn));
 
 -- 2) The accounts that are there already (made by an earlier version of this file) get the new email and password, and are signed out.

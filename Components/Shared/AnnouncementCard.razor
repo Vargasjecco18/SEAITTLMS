@@ -71,10 +71,5 @@
     private string AudienceText =>
         Item.CourseName is { } course ? $"{course} · {Item.SectionLabel}"
         : Item.SectionLabel is { } section ? $"Students of {section}"
-        : Item.Audience switch
-        {
-            AnnouncementAudiences.Students => "The students",
-            AnnouncementAudiences.Teachers => "The teachers",
-            _ => "Everybody",
-        };
+        : AnnouncementAudiences.Display(Item.Audience);
 }

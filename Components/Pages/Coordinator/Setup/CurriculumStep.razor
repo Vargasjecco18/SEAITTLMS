@@ -23,6 +23,7 @@
                     <span class="col-count">@tracks.Count</span>
                     <label class="col-search"><Icon Name="search" Size="15" /><input id="track-search" type="search" placeholder="Search" aria-label="Search the tracks" maxlength="60" autocomplete="off" @bind="trackSearch" @bind:event="oninput" /></label>
                 </header>
+                <div class="col-cols" aria-hidden="true"><span>Code</span><span>Name</span><span class="mid">Strands</span><span class="mid">Offered</span><span class="mid">Delete</span></div>
                 <ul class="col-list" role="listbox" aria-label="Tracks">
                     @foreach (var t in ShownTracks)
                     {
@@ -32,7 +33,10 @@
                             <input class="ghost grow" aria-label="@($"Name of the track {t.Code}")" maxlength="100" value="@t.Name" @key="@($"tm-{t.Id}-{stamp}")"
                                    @onchange="e => SaveTrackAsync(t, name: e.Value?.ToString())" />
                             <span class="meta">@t.Strands</span>
-                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the track {t.Code}")" OnClick='() => OpenDelete(t.Id, t.Code, "track")' />
+                            <label class="offered-box" title="Uncheck it for a track that is not offered now. The registrar can't enroll students in its strands.">
+                                <input type="checkbox" aria-label="@($"{t.Code} is offered")" checked="@t.IsActive" @key="@($"ta-{t.Id}-{stamp}")" @onchange="e => SaveTrackAsync(t, active: (bool?)e.Value)" @onclick:stopPropagation="true" />
+                            </label>
+                            <span class="delete-box"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the track {t.Code}")" OnClick='() => OpenDelete(t.Id, t.Code, "track")' /></span>
                         </li>
                     }
 
@@ -61,6 +65,7 @@
                 }
                 else
                 {
+                    <div class="col-cols" aria-hidden="true"><span>Code</span><span>Name</span><span class="mid">Courses</span><span class="mid">Offered</span><span class="mid">Delete</span></div>
                     <ul class="col-list" role="listbox" aria-label="@($"Strands of {track.Code}")">
                         @foreach (var st in strandList)
                         {
@@ -69,12 +74,12 @@
                                        @onchange="e => SaveStrandAsync(st, code: e.Value?.ToString())" />
                                 <input class="ghost grow" aria-label="@($"Name of the strand {st.Code}")" maxlength="150" value="@st.Name" @key="@($"sm-{st.Id}-{stamp}")"
                                        @onchange="e => SaveStrandAsync(st, name: e.Value?.ToString())" />
-                                <label class="offered" title="Switch it off for a strand that is not offered now. The registrar can't enroll students in it.">
-                                    <input type="checkbox" aria-label="@($"{st.Code} is offered")" checked="@st.IsActive" @key="@($"sa-{st.Id}-{stamp}")"
-                                           @onchange="e => SaveStrandAsync(st, active: (bool?)e.Value)" /> <span>Offered</span>
-                                </label>
                                 <span class="meta">@st.Subjects</span>
-                                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the strand {st.Code}")" OnClick='() => OpenDelete(st.Id, st.Code, "strand")' />
+                                <label class="offered-box" title="Uncheck it for a strand that is not offered now. The registrar can't enroll students in it.">
+                                    <input type="checkbox" aria-label="@($"{st.Code} is offered")" checked="@st.IsActive" @key="@($"sa-{st.Id}-{stamp}")"
+                                           @onchange="e => SaveStrandAsync(st, active: (bool?)e.Value)" @onclick:stopPropagation="true" />
+                                </label>
+                                <span class="delete-box"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete the strand {st.Code}")" OnClick='() => OpenDelete(st.Id, st.Code, "strand")' /></span>
                             </li>
                         }
 
@@ -106,13 +111,7 @@
                 else
                 {
                     var lines = CoursesShown(strand).ToList();
-                    <div class="course-columns" aria-hidden="true">
-                        <span class="cc-code">Code</span>
-                        <span class="cc-name">Course</span>
-                        <span class="cc-units">Unit</span>
-                        <span class="cc-offered">Offered</span>
-                        <span class="cc-delete">Delete</span>
-                    </div>
+                    <div class="col-cols course-cols" aria-hidden="true"><span>Code</span><span>Course</span><span class="mid">Unit</span><span class="mid">Offered</span><span class="mid">Delete</span></div>
                     <div class="col-list courses-box">
                         @foreach (var group in lines.GroupBy(l => (l.GradeLevel, l.TermNumber)).OrderBy(g => g.Key.GradeLevel).ThenBy(g => g.Key.TermNumber))
                         {
@@ -221,6 +220,26 @@
 
     /// <summary>What is typed in the search box of the page.</summary>
     [Parameter] public string? Search { get; set; }
+
+    /// <summary>The track and the strand the dropdown of the tab asked for (the address has ?track=1&amp;strand=2).</summary>
+    [Parameter] public int? InitialTrack { get; set; }
+
+    [Parameter] public int? InitialStrand { get; set; }
+
+    private (int?, int?) askedFor;
+
+    protected override void OnParametersSet()
+    {
+        if ((InitialTrack, InitialStrand) != askedFor)
+        {
+            askedFor = (InitialTrack, InitialStrand);
+            if (InitialTrack is { } t)
+            {
+                selectedTrackId = t;
+                selectedStrandId = InitialStrand;
+            }
+        }
+    }
 
     private IReadOnlyList<TrackRow>? tracks;
     private IReadOnlyList<StrandRow> strands = [];
@@ -337,8 +356,8 @@
     }
 
     // ---- tracks
-    private Task SaveTrackAsync(TrackRow track, string? code = null, string? name = null) =>
-        DoAsync(userId => Setup.SaveTrackAsync(new TrackInput { Id = track.Id, Code = code ?? track.Code, Name = name ?? track.Name, IsActive = track.IsActive }, userId));
+    private Task SaveTrackAsync(TrackRow track, string? code = null, string? name = null, bool? active = null) =>
+        DoAsync(userId => Setup.SaveTrackAsync(new TrackInput { Id = track.Id, Code = code ?? track.Code, Name = name ?? track.Name, IsActive = active ?? track.IsActive }, userId));
 
     private async Task AddTrackAsync()
     {

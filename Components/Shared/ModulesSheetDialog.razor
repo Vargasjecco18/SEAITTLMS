@@ -1,6 +1,6 @@
 @using Microsoft.AspNetCore.Components.Forms
 
-@* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Link and its Files, and the
+@* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Slides (optional), its Link and its Files, and the
    step by step at the right. It is a plain table of boxes: a box is read when it is left (not at every key), the files are only remembered (they are read when Save is pressed, a few modules
    at a time), and nothing is built until the box is opened, so it costs the server almost nothing. The page saves the modules (OnImport). *@
 <Modal Open="Open" Title="@($"Add modules · {CourseName}")" Wide="true" OnClose="CloseAsync">
@@ -24,6 +24,7 @@
                                 <tr>
                                     <th scope="col" class="c-n">#</th>
                                     <th scope="col" class="c-title">Title</th>
+                                    <th scope="col" class="c-slides">Slides <small>(optional)</small></th>
                                     <th scope="col" class="c-link">Link <small>(optional)</small></th>
                                     <th scope="col" class="c-files">Files <small>(needed)</small></th>
                                     <th scope="col" class="c-state">Ready</th>
@@ -40,6 +41,20 @@
                                         <td class="c-title">
                                             <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Title of row {n}")" placeholder="Title of the module" value="@row.Title" @key="@($"t-{row.Id}")"
                                                    @onchange="e => row.Title = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-slides">
+                                            <span class="file-chips">
+                                                @foreach (var slide in row.Slides)
+                                                {
+                                                    var shown = slide;
+                                                    <span class="file-chip" title="@shown.Name"><Icon Name="presentation" Size="13" /> <span class="chip-name">@shown.Name</span>
+                                                        <button type="button" class="chip-x" aria-label="@($"Take {shown.Name} out of the slides of row {n}")" @onclick="() => row.Slides.Remove(shown)"><Icon Name="x" Size="12" /></button></span>
+                                                }
+                                            </span>
+                                            <label class="add-files" title="Choose the slides of this module (a PowerPoint file or a PDF), if there are any">
+                                                <Icon Name="plus" Size="14" /> <span>@(row.Slides.Count == 0 ? "Add slides" : "More")</span>
+                                                <InputFile class="file-input" OnChange="e => SlidesChosen(row, e)" multiple accept=".ppt,.pptx,.pps,.ppsx,.odp,.key,.pdf" aria-label="@($"Slides of row {n}")" />
+                                            </label>
                                         </td>
                                         <td class="c-link">
                                             <input class="cell" type="url" maxlength="500" autocomplete="off" aria-label="@($"Link of row {n}")" placeholder="https://…" value="@row.Link" @key="@($"l-{row.Id}")"
@@ -100,12 +115,12 @@
                     <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
                     <ol>
                         <li><strong>Type the title</strong> of the module in a row. Press Tab to go to the next box.</li>
+                        <li><strong>Add slides</strong> if the module has them (a PowerPoint file or a PDF). It is optional: the teacher and the students get a <em>Slides</em> button when there are slides.</li>
                         <li><strong>Paste a link</strong> to a video or a file online if there is one. It is optional and starts with <em>https://</em>.</li>
                         <li><strong>Press Add files</strong> in the row and choose the files of the module (a PDF, a Word file, slides, a picture ...). <strong>A file is needed.</strong> There is no limit in MB.</li>
                         <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
                         <li><strong>Press Save.</strong> Each row becomes one module of the course, with its files, after the ones that are already there.</li>
                     </ol>
-                    <p class="sheet-tip"><Icon Name="info" Size="14" /> Up to @MaxRows modules at a time, and up to @AttachmentService.MaxPerOwner files in a module. Nothing is saved until you press Save.</p>
                 </aside>
             </div>
         }
@@ -145,6 +160,7 @@
         public string Title { get; set; } = "";
         public string Link { get; set; } = "";
         public List<IBrowserFile> Files { get; } = [];
+        public List<IBrowserFile> Slides { get; } = [];
     }
 
     private readonly List<SheetRow> rows = [];
@@ -205,7 +221,7 @@
         }
     }
 
-    private static bool IsFilled(SheetRow row) => row.Title.Trim().Length > 0 || row.Link.Trim().Length > 0 || row.Files.Count > 0;
+    private static bool IsFilled(SheetRow row) => row.Title.Trim().Length > 0 || row.Link.Trim().Length > 0 || row.Files.Count > 0 || row.Slides.Count > 0;
 
     private IReadOnlyList<SheetRow> Filled => [.. rows.Where(IsFilled)];
 
@@ -243,7 +259,34 @@
             problems.Add("A file is empty.");
         }
 
+        // The slides are optional; when they are there they are PowerPoint files or PDFs.
+        if (row.Slides.Count > AttachmentService.MaxPerOwner)
+        {
+            problems.Add($"At most {AttachmentService.MaxPerOwner} slide files.");
+        }
+        else if (row.Slides.FirstOrDefault(f => !AttachmentService.IsSlideFile(f.Name)) is { } notSlide)
+        {
+            problems.Add($"{notSlide.Name}: slides are a PowerPoint file (.ppt, .pptx) or a PDF.");
+        }
+        else if (row.Slides.Any(f => f.Size == 0))
+        {
+            problems.Add("A slide file is empty.");
+        }
+
         return problems;
+    }
+
+    /// <summary>The slides are only remembered here too; they are read when Save is pressed.</summary>
+    private void SlidesChosen(SheetRow row, InputFileChangeEventArgs e)
+    {
+        error = null;
+        foreach (var file in e.GetMultipleFiles(AttachmentService.MaxPerOwner + 1))
+        {
+            if (!row.Slides.Any(f => f.Name == file.Name && f.Size == file.Size))
+            {
+                row.Slides.Add(file);
+            }
+        }
     }
 
     /// <summary>The files are only remembered here; they are read when Save is pressed.</summary>
@@ -296,8 +339,17 @@
                             files.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
                         }
 
+                        var slides = new List<NewAttachment>();
+                        foreach (var file in row.Slides)
+                        {
+                            await using var stream = file.OpenReadStream(long.MaxValue);
+                            using var buffer = new MemoryStream();
+                            await stream.CopyToAsync(buffer);
+                            slides.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
+                        }
+
                         var input = new ModuleInput { Title = row.Title.Trim(), LinkUrl = row.Link.Trim().Length == 0 ? null : row.Link.Trim() };
-                        list.Add(new ModuleToSave(input, files, number));
+                        list.Add(new ModuleToSave(input, files, number, slides));
                     }
                     catch (IOException)
                     {

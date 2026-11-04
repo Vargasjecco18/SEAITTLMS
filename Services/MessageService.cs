@@ -23,7 +23,7 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
     /// <summary>The roles a person may write to.</summary>
     private static string[] AllowedRoles(string role) => role switch
     {
-        AppRoles.Student => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar],
+        AppRoles.Student => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar],
         AppRoles.Teacher => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
         AppRoles.Registrar => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
         AppRoles.AcademicCoordinator => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],

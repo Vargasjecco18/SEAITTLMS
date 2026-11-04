@@ -136,6 +136,50 @@
                         }
                     </Card>
                     break;
+                case "notices":
+                    @* The announcements that are on now or come in the next two months (the staff's calendar). *@
+                    <Card Title="Announcements" IconName="megaphone">
+                        @if (upcomingNotices.Count == 0)
+                        {
+                            <p class="quiet">No announcement is on now.</p>
+                        }
+                        else
+                        {
+                            <ul class="next">
+                                @foreach (var e in Slice("notices", upcomingNotices))
+                                {
+                                    <li>
+                                        <span class="kind announcement"><Icon Name="megaphone" Size="16" /></span>
+                                        <span class="next-text"><span class="next-title">@e.Title</span><small>@e.Subtitle</small></span>
+                                    </li>
+                                }
+                            </ul>
+                            <ShowMoreButton Total="upcomingNotices.Count" Shown="ShownFirst" Open="@(expanded.Contains("notices"))" OnToggle="@(() => ToggleMore("notices"))" />
+                        }
+                    </Card>
+                    break;
+                case "holidays":
+                    <Card Title="Holidays" IconName="flag">
+                        @if (holidays.Count == 0)
+                        {
+                            <p class="quiet">No holiday in the next two months.</p>
+                        }
+                        else
+                        {
+                            <ul class="next">
+                                @foreach (var e in Slice("holidays", holidays))
+                                {
+                                    <li>
+                                        <span class="kind holiday"><Icon Name="flag" Size="16" /></span>
+                                        <span class="next-text"><span class="next-title">@e.Title</span><small>@e.Subtitle</small></span>
+                                        <span class="when">@PhilippineTime.FormatDate(e.Day)</span>
+                                    </li>
+                                }
+                            </ul>
+                            <ShowMoreButton Total="holidays.Count" Shown="ShownFirst" Open="@(expanded.Contains("holidays"))" OnToggle="@(() => ToggleMore("holidays"))" />
+                        }
+                    </Card>
+                    break;
                 case "achievements":
                     <AchievementsWidget Items="achievements" />
                     break;
@@ -202,6 +246,8 @@
     private string? role;
     private string[] order = [];
     private List<CalendarEvent> upNext = [];
+    private List<CalendarEvent> upcomingNotices = [];
+    private List<CalendarEvent> holidays = [];
     /// <summary>The title of the card with the work to do (the student's dashboard calls it "Due dates").</summary>
     [Parameter] public string ActivitiesTitle { get; set; } = "Assignments and due dates";
 
@@ -257,18 +303,20 @@
     {
         var user = await Me.GetAsync();
         role = user?.Role;
-        if (user is null || (role != AppRoles.Student && role != AppRoles.Teacher))
+        if (user is null)
         {
             role = null;
             return;
         }
 
+        // The staff have only the cards of the calendar: the announcements and the holidays (and the due dates / the small calendar when a page asks for them).
+        var studentOrTeacher = role == AppRoles.Student || role == AppRoles.Teacher;
         order = Show.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(w => w switch
             {
                 "achievements" or "activities" => role == AppRoles.Student,
                 "tocheck" or "unassigned" or "unchecked" => role == AppRoles.Teacher,
-                "online" => true,
+                "announcements" or "online" => studentOrTeacher,
                 _ => true,
             })
             .ToArray();
@@ -298,6 +346,14 @@
                 .Where(e => !e.Done && e.Kind != CalendarKinds.Module && (e.AtUtc is null || e.AtUtc >= now || e.Overdue))
                 .DistinctBy(e => e.Kind == CalendarKinds.Announcement ? "notice:" + e.Title : e.Key) // a notice of several days is listed once
                 .Take(30).ToList();
+        }
+
+        if (order.Contains("notices") || order.Contains("holidays"))
+        {
+            var from = PhilippineTime.Today(Clock);
+            var ahead = (await Events.GetEventsAsync(user, from, from.AddDays(60))).ToList();
+            upcomingNotices = [.. ahead.Where(e => e.Kind == CalendarKinds.Announcement).DistinctBy(e => e.Title).Take(30)];
+            holidays = [.. ahead.Where(e => e.Kind == CalendarKinds.Holiday).Take(30)];
         }
 
         if (order.Contains("achievements") && await Me.GetStudentIdAsync() is { } studentId)

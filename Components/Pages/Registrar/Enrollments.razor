@@ -108,57 +108,22 @@ else
 {
     <EditForm Model="form" OnSubmit="SubmitAsync" class="enroll-form">
 
-        <FormErrors Errors="errors" />
+        @if (!viewOpen)
+        {
+            <FormErrors Errors="errors" />
+        }
 
-        <div class="grid">
-            <Card Title="Student" IconName="graduation-cap">
-                <Field For="lrn" Label="LRN" Required="true" Hint="The 12 digits of the Learner Reference Number.">
-                    <input id="lrn" type="text" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" autocomplete="off" required
-                           title="12 digits" @bind="form.Lrn" @bind:event="oninput" @bind:after="OnLrnChangedAsync" />
-                </Field>
-
-                @if (existing is not null)
-                {
-                    <div class="notice" role="status">
-                        <Icon Name="info" Size="18" />
-                        <div>
-                            <strong>@existing.FullName already has an account.</strong>
-                            <span>This adds a new enrollment. The name and the sign-in details stay as they are.</span>
-                            @if (existing.LastPlacement is not null)
-                            {
-                                <span>The grade level, track and strand are the ones of the last enrollment. Choose the section.</span>
-                            }
-                            @if (existing.EnrolledTermIds.Contains(form.TermId))
-                            {
-                                <span class="warn">This student is already enrolled for the selected term.</span>
-                            }
-                        </div>
-                    </div>
-                }
-
-                <Field For="first-name" Label="First name" Required="true">
-                    <input id="first-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap"
-                           @bind="FirstNameValue" @onblur="WriteNamesWithCapitals" />
-                </Field>
-                <Field For="middle-name" Label="Middle name">
-                    <input id="middle-name" type="text" maxlength="100" autocomplete="off" readonly="@(existing is not null)" class="cap"
-                           @bind="MiddleNameValue" @onblur="WriteNamesWithCapitals" />
-                </Field>
-                <Field For="last-name" Label="Last name" Required="true">
-                    <input id="last-name" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap"
-                           @bind="LastNameValue" @bind:event="oninput" @onblur="WriteNamesWithCapitals" />
-                </Field>
-                <Field For="name-extension" Label="Name extension" Hint="Optional: Jr., Sr., III ...">
-                    <input id="name-extension" type="text" maxlength="10" autocomplete="off" placeholder="Jr." class="cap"
-                           readonly="@(existing is not null)" @bind="NameExtensionValue" @onblur="WriteNamesWithCapitals" />
-                </Field>
-                <Field For="phone" Label="Phone number" Hint="Optional. A mobile number like 0917 123 4567.">
-                    <input id="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="off" placeholder="09XX XXX XXXX"
-                           readonly="@(existing?.PhoneNumber is not null)" @bind="PhoneValue" />
-                </Field>
+        <div class="grid enroll-grid">
+            <Card Title="Student" IconName="graduation-cap" Class="area-student">
+                @StudentFields("")
             </Card>
 
-            <Card Title="Enrollment" IconName="clipboard-list">
+            @* The button stays under the student's card, at the left: the courses that appear in the card at the right do not move it. *@
+            <div class="area-view">
+                <Button Type="button" Variant="ButtonVariant.Primary" IconName="eye" OnClick="OpenView">View enrolling student</Button>
+            </div>
+
+            <Card Title="Enrollment" IconName="clipboard-list" Class="area-enroll">
                 @* The term is set by the calendar (the first day and the last day of each term): the registrar does not choose it. *@
                 <Field For="term" Label="Term" Hint="Set by itself from the first day and the last day of the term.">
                     <input id="term" readonly value="@TermText(form.TermId)" />
@@ -273,38 +238,65 @@ else
                 </div>
             </Card>
         </div>
-
-        @* The sign-in details are shown until the courses of the strand appear; after that the form is about the enrollment, and the receipt has the sign-in. *@
-        <div class="grid">
-            @if (plan.Count == 0)
-            {
-            <Card Title="Sign-in details" IconName="key-round">
-                @if (existing is not null)
-                {
-                    <p>This student already has an account: <span class="mono">@existing.Email</span>.</p>
-                    <p class="muted">Their password does not change.</p>
-                }
-                else if (Preview is { } preview)
-                {
-                    <dl class="preview">
-                        <div><dt>Email</dt><dd class="mono" id="preview-email">@preview.Email</dd></div>
-                        <div><dt>Password</dt><dd class="mono" id="preview-password">@preview.Password</dd></div>
-                    </dl>
-                    <p class="hint">Made from the last name and the last 6 digits of the LRN. They are created when you press Enroll student.</p>
-                }
-                else
-                {
-                    <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
-                }
-            </Card>
-            }
-        </div>
-
-        <div class="submit-row">
-            <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>
-            <ButtonLink Href="registrar" Variant="ButtonVariant.Ghost">Cancel</ButtonLink>
-        </div>
     </EditForm>
+
+    @* The box of the enrolling student: the information (it can be corrected here), the sign-in details, Enroll student and Cancel. *@
+    <Modal Open="viewOpen" Title="Enrolling student" Large="true" Centered="true" OnClose="CloseView">
+        @if (viewOpen)
+        {
+            <EditForm Model="form" OnSubmit="SubmitAsync">
+              <div class="view-form">
+                <FormErrors Errors="errors" />
+
+                <section class="view-part" aria-label="Student">
+                    <h3><Icon Name="graduation-cap" Size="18" /> Student</h3>
+                    <div class="view-fields">
+                        @StudentFields("ev-")
+                    </div>
+                </section>
+
+                <section class="view-part" aria-label="Enrollment">
+                    <h3><Icon Name="clipboard-list" Size="18" /> Enrollment</h3>
+                    <dl class="view-summary" id="view-summary">
+                        <div><dt>Term</dt><dd>@TermText(form.TermId)</dd></div>
+                        <div><dt>Grade level</dt><dd>Grade @form.GradeLevel</dd></div>
+                        <div><dt>Track</dt><dd>@(lookups!.Tracks.FirstOrDefault(t => t.Id == form.TrackId)?.Code ?? "Not chosen")</dd></div>
+                        <div><dt>Strand</dt><dd>@(lookups.Strands.FirstOrDefault(t => t.Id == form.StrandId)?.Code ?? "Not chosen")</dd></div>
+                        <div><dt>Section</dt><dd>@(string.IsNullOrWhiteSpace(form.SectionName) ? "Not chosen" : form.SectionName)</dd></div>
+                        <div><dt>Courses</dt><dd>@(plan.Count == 0 ? "None yet" : $"{plan.Count} · {plan.Sum(c => c.Units).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} units")</dd></div>
+                    </dl>
+                    <p class="view-note">The grade level, strand and section are chosen on the page.</p>
+                </section>
+
+                <section class="view-part" aria-label="Sign-in details">
+                    <h3><Icon Name="key-round" Size="18" /> Sign-in details</h3>
+                    @if (existing is not null)
+                    {
+                        <p>This student already has an account: <span class="mono">@existing.Email</span>.</p>
+                        <p class="muted">Their password does not change.</p>
+                    }
+                    else if (Preview is { } preview)
+                    {
+                        <dl class="preview">
+                            <div><dt>Email</dt><dd class="mono" id="preview-email">@preview.Email</dd></div>
+                            <div><dt>Password</dt><dd class="mono" id="preview-password">@preview.Password</dd></div>
+                        </dl>
+                        <p class="hint">Made from the last name and the last 6 digits of the LRN. They are created when you press Enroll student.</p>
+                    }
+                    else
+                    {
+                        <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
+                    }
+                </section>
+
+                <div class="view-actions">
+                    <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>
+                    <Button Type="button" Variant="ButtonVariant.Ghost" OnClick="CloseView">Cancel</Button>
+                </div>
+              </div>
+            </EditForm>
+        }
+    </Modal>
 }
 
 <Modal Open="importOpen" Title="Import students from Excel" Large="true" OnClose="CloseImport">
@@ -397,6 +389,69 @@ else
         public string PhoneNumber { get; set; } = "";
     }
 
+    /// <summary>The boxes about the student. They are on the page and again in the box of the enrolling student: the same values, a prefix for the ids.</summary>
+    private RenderFragment StudentFields(string p) => @<text>
+        <Field For="@(p + "lrn")" Label="LRN" Required="true" Hint="The 12 digits of the Learner Reference Number.">
+            <input id="@(p + "lrn")" type="text" inputmode="numeric" data-digits maxlength="12" pattern="[0-9]{12}" autocomplete="off" required
+                   title="12 digits" @bind="LrnValue" @bind:event="oninput" @bind:after="OnLrnChangedAsync" />
+        </Field>
+
+        @if (existing is not null)
+        {
+            <div class="notice" role="status">
+                <Icon Name="info" Size="18" />
+                <div>
+                    <strong>@existing.FullName already has an account.</strong>
+                    <span>This adds a new enrollment. The name and the sign-in details stay as they are.</span>
+                    @if (existing.LastPlacement is not null)
+                    {
+                        <span>The grade level, track and strand are the ones of the last enrollment. Choose the section.</span>
+                    }
+                    @if (existing.EnrolledTermIds.Contains(form.TermId))
+                    {
+                        <span class="warn">This student is already enrolled for the selected term.</span>
+                    }
+                </div>
+            </div>
+        }
+
+        <Field For="@(p + "first-name")" Label="First name" Required="true">
+            <input id="@(p + "first-name")" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap" data-letters
+                   @bind="FirstNameValue" @onblur="WriteNamesWithCapitals" />
+        </Field>
+        <Field For="@(p + "middle-name")" Label="Middle name">
+            <input id="@(p + "middle-name")" type="text" maxlength="100" autocomplete="off" readonly="@(existing is not null)" class="cap" data-letters
+                   @bind="MiddleNameValue" @onblur="WriteNamesWithCapitals" />
+        </Field>
+        <Field For="@(p + "last-name")" Label="Last name" Required="true">
+            <input id="@(p + "last-name")" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap" data-letters
+                   @bind="LastNameValue" @bind:event="oninput" @onblur="WriteNamesWithCapitals" />
+        </Field>
+        <Field For="@(p + "name-extension")" Label="Name extension" Hint="Optional: Jr., Sr., III ...">
+            <input id="@(p + "name-extension")" type="text" maxlength="10" autocomplete="off" placeholder="Jr." class="cap" data-letters
+                   readonly="@(existing is not null)" @bind="NameExtensionValue" @onblur="WriteNamesWithCapitals" />
+        </Field>
+        <Field For="@(p + "phone")" Label="Phone number" Hint="Optional. Digits only, like 09171234567.">
+            <input id="@(p + "phone")" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" placeholder="09XXXXXXXXX"
+                   readonly="@(existing?.PhoneNumber is not null)" @bind="PhoneValue" />
+        </Field>
+    </text>;
+
+    // The box of the enrolling student.
+    private bool viewOpen;
+
+    private void OpenView()
+    {
+        errors = [];
+        viewOpen = true;
+    }
+
+    private void CloseView()
+    {
+        viewOpen = false;
+        errors = [];
+    }
+
     private readonly Form form = new();
     private EnrollmentLookups? lookups;
     private ExistingStudent? existing;
@@ -425,32 +480,39 @@ else
     private string FirstNameValue
     {
         get => existing?.FirstName ?? form.FirstName;
-        set => form.FirstName = value;
+        set => form.FirstName = NameCase.KeepLetters(value);
     }
 
     private string MiddleNameValue
     {
         get => existing?.MiddleName ?? form.MiddleName;
-        set => form.MiddleName = value;
+        set => form.MiddleName = NameCase.KeepLetters(value);
     }
 
     private string LastNameValue
     {
         get => existing?.LastName ?? form.LastName;
-        set => form.LastName = value;
+        set => form.LastName = NameCase.KeepLetters(value);
     }
 
     private string NameExtensionValue
     {
         get => existing?.NameExtension ?? form.NameExtension;
-        set => form.NameExtension = value;
+        set => form.NameExtension = NameCase.KeepLetters(value);
+    }
+
+    // The LRN has digits only (the box drops the rest as it is typed; this keeps it when the box was not able to).
+    private string LrnValue
+    {
+        get => form.Lrn;
+        set => form.Lrn = NameCase.KeepDigits(value);
     }
 
     // A student who already has a number shows it (read-only); otherwise what is typed is kept and saved with the enrollment.
     private string PhoneValue
     {
-        get => existing?.PhoneNumber ?? form.PhoneNumber;
-        set => form.PhoneNumber = value;
+        get => existing?.PhoneNumber is { } stored ? SEAITT_LMS.Auth.PhoneNumbers.ToLocal(stored) : form.PhoneNumber;
+        set => form.PhoneNumber = NameCase.KeepDigits(value);
     }
 
     /// <summary>When a name box is left, the names are written with capital letters (juan dela cruz -> Juan Dela Cruz). The service does it again when it saves.</summary>
@@ -665,6 +727,7 @@ else
             {
                 receipt = result.Receipt;
                 copied = false;
+                viewOpen = false;
             }
             else
             {

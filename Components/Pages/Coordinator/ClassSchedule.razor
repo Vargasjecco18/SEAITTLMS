@@ -209,40 +209,52 @@
 <Modal Open="allOpen" Title="@($"All class schedules · {TermName}")" Full="true" OnClose="CloseAll">
     @if (allOpen)
     {
-        <div class="all-tools">
-            <SearchField Id="all-search" @bind-Value="allSearch" Live="true" SubmitText="" Placeholder="Search a section, a course, a room or a teacher" AriaLabel="Search the class schedules" />
-            <span class="muted">@AllShown.Sum(g => g.Count()) classes in @AllShown.Count sections</span>
-        </div>
-        @if (AllShown.Count == 0)
-        {
-            <EmptyState IconName="search-x" Title="No class matches" />
-        }
-        else
-        {
-            <div class="all-grid">
-                @foreach (var group in AllShown)
-                {
-                    <section class="all-section" aria-label="@group.Key">
-                        <h3>@group.Key <small>@group.Count() @(group.Count() == 1 ? "class" : "classes")</small></h3>
-                        <table>
-                            <thead><tr><th>Course</th><th>Days</th><th>Time</th><th>Room</th><th>Teacher</th></tr></thead>
-                            <tbody>
+        <div class="all-wrap">
+            <div class="all-tools">
+                <SearchField Id="all-search" @bind-Value="allSearch" Live="true" SubmitText="" Placeholder="Search a section, a course, a room or a teacher" AriaLabel="Search the class schedules" />
+                <ul class="all-stats" aria-label="In short">
+                    <li><Icon Name="users" Size="16" /> <strong>@AllShown.Count</strong> sections</li>
+                    <li><Icon Name="calendar-clock" Size="16" /> <strong>@AllShown.Sum(g => g.Count())</strong> classes</li>
+                    <li><Icon Name="door-open" Size="16" /> <strong>@AllShown.SelectMany(g => g).Where(c => c.RoomName is not null).Select(c => c.RoomName).Distinct().Count()</strong> rooms</li>
+                    <li><Icon Name="presentation" Size="16" /> <strong>@AllShown.SelectMany(g => g).Where(c => c.Teacher is not null).Select(c => c.Teacher).Distinct().Count()</strong> teachers</li>
+                </ul>
+            </div>
+            @if (AllShown.Count == 0)
+            {
+                <EmptyState IconName="search-x" Title="No class matches" />
+            }
+            else
+            {
+                <div class="all-grid">
+                    @foreach (var group in AllShown)
+                    {
+                        <section class="all-section" aria-label="@group.Key">
+                            <header class="all-head">
+                                <span class="all-icon"><Icon Name="users" Size="18" /></span>
+                                <h3>@group.Key</h3>
+                                <span class="all-count">@group.Count() @(group.Count() == 1 ? "class" : "classes")</span>
+                            </header>
+                            <ul class="all-classes">
                                 @foreach (var c in group.OrderBy(x => x.Days).ThenBy(x => x.Start))
                                 {
-                                    <tr>
-                                        <td>@c.Course</td>
-                                        <td>@c.Days</td>
-                                        <td>@ClassTime.Label(c.Start) – @ClassTime.Label(c.End)</td>
-                                        <td>@(c.RoomName ?? "—")</td>
-                                        <td>@(c.Teacher ?? "—")</td>
-                                    </tr>
+                                    <li>
+                                        <span class="all-time"><strong>@ClassTime.Label(c.Start)</strong><small>to @ClassTime.Label(c.End)</small></span>
+                                        <span class="all-main">
+                                            <span class="all-course">@c.Course</span>
+                                            <span class="all-meta">
+                                                <span class="all-days">@c.Days</span>
+                                                <span><Icon Name="door-open" Size="13" /> @(c.RoomName ?? "No room")</span>
+                                                <span><Icon Name="presentation" Size="13" /> @(c.Teacher ?? "No teacher yet")</span>
+                                            </span>
+                                        </span>
+                                    </li>
                                 }
-                            </tbody>
-                        </table>
-                    </section>
-                }
-            </div>
-        }
+                            </ul>
+                        </section>
+                    }
+                </div>
+            }
+        </div>
     }
 </Modal>
 

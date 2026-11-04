@@ -11436,6 +11436,11 @@ SELECT * FROM (
   UNION ALL SELECT @s_6, NULL, 'LowAttendance', 'Absent in 4 of the last 10 classes', 60.00, 'Resolved', 'Parents called', 'Kristine was sick; the family sent a medical certificate. Attendance is normal again.', 'Improved', (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE), @u_guidance, (@day0 + INTERVAL -30 DAY + INTERVAL 2 HOUR + INTERVAL 0 MINUTE), (@day0 + INTERVAL -12 DAY + INTERVAL 4 HOUR + INTERVAL 0 MINUTE)
 ) AS r WHERE @go = 1;
 
+-- ================================================================ 12) One summative exam for each course
+-- The library above is made with two practice exams for each course; each course has ONE (the first). The second one and its copy in the courses of the teachers are taken away.
+DELETE FROM module_items WHERE @go = 1 AND id > 0 AND material_item_id IN (SELECT id FROM (SELECT id FROM material_items WHERE kind = 'Exam' AND title = 'Summative exam 2') x);
+DELETE FROM material_items WHERE @go = 1 AND id > 0 AND kind = 'Exam' AND title = 'Summative exam 2';
+
 -- ================================================================ What was added
 SELECT CASE WHEN @go = 1 THEN 'Done: the sample data was added.' WHEN @found = 0 THEN 'Nothing was added: some of the sample people or places were not found. Run seaittlms_reset_and_rebuild.sql and then seaittlms_sample_accounts.sql first.' ELSE 'Nothing was added: the sample students are already enrolled (this file runs once).' END AS result;
 SELECT 'enrollments' AS table_name, COUNT(*) AS `rows` FROM enrollments

@@ -73,6 +73,13 @@ public sealed record MaterialOverview(
     int CoursesTaught, int LibraryModules, int LibraryItems, int Sent, int StillDrafts, IReadOnlyList<CourseWithoutSyllabus> WithoutSyllabus,
     IReadOnlyList<RecentDelivery> Recent);
 
+/// <summary>A course in the dropdown of the Course Menu of the library.</summary>
+public sealed record LibraryMenuCourse(int SubjectId, string Code, string Name, int TermNumber);
+
+public sealed record LibraryMenuStrand(int StrandId, string Code, string Name, IReadOnlyList<LibraryMenuCourse> Courses);
+
+public sealed record LibraryMenuTrack(int TrackId, string Code, string Name, IReadOnlyList<LibraryMenuStrand> Strands);
+
 public sealed record CourseMaterials(
     int SubjectId, string Code, string Name, IReadOnlyList<MaterialModuleView> Modules, IReadOnlyList<MaterialExamView> Exams, IReadOnlyList<MaterialTeacherRow> Teachers);
 
@@ -184,6 +191,24 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var all = own.SelectMany(s => curriculum.Where(c => c.StrandId == s.Id).Select(c => c.SubjectId)).Distinct().ToList();
             return new LibraryTrack(t.Id, t.Code, t.Name, all.Count, all.Count(withSyllabus.Contains), rows);
         }).ToList();
+    }
+
+    /// <summary>
+    /// Every track with its strands and the courses of each strand (with the term), made with three small queries: it feeds the dropdown of the Course Menu of a course in the library
+    /// (track, then strand, then course) so the provider goes to another course without going back to the list.
+    /// </summary>
+    public async Task<IReadOnlyList<LibraryMenuTrack>> ListCourseTreeAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var tracks = await db.Tracks.AsNoTracking().Where(t => t.IsActive).OrderBy(t => t.Id).Select(t => new { t.Id, t.Code, t.Name }).ToListAsync(ct);
+        var strands = await db.Strands.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.Id).Select(s => new { s.Id, s.TrackId, s.Code, s.Name }).ToListAsync(ct);
+        var rows = await db.StrandSubjects.AsNoTracking().Where(x => x.Subject.IsActive)
+            .Select(x => new { x.StrandId, x.SubjectId, x.Subject.Code, x.Subject.Name, x.TermNumber }).Distinct().ToListAsync(ct);
+
+        return tracks.Select(t => new LibraryMenuTrack(t.Id, t.Code, t.Name,
+            strands.Where(s => s.TrackId == t.Id).Select(s => new LibraryMenuStrand(s.Id, s.Code, s.Name,
+                rows.Where(r => r.StrandId == s.Id).OrderBy(r => r.TermNumber).ThenBy(r => r.Name)
+                    .Select(r => new LibraryMenuCourse(r.SubjectId, r.Code, r.Name, r.TermNumber)).ToList())).ToList())).ToList();
     }
 
     public async Task<CourseMaterials?> GetCourseAsync(int subjectId, CancellationToken ct = default)

@@ -285,6 +285,12 @@ public sealed partial class EnrollmentService(
             errors.Add("The name extension (Jr., Sr., III ...) can have at most 10 characters.");
         }
 
+        // The names are words: letters only (with the spaces, dots, dashes and apostrophes inside real names), no digits.
+        if (!NameCase.IsName(firstName) || !NameCase.IsName(middleName) || !NameCase.IsName(lastName) || !NameCase.IsName(nameExtension))
+        {
+            errors.Add("The names can have letters only: no digits or other signs.");
+        }
+
         if (request.GradeLevel is not (11 or 12))
         {
             errors.Add("Pick grade level 11 or 12.");
@@ -300,10 +306,12 @@ public sealed partial class EnrollmentService(
         string? phone = null;
         if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
         {
-            phone = PhoneNumbers.Normalize(request.PhoneNumber);
+            // Digits only (the spaces of a pasted "0917 123 4567" are ignored, and the + of a number that is already stored); a letter or another sign is not a phone number.
+            var typed = string.Concat(request.PhoneNumber.Where(c => !char.IsWhiteSpace(c)));
+            phone = (typed.StartsWith('+') ? typed[1..] : typed).All(char.IsAsciiDigit) ? PhoneNumbers.Normalize(typed) : null;
             if (phone is null)
             {
-                errors.Add("The phone number is not valid. Use a mobile number like 0917 123 4567, or leave it empty.");
+                errors.Add("The phone number can have digits only, like 09171234567. Leave it empty if there is none.");
             }
         }
 

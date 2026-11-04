@@ -39,19 +39,65 @@
         <a class="tab @(tab == "school-years" ? "on" : "")" title="School years" href="coordinator/academic-setup/school-years" aria-current="@(tab == "school-years" ? "page" : null)">
             <span class="tab-icon"><Icon Name="calendar-range" Size="18" /></span>
             <span class="tab-text"><strong>School years</strong><small>@CountOf("school-years")</small></span>
+            <span class="tab-chevron" aria-hidden="true"><Icon Name="@(tab == "school-years" ? "chevron-down" : "chevron-right")" Size="16" /></span>
         </a>
+        @if (tab == "school-years" && lookups is not null)
+        {
+            <ul class="tab-sub" aria-label="School years">
+                @foreach (var year in lookups.Years)
+                {
+                    <li><a href="@($"coordinator/academic-setup/school-years#sy-{year.Id}")">@year.Name</a></li>
+                }
+            </ul>
+        }
         <a class="tab @(tab == "curriculum" ? "on" : "")" title="Tracks, strands and courses" href="coordinator/academic-setup/curriculum" aria-current="@(tab == "curriculum" ? "page" : null)">
             <span class="tab-icon"><Icon Name="layers" Size="18" /></span>
             <span class="tab-text"><strong>Tracks, strands and courses</strong><small>@CountOf("curriculum")</small></span>
+            <span class="tab-chevron" aria-hidden="true"><Icon Name="@(tab == "curriculum" ? "chevron-down" : "chevron-right")" Size="16" /></span>
         </a>
+        @if (tab == "curriculum" && lookups is not null)
+        {
+            <ul class="tab-sub" aria-label="Tracks and strands">
+                @foreach (var t in lookups.Tracks)
+                {
+                    <li>
+                        <a class="sub-track @(TrackQuery == t.Id && StrandQuery is null ? "on" : "")" href="@($"coordinator/academic-setup/curriculum?track={t.Id}")">@t.Code</a>
+                        <ul>
+                            @foreach (var st in lookups.Strands.Where(x => x.Track == t.Code))
+                            {
+                                <li><a class="@(StrandQuery == st.Id ? "on" : "")" href="@($"coordinator/academic-setup/curriculum?track={t.Id}&strand={st.Id}")" title="@st.Name">@st.Code</a></li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ul>
+        }
         <a class="tab @(tab == "sections" ? "on" : "")" title="Class sections" href="coordinator/academic-setup/sections" aria-current="@(tab == "sections" ? "page" : null)">
             <span class="tab-icon"><Icon Name="users" Size="18" /></span>
             <span class="tab-text"><strong>Class sections</strong><small>@CountOf("sections")</small></span>
+            <span class="tab-chevron" aria-hidden="true"><Icon Name="@(tab == "sections" ? "chevron-down" : "chevron-right")" Size="16" /></span>
         </a>
+        @if (tab == "sections")
+        {
+            <ul class="tab-sub" aria-label="Classes">
+                <li><a class="@(GradeQuery != 12 ? "on" : "")" href="coordinator/academic-setup/sections?grade=11">Grade 11</a></li>
+                <li><a class="@(GradeQuery == 12 ? "on" : "")" href="coordinator/academic-setup/sections?grade=12">Grade 12</a></li>
+            </ul>
+        }
         <a class="tab @(tab == "rooms" ? "on" : "")" title="Rooms" href="coordinator/academic-setup/rooms" aria-current="@(tab == "rooms" ? "page" : null)">
             <span class="tab-icon"><Icon Name="door-open" Size="18" /></span>
             <span class="tab-text"><strong>Rooms</strong><small>@CountOf("rooms")</small></span>
+            <span class="tab-chevron" aria-hidden="true"><Icon Name="@(tab == "rooms" ? "chevron-down" : "chevron-right")" Size="16" /></span>
         </a>
+        @if (tab == "rooms" && rooms.Count > 0)
+        {
+            <ul class="tab-sub" aria-label="Rooms">
+                @foreach (var room in rooms)
+                {
+                    <li><a href="@($"coordinator/academic-setup/rooms#room-{room.Id}")">@room.Name</a></li>
+                }
+            </ul>
+        }
 
         <span class="tabs-rule" aria-hidden="true"></span>
         <p class="tabs-note">Also in the menu</p>
@@ -67,7 +113,10 @@
             <form class="setup-search" role="search" @onsubmit="() => { }">
                 <SearchField Id="setup-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="@SearchHint" AriaLabel="Search the academic setup" />
             </form>
-            <p class="setup-lead">@Lead</p>
+            @if (Lead.Length > 0)
+            {
+                <p class="setup-lead">@Lead</p>
+            }
         </div>
 
         @* A new key makes the part read its rows again (after an import). *@
@@ -75,10 +124,10 @@
             @switch (tab)
             {
                 case "curriculum":
-                    <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+                    <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" InitialTrack="TrackQuery" InitialStrand="StrandQuery" />
                     break;
                 case "sections":
-                    <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+                    <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" InitialGrade="GradeQuery" />
                     break;
                 case "rooms":
                     <RoomsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
@@ -101,6 +150,16 @@
 @code {
     [Parameter] public string? TabKey { get; set; }
 
+    /// <summary>What the dropdown of a tab asks for: a track, a strand, a class.</summary>
+    [SupplyParameterFromQuery(Name = "track")] private int? TrackQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "strand")] private int? StrandQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "grade")] private int? GradeQuery { get; set; }
+
+    private SetupLookups? lookups;
+    private IReadOnlyList<RoomRow> rooms = [];
+
     private SetupCounts? counts;
     private int roomCount;
     private int reloadKey;
@@ -114,7 +173,9 @@
     protected override async Task OnParametersSetAsync()
     {
         counts ??= await Setup.GetCountsAsync();
-        roomCount = (await Times.ListRoomsAsync()).Count;
+        lookups ??= await Setup.GetLookupsAsync();
+        rooms = await Times.ListRoomsAsync();
+        roomCount = rooms.Count;
 
         // An address like academic-setup/curriculum goes to that part (the old names of the parts still work; the sections have a page of their own now).
         var wanted = (TabKey ?? "").ToLowerInvariant() switch
@@ -143,7 +204,7 @@
 
     private string Lead => tab switch
     {
-        "curriculum" => "Choose a track, then a strand. Type over a box to change it.",
+        "curriculum" => "",
         "sections" => "Each class has its strands, and each strand its sections. Press a card for the adviser and the students.",
         "rooms" => "The rooms for the class schedule.",
         _ => "The school year now and the next two, with three terms each.",
@@ -155,7 +216,9 @@
     private async Task ReloadCountsAsync()
     {
         counts = await Setup.GetCountsAsync();
-        roomCount = (await Times.ListRoomsAsync()).Count;
+        lookups = await Setup.GetLookupsAsync();
+        rooms = await Times.ListRoomsAsync();
+        roomCount = rooms.Count;
         changes++;
     }
 

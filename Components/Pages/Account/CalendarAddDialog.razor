@@ -21,6 +21,13 @@
             @if (isTeacher)
             {
                 <li>
+                    <a class="add-choice" href="@($"calendar?view={View}&date={Day:yyyy-MM-dd}&announce=1&on={Day:yyyy-MM-dd}")">
+                        <span class="add-icon"><Icon Name="megaphone" Size="20" /></span>
+                        <span class="add-text"><strong>An announcement to my class</strong><small>A notice for the students of one of your classes, from this day.</small></span>
+                        <Icon Name="chevron-right" Size="16" />
+                    </a>
+                </li>
+                <li>
                     <a class="add-choice" href="teacher/subjects">
                         <span class="add-icon"><Icon Name="clipboard-list" Size="20" /></span>
                         <span class="add-text"><strong>Add activities</strong><small>Go to your courses, open one and press Add activities (seatwork, assignments, quizzes, task performance).</small></span>

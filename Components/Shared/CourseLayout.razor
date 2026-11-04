@@ -1,3 +1,6 @@
+@inject NavCourseService NavCourses
+@inject CurrentUser Me
+
 @* A page of a course: the second menu of the course at the left (it can be hidden and shown again, and it stays in view under the header while the page scrolls),
    the page in the middle and, when the page has one, a column at the right. The choice to hide the menu is kept on this computer (wwwroot/app.js, data-cm-toggle). *@
 @* The Courses link of the school menu goes back to this course (wwwroot/app.js remembers it), until the list of the courses is opened again. *@
@@ -18,7 +21,7 @@
             <span class="cm-when-shown"><Icon Name="panel-left-close" Size="18" /> <span>Hide menu</span></span>
             <span class="cm-when-hidden"><Icon Name="panel-left-open" Size="18" /> <span>Course Menu</span></span>
         </button>
-        <CourseMenu Id="course-menu-nav" Groups="Groups" Selected="@Selected" Extra="Extra" CanAdd="@(Teacher is not null)" />
+        <CourseMenu Id="course-menu-nav" Groups="Groups" Selected="@Selected" Extra="Extra" ExtraContent="CustomExtraContent" CanAdd="@(Teacher is not null)" />
     </div>
 
     <div class="course-main">@ChildContent</div>
@@ -41,6 +44,9 @@
     /// <summary>The module that is open (its line is marked in the dropdown of Modules).</summary>
     [Parameter] public int? CurrentModuleId { get; set; }
 
+    /// <summary>The activity, quiz or task that is open (its line in the menu is marked and its dropdown is open).</summary>
+    [Parameter] public int? CurrentItemId { get; set; }
+
     /// <summary>The page under the line that is open: students, gradebook, attendance (teacher), classmates, teachers, grades (student).</summary>
     [Parameter] public string CurrentExtra { get; set; } = "";
 
@@ -62,7 +68,44 @@
 
     [Parameter] public IReadOnlyList<CourseMenuLink>? CustomExtra { get; set; }
 
-    private IReadOnlyList<CourseMenuGroup> Groups => CustomGroups ?? (Teacher is { } t ? CourseMenuBuilder.ForTeacher(t, CurrentModuleId) : Student is { } s ? CourseMenuBuilder.ForStudent(s, CurrentModuleId) : []);
+    /// <summary>More content under the line of a custom menu (the dropdown of the library).</summary>
+    [Parameter] public RenderFragment? CustomExtraContent { get; set; }
+
+    private IReadOnlyList<NavCourse> myCourses = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // The Courses dropdown of the menu: the courses of the person, to go from one to another (a short list, kept for a few seconds by the service).
+        if (Teacher is not null)
+        {
+            myCourses = await Me.GetTeacherIdAsync() is { } teacherId ? await NavCourses.ForTeacherAsync(teacherId) : [];
+        }
+        else if (Student is not null)
+        {
+            myCourses = await Me.GetStudentIdAsync() is { } studentId ? await NavCourses.ForStudentAsync(studentId) : [];
+        }
+    }
+
+    /// <summary>The first dropdown: Courses (the courses of the person; the course that is open is marked). The last line goes to the whole list.</summary>
+    private CourseMenuGroup? CoursesGroup
+    {
+        get
+        {
+            if (CustomGroups is not null || (Teacher is null && Student is null))
+            {
+                return null;
+            }
+
+            var teacher = Teacher is not null;
+            var page = teacher ? "teacher/subjects" : "student/subjects";
+            return new CourseMenuGroup("courses", "Courses", "book-open", myCourses.Count, page,
+                [.. myCourses.Select(c => new CourseMenuEntry(c.Section is null ? c.Name : $"{c.Name} · {c.Section}", $"{page}/{c.AssignmentId}", c.AssignmentId == AssignmentId))]);
+        }
+    }
+
+    private IReadOnlyList<CourseMenuGroup> Groups => CoursesGroup is { } courses ? [courses, .. BuiltGroups] : BuiltGroups;
+
+    private IReadOnlyList<CourseMenuGroup> BuiltGroups => CustomGroups ?? (Teacher is { } t ? CourseMenuBuilder.ForTeacher(t, CurrentModuleId, CurrentItemId) : Student is { } s ? CourseMenuBuilder.ForStudent(s, CurrentModuleId, CurrentItemId) : []);
 
     private IReadOnlyList<CourseMenuLink> Extra => CustomExtra ?? CourseMenuBuilder.ExtraLinks(Teacher is not null, AssignmentId, CurrentExtra);
 }

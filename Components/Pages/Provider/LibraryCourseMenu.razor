@@ -1,0 +1,109 @@
+@inject MaterialService Library
+
+@* The dropdown of the Course Menu in the library: Track, then Strand, then Course, in levels that open one inside the other. The course that is open is marked and its
+   track and strand are open, so the provider sees where it is and goes to another course without going back to the list. It is plain HTML (details), so it needs no scripts. *@
+@if (tree is not null && tree.Count > 0)
+{
+    <details class="lcm" data-library-switch>
+        <summary class="lcm-top">
+            <Icon Name="layers" Size="18" />
+            <span class="lcm-label">
+                <span class="lcm-title">Courses</span>
+                @if (here is not null)
+                {
+                    <small>@here.Value.Track.Code › @here.Value.Strand.Code</small>
+                }
+            </span>
+            <span class="lcm-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="16" /></span>
+        </summary>
+
+        <ul class="lcm-level lcm-tracks">
+            @foreach (var track in tree)
+            {
+                var trackHere = here?.Track.TrackId == track.TrackId;
+                <li>
+                    <details class="lcm-sub" data-lcm-track="@track.Code" open="@trackHere">
+                        <summary class="lcm-row @(trackHere ? "on" : "")">
+                            <span class="lcm-code">@track.Code</span>
+                            <span class="lcm-name">@track.Name</span>
+                            <span class="lcm-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="14" /></span>
+                        </summary>
+                        <ul class="lcm-level">
+                            @if (track.Strands.Count == 0)
+                            {
+                                <li class="lcm-none">No strand yet.</li>
+                            }
+                            @foreach (var strand in track.Strands)
+                            {
+                                var strandHere = trackHere && here?.Strand.StrandId == strand.StrandId;
+                                <li>
+                                    <details class="lcm-sub" data-lcm-strand="@strand.Code" open="@strandHere">
+                                        <summary class="lcm-row @(strandHere ? "on" : "")">
+                                            <span class="lcm-code">@strand.Code</span>
+                                            <span class="lcm-name">@strand.Name</span>
+                                            <span class="lcm-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="14" /></span>
+                                        </summary>
+                                        <ul class="lcm-level lcm-courses">
+                                            @if (strand.Courses.Count == 0)
+                                            {
+                                                <li class="lcm-none">No course yet.</li>
+                                            }
+                                            @foreach (var course in strand.Courses)
+                                            {
+                                                var current = course.SubjectId == CurrentSubjectId && strandHere;
+                                                <li>
+                                                    <a class="lcm-course @(current ? "on" : "")" href="@($"provider/library/{course.SubjectId}?track={track.TrackId}&strand={strand.StrandId}&term={course.TermNumber}")"
+                                                       aria-current="@(current ? "page" : null)" title="@course.Name">
+                                                        <span>@course.Name</span>
+                                                        <small>@course.Code · @SchoolCalendar.TermName(course.TermNumber)</small>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </details>
+                                </li>
+                            }
+                        </ul>
+                    </details>
+                </li>
+            }
+        </ul>
+    </details>
+}
+
+@code {
+    /// <summary>The course that is open in the library.</summary>
+    [Parameter] public int CurrentSubjectId { get; set; }
+
+    /// <summary>The track and strand the provider came through (the address says so). When they are not given, the first strand that studies the course is used.</summary>
+    [Parameter] public int? TrackId { get; set; }
+
+    [Parameter] public int? StrandId { get; set; }
+
+    private IReadOnlyList<LibraryMenuTrack>? tree;
+    private (LibraryMenuTrack Track, LibraryMenuStrand Strand)? here;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        tree = await Library.ListCourseTreeAsync();
+        here = null;
+
+        // The strand named in the address, if it studies this course; otherwise the first strand that does.
+        foreach (var track in tree)
+        {
+            foreach (var strand in track.Strands)
+            {
+                var studies = strand.Courses.Any(c => c.SubjectId == CurrentSubjectId);
+                if (!studies)
+                {
+                    continue;
+                }
+
+                if (here is null || (TrackId == track.TrackId && StrandId == strand.StrandId))
+                {
+                    here = (track, strand);
+                }
+            }
+        }
+    }
+}

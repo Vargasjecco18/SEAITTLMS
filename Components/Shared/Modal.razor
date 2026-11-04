@@ -5,8 +5,8 @@
     @* A box over the page. It closes with the X, with the Cancel button of the form in it, or with Escape.
        Clicking next to it does not close it, so a half-filled form is not lost by accident. The key handler sits on the
        whole overlay (which can take the focus too), so Escape still works after a click next to the box. *@
-    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "") @(Banner ? "at-top" : "") @(Full ? "full" : "")" tabindex="-1" @onkeydown="OnKeyDown">
-        <div class="dialog @(Large ? "large" : "") @(Wide ? "wide" : "") @(Full ? "full" : "") @(Narrow ? "narrow" : "") @DialogClass" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
+    <div class="backdrop @(Centered ? "centered" : "") @(Top ? "top" : "") @(Banner ? "at-top" : "") @(Full ? "full" : "") @(Cover ? "cover" : "")" tabindex="-1" @onkeydown="OnKeyDown">
+        <div class="dialog @(Large ? "large" : "") @(Wide ? "wide" : "") @(Full ? "full" : "") @(Cover ? "cover" : "") @(Narrow ? "narrow" : "") @DialogClass" role="dialog" aria-modal="true" aria-labelledby="@titleId" tabindex="-1" @ref="dialog">
             <header class="dialog-head">
                 <h2 id="@titleId">@Title</h2>
                 <button type="button" class="close" aria-label="Close" title="Close" @onclick="Close"><Icon Name="x" Size="20" /></button>
@@ -47,6 +47,9 @@
 
     /// <summary>The box covers all the screen (for a list of everything, like all the class schedules).</summary>
     [Parameter] public bool Full { get; set; }
+
+    /// <summary>The box covers the screen with a little space at the sides and the top (for the settings).</summary>
+    [Parameter] public bool Cover { get; set; }
 
     /// <summary>A narrower box.</summary>
     [Parameter] public bool Narrow { get; set; }
