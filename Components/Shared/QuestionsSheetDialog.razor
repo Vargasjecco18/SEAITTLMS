@@ -121,8 +121,18 @@
                 </div>
 
                 <div class="sheet-tools">
-                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= ItemSheets.MaxQuestions)" OnClick="() => AddRows(1)">Add a row</Button>
-                    <Button Small="true" Variant="ButtonVariant.Ghost" IconName="plus" Disabled="@(rows.Count >= ItemSheets.MaxQuestions)" OnClick="() => AddRows(5)">Add 5 rows</Button>
+                    @* Add [type] [number] row: the type of the new rows is chosen from a list and how many from a number box. *@
+                    <span class="add-rows" role="group" aria-label="Add rows">
+                        <span>Add</span>
+                        <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
+                            <option value="@QuestionKinds.MultipleChoice">Multiple choice</option>
+                            <option value="@QuestionKinds.TrueFalse">True or false</option>
+                            <option value="@QuestionKinds.ShortAnswer">Short answer</option>
+                        </select>
+                        <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                        <span>@(addCount == 1 ? "row" : "rows")</span>
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= ItemSheets.MaxQuestions)" OnClick="AddChosenRows">Add</Button>
+                    </span>
                     <span class="muted">@rows.Count of @ItemSheets.MaxQuestions rows</span>
                 </div>
 
@@ -176,6 +186,10 @@
     private readonly List<SheetRow> rows = [];
     private int nextId;
 
+    // The type and the number of the rows that "Add [type] [number] rows" puts at the end.
+    private string addKind = QuestionKinds.MultipleChoice;
+    private int addCount = 1;
+
     [Parameter] public bool Open { get; set; }
 
     /// <summary>The exam the questions go to, for the heading.</summary>
@@ -206,7 +220,7 @@
                 rows.Add(FromQuestion(q));
             }
 
-            AddRows(rows.Count == 0 ? 5 : 2);
+            AddRows(rows.Count == 0 ? 3 : 1, QuestionKinds.MultipleChoice);
         }
 
         wasOpen = Open;
@@ -247,13 +261,15 @@
 
     private Task CloseAsync() => OnClose.InvokeAsync();
 
-    private void AddRows(int count)
+    private void AddRows(int count, string kind)
     {
         for (var n = 0; n < count && rows.Count < ItemSheets.MaxQuestions; n++)
         {
-            rows.Add(new SheetRow { Id = ++nextId });
+            rows.Add(new SheetRow { Id = ++nextId, Kind = kind });
         }
     }
+
+    private void AddChosenRows() => AddRows(Math.Clamp(addCount, 1, 50), addKind);
 
     private void RemoveRow(SheetRow row)
     {

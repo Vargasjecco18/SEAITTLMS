@@ -6,7 +6,7 @@
    Page 1: the letterhead (the logo at the upper left, the school next to it, the number and the date of the form at the right), the title, the numbered parts of the form
    with every answer written out in words (the grade level is plain text), the courses (the units and the days and time of each one at its right) and the e-LMS account.
    Page 2: the terms and conditions in detail, and at the bottom of the page the lines for the student's signature over the printed name and for the parent's or guardian's. *@
-<div class="print-sheet" aria-hidden="true">
+<div class="print-sheet @(Preview ? "preview" : "")" aria-hidden="@(Preview ? null : "true")">
     <section class="page front">
         <header class="letterhead">
             <img class="sheet-logo" src="@Assets["images/logo.png"]" alt="" width="84" height="84" />
@@ -23,7 +23,7 @@
                 }
             </div>
             <dl class="form-id">
-                <div><dt>Enrollment no.</dt><dd>@Receipt.EnrollmentId.ToString("D6")</dd></div>
+                <div><dt>Enrollment no.</dt><dd>@EnrollmentNo</dd></div>
                 <div><dt>Date</dt><dd>@PhilippineTime.FormatLongDate(PhilippineTime.Now(Clock))</dd></div>
             </dl>
         </header>
@@ -132,7 +132,7 @@
                 <strong>@school.SchoolName</strong>
                 <span>@(string.IsNullOrWhiteSpace(school.Tagline) ? "" : school.Tagline + " · ")Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
             </div>
-            <span class="back-no">Enrollment no. @Receipt.EnrollmentId.ToString("D6")</span>
+            <span class="back-no">Enrollment no. @EnrollmentNo</span>
         </header>
 
         <h2 class="title">Terms and Conditions</h2>
@@ -210,6 +210,12 @@
 
 @code {
     [Parameter, EditorRequired] public EnrollmentReceipt Receipt { get; set; } = null!;
+
+    /// <summary>True for the copy shown on the screen, in the Print Enrollment box (a paper to look at); the other copy is only there for the printer.</summary>
+    [Parameter] public bool Preview { get; set; }
+
+    /// <summary>The number of the enrollment; before the student is enrolled there is none yet.</summary>
+    private string EnrollmentNo => Receipt.EnrollmentId > 0 ? Receipt.EnrollmentId.ToString("D6") : "—";
 
     private SystemSettingsValues school => Settings.Current;
 

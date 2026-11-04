@@ -1,0 +1,65 @@
+.muted {
+    color: var(--text-muted);
+}
+
+.module-activities {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.activity {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.activity:hover,
+.activity:focus-visible {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}
+
+.activity-icon {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--brand-strong);
+}
+
+.activity-text {
+    display: grid;
+    flex: 1;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.activity-title {
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.activity-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 0.6rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.late {
+    color: var(--danger);
+    font-weight: 600;
+}

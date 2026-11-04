@@ -84,31 +84,68 @@ public class Room : AuditableEntity
     public string Name { get; set; } = "";
 }
 
-/// <summary>The days a course meets: MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday).</summary>
+/// <summary>
+/// The days a course meets. A course is put on the week as MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday), and after that each day can be moved by itself, so the days of one
+/// row of the schedule are any of the five days written in the order of the week: "MWF", "TTH", "MF", "W", "TH" ... (M Monday, T Tuesday, W Wednesday, TH Thursday, F Friday).
+/// </summary>
 public static class MeetingDays
 {
     public const string Mwf = "MWF";
     public const string Tth = "TTH";
 
+    /// <summary>What can be chosen for a whole course in a list (the other days come from moving one day by itself).</summary>
     public static readonly IReadOnlyList<string> All = [Mwf, Tth];
 
+    /// <summary>MWF or TTH: the two patterns a course starts with.</summary>
     public static bool IsValid(string? days) => days is Mwf or Tth;
 
-    /// <summary>"Monday, Wednesday, Friday" for MWF.</summary>
-    public static string LongName(string days) => days switch
-    {
-        Mwf => "Monday, Wednesday, Friday",
-        Tth => "Tuesday, Thursday",
-        _ => days,
-    };
+    private static readonly string[] Codes = ["M", "T", "W", "TH", "F"];
 
-    /// <summary>The days of the week (Monday = 1 ... Friday = 5) of a pattern, for the calendar.</summary>
-    public static IReadOnlyList<DayOfWeek> Days(string days) => days switch
+    private static readonly string[] Names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+    /// <summary>The days (Monday = 1 ... Friday = 5) a text stands for, in the order of the week; an empty list when the text is not made of the day codes.</summary>
+    public static IReadOnlyList<int> Parse(string? days)
     {
-        Mwf => [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday],
-        Tth => [DayOfWeek.Tuesday, DayOfWeek.Thursday],
-        _ => [],
-    };
+        var found = new List<int>();
+        var text = days ?? "";
+        for (var i = 0; i < text.Length; i++)
+        {
+            switch (text[i])
+            {
+                case 'M': found.Add(1); break;
+                case 'W': found.Add(3); break;
+                case 'F': found.Add(5); break;
+                case 'T' when i + 1 < text.Length && text[i + 1] == 'H': found.Add(4); i++; break;
+                case 'T': found.Add(2); break;
+                default: return [];
+            }
+        }
+
+        return [.. found.Distinct().Order()];
+    }
+
+    /// <summary>The text of some days (1 to 5): "MWF", "TTH", "MF", "W" ... in the order of the week. Empty when there are none.</summary>
+    public static string Format(IEnumerable<int> days) => string.Concat(days.Where(d => d is >= 1 and <= 5).Distinct().Order().Select(d => Codes[d - 1]));
+
+    /// <summary>True when the text is a set of days written the one way (in the order of the week, each day once).</summary>
+    public static bool IsCanonical(string? days) => !string.IsNullOrEmpty(days) && Format(Parse(days)) == days;
+
+    public static bool Overlap(string? a, string? b) => Parse(a).Intersect(Parse(b)).Any();
+
+    public static bool Has(string? days, int day) => Parse(days).Contains(day);
+
+    public static string Without(string days, int day) => Format(Parse(days).Where(d => d != day));
+
+    public static string With(string days, int day) => Format(Parse(days).Append(day));
+
+    /// <summary>The pattern a day starts with when a course is put on the week there: Monday, Wednesday and Friday give MWF, Tuesday and Thursday give TTH.</summary>
+    public static string PatternOf(int day) => day is 1 or 3 or 5 ? Mwf : Tth;
+
+    /// <summary>"Monday, Wednesday, Friday" for MWF.</summary>
+    public static string LongName(string days) => string.Join(", ", Parse(days).Select(d => Names[d - 1]));
+
+    /// <summary>The days of the week of some days, for the calendar.</summary>
+    public static IReadOnlyList<DayOfWeek> Days(string days) => [.. Parse(days).Select(d => (DayOfWeek)(d % 7))];
 }
 
 /// <summary>

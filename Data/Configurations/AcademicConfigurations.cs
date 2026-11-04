@@ -122,7 +122,7 @@ internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<Cou
     public void Configure(EntityTypeBuilder<CourseSchedule> b)
     {
         b.ToTable("course_schedules");
-        b.Property(c => c.Days).HasMaxLength(3).IsRequired();
+        b.Property(c => c.Days).HasMaxLength(6).IsRequired();
 
         // Gone with the section; a course that has class times can't be deleted until they are cleared.
         b.HasOne(c => c.Section).WithMany().HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Cascade);
@@ -132,12 +132,12 @@ internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<Cou
         // A room that is removed leaves its classes without a room (they keep their days and times).
         b.HasOne(c => c.Room).WithMany().HasForeignKey(c => c.RoomId).OnDelete(DeleteBehavior.SetNull);
 
-        // A course of a section meets at one time.
-        b.HasIndex(c => new { c.SectionId, c.SubjectId }).IsUnique();
+        // A course of a section has one row for each group of days that meets at the same time (MWF at 8:00, then W moved to 10:00 makes the rows MF and W). The days of the rows of one course never overlap (the service checks it).
+        b.HasIndex(c => new { c.SectionId, c.SubjectId, c.Days }).IsUnique();
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_course_schedules_days", "days IN ('MWF', 'TTH')");
+            t.HasCheckConstraint("ck_course_schedules_days", "days REGEXP '^M?T?W?(TH)?F?$' AND days <> ''");
             t.HasCheckConstraint("ck_course_schedules_hours", "end_time > start_time");
         });
     }

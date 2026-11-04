@@ -17,79 +17,43 @@
     }
 }
 
-/* The enrollment form: the student's card at the left with its button under it, the enrollment card at the right. The button is in the second row, which takes
-   what is left of the height, so the courses that grow the card at the right never push it down. */
+/* The enrollment form: at the left the student's card, the sign-in details and, under them, Print Enrollment and Enroll student; at the right the enrollment card. The left column
+   does not depend on the courses, which appear at the right, so nothing at the left is moved when they show (the last row of the left column takes what is left of the height). */
 .enroll-grid {
-    grid-template-areas: "student" "view" "enroll";
+    grid-template-areas: "student" "signin" "actions" "enroll";
 }
 
 .enroll-grid ::deep .area-student { grid-area: student; }
-.enroll-grid .area-view { grid-area: view; }
+.enroll-grid ::deep .area-signin { grid-area: signin; }
+.enroll-grid .area-actions { grid-area: actions; }
 .enroll-grid ::deep .area-enroll { grid-area: enroll; }
 
 @media (min-width: 1000px) {
     .enroll-grid {
-        grid-template-areas: "student enroll" "view enroll";
-        grid-template-rows: auto 1fr;
+        grid-template-areas: "student enroll" "signin enroll" "actions enroll";
+        grid-template-rows: auto auto 1fr;
     }
 }
 
-.area-view {
+.area-actions {
     display: flex;
-    justify-content: flex-start;
+    flex-wrap: wrap;
+    align-items: flex-start;
     align-self: start;
+    gap: 0.75rem;
 }
 
-/* ---------- the box of the enrolling student ---------- */
-.view-form {
+/* ---------- the Print Enrollment box ---------- */
+.print-preview {
     display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-}
-
-.view-part {
-    padding: 1rem 1.1rem;
+    justify-content: center;
+    max-height: 68vh;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    overflow: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: var(--surface);
-}
-
-.view-part h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    margin: 0 0 0.8rem;
-    font-size: 1rem;
-}
-
-.view-part h3 ::deep .icon {
-    color: var(--primary);
-}
-
-.view-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 1rem;
-}
-
-.view-fields .notice {
-    grid-column: 1 / -1;
-}
-
-.view-summary {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem 1rem;
-}
-
-.view-summary dd {
-    font-weight: 600;
-}
-
-.view-note {
-    margin: 0.8rem 0 0;
-    color: var(--text-muted);
-    font-size: 0.85rem;
+    background: var(--surface-2);
 }
 
 .view-actions {
@@ -97,13 +61,6 @@
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.75rem;
-}
-
-@media (max-width: 640px) {
-    .view-fields,
-    .view-summary {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 
 .two {

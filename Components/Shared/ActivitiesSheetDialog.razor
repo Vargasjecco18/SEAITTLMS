@@ -4,13 +4,25 @@
 @* The sheet for adding many activities of a course at once, inside the system (no Excel and no file to download): a row for each seatwork, assignment, quiz or task performance with its Module and
    its Type (lists to choose from), its Title, its Instructions, its Points, when it is Due and its Files, and the step by step at the right. A box is read when it is left (not at every key), the files are
    only remembered (they are read when Save is pressed, a few rows at a time) and nothing is built until the box is opened. The page saves the rows (OnImport), so the rules of the page apply. *@
-<Modal Open="Open" Title="@($"Add activities · {CourseName}")" Cover="true" OnClose="CloseAsync">
+<Modal Open="Open" Title="@($"Add activities · {CourseName}")" Wide="true" Top="true" OnClose="CloseAsync">
     @if (Open)
     {
         @if (result is null)
         {
             <div class="sheet-layout">
                 <div class="sheet-main">
+                    <details class="sheet-steps">
+                        <summary><Icon Name="list-checks" Size="16" /> Step by step</summary>
+                        <ol>
+                        <li><strong>Choose the module</strong> of the row from the list, then <strong>the type</strong>: seatwork, assignment, quiz or task performance.</li>
+                        <li><strong>Type the title.</strong> Press Tab to go to the next box.</li>
+                        <li><strong>Write the instructions</strong> and the <strong>points</strong> (100 if you leave it). The due date is optional.</li>
+                        <li><strong>Add files</strong> to the row if the activity has some (a worksheet, a picture ...).</li>
+                        <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                        <li><strong>Press Save.</strong> Each row becomes an activity of its module. For a quiz, write its questions afterwards in <em>Questions</em>.</li>
+                    </ol>
+                    </details>
+
                     <p class="sheet-summary" role="status">
                         <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "row is" : "rows are") ready.
                         @if (Filled.Count > ReadyCount)
@@ -125,18 +137,6 @@
                         <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 activity" : $"Save {ReadyCount} activities")</Button>
                     </div>
                 </div>
-
-                <aside class="sheet-steps" aria-label="Step by step">
-                    <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
-                    <ol>
-                        <li><strong>Choose the module</strong> of the row from the list, then <strong>the type</strong>: seatwork, assignment, quiz or task performance.</li>
-                        <li><strong>Type the title.</strong> Press Tab to go to the next box.</li>
-                        <li><strong>Write the instructions</strong> and the <strong>points</strong> (100 if you leave it). The due date is optional.</li>
-                        <li><strong>Add files</strong> to the row if the activity has some (a worksheet, a picture ...).</li>
-                        <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                        <li><strong>Press Save.</strong> Each row becomes an activity of its module. For a quiz, write its questions afterwards in <em>Questions</em>.</li>
-                    </ol>
-                </aside>
             </div>
         }
         else

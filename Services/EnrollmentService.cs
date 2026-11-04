@@ -195,7 +195,7 @@ public sealed partial class EnrollmentService(
         return courses
             .Select(c => new CoursePlanRow(
                 c.Id, c.Code, c.Name, c.Units,
-                meetings.FirstOrDefault(m => m.SubjectId == c.Id) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime, m.Schedule.Code).DescribeFull() : null))
+                CourseScheduleService.Combine(meetings.Where(m => m.SubjectId == c.Id))?.DescribeFull()))
             .ToList();
     }
 
@@ -513,7 +513,7 @@ public sealed partial class EnrollmentService(
 
             // When each course meets (set by the academic coordinator), in the order of the courses.
             var meetings = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => c.SectionId == section.Id).ToListAsync(ct);
-            var meets = subjects.Select(s => meetings.FirstOrDefault(m => m.SubjectId == s.Id) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime, m.Schedule.Code).DescribeFull() : null).ToList();
+            var meets = subjects.Select(s => CourseScheduleService.Combine(meetings.Where(m => m.SubjectId == s.Id))?.DescribeFull()).ToList();
             return new EnrollmentResult(
                 new EnrollmentReceipt(
                     enrollment.Id, student.Id, fullName, lrn, term.SchoolYear.Name, term.Name, request.GradeLevel,

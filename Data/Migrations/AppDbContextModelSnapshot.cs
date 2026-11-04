@@ -639,8 +639,8 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<string>("Days")
                         .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("varchar(3)")
+                        .HasMaxLength(6)
+                        .HasColumnType("varchar(6)")
                         .HasColumnName("days");
 
                     b.Property<TimeOnly>("EndTime")
@@ -683,13 +683,13 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("SubjectId")
                         .HasDatabaseName("ix_course_schedules_subject_id");
 
-                    b.HasIndex("SectionId", "SubjectId")
+                    b.HasIndex("SectionId", "SubjectId", "Days")
                         .IsUnique()
-                        .HasDatabaseName("ix_course_schedules_section_id_subject_id");
+                        .HasDatabaseName("ix_course_schedules_section_id_subject_id_days");
 
                     b.ToTable("course_schedules", null, t =>
                         {
-                            t.HasCheckConstraint("ck_course_schedules_days", "days IN ('MWF', 'TTH')");
+                            t.HasCheckConstraint("ck_course_schedules_days", "days REGEXP '^M?T?W?(TH)?F?$' AND days <> ''");
 
                             t.HasCheckConstraint("ck_course_schedules_hours", "end_time > start_time");
                         });
@@ -1835,6 +1835,36 @@ namespace SEAITT_LMS.Data.Migrations
                             t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam')");
 
                             t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ModuleRead", b =>
+                {
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int")
+                        .HasColumnName("module_id");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<byte>("Percent")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("percent");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("ModuleId", "StudentId")
+                        .HasName("pk_module_reads");
+
+                    b.HasIndex("StudentId")
+                        .HasDatabaseName("ix_module_reads_student_id");
+
+                    b.ToTable("module_reads", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_module_reads_percent", "percent BETWEEN 0 AND 100");
                         });
                 });
 
@@ -4270,6 +4300,27 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_module_items_modules_module_id");
 
                     b.Navigation("Module");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ModuleRead", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.LearningModule", "Module")
+                        .WithMany()
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_module_reads_modules_module_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_module_reads_students_student_id");
+
+                    b.Navigation("Module");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.ModuleView", b =>

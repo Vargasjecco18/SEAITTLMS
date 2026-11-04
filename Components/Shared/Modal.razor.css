@@ -158,3 +158,10 @@ h2 {
         height: 2.75rem;
     }
 }
+
+/* A box is never printed: what is printed is the page behind it (or what the page asks for). */
+@media print {
+    .backdrop {
+        display: none !important;
+    }
+}

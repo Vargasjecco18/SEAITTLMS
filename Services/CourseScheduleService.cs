@@ -26,13 +26,18 @@ public static class ClassTime
     public static string Box(TimeOnly time) => time.ToString("HH:mm", CultureInfo.InvariantCulture);
 }
 
-/// <summary>When a course meets: the part of the day (AM, MID or PM), the days (MWF or TTH) and the time, for example "AM · MWF · 8:00 AM – 9:30 AM".</summary>
-public sealed record MeetingInfo(string Days, TimeOnly Start, TimeOnly End, string? Part = null)
+/// <summary>
+/// When a course meets: the part of the day (AM, MID or PM), the days (MWF, TTH or the days that were moved by themselves) and the time, for example "AM · MWF · 8:00 AM – 9:30 AM".
+/// A course whose days do not all meet at the same time has the other groups of days in <see cref="Also"/> ("MF · 8:00 AM – 9:00 AM; W · 10:00 AM – 11:00 AM").
+/// </summary>
+public sealed record MeetingInfo(string Days, TimeOnly Start, TimeOnly End, string? Part = null, IReadOnlyList<MeetingInfo>? Also = null)
 {
     public string Times => $"{ClassTime.Format(Start)} – {ClassTime.Format(End)}";
 
+    private string One => $"{Days} · {Times}";
+
     /// <summary>"MWF · 8:00 AM – 9:30 AM".</summary>
-    public string Describe() => $"{Days} · {Times}";
+    public string Describe() => Also is { Count: > 0 } also ? string.Join("; ", new[] { One }.Concat(also.Select(a => a.One))) : One;
 
     /// <summary>"AM · MWF · 8:00 AM – 9:30 AM" (the schedule first), as the enrollment form shows it.</summary>
     public string DescribeFull() => Part is null ? Describe() : $"{Part} · {Describe()}";
@@ -98,6 +103,24 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
 
     private static readonly TimeOnly EarliestHour = new(5, 0);
     private static readonly TimeOnly LatestHour = new(22, 0);
+
+    /// <summary>
+    /// One <see cref="MeetingInfo"/> for the rows of a course (null when it has none): the days that meet at the same time are one group, the first group (the earliest day) is the main one and
+    /// the others are in <see cref="MeetingInfo.Also"/>. The part of the day is the one of the schedule of the row, when it was loaded with it.
+    /// </summary>
+    public static MeetingInfo? Combine(IEnumerable<CourseSchedule> rows)
+    {
+        var groups = rows.GroupBy(r => (r.StartTime, r.EndTime))
+            .Select(g => (Days: MeetingDays.Format(g.SelectMany(r => MeetingDays.Parse(r.Days))), g.Key.StartTime, g.Key.EndTime, Part: g.Select(r => r.Schedule?.Code).FirstOrDefault(c => c is not null), Order: g.SelectMany(r => MeetingDays.Parse(r.Days)).DefaultIfEmpty(9).Min()))
+            .OrderBy(g => g.Order).ToList();
+        if (groups.Count == 0)
+        {
+            return null;
+        }
+
+        var first = groups[0];
+        return new MeetingInfo(first.Days, first.StartTime, first.EndTime, first.Part, groups.Count == 1 ? null : [.. groups.Skip(1).Select(g => new MeetingInfo(g.Days, g.StartTime, g.EndTime, g.Part))]);
+    }
 
     private static Task<bool> IsCoordinatorAsync(AppDbContext db, int userId, CancellationToken ct) =>
         db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
@@ -193,7 +216,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             {
                 s.Id, s.GradeLevel, s.StrandId, Strand = s.Strand.Code, s.Name, s.SchoolYearId,
                 Year = s.SchoolYear.Name, s.SchoolYear.StartDate, s.SchoolYear.EndDate,
-                Scheduled = db.CourseSchedules.Count(c => c.SectionId == s.Id),
+                Scheduled = db.CourseSchedules.Where(c => c.SectionId == s.Id).Select(c => c.SubjectId).Distinct().Count(),
             })
             .ToListAsync(ct);
         var curriculum = await db.StrandSubjects.AsNoTracking().Select(x => new { x.StrandId, x.GradeLevel, x.SubjectId }).ToListAsync(ct);
@@ -259,9 +282,9 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             .Select(c => new CourseTimeRow(
                 c.SubjectId, c.Code, c.Name, c.TermNumber, termNames.GetValueOrDefault(c.TermNumber, $"Term {c.TermNumber}"),
                 teachers.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.Name,
-                times.FirstOrDefault(t => t.SubjectId == c.SubjectId) is { } t ? new MeetingInfo(t.Days, t.StartTime, t.EndTime, t.Schedule.Code) : null,
-                times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.ScheduleId,
-                times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.RoomId, times.FirstOrDefault(t => t.SubjectId == c.SubjectId)?.Room?.Name))
+                Combine(times.Where(t => t.SubjectId == c.SubjectId)),
+                times.Where(t => t.SubjectId == c.SubjectId).OrderBy(t => t.Id).FirstOrDefault()?.ScheduleId,
+                times.Where(t => t.SubjectId == c.SubjectId).OrderBy(t => t.Id).FirstOrDefault()?.RoomId, times.Where(t => t.SubjectId == c.SubjectId).OrderBy(t => t.Id).FirstOrDefault()?.Room?.Name))
             .ToList();
     }
 
@@ -432,7 +455,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         var errors = new List<string>();
 
         // ---- what each row asks for, checked by itself
-        var plan = new List<(string Name, int SubjectId, byte Term, CourseTimeInput? Input, CourseSchedule? Old)>();
+        var plan = new List<(string Name, int SubjectId, byte Term, CourseTimeInput? Input, IReadOnlyList<CourseSchedule> Olds)>();
         foreach (var row in rows)
         {
             var entry = curriculum.Where(c => c.SubjectId == row.SubjectId).OrderBy(c => c.TermNumber).FirstOrDefault();
@@ -443,7 +466,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
                 continue;
             }
 
-            var old = existing.FirstOrDefault(e => e.SubjectId == row.SubjectId);
+            var old = (IReadOnlyList<CourseSchedule>)[.. existing.Where(e => e.SubjectId == row.SubjectId).OrderBy(e => e.Id)];
             if (row.IsEmpty)
             {
                 plan.Add((entry.Name, row.SubjectId, entry.TermNumber, null, old));
@@ -483,7 +506,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             {
                 var a = future[i];
                 var b = future[j];
-                if (a.Term == b.Term && a.Days == b.Days && Overlaps(a.Start, a.End, b.Start, b.End)
+                if (a.Term == b.Term && a.SubjectId != b.SubjectId && MeetingDays.Overlap(a.Days, b.Days) && Overlaps(a.Start, a.End, b.Start, b.End)
                     && (plan.Any(p => p.SubjectId == a.SubjectId && p.Input is not null) || plan.Any(p => p.SubjectId == b.SubjectId && p.Input is not null)))
                 {
                     errors.Add($"{a.Name} ({a.Days} {ClassTime.Format(a.Start)} – {ClassTime.Format(a.End)}) and {b.Name} ({b.Days} {ClassTime.Format(b.Start)} – {ClassTime.Format(b.End)}) of {label} would meet at the same time. A section can't have two classes at the same time.");
@@ -502,9 +525,9 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         }
 
         // ---- a room can't hold two classes at the same time
-        foreach (var p in plan.Where(p => p.Input is not null && EffectiveRoom(p.Input, p.Old) is not null))
+        foreach (var p in plan.Where(p => p.Input is not null && EffectiveRoom(p.Input, p.Olds.FirstOrDefault()) is not null))
         {
-            var roomId = EffectiveRoom(p.Input!, p.Old)!.Value;
+            var roomId = EffectiveRoom(p.Input!, p.Olds.FirstOrDefault())!.Value;
             if (!await db.Rooms.AnyAsync(r => r.Id == roomId, ct))
             {
                 errors.Add($"{p.Name}: that room no longer exists.");
@@ -527,9 +550,9 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         {
             if (p.Input is null)
             {
-                if (p.Old is not null)
+                if (p.Olds.Count > 0)
                 {
-                    db.CourseSchedules.Remove(p.Old);
+                    db.CourseSchedules.RemoveRange(p.Olds);
                     cleared++;
                 }
 
@@ -537,18 +560,27 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             }
 
             var partId = PartFor(parts.Values, p.Input.Start!.Value)?.Id ?? p.Input.ScheduleId ?? parts.Keys.First();
-            if (p.Old is null)
+            var room = EffectiveRoom(p.Input, p.Olds.FirstOrDefault());
+            var old = p.Olds.FirstOrDefault();
+            if (old is null)
             {
-                db.CourseSchedules.Add(new CourseSchedule { SectionId = sectionId, SubjectId = p.SubjectId, ScheduleId = partId, Days = p.Input.Days!, StartTime = p.Input.Start!.Value, EndTime = p.Input.End!.Value, RoomId = EffectiveRoom(p.Input, null) });
+                db.CourseSchedules.Add(new CourseSchedule { SectionId = sectionId, SubjectId = p.SubjectId, ScheduleId = partId, Days = p.Input.Days!, StartTime = p.Input.Start!.Value, EndTime = p.Input.End!.Value, RoomId = room });
                 set++;
             }
-            else if (p.Old.ScheduleId != partId || p.Old.Days != p.Input.Days || p.Old.StartTime != p.Input.Start || p.Old.EndTime != p.Input.End || p.Old.RoomId != EffectiveRoom(p.Input, p.Old))
+            else if (p.Olds.Count > 1 || old.ScheduleId != partId || old.Days != p.Input.Days || old.StartTime != p.Input.Start || old.EndTime != p.Input.End || old.RoomId != room)
             {
-                p.Old.ScheduleId = partId;
-                p.Old.Days = p.Input.Days!;
-                p.Old.StartTime = p.Input.Start!.Value;
-                p.Old.EndTime = p.Input.End!.Value;
-                p.Old.RoomId = EffectiveRoom(p.Input, p.Old);
+                // A course that had its days moved one by one (several rows) gets one row again: the other rows go first, then the first one takes the new days and time.
+                if (p.Olds.Count > 1)
+                {
+                    db.CourseSchedules.RemoveRange(p.Olds.Skip(1));
+                    await db.SaveChangesAsync(ct);
+                }
+
+                old.ScheduleId = partId;
+                old.Days = p.Input.Days!;
+                old.StartTime = p.Input.Start!.Value;
+                old.EndTime = p.Input.End!.Value;
+                old.RoomId = room;
                 set++;
             }
         }
@@ -582,6 +614,123 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         var name = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct);
         var removed = await db.CourseSchedules.Where(c => c.SectionId == sectionId && c.SubjectId == subjectId).ExecuteDeleteAsync(ct);
         return removed == 0 ? ServiceResult.Fail("That course had no class time.") : ServiceResult.Ok($"The class time of {name} was removed.");
+    }
+
+    /// <summary>
+    /// Moves one day of a course by itself on the schedule grid: the class of <paramref name="fromDay"/> (1 Monday ... 5 Friday) goes to <paramref name="toDay"/> at the new time, and the other days of the
+    /// course stay where they were (a course put on the week as MWF and then moved on Wednesday keeps Monday and Friday). The days that meet at the same time are one row, so the rows are
+    /// split and joined here.
+    /// </summary>
+    public async Task<ServiceResult> MoveDayAsync(int actingUserId, int sectionId, int subjectId, int fromDay, int toDay, int? roomId, TimeOnly start, TimeOnly end, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        if (fromDay is < 1 or > 5 || toDay is < 1 or > 5)
+        {
+            return ServiceResult.Fail("Choose a day from Monday to Friday.");
+        }
+
+        var rows = await db.CourseSchedules.Where(c => c.SectionId == sectionId && c.SubjectId == subjectId).OrderBy(c => c.Id).ToListAsync(ct);
+        var source = rows.FirstOrDefault(r => MeetingDays.Has(r.Days, fromDay));
+        if (source is null)
+        {
+            return ServiceResult.Fail("That class is not on the schedule any more. Reload the page.");
+        }
+
+        var problem = Check(new CourseTimeInput(subjectId, null, MeetingDays.Mwf, start, end));
+        if (problem is not null)
+        {
+            return ServiceResult.Fail(problem);
+        }
+
+        var name = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct) ?? "The course";
+        var day = MeetingDays.Format([toDay]);
+
+        // the same checks as for a whole course, for this one day: the teacher, the room and the other courses of the section in the same term
+        var teacherId = await db.TeachingAssignments.AsNoTracking().Where(a => a.SectionId == sectionId && a.SubjectId == subjectId).Select(a => (int?)a.TeacherId).FirstOrDefaultAsync(ct);
+        if (teacherId is { } tid && await TeacherConflictAsync(db, tid, sectionId, subjectId, day, start, end, ct) is { } conflict)
+        {
+            return ServiceResult.Fail($"{name}: {conflict}");
+        }
+
+        if (roomId is { } rid)
+        {
+            if (!await db.Rooms.AnyAsync(r => r.Id == rid, ct))
+            {
+                return ServiceResult.Fail($"{name}: that room no longer exists.");
+            }
+
+            if (await RoomConflictAsync(db, rid, sectionId, subjectId, day, start, end, ct) is { } roomProblem)
+            {
+                return ServiceResult.Fail($"{name}: {roomProblem}");
+            }
+        }
+
+        var term = await TermOfCourseAsync(db, sectionId, subjectId, ct);
+        var sameTerm = await db.CourseSchedules.AsNoTracking().Where(c => c.SectionId == sectionId && c.SubjectId != subjectId).ToListAsync(ct);
+        foreach (var other in sameTerm.Where(o => MeetingDays.Has(o.Days, toDay) && Overlaps(start, end, o.StartTime, o.EndTime)))
+        {
+            if (term is not null && await TermOfCourseAsync(db, sectionId, other.SubjectId, ct) == term)
+            {
+                var otherName = await db.Subjects.AsNoTracking().Where(s => s.Id == other.SubjectId).Select(s => s.Name).FirstAsync(ct);
+                return ServiceResult.Fail($"{name} would meet at the same time as {otherName} of the same section on {MeetingDays.LongName(day)}.");
+            }
+        }
+
+        var parts = await db.Schedules.AsNoTracking().ToListAsync(ct);
+        var partId = PartFor(parts, start)?.Id ?? parts.First().Id;
+
+        // 1. the day leaves the row it was in (the row goes when it was its only day) ... 2. nothing else of the course stays on the day it goes to ... 3. the day joins a row with the same time and room, or gets one of its own
+        var left = MeetingDays.Without(source.Days, fromDay);
+        if (left.Length == 0)
+        {
+            db.CourseSchedules.Remove(source);
+        }
+        else
+        {
+            source.Days = left;
+        }
+
+        foreach (var row in rows.Where(r => r != source && MeetingDays.Has(r.Days, toDay)))
+        {
+            var rest = MeetingDays.Without(row.Days, toDay);
+            if (rest.Length == 0)
+            {
+                db.CourseSchedules.Remove(row);
+            }
+            else
+            {
+                row.Days = rest;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var again = await db.CourseSchedules.Where(c => c.SectionId == sectionId && c.SubjectId == subjectId).ToListAsync(ct);
+        var join = again.FirstOrDefault(r => r.StartTime == start && r.EndTime == end && r.RoomId == roomId);
+        if (join is not null)
+        {
+            join.Days = MeetingDays.With(join.Days, toDay);
+        }
+        else
+        {
+            db.CourseSchedules.Add(new CourseSchedule { SectionId = sectionId, SubjectId = subjectId, ScheduleId = partId, Days = day, StartTime = start, EndTime = end, RoomId = roomId });
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return ServiceResult.Fail("Somebody else just changed the class times of that section. Reload and look again.");
+        }
+
+        return ServiceResult.Ok($"{name} meets on {MeetingDays.LongName(day)} at {ClassTime.Format(start)} – {ClassTime.Format(end)}.");
     }
 
     /// <summary>The room a class ends up in: the one typed, none when <see cref="CourseTimeInput.NoRoom"/> was typed, and the one it has when nothing was typed.</summary>
@@ -644,7 +793,8 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return (await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => ids.Contains(c.SectionId)).ToListAsync(ct))
-            .ToDictionary(c => (c.SectionId, c.SubjectId), c => new MeetingInfo(c.Days, c.StartTime, c.EndTime, c.Schedule.Code));
+            .GroupBy(c => (c.SectionId, c.SubjectId))
+            .ToDictionary(g => g.Key, g => Combine(g)!);
     }
 
     // ======================================================================= the checks other services use too
@@ -662,14 +812,14 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         }
 
         var myTerm = await TermOfAsync(db, mine.StrandId, mine.GradeLevel, subjectId, ct);
-        var theirs = await db.CourseSchedules.AsNoTracking()
-            .Where(c => c.Days == days && !(c.SectionId == sectionId && c.SubjectId == subjectId) && c.Section.SchoolYearId == mine.SchoolYearId
+        var theirs = (await db.CourseSchedules.AsNoTracking()
+            .Where(c => !(c.SectionId == sectionId && c.SubjectId == subjectId) && c.Section.SchoolYearId == mine.SchoolYearId
                         && db.TeachingAssignments.Any(a => a.TeacherId == teacherId && a.SectionId == c.SectionId && a.SubjectId == c.SubjectId))
             .Select(c => new
             {
-                c.SubjectId, Subject = c.Subject.Name, c.StartTime, c.EndTime, c.Section.StrandId, c.Section.GradeLevel, Strand = c.Section.Strand.Code, SectionName = c.Section.Name,
+                c.SubjectId, Subject = c.Subject.Name, c.Days, c.StartTime, c.EndTime, c.Section.StrandId, c.Section.GradeLevel, Strand = c.Section.Strand.Code, SectionName = c.Section.Name,
                 Teacher = db.Teachers.Where(t => t.Id == teacherId).Select(t => t.FirstName + " " + t.LastName).FirstOrDefault(),
-            }).ToListAsync(ct);
+            }).ToListAsync(ct)).Where(c => MeetingDays.Overlap(c.Days, days)).ToList();
 
         foreach (var other in theirs.Where(o => Overlaps(start, end, o.StartTime, o.EndTime)))
         {
@@ -694,10 +844,10 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
         }
 
         var myTerm = await TermOfAsync(db, mine.StrandId, mine.GradeLevel, subjectId, ct);
-        var others = await db.CourseSchedules.AsNoTracking()
-            .Where(c => c.RoomId == roomId && c.Days == days && !(c.SectionId == sectionId && c.SubjectId == subjectId) && c.Section.SchoolYearId == mine.SchoolYearId)
-            .Select(c => new { c.SubjectId, Subject = c.Subject.Name, c.StartTime, c.EndTime, c.Section.StrandId, c.Section.GradeLevel, Strand = c.Section.Strand.Code, SectionName = c.Section.Name, Room = c.Room!.Name })
-            .ToListAsync(ct);
+        var others = (await db.CourseSchedules.AsNoTracking()
+            .Where(c => c.RoomId == roomId && !(c.SectionId == sectionId && c.SubjectId == subjectId) && c.Section.SchoolYearId == mine.SchoolYearId)
+            .Select(c => new { c.SubjectId, Subject = c.Subject.Name, c.Days, c.StartTime, c.EndTime, c.Section.StrandId, c.Section.GradeLevel, Strand = c.Section.Strand.Code, SectionName = c.Section.Name, Room = c.Room!.Name })
+            .ToListAsync(ct)).Where(c => MeetingDays.Overlap(c.Days, days)).ToList();
 
         foreach (var other in others.Where(o => Overlaps(start, end, o.StartTime, o.EndTime)))
         {
@@ -713,6 +863,13 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
     }
 
     private static bool Overlaps(TimeOnly start, TimeOnly end, TimeOnly otherStart, TimeOnly otherEnd) => start < otherEnd && otherStart < end;
+
+    /// <summary>The term of a course of a section (by the curriculum of its strand and grade level), or null.</summary>
+    private static async Task<byte?> TermOfCourseAsync(AppDbContext db, int sectionId, int subjectId, CancellationToken ct)
+    {
+        var mine = await db.Sections.AsNoTracking().Where(s => s.Id == sectionId).Select(s => new { s.StrandId, s.GradeLevel }).FirstOrDefaultAsync(ct);
+        return mine is null ? null : await TermOfAsync(db, mine.StrandId, mine.GradeLevel, subjectId, ct);
+    }
 
     /// <summary>The term (1, 2, ...) in which the strand takes the course at the grade level, or null when it is not one of its courses.</summary>
     private static async Task<byte?> TermOfAsync(AppDbContext db, int strandId, byte gradeLevel, int subjectId, CancellationToken ct) =>

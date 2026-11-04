@@ -1,6 +1,23 @@
-/* On the screen the paper is hidden; the registrar's page shows it only when printing. */
+/* On the screen the paper is hidden (the registrar's page shows it only when printing), except the copy of the Print Enrollment box, which is a paper to look at. */
 .print-sheet {
     display: none;
+}
+
+@media screen {
+    .print-sheet.preview {
+        display: block;
+        zoom: 0.78;
+        background: #fff;
+        border: 1px solid #c7d1df;
+        box-shadow: 0 6px 24px rgba(16, 24, 40, 0.18);
+    }
+}
+
+/* On paper only the copy for the printer is printed. */
+@media print {
+    .print-sheet.preview {
+        display: none !important;
+    }
 }
 
 /* No margin on the paper: the browser prints its own header (the date and the title of the page) and footer (the address of the page) in the margin, and with none
@@ -11,8 +28,13 @@
 }
 
 @media print {
-    .print-sheet {
+    .print-sheet:not(.preview) {
         display: block;
+    }
+}
+
+@media print, screen {
+    .print-sheet {
         color: #111;
         font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
         font-size: 9.5pt;

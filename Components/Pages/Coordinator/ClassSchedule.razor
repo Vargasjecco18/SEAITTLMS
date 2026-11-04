@@ -19,30 +19,24 @@
 
 <div class="schedule-page" id="schedule-root" @ref="root">
     <header class="bar">
-        <a class="back" href="coordinator/sections"><Icon Name="arrow-left" Size="18" /> Class sections</a>
         <h1><Icon Name="calendar-clock" Size="22" /> Class schedule</h1>
 
         <div class="bar-fields">
-            <Field For="cs-year" Label="School year">
-                <select id="cs-year" @onchange="YearChangedAsync">
-                    @foreach (var y in years)
-                    {
-                        <option value="@y.Id" selected="@(y.Id == yearId)">@y.Name</option>
-                    }
-                </select>
-            </Field>
-            <Field For="cs-term" Label="Term">
-                <select id="cs-term" @onchange="TermChangedAsync">
-                    @foreach (var t in TermsOfYear)
-                    {
-                        <option value="@t.TermNumber" selected="@(t.TermNumber == term)">@t.Name</option>
-                    }
-                </select>
-            </Field>
+            <select id="cs-year" class="bar-select" aria-label="School year" @onchange="YearChangedAsync">
+                @foreach (var y in years)
+                {
+                    <option value="@y.Id" selected="@(y.Id == yearId)">@y.Name</option>
+                }
+            </select>
+            <select id="cs-term" class="bar-select" aria-label="Term" @onchange="TermChangedAsync">
+                @foreach (var t in TermsOfYear)
+                {
+                    <option value="@t.TermNumber" selected="@(t.TermNumber == term)">@t.Name</option>
+                }
+            </select>
 
             @* The rooms: every room has its own schedule. *@
             <div class="room-picker">
-                <span class="room-label">Room</span>
                 <button type="button" id="room-button" class="room-button" aria-haspopup="listbox" aria-expanded="@(roomMenu ? "true" : "false")" @onclick="() => roomMenu = !roomMenu">
                     <Icon Name="door-open" Size="18" /> <span>@RoomName</span> <Icon Name="chevron-down" Size="16" />
                 </button>
@@ -82,7 +76,7 @@
     <div class="body">
         <aside class="palette" aria-label="Sections and their courses">
             <SearchField Id="schedule-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a section" AriaLabel="Search a section" />
-            <p class="palette-lead">Drag a course to a day and a time.</p>
+            <p class="palette-lead">Drag a course to a day and a time. Drag a class back here to take it off the week.</p>
 
             @if (sections.Count == 0)
             {
@@ -172,7 +166,7 @@
                             @foreach (var block in BlocksOf(day))
                             {
                                 var c = block.Class;
-                                <div class="block kind-@(c.TermNumber % 6)" draggable="true" data-drag="@($"m:{c.SectionId}:{c.SubjectId}")" data-block="@c.Course" data-section="@c.SectionLabel"
+                                <div class="block kind-@(c.TermNumber % 6)" draggable="true" data-drag="@($"m:{c.SectionId}:{c.SubjectId}:{day}")" data-day="@day" data-block="@c.Course" data-section="@c.SectionLabel"
                                      style="top: calc(var(--row) * @block.Top); height: calc(var(--row) * @block.Height - 2px); left: @(block.Left)%; width: calc(@(block.Width)% - 2px);"
                                      @ondblclick="() => OpenDialogAsync(c.SectionId)" @ondblclick:stopPropagation="true"
                                      title="@($"{c.Course} · {c.SectionLabel} · {ClassTime.Label(c.Start)} – {ClassTime.Label(c.End)}")">
@@ -184,7 +178,7 @@
                                         <span class="b-teacher">@c.Teacher</span>
                                     }
                                     <div class="b-tools">
-                                        <select class="b-length" aria-label="@($"Length of {c.Course} of {c.SectionLabel}")" @onchange="e => ChangeLengthAsync(c, e.Value?.ToString())">
+                                        <select class="b-length" aria-label="@($"Length of {c.Course} of {c.SectionLabel}")" @onchange="e => ChangeLengthAsync(c, day, e.Value?.ToString())">
                                             @foreach (var minutes in Lengths)
                                             {
                                                 <option value="@minutes" selected="@(Minutes(c) == minutes)">@Hours(minutes)</option>
@@ -198,26 +192,42 @@
                     }
                 </div>
             </div>
-            <p class="week-note">@(rooms.Count == 0 ? "No room yet: press the Room box and add one." : $"Classes in {RoomName}.") MWF is Monday, Wednesday, Friday; TTH is Tuesday, Thursday.</p>
+            @if (rooms.Count == 0)
+            {
+                <p class="week-note">No room yet: press the Room box and add one.</p>
+            }
         </div>
     </div>
 </div>
 
 <SectionDialog Section="dialogSection" OnClose="CloseDialogAsync" />
 
-@* Every class of the school year and term, section by section, over all the screen. It is read only when it is opened. *@
-<Modal Open="allOpen" Title="@($"All class schedules · {TermName}")" Full="true" OnClose="CloseAll">
+@* Every class of the school year and term, section by section, in a box over the screen with a little space at its sides. It is read only when it is opened. The grade level, the strand and
+   the section are chosen from lists, so what is shown fits the box (no scrolling). *@
+<Modal Open="allOpen" Title="@($"All class schedules · {TermName}")" Cover="true" OnClose="CloseAll">
     @if (allOpen)
     {
         <div class="all-wrap">
             <div class="all-tools">
-                <SearchField Id="all-search" @bind-Value="allSearch" Live="true" SubmitText="" Placeholder="Search a section, a course, a room or a teacher" AriaLabel="Search the class schedules" />
-                <ul class="all-stats" aria-label="In short">
-                    <li><Icon Name="users" Size="16" /> <strong>@AllShown.Count</strong> sections</li>
-                    <li><Icon Name="calendar-clock" Size="16" /> <strong>@AllShown.Sum(g => g.Count())</strong> classes</li>
-                    <li><Icon Name="door-open" Size="16" /> <strong>@AllShown.SelectMany(g => g).Where(c => c.RoomName is not null).Select(c => c.RoomName).Distinct().Count()</strong> rooms</li>
-                    <li><Icon Name="presentation" Size="16" /> <strong>@AllShown.SelectMany(g => g).Where(c => c.Teacher is not null).Select(c => c.Teacher).Distinct().Count()</strong> teachers</li>
-                </ul>
+                <select id="all-grade" class="bar-select" aria-label="Grade level" @onchange="e => { allGrade = e.Value?.ToString() ?? string.Empty; allStrand = string.Empty; allSection = string.Empty; }">
+                    <option value="" selected="@(allGrade == "")">All grade levels</option>
+                    <option value="11" selected="@(allGrade == "11")">Grade 11</option>
+                    <option value="12" selected="@(allGrade == "12")">Grade 12</option>
+                </select>
+                <select id="all-strand" class="bar-select" aria-label="Strand" @onchange="e => { allStrand = e.Value?.ToString() ?? string.Empty; allSection = string.Empty; }">
+                    <option value="" selected="@(allStrand == "")">All strands</option>
+                    @foreach (var strand in AllStrands)
+                    {
+                        <option value="@strand" selected="@(allStrand == strand)">@strand</option>
+                    }
+                </select>
+                <select id="all-section" class="bar-select" aria-label="Section" @onchange="e => allSection = e.Value?.ToString() ?? string.Empty">
+                    <option value="" selected="@(allSection == "")">All sections</option>
+                    @foreach (var name in AllSectionNames)
+                    {
+                        <option value="@name" selected="@(allSection == name)">Section @name</option>
+                    }
+                </select>
             </div>
             @if (AllShown.Count == 0)
             {
@@ -290,7 +300,9 @@
     private IReadOnlyList<TermRow> allTerms = [];
     private IReadOnlyDictionary<int, SectionTermSummary> summaries = new Dictionary<int, SectionTermSummary>();
     private bool allOpen;
-    private string allSearch = "";
+    private string allGrade = "11";
+    private string allStrand = "";
+    private string allSection = "";
     private IReadOnlyList<PlacedClass> allClasses = [];
     private IReadOnlyList<SectionRow> sectionRows = [];
     private readonly Dictionary<int, IReadOnlyList<CourseTimeRow>> courseCache = [];
@@ -486,16 +498,13 @@
     }
 
     // ---- the classes on the grid
-    private static string DaysOf(int day) => day is 1 or 3 or 5 ? MeetingDays.Mwf : MeetingDays.Tth;
-
     private static int Minutes(PlacedClass c) => (int)(c.End - c.Start).TotalMinutes;
 
     private static string Hours(int minutes) => minutes % 60 == 0 ? $"{minutes / 60} h" : $"{minutes / 60}.5 h";
 
     private IReadOnlyList<Block> BlocksOf(int day)
     {
-        var pattern = DaysOf(day);
-        var list = placed.Where(c => c.Days == pattern).OrderBy(c => c.Start).ThenBy(c => c.SectionLabel).ToList();
+        var list = placed.Where(c => MeetingDays.Has(c.Days, day)).OrderBy(c => c.Start).ThenBy(c => c.SectionLabel).ToList();
 
         // Classes at the same time (only possible without a room) stand side by side.
         var blocks = new List<Block>();
@@ -550,15 +559,20 @@
         return blocks;
     }
 
-    /// <summary>A course was dropped on a day at a half hour (the page's script says where): it is put there, or moved there.</summary>
+    /// <summary>
+    /// A course was dropped on a day at a half hour (the page's script says where). A course from the list is put on the week for the first time: it meets at that time on all the days of its pattern
+    /// (Monday, Wednesday and Friday, or Tuesday and Thursday). A class that is already on the week is moved by itself: only the day that was dragged goes to the new place, and the other days stay.
+    /// </summary>
     [JSInvokable]
     public async Task OnDrop(string payload, int day, int slot)
     {
         var parts = payload.Split(':');
-        if (parts.Length != 3 || !int.TryParse(parts[1], out var sectionId) || !int.TryParse(parts[2], out var subjectId) || day is < 1 or > 5)
+        if (parts.Length < 3 || !int.TryParse(parts[1], out var sectionId) || !int.TryParse(parts[2], out var subjectId) || day is < 1 or > 5)
         {
             return;
         }
+
+        var fromDay = parts.Length == 4 && parts[0] == "m" && int.TryParse(parts[3], out var from) ? from : 0;
 
         if (roomId == 0)
         {
@@ -569,9 +583,10 @@
         }
 
         slot = Math.Clamp(slot, 0, Slots - 1);
-        var existing = placed.FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId)
+        var moved = fromDay > 0 ? placed.FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId && MeetingDays.Has(c.Days, fromDay)) : null;
+        var existing = moved ?? placed.FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId)
                        ?? (await Times.ListPlacedAsync(-1, yearId, 0)).FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId);
-        var length = existing is null ? 60 : Math.Max(30, Minutes(existing));   // a course that is put on the week again starts as one hour
+        var length = existing is null ? 60 : Math.Max(30, Minutes(existing));   // a course that is put on the week again starts as one hour (or as long as it was)
         var start = SlotTime(slot);
         var latestStart = new TimeOnly(LastHour, 0).AddMinutes(-length);
         if (start > latestStart)
@@ -581,14 +596,41 @@
 
         await InvokeAsync(async () =>
         {
-            int? room = roomId;
-            var result = await RunAsync(userId => Times.PlaceAsync(userId, sectionId, subjectId, room, DaysOf(day), start, start.AddMinutes(length)), quiet: true);
+            int? room = moved?.RoomId ?? roomId;
+            if (moved is not null)
+            {
+                await RunAsync(userId => Times.MoveDayAsync(userId, sectionId, subjectId, fromDay, day, room, start, start.AddMinutes(length)), quiet: true);
+            }
+            else
+            {
+                await RunAsync(userId => Times.PlaceAsync(userId, sectionId, subjectId, room, MeetingDays.PatternOf(day), start, start.AddMinutes(length)), quiet: true);
+            }
+
             await ReloadAsync();
             StateHasChanged();
         });
     }
 
-    private async Task ChangeLengthAsync(PlacedClass c, string? value)
+    /// <summary>A class of the week was dropped on the list of courses: the course goes back to its section (all its days leave the week) and is in the list again.</summary>
+    [JSInvokable]
+    public async Task OnDropBack(string payload)
+    {
+        var parts = payload.Split(':');
+        if (parts.Length < 3 || parts[0] != "m" || !int.TryParse(parts[1], out var sectionId) || !int.TryParse(parts[2], out var subjectId))
+        {
+            return;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            await RunAsync(userId => Times.ClearAsync(userId, sectionId, subjectId), quiet: true);
+            openSections.Add(sectionId);
+            await ReloadAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task ChangeLengthAsync(PlacedClass c, int day, string? value)
     {
         if (!int.TryParse(value, out var minutes))
         {
@@ -604,7 +646,8 @@
             return;
         }
 
-        await RunAsync(userId => Times.PlaceAsync(userId, c.SectionId, c.SubjectId, c.RoomId, c.Days, c.Start, end), quiet: true);
+        // a class is a day of its own now: the length changes for the day of the block
+        await RunAsync(userId => Times.MoveDayAsync(userId, c.SectionId, c.SubjectId, day, day, c.RoomId, c.Start, end), quiet: true);
         await ReloadAsync();
     }
 
@@ -617,17 +660,33 @@
     // ---- all the class schedules (over all the screen)
     private async Task OpenAllAsync()
     {
-        allSearch = "";
         allClasses = yearId == 0 ? [] : await Times.ListPlacedAsync(-1, yearId, term);
+        allGrade = "11";
+        allStrand = AllStrands.FirstOrDefault() ?? string.Empty;
+        allSection = string.Empty;
         allOpen = true;
     }
 
     private void CloseAll() => allOpen = false;
 
+    /// <summary>"11-BUSSENT-A" is grade 11, the strand BUSSENT and the section A (a strand can have a dash in its code, so the first and the last parts are the grade and the section).</summary>
+    private static (string Grade, string Strand, string Section) PartsOf(string label)
+    {
+        var parts = label.Split('-');
+        return parts.Length < 3 ? (parts[0], label, "") : (parts[0], string.Join('-', parts[1..^1]), parts[^1]);
+    }
+
+    private IEnumerable<string> AllStrands => allClasses.Select(c => PartsOf(c.SectionLabel)).Where(p => allGrade == "" || p.Grade == allGrade).Select(p => p.Strand).Distinct().Order(StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<string> AllSectionNames => allClasses.Select(c => PartsOf(c.SectionLabel))
+        .Where(p => (allGrade == "" || p.Grade == allGrade) && (allStrand == "" || p.Strand == allStrand)).Select(p => p.Section).Distinct().Order(StringComparer.OrdinalIgnoreCase);
+
     private IReadOnlyList<IGrouping<string, PlacedClass>> AllShown => [.. allClasses
-        .Where(c => string.IsNullOrWhiteSpace(allSearch)
-                    || c.SectionLabel.Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase) || c.Course.Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase)
-                    || (c.RoomName ?? "").Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase) || (c.Teacher ?? "").Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase))
+        .Where(c =>
+        {
+            var p = PartsOf(c.SectionLabel);
+            return (allGrade == "" || p.Grade == allGrade) && (allStrand == "" || p.Strand == allStrand) && (allSection == "" || p.Section == allSection);
+        })
         .GroupBy(c => c.SectionLabel).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)];
 
     // ---- the box of a section (adviser and students)

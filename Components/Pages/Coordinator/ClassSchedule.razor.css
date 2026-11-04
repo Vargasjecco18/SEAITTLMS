@@ -26,19 +26,6 @@
     font-size: 1.3rem;
 }
 
-.back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.back:hover {
-    color: var(--brand);
-}
-
 .bar-fields {
     display: flex;
     flex-wrap: wrap;
@@ -47,8 +34,16 @@
     margin-left: auto;
 }
 
-.bar-fields ::deep .field {
-    margin: 0;
+/* The choices at the top (school year, term): plain lists with no label over them. */
+.bar-select {
+    min-width: 8rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border-strong, var(--border));
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
 }
 
 /* ---------- the rooms ---------- */
@@ -56,11 +51,6 @@
     position: relative;
     display: grid;
     gap: 0.3rem;
-}
-
-.room-label {
-    font-size: 0.85rem;
-    font-weight: 650;
 }
 
 .room-button {
@@ -185,15 +175,15 @@
     display: grid;
     grid-template-columns: 19rem minmax(0, 1fr);
     gap: 1rem;
-    align-items: start;
+    align-items: stretch;
 }
 
+/* The list of the courses is as tall as the week next to it (contain: size makes it count as empty for the row, then it stretches to the height of the week and scrolls inside). */
 .palette {
-    position: sticky;
-    top: 0.75rem;
     display: grid;
+    align-content: start;
     gap: 0.6rem;
-    max-height: calc(100vh - 1.5rem);
+    contain: size;
     padding: 0.85rem;
     overflow-y: auto;
     border: 1px solid var(--border);
@@ -462,7 +452,7 @@
     }
 
     .palette {
-        position: static;
+        contain: none;
         max-height: 18rem;
     }
 
@@ -501,52 +491,22 @@
 .all-wrap {
     max-width: 1600px;
     margin: 0 auto;
-    padding-inline: clamp(0.5rem, 3vw, 3rem);
+    padding-inline: clamp(0.5rem, 2vw, 2rem);
 }
 
 .all-tools {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem 1.5rem;
-    margin-bottom: 1.25rem;
-}
-
-.all-tools ::deep .search {
-    flex: 1 1 20rem;
-    max-width: 32rem;
-}
-
-.all-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.all-stats li {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
-
-.all-stats li strong {
-    color: var(--text);
-    font-size: 1rem;
+    gap: 0.6rem 0.9rem;
+    margin-bottom: 1rem;
 }
 
 .all-grid {
     display: grid;
     gap: 1.1rem;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 25rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    align-items: start;
 }
 
 .all-section {
@@ -672,4 +632,12 @@
     color: var(--brand-strong);
     font-size: 0.72rem;
     font-weight: 700;
+}
+
+/* A class of the week is over the list: it can be dropped there to take it off the week. */
+.palette.drop-back {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    outline: 2px dashed var(--brand);
+    outline-offset: -4px;
 }

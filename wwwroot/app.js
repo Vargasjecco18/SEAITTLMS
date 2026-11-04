@@ -214,7 +214,7 @@
     }
 
     function setTheme(choice) {
-        if (choice === 'light' || choice === 'dark') {
+        if (['light', 'dark', 'ocean', 'forest', 'sunset', 'paper', 'midnight'].indexOf(choice) >= 0) {
             root.setAttribute('data-theme', choice);
             root.setAttribute('data-theme-pref', choice);
             save('seaitt-theme', choice);
@@ -1416,8 +1416,17 @@ window.seaitt = Object.assign(window.seaitt || {}, {
                 // The class is added after the browser has taken the picture of what is dragged (changing the page inside dragstart can cancel the drag).
                 window.setTimeout(function () { if (state.payload) { root.classList.add('is-dragging'); } }, 0);
             };
-            state.handlers.dragend = function () { state.payload = null; root.classList.remove('is-dragging'); clearHot(); };
+            state.handlers.dragend = function () { state.payload = null; root.classList.remove('is-dragging'); clearHot(); var pal = root.querySelector('.palette'); if (pal) { pal.classList.remove('drop-back'); } };
             state.handlers.dragover = function (e) {
+                // A class of the week over the list of courses: it can be dropped there, to take it off the week.
+                var list = e.target instanceof Element ? e.target.closest('.palette') : null;
+                if (list && state.payload && state.payload.charAt(0) === 'm') {
+                    e.preventDefault();
+                    if (e.dataTransfer) { e.dataTransfer.dropEffect = 'move'; }
+                    clearHot();
+                    list.classList.add('drop-back');
+                    return;
+                }
                 var col = e.target instanceof Element ? e.target.closest('.day-col') : null;
                 if (!col || !state.payload) { return; }
                 e.preventDefault();
@@ -1426,6 +1435,17 @@ window.seaitt = Object.assign(window.seaitt || {}, {
                 if (slot && slot !== state.hot) { clearHot(); slot.classList.add('hot'); state.hot = slot; }
             };
             state.handlers.drop = function (e) {
+                var list = e.target instanceof Element ? e.target.closest('.palette') : null;
+                if (list && state.payload && state.payload.charAt(0) === 'm') {
+                    e.preventDefault();
+                    var back = state.payload;
+                    state.payload = null;
+                    root.classList.remove('is-dragging');
+                    list.classList.remove('drop-back');
+                    clearHot();
+                    state.ref.invokeMethodAsync('OnDropBack', back);
+                    return;
+                }
                 var col = e.target instanceof Element ? e.target.closest('.day-col') : null;
                 if (!col || !state.payload) { return; }
                 e.preventDefault();
@@ -1446,6 +1466,21 @@ window.seaitt = Object.assign(window.seaitt || {}, {
             this.state = null;
         }
     }
+});
+
+// A plain form that sends itself when one of its lists is changed (form data-autosubmit): the lists of the course library.
+document.addEventListener('change', function (event) {
+    var box = event.target;
+    if (!(box instanceof HTMLSelectElement)) { return; }
+    var form = box.closest('form[data-autosubmit]');
+    if (!form) { return; }
+    // The lists follow each other: a new track empties the strand and the course, a new strand empties the course.
+    var order = ['track', 'grade', 'strand', 'course'];
+    var at = order.indexOf(box.name);
+    if (at >= 0 && box.name !== 'grade') {
+        order.slice(at + 1).forEach(function (name) { var next = form.elements[name]; if (next && name !== 'grade') { next.value = ''; } });
+    }
+    if (typeof form.requestSubmit === 'function') { form.requestSubmit(); } else { form.submit(); }
 });
 
 // How much of a module has been read (the bar at the right of its title, <ReadProgress>), and the viewer of the PDF files.
@@ -1497,12 +1532,35 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         return f.d ? 1 : 0;
     }
 
+    // The files that make the bar: when the module has slides, only the slides count (the bar is connected to the slides); otherwise all its files.
     function fileIds() {
-        var ids = {};
+        var ids = {}, slideIds = {};
         document.querySelectorAll('.pane[data-file-ids]').forEach(function (pane) {
-            pane.getAttribute('data-file-ids').split(',').forEach(function (id) { if (id) { ids[id] = true; } });
+            var target = pane.hasAttribute('data-slides') ? slideIds : ids;
+            pane.getAttribute('data-file-ids').split(',').forEach(function (id) { if (id) { target[id] = true; } });
         });
-        return Object.keys(ids);
+        document.querySelectorAll('[data-slides-viewer][data-file-id]').forEach(function (v) { slideIds[v.getAttribute('data-file-id')] = true; });
+        var slides = Object.keys(slideIds);
+        return slides.length > 0 ? slides : Object.keys(ids);
+    }
+
+    // The student's bar is kept on the server too (the bar of the module in the course reads it); a smaller number than the one sent is not sent again.
+    function report(value) {
+        if (!state || !state.el.hasAttribute('data-read-save') || value <= (state.sent || 0)) { return; }
+        // one report waits to be sent; a newer value does not push it back (the value is read when it is sent), so a bar that changes all the time still reports
+        if (state.reportTimer) { return; }
+        var current = state;
+        state.reportTimer = window.setTimeout(function () {
+            current.reportTimer = null;
+            var v = current.data.best || 0;
+            if (v <= (current.sent || 0)) { return; }
+            var before = current.sent || 0;
+            current.sent = v;
+            try {
+                window.fetch(abs('module-reads'), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ moduleId: Number(current.el.getAttribute('data-read-module')), percent: v }) }).catch(function () { current.sent = before; });
+            } catch (error) { current.sent = before; }
+        }, 1500);
     }
 
     function show() {
@@ -1513,6 +1571,10 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         var value = ids.length === 0 ? 0 : Math.round(100 * total / ids.length);
         value = Math.max(state.data.best || 0, Math.min(100, value));
         if (value !== state.data.best) { state.data.best = value; save(); }
+        report(state.data.best || 0);
+        // only write what changed: writing the same text again is a change of the page that wakes this code up again and again
+        if (state.shown === value) { return; }
+        state.shown = value;
         var text = state.el.querySelector('[data-rp-value]');
         var bar = state.el.querySelector('[data-rp-bar]');
         if (text) { text.textContent = value + '%'; }
@@ -1665,6 +1727,90 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         }).catch(fail);
     }
 
+    // ---------------------------------------------------------------- the slides: one slide at a time, from left to right (arrows, the keys of the keyboard, or the buttons)
+    function startSlides(box) {
+        box.setAttribute('data-slides-ready', '1');
+        var id = box.getAttribute('data-file-id');
+        var url = abs(box.getAttribute('data-slides-src'));
+        box.innerHTML = '<div class="sl-stage"><button type="button" class="sl-nav sl-prev" aria-label="Previous slide" disabled>&#8249;</button>'
+            + '<div class="sl-frame" tabindex="0"><div class="sl-slide"><span class="sl-wait">Loading…</span></div></div>'
+            + '<button type="button" class="sl-nav sl-next" aria-label="Next slide" disabled>&#8250;</button></div>'
+            + '<div class="sl-bar"><span class="sl-count" aria-live="polite"></span><span class="sl-dots" aria-hidden="true"></span></div>';
+        var frame = box.querySelector('.sl-frame');
+        var slide = box.querySelector('.sl-slide');
+        var prev = box.querySelector('.sl-prev');
+        var next = box.querySelector('.sl-next');
+        var count = box.querySelector('.sl-count');
+        var dots = box.querySelector('.sl-dots');
+        var pdfDoc = null, total = 0, current = 0, dwell = {}, timer = null, drawing = 0;
+
+        function fail() {
+            if (timer) { window.clearInterval(timer); }
+            box.innerHTML = '<p class="pdf-message">These slides can\'t be shown here. Use “Open in a new tab” or Download.</p>';
+        }
+
+        function go(n, direction) {
+            if (!pdfDoc || n < 1 || n > total) { return; }
+            var token = ++drawing;
+            current = n;
+            prev.disabled = n <= 1;
+            next.disabled = n >= total;
+            count.textContent = 'Slide ' + n + ' of ' + total;
+            dots.querySelectorAll('i').forEach(function (d, i) { d.classList.toggle('on', i === n - 1); d.classList.toggle('seen', rec(id) && rec(id).p.indexOf(i + 1) >= 0); });
+            pdfDoc.getPage(n).then(function (page) {
+                var dpr = Math.min(2, window.devicePixelRatio || 1);
+                var width = Math.max(320, frame.clientWidth);
+                var base = page.getViewport({ scale: 1 });
+                var viewport = page.getViewport({ scale: (width / base.width) * dpr });
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.floor(viewport.width);
+                canvas.height = Math.floor(viewport.height);
+                return page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(function () {
+                    if (token !== drawing) { return; }
+                    var fresh = document.createElement('div');
+                    fresh.className = 'sl-slide ' + (direction === 'back' ? 'from-left' : direction === 'forward' ? 'from-right' : '');
+                    fresh.appendChild(canvas);
+                    frame.replaceChild(fresh, frame.querySelector('.sl-slide'));
+                    slide = fresh;
+                });
+            }).catch(function () { /* a slide that can't be drawn is left as it was */ });
+        }
+
+        prev.addEventListener('click', function () { go(current - 1, 'back'); });
+        next.addEventListener('click', function () { go(current + 1, 'forward'); });
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); go(current - 1, 'back'); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); go(current + 1, 'forward'); }
+            else if (e.key === 'Home') { e.preventDefault(); go(1, 'back'); }
+            else if (e.key === 'End') { e.preventDefault(); go(total, 'forward'); }
+        });
+
+        // a slide counts as seen once it has been in front of the reader for a moment (the same rule as the pages of a PDF)
+        function step() {
+            if (!document.body.contains(box)) { window.clearInterval(timer); return; }
+            var f = rec(id);
+            if (!f || !current || !inFront(box)) { return; }
+            dwell[current] = (dwell[current] || 0) + 0.5;
+            if (dwell[current] >= PAGE_SECONDS && f.p.indexOf(current) < 0) {
+                f.p.push(current);
+                dots.querySelectorAll('i')[current - 1] && dots.querySelectorAll('i')[current - 1].classList.add('seen');
+                touch();
+            }
+        }
+
+        loadPdfJs().then(function (lib) { return lib.getDocument({ url: url, withCredentials: true }).promise; }).then(function (doc) {
+            pdfDoc = doc;
+            total = doc.numPages;
+            var f = rec(id);
+            if (f) { f.n = total; }
+            for (var i = 0; i < total; i++) { dots.appendChild(document.createElement('i')); }
+            timer = window.setInterval(step, 500);
+            go(1, '');
+            frame.focus({ preventScroll: true });
+            touch();
+        }).catch(fail);
+    }
+
     // ---------------------------------------------------------------- the other files
     function watchImage(img) {
         img.setAttribute('data-read-watch', '1');
@@ -1726,6 +1872,7 @@ window.seaitt = Object.assign(window.seaitt || {}, {
     // ---------------------------------------------------------------- the page
     function attachViewers() {
         document.querySelectorAll('.pdf-view[data-pdf-src]:not([data-pdf-ready])').forEach(startPdf);
+        document.querySelectorAll('.slides-view[data-slides-src]:not([data-slides-ready])').forEach(startSlides);
         if (!state) { return; }
         document.querySelectorAll('.viewer img[data-file-id]:not([data-read-watch])').forEach(watchImage);
         document.querySelectorAll('.viewer iframe[data-file-id]:not([data-read-watch])').forEach(watchFrame);
@@ -1737,6 +1884,9 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         if (el && (!state || state.el !== el)) {
             var key = el.getAttribute('data-read-key') || '';
             state = { el: el, key: key, data: load(key) };
+            // what the server already has for this student (another computer, or the course page) is where the bar starts
+            var fromServer = parseInt(el.getAttribute('data-read-server') || '0', 10);
+            if (fromServer > (state.data.best || 0)) { state.data.best = Math.min(100, fromServer); }
             show();
         } else if (!el && state) {
             state = null;

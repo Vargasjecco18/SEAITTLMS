@@ -257,12 +257,28 @@ th.col-level {
     list-style: none;
 }
 
+/* A line of the attendance box: a light tint of the brand blue with a line at its left (the same in every look), not the gray of the page. */
 .attendance-list li {
     display: grid;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid var(--border);
+    gap: 0.15rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+    border-left: 4px solid var(--brand);
     border-radius: var(--radius-sm);
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--brand-soft) 70%, var(--surface));
+}
+
+.attendance-list li .detail {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.attendance-list li .sub {
+    color: var(--text-muted);
 }
 
 /* ---------- the rows come alive: a picture of initials, a chip for the section, rounded choices with an icon, a line at the left of a row with a concern ---------- */

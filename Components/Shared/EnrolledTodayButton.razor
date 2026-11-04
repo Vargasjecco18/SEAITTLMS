@@ -1,0 +1,72 @@
+@rendermode InteractiveServer
+@inject EnrollmentService Enrollment
+@inject TimeProvider Clock
+
+@* "View Enrolled Student Today" in the top right of Student's Accounts: a box in the middle of the screen with the students the registrar enrolled today (the day of the Philippines). It is its own
+   live island, so it works inside the page that is otherwise plain. *@
+<Button Variant="ButtonVariant.Secondary" IconName="calendar-check" OnClick="OpenAsync">View Enrolled Student Today</Button>
+
+<Modal Open="open" Title="Enrolled Students Today" Large="true" Centered="true" OnClose="() => open = false">
+    @if (open)
+    {
+        @if (rows is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (rows.Count == 0)
+        {
+            <EmptyState IconName="user-plus" Title="Nobody was enrolled today yet">
+                <p>The students you enroll today appear here, the newest first.</p>
+            </EmptyState>
+        }
+        else
+        {
+            <p class="count"><strong>@rows.Count</strong> @(rows.Count == 1 ? "student" : "students") enrolled on @PhilippineTime.FormatLongDate(PhilippineTime.Now(Clock)).</p>
+            <div class="table-wrap">
+                <table class="table" id="enrolled-today">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">LRN</th>
+                            <th scope="col">Grade level</th>
+                            <th scope="col">Strand</th>
+                            <th scope="col">Section</th>
+                            <th scope="col">Term</th>
+                            <th scope="col">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in rows)
+                        {
+                            <tr>
+                                <td><strong>@row.StudentName</strong></td>
+                                <td class="mono">@row.Lrn</td>
+                                <td>Grade @row.GradeLevel</td>
+                                <td>@row.Strand</td>
+                                <td>@row.Section</td>
+                                <td>@row.Term <span class="sub">@row.SchoolYear</span></td>
+                                <td>@PhilippineTime.FormatTime(row.EnrolledAtUtc)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="() => open = false">Close</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private bool open;
+    private IReadOnlyList<EnrolledTodayRow>? rows;
+
+    private async Task OpenAsync()
+    {
+        rows = null;
+        open = true;
+        rows = await Enrollment.GetEnrolledOnAsync();
+    }
+}

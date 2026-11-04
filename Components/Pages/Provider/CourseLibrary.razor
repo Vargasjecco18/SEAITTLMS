@@ -27,7 +27,7 @@ else
     var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
 
     @* The Course Menu at the left (Syllabus, Modules, Summative exams, each with what is inside) and the menu of the school folded to its icons: the page has the room. *@
-    <CourseLayout CustomGroups="LibraryMenu(syllabus, modules)" CollapseMenu="true">
+    <CourseLayout CustomGroups="LibraryMenu(syllabus, modules)" CustomExtra="NoLinks" CollapseMenu="true">
     <CustomExtraContent>
         @* Instead of "Back to 1st Term": Track, then Strand, then Course, to go to another course. *@
         <LibraryCourseMenu CurrentSubjectId="SubjectId" TrackId="TrackQuery" StrandId="StrandQuery" />
@@ -59,6 +59,7 @@ else
         }
         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
         <Button Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
+        <Button Variant="ButtonVariant.Secondary" IconName="copy" Disabled="@(course.Modules.Count == 0 || busy)" Title="Copy the syllabus and the modules to the teachers of this course in the next school year" OnClick="CopyToNextYearAsync">Copy to next school year</Button>
         <Button Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
     </PageHeader>
 
@@ -276,8 +277,8 @@ else
             <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
-            <AttachmentPicker @ref="modulePicker" NoSizeLimit="true" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
             <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="modulePicker" NoSizeLimit="true" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
@@ -292,17 +293,28 @@ else
     {
         <EditForm Model="examForm" OnValidSubmit="SaveExamAsync">
             <FormErrors Errors="formErrors" />
-            @if (editingExamId is null)
-            {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" OnClick="OpenExamsExcelFromForm">Fill many from an Excel file instead</Button></p>
-            }
-
             <Field For="x-title" Label="Title" Required="true" Hint="Like 1st Term summative exam.">
                 <InputText id="x-title" @bind-Value="examForm.Title" maxlength="200" autocomplete="off" />
             </Field>
             <Field For="x-text" Label="Instructions" Hint="What the students must know or do.">
-                <InputTextArea id="x-text" @bind-Value="examForm.Instructions" rows="5" />
+                <InputTextArea id="x-text" @bind-Value="examForm.Instructions" rows="4" />
             </Field>
+
+            @* Under the instructions: the questions, then the highest score (the total of the points of the questions), then the settings, and last the days it opens and closes. *@
+            <section class="exam-questions" aria-label="Questions of the exam">
+                <h3><Icon Name="list-checks" Size="16" /> Questions <span class="count">@examQuestions.Count</span></h3>
+                <p class="exams-note">@(examQuestions.Count == 0 ? "No question yet. Write them in the sheet: the type and the right answer are chosen from lists." : $"The exam is worth {examQuestions.Sum(q => q.Points):0.##} points.")</p>
+                <Button Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenQuestionsSheet">@(examQuestions.Count == 0 ? "Add questions" : "Edit the questions")</Button>
+            </section>
+
+            <Field For="x-score" Label="Highest score" Required="true" Hint="@(examQuestions.Count == 0 ? "With questions, the highest score is the total of their points." : "The total of the points of the questions.")">
+                <InputNumber id="x-score" Value="@(examQuestions.Count > 0 ? examQuestions.Sum(q => q.Points) : examForm.MaxScore)" ValueChanged="@((decimal v) => examForm.MaxScore = v)" ValueExpression="@(() => examForm.MaxScore)" disabled="@(examQuestions.Count > 0)" />
+            </Field>
+
+            <QuizSettings IdPrefix="x" Title="Summative Exam Settings" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
+                          @bind-TimeLimit="examForm.TimeLimitMinutes" @bind-MaxViolations="examForm.MaxViolations" @bind-AntiCheat="examForm.AntiCheat"
+                          @bind-ShuffleQuestions="examForm.ShuffleQuestions" @bind-ShuffleOptions="examForm.ShuffleOptions" @bind-ShowResult="examForm.ShowResult" />
+
             <div class="two">
                 <Field For="x-opens" Label="Opens on" Required="true" Hint="Philippine time.">
                     <input id="x-opens" type="datetime-local" value="@examForm.OpensText" @onchange="SetOpens" />
@@ -311,22 +323,6 @@ else
                     <input id="x-closes" type="datetime-local" value="@examForm.DueText" @onchange="SetCloses" />
                 </Field>
             </div>
-            @if (examQuestions.Count == 0)
-            {
-                <Field For="x-score" Label="Highest score" Required="true" Hint="With questions, the highest score is the total of their points.">
-                    <InputNumber id="x-score" @bind-Value="examForm.MaxScore" />
-                </Field>
-            }
-
-            <section class="exam-questions" aria-label="Questions of the exam">
-                <h3><Icon Name="list-checks" Size="16" /> Questions <span class="count">@examQuestions.Count</span></h3>
-<p class="exams-note">@(examQuestions.Count == 0 ? "No question yet. Write them in the sheet: the type and the right answer are chosen from lists." : $"The exam is worth {examQuestions.Sum(q => q.Points):0.##} points.")</p>
-                <Button Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenQuestionsSheet">@(examQuestions.Count == 0 ? "Add questions" : "Edit the questions")</Button>
-            </section>
-
-            <QuizSettings IdPrefix="x" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
-                          @bind-TimeLimit="examForm.TimeLimitMinutes" @bind-MaxViolations="examForm.MaxViolations" @bind-AntiCheat="examForm.AntiCheat"
-                          @bind-ShuffleQuestions="examForm.ShuffleQuestions" @bind-ShuffleOptions="examForm.ShuffleOptions" @bind-ShowResult="examForm.ShowResult" />
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseExamForm">Cancel</Button>
@@ -592,6 +588,9 @@ else
 
     /// <summary>The list this page was opened from (the term of the strand, the strand or the track), or the whole library.</summary>
     /// <summary>The Course Menu: Syllabus, Modules and Summative exams, each a dropdown of what is inside (the lines go to the place on this page).</summary>
+    /// <summary>The library has no pages under the line of the menu (no classmates, teachers or grades: those are for a student's course).</summary>
+    private static readonly IReadOnlyList<CourseMenuLink> NoLinks = [];
+
     private IReadOnlyList<CourseMenuGroup> LibraryMenu(MaterialModuleView? syllabus, IReadOnlyList<MaterialModuleView> modules) =>
     [
         new("syllabus", "Syllabus", "book-marked", syllabus is null ? 0 : 1, PageBase + "#syllabus", syllabus is null ? [] : [new CourseMenuEntry(syllabus.Title, PageBase + "#syllabus")]),
@@ -863,7 +862,6 @@ else
         examsExcelOpen = true;
     }
 
-    private void OpenExamsExcelFromForm() => OpenExamsExcel();
 
     private void CloseExamsExcel() => examsExcelOpen = false;
 
@@ -959,6 +957,26 @@ else
     }
 
     private void CloseSend() => sending = false;
+
+    /// <summary>Copies the syllabus and the modules to the teachers of the course in the next school year.</summary>
+    private async Task CopyToNextYearAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            Say(await Library.CopyToNextYearAsync(userId, SubjectId));
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     // "Add syllabus" inside the send window: the window closes and the form of the syllabus opens.
     private void AddSyllabusFromSend()

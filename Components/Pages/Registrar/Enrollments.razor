@@ -12,9 +12,6 @@
 
 <PageTitle>Enrollment · SEAITT Legazpi LMS</PageTitle>
 
-@* The menu of the school folds to its icons on this page (wwwroot/app.js looks for this marker); the button at the top of the menu shows it again. *@
-<span data-side-rail hidden></span>
-
 <div class="screen-only">
     <PageHeader Title="Enrollment"
                 IconName="user-plus">
@@ -106,21 +103,40 @@ else if (receipt is not null)
 }
 else
 {
+    <div class="screen-only">
     <EditForm Model="form" OnSubmit="SubmitAsync" class="enroll-form">
 
-        @if (!viewOpen)
-        {
-            <FormErrors Errors="errors" />
-        }
+        <FormErrors Errors="errors" />
 
         <div class="grid enroll-grid">
             <Card Title="Student" IconName="graduation-cap" Class="area-student">
                 @StudentFields("")
             </Card>
 
-            @* The button stays under the student's card, at the left: the courses that appear in the card at the right do not move it. *@
-            <div class="area-view">
-                <Button Type="button" Variant="ButtonVariant.Primary" IconName="eye" OnClick="OpenView">View enrolling student</Button>
+            @* The sign-in details are under the student's card, at the left, and always there: the courses that appear in the card at the right do not move them. Under them: Print Enrollment and Enroll student. *@
+            <Card Title="Sign-in details" IconName="key-round" Class="area-signin">
+                @if (existing is not null)
+                {
+                    <p>This student already has an account: <span class="mono">@existing.Email</span>.</p>
+                    <p class="muted">Their password does not change.</p>
+                }
+                else if (Preview is { } preview)
+                {
+                    <dl class="preview">
+                        <div><dt>Email</dt><dd class="mono" id="preview-email">@preview.Email</dd></div>
+                        <div><dt>Password</dt><dd class="mono" id="preview-password">@preview.Password</dd></div>
+                    </dl>
+                    <p class="hint">Made from the last name and the last 6 digits of the LRN. They are created when you press Enroll student.</p>
+                }
+                else
+                {
+                    <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
+                }
+            </Card>
+
+            <div class="area-actions">
+                <Button Type="button" Variant="ButtonVariant.Secondary" IconName="list" OnClick="() => printOpen = true">Print Enrollment</Button>
+                <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>
             </div>
 
             <Card Title="Enrollment" IconName="clipboard-list" Class="area-enroll">
@@ -239,62 +255,20 @@ else
             </Card>
         </div>
     </EditForm>
+    </div>
 
-    @* The box of the enrolling student: the information (it can be corrected here), the sign-in details, Enroll student and Cancel. *@
-    <Modal Open="viewOpen" Title="Enrolling student" Large="true" Centered="true" OnClose="CloseView">
-        @if (viewOpen)
+    @* The paper that is printed for this student (a preview in the middle of the screen). What is on the paper is the form of EnrollmentPrintSheet; the Print button prints the same form. *@
+    <EnrollmentPrintSheet Receipt="DraftReceipt" />
+    <Modal Open="printOpen" Title="Print Enrollment" Large="true" Centered="true" OnClose="() => printOpen = false">
+        @if (printOpen)
         {
-            <EditForm Model="form" OnSubmit="SubmitAsync">
-              <div class="view-form">
-                <FormErrors Errors="errors" />
-
-                <section class="view-part" aria-label="Student">
-                    <h3><Icon Name="graduation-cap" Size="18" /> Student</h3>
-                    <div class="view-fields">
-                        @StudentFields("ev-")
-                    </div>
-                </section>
-
-                <section class="view-part" aria-label="Enrollment">
-                    <h3><Icon Name="clipboard-list" Size="18" /> Enrollment</h3>
-                    <dl class="view-summary" id="view-summary">
-                        <div><dt>Term</dt><dd>@TermText(form.TermId)</dd></div>
-                        <div><dt>Grade level</dt><dd>Grade @form.GradeLevel</dd></div>
-                        <div><dt>Track</dt><dd>@(lookups!.Tracks.FirstOrDefault(t => t.Id == form.TrackId)?.Code ?? "Not chosen")</dd></div>
-                        <div><dt>Strand</dt><dd>@(lookups.Strands.FirstOrDefault(t => t.Id == form.StrandId)?.Code ?? "Not chosen")</dd></div>
-                        <div><dt>Section</dt><dd>@(string.IsNullOrWhiteSpace(form.SectionName) ? "Not chosen" : form.SectionName)</dd></div>
-                        <div><dt>Courses</dt><dd>@(plan.Count == 0 ? "None yet" : $"{plan.Count} · {plan.Sum(c => c.Units).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)} units")</dd></div>
-                    </dl>
-                    <p class="view-note">The grade level, strand and section are chosen on the page.</p>
-                </section>
-
-                <section class="view-part" aria-label="Sign-in details">
-                    <h3><Icon Name="key-round" Size="18" /> Sign-in details</h3>
-                    @if (existing is not null)
-                    {
-                        <p>This student already has an account: <span class="mono">@existing.Email</span>.</p>
-                        <p class="muted">Their password does not change.</p>
-                    }
-                    else if (Preview is { } preview)
-                    {
-                        <dl class="preview">
-                            <div><dt>Email</dt><dd class="mono" id="preview-email">@preview.Email</dd></div>
-                            <div><dt>Password</dt><dd class="mono" id="preview-password">@preview.Password</dd></div>
-                        </dl>
-                        <p class="hint">Made from the last name and the last 6 digits of the LRN. They are created when you press Enroll student.</p>
-                    }
-                    else
-                    {
-                        <p class="muted">Type the LRN and the last name and the student's email and password appear here.</p>
-                    }
-                </section>
-
-                <div class="view-actions">
-                    <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>
-                    <Button Type="button" Variant="ButtonVariant.Ghost" OnClick="CloseView">Cancel</Button>
-                </div>
-              </div>
-            </EditForm>
+            <div class="print-preview">
+                <EnrollmentPrintSheet Receipt="DraftReceipt" Preview="true" />
+            </div>
+            <div class="view-actions">
+                <Button Type="button" Variant="ButtonVariant.Ghost" OnClick="() => printOpen = false">Close</Button>
+                <Button Type="button" Variant="ButtonVariant.Primary" IconName="list" OnClick="PrintAsync">Print</Button>
+            </div>
         }
     </Modal>
 }
@@ -437,19 +411,25 @@ else
         </Field>
     </text>;
 
-    // The box of the enrolling student.
-    private bool viewOpen;
+    // The Print Enrollment box.
+    private bool printOpen;
 
-    private void OpenView()
+    /// <summary>What the paper shows before the student is enrolled: the form as it is now (the number of the enrollment is not made yet).</summary>
+    private EnrollmentReceipt DraftReceipt
     {
-        errors = [];
-        viewOpen = true;
-    }
-
-    private void CloseView()
-    {
-        viewOpen = false;
-        errors = [];
+        get
+        {
+            var term = lookups?.Terms.FirstOrDefault(t => t.Id == form.TermId);
+            var track = lookups?.Tracks.FirstOrDefault(t => t.Id == form.TrackId);
+            var strand = lookups?.Strands.FirstOrDefault(t => t.Id == form.StrandId);
+            var name = existing?.FullName ?? string.Join(' ', new[] { NameCase.Title(form.FirstName), NameCase.Title(form.MiddleName), NameCase.Title(form.LastName), NameCase.Title(form.NameExtension) }.Where(n => n.Length > 0));
+            var login = Preview;
+            return new EnrollmentReceipt(
+                0, existing?.StudentId ?? 0, name, form.Lrn, term?.SchoolYear ?? "", term?.Name ?? "", form.GradeLevel,
+                track?.Code ?? "", strand?.Code ?? "", form.SectionName,
+                [.. plan.Select(c => c.Name)], existing is null, existing?.Email ?? login?.Email ?? "", existing is null ? login?.Password : null,
+                string.IsNullOrWhiteSpace(form.PhoneNumber) ? null : form.PhoneNumber, [.. plan.Select(c => c.Meets)], [.. plan.Select(c => c.Units)]);
+        }
     }
 
     private readonly Form form = new();
@@ -727,7 +707,6 @@ else
             {
                 receipt = result.Receipt;
                 copied = false;
-                viewOpen = false;
             }
             else
             {

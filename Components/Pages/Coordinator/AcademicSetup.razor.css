@@ -371,3 +371,18 @@
 .tab-sub .sub-track {
     color: var(--text);
 }
+
+/* The sections of a strand: A B C side by side. */
+.tab-sub ul.tab-names {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    margin: 0.1rem 0 0.25rem 0.6rem;
+    padding: 0;
+    border-left: 0;
+}
+
+.tab-sub ul.tab-names a {
+    min-width: 1.6rem;
+    text-align: center;
+}

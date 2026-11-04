@@ -39,7 +39,7 @@
         @foreach (var strand in StrandsShown)
         {
             var tone = ToneOf(strand);
-            <section class="strand-block" data-strand="@strand.Code" aria-label="@($"Grade {Grade} {strand.Code}")">
+            <section class="strand-block" id="@($"strand-{strand.Code}")" data-strand="@strand.Code" aria-label="@($"Grade {Grade} {strand.Code}")">
                 <header class="strand-head">
                     <h3>@strand.Code <small>@strand.Name</small></h3>
                 </header>
@@ -49,7 +49,7 @@
                         var row = RowOf(strand, name);
                         @if (row is not null)
                         {
-                            <article class="section-card" role="button" tabindex="0" data-section="@row.Label" title="Adviser and students of @row.Label"
+                            <article class="section-card" id="@($"sec-{row.Label}")" role="button" tabindex="0" data-section="@row.Label" title="Adviser and students of @row.Label"
                                      @onclick="() => dialogSection = row" @onkeydown="e => OnCardKey(e, row)">
                                 <span class="card-icon tone-@tone"><Icon Name="@IconOf(strand)" Size="26" /></span>
                                 <span class="card-text">

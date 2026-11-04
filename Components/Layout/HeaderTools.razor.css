@@ -341,6 +341,38 @@
     transition: border-color 0.15s, background-color 0.15s, color 0.15s, transform 0.15s;
 }
 
+/* A look that has its own colors shows them as three dots: the page, the card and the brand color. */
+.dots {
+    display: inline-flex;
+    gap: 0.2rem;
+    height: 18px;
+    align-items: center;
+}
+
+.dots i {
+    display: block;
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+}
+
+.dots.ocean i:nth-child(1) { background: #e9f5f8; }
+.dots.ocean i:nth-child(2) { background: #ffffff; }
+.dots.ocean i:nth-child(3) { background: #0e7490; }
+.dots.forest i:nth-child(1) { background: #eef5ee; }
+.dots.forest i:nth-child(2) { background: #fcfffc; }
+.dots.forest i:nth-child(3) { background: #2f7d32; }
+.dots.sunset i:nth-child(1) { background: #fdf1ea; }
+.dots.sunset i:nth-child(2) { background: #fffdfb; }
+.dots.sunset i:nth-child(3) { background: #c2410c; }
+.dots.paper i:nth-child(1) { background: #f4efe4; }
+.dots.paper i:nth-child(2) { background: #fffdf6; }
+.dots.paper i:nth-child(3) { background: #7c5a1c; }
+.dots.midnight i:nth-child(1) { background: #0a1024; }
+.dots.midnight i:nth-child(2) { background: #111a36; }
+.dots.midnight i:nth-child(3) { background: #8ea2ff; }
+
 .choice:hover {
     background: var(--surface-2);
     color: var(--text);
@@ -353,7 +385,12 @@
 /* The one that is on (the page itself says which in data-theme-pref). */
 html[data-theme-pref="light"] .choice[data-theme-choice="light"],
 html[data-theme-pref="dark"] .choice[data-theme-choice="dark"],
-html[data-theme-pref="auto"] .choice[data-theme-choice="auto"] {
+html[data-theme-pref="auto"] .choice[data-theme-choice="auto"],
+html[data-theme-pref="ocean"] .choice[data-theme-choice="ocean"],
+html[data-theme-pref="forest"] .choice[data-theme-choice="forest"],
+html[data-theme-pref="sunset"] .choice[data-theme-choice="sunset"],
+html[data-theme-pref="paper"] .choice[data-theme-choice="paper"],
+html[data-theme-pref="midnight"] .choice[data-theme-choice="midnight"] {
     border-color: var(--brand);
     background: var(--brand-soft);
     color: var(--brand-strong);

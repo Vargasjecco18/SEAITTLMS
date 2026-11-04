@@ -148,10 +148,12 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         }
 
         // When the course already has class times, the teacher must be free then.
-        var meeting = await db.CourseSchedules.AsNoTracking().Where(c => c.SectionId == sectionId && c.SubjectId == subjectId).FirstOrDefaultAsync(ct);
-        if (meeting is not null && await CourseScheduleService.TeacherConflictAsync(db, teacher.Id, sectionId, subjectId, meeting.Days, meeting.StartTime, meeting.EndTime, ct) is { } conflict)
+        foreach (var meeting in await db.CourseSchedules.AsNoTracking().Where(c => c.SectionId == sectionId && c.SubjectId == subjectId).ToListAsync(ct))
         {
-            return ServiceResult.Fail(conflict);
+            if (await CourseScheduleService.TeacherConflictAsync(db, teacher.Id, sectionId, subjectId, meeting.Days, meeting.StartTime, meeting.EndTime, ct) is { } conflict)
+            {
+                return ServiceResult.Fail(conflict);
+            }
         }
 
         db.TeachingAssignments.Add(new TeachingAssignment { TeacherId = teacher.Id, SectionId = sectionId, SubjectId = subjectId });
@@ -249,9 +251,9 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         foreach (var r in rows)
         {
             var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
-            var meets = meetings.FirstOrDefault(m => m.SectionId == r.SectionId && m.SubjectId == r.SubjectId);
+            var meets = CourseScheduleService.Combine(meetings.Where(m => m.SectionId == r.SectionId && m.SubjectId == r.SubjectId));
             cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
-                meets is null ? null : new MeetingInfo(meets.Days, meets.StartTime, meets.EndTime).Describe(),
+                meets?.Describe(),
                 KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName,
                 Completed(r.StrandId, r.GradeLevel, r.SubjectId, r.SchoolYearId, r.YearEnd)));
         }
@@ -373,7 +375,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                     IsCompleted: e.EnrollmentStatus == EnrollmentStatus.Completed || (!e.IsCurrent && e.EndDate < today),
                     AttendancePercent: marked.Count == 0 ? null : Math.Round(came * 100m / marked.Count, 1),
                     NextDueUtc: nextDue,
-                    Meets: meetings.FirstOrDefault(m => m.SectionId == e.SectionId && m.SubjectId == e.SubjectId) is { } m ? new MeetingInfo(m.Days, m.StartTime, m.EndTime).Describe() : null,
+                    Meets: CourseScheduleService.Combine(meetings.Where(m => m.SectionId == e.SectionId && m.SubjectId == e.SubjectId))?.Describe(),
                     Activities: its.Count(i => i.Kind is ItemKinds.Activity or ItemKinds.Seatwork or ItemKinds.Recitation), Quizzes: its.Count(i => i.Kind == ItemKinds.Quiz), TaskPerformances: its.Count(i => i.Kind == ItemKinds.TaskPerformance),
                     StrandCode: e.StrandCode, StrandName: e.StrandName);
             })

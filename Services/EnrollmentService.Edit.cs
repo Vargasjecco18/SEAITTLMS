@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using SEAITT_LMS.Auth;
+using SEAITT_LMS.Components.Shared;
 using SEAITT_LMS.Data;
 using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
+
+/// <summary>One student enrolled on a day, for the registrar's list "Enrolled Students Today".</summary>
+public sealed record EnrolledTodayRow(int EnrollmentId, string StudentName, string Lrn, byte GradeLevel, string Strand, string Section, string Term, string SchoolYear, DateTime EnrolledAtUtc);
 
 /// <summary>How full a section is: the students enrolled in it for a term, and the limit.</summary>
 public sealed record SectionLoad(string Name, int Students, int Capacity)
@@ -351,5 +355,20 @@ public sealed partial class EnrollmentService
         {
             return ServiceResult.Fail("Someone else saved the same thing a moment ago. Please try again.");
         }
+    }
+
+    /// <summary>The students enrolled on a day (by the Philippine calendar; today when no day is given), the newest first.</summary>
+    public async Task<IReadOnlyList<EnrolledTodayRow>> GetEnrolledOnAsync(DateOnly? day = null, CancellationToken ct = default)
+    {
+        var date = day ?? PhilippineTime.Today(clock ?? TimeProvider.System);
+        var from = PhilippineTime.ToUtc(date.ToDateTime(TimeOnly.MinValue));
+        var to = from.AddDays(1);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.Enrollments.AsNoTracking()
+            .Where(e => e.CreatedAtUtc >= from && e.CreatedAtUtc < to && e.Status == EnrollmentStatus.Enrolled)
+            .OrderByDescending(e => e.CreatedAtUtc).ThenByDescending(e => e.Id)
+            .Select(e => new { e.Id, e.FirstName, e.MiddleName, e.LastName, e.NameExtension, e.Lrn, e.GradeLevel, Strand = e.Strand.Code, Section = e.Section.Name, Term = e.Term.Name, SchoolYear = e.Term.SchoolYear.Name, e.CreatedAtUtc })
+            .ToListAsync(ct);
+        return [.. rows.Select(r => new EnrolledTodayRow(r.Id, string.Join(' ', new[] { r.FirstName, r.MiddleName, r.LastName, r.NameExtension }.Where(n => !string.IsNullOrWhiteSpace(n))), r.Lrn, r.GradeLevel, r.Strand, r.Section, r.Term, r.SchoolYear, r.CreatedAtUtc))];
     }
 }

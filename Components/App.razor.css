@@ -132,6 +132,140 @@ html[data-theme="light"] {
     color-scheme: light;
 }
 
+/* More appearances to choose from in the settings (data-theme="ocean", "forest", "sunset", "paper" and "midnight"). Each one changes the page and card colors and the brand color, nothing else:
+   the meaning colors (success, warning, danger) stay, so a badge says the same thing in every look. */
+html[data-theme="ocean"] {
+    --bg: #e9f5f8;
+    --surface: #ffffff;
+    --surface-2: #dff0f4;
+    --border: #aacdd8;
+    --field-border: #5f8fa0;
+    --text: #0c2a35;
+    --text-muted: #44697a;
+    --brand: #0e7490;
+    --brand-strong: #155e75;
+    --brand-soft: #d3eef5;
+    --brand-ring: rgba(14, 116, 144, 0.3);
+    --brand-gradient: linear-gradient(135deg, #0e7490, #0891b2);
+    --btn-bg: #0e7490;
+    --btn-bg-hover: #155e75;
+    --info: #0e7490;
+    --info-soft: #cffafe;
+    --blue: #0e7490;
+    --blue-soft: #cffafe;
+    color-scheme: light;
+}
+
+html[data-theme="forest"] {
+    --bg: #eef5ee;
+    --surface: #fcfffc;
+    --surface-2: #e3efe3;
+    --border: #b4cdb6;
+    --field-border: #6c8f70;
+    --text: #14281a;
+    --text-muted: #4a6a50;
+    --brand: #2f7d32;
+    --brand-strong: #1f5c24;
+    --brand-soft: #dcefdc;
+    --brand-ring: rgba(47, 125, 50, 0.3);
+    --brand-gradient: linear-gradient(135deg, #2f7d32, #4c9a2a);
+    --btn-bg: #2f7d32;
+    --btn-bg-hover: #1f5c24;
+    --info: #2f7d32;
+    --info-soft: #dcefdc;
+    --blue: #2f7d32;
+    --blue-soft: #dcefdc;
+    color-scheme: light;
+}
+
+html[data-theme="sunset"] {
+    --bg: #fdf1ea;
+    --surface: #fffdfb;
+    --surface-2: #fbe6db;
+    --border: #e4bfae;
+    --field-border: #a97a68;
+    --text: #321a12;
+    --text-muted: #7a5445;
+    --brand: #c2410c;
+    --brand-strong: #9a3412;
+    --brand-soft: #fde4d6;
+    --brand-ring: rgba(194, 65, 12, 0.3);
+    --brand-gradient: linear-gradient(135deg, #c2410c, #db2777);
+    --btn-bg: #c2410c;
+    --btn-bg-hover: #9a3412;
+    --info: #c2410c;
+    --info-soft: #fde4d6;
+    --blue: #c2410c;
+    --blue-soft: #fde4d6;
+    color-scheme: light;
+}
+
+html[data-theme="paper"] {
+    --bg: #f4efe4;
+    --surface: #fffdf6;
+    --surface-2: #eee6d3;
+    --border: #d3c6a8;
+    --field-border: #8c7d5c;
+    --text: #2b2418;
+    --text-muted: #6f6347;
+    --brand: #7c5a1c;
+    --brand-strong: #5f4312;
+    --brand-soft: #f1e6cb;
+    --brand-ring: rgba(124, 90, 28, 0.3);
+    --brand-gradient: linear-gradient(135deg, #7c5a1c, #a07424);
+    --btn-bg: #7c5a1c;
+    --btn-bg-hover: #5f4312;
+    --info: #7c5a1c;
+    --info-soft: #f1e6cb;
+    --blue: #7c5a1c;
+    --blue-soft: #f1e6cb;
+    color-scheme: light;
+}
+
+html[data-theme="midnight"] {
+    --bg: #0a1024;
+    --surface: #111a36;
+    --surface-2: #18234a;
+    --border: #2b3a6b;
+    --field-border: #6b7ab0;
+    --text: #e6ebff;
+    --text-muted: #a1acd6;
+    --brand: #8ea2ff;
+    --brand-strong: #b4c0ff;
+    --brand-soft: rgba(142, 162, 255, 0.18);
+    --brand-ring: rgba(142, 162, 255, 0.4);
+    --brand-gradient: linear-gradient(135deg, #5468e0, #7c5cf0);
+    --btn-bg: #5468e0;
+    --btn-bg-hover: #4356cc;
+    --success: #86efac;
+    --success-soft: rgba(34, 197, 94, 0.16);
+    --info: #93c5fd;
+    --info-soft: rgba(59, 130, 246, 0.2);
+    --warning: #fcd34d;
+    --warning-soft: rgba(245, 158, 11, 0.16);
+    --danger: #fca5a5;
+    --danger-soft: rgba(239, 68, 68, 0.18);
+    --danger-solid: #c62828;
+    --danger-solid-hover: #b71c1c;
+    --blue: #b4c0ff;
+    --blue-soft: rgba(142, 162, 255, 0.18);
+    --green: #86efac;
+    --green-soft: rgba(34, 197, 94, 0.16);
+    --amber: #fcd34d;
+    --amber-soft: rgba(245, 158, 11, 0.16);
+    --violet: #c4b5fd;
+    --violet-soft: rgba(139, 92, 246, 0.2);
+    --rose: #fda4af;
+    --rose-soft: rgba(244, 63, 94, 0.16);
+    --teal: #2dd4bf;
+    --teal-soft: rgba(45, 212, 191, 0.16);
+    --slate: #cbd5e1;
+    --slate-soft: rgba(148, 163, 184, 0.16);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
     html:not([data-theme]) {
         --bg: #000000;

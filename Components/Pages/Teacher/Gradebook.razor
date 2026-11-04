@@ -26,19 +26,6 @@ else if (subjects.Count == 0)
 }
 else
 {
-    <Card>
-        <div class="pick">
-            <Field For="g-subject" Label="Select course">
-                <select id="g-subject" value="@subjectId" @onchange="SubjectChanged">
-                    @foreach (var s in subjects)
-                    {
-                        <option value="@s.AssignmentId" selected="@(s.AssignmentId == subjectId)">@s.SubjectName · @s.SectionLabel</option>
-                    }
-                </select>
-            </Field>
-        </div>
-    </Card>
-
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
     @if (book is not null)
@@ -51,6 +38,27 @@ else
         </div>
 
         <Card>
+            @* The course is chosen at the top left of the card; the buttons are at the top right. *@
+            <div class="card-top">
+                <div class="pick">
+                    <Field For="g-subject" Label="Select course">
+                        <select id="g-subject" value="@subjectId" @onchange="SubjectChanged">
+                            @foreach (var s in subjects)
+                            {
+                                <option value="@s.AssignmentId" selected="@(s.AssignmentId == subjectId)">@s.SubjectName · @s.SectionLabel</option>
+                            }
+                        </select>
+                    </Field>
+                </div>
+                @if (book is { Columns.Count: > 0, Rows.Count: > 0 })
+                {
+                    <div class="tools">
+                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
+                        <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
+                    </div>
+                }
+            </div>
             @if (book.Columns.Count == 0)
             {
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
@@ -66,14 +74,6 @@ else
             else
             {
                 <FormErrors Errors="formErrors" />
-                @* The way to use the gradebook, and what can be done with it, at the top right. *@
-                <div class="table-tools">
-                    <div class="tools">
-                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
-                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
-                        <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
-                    </div>
-                </div>
                 <div class="scroll">
                     <table class="grid">
                         <thead>

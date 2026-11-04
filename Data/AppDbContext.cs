@@ -47,6 +47,7 @@ public class AppDbContext : DbContext
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<FinalGrade> FinalGrades => Set<FinalGrade>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
+    public DbSet<ModuleRead> ModuleReads => Set<ModuleRead>();
     public DbSet<ItemView> ItemViews => Set<ItemView>();
     public DbSet<CalendarEntry> CalendarEntries => Set<CalendarEntry>();
     public DbSet<CalendarEntryInvite> CalendarEntryInvites => Set<CalendarEntryInvite>();

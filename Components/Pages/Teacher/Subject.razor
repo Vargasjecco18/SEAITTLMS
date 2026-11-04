@@ -29,8 +29,7 @@ else
     <PageHeader Title="@($"{subject.SubjectName} · {subject.SectionLabel}")"
                 IconName="book-open">
         <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Ghost" IconName="chevron-left">All courses</ButtonLink>
-        <ActivitiesPop Teacher="subject" />
-        <Button IconName="plus" OnClick="() => OpenActivitiesAsync()">Add activities</Button>
+        <AddItemMenu Choice="true" Label="Add activities" Modules="AddMenuModules" OnPick="PickNew" />
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
@@ -120,7 +119,7 @@ else
     {
         @* The first page of the course counts as being in the course: the Courses link of the menu comes back here (wwwroot/app.js). *@
         <span data-last-course="@($"teacher/subjects/{AssignmentId}")" hidden></span>
-        @* The first page of a course: only the syllabus and the modules, one line each, with the Course Menu at the left. A click on the line opens its card: the Slides and the Module buttons. *@
+        @* The first page of a course: only the syllabus and the modules, one row each (the title, how far the class has read, the Slides and Module buttons and the state), with the Course Menu at the left. *@
         <CourseLayout Teacher="subject">
         <p class="hint-line">
             <Icon Name="eye-off" Size="16" />
@@ -148,12 +147,11 @@ else
                         }
 
                         var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus && !m.IsExamSet);
-                        var isOpen = openRows.Contains(module.Id);
                         var progress = ProgressOf(module);
                         var moduleHref = $"teacher/subjects/{AssignmentId}/modules/{module.Id}";
-                        <li class="course-row @module.State.ToLowerInvariant() @(isOpen ? "is-open" : "")" data-module="@module.Id">
-                            @* A click on the row opens its card, with the Slides (when there are slides) and the Module buttons. *@
-                            <button type="button" class="row-open" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"row-body-{module.Id}")" @onclick="() => ToggleRow(module.Id)">
+                        <li class="course-row @module.State.ToLowerInvariant()" data-module="@module.Id">
+                            @* The title opens the module. In the middle: how far the class has read the slides of the module, and the Slides (when there are slides) and Module buttons. *@
+                            <a class="row-open" href="@moduleHref">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">
                                     <span class="row-title">@module.Title</span>
@@ -164,16 +162,28 @@ else
                                         }
                                         else
                                         {
-                                            @if (progress is { } done)
-                                            {
-                                                <span class="row-progress"><ProgressBar Percent="done.Percent" Title="@done.Text" /></span>
-                                            }
                                             <span class="count-chip">@ModuleSummary(module)</span>
                                         }
                                     </span>
                                 </span>
-                                <span class="row-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="18" /></span>
-                            </button>
+                            </a>
+                            <span class="row-progress">
+                                @if (progress is { } done)
+                                {
+                                    <ProgressBar Percent="done.Percent" Title="@done.Text" />
+                                }
+                                else
+                                {
+                                    <span class="muted no-file" title="This module has no slide or file to read yet">No file yet</span>
+                                }
+                            </span>
+                            <span class="row-buttons">
+                                @if (module.HasSlides)
+                                {
+                                    <ButtonLink Href="@($"{moduleHref}?slides=1")" Variant="ButtonVariant.Secondary" Small="true" IconName="presentation">Slides</ButtonLink>
+                                }
+                                <ButtonLink Href="@moduleHref" Small="true" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
+                            </span>
                             <span class="row-status">
                                 @if (module.State == Visibility.Posted)
                                 {
@@ -189,16 +199,6 @@ else
                                 }
                                 <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Title="@($"Post, schedule or hide {module.Title}")" OnClick="() => OpenStatus(module)">Status</Button>
                             </span>
-                            @if (isOpen)
-                            {
-                                <div class="row-body" id="@($"row-body-{module.Id}")">
-                                    @if (module.HasSlides)
-                                    {
-                                        <ButtonLink Href="@($"{moduleHref}#slides")" Variant="ButtonVariant.Secondary" IconName="presentation">Slides</ButtonLink>
-                                    }
-                                    <ButtonLink Href="@moduleHref" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
-                                </div>
-                            }
                         </li>
                     }
                 </ul>
@@ -609,29 +609,9 @@ else
 
     // ---------------------------------------------------------------- items
 
-    // The rows of the first page that are open (their card shows the buttons).
-    private readonly HashSet<int> openRows = [];
-
-    private void ToggleRow(int moduleId)
-    {
-        if (!openRows.Remove(moduleId))
-        {
-            openRows.Add(moduleId);
-        }
-    }
-
-    /// <summary>How far the class is in a module: the works handed in out of the works the students must hand in (the activities of the module times the students). None when the module has no activity.</summary>
-    private static (int Percent, string Text)? ProgressOf(TeacherModule module)
-    {
-        var expected = module.Items.Sum(i => i.Students);
-        if (expected == 0)
-        {
-            return null;
-        }
-
-        var received = module.Items.Sum(i => Math.Min(i.Submitted, i.Students));
-        return (received * 100 / expected, $"{received} of {expected} works handed in by the class");
-    }
+    /// <summary>How far the class has read the slides of a module (the average of the students; the ones who have not read count as 0). None when the module has no slide or file.</summary>
+    private static (int Percent, string Text)? ProgressOf(TeacherModule module) =>
+        module.ReadPercent is { } percent ? (percent, module.HasSlides ? $"The class has read {percent}% of the slides on average" : $"The class has read {percent}% of the files on average") : null;
 
     /// <summary>"2 assignments · 1 quiz" under the title of a closed module.</summary>
     private static string ModuleSummary(TeacherModule module)
@@ -655,6 +635,13 @@ else
 
     private async Task PickNew(AddMenuPick pick)
     {
+        if (pick.Kind == AddItemMenuLabels.ExcelKind && pick.ModuleId == 0)
+        {
+            // "Add activities" at the top of the course: the sheet, not tied to one module.
+            await OpenActivitiesAsync();
+            return;
+        }
+
         if (subject?.Modules.FirstOrDefault(m => m.Id == pick.ModuleId) is { } module)
         {
             if (pick.Kind == AddItemMenuLabels.ExcelKind)

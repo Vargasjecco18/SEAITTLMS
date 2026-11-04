@@ -304,6 +304,24 @@ public class ModuleView
     public DateTime FirstOpenedAtUtc { get; set; }
 }
 
+/// <summary>
+/// How much of a module a student has read, from 0 to 100: what the page of the module counts inside its slides (or, when it has no slides, inside its files): the pages that were in
+/// front of the reader and how far they were scrolled. It never goes back. The bar of the module in the course reads it: the student sees their own, the teacher sees the average of the class.
+/// </summary>
+public class ModuleRead
+{
+    public int ModuleId { get; set; }
+    public LearningModule Module { get; set; } = null!;
+
+    public int StudentId { get; set; }
+    public Student Student { get; set; } = null!;
+
+    /// <summary>0 to 100.</summary>
+    public byte Percent { get; set; }
+
+    public DateTime UpdatedAtUtc { get; set; }
+}
+
 /// <summary>That a student has opened an activity, a quiz or a task performance (its page). The academic provider reads it to see what the students opened.</summary>
 public class ItemView
 {

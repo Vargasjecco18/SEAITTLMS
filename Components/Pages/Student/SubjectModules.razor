@@ -120,35 +120,33 @@ else
                         }
 
                         var number = subject.Modules.Take(n + 1).Count(m => !m.IsSyllabus && !m.IsExamSet);
-                        var isOpen = openRows.Contains(module.Id);
                         var progress = ProgressOf(module);
                         var moduleHref = $"student/modules/{module.Id}";
-                        <li class="course-row @(isOpen ? "is-open" : "")" data-module="@module.Id">
-                            @* A click on the row opens its card, with the Slides (when there are slides) and the Module buttons. *@
-                            <button type="button" class="row-open" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"row-body-{module.Id}")" aria-label="@(module.IsSyllabus ? "The syllabus" : module.Title)" @onclick="() => ToggleRow(module.Id)">
+                        <li class="course-row" data-module="@module.Id">
+                            <a class="row-open" href="@moduleHref" aria-label="@(module.IsSyllabus ? "Open the syllabus" : $"Open {module.Title}")">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">
                                     <span class="row-title">@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</span>
-                                    <span class="row-meta">
-                                        @if (progress is { } done)
-                                        {
-                                            <span class="row-progress"><ProgressBar Percent="done.Percent" Title="@done.Text" /></span>
-                                        }
-                                        <span>@ModuleSummary(module)</span>
-                                    </span>
+                                    <span class="row-meta"><span>@ModuleSummary(module)</span></span>
                                 </span>
-                                <span class="row-chevron" aria-hidden="true"><Icon Name="chevron-down" Size="18" /></span>
-                            </button>
-                            @if (isOpen)
-                            {
-                                <div class="row-body" id="@($"row-body-{module.Id}")">
-                                    @if (module.HasSlides)
-                                    {
-                                        <ButtonLink Href="@($"{moduleHref}#slides")" Variant="ButtonVariant.Secondary" IconName="presentation">Slides</ButtonLink>
-                                    }
-                                    <ButtonLink Href="@moduleHref" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
-                                </div>
-                            }
+                            </a>
+                            <span class="row-progress">
+                                @if (progress is { } done)
+                                {
+                                    <ProgressBar Percent="done.Percent" Title="@done.Text" />
+                                }
+                                else
+                                {
+                                    <span class="muted no-file" title="This module has no slide or file to read yet">No file yet</span>
+                                }
+                            </span>
+                            <span class="row-buttons">
+                                @if (module.HasSlides)
+                                {
+                                    <ButtonLink Href="@($"{moduleHref}?slides=1")" Variant="ButtonVariant.Secondary" Small="true" IconName="presentation">Slides</ButtonLink>
+                                }
+                                <ButtonLink Href="@moduleHref" Small="true" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
+                            </span>
                         </li>
                     }
                 </ul>
@@ -187,28 +185,9 @@ else
         return parts.Count == 0 ? "Lesson only" : string.Join(" · ", parts);
     }
 
-    // The rows of the first page that are open (their card shows the buttons).
-    private readonly HashSet<int> openRows = [];
-
-    private void ToggleRow(int moduleId)
-    {
-        if (!openRows.Remove(moduleId))
-        {
-            openRows.Add(moduleId);
-        }
-    }
-
-    /// <summary>How far the student is in a module: the activities handed in (or already graded) out of the activities of the module. None when the module has no activity.</summary>
-    private static (int Percent, string Text)? ProgressOf(StudentModule module)
-    {
-        if (module.IsSyllabus || module.Items.Count == 0)
-        {
-            return null;
-        }
-
-        var done = module.Items.Count(i => i.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded);
-        return (done * 100 / module.Items.Count, $"{done} of {module.Items.Count} activities done");
-    }
+    /// <summary>How much of the slides of the module the student has read (of its files when it has no slides). None when the module has nothing to read.</summary>
+    private static (int Percent, string Text)? ProgressOf(StudentModule module) =>
+        module.ReadPercent is { } percent ? (percent, module.HasSlides ? $"You have read {percent}% of the slides" : $"You have read {percent}% of the files") : null;
 
     private bool loaded;
     private StudentSubject? subject;

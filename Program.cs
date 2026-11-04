@@ -401,6 +401,14 @@ app.MapPost("/admin/backups/upload", async (HttpContext http, IFormFile? backup,
 
 // A file of the locker (Resources): the owner opens it, and so does anybody it was shared with. Always saved as a file (never shown in the
 // page), so a file with a web page in it can't run as part of this site.
+// The page of a module sends how much of it the student has read (the bar "Read 40%", wwwroot/app.js); the bar of the course reads it.
+app.MapPost("/module-reads", async (HttpContext http, ModuleService modules, ModuleReadRequest body) =>
+{
+    return int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) && (await modules.SaveReadingAsync(userId, body.ModuleId, body.Percent)).Succeeded
+        ? Results.NoContent()
+        : Results.BadRequest();
+}).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.Student }).DisableAntiforgery();
+
 app.MapGet("/files/{id:int}", async (int id, HttpContext http, FileService files) =>
 {
     var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
@@ -498,3 +506,6 @@ static bool IsOpenWhileClosed(PathString path) =>
     path.StartsWithSegments("/maintenance") || path.StartsWithSegments("/login") || path.StartsWithSegments("/account")
     || path.StartsWithSegments("/_framework") || path.StartsWithSegments("/_content") || path.StartsWithSegments("/images")
     || path.Value is { } value && (value.EndsWith(".css") || value.EndsWith(".js") || value.EndsWith(".png") || value.EndsWith(".ico") || value.EndsWith(".map"));
+
+/// <summary>What the page of a module sends: the module and how much of it was read (0 to 100).</summary>
+internal sealed record ModuleReadRequest(int ModuleId, int Percent);

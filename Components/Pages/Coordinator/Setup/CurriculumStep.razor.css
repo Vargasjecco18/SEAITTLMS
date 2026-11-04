@@ -20,7 +20,7 @@
 
 @media (min-width: 1100px) {
     .cols {
-        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) minmax(0, 1.35fr);
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.3fr);
     }
 }
 
@@ -145,8 +145,9 @@
     font-size: 0.8rem;
 }
 
+/* The courses start at the same place as the rows of the other cards (same padding as .col-list and .row), so their head lines up too. */
 .courses-box {
-    padding: 0.5rem 0.6rem;
+    padding: 0.35rem;
 }
 
 .course-group + .course-group {
@@ -175,7 +176,7 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.2rem 0.4rem;
+    padding: 0.25rem 0.4rem;
     border-radius: var(--radius-sm);
 }
 
@@ -217,13 +218,13 @@
 .col-tracks li.row,
 .col-strands li.row {
     display: grid;
-    grid-template-columns: minmax(0, 5.2rem) minmax(0, 1fr) 3.4rem 3.4rem 2.6rem;
+    grid-template-columns: minmax(0, 4.9rem) minmax(0, 1fr) 3.3rem 3.3rem 2.5rem;
     align-items: center;
     column-gap: 0.35rem;
 }
 
 .col-cols {
-    padding: 0.45rem 0.8rem 0.25rem;
+    padding: 0.45rem 0.75rem 0.25rem;
     border-bottom: 1px solid var(--border);
     color: var(--text-muted);
     font-size: 0.64rem;
@@ -236,6 +237,11 @@
     text-align: center;
 }
 
+/* The words of the text columns start where the text inside the boxes below starts (the padding of a box). */
+.col-cols span:nth-child(-n+2) {
+    padding-left: 0.55rem;
+}
+
 .offered-box,
 .delete-box {
     display: inline-flex;
@@ -245,7 +251,7 @@
 
 .col-cols.course-cols,
 .course {
-    grid-template-columns: minmax(0, 4.9rem) minmax(0, 1fr) 3.1rem 3.4rem 2.6rem;
+    grid-template-columns: minmax(0, 4.9rem) minmax(0, 1fr) 3.3rem 3.3rem 2.5rem;
 }
 
 .course {

@@ -16,10 +16,24 @@
     font-size: 0.88rem;
 }
 
+/* Four panels in a row, level with each other: the same height, the title of each at the top and its choices under it. Two in a row on a narrow box, one on a phone. */
 .panels {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.75rem;
+    align-items: stretch;
+}
+
+@media (max-width: 900px) {
+    .panels {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .panels {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .panel {
@@ -36,6 +50,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 1.75rem;
 }
 
 .panel-icon {
@@ -84,14 +99,16 @@
 
 .inline {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.4rem 0.6rem;
+    margin-top: auto;
     font-size: 0.88rem;
 }
 
 .inline input {
-    width: 6.5rem;
+    width: 5rem;
 }
 
 /* A switch is a real checkbox that is drawn as a track with a thumb. */

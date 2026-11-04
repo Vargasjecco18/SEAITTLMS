@@ -101,7 +101,6 @@
                                     @if (picked == ReferralReasons.LowAttendance)
                                     {
                                         @* Attendance concerns found on the same day are one line: View attendance shows each course in a box in the middle of the screen. *@
-                                        <span class="detail"><Icon Name="info" Size="15" /><span>@(open.Count == 1 ? open[0].Detail : $"{open.Count} courses with low attendance")</span></span>
                                         <button type="button" class="attendance-button" @onclick="() => OpenAttendance(student, open)"><Icon Name="eye" Size="15" /> View attendance</button>
                                     }
                                     else
@@ -271,7 +270,7 @@
 </Modal>
 
 @* ===== View attendance: the courses of one attendance concern, in a box in the middle of the screen ===== *@
-<Modal Open="attendanceFor is not null" Title="@($"Attendance · {attendanceFor?.StudentName}")" Centered="true" Top="true" OnClose="CloseAttendance">
+<Modal Open="attendanceFor is not null" Title="@($"Attendance · {attendanceFor?.StudentName}")" Centered="true" Top="true" Narrow="true" OnClose="CloseAttendance">
     @if (attendanceFor is not null)
     {
         <p class="sub all-sub">@attendanceFor.Lrn@(attendanceFor.Placement is null ? "" : " · " + attendanceFor.Placement)</p>

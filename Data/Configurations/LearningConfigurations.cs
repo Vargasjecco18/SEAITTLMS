@@ -125,6 +125,19 @@ internal sealed class FinalGradeConfiguration : IEntityTypeConfiguration<FinalGr
     }
 }
 
+internal sealed class ModuleReadConfiguration : IEntityTypeConfiguration<ModuleRead>
+{
+    public void Configure(EntityTypeBuilder<ModuleRead> b)
+    {
+        b.ToTable("module_reads");
+        b.HasKey(r => new { r.ModuleId, r.StudentId });
+        b.HasOne(r => r.Module).WithMany().HasForeignKey(r => r.ModuleId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(r => r.Student).WithMany().HasForeignKey(r => r.StudentId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(r => r.StudentId);
+        b.ToTable(t => t.HasCheckConstraint("ck_module_reads_percent", "percent BETWEEN 0 AND 100"));
+    }
+}
+
 internal sealed class ModuleViewConfiguration : IEntityTypeConfiguration<ModuleView>
 {
     public void Configure(EntityTypeBuilder<ModuleView> b)

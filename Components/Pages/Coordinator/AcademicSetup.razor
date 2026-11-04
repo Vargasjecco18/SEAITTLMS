@@ -79,9 +79,33 @@
         </a>
         @if (tab == "sections")
         {
-            <ul class="tab-sub" aria-label="Classes">
-                <li><a class="@(GradeQuery != 12 ? "on" : "")" href="coordinator/academic-setup/sections?grade=11">Grade 11</a></li>
-                <li><a class="@(GradeQuery == 12 ? "on" : "")" href="coordinator/academic-setup/sections?grade=12">Grade 12</a></li>
+            @* A multilevel list: the grade level, inside it the strands and inside each strand its sections (the grade level that is chosen is the one that is open). *@
+            <ul class="tab-sub" aria-label="Grade levels, strands and sections">
+                @foreach (var grade in new[] { 11, 12 })
+                {
+                    var open = (GradeQuery == 12 ? 12 : 11) == grade;
+                    <li>
+                        <a class="sub-track @(open ? "on" : "")" href="@($"coordinator/academic-setup/sections?grade={grade}")" aria-expanded="@(open ? "true" : "false")">Grade @grade</a>
+                        @if (open && lookups is not null)
+                        {
+                            <ul aria-label="@($"Strands of grade {grade}")">
+                                @foreach (var st in lookups.Strands)
+                                {
+                                    var names = SectionNamesOf(grade, st.Code);
+                                    <li>
+                                        <a class="sub-track" href="@($"coordinator/academic-setup/sections?grade={grade}#strand-{st.Code}")" title="@st.Name">@st.Code</a>
+                                        <ul class="tab-names" aria-label="@($"Sections of {st.Code}")">
+                                            @foreach (var name in names)
+                                            {
+                                                <li><a href="@($"coordinator/academic-setup/sections?grade={grade}#sec-{grade}-{st.Code}-{name}")" title="@($"Section {name} of {st.Code}")">@name</a></li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </li>
+                }
             </ul>
         }
         <a class="tab @(tab == "rooms" ? "on" : "")" title="Rooms" href="coordinator/academic-setup/rooms" aria-current="@(tab == "rooms" ? "page" : null)">
@@ -159,6 +183,11 @@
 
     private SetupLookups? lookups;
     private IReadOnlyList<RoomRow> rooms = [];
+    private IReadOnlyList<SectionRow> sectionRows = [];
+
+    /// <summary>The sections a strand has at a grade level in the school years that are not over (A, B, C ...), for the list under the Class sections tab.</summary>
+    private IEnumerable<string> SectionNamesOf(int grade, string strandCode) =>
+        sectionRows.Where(r => r.GradeLevel == grade && r.StrandCode == strandCode).Select(r => r.Name).Distinct().Order(StringComparer.OrdinalIgnoreCase);
 
     private SetupCounts? counts;
     private int roomCount;
@@ -192,6 +221,9 @@
             tab = wanted;
             search = "";
         }
+
+        // The sections under the Class sections tab (its list of grade level, strand and sections).
+        sectionRows = tab == "sections" ? await Setup.ListSectionsAsync() : [];
     }
 
     private string SearchHint => tab switch

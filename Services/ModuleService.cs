@@ -77,7 +77,7 @@ public sealed record ItemForEdit(
 
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
-    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false, bool HasSlides = false);
+    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false, bool HasSlides = false, int? ReadPercent = null);
 
 public sealed record TeacherSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, int Students, IReadOnlyList<TeacherModule> Modules);
@@ -89,7 +89,7 @@ public sealed record StudentItem(
 
 public sealed record StudentModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
-    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false, bool HasSlides = false);
+    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false, bool HasSlides = false, int? ReadPercent = null);
 
 public sealed record StudentSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string TeacherName, IReadOnlyList<StudentModule> Modules);
@@ -138,10 +138,15 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
         var fromProvider = (await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == assignmentId).Select(d => d.ModuleId).ToListAsync(ct)).ToHashSet();
         var withSlides = await ModulesWithSlidesAsync(db, moduleIds, ct);
+        var withFiles = await ModulesWithFilesAsync(db, moduleIds, ct);
+        var readSums = (await db.ModuleReads.AsNoTracking().Where(r => moduleIds.Contains(r.ModuleId)).GroupBy(r => r.ModuleId).Select(g => new { ModuleId = g.Key, Sum = g.Sum(r => (int)r.Percent) }).ToListAsync(ct))
+            .ToDictionary(x => x.ModuleId, x => x.Sum);
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
-            m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet, withSlides.Contains(m.Id))).ToList();
+            m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet, withSlides.Contains(m.Id),
+            // the average of the class (the students who have not read count as 0); null when the module has no file to read
+            withFiles.Contains(m.Id) ? (students == 0 ? 0 : (int)Math.Round(readSums.GetValueOrDefault(m.Id) / (double)students)) : null)).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students, result);
     }
@@ -562,16 +567,71 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var opened = (await db.ModuleViews.AsNoTracking().Where(v => v.StudentId == studentId && ids.Contains(v.ModuleId)).Select(v => v.ModuleId).ToListAsync(ct)).ToHashSet();
         var items = await LoadStudentItemsAsync(db, studentId, ids, now, ct);
         var withSlides = await ModulesWithSlidesAsync(db, ids, ct);
+        var withFiles = await ModulesWithFilesAsync(db, ids, ct);
+        var reads = await db.ModuleReads.AsNoTracking().Where(r => r.StudentId == studentId && ids.Contains(r.ModuleId)).ToDictionaryAsync(r => r.ModuleId, r => (int)r.Percent, ct);
 
         return new StudentSubject(
             a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Teacher,
             modules.Select(m => new StudentModule(m.Id, m.Title, m.Description, null, null, m.Position, m.VisibleFromUtc!.Value, opened.Contains(m.Id),
-                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet, HasSlides: withSlides.Contains(m.Id))).ToList());
+                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet, HasSlides: withSlides.Contains(m.Id), ReadPercent: withFiles.Contains(m.Id) ? reads.GetValueOrDefault(m.Id) : null)).ToList());
     }
 
     /// <summary>The modules (of the ones given) that have slides, so the course page can offer a Slides button only where there are some.</summary>
     private static async Task<HashSet<int>> ModulesWithSlidesAsync(AppDbContext db, List<int> moduleIds, CancellationToken ct) =>
         (await db.Attachments.AsNoTracking().Where(a => a.IsSlides && a.ModuleId != null && moduleIds.Contains(a.ModuleId.Value)).Select(a => a.ModuleId!.Value).Distinct().ToListAsync(ct)).ToHashSet();
+
+    /// <summary>The modules (of the ones given) that have a file or slides, so the bar of reading is shown only where there is something to read.</summary>
+    private static async Task<HashSet<int>> ModulesWithFilesAsync(AppDbContext db, List<int> moduleIds, CancellationToken ct) =>
+        (await db.Attachments.AsNoTracking().Where(a => a.ModuleId != null && moduleIds.Contains(a.ModuleId.Value)).Select(a => a.ModuleId!.Value).Distinct().ToListAsync(ct)).ToHashSet();
+
+    /// <summary>
+    /// Keeps how much of a module the student has read (0 to 100). The page of the module counts it in the browser and sends it here; it never goes back, so a smaller number is ignored.
+    /// Only a student who takes the course, for a module that is posted, can save it.
+    /// </summary>
+    public async Task<ServiceResult> SaveReadingAsync(int userId, int moduleId, int percent, CancellationToken ct = default)
+    {
+        percent = Math.Clamp(percent, 0, 100);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == userId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+        if (studentId is null)
+        {
+            return ServiceResult.Fail("Only a student's reading is kept.");
+        }
+
+        var now = Now;
+        var m = await db.Modules.AsNoTracking().Where(x => x.Id == moduleId && x.VisibleFromUtc != null && x.VisibleFromUtc <= now)
+            .Select(x => new { x.Assignment.SectionId, x.Assignment.SubjectId }).FirstOrDefaultAsync(ct);
+        if (m is null || !await OnRosterAsync(db, studentId.Value, m.SectionId, m.SubjectId, ct))
+        {
+            return ServiceResult.Fail("This module is not one of your courses.");
+        }
+
+        var row = await db.ModuleReads.FirstOrDefaultAsync(r => r.ModuleId == moduleId && r.StudentId == studentId.Value, ct);
+        if (row is null)
+        {
+            db.ModuleReads.Add(new ModuleRead { ModuleId = moduleId, StudentId = studentId.Value, Percent = (byte)percent, UpdatedAtUtc = now });
+        }
+        else if (percent > row.Percent)
+        {
+            row.Percent = (byte)percent;
+            row.UpdatedAtUtc = now;
+        }
+        else
+        {
+            return ServiceResult.Ok("Nothing new.");
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // saved at the same moment by the other tab: the larger number wins on the next report
+        }
+
+        return ServiceResult.Ok("Saved.");
+    }
 
     /// <summary>A module with its text. Opening it is remembered, so it is no longer listed as not opened yet.</summary>
     public async Task<StudentModule?> OpenModuleAsync(int studentId, int moduleId, CancellationToken ct = default)

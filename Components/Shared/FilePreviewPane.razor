@@ -4,7 +4,7 @@
 @if (Items.Count > 0)
 {
     var current = Current;
-    <div class="pane" data-file-ids="@string.Join(',', Items.Select(i => i.Id))">
+    <div class="pane" data-file-ids="@string.Join(',', Items.Select(i => i.Id))" data-slides="@(IsSlides ? "1" : null)">
         @if (Items.Count > 1)
         {
             <div class="chips" role="group" aria-label="@Label">
@@ -66,6 +66,9 @@
 @code {
     /// <summary>The reference link of the module (when it has one): shown in the bar of the file, at the left of Open in a new tab.</summary>
     [Parameter] public string? LinkUrl { get; set; }
+
+    /// <summary>True for the slides of a module: the bar of reading counts them (and only them) when the module has slides.</summary>
+    [Parameter] public bool IsSlides { get; set; }
 
     private int? selectedId;
 

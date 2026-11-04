@@ -108,3 +108,23 @@
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: none; }
 }
+
+.sheet-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+}
+
+.sheet-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.2rem;
+    font-size: 1rem;
+}
+
+.sheet-card p {
+    margin: 0;
+}

@@ -25,7 +25,11 @@ else if (subject is null || module is null)
 else
 {
     <PageHeader Title="@module.Title" IconName="layers">
-        <ReadProgress Key="@($"module-{ModuleId}")" />
+        <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" />
+        @if (slideFiles.Count > 0)
+        {
+            <Button Variant="ButtonVariant.Secondary" IconName="presentation" OnClick="() => slidesOpen = true">Slides</Button>
+        }
         <ButtonLink Href="@($"teacher/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
     </PageHeader>
 
@@ -55,6 +59,8 @@ else
             </Card>
         </Aside>
     </CourseLayout>
+
+    <SlidesModal Open="slidesOpen && slideFiles.Count > 0" Title="@module.Title" Files="slideFiles" OnClose="() => slidesOpen = false" />
 }
 
 @code {
@@ -64,6 +70,13 @@ else
 
     /// <summary>The file to show first (the name the teacher pressed in the list of the course).</summary>
     [SupplyParameterFromQuery(Name = "file")] public int? File { get; set; }
+
+    /// <summary>"1" when the teacher pressed Slides in the course: the slides open first.</summary>
+    [SupplyParameterFromQuery(Name = "slides")] public string? SlidesQuery { get; set; }
+
+    private bool slidesOpen;
+    private int slidesAskedFor = -1;
+    private IReadOnlyList<AttachmentRow> slideFiles => [.. files.Where(f => f.IsSlides)];
 
     private int teacherId;
     private bool loaded;
@@ -78,6 +91,11 @@ else
         teacherId = await Me.GetTeacherIdAsync() ?? 0;
         await LoadAsync();
         loaded = true;
+        if (slidesAskedFor != ModuleId)
+        {
+            slidesAskedFor = ModuleId;
+            slidesOpen = SlidesQuery == "1" && slideFiles.Count > 0;
+        }
     }
 
     private async Task LoadAsync()

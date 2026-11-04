@@ -41,12 +41,7 @@ else
     @* The Course Menu is at the left (the menu of the school folds to its icons so everything has room). Then the instructions, the answer, and at the right of the answer the details and
        the feedback of the teacher, which can be hidden. *@
     <CourseLayout Student="course" CurrentItemId="item.ItemId" Selected="@CourseMenu.KeyOf(item.Kind)" CollapseMenu="true">
-    <div class="layout-tools">
-        <button type="button" class="details-toggle" aria-expanded="@(showDetails ? "true" : "false")" aria-controls="work-side" @onclick="() => showDetails = !showDetails">
-            <Icon Name="@(showDetails ? "eye-off" : "panel-right-open")" Size="16" /> @(showDetails ? "Hide details" : "Show details")
-        </button>
-    </div>
-    <div class="layout @(showDetails ? "" : "details-hidden")">
+    <div class="layout">
         <div class="question">
             <Card Title="@(item.IsQuiz ? "About this quiz" : "Instructions")" IconName="file-text">
                 @if (string.IsNullOrWhiteSpace(item.Instructions))
@@ -195,31 +190,27 @@ else
                     }
                 </Card>
             }
-        </div>
 
-        @if (showDetails)
-        {
-            <aside class="side" id="work-side" aria-label="Details and feedback">
-                <Card Title="Details" IconName="info">
-                    <dl class="facts">
-                        <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
-                        <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
-                        <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
-                        @if (item.ScoreVisible && item.Score is { } s)
-                        {
-                            <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
-                        }
-                    </dl>
+            @* Under the answer: the details of the work and, once the teacher wrote one, the feedback. *@
+            <Card Title="Details" IconName="info">
+                <dl class="facts">
+                    <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
+                    <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
+                    <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
+                    @if (item.ScoreVisible && item.Score is { } s)
+                    {
+                        <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
+                    }
+                </dl>
+            </Card>
+
+            @if (!string.IsNullOrWhiteSpace(item.Feedback))
+            {
+                <Card Title="Feedback from your teacher" IconName="message-square">
+                    <div class="text">@item.Feedback</div>
                 </Card>
-
-                @if (!string.IsNullOrWhiteSpace(item.Feedback))
-                {
-                    <Card Title="Feedback from your teacher" IconName="message-square">
-                        <div class="text">@item.Feedback</div>
-                    </Card>
-                }
-            </aside>
-        }
+            }
+        </div>
     </div>
     </CourseLayout>
 }
@@ -252,7 +243,6 @@ else
     [Parameter] public int ItemId { get; set; }
 
     private bool loaded;
-    private bool showDetails = true;
     private int studentId;
     private StudentItemView? item;
     private StudentSubject? course;

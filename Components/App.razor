@@ -17,8 +17,10 @@
             try {
                 var root = document.documentElement;
                 var theme = localStorage.getItem('seaitt-theme');
-                if (theme === 'light' || theme === 'dark') { root.setAttribute('data-theme', theme); }
-                root.setAttribute('data-theme-pref', theme === 'light' || theme === 'dark' ? theme : 'auto');
+                var looks = ['light', 'dark', 'ocean', 'forest', 'sunset', 'paper', 'midnight'];
+                var known = looks.indexOf(theme) >= 0;
+                if (known) { root.setAttribute('data-theme', theme); }
+                root.setAttribute('data-theme-pref', known ? theme : 'auto');
                 if (localStorage.getItem('seaitt-motion') === 'off') { root.setAttribute('data-motion', 'off'); }
                 if (localStorage.getItem('seaitt-sound') === 'off') { root.setAttribute('data-sound', 'off'); }
                 if (theme && document.cookie.indexOf('seaitt-theme=') < 0) { document.cookie = 'seaitt-theme=' + theme + '; path=/; max-age=31536000; samesite=lax'; }
@@ -42,13 +44,13 @@
 @code {
     [CascadingParameter] private HttpContext? HttpContext { get; set; }
 
-    /// <summary>"light" or "dark" when the person chose one, otherwise null (automatic: follow the computer).</summary>
+    /// <summary>The look the person chose (light, dark, ocean, forest, sunset, paper or midnight), otherwise null (automatic: follow the computer).</summary>
     private string? Theme
     {
         get
         {
             var choice = HttpContext?.Request.Cookies["seaitt-theme"];
-            return choice is "light" or "dark" ? choice : null;
+            return choice is "light" or "dark" or "ocean" or "forest" or "sunset" or "paper" or "midnight" ? choice : null;
         }
     }
 

@@ -562,3 +562,72 @@ h2 {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* The students with an attendance concern and the students with a violation concern, side by side. */
+.concern-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 560px) {
+    .concern-groups {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.concern-group h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+}
+
+.concern-group .count {
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.concern-people {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.concern-people li {
+    display: grid;
+    padding: 0.4rem 0.6rem;
+    border-left: 3px solid var(--brand);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--brand-soft) 60%, var(--surface));
+}
+
+.concern-people a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.concern-people a:hover {
+    color: var(--brand-strong);
+    text-decoration: underline;
+}
+
+.concern-people .sub {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.more-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: var(--brand-strong);
+    font-size: 0.85rem;
+    font-weight: 650;
+}

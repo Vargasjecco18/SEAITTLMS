@@ -77,11 +77,11 @@ public static class HelpContent
         [
             "Press the gear at the top right (Settings).",
             "Under Profile picture, press “Upload a picture” and choose a photo. It is made small for you. “Remove” brings back your initials.",
-            "Under Appearance choose Light, Dark or Auto (Auto follows your computer). You can also switch the animations off.",
+            "Under Appearance choose Light, Dark, Auto (Auto follows your computer) or one of the colors: Ocean, Forest, Sunset, Paper and Midnight. You can also switch the animations off.",
         ]),
         new("What does the Save button of Settings keep?",
         [
-            "The picture, and the look of the pages (Light, Dark or Auto, the animations and the sound switch), are kept as soon as you choose them.",
+            "The picture, and the look of the pages (Light, Dark, Auto or one of the five colors, the animations and the sound switch), are kept as soon as you choose them.",
             "The notification sound and the password are kept with the Save button at the bottom of Settings. Choose a sound (it plays so you can hear it), or fill in the password boxes, then press Save. A new password signs you out, and you log in again with it.",
         ]),
         new("How do messages work?",
@@ -111,8 +111,8 @@ public static class HelpContent
             "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
             "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, and Exams when your teacher gave one), then Classmates, Teachers (with a Message button to write to the teacher) and Grades. It stays in view while you scroll, and the button at its top hides it or shows it again.",
-            "Each line of the course (the syllabus and the modules) shows how far you are in it, at the left of its activities. Press a line to open its card: the Slides button (when the academic provider or your teacher added slides) and the Module button. A reference link of a module is at the left of “Open in a new tab”.",
-            "On an activity the Course Menu is at the left too, then the instructions, your answer, and at the right of your answer the Details and the Feedback of your teacher. “Hide details” closes that column to give the answer more room.",
+            "Each row of the course (the syllabus and the modules) has its progress bar. The bar grows as you read the slides: the Slides button opens them first, one slide at a time, from left to right (the arrows, the keys of the keyboard or the dots), and the Module button opens the lesson. At the right of the lesson are the activities of the module, each one a link with how you did; the button above them hides them. A reference link of a module is at the left of “Open in a new tab”.",
+            "On an activity the Course Menu is at the left too, then the instructions, and your answer with its Details and the Feedback of your teacher under it.",
             "When you read a lesson, or read it again, the main menu folds to its icons to give the lesson more room. The button at the top of the icons shows the names again.",
         ]),
         new("What if I hand in after the due date?",
@@ -174,19 +174,19 @@ public static class HelpContent
             "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Add many modules in a sheet” in the same box: a row for each module with its Title, its Slides (optional), its Link and its Files. There is no Excel file to download.",
             "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
             "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
-            "Press “Add activities” at the top right of the course. It opens a sheet inside the system: a row for each activity, with its Module and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files. Fill the rows you want and press Save. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
+            "Press “Add activities” at the top right of the course. It offers “Add activities” and “Add quiz”. “Add activities” opens a sheet inside the system: a row for each activity, with its Module and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files; fill the rows you want and press Save (the sheet fits the box: no scroll bars). “Add quiz” asks for the module, then the box of the quiz: after saving it you write its questions in a sheet. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
         ]),
         new("What is the menu inside a course?",
         [
-            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, each one listing that kind of work for the whole course), then Students (each with a Message button), Gradebook and Attendance. The first page of the course lists the syllabus and the modules: each line shows how far the class is (the works handed in), and pressing it opens its card with the Slides and the Module buttons.",
+            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, each one listing that kind of work for the whole course), then Students (each with a Message button), Gradebook and Attendance. The first page of the course lists the syllabus and the modules: each row shows how far the class has read the slides (the average of the class), with the Slides and the Module buttons.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
-            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. At the left of “Add activities” is the Activities button: it lists your activities by kind, each one a link, with an Add line for each kind. Inside an activity the Course Menu is at the left of the page, and a double click on the title of the activity shows what you gave (the instructions and the files). There are no exams in your menu: the summative exams come from the academic provider.",
+            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. Inside an activity the Course Menu is at the left of the page, and a double click on the title of the activity shows what you gave (the instructions and the files). There are no exams in your menu: the summative exams come from the academic provider.",
         ]),
         new("Can I add many activities at once?",
         [
             "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment, quiz or task performance. Choose its module and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
             "The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its module.",
-            "The questions of a quiz are written in the quiz itself (Questions). There, Template, Export the questions and Import from Excel still work.",
+            "The questions of a quiz are written in the quiz itself (Questions), in a sheet like the one of a summative exam: press “Add questions” (or “Edit the questions”), write a row for each question (its type and its right answer are chosen from lists), and use “Add [type] [number] rows” to add many rows of one type. There is no Excel for the questions any more.",
         ]),
         new("A student handed in after the due date. What do I do?",
         [
@@ -216,7 +216,7 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose a course. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no module to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
+            "Open Gradebook and choose the course in the list at the top left of the card. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no module to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
@@ -294,12 +294,13 @@ public static class HelpContent
         new("How do I enroll a student?",
         [
             "Open Enrollment. Type the 12-digit LRN (digits only, like the phone number) and the names (letters only). If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. Then press “View enrolling student” (at the left, under the student card): a box in the middle of the screen shows the information (you can still correct it there), the sign-in details, and the buttons Enroll student and Cancel.",
+            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” to see the enrollment form in a box in the middle of the screen (and print it), then “Enroll student” to enroll.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
             "Open Student's Accounts. Filter by term, strand, schedule or search by name or LRN. Press a student's courses to see them.",
             "You can also see who is enrolled for the next term, and unenroll a student.",
+            "“View Enrolled Student Today” (top right) lists the students enrolled today, the newest first, with their LRN, grade level, strand, section and term.",
         ], "registrar/student-accounts", "Open Student's Accounts"),
         new("The section I need is not in the list.",
         [
@@ -323,7 +324,7 @@ public static class HelpContent
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("Where are the class sections?",
         [
-            "Class sections is a tab of the Academic setup. There is a tab for each class (Grade 11, Grade 12), the strands are inside it, and inside each strand the sections A, B and C are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
+            "Class sections is a tab of the Academic setup. The tab opens a list of the levels: Grade level (11 and 12), inside it the Strands and inside each strand the Sections A, B and C; press a grade level to see all its strands and sections. In the page there is a tab for each class too, and inside each strand the sections are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
             "A card that says “Add section” makes the section that is missing (A, B and C). The bin on a card deletes the section, after asking.",
         ], "coordinator/academic-setup/sections", "Open Class sections"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
@@ -366,7 +367,7 @@ public static class HelpContent
     [
         new("How do I send a syllabus and modules to the teachers?",
         [
-            "Open Course library: a track and its first strand are chosen for you; press another track or strand, then a course (the three cards stay side by side; a course opens with a Course Menu at the left, where the Courses dropdown goes from track to strand to course without going back). Add the syllabus first, then the modules (“Add many modules in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each module with its title, its slides (optional), its link (optional) and its files (needed), and the step by step at the right; no Excel is needed. The teachers and the students get a Slides button when a module has slides). Press a syllabus or a module to open it and see its text and files.",
+            "Open Course library: the courses of the current term are cards, like the Courses of the teachers and the students. Use the search box and the lists Track, Grade level, Strand and Course to find one, then press Open (a course opens with a Course Menu at the left, where the Courses dropdown goes from track to strand to course without going back; the previous terms are hidden, because the library works on the current term). Add the syllabus first, then the modules (“Add many modules in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each module with its title, its slides (optional), its link (optional) and its files (needed), and the step by step at the right; no Excel is needed. The teachers and the students get a Slides button when a module has slides). Press a syllabus or a module to open it and see its text and files.",
             "You send the syllabus and the modules to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
             "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam. There is no limit in MB for them. The path at the top (Library › Academic › the strand › the term) takes you back one step at a time.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
@@ -375,9 +376,9 @@ public static class HelpContent
         new("How do I make a summative exam?",
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
-            "Write the title and the instructions, then press “Add questions”: a sheet opens where each row is a question, with its type and its right answer chosen from lists. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
-            "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file.",
-            "Choose the quiz settings (time limit, anti-cheating watch). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
+            "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
+            "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the modules to the teachers who have the course in the next school year, as drafts.",
+            "Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result; they are in four columns under the highest score). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [

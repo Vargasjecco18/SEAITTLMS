@@ -1996,5 +1996,34 @@ DELETE FROM `material_items` WHERE `id` > 0 AND `kind` = 'Exam' AND `title` = 'S
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261104044506_StaffAudiencesHolidaysAndOneExam', '9.0.20');
 
+ALTER TABLE `course_schedules` DROP CONSTRAINT `ck_course_schedules_days`;
+
+ALTER TABLE `course_schedules` MODIFY COLUMN `days` varchar(6) CHARACTER SET utf8mb4 NOT NULL;
+
+CREATE UNIQUE INDEX `ix_course_schedules_section_id_subject_id_days` ON `course_schedules` (`section_id`, `subject_id`, `days`);
+
+ALTER TABLE `course_schedules` DROP INDEX `ix_course_schedules_section_id_subject_id`;
+
+ALTER TABLE `course_schedules` ADD CONSTRAINT `ck_course_schedules_days` CHECK (days REGEXP '^M?T?W?(TH)?F?$' AND days <> '');
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261104172412_DaysOfAClassMeeting', '9.0.20');
+
+CREATE TABLE `module_reads` (
+    `module_id` int NOT NULL,
+    `student_id` int NOT NULL,
+    `percent` tinyint unsigned NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_module_reads` PRIMARY KEY (`module_id`, `student_id`),
+    CONSTRAINT `ck_module_reads_percent` CHECK (percent BETWEEN 0 AND 100),
+    CONSTRAINT `fk_module_reads_modules_module_id` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_module_reads_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_module_reads_student_id` ON `module_reads` (`student_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261104174415_ModuleReadingProgress', '9.0.20');
+
 COMMIT;
 

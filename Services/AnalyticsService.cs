@@ -35,7 +35,11 @@ public sealed record AnalyticsReport(
     string ConcernTitle, IReadOnlyList<ConcernCount> Concerns,
     int Resolved, int Improved, IReadOnlyList<InterventionStat> Interventions,
     string PerformanceTitle, IReadOnlyList<GroupPerformance> Performance,
-    int Solved = 0, int SolvedRecently = 0, IReadOnlyList<ConcernCount>? SolvedByReason = null);
+    int Solved = 0, int SolvedRecently = 0, IReadOnlyList<ConcernCount>? SolvedByReason = null, IReadOnlyList<ConcernStudent>? ConcernStudents = null);
+
+/// <summary>A student who has an attendance concern or a violation concern now (one line for each student and kind), for the guidance counselor's analytics.</summary>
+/// <param name="Detail">What was found: the course of an attendance concern, "Attendance as low as 75% in 3 courses" when there are several, or the violation.</param>
+public sealed record ConcernStudent(string Reason, int StudentId, string Name, string Lrn, string Detail, DateTime SinceUtc);
 
 /// <summary>One student in one course, as the analytics file lists them: the grade, how it is, the work missed and the attendance.</summary>
 /// <summary>
@@ -291,6 +295,7 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         var solved = 0;
         var solvedRecently = 0;
         var solvedByReason = new List<ConcernCount>();
+        var concernStudents = new List<ConcernStudent>();
         int openReferrals;
         if (schoolWide)
         {
@@ -311,6 +316,16 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             solvedRecently = solvedRows.Count(r => r.ResolvedAtUtc != null && r.ResolvedAtUtc >= now.AddDays(-30));
             solvedByReason = ReferralReasons.All.Select(r => new ConcernCount(r, solvedRows.Count(x => x.Reason == r))).ToList();
 
+            // The students who have an attendance concern or a violation concern now (the ones the counselor has not solved).
+            var open = await db.Referrals.AsNoTracking()
+                .Where(r => r.Status != ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+                .Select(r => new { r.StudentId, r.Reason, r.Detail, r.Metric, r.CreatedAtUtc, r.Student.FirstName, r.Student.LastName, r.Student.Lrn })
+                .ToListAsync(ct);
+            concernStudents = open.GroupBy(r => (r.StudentId, r.Reason))
+                .Select(g => new ConcernStudent(g.Key.Reason, g.Key.StudentId, g.First().LastName + ", " + g.First().FirstName, g.First().Lrn,
+                    g.Count() == 1 ? g.First().Detail : g.Any(r => r.Metric != null) ? $"Attendance as low as {g.Where(r => r.Metric != null).Min(r => r.Metric!.Value):0.#}% in {g.Count()} courses" : $"Low in {g.Count()} courses", g.Min(r => r.CreatedAtUtc)))
+                .OrderBy(c => c.Name).ToList();
+
             var done = await db.Referrals.AsNoTracking().Where(r => r.Status == ReferralStatus.Resolved && r.Outcome != null).Select(r => new { r.Intervention, r.Outcome }).ToListAsync(ct);
             resolved = done.Count;
             improved = done.Count(d => d.Outcome == ReferralOutcomes.Improved);
@@ -326,6 +341,6 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         return new AnalyticsReport(schoolWide, schoolWide ? "the whole school" : "your courses", byStudent.Count, Avg(overall.Values.Where(v => v is not null).Select(v => v!.Value)), Pooled(metrics),
-            failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, attendance, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance, solved, solvedRecently, solvedByReason);
+            failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, attendance, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance, solved, solvedRecently, solvedByReason, concernStudents);
     }
 }

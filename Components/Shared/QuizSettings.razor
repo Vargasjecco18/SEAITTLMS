@@ -1,8 +1,8 @@
 @* The settings of a quiz, as a set of small panels: the time, the anti-cheating watch, the order and what the student sees afterwards.
    Used when a teacher adds or edits a quiz. Every value is bound with @bind-<Name>. The inputs keep plain ids (IdPrefix-limit, -warn, -anti,
    -shuffle-q, -shuffle-o, -show) so they can be found. *@
-<section class="quiz-settings" aria-label="Quiz settings">
-    <h3><Icon Name="shield-check" Size="16" /> Quiz settings</h3>
+<section class="quiz-settings" aria-label="@Title">
+    <h3><Icon Name="shield-check" Size="16" /> @Title</h3>
     @if (!string.IsNullOrWhiteSpace(Note))
     {
         <p class="note">@Note</p>
@@ -30,7 +30,7 @@
             <label class="switch">
                 <input id="@(IdPrefix)-anti" type="checkbox" role="switch" checked="@AntiCheat" @onchange="e => AntiCheatChanged.InvokeAsync(e.Value is true)" />
                 <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="switch-text"><strong>@(AntiCheat ? "On" : "Off")</strong><small>Warns the student who leaves the quiz tab or window, copies, pastes, prints or takes a screenshot, and shows the student's name faintly over the page. A photo taken with another device can't be detected. After the allowed warnings the quiz is handed in by itself and flagged for you.</small></span>
+                <span class="switch-text"><strong>@(AntiCheat ? "On" : "Off")</strong><small>Warns on leaving the tab, copy, paste, print or a screenshot. Too many warnings hand it in and flag it for you.</small></span>
             </label>
             @if (AntiCheat)
             {
@@ -46,12 +46,12 @@
             <label class="switch">
                 <input id="@(IdPrefix)-shuffle-q" type="checkbox" role="switch" checked="@ShuffleQuestions" @onchange="e => ShuffleQuestionsChanged.InvokeAsync(e.Value is true)" />
                 <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="switch-text"><strong>Shuffle the questions</strong><small>Every student gets them in a different order.</small></span>
+                <span class="switch-text"><strong>Shuffle the questions</strong><small>A different order for each student.</small></span>
             </label>
             <label class="switch">
                 <input id="@(IdPrefix)-shuffle-o" type="checkbox" role="switch" checked="@ShuffleOptions" @onchange="e => ShuffleOptionsChanged.InvokeAsync(e.Value is true)" />
                 <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="switch-text"><strong>Shuffle the choices</strong><small>The choices of a multiple choice question change places for every student.</small></span>
+                <span class="switch-text"><strong>Shuffle the choices</strong><small>Choices change places for each student.</small></span>
             </label>
         </div>
 
@@ -60,7 +60,7 @@
             <label class="switch">
                 <input id="@(IdPrefix)-show" type="checkbox" role="switch" checked="@ShowResult" @onchange="e => ShowResultChanged.InvokeAsync(e.Value is true)" />
                 <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="switch-text"><strong>Show the result right away</strong><small>The student sees their score and the right answers after handing in.</small></span>
+                <span class="switch-text"><strong>Show the result right away</strong><small>The student sees the score and the right answers.</small></span>
             </label>
         </div>
     </div>
@@ -74,6 +74,9 @@
 
     /// <summary>A line of help under the title (for example that the questions are written after saving).</summary>
     [Parameter] public string? Note { get; set; }
+
+    /// <summary>The title of the panels ("Quiz settings", or "Summative Exam Settings" for an exam).</summary>
+    [Parameter] public string Title { get; set; } = "Quiz settings";
 
     [Parameter] public int? TimeLimit { get; set; }
     [Parameter] public EventCallback<int?> TimeLimitChanged { get; set; }

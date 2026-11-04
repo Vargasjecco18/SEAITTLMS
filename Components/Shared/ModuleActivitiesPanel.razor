@@ -1,0 +1,51 @@
+@* The activities of a module (seatwork, assignments, quizzes, task performances) in the column at the right of the lesson, so a student can go from reading to doing without
+   going back to the course. The student's own state is on each line. The page decides if the column is shown (it can be hidden). *@
+<Card Title="Activities in this module" IconName="list-checks">
+    @if (Items.Count == 0)
+    {
+        <p class="muted">Your teacher has not added an activity to this module yet.</p>
+    }
+    else
+    {
+        <ul class="module-activities">
+            @foreach (var item in Items)
+            {
+                var hidden = ItemKinds.IsQuizLike(item.Kind) && item.Status == SubmissionStatus.Graded && item.Score is null;
+                var (text, tone) = SubjectStyle.StudentStatus(item.Status, item.IsLate, item.IsOverdue, ItemKinds.IsQuizLike(item.Kind), hidden, item.LateDecision);
+                <li>
+                    <a class="activity" href="student/items/@item.Id">
+                        <span class="activity-icon"><Icon Name="@SubjectStyle.KindIcon(item.Kind)" Size="16" /></span>
+                        <span class="activity-text">
+                            <span class="activity-title">@item.Title</span>
+                            <span class="activity-meta">
+                                <span>@ItemKinds.Display(item.Kind)</span>
+                                @if (item.DueAtUtc is { } due && item.Status is not (SubmissionStatus.Graded or SubmissionStatus.Submitted))
+                                {
+                                    <span class="@(item.IsOverdue ? "late" : "")">@PhilippineTime.DueText(due, Now)</span>
+                                }
+
+                                @if (item.Score is { } score)
+                                {
+                                    <span>@score.ToString("0.##") / @item.MaxScore.ToString("0.##")</span>
+                                }
+                                else
+                                {
+                                    <span>@item.MaxScore.ToString("0.##") points</span>
+                                }
+                            </span>
+                        </span>
+                        <Badge Tone="@tone">@text</Badge>
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+</Card>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<StudentItem> Items { get; set; } = [];
+
+    [Inject] private TimeProvider Clock { get; set; } = default!;
+
+    private DateTimeOffset Now => PhilippineTime.Now(Clock);
+}

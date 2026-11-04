@@ -7,6 +7,11 @@ namespace SEAITT_LMS.Services;
 
 /// <summary>A course in the list of the course materials, with what the provider has prepared for it.</summary>
 /// <param name="Placement">In a strand's list: where the course is studied, like "Grade 11 · 1st Term, Grade 12 · 1st Term".</param>
+/// <summary>A course of the library as a card: where a strand studies it (track, strand, grade level, term) and what is prepared for it.</summary>
+public sealed record LibraryCard(
+    int SubjectId, string Code, string Name, int TrackId, string TrackCode, int StrandId, string StrandCode, string StrandName, byte GradeLevel, byte TermNumber,
+    bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent);
+
 public sealed record MaterialCourseRow(
     int SubjectId, string Code, string Name, bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent, string? Placement = null);
 
@@ -150,6 +155,37 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                 teachers.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == s.Id)?.Count ?? 0,
                 placements?.GetValueOrDefault(s.Id));
         }).ToList();
+    }
+
+    /// <summary>
+    /// The courses of the library as cards, one for each course of each strand (a course that two strands study has a card for each). Only the courses of the term that is going on are
+    /// listed: what is prepared is for the current term, and the courses of the terms before it are not shown. (When no term is marked as current, every term is listed.)
+    /// </summary>
+    public async Task<IReadOnlyList<LibraryCard>> ListLibraryCardsAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var yearId = await CurrentYearIdAsync(db, ct);
+        var current = await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => (byte?)t.TermNumber).FirstOrDefaultAsync(ct);
+
+        var lines = await db.StrandSubjects.AsNoTracking().Where(x => x.IsOffered && x.Subject.IsActive && x.Strand.IsActive && (current == null || x.TermNumber == current))
+            .Select(x => new { x.SubjectId, x.Subject.Code, x.Subject.Name, x.StrandId, StrandCode = x.Strand.Code, StrandName = x.Strand.Name, TrackId = x.Strand.TrackId, TrackCode = x.Strand.Track.Code, x.GradeLevel, x.TermNumber })
+            .ToListAsync(ct);
+        var modules = await db.MaterialModules.AsNoTracking().Where(m => !m.IsExamSet)
+            .GroupBy(m => m.SubjectId)
+            .Select(g => new { SubjectId = g.Key, Syllabus = g.Count(m => m.IsSyllabus), Modules = g.Count(m => !m.IsSyllabus) }).ToListAsync(ct);
+        var exams = await db.MaterialItems.AsNoTracking().Where(i => i.Kind == ItemKinds.Exam)
+            .GroupBy(i => i.Module.SubjectId).Select(g => new { SubjectId = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var teachers = await db.TeachingAssignments.AsNoTracking().Where(a => a.Section.SchoolYearId == yearId)
+            .GroupBy(a => a.SubjectId).Select(g => new { SubjectId = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var sent = await db.MaterialDeliveries.AsNoTracking().GroupBy(d => d.MaterialModule.SubjectId).Select(g => new { SubjectId = g.Key, Count = g.Count() }).ToListAsync(ct);
+
+        return [.. lines.OrderBy(l => l.TrackCode).ThenBy(l => l.StrandCode).ThenBy(l => l.GradeLevel).ThenBy(l => l.Name).Select(l =>
+        {
+            var m = modules.FirstOrDefault(x => x.SubjectId == l.SubjectId);
+            return new LibraryCard(l.SubjectId, l.Code, l.Name, l.TrackId, l.TrackCode, l.StrandId, l.StrandCode, l.StrandName, l.GradeLevel, l.TermNumber,
+                (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, exams.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0,
+                teachers.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0);
+        })];
     }
 
     /// <summary>The terms a strand studies in (1st Term, 2nd Term ...), for the provider to choose from after choosing a strand.</summary>
@@ -573,7 +609,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     /// Sends the syllabus and the modules of the course to the courses of some teachers. Each teacher's course gets a copy of each module (its title, its link and its files) as a
     /// draft that is not posted: the teacher decides when to post it. A module that was sent to that course before is skipped. Each teacher is told once.
     /// </summary>
-    public async Task<ServiceResult> SendAsync(int userId, int subjectId, IReadOnlyCollection<int> moduleIds, IReadOnlyCollection<int> assignmentIds, CancellationToken ct = default)
+    public async Task<ServiceResult> SendAsync(int userId, int subjectId, IReadOnlyCollection<int> moduleIds, IReadOnlyCollection<int> assignmentIds, CancellationToken ct = default, int? schoolYearId = null)
     {
         if (moduleIds.Count == 0)
         {
@@ -608,7 +644,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             return ServiceResult.Fail("What you chose is not in the library of this course any more.");
         }
 
-        var yearId = await CurrentYearIdAsync(db, ct);
+        var yearId = schoolYearId ?? await CurrentYearIdAsync(db, ct);
         var targets = await db.TeachingAssignments.AsNoTracking()
             .Where(a => a.SubjectId == subjectId && assignmentIds.Contains(a.Id) && a.Section.SchoolYearId == yearId)
             .Select(a => new { a.Id, TeacherUserId = a.Teacher.UserId, SectionName = a.Section.Name, a.Section.GradeLevel, StrandCode = a.Section.Strand.Code })
@@ -678,6 +714,43 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         return ServiceResult.Ok(
             $"Sent {Plural(library.Count, "module")} to {Plural(teachersTold, "teacher")}"
             + (skipped > 0 ? $" ({skipped} already sent before were skipped)." : ". They are drafts in the teachers' courses."), copied);
+    }
+
+    /// <summary>
+    /// Copies the syllabus and the modules of the library of a course to the teachers who have the course in the school year that comes after the current one (the button "Copy to the next school
+    /// year"): every teacher of the course in that year gets them as drafts, like Send to teachers does. What a teacher already got is skipped, so pressing it twice sends nothing twice.
+    /// </summary>
+    public async Task<ServiceResult> CopyToNextYearAsync(int userId, int subjectId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsProviderAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(ProviderOnly);
+        }
+
+        var current = await CurrentYearIdAsync(db, ct);
+        var currentStart = await db.SchoolYears.AsNoTracking().Where(y => y.Id == current).Select(y => (DateOnly?)y.StartDate).FirstOrDefaultAsync(ct);
+        var next = currentStart is null ? null : await db.SchoolYears.AsNoTracking().Where(y => y.StartDate > currentStart).OrderBy(y => y.StartDate)
+            .Select(y => new { y.Id, y.Name }).FirstOrDefaultAsync(ct);
+        if (next is null)
+        {
+            return ServiceResult.Fail("There is no school year after the current one yet. The academic coordinator makes it in the academic setup.");
+        }
+
+        var moduleIds = await db.MaterialModules.AsNoTracking().Where(m => m.SubjectId == subjectId && !m.IsExamSet).Select(m => m.Id).ToListAsync(ct);
+        if (moduleIds.Count == 0)
+        {
+            return ServiceResult.Fail("This course has no syllabus or module in the library to copy yet.");
+        }
+
+        var assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.SubjectId == subjectId && a.Section.SchoolYearId == next.Id).Select(a => a.Id).ToListAsync(ct);
+        if (assignmentIds.Count == 0)
+        {
+            return ServiceResult.Fail($"No teacher has this course in {next.Name} yet. The administrator gives the courses to the teachers in Users Management; press the button again after that.");
+        }
+
+        var result = await SendAsync(userId, subjectId, moduleIds, assignmentIds, ct, next.Id);
+        return result.Succeeded ? ServiceResult.Ok($"{result.Message} (school year {next.Name})", result.Id) : result;
     }
 
     /// <summary>

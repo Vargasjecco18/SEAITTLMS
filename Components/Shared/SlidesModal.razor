@@ -1,0 +1,58 @@
+@* The slides of a module in a box in the middle of the screen, one slide at a time from left to right (the arrows at its sides, the arrow keys, Home and End). A PDF is drawn slide by slide by
+   wwwroot/app.js (the same counting of what was seen as the file box of the module: the slides it shows are the slides of the bar of reading). A file the browser can't draw (a PowerPoint file)
+   says so and offers the download. When a module has several slide files, a button for each one chooses it. *@
+<Modal Open="Open" Title="@($"Slides · {Title}")" Large="true" Centered="true" OnClose="OnClose">
+    @if (Open && Files.Count > 0)
+    {
+        var current = Files.FirstOrDefault(f => f.Id == selectedId) ?? Files[0];
+        @if (Files.Count > 1)
+        {
+            <div class="chips" role="group" aria-label="Slides of this module">
+                @foreach (var f in Files)
+                {
+                    var id = f.Id;
+                    <button type="button" class="chip @(id == current.Id ? "on" : "")" aria-pressed="@(id == current.Id ? "true" : "false")" title="@f.Name" @onclick="() => selectedId = id">
+                        <Icon Name="presentation" Size="15" /> <span>@f.Name</span>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="slides-head">
+            <span class="file-title" title="@current.Name"><Icon Name="presentation" Size="16" /> <strong>@current.Name</strong></span>
+            <span class="bar-links">
+                <a href="files/a/@current.Id" target="_blank" rel="noopener noreferrer"><Icon Name="external-link" Size="14" /> Open in a new tab</a>
+                <a href="files/a/@current.Id?download=1" download="@current.Name"><Icon Name="download" Size="14" /> Download</a>
+            </span>
+        </div>
+
+        @if (IsPdf(current.Name))
+        {
+            <div class="slides-view" @key="current.Id" data-slides-viewer data-slides-src="files/a/@current.Id" data-file-id="@current.Id" data-file-name="@current.Name" role="region" aria-label="@($"Slides: {current.Name}")"></div>
+        }
+        else
+        {
+            <p class="none"><Icon Name="file" Size="20" /> This kind of slides (a PowerPoint file) can't be shown here. Download it to read it.</p>
+        }
+
+        <div class="slides-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="OnClose">Close</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private int? selectedId;
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>The module the slides are of (the heading).</summary>
+    [Parameter] public string Title { get; set; } = "";
+
+    /// <summary>The slide files of the module.</summary>
+    [Parameter] public IReadOnlyList<AttachmentRow> Files { get; set; } = [];
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private static bool IsPdf(string name) => name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+}

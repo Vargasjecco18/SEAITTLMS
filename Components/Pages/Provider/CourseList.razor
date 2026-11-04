@@ -8,178 +8,152 @@
 <PageHeader Title="Course library"
             IconName="folder-open" />
 
-@* The library is read from the top: the tracks, then (a click on a track) its strands, then (a click on a strand) the courses of the strand,
-   and a course opens its library. Searching a course by name or code shows the matching courses of the whole school at once.
-   Every step is a plain link (/provider/library, ?track=..., ?track=...&strand=...), so the back button works. Opening the library picks the first track and strand. *@
-<Card Class="search-card">
-    <form method="get" action="provider/library" class="filter-bar" role="search">
-        <SearchField Id="lib-search" Name="q" Static="true" Value="@Q" Placeholder="Search a course by name or code" AriaLabel="Search the courses" ClearHref="provider/library" />
-    </form>
-</Card>
-
-@* The menu of the school folds to its icons here, so the three cards have the room (wwwroot/app.js looks for this marker). *@
-<span data-side-rail hidden></span>
-
-@if (searching)
-{
-    <div class="level">
-        <nav class="crumbs" aria-label="Where you are"><a href="provider/library">Course library</a><span aria-hidden="true">›</span><span>Search “@Q”</span></nav>
-        <CourseTable Courses="courses" ShowPlacement="false" />
-    </div>
-}
-else if (tracks is null)
+@* The library looks like the Courses of a teacher or a student: a card for each course (or a list), with the picture of its strand. Where the chips All, Enrolled and Completed are there, here are the
+   search box and the lists Track, Grade level, Strand and Course. Only the courses of the term that is going on are shown, because that is what the provider prepares. Every choice is in the address
+   (a plain form), so the back button works. *@
+@if (cards is null)
 {
     <p class="muted">Loading…</p>
 }
 else
 {
-    @* Three cards side by side, like the tracks, strands and courses of the academic setup: a track, then its strands, then the courses of the strand (term by term). Every line is a plain link. *@
-    <div class="lib-cols">
-        <section class="lib-col" aria-label="Tracks">
-            <header class="lib-head"><h3>Tracks</h3><span class="lib-count">@tracks.Count</span></header>
-            @if (tracks.Count == 0)
-            {
-                <p class="lib-empty">No track yet. Tracks are made in the academic setup.</p>
-            }
-            else
-            {
-                <ul class="lib-list">
-                    @foreach (var t in tracks)
-                    {
-                        <li>
-                            <a class="lib-item @(track?.TrackId == t.TrackId ? "on" : "")" href="@($"provider/library?track={t.TrackId}")" aria-current="@(track?.TrackId == t.TrackId ? "true" : null)">
-                                <span class="li-code">@t.Code</span>
-                                <span class="li-name">@t.Name</span>
-                                <span class="li-meta" title="@Plural(t.Courses, "subject") · @t.WithSyllabus with a syllabus">@t.Strands.Count</span>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            }
-        </section>
+    <div class="bar">
+        <form method="get" action="provider/library" class="filters" role="search" data-autosubmit>
+            <input type="hidden" name="view" value="@view" />
+            <SearchField Id="lib-search" Name="q" Static="true" Value="@Q" Placeholder="Search a course by name or code" AriaLabel="Search the courses" ClearHref="@Url(null, null, null, null)" />
+            <select id="f-track" name="track" aria-label="Track">
+                <option value="">All tracks</option>
+                @foreach (var t in Tracks)
+                {
+                    <option value="@t.Id" selected="@(TrackId == t.Id)">@t.Code</option>
+                }
+            </select>
+            <select id="f-grade" name="grade" aria-label="Grade level">
+                <option value="">All grade levels</option>
+                <option value="11" selected="@(Grade == 11)">Grade 11</option>
+                <option value="12" selected="@(Grade == 12)">Grade 12</option>
+            </select>
+            <select id="f-strand" name="strand" aria-label="Strand">
+                <option value="">All strands</option>
+                @foreach (var st in Strands)
+                {
+                    <option value="@st.Id" selected="@(StrandId == st.Id)">@st.Code</option>
+                }
+            </select>
+            <select id="f-course" name="course" aria-label="Course">
+                <option value="">All courses</option>
+                @foreach (var c in CourseChoices)
+                {
+                    <option value="@c.SubjectId" selected="@(CourseId == c.SubjectId)">@c.Name</option>
+                }
+            </select>
+            <noscript><button type="submit" class="button secondary small">Show</button></noscript>
+        </form>
 
-        <section class="lib-col" aria-label="Strands">
-            <header class="lib-head"><h3>Strands <small>@track?.Code</small></h3><span class="lib-count">@(track?.Strands.Count ?? 0)</span></header>
-            @if (track is null)
-            {
-                <p class="lib-empty">Choose a track.</p>
-            }
-            else if (track.Strands.Count == 0)
-            {
-                <p class="lib-empty">No strand in this track yet.</p>
-            }
-            else
-            {
-                <ul class="lib-list">
-                    @foreach (var st in track.Strands)
-                    {
-                        <li>
-                            <a class="lib-item @(strand?.StrandId == st.StrandId ? "on" : "")" href="@($"provider/library?track={track.TrackId}&strand={st.StrandId}")" aria-current="@(strand?.StrandId == st.StrandId ? "true" : null)">
-                                <span class="li-code">@st.Code</span>
-                                <span class="li-name">@st.Name</span>
-                                <span class="li-meta" title="@Plural(st.Courses, "subject") · @st.WithSyllabus with a syllabus">@st.WithSyllabus / @st.Courses</span>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            }
-        </section>
-
-        <section class="lib-col lib-wide" aria-label="Courses">
-            <header class="lib-head"><h3>Courses <small>@strand?.Code</small></h3><span class="lib-count">@coursesByTerm.Values.Sum(l => l.Count)</span></header>
-            @if (strand is null)
-            {
-                <p class="lib-empty">Choose a strand.</p>
-            }
-            else if (coursesByTerm.Values.All(l => l.Count == 0))
-            {
-                <p class="lib-empty">This strand has no course yet.</p>
-            }
-            else
-            {
-                <div class="lib-courses">
-                    @foreach (var term in strandTerms)
-                    {
-                        var list = coursesByTerm.GetValueOrDefault(term.TermNumber) ?? [];
-                        if (list.Count == 0)
-                        {
-                            continue;
-                        }
-
-                        <section class="lib-term @(TermNumber == term.TermNumber ? "on" : "")" aria-label="@term.Name">
-                            <h4>@term.Name <small>@Plural(term.Courses, "subject") · @term.WithSyllabus with a syllabus</small></h4>
-                            <ul class="lib-list">
-                                @foreach (var c in list)
-                                {
-                                    <li>
-                                        <a class="lib-course" href="@($"provider/library/{c.SubjectId}?track={track!.TrackId}&strand={strand.StrandId}&term={term.TermNumber}")" data-course="@c.Code">
-                                            <span class="lc-main">
-                                                <span class="lc-name">@c.Name <span class="li-code">@c.Code</span></span>
-                                                <span class="lc-sub">@c.Placement · @Plural(c.Modules, "module") · @Plural(c.Exams, "summative exam")@(c.Teachers == 0 ? " · no teacher this year" : $" · {Plural(c.Teachers, "teacher")}")</span>
-                                            </span>
-                                            @if (c.HasSyllabus)
-                                            {
-                                                <Badge Tone="Tone.Success">Syllabus ready</Badge>
-                                            }
-                                            else
-                                            {
-                                                <Badge Tone="Tone.Warning">No syllabus yet</Badge>
-                                            }
-                                        </a>
-                                    </li>
-                                }
-                            </ul>
-                        </section>
-                    }
-                </div>
-            }
-        </section>
+        <nav class="views" aria-label="View">
+            <a class="view @(view == "cards" ? "on" : "")" href="@Url(Q, null, null, null, "cards", true)" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
+            <a class="view @(view == "list" ? "on" : "")" href="@Url(Q, null, null, null, "list", true)" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
+        </nav>
     </div>
+
+    @if (shown.Count == 0)
+    {
+        <Card>
+            <EmptyState IconName="search-x" Title="No course matches">
+                <p>Try another name or code, or choose All in the lists. Courses are made in the academic setup, and the library shows the courses of the term that is going on.</p>
+                <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary">Show all courses</ButtonLink>
+            </EmptyState>
+        </Card>
+    }
+    else if (view == "list")
+    {
+        <Card>
+            <CourseTable Courses="@ListRows" Path="@PathOf(null)" ShowPlacement="true" />
+        </Card>
+    }
+    else
+    {
+        <div class="grid">
+            @foreach (var c in shown)
+            {
+                <SubjectCard Name="@c.Name" Cover="@StrandArt.For(c.StrandCode, c.StrandName)" CoverLabel="@c.StrandName"
+                             Section="@($"{c.TrackCode} · {c.StrandCode} · Grade {c.GradeLevel}")" Meets="@SchoolCalendar.TermName(c.TermNumber)"
+                             Href="@($"provider/library/{c.SubjectId}?track={c.TrackId}&strand={c.StrandId}&term={c.TermNumber}")" OffText="Open">
+                    <span class="card-facts" data-course="@c.Code">
+                        @if (c.HasSyllabus)
+                        {
+                            <Badge Tone="Tone.Success">Syllabus ready</Badge>
+                        }
+                        else
+                        {
+                            <Badge Tone="Tone.Warning">No syllabus yet</Badge>
+                        }
+                        <span class="fact">@Plural(c.Modules, "module")</span>
+                        <span class="fact">@Plural(c.Exams, "summative exam")</span>
+                    </span>
+                </SubjectCard>
+            }
+        </div>
+    }
 }
 
 @code {
     [SupplyParameterFromQuery(Name = "q")] private string? Q { get; set; }
-    [SupplyParameterFromQuery(Name = "track")] private int? TrackId { get; set; }
-    [SupplyParameterFromQuery(Name = "strand")] private int? StrandId { get; set; }
-    [SupplyParameterFromQuery(Name = "term")] private int? TermNumber { get; set; }
+    [SupplyParameterFromQuery(Name = "track")] private string? TrackText { get; set; }
+    [SupplyParameterFromQuery(Name = "grade")] private string? GradeText { get; set; }
+    [SupplyParameterFromQuery(Name = "strand")] private string? StrandText { get; set; }
+    [SupplyParameterFromQuery(Name = "course")] private string? CourseText { get; set; }
+    [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
 
-    private IReadOnlyList<LibraryTrack>? tracks;
-    private IReadOnlyList<MaterialCourseRow> courses = [];
-    private IReadOnlyDictionary<int, IReadOnlyList<MaterialCourseRow>> coursesByTerm = new Dictionary<int, IReadOnlyList<MaterialCourseRow>>();
-    private LibraryTrack? track;
-    private LibraryStrand? strand;
-    private IReadOnlyList<LibraryTerm> strandTerms = [];
-    private bool searching;
+    [CascadingParameter] private HttpContext? Http { get; set; }
 
-    private static string Plural(int n, string one) => n == 1 ? $"1 {one}" : $"{n:N0} {one}s";
+    private IReadOnlyList<LibraryCard>? cards;
+    private List<LibraryCard> shown = [];
+    private string view = "cards";
+
+    private int? TrackId => ParseNumber(TrackText);
+    private int? Grade => ParseNumber(GradeText) is 11 or 12 ? ParseNumber(GradeText) : null;
+    private int? CourseId => ParseNumber(CourseText);
+
+    // A strand that does not belong to the track that is chosen is not a choice any more (the lists follow each other: track, then strand, then course).
+    private int? StrandId => ParseNumber(StrandText) is { } id && Strands.Any(s => s.Id == id) ? id : null;
+
+    private static int? ParseNumber(string? text) => int.TryParse(text, out var number) && number > 0 ? number : null;
+
+    private IEnumerable<(int Id, string Code)> Tracks => cards!.Select(c => (c.TrackId, c.TrackCode)).Distinct().OrderBy(t => t.TrackCode);
+
+    private IEnumerable<(int Id, string Code)> Strands => cards!.Where(c => TrackId is null || c.TrackId == TrackId).Select(c => (c.StrandId, c.StrandCode)).Distinct().OrderBy(s => s.StrandCode);
+
+    private IEnumerable<(int SubjectId, string Name)> CourseChoices => cards!
+        .Where(c => (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId))
+        .Select(c => (c.SubjectId, c.Name)).Distinct().OrderBy(c => c.Name);
+
+    private IReadOnlyList<MaterialCourseRow> ListRows => [.. shown.Select(c => new MaterialCourseRow(c.SubjectId, c.Code, c.Name, c.HasSyllabus, c.Modules, c.Exams, c.Teachers, c.Sent, $"{c.TrackCode} · {c.StrandCode} · Grade {c.GradeLevel} · {SchoolCalendar.TermName(c.TermNumber)}"))];
 
     protected override async Task OnParametersSetAsync()
     {
-        searching = !string.IsNullOrWhiteSpace(Q);
-        tracks = await Library.ListTracksAsync();
-        track = TrackId is { } t ? tracks.FirstOrDefault(x => x.TrackId == t) : null;
-        strand = track is not null && StrandId is { } sid ? track.Strands.FirstOrDefault(x => x.StrandId == sid) : null;
+        view = ViewPreference.Resolve(Http, "library", ViewText, "cards", "list");
+        cards = await Library.ListLibraryCardsAsync();
+        var words = (Q ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        shown = [.. cards.Where(c =>
+            (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId) && (CourseId is null || c.SubjectId == CourseId)
+            && words.All(w => c.Name.Contains(w, StringComparison.OrdinalIgnoreCase) || c.Code.Contains(w, StringComparison.OrdinalIgnoreCase)))];
+    }
 
-        // Opening the course library (or only a track) picks by itself: the first track that has a strand, then the first strand of the track that has courses.
-        // The three cards are never empty, and a click still goes anywhere.
-        if (!searching)
-        {
-            track ??= tracks.FirstOrDefault(x => x.Strands.Count > 0) ?? tracks.FirstOrDefault();
-            strand ??= track?.Strands.FirstOrDefault(x => x.Courses > 0) ?? track?.Strands.FirstOrDefault();
-        }
-        strandTerms = strand is null || searching ? [] : await Library.ListStrandTermsAsync(strand.StrandId);
-        courses = searching ? await Library.ListCoursesAsync(Q) : [];
+    private string? PathOf(int? _) => null;
 
-        // the courses of the chosen strand, term by term (one small query for each term)
-        var byTerm = new Dictionary<int, IReadOnlyList<MaterialCourseRow>>();
-        if (strand is not null && !searching)
-        {
-            foreach (var term in strandTerms)
-            {
-                byTerm[term.TermNumber] = await Library.ListCoursesAsync(null, default, strand.StrandId, term.TermNumber);
-            }
-        }
+    private static string Plural(int n, string one) => n == 1 ? $"1 {one}" : $"{n:N0} {one}s";
 
-        coursesByTerm = byTerm;
+    private string Url(string? q, int? track, int? grade, int? strand, string? viewName = null, bool explicitView = false)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(q)) { parts.Add("q=" + Uri.EscapeDataString(q)); }
+        if (TrackId is { } t) { parts.Add("track=" + t); }
+        if (Grade is { } g) { parts.Add("grade=" + g); }
+        if (StrandId is { } s) { parts.Add("strand=" + s); }
+        if (CourseId is { } c) { parts.Add("course=" + c); }
+        var chosen = viewName ?? view;
+        if (chosen == "list" || explicitView) { parts.Add("view=" + chosen); }
+        return "provider/library" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));
     }
 }

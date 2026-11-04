@@ -64,8 +64,8 @@ else if (Role == AppRoles.GuidanceCounselor)
     <div class="stats">
         <StatCard Label="Students with concerns" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Amber" Hint="Attendance or a violation" Href="guidance/referrals" />
         <StatCard Label="Attendance" Text="@(report.AttendanceRate is { } rate ? $"{rate:0.#}%" : "—")" IconName="calendar-check" Accent="@(report.AttendanceRate < AttendanceService.LowAttendancePercent ? AccentColor.Rose : AccentColor.Green)" Hint="Present or late" />
-        <StatCard Label="Resolved" Value="@report.Resolved" IconName="circle-check" Accent="AccentColor.Green" Hint="Concerns that were closed" />
-        <StatCard Label="Improved" Text="@(report.Resolved == 0 ? "—" : $"{report.Improved * 100 / report.Resolved}%")" IconName="trending-up" Accent="AccentColor.Violet" Hint="Of the resolved concerns" />
+        <StatCard Label="Attendance concern" Value="@(report.ConcernStudents?.Count(c => c.Reason == ReferralReasons.LowAttendance) ?? 0)" IconName="triangle-alert" Accent="AccentColor.Rose" Hint="Students with low attendance" Href="guidance/referrals?show=concerns&reason=LowAttendance" />
+        <StatCard Label="Violation concern" Value="@(report.ConcernStudents?.Count(c => c.Reason == ReferralReasons.Violation) ?? 0)" IconName="shield-alert" Accent="AccentColor.Violet" Hint="Students with a violation" Href="guidance/referrals?show=concerns&reason=Violation" />
     </div>
 
     <section class="concern-tiles" aria-label="@report.ConcernTitle">
@@ -88,7 +88,7 @@ else if (Role == AppRoles.GuidanceCounselor)
 
     <div class="board">
         @AttendanceCard(report)
-        @SolvedCard(report)
+        @ConcernStudentsCard(report)
     </div>
 }
 else
@@ -317,6 +317,49 @@ else
                     </li>
                 }
             </ul>
+        }
+    </Card>;
+
+    /// <summary>The students who have an attendance concern and the students who have a violation concern now, each with what was found.</summary>
+    private RenderFragment ConcernStudentsCard(AnalyticsReport r) => @<Card Title="Students with a concern" IconName="heart-handshake">
+        @{
+            var list = r.ConcernStudents ?? [];
+        }
+        @if (list.Count == 0)
+        {
+            <p class="muted">No student has an attendance or a violation concern now.</p>
+        }
+        else
+        {
+            <div class="concern-groups">
+                @foreach (var reason in new[] { ReferralReasons.LowAttendance, ReferralReasons.Violation })
+                {
+                    var of = list.Where(c => c.Reason == reason).ToList();
+                    <section class="concern-group" aria-label="@ReferralReasons.Display(reason)">
+                        <h3>@ReferralReasons.Display(reason) <span class="count">@of.Count</span></h3>
+                        @if (of.Count == 0)
+                        {
+                            <p class="muted">None.</p>
+                        }
+                        else
+                        {
+                            <ul class="concern-people">
+                                @foreach (var c in of.Take(8))
+                                {
+                                    <li>
+                                        <a href="@($"guidance/referrals?show=concerns&q={Uri.EscapeDataString(c.Lrn)}")"><strong>@c.Name</strong></a>
+                                        <span class="sub">@c.Detail</span>
+                                    </li>
+                                }
+                            </ul>
+                            @if (of.Count > 8)
+                            {
+                                <a class="more-link" href="@($"guidance/referrals?show=concerns&reason={reason}")">All @of.Count students</a>
+                            }
+                        }
+                    </section>
+                }
+            </div>
         }
     </Card>;
 

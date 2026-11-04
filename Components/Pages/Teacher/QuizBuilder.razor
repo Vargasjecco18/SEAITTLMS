@@ -52,7 +52,18 @@ else
 
     <FormErrors Errors="formErrors" />
 
-    <QuestionExcelTools QuizTitle="@data.Title" Questions="questions" Disabled="locked" OnImported="ImportedAsync" />
+    @if (!locked)
+    {
+        <Card>
+            <div class="sheet-card">
+                <div>
+                    <h3><Icon Name="list-checks" Size="16" /> Write the questions in a sheet</h3>
+                    <p class="muted">@(questions.Count == 0 ? "A row for each question: the type and the right answer are chosen from lists." : $"{questions.Count} {(questions.Count == 1 ? "question" : "questions")} so far. Open the sheet to add more or change them.")</p>
+                </div>
+                <Button Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenSheet">@(questions.Count == 0 ? "Add questions" : "Edit the questions")</Button>
+            </div>
+        </Card>
+    }
 
     <div class="total">
         <strong>@questions.Count @(questions.Count == 1 ? "question" : "questions")</strong>
@@ -155,6 +166,8 @@ else
     }
 }
 
+<QuestionsSheetDialog Open="sheetOpen" ExamTitle="@(data?.Title ?? "Quiz")" Existing="questions ?? []" OnSave="SheetSavedAsync" OnClose="CloseSheet" />
+
 @code {
     [Parameter] public int ItemId { get; set; }
 
@@ -191,8 +204,19 @@ else
 
     private void ClearMessage() => message = null;
 
-    /// <summary>The questions of an Excel file are added to the end of the list; the teacher looks at them and presses Save questions.</summary>
-    private void ImportedAsync(IReadOnlyList<QuestionInput> imported) => questions!.AddRange(imported);
+    private bool sheetOpen;
+
+    private void OpenSheet() => sheetOpen = true;
+
+    private void CloseSheet() => sheetOpen = false;
+
+    /// <summary>The sheet gives back the whole list of questions: it replaces the list and the teacher presses Save questions (like the summative exam).</summary>
+    private async Task SheetSavedAsync(IReadOnlyList<QuestionInput> saved)
+    {
+        sheetOpen = false;
+        questions = [.. saved];
+        await SaveAsync();
+    }
 
     private void Add(string kind) => questions!.Add(new QuestionInput
     {

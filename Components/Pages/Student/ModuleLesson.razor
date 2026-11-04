@@ -23,18 +23,43 @@ else if (module is null)
 else
 {
     <PageHeader Title="@module.Title" IconName="layers">
-        <ReadProgress Key="@($"module-{ModuleId}")" />
+        <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" Save="true" ServerPercent="module.ReadPercent" />
+        @if (slideFiles.Count > 0)
+        {
+            <Button Variant="ButtonVariant.Secondary" IconName="presentation" OnClick="() => slidesOpen = true">Slides</Button>
+        }
         <ButtonLink Href="@($"student/subjects/{module.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @module.SubjectName</ButtonLink>
     </PageHeader>
 
     @* The menu of the course at the left (so the student can go to the modules, the assignments ... without going back), and the lesson with its files shown right here. *@
-    <CourseLayout Student="subject" CurrentModuleId="ModuleId" CollapseMenu="true">
+    @* At the right of the lesson: the activities of this module, which the student can hide (the button is above the lesson). *@
+    <CourseLayout Student="subject" CurrentModuleId="ModuleId" CollapseMenu="true" Aside="@(showActivities ? ActivitiesAside : null)">
+        <div class="lesson-tools">
+            <button type="button" class="activities-toggle" aria-expanded="@(showActivities ? "true" : "false")" aria-controls="module-activities" @onclick="() => showActivities = !showActivities">
+                <Icon Name="@(showActivities ? "eye-off" : "panel-right-open")" Size="16" />
+                @(showActivities ? "Hide activities" : $"Show activities ({module.Items.Count})")
+            </button>
+        </div>
         <LessonContent Title="@module.Title" LinkUrl="@module.LinkUrl" Files="files" ModuleLabel="@FileLabel.OfModule(module.Title)" />
     </CourseLayout>
+
+    @* The Slides button of the course page comes here with ?slides=1: the slides are the first thing the student sees, one slide at a time from left to right. *@
+    <SlidesModal Open="slidesOpen && slideFiles.Count > 0" Title="@module.Title" Files="slideFiles" OnClose="() => slidesOpen = false" />
 }
 
 @code {
     [Parameter] public int ModuleId { get; set; }
+
+    private bool showActivities = true;
+
+    private RenderFragment ActivitiesAside => @<div id="module-activities"><ModuleActivitiesPanel Items="module!.Items" /></div>;
+
+    /// <summary>"1" when the student pressed Slides in the course: the slides open first.</summary>
+    [SupplyParameterFromQuery(Name = "slides")] public string? SlidesQuery { get; set; }
+
+    private bool slidesOpen;
+    private int slidesAskedFor = -1;
+    private IReadOnlyList<AttachmentRow> slideFiles => [.. files.Where(f => f.IsSlides)];
 
     private bool loaded;
     private StudentModule? module;
@@ -48,5 +73,12 @@ else
         files = module is null ? [] : await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Module, ModuleId));
         subject = studentId is { } sid && module is not null ? await Modules.GetStudentSubjectAsync(sid, module.AssignmentId) : null;
         loaded = true;
+
+        // the slides open by themselves once, when the page is opened from the Slides button
+        if (slidesAskedFor != ModuleId)
+        {
+            slidesAskedFor = ModuleId;
+            slidesOpen = SlidesQuery == "1" && slideFiles.Count > 0;
+        }
     }
 }
