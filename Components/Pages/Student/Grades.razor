@@ -3,6 +3,7 @@
 @inject CurrentUser Me
 @inject GradeService GradeBook
 @inject AttendanceService AttendanceBook
+@inject GradebookService Books
 
 <PageTitle>Grades and progress · SEAITT Legazpi LMS</PageTitle>
 <AutoRefresh />
@@ -56,19 +57,20 @@ else
             <StatCard Label="Graded works" Value="@summary.GradedCount" IconName="clipboard-check" Accent="AccentColor.Violet" Hint="@($"{summary.Subjects.Sum(s => s.Missing)} missing")" />
         </div>
 
-        @* Each subject is closed at first. A click on its name shows its progress and its graded work (a plain details box, no script needed). *@
+        @* Every course is a gradebook like the teacher's, read only and with the student's own row: the progress is at the top of the course, then the scores of each activity, the average and the final grade. *@
         <div class="subjects">
             @foreach (var s in summary.Subjects)
             {
                 var att = attendance?.Subjects.FirstOrDefault(a => a.AssignmentId == s.AssignmentId);
-                <details class="subject" aria-label="@s.SubjectName">
-                    <summary>
-                        <span class="chev" aria-hidden="true"><Icon Name="chevron-right" Size="18" /></span>
+                var book = books.GetValueOrDefault(s.AssignmentId);
+                <section class="subject open" aria-label="@s.SubjectName">
+                    <header class="subject-head">
                         <span class="subject-title">
                             <span class="subject-name">@s.SubjectName</span>
                             <span class="sub">@s.TeacherName · @s.SectionLabel</span>
                         </span>
-                    </summary>
+                        <a class="open-course" href="student/subjects/@s.AssignmentId">Open the course <Icon Name="arrow-right" Size="14" /></a>
+                    </header>
 
                     <div class="subject-body">
                         <div class="progress-row">
@@ -89,10 +91,64 @@ else
                                 }
                             </span>
                         </div>
-                        @if (s.FinalGrade is { } finalGrade)
+                        <p class="counts">
+                            @if (att is { Percent: { } attRate })
+                            {
+                                <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
+                            }
+                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "activity" : "activities") graded
+                            @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
+                            @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
+                            <span class="note-inline"> · The line on the bar is the passing grade, @GradeRules.PassingPercent.ToString("0").</span>
+                        </p>
+
+                        @if (book is null || book.Columns.Count == 0)
                         {
-                            <p class="final-grade">Final grade from your teacher: <strong>@finalGrade.ToString("0.##")</strong> <Badge Tone="@GradeRules.ToneOf(finalGrade)">@GradeRules.Descriptor(finalGrade)</Badge></p>
+                            <p class="muted">No activity is open in this course yet.</p>
                         }
+                        else
+                        {
+                            <div class="table-wrap">
+                                <table class="table gradebook" aria-label="@($"Gradebook of {s.SubjectName}")">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky">&nbsp;</th>
+                                            @foreach (var c in book.Columns)
+                                            {
+                                                <th scope="col" class="col-item" title="@c.Title">
+                                                    <a href="student/items/@c.ItemId"><span class="code">@c.Code</span></a>
+                                                    <span class="max">out of @c.Max.ToString("0.##")</span>
+                                                </th>
+                                            }
+                                            <th scope="col" class="avg">Average</th>
+                                            <th scope="col" class="final">Final grade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <th scope="row" class="sticky"><span class="name">Your scores</span></th>
+                                            @foreach (var cell in book.Row.Cells)
+                                            {
+                                                <td class="cell @CellClass(cell)">@CellText(cell)@if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }</td>
+                                            }
+                                            <td class="avg">
+                                                @if (book.Row.Percent is { } avgPercent)
+                                                {
+                                                    <Badge Tone="@GradeRules.ToneOf(avgPercent)">@avgPercent.ToString("0.#")%</Badge>
+                                                }
+                                                else
+                                                {
+                                                    <span class="dash">—</span>
+                                                }
+                                            </td>
+                                            <td class="final">@(book.Row.FinalGrade is { } fg ? fg.ToString("0.##") : "—")</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>SE</strong> summative exam. Press a code to open the activity. You can only read this table: your teacher gives the scores.</p>
+                        }
+
                         @if (s.HasExam)
                         {
                             <p class="final-grade">Summative exam:
@@ -106,46 +162,8 @@ else
                                 }
                             </p>
                         }
-                        <p class="note"><span class="mark-sample"></span> The line is the passing grade, @GradeRules.PassingPercent.ToString("0").</p>
-
-                        <h3 class="work-title">Assignments</h3>
-                        <p class="counts">
-                            @if (att is { Percent: { } attRate })
-                            {
-                                <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
-                            }
-                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "assignment" : "assignments") graded
-                            @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
-                            @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
-                        </p>
-
-                        @if (s.Graded.Count > 0)
-                        {
-                            <div class="table-wrap">
-                                <table class="table">
-                                    <thead><tr><th scope="col">Assignment</th><th scope="col">Score</th><th scope="col">Percent</th><th scope="col" class="col-more">Graded</th></tr></thead>
-                                    <tbody>
-                                        @foreach (var g in s.Graded)
-                                        {
-                                            <tr>
-                                                <td><a href="student/items/@g.ItemId">@g.Title</a> <span class="kind">@ItemKinds.Display(g.Kind)</span>@if (g.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
-                                                <td>@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</td>
-                                                <td><Badge Tone="@GradeRules.ToneOf(g.Percent)">@g.Percent.ToString("0.#")%</Badge></td>
-                                                <td class="col-more">@(g.GradedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
-                        else
-                        {
-                            <p class="muted">No assignment is graded yet.</p>
-                        }
-
-                        <p class="open-course"><a href="student/subjects/@s.AssignmentId">Open the course <Icon Name="arrow-right" Size="14" /></a></p>
                     </div>
-                </details>
+                </section>
             }
         </div>
     }
@@ -154,6 +172,7 @@ else
 @code {
     private StudentGradeSummary? summary;
     private StudentAttendance? attendance;
+    private IReadOnlyDictionary<int, StudentBook> books = new Dictionary<int, StudentBook>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,8 +181,27 @@ else
         if (studentId is { } sid)
         {
             attendance = await AttendanceBook.GetStudentAsync(sid);
+            books = await Books.GetForStudentAsync(sid);
         }
     }
+
+    private static string CellText(GradebookCell cell) => cell.Status switch
+    {
+        SubmissionStatus.Graded when cell.Score is { } score => score.ToString("0.##"),
+        SubmissionStatus.Graded => "Graded",
+        SubmissionStatus.Submitted when cell.LateDecision == LateDecisions.Declined => "Declined",
+        SubmissionStatus.Submitted => "Handed in",
+        SubmissionStatus.InProgress => "Started",
+        _ => "—",
+    };
+
+    private static string CellClass(GradebookCell cell) => cell.Status switch
+    {
+        SubmissionStatus.Graded => "graded",
+        SubmissionStatus.Submitted => "handed",
+        SubmissionStatus.InProgress => "started",
+        _ => "empty",
+    };
 
     private static string Band(decimal? percent) => percent switch
     {

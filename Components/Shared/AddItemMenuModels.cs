@@ -55,7 +55,7 @@ public static class CourseMenuBuilder
         var number = 0;
         var modules = subject.Modules.Where(m => !m.IsExamSet).Select(m => new CourseMenuEntry(m.IsSyllabus ? "Syllabus" : Titled(++number, m.Title), $"{page}/modules/{m.Id}", m.Id == currentModuleId)).ToList();
         groups.Add(new CourseMenuGroup("modules", "Modules", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
-        foreach (var kind in KindOrder)
+        foreach (var kind in KindOrder.Where(k => k != ItemKinds.Exam))   // the exams are the provider's: the teacher's menu has no Exams
         {
             var items = subject.Modules.SelectMany(m => m.Items.Where(i => i.Kind == kind)).ToList();
             if (ItemKinds.IsOptionalTab(kind) && items.Count == 0)

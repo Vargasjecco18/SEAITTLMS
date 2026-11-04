@@ -73,6 +73,11 @@
     color: var(--slate);
 }
 
+.line.holiday .line-icon {
+    background: var(--rose-soft);
+    color: var(--rose);
+}
+
 .line.module .line-icon {
     background: var(--surface-2);
     color: var(--text-muted);

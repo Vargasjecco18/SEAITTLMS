@@ -15,6 +15,9 @@ public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bo
 
 public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null);
 
+/// <summary>The gradebook of one course as the student sees it: the columns and the one row of the student (nothing to change).</summary>
+public sealed record StudentBook(int AssignmentId, IReadOnlyList<GradebookColumn> Columns, GradebookRow Row);
+
 public sealed record SubjectGradebook(
     int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing);
 
@@ -85,13 +88,64 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
     }
 
     /// <summary>
+    /// The gradebook of each course of a student, read only: the columns the teacher's gradebook has (the work that is open), the scores of the student, their average and the
+    /// final grade the teacher wrote. The same numbers the teacher sees in the student's row.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<int, StudentBook>> GetForStudentAsync(int studentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var student = await db.Students.AsNoTracking().Where(s => s.Id == studentId).Select(s => new { s.FirstName, s.LastName, s.Lrn }).FirstOrDefaultAsync(ct);
+        if (student is null)
+        {
+            return new Dictionary<int, StudentBook>();
+        }
+
+        var assignmentIds = await Roster.AssignmentsOf(db, studentId).Select(a => a.Id).ToListAsync(ct);
+        var finals = await db.FinalGrades.AsNoTracking().Where(g => g.StudentId == studentId && assignmentIds.Contains(g.AssignmentId)).ToDictionaryAsync(g => g.AssignmentId, g => g.Grade, ct);
+        var books = new Dictionary<int, StudentBook>();
+        foreach (var assignmentId in assignmentIds)
+        {
+            var columns = await GetColumnsAsync(db, assignmentId, now, ct, studentView: true);
+            var itemIds = columns.Select(c => c.ItemId).ToList();
+            var mine = await db.Submissions.AsNoTracking().Where(s => s.StudentId == studentId && itemIds.Contains(s.ItemId))
+                .Select(s => new { s.ItemId, s.Status, s.Score, s.IsLate, s.LateDecision }).ToDictionaryAsync(s => s.ItemId, ct);
+
+            var cells = new List<GradebookCell>();
+            decimal earned = 0, possible = 0;
+            foreach (var c in columns)
+            {
+                if (mine.TryGetValue(c.ItemId, out var s))
+                {
+                    cells.Add(new GradebookCell(c.ItemId, s.Status, s.Score, s.IsLate, false, s.LateDecision));
+                    if (s.Score is { } score && s.Status == SubmissionStatus.Graded)
+                    {
+                        earned += score;
+                        possible += c.Max;
+                    }
+                }
+                else
+                {
+                    cells.Add(new GradebookCell(c.ItemId, "NotStarted", null, false, false));
+                }
+            }
+
+            books[assignmentId] = new StudentBook(assignmentId, columns, new GradebookRow(studentId, $"{student.LastName}, {student.FirstName}", student.Lrn, cells,
+                possible <= 0 ? null : Math.Round(earned / possible * 100, 1), 0, finals.TryGetValue(assignmentId, out var final) ? final : null));
+        }
+
+        return books;
+    }
+
+    /// <summary>
     /// The columns in the order the teacher put them (the ones that were never moved come last, module by module). The codes (A1, Q1 ...) count the work of each kind in the
     /// order of the modules, so a column that is moved keeps its name.
     /// </summary>
-    private static async Task<List<GradebookColumn>> GetColumnsAsync(AppDbContext db, int assignmentId, DateTime now, CancellationToken ct)
+    private static async Task<List<GradebookColumn>> GetColumnsAsync(AppDbContext db, int assignmentId, DateTime now, CancellationToken ct, bool studentView = false)
     {
         var rows = await db.ModuleItems.AsNoTracking()
-            .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now)
+            .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
+                        && (!studentView || i.VisibleFromUtc == null || i.VisibleFromUtc <= now))   // a student does not see the work that is not open yet
             .OrderBy(i => i.Module.Position).ThenBy(i => i.Module.Id).ThenBy(i => i.Position).ThenBy(i => i.Id)
             .Select(i => new { i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder, Summative = i.MaterialItemId != null })
             .ToListAsync(ct);

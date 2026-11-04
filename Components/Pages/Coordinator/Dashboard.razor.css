@@ -15,6 +15,7 @@
 .cards {
     display: grid;
     gap: 1.25rem;
+    margin-top: 1.5rem;
 }
 
 @media (min-width: 1000px) {

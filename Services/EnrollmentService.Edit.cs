@@ -250,7 +250,7 @@ public sealed partial class EnrollmentService
 
         // The courses: the ones chosen (they must be courses of the strand at this grade level and term), or all of them when nothing was chosen.
         var curriculum = await db.StrandSubjects.AsNoTracking()
-            .Where(x => x.StrandId == strand!.Id && x.GradeLevel == change.GradeLevel && x.TermNumber == term.TermNumber && x.Subject.IsActive)
+            .Where(x => x.StrandId == strand!.Id && x.GradeLevel == change.GradeLevel && x.TermNumber == term.TermNumber && x.Subject.IsActive && x.IsOffered)
             .Select(x => x.Subject).OrderBy(s => s.Name).ToListAsync(ct);
         List<Subject> subjects;
         var oldSubjectIds = enrollment.EnrolledSubjects.Select(s => s.SubjectId).ToHashSet();

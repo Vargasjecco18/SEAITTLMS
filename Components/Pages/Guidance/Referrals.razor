@@ -11,7 +11,7 @@
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
 <Card>
-    <p class="lead-line">You look after <strong>attendance</strong> and <strong>violations</strong>. Every student of the school is in the list: press <strong>At risk</strong> on a student to see their concerns, to add one, or to write what you did.</p>
+    <p class="lead-line">You look after <strong>attendance</strong> and <strong>violations</strong>. Every student of the school is in the list: choose a <strong>concern</strong> on a student's row and what happened to record it, write the <strong>notes</strong>, and press <strong>Solved</strong> when it is over.</p>
     <form class="filter-bar one-row" role="search" @onsubmit="SearchAsync">
         <SearchField Id="r-search" @bind-Value="searchText" Label="Search" SubmitText="" Placeholder="Name, LRN, grade level, strand, section…"
                      AriaLabel="Search the students" OnClear="SearchAsync" />
@@ -53,45 +53,79 @@
     {
         <p class="filter-count">@(result.Total == 1 ? "1 student" : $"{result.Total:N0} students")</p>
         <div class="table-wrap">
-            <table class="table">
+            <table class="table referral-table">
                 <thead>
                     <tr>
                         <th scope="col">Student</th>
-                        <th scope="col" class="col-level">Grade level</th>
-                        <th scope="col">Strand</th>
                         <th scope="col">Section</th>
-                        <th scope="col">Concerns</th>
-                        <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
+                        <th scope="col">Concern</th>
+                        <th scope="col">What happened</th>
+                        <th scope="col" class="col-notes">Notes</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Solved</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var student in result.Items)
                     {
-                        <tr>
+                        var picked = ReasonOf(student);
+                        var open = OpenOf(student, picked);
+                        <tr data-student="@student.Lrn">
                             <td>
-                                <span class="name">@student.StudentName</span>
+                                <button type="button" class="name-link" title="Open the concerns of @student.StudentName, the earlier ones and where to add one" @onclick="() => ViewAll(student)">@student.StudentName</button>
                                 <span class="sub">@student.Lrn</span>
                             </td>
-                            <td class="col-level">@(student.GradeLevel is { } level ? $"Grade {level}" : "—")</td>
-                            <td>@(student.Strand ?? "—")</td>
                             <td>@(student.Placement ?? "—")</td>
                             <td>
+                                <select class="concern-select" aria-label="@($"Concern of {student.StudentName}")" value="@picked" @onchange="e => PickReason(student, e.Value?.ToString())">
+                                    <option value="">None</option>
+                                    @foreach (var r in ReferralReasons.All)
+                                    {
+                                        <option value="@r" selected="@(picked == r)">@ReferralReasons.Display(r)@(student.OpenReferrals.Any(x => x.Reason == r) ? " ●" : "")</option>
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                @if (picked == "")
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                else if (open.Count > 0)
+                                {
+                                    @if (picked == ReferralReasons.LowAttendance)
+                                    {
+                                        @* Attendance concerns found on the same day are one line: View attendance shows each course in a box in the middle of the screen. *@
+                                        <span class="detail">@(open.Count == 1 ? open[0].Detail : $"{open.Count} courses with low attendance")</span>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye" OnClick="() => OpenAttendance(student, open)">View attendance</Button>
+                                    }
+                                    else
+                                    {
+                                        <span class="detail">@string.Join(" · ", open.Select(o => o.Detail).Distinct())</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <select class="concern-select" aria-label="@($"What happened to {student.StudentName}")" @onchange="e => AddHereAsync(student, picked, e.Value?.ToString())" disabled="@busy">
+                                        <option value="">Choose what happened</option>
+                                        @foreach (var choice in ReferralService.HappenedChoices(picked))
+                                        {
+                                            <option value="@choice">@choice</option>
+                                        }
+                                    </select>
+                                }
+                            </td>
+                            <td class="col-notes">
                                 @if (!student.HasOpen)
                                 {
                                     <span class="muted">None</span>
                                 }
                                 else
                                 {
-                                    <span class="reasons">
-                                        @foreach (var r in student.Reasons)
-                                        {
-                                            <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(r)">@ReferralReasons.Display(r)</Badge>
-                                        }
-                                    </span>
+                                    var noted = student.OpenReferrals.Any(r => !string.IsNullOrWhiteSpace(r.Notes));
+                                    <button type="button" class="notes-button @(noted ? "is-noted" : "")" title="@(noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)">@(noted ? "Noted" : "None")</button>
                                 }
                             </td>
                             <td class="col-actions">
-                                <Button Small="true" Variant="@(student.HasOpen ? ButtonVariant.Danger : ButtonVariant.Secondary)" IconName="shield-alert" Title="@(student.HasOpen ? "A concern is open: press to see it" : "No concern now: press to add one")" OnClick="() => ViewAll(student)">At risk</Button>
+                                <Button Small="true" IconName="circle-check" Disabled="@(busy || !student.HasOpen)" Title="@(student.HasOpen ? "The concern is over" : "No concern to solve")" OnClick="() => SolveRowAsync(student)">Solved</Button>
                             </td>
                         </tr>
                     }
@@ -111,7 +145,7 @@
 </Card>
 
 @* ===== One student: their concerns (Notes and Solved at the top right), the earlier ones, and a place to add one ===== *@
-<Modal Open="viewing is not null" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
+<Modal Open="viewing is not null && !notesFromRow" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
     @if (viewing is not null)
     {
         <div class="modal-top">
@@ -151,16 +185,7 @@
                                     @if (group.Rows.Count > 1)
                                     {
                                         @* Several attendance concerns found on the same day: one line with a button that shows each course. *@
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="@(openGroups.Contains(group.Key) ? "chevron-up" : "eye")" OnClick="() => ToggleGroup(group.Key)">@(openGroups.Contains(group.Key) ? "Hide attendance" : $"View attendance ({group.Rows.Count} courses)")</Button>
-                                        @if (openGroups.Contains(group.Key))
-                                        {
-                                            <ul class="attendance-list">
-                                                @foreach (var line in group.Rows)
-                                                {
-                                                    <li>@line.Detail</li>
-                                                }
-                                            </ul>
-                                        }
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye" OnClick="() => OpenAttendance(viewing!, group.Rows)">View attendance (@group.Rows.Count)</Button>
                                     }
                                     else
                                     {
@@ -235,8 +260,28 @@
     }
 </Modal>
 
+@* ===== View attendance: the courses of one attendance concern, in a box in the middle of the screen ===== *@
+<Modal Open="attendanceFor is not null" Title="@($"Attendance · {attendanceFor?.StudentName}")" Centered="true" Top="true" OnClose="CloseAttendance">
+    @if (attendanceFor is not null)
+    {
+        <p class="sub all-sub">@attendanceFor.Lrn@(attendanceFor.Placement is null ? "" : " · " + attendanceFor.Placement)</p>
+        <ul class="attendance-list">
+            @foreach (var line in attendanceLines)
+            {
+                <li>
+                    <span class="detail">@line.Detail</span>
+                    <span class="sub">Since @PhilippineTime.FormatDate(line.CreatedAtUtc)@(string.IsNullOrEmpty(line.TeacherName) ? "" : " · " + line.TeacherName)</span>
+                </li>
+            }
+        </ul>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseAttendance">Close</Button>
+        </div>
+    }
+</Modal>
+
 @* ===== The help given and the notes of the student ===== *@
-<Modal Open="notesOpen" Title="@($"Notes · {viewing?.StudentName}")" OnClose="CloseNotes">
+<Modal Open="notesOpen" Title="@($"Notes · {viewing?.StudentName}")" Centered="true" Top="true" OnClose="CloseNotes">
     @if (notesOpen && viewing is not null)
     {
         <FormErrors Errors="formErrors" />
@@ -276,8 +321,10 @@
     private string newHappened = "";
     private string newMore = "";
     private bool showPrevious;
+    private readonly Dictionary<int, string> rowReasons = [];
+    private ReferralStudentRow? attendanceFor;
+    private IReadOnlyList<ReferralRow> attendanceLines = [];
     private bool notesOpen;
-    private readonly HashSet<string> openGroups = [];
     private string grade = "";
     private string searchText = "";
     private string appliedSearch = "";
@@ -302,6 +349,82 @@
     }
 
     private void ClearMessage() => message = null;
+
+    /// <summary>The concern shown on the row of a student: the one picked, or the first they have open (violations first), or none.</summary>
+    private string ReasonOf(ReferralStudentRow student) =>
+        rowReasons.TryGetValue(student.StudentId, out var picked) ? picked : student.Reasons.FirstOrDefault() ?? "";
+
+    private static List<ReferralRow> OpenOf(ReferralStudentRow student, string reason) =>
+        reason == "" ? [] : [.. student.OpenReferrals.Where(r => r.Reason == reason).OrderByDescending(r => r.CreatedAtUtc)];
+
+    private void PickReason(ReferralStudentRow student, string? value) => rowReasons[student.StudentId] = value ?? "";
+
+    /// <summary>A student with no such concern yet: choosing what happened on the row records it.</summary>
+    private async Task AddHereAsync(ReferralStudentRow student, string reasonKey, string? happened)
+    {
+        if (busy || string.IsNullOrWhiteSpace(happened))
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var saved = await Desk.AddConcernAsync(student.StudentId, reasonKey, happened, null, userId);
+            messageIsError = !saved.Succeeded;
+            message = saved.Succeeded ? $"{student.StudentName}: {saved.Message}" : string.Join(" ", saved.Errors);
+            if (saved.Succeeded)
+            {
+                rowReasons.Remove(student.StudentId);
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task SolveRowAsync(ReferralStudentRow student)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var solved = await Desk.SolveStudentAsync(student.StudentId, userId);
+            messageIsError = !solved.Succeeded;
+            message = solved.Succeeded ? $"{student.StudentName}: {solved.Message}" : string.Join(" ", solved.Errors);
+            rowReasons.Remove(student.StudentId);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    /// <summary>The notes box opened from the row of a student (the box with all their concerns stays closed).</summary>
+    private bool notesFromRow;
+
+    private void OpenNotesFor(ReferralStudentRow student)
+    {
+        notesFromRow = true;
+        viewing = student;
+        formErrors = [];
+        OpenNotes();
+    }
+
+    private void OpenAttendance(ReferralStudentRow student, IReadOnlyList<ReferralRow> lines)
+    {
+        attendanceFor = student;
+        attendanceLines = lines;
+    }
+
+    private void CloseAttendance() => attendanceFor = null;
 
     private async Task LoadAsync()
     {
@@ -330,7 +453,6 @@
         newHappened = "";
         newMore = "";
         showPrevious = false;
-        openGroups.Clear();
         viewing = student;
     }
 
@@ -344,14 +466,6 @@
     {
         newReason = e.Value?.ToString() ?? "";
         newHappened = "";
-    }
-
-    private void ToggleGroup(string key)
-    {
-        if (!openGroups.Remove(key))
-        {
-            openGroups.Add(key);
-        }
     }
 
     /// <summary>One line of the list of concerns: attendance concerns found on the same day are one line (View attendance shows each course); a violation is a line of its own.</summary>
@@ -448,7 +562,15 @@
         notesOpen = true;
     }
 
-    private void CloseNotes() => notesOpen = false;
+    private void CloseNotes()
+    {
+        notesOpen = false;
+        if (notesFromRow)
+        {
+            notesFromRow = false;
+            viewing = null;
+        }
+    }
 
     private async Task SaveAsync()
     {
@@ -467,9 +589,9 @@
                 return;
             }
 
-            notesOpen = false;
             messageIsError = false;
             message = $"{viewing.StudentName}: {saved.Message}";
+            CloseNotes();
             await LoadAsync();
             await RefreshViewingAsync();
         }

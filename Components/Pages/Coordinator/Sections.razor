@@ -10,9 +10,6 @@
     <ButtonLink Href="coordinator/class-schedule" IconName="calendar-clock">Open the class schedule</ButtonLink>
 </PageHeader>
 
-@* The menu of the school folds to its icons here, so the cards have the room (wwwroot/app.js looks for this marker). *@
-<span data-side-rail hidden></span>
-
 <form class="sections-search" role="search" @onsubmit="() => { }">
     <SearchField Id="sections-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a strand, a section or an adviser" AriaLabel="Search the sections" />
 </form>

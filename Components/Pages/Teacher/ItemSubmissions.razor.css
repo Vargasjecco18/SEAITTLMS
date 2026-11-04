@@ -323,10 +323,11 @@
 
 @media (min-width: 900px) {
     .detail-grid {
-        grid-template-columns: minmax(0, 1fr) 20rem;
+        grid-template-columns: 13rem minmax(0, 1fr) 19rem;
     }
 
-    .detail-grade {
+    .detail-grade,
+    .detail-students {
         position: sticky;
         top: 0;
     }
@@ -373,8 +374,80 @@
     outline: 0;
 }
 
-.col-go {
-    width: 2.5rem;
+/* What a student handed in, as small tags in the Answers column. */
+.answer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.answer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 11rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The students who handed in, at the left of the box: press one to see their work. */
+.detail-students {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+
+.detail-students ul {
+    display: grid;
+    gap: 0.3rem;
+    max-height: 60vh;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.student-pick {
+    display: grid;
+    width: 100%;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.student-pick:hover {
+    background: var(--surface);
+}
+
+.student-pick.on {
+    border-color: var(--border);
+    background: var(--surface);
+    box-shadow: inset 3px 0 0 var(--text-muted);
+}
+
+.pick-name {
+    font-size: 0.88rem;
+    font-weight: 650;
+}
+
+.pick-sub {
     color: var(--text-muted);
-    text-align: right;
+    font-size: 0.75rem;
 }

@@ -152,7 +152,7 @@ public sealed partial class EnrollmentService(
         }
 
         return await db.StrandSubjects.AsNoTracking()
-            .Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber)
+            .Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber && x.IsOffered)
             .OrderBy(x => x.Subject.Name)
             .Select(x => new SubjectOption(x.Subject.Id, x.Subject.Code, x.Subject.Name))
             .ToListAsync(ct);
@@ -173,7 +173,7 @@ public sealed partial class EnrollmentService(
         }
 
         var courses = await db.StrandSubjects.AsNoTracking()
-            .Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == term.TermNumber)
+            .Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == term.TermNumber && x.IsOffered)
             .OrderBy(x => x.Subject.Name)
             .Select(x => new { x.Subject.Id, x.Subject.Code, x.Subject.Name, x.Subject.Units })
             .ToListAsync(ct);
@@ -344,7 +344,7 @@ public sealed partial class EnrollmentService(
         // The subjects are fixed by the strand: all the subjects of this strand at this grade level and term (the curriculum).
         // A subject the administrator switched off is left out.
         var subjects = await db.StrandSubjects.AsNoTracking()
-            .Where(x => x.StrandId == strand!.Id && x.GradeLevel == request.GradeLevel && x.TermNumber == term!.TermNumber && x.Subject.IsActive)
+            .Where(x => x.StrandId == strand!.Id && x.GradeLevel == request.GradeLevel && x.TermNumber == term!.TermNumber && x.Subject.IsActive && x.IsOffered)
             .Select(x => x.Subject)
             .OrderBy(s => s.Name)
             .ToListAsync(ct);

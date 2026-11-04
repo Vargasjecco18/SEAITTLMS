@@ -1,0 +1,284 @@
+/* The sheet: a table of boxes with a step by step at the right. */
+.sheet-layout {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (min-width: 960px) {
+    .sheet-layout {
+        grid-template-columns: minmax(0, 1fr) 19rem;
+    }
+}
+
+.sheet-main {
+    min-width: 0;
+}
+
+.sheet-summary {
+    margin: 0 0 0.75rem;
+}
+
+.bad {
+    margin-left: 0.4rem;
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.muted {
+    color: var(--text-muted);
+}
+
+.sheet-wrap {
+    max-height: 52vh;
+    overflow: auto;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-sm);
+}
+
+.sheet {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.sheet th,
+.sheet td {
+    padding: 0;
+    border: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.sheet thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.45rem 0.5rem;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.sheet thead th small {
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.c-n {
+    width: 2.4rem;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.c-title {
+    width: 26%;
+}
+
+.c-link {
+    width: 24%;
+}
+
+.c-state {
+    width: 12rem;
+    padding: 0 0.5rem !important;
+    font-size: 0.82rem;
+}
+
+.c-x {
+    width: 2.4rem;
+    text-align: center;
+}
+
+.cell {
+    width: 100%;
+    padding: 0.55rem 0.55rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+}
+
+.cell:focus {
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+    background: var(--surface);
+}
+
+.c-files {
+    padding: 0.3rem 0.4rem !important;
+}
+
+.file-chips {
+    display: inline;
+}
+
+.file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 11rem;
+    margin: 0.1rem 0.25rem 0.1rem 0;
+    padding: 0.1rem 0.25rem 0.1rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip-x,
+.row-x {
+    display: inline-grid;
+    place-items: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.row-x {
+    width: 1.8rem;
+    height: 1.8rem;
+}
+
+.chip-x:hover,
+.row-x:hover:not(:disabled) {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.row-x:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.add-files {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px dashed var(--field-border);
+    border-radius: 999px;
+    color: var(--brand-strong);
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.add-files:hover {
+    background: var(--brand-soft);
+}
+
+/* the real file box is there (for the keyboard and screen readers) but only its label is seen */
+.add-files ::deep .file-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+tr.ok .c-state {
+    background: var(--success-soft);
+}
+
+tr.bad .c-state {
+    background: var(--warning-soft);
+}
+
+.state-ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--success);
+    font-weight: 650;
+}
+
+.state-bad {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.sheet-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.sheet-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.sheet-errors {
+    margin: 0 0 1rem;
+    padding-left: 1.2rem;
+    color: var(--danger);
+}
+
+/* The step by step, at the right of the sheet. */
+.sheet-steps {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+
+@media (min-width: 960px) {
+    .sheet-steps {
+        position: sticky;
+        top: 0;
+    }
+}
+
+.sheet-steps h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.sheet-steps ol {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.sheet-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin: 0.9rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}

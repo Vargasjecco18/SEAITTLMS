@@ -479,38 +479,80 @@
     font-size: 0.85rem;
 }
 
-/* An hour that a section at the left already has in another room: hatched and marked, under the classes of this room. */
-.busy-mark {
-    position: absolute;
-    right: 0;
-    left: 0;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.05rem;
-    padding: 0.2rem 0.4rem;
+/* The head of a section says its room and how many of its courses are on the schedule. */
+.p-room {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    max-width: 7rem;
     overflow: hidden;
-    border: 1px dashed var(--border);
-    border-radius: 6px;
-    background: repeating-linear-gradient(45deg, transparent 0 6px, var(--slate-soft) 6px 8px);
     color: var(--text-muted);
-    font-size: 0.72rem;
-    font-weight: 650;
-    pointer-events: none;
-}
-
-.busy-mark small {
-    overflow: hidden;
-    font-size: 0.68rem;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.busy-legend {
-    display: inline-flex;
+.p-count.is-done {
+    color: var(--success);
+}
+
+/* All the class schedules, over all the screen. */
+.all-tools {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.all-tools ::deep .search {
+    flex: 1 1 20rem;
+    max-width: 32rem;
+}
+
+.all-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+}
+
+.all-section {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.all-section h3 {
+    margin: 0;
+    padding: 0.55rem 0.8rem;
+    background: var(--surface-2);
+    font-size: 0.95rem;
+}
+
+.all-section h3 small {
     margin-left: 0.4rem;
     color: var(--text-muted);
+    font-weight: 500;
+}
+
+.all-section table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.all-section th,
+.all-section td {
+    padding: 0.35rem 0.8rem;
+    border-top: 1px solid var(--border);
+    text-align: left;
+}
+
+.all-section th {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }

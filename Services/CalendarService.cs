@@ -19,6 +19,9 @@ public static class CalendarKinds
     /// <summary>An announcement with a Start or an End day: it is on the calendar of the people it is for on every day from Start to End.</summary>
     public const string Announcement = "Announcement";
 
+    /// <summary>A holiday of the Philippines (<see cref="PhilippineHolidays"/>): on the calendar of every role.</summary>
+    public const string Holiday = "Holiday";
+
     // The kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance, Seatwork, Recitation (and Exam).
 
     public static string Label(string kind) => kind switch
@@ -30,6 +33,7 @@ public static class CalendarKinds
         ItemKinds.Exam => "Exam",
         Summative => "Summative exam",
         Announcement => "Announcement",
+        Holiday => "Holiday",
         ItemKinds.Activity => "Assignment",
         Module => "Module",
         Personal => "Event",
@@ -42,6 +46,7 @@ public static class CalendarKinds
         Personal => "calendar-clock",
         Summative => "clipboard-list",
         Announcement => "megaphone",
+        Holiday => "flag",
         _ => SubjectStyle.KindIcon(kind),
     };
 }
@@ -162,6 +167,10 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
         }
 
         events.AddRange(await GetAnnouncementEventsAsync(db, user, from, to, ct));
+
+        // The holidays of the Philippines are on everybody's calendar.
+        events.AddRange(PhilippineHolidays.Between(from, to).Select((h, n) => new CalendarEvent($"holiday-{h.Day:yyyyMMdd}-{n}", h.Day, null, h.Name,
+            h.Kind + (h.Estimated ? " · the day can change" : ""), CalendarKinds.Holiday, null, false, false)));
 
         // The events the person wrote on their own calendar.
         var entries = await db.CalendarEntries.AsNoTracking().Where(e => e.UserId == user.UserId && e.Day >= from && e.Day <= to).ToListAsync(ct);

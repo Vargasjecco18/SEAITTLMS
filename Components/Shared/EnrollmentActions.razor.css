@@ -63,26 +63,6 @@
     font-weight: 600;
 }
 
-.course-picks {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-    gap: 0.3rem 1rem;
-    max-height: 12rem;
-    margin-bottom: 0.4rem;
-    padding: 0.5rem 0.65rem;
-    overflow-y: auto;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-}
-
-.course-pick {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-
 .link-button {
     padding: 0;
     border: 0;

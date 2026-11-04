@@ -265,6 +265,7 @@ else
                                     </td>
                                     <td class="col-actions">
                                         <Button Small="true" Variant="ButtonVariant.Secondary" IconName="users" Disabled="@(c.Responses >= c.Expected)" OnClick="() => OpenNotAnsweredAsync(c)">Not answered yet</Button>
+                                        <Button Small="true" IconName="send" Disabled="@(c.Responses >= c.Expected || detail.State != EvaluationStates.Open)" Title="Message the students who have not answered" OnClick="() => OpenMessage(c)">Message</Button>
                                     </td>
                                 </tr>
                             }
@@ -348,6 +349,22 @@ else
     }
 </Modal>
 
+@* ===== Message the students who have not answered (a box in the middle of the screen) ===== *@
+<Modal Open="messageFor is not null" Title="@(messageFor is null ? "" : $"Message · {messageFor.SubjectName}")" Centered="true" OnClose="CloseMessage">
+    @if (messageFor is not null)
+    {
+        <p class="dialog-text">@messageFor.TeacherName · @messageFor.SectionLabel · @(messageFor.Expected - messageFor.Responses) @(messageFor.Expected - messageFor.Responses == 1 ? "student has" : "students have") not answered yet. Each one gets a notification.</p>
+        <FormErrors Errors="messageErrors" />
+        <Field For="eval-message" Label="Message" Hint="Up to 500 characters. You can change the words.">
+            <textarea id="eval-message" rows="4" maxlength="500" @bind="messageText" @bind:event="oninput"></textarea>
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseMessage">Cancel</Button>
+            <Button IconName="send" Disabled="busy" OnClick="SendMessageAsync">@(busy ? "Sending…" : "Send")</Button>
+        </div>
+    }
+</Modal>
+
 @* ===== Delete ===== *@
 <Modal Open="confirmDelete" Title="Delete this evaluation?" OnClose="CloseDelete">
     <p class="dialog-text">"@detail?.Title" will be deleted with all the answers the students gave. <strong>This can't be undone.</strong></p>
@@ -387,6 +404,9 @@ else
     private string sendDueText = "";
 
     private EvaluationCourseRow? notAnsweredFor;
+    private EvaluationCourseRow? messageFor;
+    private string messageText = "";
+    private List<string> messageErrors = [];
     private IReadOnlyList<string>? notAnswered;
 
     private bool confirmDelete;
@@ -604,6 +624,42 @@ else
     {
         notAnsweredFor = course;
         notAnswered = await Service.GetNotAnsweredAsync(EvaluationId, course.AssignmentId);
+    }
+
+    private void OpenMessage(EvaluationCourseRow course)
+    {
+        messageFor = course;
+        messageErrors = [];
+        messageText = $"Please answer the teacher evaluation for {course.SubjectName} before it closes. Your answers are anonymous.";
+    }
+
+    private void CloseMessage() => messageFor = null;
+
+    private async Task SendMessageAsync()
+    {
+        if (busy || messageFor is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Service.MessageNotAnsweredAsync(userId, EvaluationId, messageFor.AssignmentId, messageText);
+            if (result.Succeeded)
+            {
+                messageFor = null;
+                Say(result);
+            }
+            else
+            {
+                messageErrors = result.Errors.ToList();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private void CloseNotAnswered()

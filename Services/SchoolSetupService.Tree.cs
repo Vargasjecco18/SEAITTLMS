@@ -4,7 +4,7 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>One line of the curriculum of a strand, with the course it names (what the multilevel list of tracks, strands and courses shows).</summary>
-public sealed record CurriculumLine(int StrandId, int GradeLevel, int TermNumber, int SubjectId, string SubjectCode, string SubjectName, decimal Units, bool IsActive);
+public sealed record CurriculumLine(int StrandId, int GradeLevel, int TermNumber, int SubjectId, string SubjectCode, string SubjectName, decimal Units, bool IsActive, bool IsOffered = true);
 
 public sealed partial class SchoolSetupService
 {
@@ -14,7 +14,7 @@ public sealed partial class SchoolSetupService
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.StrandSubjects.AsNoTracking()
             .OrderBy(x => x.StrandId).ThenBy(x => x.GradeLevel).ThenBy(x => x.TermNumber).ThenBy(x => x.Subject.Name)
-            .Select(x => new CurriculumLine(x.StrandId, x.GradeLevel, x.TermNumber, x.SubjectId, x.Subject.Code, x.Subject.Name, x.Subject.Units, x.Subject.IsActive))
+            .Select(x => new CurriculumLine(x.StrandId, x.GradeLevel, x.TermNumber, x.SubjectId, x.Subject.Code, x.Subject.Name, x.Subject.Units, x.Subject.IsActive, x.IsOffered))
             .ToListAsync(ct);
     }
 

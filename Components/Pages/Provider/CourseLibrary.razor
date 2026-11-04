@@ -26,6 +26,8 @@ else
     var syllabus = course.Modules.FirstOrDefault(m => m.IsSyllabus);
     var modules = course.Modules.Where(m => !m.IsSyllabus).ToList();
 
+    @* The Course Menu at the left (Syllabus, Modules, Summative exams, each with what is inside) and the menu of the school folded to its icons: the page has the room. *@
+    <CourseLayout CustomGroups="LibraryMenu(syllabus, modules)" CustomExtra="LibraryLinks" CollapseMenu="true">
     @* Where the person came from: Course library › Academic › Business and Entrepreneurship › 1st Term. The back button goes to that list, not to all the courses. *@
     <nav class="crumbs" aria-label="Where you are">
         <a href="provider/library">Course library</a>
@@ -119,7 +121,7 @@ else
     }
     else
     {
-        <div class="modules">
+        <div class="modules" id="modules">
             @* The syllabus always comes first: when there is none yet, its place is held. *@
             @if (syllabus is null)
             {
@@ -146,7 +148,7 @@ else
                 var id = module.Id;
                 var isOpen = openModules.Contains(id);
                 var moduleFiles = FilesOf(moduleAttachments, id);
-                <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" id="@(module.IsSyllabus ? "syllabus" : $"module-section-{module.Id}")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
                     @* A click on the title opens the syllabus or the module: its text, its files and its assignments, quizzes and task performances. *@
                     <header class="module-head">
                         <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{id}")" @onclick="() => ToggleModule(id)">
@@ -196,7 +198,7 @@ else
     }
 
     @* ===== The summative exams of the course: the paper, the highest score and the schedule ===== *@
-    <section class="exams" aria-labelledby="exams-title">
+    <section class="exams" id="exams" aria-labelledby="exams-title">
         <header class="exams-head">
             <h2 id="exams-title"><Icon Name="clipboard-list" Size="20" /> Summative exams <span class="count">@course.Exams.Count</span></h2>
             <span class="exams-actions">
@@ -216,7 +218,7 @@ else
                 @foreach (var exam in course.Exams)
                 {
                     var examFiles = FilesOf(itemAttachments, exam.Id);
-                    <li class="item">
+                    <li class="item" id="@($"exam-{exam.Id}")">
                         <div class="item-main">
                             <span class="item-title">@exam.Title</span>
                             <div class="item-meta">
@@ -248,6 +250,7 @@ else
             </ul>
         }
     </section>
+    </CourseLayout>
 }
 
 @* ===== Module or syllabus: add or edit ===== *@
@@ -258,7 +261,7 @@ else
             <FormErrors Errors="formErrors" />
             @if (editingModuleId is null && !editingIsSyllabus)
             {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="OpenModulesExcel">Template and import (Excel)</Button> <span class="muted">to add many modules at once</span></p>
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenModulesExcel">Add many modules in a sheet</Button> <span class="muted">title, link and files, no Excel needed</span></p>
             }
 
             <Field For="m-title" Label="Title" Required="true">
@@ -335,7 +338,7 @@ else
                    TemplateName="@ExamSheets.FileName("Template")" Template="ExamSheets.Template"
                    Export="ExamsExportBytes" ExportName="@ExamSheets.FileName(course?.Name ?? "Course")" ExportLabel="Export the exams of this course" ExportCount="@(course?.Exams.Count ?? 0)"
                    Read="ReadExams" OnImport="ImportExamsAsync" OnClose="CloseExamsExcel" />
-<ModulesExcelDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" Existing="ModulesExisting" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
+<ModulesSheetDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
 
 @* ===== Send to teachers (syllabus and modules) / Post to students (summative exams) ===== *@
 <Modal Open="sending" Title="@(postingExams ? "Post to students" : "Send to teachers")" OnClose="CloseSend" Large="true">
@@ -522,12 +525,9 @@ else
         ? (editingModuleId is null ? "Add syllabus" : "Edit syllabus")
         : (editingModuleId is null ? "Add module" : "Edit module");
 
-    // ---- the workbook of modules of the course
+    // ---- the sheet for adding many modules of the course at once (inside the system, no Excel)
 
     private bool modulesExcelOpen;
-
-    private IReadOnlyList<ModuleExportRow> ModulesExisting =>
-        [.. (course?.Modules ?? []).Where(m => !m.IsSyllabus).Select(m => new ModuleExportRow(m.Title, m.Description, m.Body, m.LinkUrl, [.. FilesOf(moduleAttachments, m.Id).Select(f => f.Name)]))];
 
     private void OpenModulesExcel()
     {
@@ -576,6 +576,19 @@ else
     private LibraryStrand? backStrand;
 
     /// <summary>The list this page was opened from (the term of the strand, the strand or the track), or the whole library.</summary>
+    /// <summary>The Course Menu: Syllabus, Modules and Summative exams, each a dropdown of what is inside (the lines go to the place on this page).</summary>
+    private IReadOnlyList<CourseMenuGroup> LibraryMenu(MaterialModuleView? syllabus, IReadOnlyList<MaterialModuleView> modules) =>
+    [
+        new("syllabus", "Syllabus", "book-marked", syllabus is null ? 0 : 1, PageBase + "#syllabus", syllabus is null ? [] : [new CourseMenuEntry(syllabus.Title, PageBase + "#syllabus")]),
+        new("modules", "Modules", "layers", modules.Count, PageBase + "#modules", [.. modules.Select((m, n) => new CourseMenuEntry(AddItemMenuLabels.ModuleLabel(n + 1, m.Title), $"{PageBase}#module-section-{m.Id}"))]),
+        new("exams", "Summative exams", "clipboard-list", course!.Exams.Count, PageBase + "#exams", [.. course.Exams.Select(e => new CourseMenuEntry(e.Title, $"{PageBase}#exam-{e.Id}"))]),
+    ];
+
+    /// <summary>This page's own address without the part after #: the page has a base address, so a link that is only "#exams" would go to the home page.</summary>
+    private string PageBase => Navigation.ToBaseRelativePath(Navigation.Uri).Split('#')[0];
+
+    private IReadOnlyList<CourseMenuLink> LibraryLinks => [new CourseMenuLink(BackText, "arrow-left", BackHref)];
+
     private string BackHref => backTrack is null ? "provider/library"
         : backStrand is null ? $"provider/library?track={backTrack.TrackId}"
         : TermQuery is { } term ? $"provider/library?track={backTrack.TrackId}&strand={backStrand.StrandId}&term={term}"

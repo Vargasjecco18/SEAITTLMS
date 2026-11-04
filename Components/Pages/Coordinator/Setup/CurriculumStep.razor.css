@@ -35,29 +35,15 @@
     box-shadow: var(--shadow);
 }
 
-/* The head of each card has its own soft color, so the three levels are easy to tell apart. */
+/* The head of each card is plain: no color for the three levels. */
 .col-head {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.7rem 0.85rem;
-    background: var(--slate-soft);
-    color: var(--slate);
-}
-
-.col-tracks .col-head {
-    background: var(--green-soft);
-    color: var(--green);
-}
-
-.col-strands .col-head {
-    background: var(--blue-soft);
-    color: var(--blue);
-}
-
-.col-courses .col-head {
-    background: var(--violet-soft);
-    color: var(--violet);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
 }
 
 .col-head h3 {
@@ -134,8 +120,8 @@
 }
 
 .row.on {
-    background: var(--brand-soft);
-    box-shadow: inset 3px 0 0 var(--brand);
+    background: var(--surface-2);
+    box-shadow: inset 3px 0 0 var(--text-muted);
 }
 
 .meta {
@@ -202,7 +188,7 @@
     display: flex;
     align-items: flex-end;
     gap: 0.35rem;
-    padding: 0.45rem 1.25rem 0.2rem 1rem;
+    padding: 0.45rem 0.4rem 0.2rem 0.4rem;
     border-bottom: 1px solid var(--border);
     color: var(--text-muted);
     font-size: 0.72rem;
@@ -213,7 +199,7 @@
 
 .cc-code {
     flex: none;
-    width: 6.2rem;
+    width: 4.9rem;
     padding-left: 0.55rem;
 }
 
@@ -224,8 +210,8 @@
 
 .cc-units {
     flex: none;
-    width: 3.9rem;
-    text-align: right;
+    width: 3.1rem;
+    text-align: center;
     line-height: 1.1;
 }
 
@@ -262,4 +248,44 @@
 .col-tracks .ghost.code,
 .col-strands .ghost.code {
     width: 5.2rem;
+}
+
+.cc-offered,
+.cc-delete {
+    flex: none;
+    width: 3rem;
+    font-size: 0.62rem;
+    letter-spacing: 0;
+    text-align: center;
+}
+
+.offered-box,
+.delete-box {
+    display: inline-flex;
+    flex: none;
+    width: 3rem;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The boxes of a course are narrow so the five columns fit in the card. */
+.course .ghost.code {
+    flex: none;
+    width: 4.9rem;
+}
+
+.course .ghost.units {
+    flex: none;
+    width: 3.1rem;
+    text-align: center;
+}
+
+.course .ghost.grow {
+    flex: 1 1 6rem;
+    width: 6rem;
+    min-width: 0;
+}
+
+.courses-box {
+    overflow-x: hidden;
 }

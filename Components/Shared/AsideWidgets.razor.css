@@ -42,6 +42,7 @@
 .kind.exam { background: var(--rose-soft); color: var(--rose); }
 .kind.module { background: var(--green-soft); color: var(--green); }
 .kind.announcement { background: var(--slate-soft); color: var(--slate); }
+.kind.holiday { background: var(--rose-soft); color: var(--rose); }
 
 .next-text {
     display: flex;

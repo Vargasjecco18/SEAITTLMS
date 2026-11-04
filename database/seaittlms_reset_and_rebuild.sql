@@ -1962,5 +1962,16 @@ ALTER TABLE `announcements` ADD CONSTRAINT `ck_announcements_schedule` CHECK (st
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261103143951_AnnouncementDaysAndStaffGroups', '9.0.20');
 
+ALTER TABLE `strand_subjects` ADD `is_offered` tinyint(1) NOT NULL DEFAULT TRUE;
+
+INSERT INTO `sections` (`school_year_id`, `strand_id`, `grade_level`, `name`, `adviser_teacher_id`, `created_at_utc`, `updated_at_utc`) SELECT s.`school_year_id`, s.`strand_id`, s.`grade_level`, 'C', NULL, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) FROM `sections` s JOIN `school_years` y ON y.`id` = s.`school_year_id` WHERE s.`name` = 'A' AND y.`end_date` >= CURDATE() AND NOT EXISTS (SELECT 1 FROM `sections` c WHERE c.`school_year_id` = s.`school_year_id` AND c.`strand_id` = s.`strand_id` AND c.`grade_level` = s.`grade_level` AND c.`name` = 'C');
+
+DELETE FROM `announcements` WHERE `id` > 0 AND `title` = 'Summative exams start next Monday' AND `author_user_id` IN (SELECT `id` FROM `users` WHERE `role_id` = 6);
+
+DELETE FROM `notifications` WHERE `id` > 0 AND `kind` = 'announcement' AND `title` = 'Summative exams start next Monday';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261104014731_SectionsCAndOfferedCourses', '9.0.20');
+
 COMMIT;
 

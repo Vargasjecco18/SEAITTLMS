@@ -60,6 +60,31 @@
     width: min(880px, 100%);
 }
 
+.dialog.wide {
+    width: min(1180px, 100%);
+}
+
+/* All the screen: the box has no margin and the body scrolls under its head. */
+.backdrop.full {
+    padding: 0;
+}
+
+.dialog.full {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+}
+
+.dialog.full .dialog-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
 .dialog-head {
     display: flex;
     align-items: center;

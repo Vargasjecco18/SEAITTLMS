@@ -150,6 +150,7 @@ internal sealed class StrandSubjectConfiguration : IEntityTypeConfiguration<Stra
         b.HasKey(x => new { x.StrandId, x.GradeLevel, x.TermNumber, x.SubjectId });
         b.HasOne(x => x.Strand).WithMany().HasForeignKey(x => x.StrandId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.Property(x => x.IsOffered).HasDefaultValue(true);
 
         b.ToTable(t =>
         {

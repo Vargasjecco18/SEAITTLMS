@@ -66,8 +66,13 @@ public static class HelpContent
         new("What is the menu on the left?",
         [
             "It lists the pages for your role. Rest the pointer on a page and a small box opens beside it showing what is inside, with links to its parts (for example, Courses shows your courses, and a click opens one).",
-            "On a phone, the menu button at the top left opens it.",
+            "On a phone, the menu button at the top left opens it. On some pages (the academic setup, the enrollment, the course library, the class schedule) the menu folds to its icons by itself so the page has more room: the button at the top of the menu, “Hide Nav bar”, shows the names again.",
         ]),
+        new("Where is the calendar?",
+        [
+            "Open Calendar in the menu (every role has it). It shows the days of the month or the week with what is due, the announcements from their start to their end, your own events and the holidays of the Philippines (a rose outline).",
+            "Double click a day to add an event on it. In the week view press the day to see everything on it.",
+        ], "calendar", "Open Calendar"),
         new("How do I change the look, or my picture?",
         [
             "Press the gear at the top right (Settings).",
@@ -120,13 +125,14 @@ public static class HelpContent
         ]),
         new("Where are my grades?",
         [
+            "Open Grades. Every course is a card with your progress at the top (the bar has the passing mark drawn on it) and, under it, the gradebook of the course with your own row: a column for each activity (A assignment, Q quiz, TP task performance, S seatwork, SE summative exam), your Average and the Final grade of your teacher. It is only to read.",
             "Open Grades in the menu: your grade in every course and how it is going. A course below 70 is marked.",
             "The dashboard shows your recent grades and your average.",
         ], "student/grades", "Open Grades"),
         new("How do I see my deadlines?",
         [
             "Open Calendar. Switch between month and week. A dot on a day is something due.",
-            "Press an assignment to go to it. The colors tell the kinds apart: the summative exams are teal, the exams a teacher adds are red, an announcement is gray (it is on every day from its Start to its End) and your own events are violet.",
+            "Press an assignment to go to it. The colors tell the kinds apart: the summative exams are teal, an announcement is gray (it is on every day from its Start to its End), a holiday of the Philippines has a rose outline and your own events are violet.",
             "Double click a day to add an event on it.",
         ], "calendar", "Open Calendar"),
         new("How do I evaluate a teacher?",
@@ -172,7 +178,7 @@ public static class HelpContent
         [
             "Inside a course there is a second menu at the left: Modules, Assignments, Quizzes and Task performances (and Exams, once you added one). Each one lists that kind of work for the whole course. Below them are Attendance, Gradebook and Students: the students of the course, each with a Message button to write to them.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
-            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. At the left of “Add activities” (and of “View activity” inside an activity) is the Activities button: it lists your activities by kind, each one a link, with an Add line for each kind.",
+            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. At the left of “Add activities” is the Activities button: it lists your activities by kind, each one a link, with an Add line for each kind. Inside an activity the same button is called Course Menu. There are no exams in your menu: the summative exams come from the academic provider.",
         ]),
         new("Can I fill many assignments or questions from Excel?",
         [
@@ -197,7 +203,7 @@ public static class HelpContent
         ]),
         new("How do I check and grade the assignments of my students?",
         [
-            "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press the row of a student: the answer opens with the score and the comment at its right. Read it and save the score.",
+            "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press the row of a student (or the Answer tag in the Answers column): a box opens with the students who handed in at the left, the answer in the middle, with a preview of the files the student sent, and the score and the comment at the right. Read it, save the score, and press another student at the left to go on.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
             "“Assignments to check” on your dashboard lists what waits for you.",
         ]),
@@ -223,7 +229,7 @@ public static class HelpContent
         ], "users", "Open Users"),
         new("How do I write to my class?",
         [
-            "Open Announcements and press “New announcement”. Choose the class (one of your courses), what it is about (an exam or other), and write it. Only the students of that class see it, and they are told with a notification.",
+            "Open Announcements: it is a calendar. Double click a day, or press “New announcement”. Choose the class (one of your courses), what it is about (an exam or other), and write it. Only the students of that class see it, and they are told with a notification.",
             "“From the school” lists the notices of the academic coordinator for the teachers: exams, holidays, the semester break and teachers' meetings.",
         ], "teacher/announcements", "Open Announcements"),
         new("How do I share a file with my students?",
@@ -295,7 +301,7 @@ public static class HelpContent
         ], "registrar/student-accounts", "Open Student's Accounts"),
         new("The section I need is not in the list.",
         [
-            "Sections A and B exist for each strand, for Grade 11 and Grade 12. If one is missing, open the Section list in Enrollment and choose “+ Add a section…”: type its name and it is added.",
+            "Sections A, B and C exist for each strand, for Grade 11 and Grade 12. If one is missing, open the Section list in Enrollment and choose “+ Add a section…”: type its name and it is added.",
         ]),
         new("How do I find people and make a group?",
         [
@@ -308,20 +314,20 @@ public static class HelpContent
     [
         new("How do I set up the school years, terms, tracks, strands and courses?",
         [
-            "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses, and Rooms. The search box at the top searches the tab that is open.",
+            "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses, Class sections and Rooms. The menu of the school folds by itself on this page, and the button above the tabs (Hide tabs) hides only the tabs. The search box at the top searches the tab that is open.",
             "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button.",
-            "Tracks, strands and courses are three cards side by side: press a track to see its strands, press a strand to see its courses. Change a name, the code or the units in place, or use the row at the bottom of a card to add one. The X takes a course out of a strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
+            "Tracks, strands and courses are three cards side by side: press a track to see its strands, press a strand to see its courses. Change a name, the code or the unit in place, or use the row at the bottom of a card to add one. A course has the columns Code, Course, Unit, Offered and Delete: uncheck Offered and the registrar can't enroll students in it; Delete takes it out of the strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
             "To fill many rows at once press the Excel button at the top and choose “Template and import (Excel)”: the workbook has a sheet for each step. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("Where are the class sections?",
         [
             "Class sections has its own place in the menu. There is a tab for each class (Grade 11, Grade 12), the strands are inside it, and inside each strand the sections A and B are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
-            "A card that says “Add section” makes the section that is missing. The bin on a card deletes the section, after asking.",
+            "A card that says “Add section” makes the section that is missing (A, B and C). The bin on a card deletes the section, after asking.",
         ], "coordinator/sections", "Open Class sections"),
         new("How do I set the days and the time of a course (MWF or TTH)?",
         [
-            "Open the Class schedule (in the menu of the school). It is a week like a spreadsheet: the days are the columns and the hours, 7:00 AM to 6:00 PM, are the rows. Choose the school year, the term and the room at the top.",
-            "At the left are the sections with the courses that have no time yet. Drag a course to a day and a time: dropped on a Monday, Wednesday or Friday it meets MWF, dropped on a Tuesday or Thursday it meets TTH. Once it is on the week the course leaves the list; use the box on a class to change how long it is, the X to take it off (it goes back to the list), or drag it to move it. When a section already has a class in another room at that time, the room shows it as Occupied.",
+            "Open the Class schedule (in the menu of the school). It is a week like a spreadsheet: the days are the columns and the hours, 7:00 AM to 6:00 PM, are the rows. Choose the school year, the term and the room at the top (a school year or a term that is over is not in the lists). “View all class schedule” shows every class over all the screen.",
+            "At the left are the sections with the courses that have no time yet. Each section says its room and how many courses are on the schedule (6 of 6), and a section with nothing left to place goes to the bottom. Drag a course to a day and a time (it is one hour long; the box on the class changes it): dropped on a Monday, Wednesday or Friday it meets MWF, dropped on a Tuesday or Thursday it meets TTH. Once it is on the week the course leaves the list; use the box on a class to change how long it is, the X to take it off (it goes back to the list), or drag it to move it.",
             "Every room has its own schedule: press the room box to pick a room, add a room or remove one. Two classes can't be in one room at the same time, a section can't have two classes at the same time, and a teacher can't have two classes at the same time.",
             "Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it.",
         ], "coordinator/class-schedule", "Open the class schedule"),
@@ -357,7 +363,7 @@ public static class HelpContent
     [
         new("How do I send a syllabus and modules to the teachers?",
         [
-            "Open Course library and choose a course. Add the syllabus first, then the modules (“Template and import (Excel)” in the same box adds many at once: the steps are at the right of the first sheet, and each module needs a title and at least one file; a link is optional). Press a syllabus or a module to open it and see its text and files.",
+            "Open Course library: press a track, then a strand, then a course (the three cards stay side by side; a course opens with a Course Menu at the left). Add the syllabus first, then the modules (“Add many modules in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each module with its title, its link (optional) and its files (needed), and the step by step at the right; no Excel is needed). Press a syllabus or a module to open it and see its text and files.",
             "You send the syllabus and the modules to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
             "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam. There is no limit in MB for them. The path at the top (Library › Academic › the strand › the term) takes you back one step at a time.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
@@ -366,7 +372,7 @@ public static class HelpContent
         new("How do I make a summative exam?",
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
-            "Write the title, the instructions, attach the paper if you have it, and the highest score. Choose when it opens and when it closes. It must close after it opens.",
+            "Write the title, the instructions, attach the paper if you have it, and the highest score. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
             "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file.",
             "Add its questions with the Excel button (the sheet Questions) and choose the quiz settings (time limit, anti-cheating watch). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
@@ -400,17 +406,17 @@ public static class HelpContent
         new("What do I look after?",
         [
             "You look after two things only: attendance and violations. Failing grades and students at risk in a course are for the teacher.",
-            "Open Referrals. Every student of the school is in the list, one line each, so you can write a concern for anybody. Use the search box (name, LRN, grade level, section, course) and the choices Show and Concern to find students.",
+            "Open Referrals. Every student of the school is in the list, one line each, so you can write a concern for anybody. Each line has the student, the section, the Concern, what happened, the Notes and a Solved button. Use the search box and the choices Show and Concern to find students.",
         ], "guidance/referrals", "Open Referrals"),
         new("Where do the attendance concerns come from?",
         [
-            "The system finds them by itself: a student whose attendance is under 80% over at least 5 marked days. You get a notification, and the student shows with an Attendance badge.",
+            "The system finds them by itself: a student whose attendance is under 80% over at least 5 marked days. You get a notification, and the student shows with Attendance in the Concern box.",
             "To see only the students who have a concern choose “Only students with a concern” in Show, or use “With concerns” or “Attendance” under Referrals in the menu.",
         ], "guidance/referrals?show=concerns", "Open the students with a concern"),
         new("How do I write a violation or follow up a concern?",
         [
-            "Press the “At risk” button on a student (it is red while the student has a concern and white when there is none). A box shows the concerns. To write a new one choose “What is it?” (it starts on None), then choose “What happened?” from the list, add more words if you want, and press “Add the concern”.",
-            "Press “Notes” (top right) to choose the help you gave (talked with the student, called the parents, talked with the teacher, other) and write your notes. When the case is over press “Solved”: the concerns move to “Previous concerns” and the button is white again. Several attendance concerns found on the same day are one line: press “View attendance” to see each course.",
+            "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded. The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
+            "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave and write your notes. When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
         ]),
         new("How do I find people and make a group?",
         [

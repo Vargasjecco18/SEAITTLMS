@@ -10,16 +10,67 @@
 <PageHeader Title="Announcements" IconName="megaphone">
     <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Disabled="@(rows is null || rows.Count == 0)">Export to Excel</Button>
     <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenExcel">Template and import (Excel)</Button>
-    <Button IconName="plus" OnClick="OpenAdd">New announcement</Button>
+    <Button IconName="plus" OnClick="() => OpenAdd(null)">New announcement</Button>
 </PageHeader>
 
 <Notice Message="@message" IsError="messageIsError" OnDismiss="ClearMessage" />
 
 <PillTabs Items="Tabs" Selected="@filter" SelectedChanged="FilterChanged" Label="Kinds of announcements" />
 
+<div class="view-tools">
+    <div class="view-switch" role="group" aria-label="How to see the announcements">
+        <button type="button" class="@(view == "calendar" ? "on" : "")" aria-pressed="@(view == "calendar" ? "true" : "false")" @onclick='() => view = "calendar"'><Icon Name="calendar-days" Size="16" /> Calendar</button>
+        <button type="button" class="@(view == "list" ? "on" : "")" aria-pressed="@(view == "list" ? "true" : "false")" @onclick='() => view = "list"'><Icon Name="list" Size="16" /> List</button>
+    </div>
+
+    @if (view == "calendar")
+    {
+        <div class="month-controls" role="group" aria-label="Month">
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-left" OnClick="() => MoveMonth(-1)">Previous</Button>
+            <Button Small="true" Variant="ButtonVariant.Secondary" OnClick="GoToday">Today</Button>
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="chevron-right" IconAfter="true" OnClick="() => MoveMonth(1)">Next</Button>
+            <strong class="month-name">@anchor.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)</strong>
+        </div>
+        <p class="muted calendar-hint">Double click a day to add an announcement on it.</p>
+    }
+</div>
+
 @if (rows is null)
 {
     <p class="muted">Loading…</p>
+}
+else if (view == "calendar")
+{
+    <div class="ann-month" role="grid" aria-label="@anchor.ToString("MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)">
+        @foreach (var name in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+        {
+            <div class="dow" role="columnheader">@name</div>
+        }
+
+        @foreach (var day in MonthDays)
+        {
+            var onDay = OnDay(day);
+            <div class="ann-cell @(day.Month != anchor.Month ? "other" : "") @(day == today ? "today" : "")" role="gridcell" data-day="@day.ToString("yyyy-MM-dd")"
+                 aria-label="@day.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture)" @ondblclick="() => OpenAdd(day)">
+                <span class="num">@day.Day</span>
+                <ul class="chips">
+                    @foreach (var row in onDay.Take(3))
+                    {
+                        <li>
+                            <button type="button" class="chip @row.Category" title="@row.Title" @onclick="() => viewing = row" @ondblclick:stopPropagation="true">
+                                <Icon Name="@AnnouncementCategories.Icon(row.Category)" Size="12" /> <span>@row.Title</span>
+                            </button>
+                        </li>
+                    }
+
+                    @if (onDay.Count > 3)
+                    {
+                        <li><button type="button" class="more-chip" @onclick="() => listDay = day" @ondblclick:stopPropagation="true">+@(onDay.Count - 3) more</button></li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
 }
 else if (Shown.Count == 0)
 {
@@ -38,6 +89,30 @@ else
         }
     </div>
 }
+
+@* One announcement, from the calendar: the card with its Edit and Delete buttons. *@
+<Modal Open="viewing is not null" Title="@(viewing?.Title ?? "Announcement")" OnClose="CloseViewing">
+    @if (viewing is not null)
+    {
+        <AnnouncementCard Item="viewing" Today="today" OnEdit="EditFromView" OnDelete="DeleteFromView" />
+    }
+</Modal>
+
+@* All the announcements of one day, when it has more than the cell shows. *@
+<Modal Open="listDay is not null" Title="@(listDay is { } d ? d.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture) : "")" OnClose="CloseDayList">
+    @if (listDay is { } day)
+    {
+        <ul class="day-list">
+            @foreach (var row in OnDay(day))
+            {
+                <li><button type="button" class="chip @row.Category" @onclick="() => { listDay = null; viewing = row; }"><Icon Name="@AnnouncementCategories.Icon(row.Category)" Size="12" /> <span>@row.Title</span></button></li>
+            }
+        </ul>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => { listDay = null; OpenAdd(day); }">Add one on this day</Button>
+        </div>
+    }
+</Modal>
 
 <Modal Open="form is not null" Title="@(form?.Id is null ? "New announcement" : "Edit announcement")" OnClose="CloseForm">
     @if (form is not null)
@@ -163,6 +238,54 @@ else
     private bool busy;
     private DateOnly today;
     private string filter = "all";
+    private string view = "calendar";
+    private DateOnly anchor;
+    private AnnouncementView? viewing;
+    private DateOnly? listDay;
+
+    /// <summary>The weeks of the month on the screen: from the Sunday on or before the 1st to the Saturday on or after the last day.</summary>
+    private IEnumerable<DateOnly> MonthDays
+    {
+        get
+        {
+            var first = new DateOnly(anchor.Year, anchor.Month, 1);
+            var last = first.AddMonths(1).AddDays(-1);
+            var from = first.AddDays(-(int)first.DayOfWeek);
+            var to = last.AddDays(6 - (int)last.DayOfWeek);
+            for (var day = from; day <= to; day = day.AddDays(1))
+            {
+                yield return day;
+            }
+        }
+    }
+
+    /// <summary>The announcements (of the kind chosen above) that are about a day: every day from its Start to its End; with only one of them that day; with none, the day it was posted.</summary>
+    private List<AnnouncementView> OnDay(DateOnly day) => [.. Shown.Where(a =>
+    {
+        var first = a.StartsOn ?? a.ExpiresOn ?? PhilippineTime.DayOf(a.CreatedAtUtc);
+        var last = a.ExpiresOn ?? a.StartsOn ?? first;
+        return first <= day && day <= last;
+    })];
+
+    private void MoveMonth(int by) => anchor = anchor.AddMonths(by);
+
+    private void GoToday() => anchor = new DateOnly(today.Year, today.Month, 1);
+
+    private void CloseViewing() => viewing = null;
+
+    private void CloseDayList() => listDay = null;
+
+    private void EditFromView(AnnouncementView row)
+    {
+        viewing = null;
+        OpenEdit(row);
+    }
+
+    private void DeleteFromView(AnnouncementView row)
+    {
+        viewing = null;
+        OpenDelete(row);
+    }
 
     private IReadOnlyList<PillTabs.Tab> Tabs =>
     [
@@ -186,6 +309,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         today = PhilippineTime.Today(Clock);
+        anchor = new DateOnly(today.Year, today.Month, 1);
         me = await Me.GetAsync();
         if (me is null)
         {
@@ -199,10 +323,16 @@ else
 
     private void ClearMessage() => message = null;
 
-    private void OpenAdd()
+    /// <summary>The box that writes a new announcement; opened from a day of the calendar (double click) it starts on that day.</summary>
+    private void OpenAdd(DateOnly? day)
     {
         errors = [];
         form = new AnnouncementInput();
+        if (day is { } on)
+        {
+            form.StartsOn = on;
+            form.ExpiresOn = on >= today ? on : null;
+        }
     }
 
     private void OpenEdit(AnnouncementView row)

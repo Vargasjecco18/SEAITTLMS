@@ -155,12 +155,15 @@ public class StrandSubject
 
     public int SubjectId { get; set; }
     public Subject Subject { get; set; } = null!;
+
+    /// <summary>Offered: the registrar enrolls students in this course of the strand and it is in the class schedule. Unchecked, it stays in the curriculum but is left out.</summary>
+    public bool IsOffered { get; set; } = true;
 }
 
-/// <summary>The section names the registrar can choose when enrolling a student: A and B. (Sections with other names can exist; the registrar can still pick those.)</summary>
+/// <summary>The section names the registrar can choose when enrolling a student: A, B and C. (Sections with other names can exist; the registrar can still pick those.)</summary>
 public static class SectionNames
 {
-    public static readonly IReadOnlyList<string> Choices = ["A", "B"];
+    public static readonly IReadOnlyList<string> Choices = ["A", "B", "C"];
 
     public static bool IsChoice(string name) => Choices.Contains(name, StringComparer.Ordinal);
 }

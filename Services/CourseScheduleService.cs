@@ -64,6 +64,16 @@ public sealed record CourseTimeInput(int SubjectId, int? ScheduleId, string? Day
     public bool IsEmpty => ScheduleId is null && string.IsNullOrEmpty(Days) && Start is null && End is null && RoomId is null;
 }
 
+/// <summary>What the list of sections shows on the head of each one: how many of its courses of the term are on the schedule (with a day, a time and a room), and the room or rooms they meet in.</summary>
+public sealed record SectionTermSummary(int SectionId, int Total, int Placed, IReadOnlyList<string> Rooms)
+{
+    /// <summary>Every course of the term has its place.</summary>
+    public bool IsDone => Total > 0 && Placed >= Total;
+
+    /// <summary>"Room 101", "2 rooms" or "No room".</summary>
+    public string RoomText => Rooms.Count switch { 0 => "No room", 1 => Rooms[0], _ => $"{Rooms.Count} rooms" };
+}
+
 /// <summary>A room with the number of classes that meet in it.</summary>
 public sealed record RoomRow(int Id, string Name, int Classes);
 
@@ -200,6 +210,32 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             .ToList();
     }
 
+    /// <summary>
+    /// For every section of a school year, how many of its courses of a term are on the schedule (a class with a day, a time and a room) out of how many it has, and its rooms.
+    /// Three small queries for the whole list, so the head of every section can say "6 of 6" without opening it.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<int, SectionTermSummary>> SummarizeTermAsync(int schoolYearId, int termNumber, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var sections = await db.Sections.AsNoTracking().Where(s => s.SchoolYearId == schoolYearId).Select(s => new { s.Id, s.StrandId, s.GradeLevel }).ToListAsync(ct);
+        var curriculum = await db.StrandSubjects.AsNoTracking().Where(x => x.IsOffered).Select(x => new { x.StrandId, x.GradeLevel, x.SubjectId, x.TermNumber }).ToListAsync(ct);
+        var classes = await db.CourseSchedules.AsNoTracking().Where(c => c.Section.SchoolYearId == schoolYearId)
+            .Select(c => new { c.SectionId, c.SubjectId, c.RoomId, Room = c.Room != null ? c.Room.Name : null }).ToListAsync(ct);
+
+        var result = new Dictionary<int, SectionTermSummary>();
+        foreach (var s in sections)
+        {
+            // a course is in the term of its first appearance in the curriculum of the strand (as the list of the courses of a section says)
+            var subjects = curriculum.Where(c => c.StrandId == s.StrandId && c.GradeLevel == s.GradeLevel)
+                .GroupBy(c => c.SubjectId).Where(g => g.Min(x => x.TermNumber) == termNumber).Select(g => g.Key).ToHashSet();
+            var placed = classes.Where(c => c.SectionId == s.Id && c.RoomId is not null && subjects.Contains(c.SubjectId)).ToList();
+            result[s.Id] = new SectionTermSummary(s.Id, subjects.Count, placed.Select(c => c.SubjectId).Distinct().Count(),
+                [.. placed.Select(c => c.Room!).Distinct().Order()]);
+        }
+
+        return result;
+    }
+
     /// <summary>The courses of the section (its strand's courses at its grade level), by term, with their class times and teachers.</summary>
     public async Task<IReadOnlyList<CourseTimeRow>> ListCoursesAsync(int sectionId, CancellationToken ct = default)
     {
@@ -210,7 +246,7 @@ public sealed class CourseScheduleService(IDbContextFactory<AppDbContext> dbFact
             return [];
         }
 
-        var courses = await db.StrandSubjects.AsNoTracking().Where(x => x.StrandId == section.StrandId && x.GradeLevel == section.GradeLevel)
+        var courses = await db.StrandSubjects.AsNoTracking().Where(x => x.StrandId == section.StrandId && x.GradeLevel == section.GradeLevel && x.IsOffered)
             .Select(x => new { x.SubjectId, x.Subject.Code, x.Subject.Name, x.TermNumber }).ToListAsync(ct);
         var termNames = await db.Terms.AsNoTracking().Where(t => t.SchoolYearId == section.SchoolYearId).ToDictionaryAsync(t => t.TermNumber, t => t.Name, ct);
         var teachers = await db.TeachingAssignments.AsNoTracking().Where(a => a.SectionId == sectionId)

@@ -12,6 +12,9 @@
 
 <PageTitle>Enrollment · SEAITT Legazpi LMS</PageTitle>
 
+@* The menu of the school folds to its icons on this page (wwwroot/app.js looks for this marker); the button at the top of the menu shows it again. *@
+<span data-side-rail hidden></span>
+
 <div class="screen-only">
     <PageHeader Title="Enrollment"
                 IconName="user-plus">
@@ -210,6 +213,7 @@ else
                         <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="() => addingSection = false">Cancel</Button>
                     </div>
                 }
+
                 @if (strandShifted)
                 {
                     <p class="shift-note" role="status"><Icon Name="info" Size="16" /> The student changes strand, so the student starts again in Grade 11.</p>

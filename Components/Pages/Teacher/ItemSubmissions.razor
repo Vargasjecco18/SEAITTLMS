@@ -83,12 +83,11 @@ else
                             <th scope="col">Status</th>
                             <th scope="col" class="col-more">Handed in</th>
                             <th scope="col">Score</th>
-                            <th scope="col" class="col-files">Files</th>
+                            <th scope="col" class="col-files">Answers</th>
                             @if (data.AntiCheat)
                             {
                                 <th scope="col" class="col-more">Warnings</th>
                             }
-                            <th scope="col" class="col-go"><span class="sr-only">Open</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,10 +105,25 @@ else
                                 <td><Badge Tone="@tone">@text</Badge>@if (row.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
                                 <td class="col-more">@(row.SubmittedAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "—")</td>
                                 <td>@(row.Score is { } score ? $"{score:0.##} / {data.MaxScore:0.##}" : "—")</td>
-                                <td class="col-files" @onclick:stopPropagation="true">
-                                    @if (row.SubmissionId is { } submissionId && rowFiles.TryGetValue(submissionId, out var sent) && sent.Count > 0)
+                                <td class="col-files">
+                                    @* The answer and the files of the student: pressing them opens the work in the box (the row does it). *@
+                                    @if (row.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded)
                                     {
-                                        <AttachmentList Items="sent" Label="@($"Files of {row.StudentName}")" />
+                                        <span class="answer-chips">
+                                            <span class="answer-chip"><Icon Name="file-text" Size="13" /> Answer</span>
+                                            @if (row.SubmissionId is { } submissionId && rowFiles.TryGetValue(submissionId, out var sent))
+                                            {
+                                                @foreach (var file in sent.Take(3))
+                                                {
+                                                    <span class="answer-chip file" title="@file.Name"><Icon Name="paperclip" Size="13" /> <span class="chip-name">@file.Name</span></span>
+                                                }
+
+                                                @if (sent.Count > 3)
+                                                {
+                                                    <span class="answer-chip">+@(sent.Count - 3)</span>
+                                                }
+                                            }
+                                        </span>
                                     }
                                     else
                                     {
@@ -129,7 +143,6 @@ else
                                         }
                                     </td>
                                 }
-                                <td class="col-go"><Icon Name="chevron-right" Size="18" /></td>
                             </tr>
                         }
                     </tbody>
@@ -168,11 +181,25 @@ else
 </Modal>
 
 @* ===== One student's work ===== *@
-<Modal Open="detail is not null" Title="@(detail?.StudentName ?? "")" OnClose="CloseDetail" Large="true">
+<Modal Open="detail is not null" Title="@(detail?.StudentName ?? "")" OnClose="CloseDetail" Wide="true">
     @if (detail is not null && data is not null)
     {
-        @* The work of the student is at the left; the score and the feedback are at the right, next to it. *@
+        @* The students who handed in are at the left (press one to see theirs), the answers of the student in the middle, the score and the feedback at the right. *@
         <div class="detail-grid">
+        <nav class="detail-students" aria-label="Students who handed in">
+            <h3 class="grade-title"><Icon Name="users" Size="16" /> Handed in</h3>
+            <ul>
+                @foreach (var other in data.Rows.Where(r => r.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded))
+                {
+                    <li>
+                        <button type="button" class="student-pick @(other.StudentId == detail.StudentId ? "on" : "")" aria-current="@(other.StudentId == detail.StudentId ? "true" : null)" @onclick="() => OpenAsync(other)">
+                            <span class="pick-name">@other.StudentName</span>
+                            <span class="pick-sub">@(other.Score is { } sc ? $"{sc:0.##} / {data.MaxScore:0.##}" : "To check")</span>
+                        </button>
+                    </li>
+                }
+            </ul>
+        </nav>
         <div class="detail-answer">
         <div class="detail-head">
             <Badge Tone="@(detail.Status == SubmissionStatus.Graded ? Tone.Success : detail.Status == SubmissionStatus.Submitted ? Tone.Info : Tone.Neutral)">@StatusText(detail.Status)</Badge>
@@ -240,7 +267,8 @@ else
                 @if (detailFiles.Count > 0)
                 {
                     <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files the student sent</h3>
-                    <AttachmentList Items="detailFiles" Label="Files the student sent" />
+                    @* The file is shown right here (a PDF, a picture, a text file, a sound or a video), so the answer can be read and scored without opening it somewhere else. *@
+                    <FilePreviewPane @key="@($"sent-{detail.StudentId}")" Items="detailFiles" Label="Files the student sent" />
                 }
             }
         }

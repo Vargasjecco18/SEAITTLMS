@@ -4,7 +4,7 @@
 @inject CurrentUser Me
 @inject NavigationManager Navigation
 
-@* The registrar's two buttons for one line of the list of enrollments: Edit (the name, the term, the course of study, the section and the courses)
+@* The registrar's two buttons for one line of the list of enrollments: Edit (the name, the term, the course of study and the section)
    and Drop out. Each opens a box over the list. It is its own live island, so it works inside a list that is otherwise plain. *@
 <div class="buttons">
     @if (Status == "Enrolled")
@@ -80,26 +80,7 @@
                 </select>
             </Field>
 
-            <div class="field">
-                <span class="field-label" id="ed-courses-label">Courses</span>
-                @if (curriculum.Count == 0)
-                {
-                    <p class="muted small">No courses are set for this strand, grade level and term yet.</p>
-                }
-                else
-                {
-                    <div class="course-picks" role="group" aria-labelledby="ed-courses-label">
-                        @foreach (var course in curriculum)
-                        {
-                            <label class="course-pick">
-                                <input type="checkbox" checked="@subjectIds.Contains(course.Id)" @onchange="e => ToggleCourse(course.Id, e.Value is true)" />
-                                <span>@course.Name</span>
-                            </label>
-                        }
-                    </div>
-                    <button type="button" class="link-button" @onclick="ToggleAllCourses">@(subjectIds.Count == curriculum.Count ? "Clear all" : "Select all")</button>
-                }
-            </div>
+            <p class="quiet">The courses are the courses of the strand in that grade level and term: they follow the strand and the grade level you choose.</p>
 
             <div class="actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseEdit">Cancel</Button>
@@ -147,7 +128,6 @@
     private EnrollmentLookups? lookups;
     private EnrollmentEditView? view;
     private IReadOnlyList<SectionLoad> loads = [];
-    private IReadOnlyList<SubjectOption> curriculum = [];
     private HashSet<int> subjectIds = [];
     private string first = "", middle = "", last = "", extension = "", phone = "", sectionName = "", dropNote = "";
     private int termId, trackId, strandId;
@@ -174,50 +154,29 @@
         (first, middle, last, extension, phone) = (view.FirstName, view.MiddleName ?? "", view.LastName, view.NameExtension ?? "", view.PhoneNumber ?? "");
         (termId, grade, trackId, strandId, sectionName) = (view.TermId, view.GradeLevel, view.TrackId, view.StrandId, view.SectionName);
         subjectIds = view.SubjectIds.ToHashSet();
-        await ReloadAsync(keepCourses: true);
+        await ReloadAsync();
     }
 
     private async Task TrackChangedAsync()
     {
         strandId = 0;
         sectionName = "";
-        await ReloadAsync(keepCourses: false);
+        await ReloadAsync();
     }
 
-    // The term, grade level or strand moved: the sections and the courses of the new place are shown (all the courses ticked).
-    private async Task PlaceChangedAsync() => await ReloadAsync(keepCourses: false);
+    // The term, grade level or strand moved: the sections of the new place are shown. The grade level the registrar chose is kept when the track changes.
+    private async Task PlaceChangedAsync() => await ReloadAsync();
 
-    private async Task ReloadAsync(bool keepCourses)
+    private async Task ReloadAsync()
     {
         if (strandId == 0)
         {
             loads = [];
-            curriculum = [];
-            subjectIds = [];
             return;
         }
 
         loads = await Enrollment.GetSectionLoadsAsync(termId, strandId, grade, EnrollmentId);
-        curriculum = await Enrollment.GetCurriculumAsync(strandId, grade, termId);
-        if (!keepCourses)
-        {
-            subjectIds = curriculum.Select(c => c.Id).ToHashSet();
-        }
     }
-
-    private void ToggleCourse(int id, bool on)
-    {
-        if (on)
-        {
-            subjectIds.Add(id);
-        }
-        else
-        {
-            subjectIds.Remove(id);
-        }
-    }
-
-    private void ToggleAllCourses() => subjectIds = subjectIds.Count == curriculum.Count ? [] : curriculum.Select(c => c.Id).ToHashSet();
 
     private void CloseEdit()
     {
@@ -237,7 +196,7 @@
         try
         {
             var me = await Me.GetAsync();
-            // No course ticked at all means "none was chosen" to the service, which gives all of them: so a student without courses is not made here.
+            // The courses are not edited here: the courses the enrollment has are kept while the term, strand and grade level stay; when one of them moves the service gives the courses of the new place.
             var change = new EnrollmentChange(EnrollmentId, first, middle, last, extension, phone, termId, grade, trackId, strandId, sectionName, subjectIds.Count == 0 ? null : subjectIds.ToList());
             var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Enrollment.UpdateEnrollmentAsync(change, me.UserId);
             if (result.Succeeded)

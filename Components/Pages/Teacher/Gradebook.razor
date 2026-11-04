@@ -57,7 +57,6 @@ else
                     <p>Assignments, quizzes and task performances of posted modules appear as columns here.</p>
                     <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
                     <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
-                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(true)">Add Exam</Button>
                 </EmptyState>
             }
             else if (book.Rows.Count == 0)
@@ -72,8 +71,7 @@ else
                     <p class="muted">Type a score in a box and move on: it is saved by itself. Write the final grade of each student in the last column, then press Save final grades. The arrows under a column move it to the left or to the right.</p>
                     <div class="tools">
                         <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
-                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(true)">Add Exam</Button>
-                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
+                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
                         <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
                     </div>
                 </div>

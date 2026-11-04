@@ -709,6 +709,20 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         return await SaveAsync(db, $"{subject.Name} was added to {strand}, grade {gradeLevel}, term {termNumber}.", ct);
     }
 
+    /// <summary>Checks or unchecks "Offered" for a course of a strand (a grade level and a term): the registrar can't enroll students in it and it is not in the class schedule while it is unchecked.</summary>
+    public async Task<ServiceResult> SetCurriculumOfferedAsync(int strandId, int gradeLevel, int termNumber, int subjectId, bool offered, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        var changed = await db.StrandSubjects.Where(x => x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber && x.SubjectId == subjectId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsOffered, offered), ct);
+        return changed == 0 ? ServiceResult.Fail("This course was removed from the strand.") : ServiceResult.Ok(offered ? "The course is offered." : "The course is not offered.");
+    }
+
     public async Task<ServiceResult> RemoveCurriculumSubjectAsync(int strandId, int gradeLevel, int termNumber, int subjectId, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);

@@ -1,0 +1,325 @@
+@using Microsoft.AspNetCore.Components.Forms
+
+@* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Link and its Files, and the
+   step by step at the right. It is a plain table of boxes: a box is read when it is left (not at every key), the files are only remembered (they are read when Save is pressed, a few modules
+   at a time), and nothing is built until the box is opened, so it costs the server almost nothing. The page saves the modules (OnImport). *@
+<Modal Open="Open" Title="@($"Add modules · {CourseName}")" Wide="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        @if (result is null)
+        {
+            <div class="sheet-layout">
+                <div class="sheet-main">
+                    <p class="sheet-summary" role="status">
+                        <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "row is" : "rows are") ready.
+                        @if (Filled.Count > ReadyCount)
+                        {
+                            <span class="bad">The rows with a problem are left out; the reason is on its line.</span>
+                        }
+                    </p>
+
+                    <div class="sheet-wrap">
+                        <table class="sheet" aria-label="Modules to add">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="c-n">#</th>
+                                    <th scope="col" class="c-title">Title</th>
+                                    <th scope="col" class="c-link">Link <small>(optional)</small></th>
+                                    <th scope="col" class="c-files">Files <small>(needed)</small></th>
+                                    <th scope="col" class="c-state">Ready</th>
+                                    <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var (row, n) in rows.Select((r, i) => (r, i + 1)))
+                                {
+                                    var problems = ProblemsOf(row);
+                                    var filled = IsFilled(row);
+                                    <tr class="@(filled ? (problems.Count == 0 ? "ok" : "bad") : "empty")" data-row="@n">
+                                        <td class="c-n">@n</td>
+                                        <td class="c-title">
+                                            <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Title of row {n}")" placeholder="Title of the module" value="@row.Title" @key="@($"t-{row.Id}")"
+                                                   @onchange="e => row.Title = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-link">
+                                            <input class="cell" type="url" maxlength="500" autocomplete="off" aria-label="@($"Link of row {n}")" placeholder="https://…" value="@row.Link" @key="@($"l-{row.Id}")"
+                                                   @onchange="e => row.Link = e.Value?.ToString() ?? string.Empty" />
+                                        </td>
+                                        <td class="c-files">
+                                            <span class="file-chips">
+                                                @foreach (var file in row.Files)
+                                                {
+                                                    var shown = file;
+                                                    <span class="file-chip" title="@shown.Name"><Icon Name="paperclip" Size="13" /> <span class="chip-name">@shown.Name</span>
+                                                        <button type="button" class="chip-x" aria-label="@($"Take {shown.Name} out of row {n}")" @onclick="() => row.Files.Remove(shown)"><Icon Name="x" Size="12" /></button></span>
+                                                }
+                                            </span>
+                                            <label class="add-files" title="Choose one or more files for this module">
+                                                <Icon Name="plus" Size="14" /> <span>@(row.Files.Count == 0 ? "Add files" : "More")</span>
+                                                <InputFile class="file-input" OnChange="e => FilesChosen(row, e)" multiple aria-label="@($"Files of row {n}")" />
+                                            </label>
+                                        </td>
+                                        <td class="c-state">
+                                            @if (!filled)
+                                            {
+                                                <span class="muted">—</span>
+                                            }
+                                            else if (problems.Count == 0)
+                                            {
+                                                <span class="state-ok"><Icon Name="circle-check" Size="15" /> Ready</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="state-bad" title="@string.Join(" ", problems)"><Icon Name="circle-alert" Size="15" /> @problems[0]</span>
+                                            }
+                                        </td>
+                                        <td class="c-x">
+                                            <button type="button" class="row-x" title="@($"Take row {n} out")" aria-label="@($"Take row {n} out")" disabled="@(rows.Count <= 1)" @onclick="() => RemoveRow(row)"><Icon Name="trash-2" Size="15" /></button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="sheet-tools">
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="() => AddRows(1)">Add a row</Button>
+                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="() => AddRows(5)">Add 5 rows</Button>
+                        <span class="muted">@rows.Count of @MaxRows rows</span>
+                    </div>
+
+                    <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
+
+                    <div class="sheet-actions">
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                        <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 module" : $"Save {ReadyCount} modules")</Button>
+                    </div>
+                </div>
+
+                <aside class="sheet-steps" aria-label="Step by step">
+                    <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
+                    <ol>
+                        <li><strong>Type the title</strong> of the module in a row. Press Tab to go to the next box.</li>
+                        <li><strong>Paste a link</strong> to a video or a file online if there is one. It is optional and starts with <em>https://</em>.</li>
+                        <li><strong>Press Add files</strong> in the row and choose the files of the module (a PDF, a Word file, slides, a picture ...). <strong>A file is needed.</strong> There is no limit in MB.</li>
+                        <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                        <li><strong>Press Save.</strong> Each row becomes one module of the course, with its files, after the ones that are already there.</li>
+                    </ol>
+                    <p class="sheet-tip"><Icon Name="info" Size="14" /> Up to @MaxRows modules at a time, and up to @AttachmentService.MaxPerOwner files in a module. Nothing is saved until you press Save.</p>
+                </aside>
+            </div>
+        }
+        else
+        {
+            <p class="sheet-summary" role="status">
+                <strong>@result.Created</strong> @(result.Created == 1 ? "module was" : "modules were") added to the course.
+                @if (result.Errors.Count > 0)
+                {
+                    <span class="bad">@result.Errors.Count @(result.Errors.Count == 1 ? "problem" : "problems").</span>
+                }
+            </p>
+            @if (result.Errors.Count > 0)
+            {
+                <ul class="sheet-errors">
+                    @foreach (var e in result.Errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+
+            <div class="sheet-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Add more modules</Button>
+                <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    public const int MaxRows = 30;
+
+    private sealed class SheetRow
+    {
+        public int Id { get; init; }
+        public string Title { get; set; } = "";
+        public string Link { get; set; } = "";
+        public List<IBrowserFile> Files { get; } = [];
+    }
+
+    private readonly List<SheetRow> rows = [];
+    private int nextId;
+    private bool saving;
+    private int savedSoFar;
+    private string? error;
+    private ItemImportSummary? result;
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>The course the modules go to, for the heading.</summary>
+    [Parameter] public string CourseName { get; set; } = "";
+
+    /// <summary>Saves some modules with their files and says how many were added and what went wrong.</summary>
+    [Parameter, EditorRequired] public Func<IReadOnlyList<ModuleToSave>, Task<ItemImportSummary>> OnImport { get; set; } = _ => Task.FromResult(new ItemImportSummary(0, []));
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            rows.Clear();
+            result = null;
+            error = null;
+            saving = false;
+        }
+        else if (rows.Count == 0)
+        {
+            AddRows(5);
+        }
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void Another()
+    {
+        rows.Clear();
+        result = null;
+        error = null;
+        AddRows(5);
+    }
+
+    private void AddRows(int count)
+    {
+        for (var n = 0; n < count && rows.Count < MaxRows; n++)
+        {
+            rows.Add(new SheetRow { Id = ++nextId });
+        }
+    }
+
+    private void RemoveRow(SheetRow row)
+    {
+        if (rows.Count > 1)
+        {
+            rows.Remove(row);
+        }
+    }
+
+    private static bool IsFilled(SheetRow row) => row.Title.Trim().Length > 0 || row.Link.Trim().Length > 0 || row.Files.Count > 0;
+
+    private IReadOnlyList<SheetRow> Filled => [.. rows.Where(IsFilled)];
+
+    private int ReadyCount => Filled.Count(r => ProblemsOf(r).Count == 0);
+
+    private static List<string> ProblemsOf(SheetRow row)
+    {
+        var problems = new List<string>();
+        var title = row.Title.Trim();
+        if (title.Length == 0)
+        {
+            problems.Add("Type the title.");
+        }
+
+        var link = row.Link.Trim();
+        if (link.Length > 0 && !(link.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || link.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+        {
+            problems.Add("The link starts with https://");
+        }
+
+        if (row.Files.Count == 0)
+        {
+            problems.Add("Add at least one file.");
+        }
+        else if (row.Files.Count > AttachmentService.MaxPerOwner)
+        {
+            problems.Add($"At most {AttachmentService.MaxPerOwner} files.");
+        }
+        else if (row.Files.FirstOrDefault(f => FileService.CleanName(f.Name) is not { } name || FileService.IsBlocked(name)) is { } blocked)
+        {
+            problems.Add($"{blocked.Name}: programs and scripts can't be attached.");
+        }
+        else if (row.Files.Any(f => f.Size == 0))
+        {
+            problems.Add("A file is empty.");
+        }
+
+        return problems;
+    }
+
+    /// <summary>The files are only remembered here; they are read when Save is pressed.</summary>
+    private void FilesChosen(SheetRow row, InputFileChangeEventArgs e)
+    {
+        error = null;
+        foreach (var file in e.GetMultipleFiles(AttachmentService.MaxPerOwner + 1))
+        {
+            if (!row.Files.Any(f => f.Name == file.Name && f.Size == file.Size))
+            {
+                row.Files.Add(file);
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving)
+        {
+            return;
+        }
+
+        saving = true;
+        savedSoFar = 0;
+        error = null;
+        var created = 0;
+        var problems = new List<string>();
+        try
+        {
+            var ready = rows.Select((r, i) => (Row: r, Number: i + 1)).Where(x => IsFilled(x.Row) && ProblemsOf(x.Row).Count == 0).ToList();
+            foreach (var left in rows.Select((r, i) => (Row: r, Number: i + 1)).Where(x => IsFilled(x.Row) && ProblemsOf(x.Row).Count > 0))
+            {
+                problems.Add($"Row {left.Number}: {string.Join(" ", ProblemsOf(left.Row))}");
+            }
+
+            // A few modules at a time: their files are read now (one after the other), saved, and let go before the next ones are read.
+            foreach (var batch in ready.Chunk(3))
+            {
+                var list = new List<ModuleToSave>();
+                foreach (var (row, number) in batch)
+                {
+                    try
+                    {
+                        var files = new List<NewAttachment>();
+                        foreach (var file in row.Files)
+                        {
+                            await using var stream = file.OpenReadStream(long.MaxValue);
+                            using var buffer = new MemoryStream();
+                            await stream.CopyToAsync(buffer);
+                            files.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
+                        }
+
+                        var input = new ModuleInput { Title = row.Title.Trim(), LinkUrl = row.Link.Trim().Length == 0 ? null : row.Link.Trim() };
+                        list.Add(new ModuleToSave(input, files, number));
+                    }
+                    catch (IOException)
+                    {
+                        problems.Add($"Row {number} ({row.Title.Trim()}): a file could not be read. Add the files again.");
+                    }
+                }
+
+                if (list.Count > 0)
+                {
+                    var summary = await OnImport(list);
+                    created += summary.Created;
+                    problems.AddRange(summary.Errors);
+                    savedSoFar += list.Count;
+                    StateHasChanged();
+                }
+            }
+
+            result = new ItemImportSummary(created, problems);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

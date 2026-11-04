@@ -93,7 +93,7 @@ i.none { background: var(--border); }
     gap: 0.75rem;
 }
 
-/* A subject is a closed card: its name first; a click shows the progress and the graded work. */
+/* A course is an open card: its name, the progress at the top, then the gradebook (read only). */
 .subject {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -101,38 +101,15 @@ i.none { background: var(--border); }
     box-shadow: var(--shadow);
 }
 
-.subject summary {
+.subject-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
     padding: 0.9rem 1.1rem;
-    border-radius: var(--radius);
-    list-style: none;
-    cursor: pointer;
-}
-
-.subject summary::-webkit-details-marker {
-    display: none;
-}
-
-.subject summary:hover .subject-name {
-    color: var(--brand-strong);
-}
-
-.subject summary:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
-}
-
-.chev {
-    display: inline-flex;
-    flex-shrink: 0;
-    color: var(--text-muted);
-    transition: transform 0.15s ease;
-}
-
-.subject[open] .chev {
-    transform: rotate(90deg);
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--surface-2);
 }
 
 .subject-title {
@@ -155,6 +132,86 @@ i.none { background: var(--border); }
 .subject-body {
     padding: 0.2rem 1.1rem 1.1rem;
     border-top: 1px solid var(--border);
+}
+
+/* The gradebook of the course, like the teacher's but only to read. */
+.gradebook {
+    min-width: max-content;
+}
+
+.gradebook th.sticky,
+.gradebook td.sticky {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+}
+
+.gradebook .col-item {
+    min-width: 4.4rem;
+    text-align: center;
+}
+
+.gradebook .col-item .code {
+    display: block;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 750;
+}
+
+.gradebook .col-item .max {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.gradebook td.cell {
+    text-align: center;
+    font-weight: 650;
+}
+
+.gradebook td.cell.empty {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.gradebook td.cell.handed {
+    color: var(--info);
+    font-size: 0.8rem;
+}
+
+.gradebook td.cell.started {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.gradebook .avg,
+.gradebook .final {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.late-dot {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-left: 0.25rem;
+    border-radius: 50%;
+    background: var(--amber);
+}
+
+.legend {
+    margin: 0.6rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.final-grade {
+    margin: 0.75rem 0 0;
+    font-size: 0.9rem;
 }
 
 .progress-row {
@@ -188,13 +245,18 @@ i.none { background: var(--border); }
 }
 
 .open-course {
-    margin: 0.9rem 0 0;
+    color: var(--brand-strong);
     font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
 }
 
-.open-course a {
-    color: var(--brand-strong);
-    font-weight: 600;
+.open-course:hover {
+    text-decoration: underline;
+}
+
+.note-inline {
+    color: var(--text-muted);
 }
 
 .counts {

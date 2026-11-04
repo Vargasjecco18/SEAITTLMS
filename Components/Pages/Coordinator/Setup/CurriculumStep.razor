@@ -109,7 +109,9 @@
                     <div class="course-columns" aria-hidden="true">
                         <span class="cc-code">Code</span>
                         <span class="cc-name">Course</span>
-                        <span class="cc-units">Units offered</span>
+                        <span class="cc-units">Unit</span>
+                        <span class="cc-offered">Offered</span>
+                        <span class="cc-delete">Delete</span>
                     </div>
                     <div class="col-list courses-box">
                         @foreach (var group in lines.GroupBy(l => (l.GradeLevel, l.TermNumber)).OrderBy(g => g.Key.GradeLevel).ThenBy(g => g.Key.TermNumber))
@@ -126,7 +128,11 @@
                                                    @onchange="e => SaveCourseAsync(line, name: e.Value?.ToString())" />
                                             <input class="ghost units" type="number" min="0.5" max="12" step="0.5" aria-label="@($"Units of {line.SubjectName}")" value="@line.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" @key="@($"cu-{line.SubjectId}-{stamp}")"
                                                    @onchange="e => SaveCourseAsync(line, units: e.Value?.ToString())" />
-                                            <Button Small="true" Variant="ButtonVariant.Ghost" IconName="x" IconOnly="true" Title="@($"Take {line.SubjectName} out of {strand.Code}")" OnClick="() => AskRemoveCourse(strand, line)" />
+                                            <label class="offered-box" title="@($"{line.SubjectName} is offered in {strand.Code}. Uncheck it and the registrar can't enroll students in it.")">
+                                                <input type="checkbox" aria-label="@($"{line.SubjectName} is offered")" checked="@line.IsOffered" @key="@($"co-{line.SubjectId}-{line.GradeLevel}-{line.TermNumber}-{stamp}")"
+                                                       @onchange="e => SetOfferedAsync(line, (bool?)e.Value ?? true)" />
+                                            </label>
+                                            <span class="delete-box"><Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" IconOnly="true" Title="@($"Delete {line.SubjectName} from {strand.Code}")" OnClick="() => AskRemoveCourse(strand, line)" /></span>
                                         </li>
                                     }
                                 </ul>
@@ -171,14 +177,14 @@
     }
 </div>
 
-<Modal Open="removingCourse is not null" Title="Take this course out of the strand?" OnClose="CloseRemoveCourse">
+<Modal Open="removingCourse is not null" Title="Delete this course from the strand?" OnClose="CloseRemoveCourse">
     @if (removingCourse is { } rc)
     {
-        <p class="delete-text"><strong>@rc.Line.SubjectName</strong> will be taken out of <strong>@rc.Strand.Code</strong> (Grade @rc.Line.GradeLevel, @SchoolCalendar.TermName(rc.Line.TermNumber)). The course stays in the other strands that have it.</p>
+        <p class="delete-text"><strong>@rc.Line.SubjectName</strong> will be deleted from <strong>@rc.Strand.Code</strong> (Grade @rc.Line.GradeLevel, @SchoolCalendar.TermName(rc.Line.TermNumber)). The course stays in the other strands that have it.</p>
         <FormErrors Errors="Errors" />
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseRemoveCourse">Keep it</Button>
-            <Button Variant="ButtonVariant.Danger" IconName="x" Disabled="Busy" OnClick="RemoveCourseConfirmedAsync">@(Busy ? "Taking out…" : "Take it out")</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="RemoveCourseConfirmedAsync">@(Busy ? "Deleting…" : "Delete")</Button>
         </div>
     }
 </Modal>
@@ -387,6 +393,9 @@
         };
         return DoAsync(userId => Setup.SaveSubjectAsync(input, userId));
     }
+
+    private Task SetOfferedAsync(CurriculumLine line, bool offered) =>
+        DoAsync(userId => Setup.SetCurriculumOfferedAsync(line.StrandId, line.GradeLevel, line.TermNumber, line.SubjectId, offered, userId));
 
     private async Task AddCourseAsync(StrandRow strand, AddState add)
     {

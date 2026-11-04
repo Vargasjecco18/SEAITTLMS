@@ -33,9 +33,9 @@
             </Field>
             <Field For="cs-term" Label="Term">
                 <select id="cs-term" @onchange="TermChangedAsync">
-                    @for (var n = 1; n <= SchoolCalendar.TermsPerYear; n++)
+                    @foreach (var t in TermsOfYear)
                     {
-                        <option value="@n" selected="@(n == term)">@SchoolCalendar.TermName(n)</option>
+                        <option value="@t.TermNumber" selected="@(t.TermNumber == term)">@t.Name</option>
                     }
                 </select>
             </Field>
@@ -49,9 +49,6 @@
                 @if (roomMenu)
                 {
                     <div class="room-menu" role="listbox" aria-label="Rooms">
-                        <button type="button" role="option" class="room-option @(roomId == 0 ? "is-picked" : "")" aria-selected="@(roomId == 0 ? "true" : "false")" data-room="0" @onclick="() => PickRoomAsync(0)">
-                            No room <span class="count">@NoRoomCount</span>
-                        </button>
                         @foreach (var room in rooms)
                         {
                             <button type="button" role="option" class="room-option @(roomId == room.Id ? "is-picked" : "")" aria-selected="@(roomId == room.Id ? "true" : "false")" data-room="@room.Id" @onclick="() => PickRoomAsync(room.Id)">
@@ -76,6 +73,9 @@
                     </div>
                 }
             </div>
+
+            @* Every class of every section and room, over all the screen. *@
+            <Button Variant="ButtonVariant.Secondary" IconName="layout-list" OnClick="OpenAllAsync">View all class schedule</Button>
         </div>
     </header>
 
@@ -97,7 +97,11 @@
                     <button type="button" class="p-head" aria-expanded="@(open ? "true" : "false")" @onclick="() => ToggleAsync(sec.SectionId)">
                         <Icon Name="@(open ? "chevron-down" : "chevron-right")" Size="16" />
                         <span class="p-name">@sec.Label</span>
-                        <span class="p-count">@(courses is null ? "" : $"{courses.Count(c => c.Meeting is not null)} of {courses.Count}")</span>
+                        @if (summaries.TryGetValue(sec.SectionId, out var sum))
+                        {
+                            <span class="p-room" title="@($"Room of {sec.Label}")"><Icon Name="door-open" Size="13" /> @sum.RoomText</span>
+                            <span class="p-count @(sum.IsDone ? "is-done" : "")" title="Courses on the schedule">@sum.Placed of @sum.Total</span>
+                        }
                     </button>
                     @if (open)
                     {
@@ -111,7 +115,7 @@
                         }
                         else
                         {
-                            var unplaced = courses.Where(c => c.Meeting is null).ToList();
+                            var unplaced = courses.Where(c => c.Meeting is null || c.RoomId is null).ToList();
                             @if (unplaced.Count == 0)
                             {
                                 <p class="muted all-placed"><Icon Name="circle-check" Size="14" /> Every course has its time.</p>
@@ -125,7 +129,7 @@
                                         <span class="c-name">@c.Name</span>
                                         @if (c.Meeting is { } m)
                                         {
-                                            <span class="c-when">@m.Days · @ClassTime.Label(m.Start) @(c.RoomName is null ? "" : $"· {c.RoomName}")</span>
+                                            <span class="c-when">@m.Days · @ClassTime.Label(m.Start) · needs a room</span>
                                         }
                                         else
                                         {
@@ -165,17 +169,6 @@
                                 <div class="slot @(SlotTime(slot).Minute == 0 ? "hour" : "half")" data-slot="@slot"></div>
                             }
 
-                            @foreach (var mark in BusyOf(day))
-                            {
-                                var m = mark.Class;
-                                <div class="busy-mark" aria-hidden="true" data-busy="@m.SectionLabel"
-                                     style="top: calc(var(--row) * @mark.Top); height: calc(var(--row) * @mark.Height - 2px);"
-                                     title="@($"{m.SectionLabel} has {m.Course} at this time in {m.RoomName ?? "no room"}")">
-                                    <Icon Name="lock" Size="12" /> <span>Occupied · @(m.RoomName ?? "No room")</span>
-                                    <small>@m.SectionLabel · @m.Course</small>
-                                </div>
-                            }
-
                             @foreach (var block in BlocksOf(day))
                             {
                                 var c = block.Class;
@@ -205,12 +198,53 @@
                     }
                 </div>
             </div>
-            <p class="week-note">@(rooms.Count == 0 ? "No room yet: press the Room box and add one." : roomId == 0 ? "These classes have no room yet. Pick a room and drag them in." : $"Classes in {RoomName}.") MWF is Monday, Wednesday, Friday; TTH is Tuesday, Thursday. <span class="busy-legend"><Icon Name="lock" Size="12" /> Hatched = the open section already has a class then in another room.</span></p>
+            <p class="week-note">@(rooms.Count == 0 ? "No room yet: press the Room box and add one." : $"Classes in {RoomName}.") MWF is Monday, Wednesday, Friday; TTH is Tuesday, Thursday.</p>
         </div>
     </div>
 </div>
 
 <SectionDialog Section="dialogSection" OnClose="CloseDialogAsync" />
+
+@* Every class of the school year and term, section by section, over all the screen. It is read only when it is opened. *@
+<Modal Open="allOpen" Title="@($"All class schedules · {TermName}")" Full="true" OnClose="CloseAll">
+    @if (allOpen)
+    {
+        <div class="all-tools">
+            <SearchField Id="all-search" @bind-Value="allSearch" Live="true" SubmitText="" Placeholder="Search a section, a course, a room or a teacher" AriaLabel="Search the class schedules" />
+            <span class="muted">@AllShown.Sum(g => g.Count()) classes in @AllShown.Count sections</span>
+        </div>
+        @if (AllShown.Count == 0)
+        {
+            <EmptyState IconName="search-x" Title="No class matches" />
+        }
+        else
+        {
+            <div class="all-grid">
+                @foreach (var group in AllShown)
+                {
+                    <section class="all-section" aria-label="@group.Key">
+                        <h3>@group.Key <small>@group.Count() @(group.Count() == 1 ? "class" : "classes")</small></h3>
+                        <table>
+                            <thead><tr><th>Course</th><th>Days</th><th>Time</th><th>Room</th><th>Teacher</th></tr></thead>
+                            <tbody>
+                                @foreach (var c in group.OrderBy(x => x.Days).ThenBy(x => x.Start))
+                                {
+                                    <tr>
+                                        <td>@c.Course</td>
+                                        <td>@c.Days</td>
+                                        <td>@ClassTime.Label(c.Start) – @ClassTime.Label(c.End)</td>
+                                        <td>@(c.RoomName ?? "—")</td>
+                                        <td>@(c.Teacher ?? "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </section>
+                }
+            </div>
+        }
+    }
+</Modal>
 
 <Modal Open="removingRoom" Title="Remove this room?" OnClose="CloseRemoveRoom">
     @if (removingRoom)
@@ -241,7 +275,11 @@
     private IReadOnlyList<ScheduleSection> allSections = [];
     private IReadOnlyList<RoomRow> rooms = [];
     private IReadOnlyList<PlacedClass> placed = [];
-    private IReadOnlyList<PlacedClass> busyElsewhere = [];
+    private IReadOnlyList<TermRow> allTerms = [];
+    private IReadOnlyDictionary<int, SectionTermSummary> summaries = new Dictionary<int, SectionTermSummary>();
+    private bool allOpen;
+    private string allSearch = "";
+    private IReadOnlyList<PlacedClass> allClasses = [];
     private IReadOnlyList<SectionRow> sectionRows = [];
     private readonly Dictionary<int, IReadOnlyList<CourseTimeRow>> courseCache = [];
     private readonly HashSet<int> openSections = [];
@@ -260,14 +298,34 @@
     private SectionRow? dialogSection;
     private bool wired;
 
-    private string RoomName => roomId == 0 ? "No room" : rooms.FirstOrDefault(r => r.Id == roomId)?.Name ?? "No room";
+    private string RoomName => rooms.FirstOrDefault(r => r.Id == roomId)?.Name ?? "No room yet";
 
-    private int NoRoomCount => noRoomCount;
-    private int noRoomCount;
+    private string TermName => allTerms.FirstOrDefault(t => t.SchoolYearId == yearId && t.TermNumber == term)?.Name ?? SchoolCalendar.TermName(term);
+
+    /// <summary>The terms of the chosen school year that are not over (a term that ended is not in the list).</summary>
+    private IEnumerable<TermRow> TermsOfYear
+    {
+        get
+        {
+            var today = PhilippineTime.Today(Clock);
+            return allTerms.Where(t => t.SchoolYearId == yearId && t.EndDate >= today).OrderBy(t => t.TermNumber);
+        }
+    }
+
+    /// <summary>Keeps the chosen term one of the terms in the list: the current one, or the first that is not over.</summary>
+    private void EnsureTerm()
+    {
+        var open = TermsOfYear.ToList();
+        if (open.Count > 0 && open.All(t => t.TermNumber != term))
+        {
+            term = (open.FirstOrDefault(t => t.IsCurrent) ?? open[0]).TermNumber;
+        }
+    }
 
     private IReadOnlyList<ScheduleSection> sections => allSections
         .Where(s => s.SchoolYearId == yearId && (string.IsNullOrWhiteSpace(search) || s.Label.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)))
-        .OrderBy(s => s.GradeLevel).ThenBy(s => s.Label, StringComparer.OrdinalIgnoreCase).ToList();
+        .OrderBy(s => summaries.TryGetValue(s.SectionId, out var sum) && sum.IsDone)   // a section with no course left to place goes to the bottom
+        .ThenBy(s => s.GradeLevel).ThenBy(s => s.Label, StringComparer.OrdinalIgnoreCase).ToList();
 
     private static TimeOnly SlotTime(int slot) => new TimeOnly(FirstHour, 0).AddMinutes(slot * 30);
 
@@ -279,16 +337,19 @@
         years = [.. lookups.Years.Where(y => y.EndDate >= today).OrderBy(y => y.StartDate)];
         yearId = years.FirstOrDefault(y => y.StartDate <= today && today <= y.EndDate)?.Id ?? years.FirstOrDefault()?.Id ?? 0;
 
-        var terms = await Setup.ListTermsAsync();
-        term = terms.FirstOrDefault(t => t.IsCurrent && t.SchoolYearId == yearId)?.TermNumber ?? 1;
+        allTerms = await Setup.ListTermsAsync();
+        term = allTerms.FirstOrDefault(t => t.IsCurrent && t.SchoolYearId == yearId)?.TermNumber ?? 1;
         if (term is < 1 or > SchoolCalendar.TermsPerYear)
         {
             term = 1;
         }
 
+        EnsureTerm();
+
         sectionRows = await Setup.ListSectionsAsync();
         rooms = await Times.ListRoomsAsync();
         roomId = rooms.FirstOrDefault()?.Id ?? 0;
+        summaries = yearId == 0 ? summaries : await Times.SummarizeTermAsync(yearId, term);
         if (sections.Count > 0)
         {
             openSections.Add(sections[0].SectionId);
@@ -317,18 +378,13 @@
     {
         allSections = await Times.ListSectionsAsync();
         rooms = await Times.ListRoomsAsync();
-        if (roomId != 0 && rooms.All(r => r.Id != roomId))
+        if (rooms.All(r => r.Id != roomId))
         {
-            roomId = 0;
+            roomId = rooms.FirstOrDefault()?.Id ?? 0;
         }
 
-        placed = yearId == 0 ? [] : await Times.ListPlacedAsync(roomId, yearId, term);
-        noRoomCount = yearId == 0 ? 0 : (await Times.ListPlacedAsync(0, yearId, term)).Count;
-
-        // The sections that are open at the left already have classes in other rooms: those hours are marked as occupied in this room's week (a section can't be in two places).
-        var every = yearId == 0 ? [] : await Times.ListPlacedAsync(-1, yearId, term);
-        var thisRoom = roomId == 0 ? (int?)null : roomId;
-        busyElsewhere = [.. every.Where(c => openSections.Contains(c.SectionId) && c.RoomId != thisRoom)];
+        placed = yearId == 0 || roomId == 0 ? [] : await Times.ListPlacedAsync(roomId, yearId, term);
+        summaries = yearId == 0 ? new Dictionary<int, SectionTermSummary>() : await Times.SummarizeTermAsync(yearId, term);
         courseCache.Clear();
         foreach (var id in openSections.ToList())
         {
@@ -357,6 +413,7 @@
     {
         yearId = int.TryParse(e.Value?.ToString(), out var id) ? id : yearId;
         openSections.Clear();
+        EnsureTerm();
         await ReloadAsync();
     }
 
@@ -412,7 +469,6 @@
         if (result.Succeeded)
         {
             removingRoom = false;
-            roomId = 0;
             await ReloadAsync();
         }
     }
@@ -423,16 +479,6 @@
     private static int Minutes(PlacedClass c) => (int)(c.End - c.Start).TotalMinutes;
 
     private static string Hours(int minutes) => minutes % 60 == 0 ? $"{minutes / 60} h" : $"{minutes / 60}.5 h";
-
-    private sealed record BusyMark(PlacedClass Class, double Top, double Height);
-
-    /// <summary>The hours of this day that the open sections already have in another room.</summary>
-    private IReadOnlyList<BusyMark> BusyOf(int day)
-    {
-        var pattern = DaysOf(day);
-        return [.. busyElsewhere.Where(c => c.Days == pattern)
-            .Select(c => new BusyMark(c, (c.Start.Hour - FirstHour) * 2 + c.Start.Minute / 30.0, Math.Max(1, (c.End - c.Start).TotalMinutes / 30.0)))];
-    }
 
     private IReadOnlyList<Block> BlocksOf(int day)
     {
@@ -502,10 +548,18 @@
             return;
         }
 
+        if (roomId == 0)
+        {
+            message = "Add a room first: press the Room box and Add room.";
+            messageIsError = true;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
         slot = Math.Clamp(slot, 0, Slots - 1);
         var existing = placed.FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId)
                        ?? (await Times.ListPlacedAsync(-1, yearId, 0)).FirstOrDefault(c => c.SectionId == sectionId && c.SubjectId == subjectId);
-        var length = existing is null ? 90 : Math.Max(30, Minutes(existing));
+        var length = existing is null ? 60 : Math.Max(30, Minutes(existing));   // a course that is put on the week again starts as one hour
         var start = SlotTime(slot);
         var latestStart = new TimeOnly(LastHour, 0).AddMinutes(-length);
         if (start > latestStart)
@@ -515,7 +569,7 @@
 
         await InvokeAsync(async () =>
         {
-            var room = roomId == 0 ? (int?)null : roomId;
+            int? room = roomId;
             var result = await RunAsync(userId => Times.PlaceAsync(userId, sectionId, subjectId, room, DaysOf(day), start, start.AddMinutes(length)), quiet: true);
             await ReloadAsync();
             StateHasChanged();
@@ -547,6 +601,22 @@
         await RunAsync(userId => Times.ClearAsync(userId, c.SectionId, c.SubjectId), quiet: true);
         await ReloadAsync();
     }
+
+    // ---- all the class schedules (over all the screen)
+    private async Task OpenAllAsync()
+    {
+        allSearch = "";
+        allClasses = yearId == 0 ? [] : await Times.ListPlacedAsync(-1, yearId, term);
+        allOpen = true;
+    }
+
+    private void CloseAll() => allOpen = false;
+
+    private IReadOnlyList<IGrouping<string, PlacedClass>> AllShown => [.. allClasses
+        .Where(c => string.IsNullOrWhiteSpace(allSearch)
+                    || c.SectionLabel.Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase) || c.Course.Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase)
+                    || (c.RoomName ?? "").Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase) || (c.Teacher ?? "").Contains(allSearch.Trim(), StringComparison.OrdinalIgnoreCase))
+        .GroupBy(c => c.SectionLabel).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)];
 
     // ---- the box of a section (adviser and students)
     private Task OpenDialogAsync(int sectionId)

@@ -250,6 +250,53 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .Select(s => UserDirectory.FullName(s.FirstName, s.MiddleName, s.LastName, s.NameExtension)).ToList();
     }
 
+    /// <summary>
+    /// A notification (words the coordinator can change) to every student of a course who has not answered the evaluation yet. Only while the evaluation is open.
+    /// Returns how many students were told.
+    /// </summary>
+    public async Task<ServiceResult> MessageNotAnsweredAsync(int userId, int evaluationId, int assignmentId, string? message, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        var text = (message ?? "").Trim();
+        if (text.Length > 500)
+        {
+            return ServiceResult.Fail("The message can have at most 500 characters.");
+        }
+
+        var evaluation = await db.TeacherEvaluations.AsNoTracking().Where(e => e.Id == evaluationId)
+            .Select(e => new { e.Title, e.SentAtUtc, e.DueAtUtc }).FirstOrDefaultAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (evaluation is null || evaluation.SentAtUtc is null || evaluation.DueAtUtc is not { } dueAt || dueAt <= now)
+        {
+            return ServiceResult.Fail("This evaluation is not open, so the students can't answer it any more.");
+        }
+
+        var target = await db.EvaluationTargets.AsNoTracking().Where(t => t.EvaluationId == evaluationId && t.AssignmentId == assignmentId)
+            .Select(t => new { t.Assignment.SectionId, t.Assignment.SubjectId, Subject = t.Assignment.Subject.Name }).FirstOrDefaultAsync(ct);
+        if (target is null)
+        {
+            return ServiceResult.Fail("This course is not part of the evaluation.");
+        }
+
+        var answered = db.EvaluationResponses.Where(r => r.EvaluationId == evaluationId && r.AssignmentId == assignmentId).Select(r => r.StudentId);
+        var students = await db.Students.AsNoTracking()
+            .Where(s => s.User.IsActive && Roster.StudentIds(db, target.SectionId, target.SubjectId).Contains(s.Id) && !answered.Contains(s.Id))
+            .Select(s => s.UserId).ToListAsync(ct);
+        if (students.Count == 0)
+        {
+            return ServiceResult.Fail("Every student of this course has answered.");
+        }
+
+        var body = text.Length > 0 ? text : $"Please answer the teacher evaluation for {target.Subject} before {PhilippineTime.FormatDateTime(dueAt)}. Your answers are anonymous.";
+        await notifications.AddForManyAsync(students, "evaluation", $"Teacher evaluation: {evaluation.Title}", body, "student/evaluations", ct);
+        return ServiceResult.Ok($"The message was sent to {students.Count} student{(students.Count == 1 ? "" : "s")}.");
+    }
+
     // ======================================================================= the coordinator: making and sending
 
     /// <summary>A new draft with the usual questions. Returns its id.</summary>

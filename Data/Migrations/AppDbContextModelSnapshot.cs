@@ -2730,6 +2730,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("subject_id");
 
+                    b.Property<bool>("IsOffered")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_offered");
+
                     b.HasKey("StrandId", "GradeLevel", "TermNumber", "SubjectId")
                         .HasName("pk_strand_subjects");
 

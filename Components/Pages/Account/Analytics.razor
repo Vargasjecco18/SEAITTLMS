@@ -55,7 +55,7 @@ else if (Role == AppRoles.Admin)
         @PerformanceCard(report)
         @AttendanceCard(report)
         @ConcernCard(report)
-        @InterventionCard(report)
+        @SolvedCard(report)
     </div>
 }
 else if (Role == AppRoles.GuidanceCounselor)
@@ -88,7 +88,7 @@ else if (Role == AppRoles.GuidanceCounselor)
 
     <div class="board">
         @AttendanceCard(report)
-        @InterventionCard(report)
+        @SolvedCard(report)
     </div>
 }
 else
@@ -320,25 +320,27 @@ else
         }
     </Card>;
 
-    private RenderFragment InterventionCard(AnalyticsReport r) => @<Card Title="Intervention effectiveness" IconName="heart-handshake">
-        @if (r.Resolved == 0)
+    /// <summary>What the guidance counselor solved: how many concerns, how many in the last 30 days, and how many of each kind.</summary>
+    private RenderFragment SolvedCard(AnalyticsReport r) => @<Card Title="Solved" IconName="circle-check">
+        @if (r.Solved == 0)
         {
-            <p class="muted">When the guidance counselor resolves a referral and says how it ended, the results show here.</p>
+            <p class="muted">When the guidance counselor presses Solved on a concern, it is counted here.</p>
         }
         else
         {
-            var success = r.Improved * 100 / r.Resolved;
+            var by = r.SolvedByReason ?? [];
+            var most = Math.Max(1, by.Count == 0 ? 1 : by.Max(c => c.Count));
             <div class="success">
-                <span class="success-number">@success%</span>
-                <span class="success-text">of @r.Resolved resolved @(r.Resolved == 1 ? "referral" : "referrals") improved</span>
+                <span class="success-number">@r.Solved</span>
+                <span class="success-text">@(r.Solved == 1 ? "concern" : "concerns") solved · @r.SolvedRecently in the last 30 days</span>
             </div>
             <ul class="bars">
-                @foreach (var i in r.Interventions)
+                @foreach (var c in by)
                 {
                     <li>
-                        <span class="bar-name">@i.Intervention</span>
-                        <span class="track"><i class="concern improved" style="width: @(i.Total == 0 ? 0 : i.Improved * 100 / i.Total)%"></i></span>
-                        <span class="bar-value">@i.Improved / @i.Total</span>
+                        <span class="bar-name">@ReferralReasons.Display(c.Reason)</span>
+                        <span class="track"><i class="concern improved" style="width: @(c.Count * 100 / most)%"></i></span>
+                        <span class="bar-value">@c.Count</span>
                     </li>
                 }
             </ul>

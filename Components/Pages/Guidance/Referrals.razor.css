@@ -227,3 +227,85 @@ th.col-level {
     border-radius: var(--radius-sm);
     background: var(--surface-2);
 }
+
+/* ---------- the rows: student, section, concern, what happened, notes, solved ---------- */
+.name-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.name-link:hover {
+    color: var(--brand);
+    text-decoration: underline;
+}
+
+.concern-select {
+    width: 100%;
+    min-width: 9rem;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.88rem;
+}
+
+.referral-table td {
+    vertical-align: middle;
+}
+
+.referral-table .detail {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.col-notes {
+    width: 6.5rem;
+    text-align: center;
+}
+
+.notes-button {
+    min-width: 4.5rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.notes-button.is-noted {
+    border-color: var(--success);
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.notes-button:hover {
+    filter: brightness(0.97);
+}
+
+.attendance-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.attendance-list li {
+    display: grid;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}

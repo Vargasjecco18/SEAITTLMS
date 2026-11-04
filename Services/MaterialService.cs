@@ -481,7 +481,39 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             await db.SaveChangesAsync(ct);
         }
 
+        if (isNew)
+        {
+            await AnnounceExamAsync(db, userId, subjectId, item, ct);
+        }
+
         return ServiceResult.Ok(isNew ? "The exam was added." : "Saved.", item.Id);
+    }
+
+    /// <summary>
+    /// A summative exam the academic provider adds goes to the announcements of the academic coordinator (an Exam announcement for everybody from the day it opens to the day it closes,
+    /// which the coordinator can change or delete), and the coordinator gets a notification.
+    /// </summary>
+    private async Task AnnounceExamAsync(AppDbContext db, int providerUserId, int subjectId, MaterialItem exam, CancellationToken ct)
+    {
+        var subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct) ?? "a course";
+        var when = exam.VisibleFromUtc is { } opens && exam.DueAtUtc is { } closes
+            ? $"It opens {PhilippineTime.FormatDateTime(opens)} and closes {PhilippineTime.FormatDateTime(closes)}."
+            : exam.DueAtUtc is { } onlyCloses ? $"It closes {PhilippineTime.FormatDateTime(onlyCloses)}." : "Its dates are not set yet.";
+        var title = $"Summative exam: {exam.Title} · {subject}";
+        db.Announcements.Add(new Announcement
+        {
+            AuthorUserId = providerUserId,
+            Title = title.Length > 200 ? title[..199] + "…" : title,
+            Body = $"The academic provider added the summative exam {exam.Title} for {subject}. {when}",
+            Audience = AnnouncementAudiences.Everyone,
+            Category = AnnouncementCategories.Exam,
+            StartsOn = exam.VisibleFromUtc is { } start ? PhilippineTime.DayOf(start) : null,
+            ExpiresOn = exam.DueAtUtc is { } end ? PhilippineTime.DayOf(end) : null,
+        });
+        await db.SaveChangesAsync(ct);
+
+        var coordinators = await db.Users.AsNoTracking().Where(u => u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId).Select(u => u.Id).ToListAsync(ct);
+        await notifications.AddForManyAsync(coordinators, "announcement", "A new summative exam", $"{exam.Title} · {subject}. {when}", "coordinator/announcements", ct);
     }
 
     /// <summary>The questions of a summative exam of the library (for the export and for the edit box).</summary>

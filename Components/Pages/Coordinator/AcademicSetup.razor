@@ -26,17 +26,14 @@
 
 <Notice Message="@message" IsError="false" OnDismiss="ClearMessage" />
 
-@if (menuHidden)
-{
-    @* The menu of the school folds to its icons too (wwwroot/app.js looks for this marker). *@
-    <span data-side-rail hidden></span>
-}
+@* The menu of the school folds to its icons on this page by itself (wwwroot/app.js looks for this marker). The button of the tabs below hides only the tabs. *@
+<span data-side-rail hidden></span>
 
 <div class="setup-shell @(menuHidden ? "is-compact" : "")">
     @* The parts of the setup, one at a time (the tabs at the left). The class sections and the class schedule have their own places in the menu of the school. *@
     <nav class="setup-tabs" aria-label="Parts of the academic setup">
-        <button type="button" class="tabs-toggle" aria-expanded="@(menuHidden ? "false" : "true")" title="@(menuHidden ? "Show the menu" : "Hide the menu")" @onclick="() => menuHidden = !menuHidden">
-            <Icon Name="@(menuHidden ? "panel-left-open" : "panel-left-close")" Size="18" /> <span class="tab-label">@(menuHidden ? "Show menu" : "Hide menu")</span>
+        <button type="button" class="tabs-toggle" aria-expanded="@(menuHidden ? "false" : "true")" title="@(menuHidden ? "Show the tabs" : "Hide the tabs")" @onclick="() => menuHidden = !menuHidden">
+            <Icon Name="@(menuHidden ? "panel-left-open" : "panel-left-close")" Size="18" /> <span class="tab-label">@(menuHidden ? "Show tabs" : "Hide tabs")</span>
         </button>
 
         <a class="tab @(tab == "school-years" ? "on" : "")" title="School years" href="coordinator/academic-setup/school-years" aria-current="@(tab == "school-years" ? "page" : null)">
@@ -47,6 +44,10 @@
             <span class="tab-icon"><Icon Name="layers" Size="18" /></span>
             <span class="tab-text"><strong>Tracks, strands and courses</strong><small>@CountOf("curriculum")</small></span>
         </a>
+        <a class="tab @(tab == "sections" ? "on" : "")" title="Class sections" href="coordinator/academic-setup/sections" aria-current="@(tab == "sections" ? "page" : null)">
+            <span class="tab-icon"><Icon Name="users" Size="18" /></span>
+            <span class="tab-text"><strong>Class sections</strong><small>@CountOf("sections")</small></span>
+        </a>
         <a class="tab @(tab == "rooms" ? "on" : "")" title="Rooms" href="coordinator/academic-setup/rooms" aria-current="@(tab == "rooms" ? "page" : null)">
             <span class="tab-icon"><Icon Name="door-open" Size="18" /></span>
             <span class="tab-text"><strong>Rooms</strong><small>@CountOf("rooms")</small></span>
@@ -54,11 +55,6 @@
 
         <span class="tabs-rule" aria-hidden="true"></span>
         <p class="tabs-note">Also in the menu</p>
-        <a class="tab tab-link" title="Class sections" href="coordinator/sections">
-            <span class="tab-icon"><Icon Name="users" Size="18" /></span>
-            <span class="tab-text"><strong>Class sections</strong><small>@CountOf("sections")</small></span>
-            <Icon Name="chevron-right" Size="16" />
-        </a>
         <a class="tab tab-link" title="Class schedule" href="coordinator/class-schedule">
             <span class="tab-icon"><Icon Name="calendar-clock" Size="18" /></span>
             <span class="tab-text"><strong>Class schedule</strong><small>@CountOf("classes")</small></span>
@@ -80,6 +76,9 @@
             {
                 case "curriculum":
                     <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
+                    break;
+                case "sections":
+                    <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
                     break;
                 case "rooms":
                     <RoomsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
@@ -127,12 +126,6 @@
             _ => "school-years",
         };
 
-        if (wanted == "sections")
-        {
-            Navigation.NavigateTo("coordinator/sections", replace: true);
-            return;
-        }
-
         if (wanted != tab)
         {
             tab = wanted;
@@ -144,12 +137,14 @@
     {
         "curriculum" => "Search a track, a strand or a course",
         "rooms" => "Search a room",
+        "sections" => "Search a strand, a section or an adviser",
         _ => "Search a school year or a term",
     };
 
     private string Lead => tab switch
     {
         "curriculum" => "Choose a track, then a strand. Type over a box to change it.",
+        "sections" => "Each class has its strands, and each strand its sections. Press a card for the adviser and the students.",
         "rooms" => "The rooms for the class schedule.",
         _ => "The school year now and the next two, with three terms each.",
     };

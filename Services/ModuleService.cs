@@ -27,6 +27,9 @@ public sealed class ModuleInput
     public string? LinkUrl { get; set; }
 }
 
+/// <summary>A module that is ready to be saved from the sheet of modules: its fields, its files and the row it was on.</summary>
+public sealed record ModuleToSave(ModuleInput Input, IReadOnlyList<NewAttachment> Files, int Row);
+
 public sealed class ItemInput
 {
     public string Kind { get; set; } = ItemKinds.Activity;
@@ -318,6 +321,12 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);
+        }
+
+        // Exams are the summative exams of the academic provider: a teacher does not add one (the ones that were posted to the course stay and can still be changed).
+        if (itemId is null && input.Kind == ItemKinds.Exam)
+        {
+            return ServiceResult.Fail("A teacher does not add exams: the summative exams come from the academic provider. Add a seatwork, an assignment, a quiz or a task performance.");
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);

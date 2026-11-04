@@ -90,3 +90,187 @@
     justify-content: flex-end;
     gap: 0.6rem;
 }
+
+/* ---------- the calendar of the announcements ---------- */
+.view-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    margin: 0.75rem 0;
+}
+
+.view-switch {
+    display: inline-flex;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.view-switch button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border: 0;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.view-switch button.on {
+    background: var(--brand-soft);
+    color: var(--brand);
+}
+
+.month-controls {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.month-name {
+    margin-left: 0.5rem;
+    font-size: 1.05rem;
+}
+
+.calendar-hint {
+    margin: 0 0 0 auto;
+}
+
+.ann-month {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.dow {
+    padding: 0.45rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.ann-cell {
+    min-height: 6.6rem;
+    padding: 0.3rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    cursor: cell;
+    user-select: none;
+}
+
+.ann-cell:nth-child(7n + 7) {
+    border-right: 0;
+}
+
+.ann-cell:hover {
+    background: var(--surface-2);
+}
+
+.ann-cell.other {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.ann-cell .num {
+    display: inline-grid;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    place-items: center;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.ann-cell.today .num {
+    background: var(--brand);
+    color: var(--on-brand);
+}
+
+.chips li {
+    min-width: 0;
+}
+
+.chips {
+    display: grid;
+    gap: 0.2rem;
+    margin: 0.2rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.chip {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.15rem 0.35rem;
+    border: 0;
+    border-radius: 6px;
+    background: var(--kind-bg);
+    color: var(--kind-text);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+}
+
+.chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip:hover {
+    filter: brightness(0.96);
+}
+
+.more-chip {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.day-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.day-list .chip {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 700px) {
+    .ann-cell {
+        min-height: 4.5rem;
+    }
+
+    .calendar-hint {
+        margin-left: 0;
+    }
+}
