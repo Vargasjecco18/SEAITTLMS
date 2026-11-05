@@ -55,6 +55,7 @@ public static class HelpContent
             "Open the address of the system and type your email and your password.",
             "When you close the browser you are signed out. Sign in again the next time. On a shared computer, press the arrow button to sign out before you leave.",
             "To sign out, press the arrow button at the bottom of the menu, next to your name.",
+            "If you do nothing for 30 minutes (no mouse, key, touch or scroll in any window of the system), a message at the top center says your account will be logged out automatically in 10 minutes. Press “Stay signed in” (or click or press a key) to keep working; otherwise you are signed out when the time is over.",
             $"After {settings.MaxFailedAttempts} wrong passwords in a row the account is locked for {settings.LockoutMinutes} minutes. Wait, or ask the administrator.",
             "An account can be signed in in one place at a time. If someone is signed in with your account, a notice at the top of the login page says so: sign out there first, or wait a few minutes after that page was closed.",
         ]),
@@ -111,6 +112,7 @@ public static class HelpContent
             "Under a handout you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A handout appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
             "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Handouts, Activities (Seatwork, Assignments, Quizzes and Task performances, and Exams when your teacher gave one), then Classmates, Teachers (with a Message button to write to the teacher) and Grades. It stays in view while you scroll, and the button at its top hides it or shows it again.",
+            "The “Progress” at the top of a handout is the same number as the bar of its row in the course: opening the handout is 50 and the slides you saw are the other 50 (a handout with no slides is 100 as soon as you open it). On a phone the slides open with the Slides button, in the whole screen. In the course, the Slides and Handout buttons are at the right of each row.",
             "Each row of the course (the syllabus and the handouts) has its progress bar, at the left of what the handout has (its activities). A handout with slides is worth 50 for opening the handout and 50 for the slides you saw (the Slides button opens them first, one slide at a time, from left to right: the arrows, the keys of the keyboard or the dots). A handout with no slides is 100 as soon as you open it. The Slides and the Handout buttons are in the middle of the row. At the right of the lesson are the activities of the handout, each one a link with how you did; the button above them hides them. A reference link of a handout is at the left of “Open in a new tab”.",
             "On an activity the Course Menu is at the left too, then the instructions, and your answer with its Details and the Feedback of your teacher under it.",
             "When you read a lesson, or read it again, the main menu folds to its icons to give the lesson more room. The button at the top of the icons shows the names again.",
@@ -123,6 +125,7 @@ public static class HelpContent
         [
             "Read the time limit and the rules before you start. The timer keeps running even if you close the page.",
             "Some quizzes watch if you leave the page, copy, paste, print or take a screenshot. Each one is a warning, and too many warnings end the quiz and send what you have. Your name is shown faintly over the quiz.",
+            "A quiz can have several kinds of question: choose one answer, tick several, true or false, type a short answer, type the word of an identification, fill in the blanks of a sentence, match the items of Column A with Column B, or write an essay. Some questions have a picture. An essay is scored by your teacher, so the quiz waits for the score after you hand it in.",
             "When you send it, the result is shown if your teacher allowed it.",
         ]),
         new("Where are my grades?",
@@ -130,6 +133,7 @@ public static class HelpContent
             "Open Grades. Every course is a card with your progress at the top (the bar has the passing mark drawn on it) and, under it, the gradebook of the course with your own row: a column for each activity (A assignment, Q quiz, TP task performance, S seatwork, SE summative exam), your Average and the Final grade of your teacher. It is only to read.",
             "Open Grades in the menu: your grade in every course and how it is going. A course below 70 is marked.",
             "The dashboard shows your recent grades and your average.",
+            "If your teacher hides the grades of a course, the card says “Hidden by your teacher” and shows no scores until your teacher shows them again.",
         ], "student/grades", "Open Grades"),
         new("How do I see my deadlines?",
         [
@@ -200,7 +204,7 @@ public static class HelpContent
         ]),
         new("How do I make a quiz?",
         [
-            "Press “Add activities”, then “Add quiz”: choose the handout, write the title and the questions. Open a quiz that is there and press Questions to change them. Add multiple choice, true or false and short answer questions with their points. A quiz that has a file has no questions: the students answer with a file and you give the score.",
+            "Press “Add activities”, then “Add quiz”: choose the handout, write the title and the questions. Open a quiz that is there and press Questions to change them. Add questions of eight kinds (multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select and essay) with their points: double click a question (or press the box button at the end of its row) to open it in a box where you can add a picture to the question and to each choice, write more choices, the blanks, and the two columns of a matching type. An essay is scored by you: the quiz waits for your score. A quiz that has a file has no questions: the students answer with a file and you give the score.",
             "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules (how many times a student may leave the page, copy, print or take a screenshot). A photo taken with another device can't be detected, but the student's name is shown faintly over the quiz.",
         ]),
         new("How do I check and grade the assignments of my students?",
@@ -216,7 +220,7 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose the course in the list at the top left of the card. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no handout to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
+            "Open Gradebook and choose the course in the list at the top left of the card. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Others” adds a column for extra scores (a recitation, an exam or others; choose the handout), “Hide from students” (it becomes “Show to students”) hides the grades of the course from the students, “Export to Excel” makes one file with all your courses, a sheet for each, that shows how the grades are worked out, and “Save final grades” saves the last column. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
@@ -308,7 +312,7 @@ public static class HelpContent
         ]),
         new("How do I find people and make a group?",
         [
-            "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
+            "Open Users: Students and Teachers are everybody of the school (a teacher also has Handled students, the students of their own courses; a student also has Course teachers, the teachers of their courses), Message and Friend status are at the right of each row, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
             "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
     ]);
@@ -324,7 +328,7 @@ public static class HelpContent
         ], "coordinator/academic-setup", "Open Academic setup"),
         new("Where are the class sections?",
         [
-            "Class sections is a tab of the Academic setup. The tab opens a list of the levels: Grade level (11 and 12), inside it the Strands and inside each strand the Sections A, B and C; press a grade level to see all its strands and sections. In the page there is a tab for each class too, and inside each strand the sections are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
+            "Class sections is a tab of the Academic setup. The tab opens a list of the levels: Grade level (11 and 12), inside it the Strands and inside each strand the Sections A, B and C; press a grade level to see all its strands and sections. In the page there is a tab for each class too, and inside each strand the sections are cards. Press a card, or a letter A, B or C under a strand in the tab, to choose its adviser (only a teacher of that strand) and to see the students in it.",
             "A card that says “Add section” makes the section that is missing (A, B and C). The bin on a card deletes the section, after asking.",
         ], "coordinator/academic-setup/sections", "Open Class sections"),
                 new("Who sends the syllabus, handouts and assignments to the teachers?",
@@ -369,9 +373,9 @@ public static class HelpContent
         new("How do I make a summative exam?",
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
-            "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
-            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam and Post to students | Copy to next school year. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the handouts to the teachers who have the course in the next school year, as drafts.",
-            "Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result; they are in four columns under the highest score). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
+            "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. The settings and when it opens and closes are not asked here: you choose them when you post it. The academic coordinator gets a notification and an announcement.",
+            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam and Post to students . The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. Press a syllabus or a handout of the course to open it in one box: the other handouts are at the left, the preview of the files in the center and the upload form at the right (“Upload” saves the files and the center shows them).",
+            "Press “Post summative exam to students” at the right of the lists of the library to post the exam of every course in the list (choose a course in All courses to post only that one), or “Post to students” inside a course to choose the sections. Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result) and when it opens and closes: the exam goes straight to the students and the system gives the scores. A course with no summative exam stops it: the page goes to that course and tells you. The teacher sees the scores in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [
@@ -412,7 +416,7 @@ public static class HelpContent
         ], "guidance/referrals?show=concerns", "Open the students with a concern"),
         new("How do I write a violation or follow up a concern?",
         [
-            "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded. The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
+            "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded and the Concern list is locked (press Solved to change it). The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
             "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave and write your notes. When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
         ]),
         new("How do I find people and make a group?",

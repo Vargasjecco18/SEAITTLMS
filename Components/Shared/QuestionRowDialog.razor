@@ -69,7 +69,7 @@
                                 var at = n;
                                 <div class="choice">
                                     <span class="tag">@QuestionSheetRow.Letter(n)</span>
-                                    <input type="text" class="box" maxlength="200" autocomplete="off" aria-label="Column B row @QuestionSheetRow.Letter(n)" placeholder="Choice @QuestionSheetRow.Letter(n)" value="@w.Options[n]"
+                                    <input type="text" class="box" maxlength="200" autocomplete="off" aria-label="Column B row @QuestionSheetRow.Letter(n)" placeholder="Item @QuestionSheetRow.Letter(n)" value="@w.Options[n]"
                                            @onchange="e => ChangeOption(at, e.Value?.ToString())" />
                                     @PictureTools(w.OptionImages[n], $"Column B row {QuestionSheetRow.Letter(n)}", f => ChoosePicture(f, at), () => ClearPicture(at))
                                     <button type="button" class="x" title="Take this row out" aria-label="Take Column B row @QuestionSheetRow.Letter(n) out" disabled="@(w.Options.Count <= 2)" @onclick="() => RemoveOption(at)"><Icon Name="x" Size="14" /></button>
