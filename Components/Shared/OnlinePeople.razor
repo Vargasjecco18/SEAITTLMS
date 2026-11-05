@@ -7,7 +7,8 @@
 
 @* The people who are online right now. Kind "students": for a student their classmates and friends, for a teacher their students. Kind "teachers": for a
    student their teachers (and friends who teach), for a teacher the other teachers. Who counts is read now and then (every minute); who of them is online is
-   looked at every few seconds (the app knows it in memory, see PresenceService). With six or more online, five are shown and "Show more" opens the rest. *@
+   looked at every few seconds (the app knows it in memory, see PresenceService), so a person who signs in or leaves shows up or goes within seconds. With six
+   or more online, five are shown and "Show more" opens the rest. *@
 <Card Title="@(Teachers ? "Online teachers" : "Online students")" IconName="@(Teachers ? "presentation" : "wifi")">
     @if (!loaded)
     {
@@ -44,6 +45,9 @@
     [Parameter] public string Kind { get; set; } = "students";
 
     private const int ShownFirst = 5;
+
+    /// <summary>How often the list looks at who is online (it only asks the memory of the app, so it is cheap).</summary>
+    private static readonly TimeSpan LookEvery = TimeSpan.FromSeconds(4);
     private bool showAll;
     private bool Teachers => Kind == "teachers";
     private int userId;
@@ -67,7 +71,7 @@
         userId = me.UserId;
         role = me.Role;
         await LoadAsync();
-        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, LookEvery, LookEvery);
     }
 
     private async Task LoadAsync()
@@ -89,7 +93,9 @@
     {
         try
         {
-            if (DateTime.UtcNow - lastLoad > TimeSpan.FromMinutes(1))
+            var before = online.Select(p => p.UserId).ToHashSet();
+            var reloaded = DateTime.UtcNow - lastLoad > TimeSpan.FromMinutes(1);
+            if (reloaded)
             {
                 await LoadAsync();
             }
@@ -98,7 +104,11 @@
                 Recount();
             }
 
-            StateHasChanged();
+            // Draw again only when somebody came or went (or the people were read again).
+            if (reloaded || !before.SetEquals(online.Select(p => p.UserId)))
+            {
+                StateHasChanged();
+            }
         }
         catch (ObjectDisposedException)
         {

@@ -49,6 +49,15 @@
                         <span class="year-count">@year.Sections @(year.Sections == 1 ? "section" : "sections")</span>
                     </header>
 
+                    @if (yearTerms.Count < SchoolCalendar.TermsPerYear)
+                    {
+                        @* A term that was deleted can be added again: it takes the first free number and the days no other term has. *@
+                        <div class="terms-missing">
+                            <span class="muted">@(yearTerms.Count == 0 ? "No term in this school year." : $"{year.Name} has {yearTerms.Count} of {SchoolCalendar.TermsPerYear} terms.")</span>
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="Busy" OnClick="() => AddTermAsync(year)">Add a term</Button>
+                        </div>
+                    }
+
                     <div class="terms">
                         @foreach (var term in yearTerms)
                         {
@@ -64,6 +73,9 @@
                                     {
                                         <Badge Tone="Tone.Neutral">Over</Badge>
                                     }
+                                    <button type="button" class="term-delete" title="@($"Delete {term.Name} of {year.Name}")" aria-label="@($"Delete {term.Name} of {year.Name}")" @onclick="() => AskDelete(term)">
+                                        <Icon Name="trash-2" Size="16" />
+                                    </button>
                                 </div>
                                 <div class="term-days">
                                     <label>From <input type="date" class="ghost date" aria-label="@($"First day of {term.Name} of {year.Name}")" value="@Box(term.StartDate)" @key="@($"ts-{term.Id}-{stamp}")"
@@ -94,6 +106,29 @@
         </details>
     }
 </div>
+
+<Modal Open="deleting is not null" Title="Delete this term?" OnClose="CloseDelete">
+    @if (deleting is not null)
+    {
+        @if (deleting.Enrollments > 0)
+        {
+            <p class="delete-text"><strong>@deleting.Name</strong> of @deleting.SchoolYear has @deleting.Enrollments @(deleting.Enrollments == 1 ? "student" : "students") enrolled, so it can't be deleted.</p>
+        }
+        else
+        {
+            <p class="delete-text">You are about to delete the term <strong>@deleting.Name</strong> of @deleting.SchoolYear. The calendar will not make it again; you can add a term back later. <strong>This can't be undone.</strong></p>
+        }
+
+        <FormErrors Errors="Errors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseDelete">@(deleting.Enrollments > 0 ? "Close" : "Keep it")</Button>
+            @if (deleting.Enrollments == 0)
+            {
+                <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="Busy" OnClick="DeleteAsync">@(Busy ? "Deleting…" : "Delete")</Button>
+            }
+        </div>
+    }
+</Modal>
 
 @code {
     /// <summary>What is typed in the search box of the page: it narrows the school years.</summary>
@@ -153,6 +188,58 @@
             Id = term.Id, SchoolYearId = term.SchoolYearId, TermNumber = term.TermNumber, Name = name ?? term.Name,
             StartDate = start is null ? term.StartDate : ParseDate(start), EndDate = end is null ? term.EndDate : ParseDate(end),
         };
+        await SaveAndShowAsync(userId => Setup.SaveTermAsync(input, userId));
+    }
+
+    private TermRow? deleting;
+
+    private void AskDelete(TermRow term)
+    {
+        Errors = [];
+        deleting = term;
+    }
+
+    private void CloseDelete()
+    {
+        deleting = null;
+        Errors = [];
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (deleting is not { } term)
+        {
+            return;
+        }
+
+        var result = await RunAsync(userId => Setup.DeleteTermAsync(term.Id, userId));
+        if (result.Succeeded)
+        {
+            deleting = null;
+            await LoadAsync();
+            stamp++;
+        }
+    }
+
+    /// <summary>Adds the first term number the school year has not got, in the days no other term covers.</summary>
+    private async Task AddTermAsync(SchoolYearRow year)
+    {
+        var have = TermsOf(year.Id);
+        var number = Enumerable.Range(1, SchoolCalendar.TermsPerYear).FirstOrDefault(n => have.All(t => t.TermNumber != n));
+        if (number == 0)
+        {
+            return;
+        }
+
+        var place = SchoolCalendar.PlaceMissing(year.StartDate, year.EndDate, [.. have.Select(t => (t.StartDate, t.EndDate))], [number]);
+        if (place.Count == 0)
+        {
+            Errors = [$"There are no free days left in {year.Name} for a new term. Change the days of the other terms first."];
+            return;
+        }
+
+        var (_, start, end) = place[0];
+        var input = new TermInput { SchoolYearId = year.Id, TermNumber = number, Name = SchoolCalendar.TermName(number), StartDate = start, EndDate = end };
         await SaveAndShowAsync(userId => Setup.SaveTermAsync(input, userId));
     }
 

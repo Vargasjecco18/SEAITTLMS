@@ -55,10 +55,10 @@
             <table class="table referral-table">
                 <thead>
                     <tr>
-                        <th scope="col">Student</th>
-                        <th scope="col">Section</th>
-                        <th scope="col">Concern</th>
-                        <th scope="col">What happened</th>
+                        <th scope="col" class="col-student">Student</th>
+                        <th scope="col" class="col-section">Section</th>
+                        <th scope="col" class="col-concern">Concern</th>
+                        <th scope="col" class="col-happened">What happened</th>
                         <th scope="col" class="col-notes">Notes</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Solved</span></th>
                     </tr>
@@ -154,7 +154,8 @@
 </Card>
 
 @* ===== One student: their concerns (Notes and Solved at the top right), the earlier ones, and a place to add one ===== *@
-<Modal Open="viewing is not null && !notesFromRow" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
+@* Only one box is up at a time: while the notes or the attendance of the student are open, the box with all their concerns waits behind (it comes back when they close). *@
+<Modal Open="viewing is not null && !notesFromRow && !notesOpen && attendanceFor is null" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
     @if (viewing is not null)
     {
         <div class="modal-top">

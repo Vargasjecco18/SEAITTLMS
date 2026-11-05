@@ -228,7 +228,7 @@ public sealed class AttachmentService(IDbContextFactory<AppDbContext> dbFactory,
         var errors = Check(files, slides: slides, noSizeLimit: noLimit).Where(e => !e.StartsWith("At most", StringComparison.Ordinal)).ToList();
         if (slides && owner.Kind is not (AttachmentOwnerKind.Module or AttachmentOwnerKind.MaterialModule))
         {
-            return ServiceResult.Fail("Slides go with a module or a syllabus.");
+            return ServiceResult.Fail("Slides go with a handout or a syllabus.");
         }
 
         if (errors.Count > 0)

@@ -11,8 +11,8 @@
 -- the database and keeps everything.
 --
 -- Afterwards the database is empty, except the five roles and the school setup (school year
--- 2026-2027 with its two terms, the ACAD and TECH-PRO tracks and their strands, the schedules
--- AM, MID and PM, the subjects and the grade 11 curriculum).
+-- 2026-2027 with its two terms, the ACAD and TECH-PRO tracks and their strands, the
+-- subjects and the grade 11 curriculum).
 -- Start the app to create the first administrator (README.md, "First-time setup").
 --
 -- HOW TO RUN IT IN MYSQL WORKBENCH
@@ -2029,6 +2029,17 @@ ALTER TABLE `subjects` ADD `library_completed_at_utc` datetime(6) NULL;
 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261105052011_LibraryCompleteCourses', '9.0.20');
+
+DROP TABLE `course_schedules`;
+
+DROP TABLE `rooms`;
+
+DROP TABLE `schedules`;
+
+ALTER TABLE `subjects` DROP COLUMN `library_completed_at_utc`;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261105102323_RemoveClassScheduleRoomsAndLibraryComplete', '9.0.20');
 
 COMMIT;
 

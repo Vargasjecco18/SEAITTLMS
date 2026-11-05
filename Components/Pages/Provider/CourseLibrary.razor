@@ -57,9 +57,9 @@ else
         {
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
-        @* The buttons of the course in groups, with a bar | between the groups: the modules, the summative exam, Complete, and the next school year. *@
+        @* The buttons of the course in groups, with a bar | between the groups: the handouts, the summative exam and the next school year. *@
         <span class="head-group">
-            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add handout</Button>
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
         </span>
         <span class="head-group">
@@ -67,12 +67,7 @@ else
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
         </span>
         <span class="head-group">
-            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="@(libraryComplete ? "rotate-ccw" : "circle-check")" Disabled="busy"
-                    Title="@(libraryComplete ? "Put this course back on the main page of the library" : "Mark this course Complete: it leaves the main page of the library and is only under Complete")"
-                    OnClick="ToggleCompleteAsync">@(libraryComplete ? "Uncomplete" : "Complete")</Button>
-        </span>
-        <span class="head-group">
-            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="@(course.Modules.Count == 0 || busy)" Title="Copy the syllabus and the modules to the teachers of this course in the next school year" OnClick="CopyToNextYearAsync">Copy to next school year</Button>
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="@(course.Modules.Count == 0 || busy)" Title="Copy the syllabus and the handouts to the teachers of this course in the next school year" OnClick="CopyToNextYearAsync">Copy to next school year</Button>
         </span>
     </PageHeader>
 
@@ -80,12 +75,12 @@ else
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span><strong>Syllabus</strong> and <strong>modules</strong> go to the teachers as drafts. <strong>Summative exams</strong> go straight to the students.</span>
+        <span><strong>Syllabus</strong> and <strong>handouts</strong> go to the teachers as drafts. <strong>Summative exams</strong> go straight to the students.</span>
     </p>
 
     <div class="tiles">
         <div class="tile"><strong>@(syllabus is null ? "No" : "Yes")</strong><span>Syllabus</span></div>
-        <div class="tile"><strong>@modules.Count</strong><span>Modules</span></div>
+        <div class="tile"><strong>@modules.Count</strong><span>Handouts</span></div>
         <div class="tile"><strong>@course.Exams.Count</strong><span>Summative exams</span></div>
     </div>
 
@@ -111,7 +106,7 @@ else
                             {
                                 @if (course.Modules.Count > 0)
                                 {
-                                    <Badge Tone="@(got == 0 ? Tone.Neutral : got >= course.Modules.Count ? Tone.Success : Tone.Info)">Modules @got of @course.Modules.Count</Badge>
+                                    <Badge Tone="@(got == 0 ? Tone.Neutral : got >= course.Modules.Count ? Tone.Success : Tone.Info)">Handouts @got of @course.Modules.Count</Badge>
                                 }
                                 @if (course.Exams.Count > 0)
                                 {
@@ -129,11 +124,11 @@ else
     @if (course.Modules.Count == 0)
     {
         <Card>
-            <EmptyState IconName="layers" Title="No syllabus or module yet">
-                <p>Start with the syllabus, then add the modules. The teachers write the assignments, quizzes and task performances.</p>
+            <EmptyState IconName="layers" Title="No syllabus or handout yet">
+                <p>Start with the syllabus, then add the handouts. The teachers write the assignments, quizzes and task performances.</p>
                 <div class="modal-actions">
                     <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
-                    <Button IconName="plus" OnClick="OpenNewModule">Add the first module</Button>
+                    <Button IconName="plus" OnClick="OpenNewModule">Add the first handout</Button>
                 </div>
             </EmptyState>
         </Card>
@@ -157,7 +152,7 @@ else
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewSyllabus">Add syllabus</Button>
                         </div>
                     </header>
-                    <p class="module-description">The syllabus is sent first, before the modules.</p>
+                    <p class="module-description">The syllabus is sent first, before the handouts.</p>
                 </section>
             }
 
@@ -167,7 +162,7 @@ else
                 var id = module.Id;
                 var isOpen = openModules.Contains(id);
                 var moduleFiles = FilesOf(moduleAttachments, id);
-                <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" id="@(module.IsSyllabus ? "syllabus" : $"module-section-{module.Id}")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Module {number}")">
+                <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" id="@(module.IsSyllabus ? "syllabus" : $"module-section-{module.Id}")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Handout {number}")">
                     @* A click on the title opens the syllabus or the module: its text, its files and its assignments, quizzes and task performances. *@
                     <header class="module-head">
                         <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{id}")" @onclick="() => ToggleModule(id)">
@@ -281,7 +276,7 @@ else
             <FormErrors Errors="formErrors" />
             @if (editingModuleId is null && !editingIsSyllabus)
             {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenModulesExcel">Add many modules in a sheet</Button> <span class="muted">title, link and files, no Excel needed</span></p>
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenModulesExcel">Add many handouts in a sheet</Button> <span class="muted">title, link and files, no Excel needed</span></p>
             }
 
             <Field For="m-title" Label="Title" Required="true">
@@ -290,8 +285,8 @@ else
             <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
                 <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
             </Field>
-            <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the module (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
-            <AttachmentPicker @ref="modulePicker" NoSizeLimit="true" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the module")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the handout (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
+            <AttachmentPicker @ref="modulePicker" NoSizeLimit="true" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the handout")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseModuleForm">Cancel</Button>
                 <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
@@ -413,7 +408,7 @@ else
     }
     else if (sending && course is not null)
     {
-        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A module that a teacher's course already got is not sent again.</p>
+        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A handout that a teacher's course already got is not sent again.</p>
         <FormErrors Errors="formErrors" />
 
         <p class="pick-title">What to send</p>
@@ -427,7 +422,7 @@ else
                         <Icon Name="book-marked" Size="18" />
                         <span>
                             <strong>Syllabus</strong>
-                            <small>Not added yet. Add it and it goes first, before the modules.</small>
+                            <small>Not added yet. Add it and it goes first, before the handouts.</small>
                         </span>
                         <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="AddSyllabusFromSend">Add syllabus</Button>
                     </div>
@@ -441,7 +436,7 @@ else
                         <input type="checkbox" checked="@sendModules.Contains(id)" @onchange="e => TogglePick(sendModules, id, e)" />
                         <span>
                             <strong>@(module.IsSyllabus ? "Syllabus: " : "")@module.Title</strong>
-                            <small>@(module.IsSyllabus ? "Syllabus" : "Module") · sent to @module.SentTo of @course.Teachers.Count</small>
+                            <small>@(module.IsSyllabus ? "Syllabus" : "Handout") · sent to @module.SentTo of @course.Teachers.Count</small>
                         </span>
                     </label>
                 </li>
@@ -538,7 +533,7 @@ else
 
     private string ModuleModalTitle => editingIsSyllabus
         ? (editingModuleId is null ? "Add syllabus" : "Edit syllabus")
-        : (editingModuleId is null ? "Add module" : "Edit module");
+        : (editingModuleId is null ? "Add handout" : "Edit handout");
 
     // ---- the sheet for adding many modules of the course at once (inside the system, no Excel)
 
@@ -607,7 +602,7 @@ else
     private IReadOnlyList<CourseMenuGroup> LibraryMenu(MaterialModuleView? syllabus, IReadOnlyList<MaterialModuleView> modules) =>
     [
         new("syllabus", "Syllabus", "book-marked", syllabus is null ? 0 : 1, PageBase + "#syllabus", syllabus is null ? [] : [new CourseMenuEntry(syllabus.Title, PageBase + "#syllabus")]),
-        new("modules", "Modules", "layers", modules.Count, PageBase + "#modules", [.. modules.Select((m, n) => new CourseMenuEntry(AddItemMenuLabels.ModuleLabel(n + 1, m.Title), $"{PageBase}#module-section-{m.Id}"))]),
+        new("modules", "Handouts", "layers", modules.Count, PageBase + "#modules", [.. modules.Select((m, n) => new CourseMenuEntry(AddItemMenuLabels.ModuleLabel(n + 1, m.Title), $"{PageBase}#module-section-{m.Id}"))]),
         new("exams", "Summative exams", "clipboard-list", course!.Exams.Count, PageBase + "#exams", [.. course.Exams.Select(e => new CourseMenuEntry(e.Title, $"{PageBase}#exam-{e.Id}"))]),
     ];
 
@@ -650,30 +645,6 @@ else
         moduleAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialModule, modules.Select(m => m.Id).ToList());
         itemAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialItem, (course?.Exams ?? []).Select(e => e.Id).ToList());
         questionsByExam = await Library.GetExamQuestionsAsync((course?.Exams ?? []).Select(e => e.Id).ToList());
-        libraryComplete = await Library.IsLibraryCompleteAsync(SubjectId);
-    }
-
-    /// <summary>True when the provider marked this course Complete (it is only under Complete in the library).</summary>
-    private bool libraryComplete;
-
-    private async Task ToggleCompleteAsync()
-    {
-        if (busy)
-        {
-            return;
-        }
-
-        busy = true;
-        try
-        {
-            var result = await Library.SetLibraryCompleteAsync(userId, SubjectId, !libraryComplete);
-            Say(result);
-            libraryComplete = await Library.IsLibraryCompleteAsync(SubjectId);
-        }
-        finally
-        {
-            busy = false;
-        }
     }
 
     private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>
@@ -1143,7 +1114,7 @@ else
 
     private void AskDeleteModule(MaterialModuleView module)
     {
-        deleteTarget = new DeleteTarget(module.IsSyllabus ? "Delete the syllabus?" : "Delete this module?",
+        deleteTarget = new DeleteTarget(module.IsSyllabus ? "Delete the syllabus?" : "Delete this handout?",
             $"\"{module.Title}\" will be deleted from the library. The copies the teachers already got stay with them.", true, module.Id);
     }
 

@@ -5,7 +5,7 @@
 @inject ModuleService Modules
 @inject AttachmentService Files
 
-<PageTitle>@(module?.Title ?? "Module") · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>@(module?.Title ?? "Handout") · SEAITT Legazpi LMS</PageTitle>
 
 @if (!loaded)
 {
@@ -14,8 +14,8 @@
 else if (module is null)
 {
     <Card>
-        <EmptyState IconName="layers" Title="Module not found" IsPage="true">
-            <p>This module is not posted, or it is not one of your courses.</p>
+        <EmptyState IconName="layers" Title="Handout not found" IsPage="true">
+            <p>This handout is not posted, or it is not one of your courses.</p>
             <ButtonLink Href="student/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>

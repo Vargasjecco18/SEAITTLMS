@@ -3,7 +3,7 @@
 @inject AttachmentService Attachments
 
 @* The form that edits a module of a teacher: the title, the link, the files and the slides. It is in the box of the course page and at the right of the
-   page where the module is read (a PDF at the left, this form at the right). It saves by itself and says so with OnSaved. *@
+   page where the handout is read (a PDF at the left, this form at the right). It saves by itself and says so with OnSaved. *@
 <EditForm Model="form" OnValidSubmit="SaveAsync">
     <FormErrors Errors="errors" />
     <Field For="m-title" Label="Title" Required="true">
@@ -12,14 +12,14 @@
     <Field For="m-link" Label="Link" Hint="A file or video the lesson uses (starts with https://).">
         <InputText id="m-link" @bind-Value="form.LinkUrl" maxlength="500" autocomplete="off" />
     </Field>
-    <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@("slides")" Slides="true" Title="Slides of the module (PowerPoint or PDF)" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => f.IsSlides).ToList())" />
-    <AttachmentPicker @ref="filesPicker" NoSizeLimit="true" Title="Files of the module" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => !f.IsSlides).ToList())" />
+    <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@("slides")" Slides="true" Title="Slides of the handout (PowerPoint or PDF)" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => f.IsSlides).ToList())" />
+    <AttachmentPicker @ref="filesPicker" NoSizeLimit="true" Title="Files of the handout" ModuleLabel="@FileLabel.OfModule(Module.Title)" Existing="@(Files.Where(f => !f.IsSlides).ToList())" />
     <div class="modal-actions save-center">
         @if (OnCancel.HasDelegate)
         {
             <Button Variant="ButtonVariant.Ghost" OnClick="OnCancel">Cancel</Button>
         }
-        <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save module")</Button>
+        <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save handout")</Button>
     </div>
 </EditForm>
 
@@ -79,7 +79,7 @@
             errors = [];
             var problems = await ApplyFilesAsync(filesPicker, slides: false);
             problems.AddRange(await ApplyFilesAsync(slidesPicker, slides: true));
-            var text = problems.Count > 0 ? $"{result.Message} But the files: {string.Join(" ", problems)}" : result.Message ?? "The module was saved.";
+            var text = problems.Count > 0 ? $"{result.Message} But the files: {string.Join(" ", problems)}" : result.Message ?? "The handout was saved.";
             await OnSaved.InvokeAsync(new EditorResult(problems.Count == 0, text));
         }
         finally

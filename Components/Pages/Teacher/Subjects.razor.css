@@ -137,6 +137,22 @@
     font-size: 0.82rem;
 }
 
+/* The section is a chip that stays in one piece (11-BUSSENT-A), however narrow the page is. */
+.col-section {
+    white-space: nowrap;
+}
+
+.section-chip {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
 .col-actions {
     text-align: right !important;
     white-space: nowrap;

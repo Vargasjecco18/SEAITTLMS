@@ -100,7 +100,7 @@ public static class ItemSheets
             isQuiz
                 ? new(ItemKinds.Plural(kind), "Time limit (minutes)", "Optional", "The minutes a student has once they start. Empty: no limit. The quiz is worth the points of its questions, which you write after importing.", TemplateGuide.TypeNumber)
                 : new(ItemKinds.Plural(kind), "Highest score", "Optional", "A number from 1 to 1000. Empty: 50.", TemplateGuide.TypeNumber),
-            new(ItemKinds.Plural(kind), "Appears on", "Optional", "The day and hour the students can see it (Philippine time). Empty: it appears with its module.", TemplateGuide.DateHow),
+            new(ItemKinds.Plural(kind), "Appears on", "Optional", "The day and hour the students can see it (Philippine time). Empty: it appears with its handout.", TemplateGuide.DateHow),
             new(ItemKinds.Plural(kind), "Due date", "Optional", "The last day and hour to hand it in (Philippine time). Empty: no due date.", TemplateGuide.DateHow),
         ],
             $"At most {MaxRows} rows.");

@@ -128,7 +128,7 @@ public sealed record CourseTrack(int SubjectId, string Name, int Sent, int Teach
     public int? ItemPercent => ItemExpected > 0 ? ProviderMath.Percent(ItemOpens, ItemExpected) : null;
 }
 
-/// <param name="Kind">"Syllabus", "Module", or the kind of the activity.</param>
+/// <param name="Kind">"Syllabus", "Handout", or the kind of the activity.</param>
 public sealed record KindTrack(string Kind, int Sent, int Opens, int Expected)
 {
     public int? Percent => Expected > 0 ? ProviderMath.Percent(Opens, Expected) : null;
@@ -367,7 +367,7 @@ public sealed partial class ProviderService(IDbContextFactory<AppDbContext> dbFa
         {
             rows = rows.Where(r => r.IsSyllabus);
         }
-        else if (filter.Kind == "Module")
+        else if (filter.Kind == "Handout")
         {
             rows = rows.Where(r => !r.IsSyllabus);
         }
@@ -640,7 +640,7 @@ public sealed partial class ProviderService(IDbContextFactory<AppDbContext> dbFa
         var rows = new List<StudentOpenRow>();
         foreach (var d in mine)
         {
-            rows.Add(new StudentOpenRow(d.SubjectName, d.Title, d.Title, d.IsSyllabus ? "Syllabus" : "Module", d.VisibleFromUtc!.Value,
+            rows.Add(new StudentOpenRow(d.SubjectName, d.Title, d.Title, d.IsSyllabus ? "Syllabus" : "Handout", d.VisibleFromUtc!.Value,
                 snap.ModuleViews.TryGetValue((d.ModuleId, student.Id), out var at) ? at : null, null));
             foreach (var i in d.VisibleItems(snap.Now))
             {
@@ -679,7 +679,7 @@ public sealed partial class ProviderService(IDbContextFactory<AppDbContext> dbFa
         var kinds = new List<KindTrack>
         {
             new("Syllabus", rows.Count(r => r.IsSyllabus), posted.Where(r => r.IsSyllabus).Sum(r => r.ModuleOpens), posted.Where(r => r.IsSyllabus).Sum(r => r.Audience)),
-            new("Module", rows.Count(r => !r.IsSyllabus), posted.Where(r => !r.IsSyllabus).Sum(r => r.ModuleOpens), posted.Where(r => !r.IsSyllabus).Sum(r => r.Audience)),
+            new("Handout", rows.Count(r => !r.IsSyllabus), posted.Where(r => !r.IsSyllabus).Sum(r => r.ModuleOpens), posted.Where(r => !r.IsSyllabus).Sum(r => r.Audience)),
         };
         foreach (var kind in ItemKinds.All)
         {

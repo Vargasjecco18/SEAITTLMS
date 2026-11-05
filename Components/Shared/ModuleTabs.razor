@@ -1,5 +1,5 @@
 @* The bottom of a module: a tab for Assignments, Quizzes and Task performance, and one for the seatwork, recitations and exams the module has, each with its list. *@
-<div class="tabs" role="tablist" aria-label="Assignments in this module">
+<div class="tabs" role="tablist" aria-label="Assignments in this handout">
     @foreach (var kind in ItemKinds.Listed.Where(k => !ItemKinds.IsOptionalTab(k) || ItemsOf(k).Count > 0))
     {
         var count = ItemsOf(kind).Count;
@@ -22,7 +22,7 @@
     }
     @if (items.Count == 0)
     {
-        <p class="none">No @ItemKinds.Plural(Active).ToLowerInvariant() in this module.</p>
+        <p class="none">No @ItemKinds.Plural(Active).ToLowerInvariant() in this handout.</p>
     }
     else
     {

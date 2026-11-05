@@ -16,7 +16,6 @@
                     <th scope="col" class="c-grade">Grade level</th>
                     <th scope="col" class="c-strand">Strand</th>
                     <th scope="col" class="c-section">Section</th>
-                    <th scope="col" class="c-room">Room</th>
                 }
                 <th scope="col" class="c-message">Message</th>
                 <th scope="col" class="c-status">Friend status</th>
@@ -40,7 +39,6 @@
                         <td class="c-grade">@(place?.GradeLevel is { } grade ? $"Grade {grade}" : "—")</td>
                         <td class="c-strand">@(place?.Strand ?? "—")</td>
                         <td class="c-section">@(place?.Section ?? "—")</td>
-                        <td class="c-room">@(place?.Room ?? "—")</td>
                     }
                     <td class="c-message">
                         @if (CanWrite(person))

@@ -67,7 +67,7 @@ else
                             <th scope="col">Course</th>
                             <th scope="col" class="col-more">Teacher</th>
                             <th scope="col">Status</th>
-                            <th scope="col">Modules</th>
+                            <th scope="col">Handouts</th>
                             <th scope="col">Progress</th>
                             <th scope="col">Assignments</th>
                             <th scope="col">Next due</th>
@@ -82,7 +82,7 @@ else
                             <tr>
                                 <td>
                                     <span class="name">@card.SubjectName</span>
-                                    <span class="sub">@card.TermName@(card.Meets is null ? "" : " · " + card.Meets)</span>
+                                    <span class="sub">@card.TermName</span>
                                 </td>
                                 <td class="col-more">
                                     @(card.TeacherName ?? "—")
@@ -96,7 +96,7 @@ else
                                     }
                                     else
                                     {
-                                        <span>@card.ModulesVisible @(card.ModulesVisible == 1 ? "module" : "modules")</span>
+                                        <span>@card.ModulesVisible @(card.ModulesVisible == 1 ? "handout" : "handouts")</span>
                                         @if (card.ModulesUnopened > 0) { <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge> }
                                     }
                                 </td>
@@ -186,7 +186,7 @@ else
             @foreach (var card in shown)
             {
                 <SubjectCard Name="@card.SubjectName" Cover="@StrandArt.For(card.StrandCode, card.StrandName)" CoverLabel="@card.StrandName"
-                             Teacher="@(card.TeacherName ?? "No teacher yet")" Section="@card.SectionLabel" Meets="@card.Meets"
+                             Teacher="@(card.TeacherName ?? "No teacher yet")" Section="@card.SectionLabel"
                              Modules="@(card.AssignmentId is null ? null : card.ModulesVisible)" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances"
                              Href="@(card.AssignmentId is { } id ? $"student/subjects/{id}" : null)" OffText="No teacher yet"
                              Progress="card.ProgressPercent" ProgressText="@card.ProgressText" />

@@ -95,54 +95,6 @@ internal sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
     }
 }
 
-internal sealed class ScheduleConfiguration : IEntityTypeConfiguration<Schedule>
-{
-    public void Configure(EntityTypeBuilder<Schedule> b)
-    {
-        b.Property(s => s.Code).HasMaxLength(10).IsRequired();
-        b.HasIndex(s => s.Code).IsUnique();
-        b.Property(s => s.Name).HasMaxLength(50).IsRequired();
-        b.HasIndex(s => s.Name).IsUnique();
-        b.ToTable(t => t.HasCheckConstraint("ck_schedules_hours", "end_time > start_time"));
-    }
-}
-
-internal sealed class RoomConfiguration : IEntityTypeConfiguration<Room>
-{
-    public void Configure(EntityTypeBuilder<Room> b)
-    {
-        b.ToTable("rooms");
-        b.Property(r => r.Name).HasMaxLength(50).IsRequired();
-        b.HasIndex(r => r.Name).IsUnique();
-    }
-}
-
-internal sealed class CourseScheduleConfiguration : IEntityTypeConfiguration<CourseSchedule>
-{
-    public void Configure(EntityTypeBuilder<CourseSchedule> b)
-    {
-        b.ToTable("course_schedules");
-        b.Property(c => c.Days).HasMaxLength(6).IsRequired();
-
-        // Gone with the section; a course that has class times can't be deleted until they are cleared.
-        b.HasOne(c => c.Section).WithMany().HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Cascade);
-        b.HasOne(c => c.Subject).WithMany().HasForeignKey(c => c.SubjectId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne(c => c.Schedule).WithMany().HasForeignKey(c => c.ScheduleId).OnDelete(DeleteBehavior.Restrict);
-
-        // A room that is removed leaves its classes without a room (they keep their days and times).
-        b.HasOne(c => c.Room).WithMany().HasForeignKey(c => c.RoomId).OnDelete(DeleteBehavior.SetNull);
-
-        // A course of a section has one row for each group of days that meets at the same time (MWF at 8:00, then W moved to 10:00 makes the rows MF and W). The days of the rows of one course never overlap (the service checks it).
-        b.HasIndex(c => new { c.SectionId, c.SubjectId, c.Days }).IsUnique();
-
-        b.ToTable(t =>
-        {
-            t.HasCheckConstraint("ck_course_schedules_days", "days REGEXP '^M?T?W?(TH)?F?$' AND days <> ''");
-            t.HasCheckConstraint("ck_course_schedules_hours", "end_time > start_time");
-        });
-    }
-}
-
 internal sealed class StrandSubjectConfiguration : IEntityTypeConfiguration<StrandSubject>
 {
     public void Configure(EntityTypeBuilder<StrandSubject> b)

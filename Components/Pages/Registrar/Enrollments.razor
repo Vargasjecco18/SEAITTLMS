@@ -64,7 +64,7 @@ else if (receipt is not null)
                         <ul class="subject-chips">
                             @for (var i = 0; i < receipt.Subjects.Count; i++)
                             {
-                                <li>@receipt.Subjects[i]@if (receipt.SubjectMeets is { } meets && i < meets.Count && meets[i] is { } when) { <small> · @when</small> }</li>
+                                <li>@receipt.Subjects[i]</li>
                             }
                         </ul>
                     }
@@ -227,7 +227,6 @@ else
                                         <th scope="col">Course</th>
                                         <th scope="col">Code</th>
                                         <th scope="col" class="num">Units</th>
-                                        <th scope="col">Schedule</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -237,7 +236,6 @@ else
                                             <td>@course.Name</td>
                                             <td class="mono">@course.Code</td>
                                             <td class="num">@course.Units.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
-                                            <td>@(course.Meets ?? (string.IsNullOrWhiteSpace(form.SectionName) ? "Choose the section to see it" : "Not set yet"))</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -245,7 +243,6 @@ else
                                     <tr>
                                         <td colspan="2">Total: @(plan.Count == 1 ? "1 course" : $"{plan.Count} courses")</td>
                                         <td class="num">@plan.Sum(c => c.Units).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)</td>
-                                        <td></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -414,7 +411,7 @@ else
                 0, existing?.StudentId ?? 0, name, form.Lrn, term?.SchoolYear ?? "", term?.Name ?? "", form.GradeLevel,
                 track?.Code ?? "", strand?.Code ?? "", form.SectionName,
                 [.. plan.Select(c => c.Name)], existing is null, existing?.Email ?? login?.Email ?? "", existing is null ? login?.Password : null,
-                string.IsNullOrWhiteSpace(form.PhoneNumber) ? null : form.PhoneNumber, [.. plan.Select(c => c.Meets)], [.. plan.Select(c => c.Units)]);
+                string.IsNullOrWhiteSpace(form.PhoneNumber) ? null : form.PhoneNumber, [.. plan.Select(c => c.Units)]);
         }
     }
 
@@ -646,7 +643,7 @@ else
 
         var curriculum = await Enrollment.GetCurriculumAsync(form.StrandId, form.GradeLevel, form.TermId);
         var sections = await Enrollment.GetSectionLoadsAsync(form.TermId, form.StrandId, form.GradeLevel);
-        var coursePlan = await Enrollment.GetCoursePlanAsync(form.TermId, form.StrandId, form.GradeLevel, form.SectionName);
+        var coursePlan = await Enrollment.GetCoursePlanAsync(form.TermId, form.StrandId, form.GradeLevel);
 
         // The choices changed again while this was loading: the newer load shows its own result.
         if (version != reloadVersion)

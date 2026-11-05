@@ -92,7 +92,7 @@ public static class HelpContent
         ]),
         new("What do the notifications say?",
         [
-            "The bell at the top lists what happened for you: a new module, a grade, a deadline coming, a friend request, a file someone shared. A new one also plays a short sound. In Settings (the gear at the top) you can choose the sound, add your own sound file, or switch it off. The browser lets a page make sound only after you clicked on it once, so click anywhere on the page if you hear nothing.",
+            "The bell at the top lists what happened for you: a new handout, a grade, a deadline coming, a friend request, a file someone shared. A new one also plays a short sound. In Settings (the gear at the top) you can choose the sound, add your own sound file, or switch it off. The browser lets a page make sound only after you clicked on it once, so click anywhere on the page if you hear nothing.",
             "Press one to go to the page it is about. “Mark all as read” clears the number.",
         ]),
     ]);
@@ -102,16 +102,16 @@ public static class HelpContent
         new("Where are my courses, and how far along am I?",
         [
             "Open Courses in the menu. Enrolled shows this term; Completed shows the courses of terms that are over.",
-            "Each course has a progress bar. It counts the modules you opened, out of the modules your teacher posted.",
+            "Each course has a progress bar. It counts the handouts you opened, out of the handouts your teacher posted.",
             "Switch between cards and a list with the buttons at the top right of the page. The system remembers the one you chose.",
         ], "student/subjects", "Open Courses"),
-        new("How do I open a module and do the assignments?",
+        new("How do I open a handout and do the assignments?",
         [
-            "Open a course, then a module. The syllabus of the course is the first thing in the list.",
-            "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
-            "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
-            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, and Exams when your teacher gave one), then Classmates, Teachers (with a Message button to write to the teacher) and Grades. It stays in view while you scroll, and the button at its top hides it or shows it again.",
-            "Each row of the course (the syllabus and the modules) has its progress bar, at the left of what the module has (its activities). A module with slides is worth 50 for opening the module and 50 for the slides you saw (the Slides button opens them first, one slide at a time, from left to right: the arrows, the keys of the keyboard or the dots). A module with no slides is 100 as soon as you open it. The Slides and the Module buttons are in the middle of the row. At the right of the lesson are the activities of the module, each one a link with how you did; the button above them hides them. A reference link of a module is at the left of “Open in a new tab”.",
+            "Open a course, then a handout. The syllabus of the course is the first thing in the list.",
+            "Under a handout you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
+            "A handout appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
+            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Handouts, Activities (Seatwork, Assignments, Quizzes and Task performances, and Exams when your teacher gave one), then Classmates, Teachers (with a Message button to write to the teacher) and Grades. It stays in view while you scroll, and the button at its top hides it or shows it again.",
+            "Each row of the course (the syllabus and the handouts) has its progress bar, at the left of what the handout has (its activities). A handout with slides is worth 50 for opening the handout and 50 for the slides you saw (the Slides button opens them first, one slide at a time, from left to right: the arrows, the keys of the keyboard or the dots). A handout with no slides is 100 as soon as you open it. The Slides and the Handout buttons are in the middle of the row. At the right of the lesson are the activities of the handout, each one a link with how you did; the button above them hides them. A reference link of a handout is at the left of “Open in a new tab”.",
             "On an activity the Course Menu is at the left too, then the instructions, and your answer with its Details and the Feedback of your teacher under it.",
             "When you read a lesson, or read it again, the main menu folds to its icons to give the lesson more room. The button at the top of the icons shows the names again.",
         ]),
@@ -166,26 +166,26 @@ public static class HelpContent
     [
         new("Where are my courses?",
         [
-            "Open Courses. Each course you teach is a card (or a row, in the list view) with its section. Press Open to see its modules and assignments.",
+            "Open Courses. Each course you teach is a card (or a row, in the list view) with its section. Press Open to see its handouts and assignments.",
             "The administrator gives you your courses (Users Management). If one is missing, ask them.",
         ], "teacher/subjects", "Open Courses"),
-        new("How do I make a module and post it to my students?",
+        new("How do I make a handout and post it to my students?",
         [
-            "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Add many modules in a sheet” in the same box: a row for each module with its Title, its Slides (optional), its Link and its Files. There is no Excel file to download.",
-            "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
-            "A module is a draft until you post it. In its row of the course, press the date (it says Draft · hidden, Posted Oct 6, 2026 or Scheduled for Nov 10, 2026, 8:00 AM): a small box has the time it appears. Choose a time and press Save time (a later time schedules it, an earlier one posts it from that date), or press Post now. The Hide from students button of the row makes it a draft again. Students see a module only after it is posted. The bar of each row is how far the class is: 50 for the slides and 50 for the module (100 for the module when it has no slides), the average of the class.",
-            "Press “Add activities” at the top right of the course. It offers “Add activities” and “Add quiz”. “Add activities” opens a sheet inside the system: a row for each activity, with its Module and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files; fill the rows you want and press Save (the sheet fits the box: no scroll bars). “Add quiz” asks for the module, then the box of the quiz: after saving it you write its questions in a sheet. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
+            "Open a course and press “Add handout”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many handouts at once: press “Add many handouts in a sheet” in the same box: a row for each handout with its Title, its Slides (optional), its Link and its Files. There is no Excel file to download.",
+            "Press Open on a handout, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit handout at the right.",
+            "A handout is a draft until you post it. In its row of the course, press the date (it says Draft · hidden, Posted Oct 6, 2026 or Scheduled for Nov 10, 2026, 8:00 AM): a small box has the time it appears. Choose a time and press Save time (a later time schedules it, an earlier one posts it from that date), or press Post now. The Hide from students button of the row makes it a draft again. Students see a handout only after it is posted. The bar of each row is how far the class is: 50 for the slides and 50 for the handout (100 for the handout when it has no slides), the average of the class.",
+            "Press “Add activities” at the top right of the course. It offers “Add activities” and “Add quiz”. “Add activities” opens a sheet inside the system: a row for each activity, with its Handout and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files; fill the rows you want and press Save (the sheet fits the box: no scroll bars). “Add quiz” asks for the handout, then the box of the quiz: after saving it you write its questions in a sheet. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
         ]),
         new("What is the menu inside a course?",
         [
-            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, each one listing that kind of work for the whole course), then Students (each with a Message button), Gradebook and Attendance. The first page of the course lists the syllabus and the modules: each row shows how far the class has read the slides (the average of the class), with the Slides and the Module buttons.",
+            "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Handouts, Activities (Seatwork, Assignments, Quizzes and Task performances, each one listing that kind of work for the whole course), then Students (each with a Message button), Gradebook and Attendance. The first page of the course lists the syllabus and the handouts: each row shows how far the class has read the slides (the average of the class), with the Slides and the Handout buttons.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
             "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. Inside an activity the Course Menu is at the left of the page, and a double click on the title of the activity shows what you gave (the instructions and the files). There are no exams in your menu: the summative exams come from the academic provider.",
         ]),
         new("Can I add many activities at once?",
         [
-            "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment, quiz or task performance. Choose its module and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
-            "To add more rows choose the type (Seatwork, Assignment, Quiz or Task performance) and the number at the bottom, then press Add (“Add [type] [number] rows”), like the questions of a summative exam. The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its module.",
+            "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment, quiz or task performance. Choose its handout and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
+            "To add more rows choose the type (Seatwork, Assignment, Quiz or Task performance) and the number at the bottom, then press Add (“Add [type] [number] rows”), like the questions of a summative exam. The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its handout.",
             "The questions of a quiz are written in the quiz itself (Questions), in a sheet like the one of a summative exam: press “Add questions” (or “Edit the questions”), write a row for each question (its type and its right answer are chosen from lists), and use “Add [type] [number] rows” to add many rows of one type. There is no Excel for the questions any more.",
         ]),
         new("A student handed in after the due date. What do I do?",
@@ -194,13 +194,13 @@ public static class HelpContent
         ]),
         new("What are the drafts that came from the academic provider?",
         [
-            "The academic provider (of the central team) can send you the syllabus and modules of a course, with their assignments and quizzes. They arrive in your course as drafts.",
+            "The academic provider (of the central team) can send you the syllabus and handouts of a course, with their assignments and quizzes. They arrive in your course as drafts.",
             "The provider sees whether you opened what was sent and whether you posted it. Opening a draft to read it or to edit it is enough to count as opened.",
             "They are yours to change: edit the text, move the due dates, then post them when you are ready. The syllabus is always first.",
         ]),
         new("How do I make a quiz?",
         [
-            "Add a quiz to a module, then press Questions. Add multiple choice, true or false and short answer questions with their points. A quiz that has a file has no questions: the students answer with a file and you give the score.",
+            "Add a quiz to a handout, then press Questions. Add multiple choice, true or false and short answer questions with their points. A quiz that has a file has no questions: the students answer with a file and you give the score.",
             "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules (how many times a student may leave the page, copy, print or take a screenshot). A photo taken with another device can't be detected, but the student's name is shown faintly over the quiz.",
         ]),
         new("How do I check and grade the assignments of my students?",
@@ -216,7 +216,7 @@ public static class HelpContent
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
-            "Open Gradebook and choose the course in the list at the top left of the card. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no module to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
+            "Open Gradebook and choose the course in the list at the top left of the card. Every student has a row, every assignment, quiz and task a column, and the average at the end. Scores are saved by themselves when you leave a box. Write the final grade of each student in the last column, then press “Save final grades”. At the top right: “Add Activities” adds a column for extra scores (an assignment, quiz, task performance, seatwork or recitation) and “Add Exam” adds an exam (it has no handout to choose); “Export to Excel”, next to “Save final grades”, makes a file that shows how the grades are worked out. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I give a due date with the calendar?",
         [
@@ -334,10 +334,10 @@ public static class HelpContent
             "Every room has its own schedule: press the room box to pick a room, add a room or remove one. Two classes can't be in one room at the same time, a section can't have two classes at the same time, and a teacher can't have two classes at the same time.",
             "Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it.",
         ], "coordinator/class-schedule", "Open the class schedule"),
-        new("Who sends the syllabus, modules and assignments to the teachers?",
+        new("Who sends the syllabus, handouts and assignments to the teachers?",
         [
             "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",
-            "If a course has no syllabus or a teacher did not get the modules, write to the academic provider (Messages).",
+            "If a course has no syllabus or a teacher did not get the handouts, write to the academic provider (Messages).",
         ]),
         new("How do I evaluate the teachers?",
         [
@@ -365,11 +365,11 @@ public static class HelpContent
 
     private static HelpSection Provider() => new("For the academic provider", "send",
     [
-        new("How do I send a syllabus and modules to the teachers?",
+        new("How do I send a syllabus and handouts to the teachers?",
         [
-            "Open Course library: the courses of the current term are cards, like the Courses of the teachers and the students. Use the search box and the lists Track, Grade level, Strand and Course to find one, then press Open (a course opens with a Course Menu at the left, where the Courses dropdown goes from track to strand to course without going back; the previous terms are hidden, because the library works on the current term). Add the syllabus first, then the modules (“Add many modules in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each module with its title, its slides (optional), its link (optional) and its files (needed), and the step by step at the right; no Excel is needed. The teachers and the students get a Slides button when a module has slides). Press a syllabus or a module to open it and see its text and files.",
-            "You send the syllabus and the modules to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
-            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a module and a summative exam. There is no limit in MB for them. The path at the top (Library › Academic › the strand › the term) takes you back one step at a time.",
+            "Open Course library: the courses of the current term are cards, like the Courses of the teachers and the students. Use the search box and the lists Track, Grade level, Strand and Course to find one, then press Open (a course opens with a Course Menu at the left, where the Courses dropdown goes from track to strand to course without going back; the previous terms are hidden, because the library works on the current term). Add the syllabus first, then the handouts (“Add many handouts in a sheet” in the same box opens a sheet inside the system, in the middle of the screen: a row for each handout with its title, its slides (optional), its link (optional) and its files (needed), and the step by step at the right; no Excel is needed. The teachers and the students get a Slides button when a handout has slides). Press a syllabus or a handout to open it and see its text and files.",
+            "You send the syllabus and the handouts to the teachers (they are drafts; the teacher posts them) and you post the summative exams straight to the students. The teacher makes the seatwork, assignments, quizzes and task performances in their own copy of the course.",
+            "You can attach files (a PDF, a picture, a text file ...) to the syllabus, a handout and a summative exam. There is no limit in MB for them. The path at the top (Library › Academic › the strand › the term) takes you back one step at a time.",
             "Press “Send to teachers”, choose what to send (the syllabus is the first thing on the list) and which teachers get it.",
             "Each teacher gets their own copy as a draft, with the files: they edit the text and the dates and post it to their students when they are ready. A PDF or a picture opens in a box in the middle of the screen, where it can be downloaded.",
         ], "provider/library", "Open Course library"),
@@ -377,17 +377,17 @@ public static class HelpContent
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
             "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
-            "In a course the buttons are in groups: Add module and Send to teachers | Add summative exam and Post to students | Complete | Copy to next school year. “Complete” marks the course as finished: it leaves the main page of the library and is only under Complete (the list at the right of All courses: Uncompleted or Complete); “Uncomplete” puts it back. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the modules to the teachers who have the course in the next school year, as drafts.",
+            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam and Post to students | Complete | Copy to next school year. “Complete” marks the course as finished: it leaves the main page of the library and is only under Complete (the list at the right of All courses: Uncompleted or Complete); “Uncomplete” puts it back. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the handouts to the teachers who have the course in the next school year, as drafts.",
             "Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result; they are in four columns under the highest score). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [
-            "Open Tracking. It has three parts: Syllabus, Modules and Summative exams. In the first two the buttons are Not posted, Scheduled and Not opened. “Not posted” shows the teachers who received a syllabus or a module and have not posted it to their students yet; “Scheduled” shows what a teacher has scheduled for later, with the time it will appear; you can write to one teacher (or all of them) when it is scheduled too far away.",
-            "Each line has the syllabus or module, the teacher and the section. The search box and the grade and course boxes narrow the list. A module that is scheduled to post later is not late: it is on “Scheduled” and is posted when its time comes.",
+            "Open Tracking. It has three parts: Syllabus, Handouts and Summative exams. In the first two the buttons are Not posted, Scheduled and Not opened. “Not posted” shows the teachers who received a syllabus or a handout and have not posted it to their students yet; “Scheduled” shows what a teacher has scheduled for later, with the time it will appear; you can write to one teacher (or all of them) when it is scheduled too far away.",
+            "Each line has the syllabus or handout, the teacher and the section. The search box and the grade and course boxes narrow the list. A handout that is scheduled to post later is not late: it is on “Scheduled” and is posted when its time comes.",
         ], "provider/tracking", "Open Tracking"),
         new("Who has not opened it?",
         [
-            "Choose “Not opened” in Syllabus or Modules. A student is on this list only after the teacher posted it: until then the teacher is the one on “Not posted”. Once the student opens it, the student leaves the list.",
+            "Choose “Not opened” in Syllabus or Handouts. A student is on this list only after the teacher posted it: until then the teacher is the one on “Not posted”. Once the student opens it, the student leaves the list.",
             "In Summative exams the buttons are Not opened, Not handed in and Handed in. They list the students of the exams that are posted: an exam that is not posted yet has no students here. “Handed in” shows the scores.",
         ]),
         new("Can I remind the people on the list?",

@@ -3,10 +3,12 @@
 @inject StudentLifecycleService Lifecycle
 @inject CurrentUser Me
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-@* The registrar's two buttons for one line of the list of enrollments: Edit (the name, the term, the course of study and the section)
-   and Drop out. Each opens a box over the list. It is its own live island, so it works inside a list that is otherwise plain. *@
+@* The registrar's buttons for one line of the list of enrollments: Account (the sign-in details of the student), Edit (the name, the term, the course of study
+   and the section) and Drop out. Each opens a box over the list. It is its own live island, so it works inside a list that is otherwise plain. *@
 <div class="buttons">
+    <button type="button" class="act" @onclick="OpenAccountAsync"><Icon Name="key-round" Size="14" /> Account</button>
     @if (Status == "Enrolled")
     {
         <button type="button" class="act" @onclick="OpenEditAsync"><Icon Name="pencil" Size="14" /> Edit</button>
@@ -16,6 +18,56 @@
         <button type="button" class="act danger" @onclick="OpenDrop"><Icon Name="user-x" Size="14" /> Drop out</button>
     }
 </div>
+
+<Modal Open="showingAccount" Title="@($"Sign-in details of {StudentName}")" OnClose="CloseAccount">
+    @if (showingAccount)
+    {
+        @if (account is null)
+        {
+            <p class="muted">@(accountProblem ?? "Loading…")</p>
+        }
+        else
+        {
+            <dl class="account">
+                <div><dt>Student</dt><dd>@account.StudentName</dd></div>
+                <div><dt>LRN</dt><dd class="mono">@account.Lrn</dd></div>
+                <div><dt>Email</dt><dd class="mono" id="account-email">@account.Email</dd></div>
+                <div>
+                    <dt>Password</dt>
+                    @if (account.Password is { } password)
+                    {
+                        <dd class="mono" id="account-password">@password</dd>
+                    }
+                    else
+                    {
+                        <dd class="muted" id="account-password">Not shown</dd>
+                    }
+                </div>
+            </dl>
+            @if (account.Password is null)
+            {
+                <p class="quiet">The student changed the password, or an administrator set a new one, so it is not shown here. An administrator can set a new password in Users.</p>
+            }
+            else
+            {
+                <p class="quiet">This is the first password, made from the last name and the end of the LRN. Tell the student to keep it private.</p>
+            }
+
+            @if (!account.IsActive)
+            {
+                <p class="quiet">This account is switched off, so the student can't sign in.</p>
+            }
+
+            <div class="actions">
+                @if (account.Password is not null)
+                {
+                    <Button Variant="ButtonVariant.Secondary" IconName="@(copied ? "circle-check" : "file-text")" OnClick="CopyAccountAsync">@(copied ? "Copied" : "Copy the login")</Button>
+                }
+                <Button OnClick="CloseAccount">Close</Button>
+            </div>
+        }
+    }
+</Modal>
 
 <Modal Open="editing" Title="@($"Edit the enrollment of {StudentName}")" OnClose="CloseEdit" Large="true">
     @if (editing)
@@ -121,6 +173,10 @@
     /// <summary>False for a student who is in the archive (nothing to drop out).</summary>
     [Parameter] public bool StudentActive { get; set; } = true;
 
+    private bool showingAccount;
+    private bool copied;
+    private string? accountProblem;
+    private StudentSignIn? account;
     private bool editing;
     private bool dropping;
     private bool busy;
@@ -145,6 +201,30 @@
     private string SectionHint => strandId == 0 ? "Choose the section, A, B or C." : loads.FirstOrDefault(l => l.Name == sectionName) is { } load
         ? $"Section {load.Name} has {load.Text}. {(load.IsFull ? "It is full." : load.SeatsLeft == 1 ? "1 seat is left." : $"{load.SeatsLeft} seats are left.")}"
         : "Choose the section, A, B or C.";
+
+    private async Task OpenAccountAsync()
+    {
+        account = null;
+        accountProblem = null;
+        copied = false;
+        showingAccount = true;
+        var me = await Me.GetAsync();
+        account = me is null ? null : await Enrollment.GetSignInAsync(StudentId, me.UserId);
+        if (account is null)
+        {
+            accountProblem = "The sign-in details could not be read.";
+        }
+    }
+
+    private void CloseAccount() => showingAccount = false;
+
+    private async Task CopyAccountAsync()
+    {
+        if (account is { Password: { } password })
+        {
+            copied = await JS.InvokeAsync<bool>("seaitt.copyText", $"Email: {account.Email}\nPassword: {password}");
+        }
+    }
 
     private async Task OpenEditAsync()
     {

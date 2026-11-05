@@ -24,8 +24,8 @@ public sealed record TrackOption(int Id, string Code, string Name);
 public sealed record StrandOption(int Id, string Code, string Name, int TrackId);
 public sealed record SubjectOption(int Id, string Code, string Name);
 
-/// <summary>A course the student will get, as the enrollment form lists it at the bottom: its units and, when the section is chosen and the coordinator set it, when it meets.</summary>
-public sealed record CoursePlanRow(int SubjectId, string Code, string Name, decimal Units, string? Meets);
+/// <summary>A course the student will get, as the enrollment form lists it at the bottom: its code, its name and its units.</summary>
+public sealed record CoursePlanRow(int SubjectId, string Code, string Name, decimal Units);
 
 public sealed record EnrollmentLookups(
     IReadOnlyList<TermOption> Terms,
@@ -77,7 +77,6 @@ public sealed record EnrollmentReceipt(
     string Email,
     string? Password,
     string? PhoneNumber = null,
-    IReadOnlyList<string?>? SubjectMeets = null,
     IReadOnlyList<decimal>? SubjectUnits = null,
     string? LeftStrand = null);
 
@@ -158,11 +157,8 @@ public sealed partial class EnrollmentService(
             .ToListAsync(ct);
     }
 
-    /// <summary>
-    /// The courses a student of this strand gets in the term of a grade level, each with its units and, for the chosen section (when it exists
-    /// and the coordinator set the class times), "AM · MWF · 8:00 AM – 9:30 AM". It is what the form shows at the bottom before enrolling.
-    /// </summary>
-    public async Task<IReadOnlyList<CoursePlanRow>> GetCoursePlanAsync(int termId, int strandId, byte gradeLevel, string? sectionName, CancellationToken ct = default)
+    /// <summary>The courses a student of this strand gets in the term of a grade level, each with its units. It is what the form shows at the bottom before enrolling.</summary>
+    public async Task<IReadOnlyList<CoursePlanRow>> GetCoursePlanAsync(int termId, int strandId, byte gradeLevel, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
@@ -178,25 +174,7 @@ public sealed partial class EnrollmentService(
             .Select(x => new { x.Subject.Id, x.Subject.Code, x.Subject.Name, x.Subject.Units })
             .ToListAsync(ct);
 
-        var meetings = new List<CourseSchedule>();
-        if (!string.IsNullOrWhiteSpace(sectionName))
-        {
-            var name = sectionName.Trim();
-            var sectionId = await db.Sections.AsNoTracking()
-                .Where(s => s.SchoolYearId == term.SchoolYearId && s.StrandId == strandId && s.GradeLevel == gradeLevel && s.Name == name)
-                .Select(s => (int?)s.Id)
-                .FirstOrDefaultAsync(ct);
-            if (sectionId is { } id)
-            {
-                meetings = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => c.SectionId == id).ToListAsync(ct);
-            }
-        }
-
-        return courses
-            .Select(c => new CoursePlanRow(
-                c.Id, c.Code, c.Name, c.Units,
-                CourseScheduleService.Combine(meetings.Where(m => m.SubjectId == c.Id))?.DescribeFull()))
-            .ToList();
+        return courses.Select(c => new CoursePlanRow(c.Id, c.Code, c.Name, c.Units)).ToList();
     }
 
     /// <summary>The sections that already exist for this strand and grade level in the term's school year.</summary>
@@ -511,15 +489,12 @@ public sealed partial class EnrollmentService(
 
             var fullName = string.Join(' ', new[] { firstName, NullIfBlank(middleName), lastName, NullIfBlank(nameExtension) }.Where(p => !string.IsNullOrWhiteSpace(p)));
 
-            // When each course meets (set by the academic coordinator), in the order of the courses.
-            var meetings = await db.CourseSchedules.AsNoTracking().Include(c => c.Schedule).Where(c => c.SectionId == section.Id).ToListAsync(ct);
-            var meets = subjects.Select(s => CourseScheduleService.Combine(meetings.Where(m => m.SubjectId == s.Id))?.DescribeFull()).ToList();
             return new EnrollmentResult(
                 new EnrollmentReceipt(
                     enrollment.Id, student.Id, fullName, lrn, term.SchoolYear.Name, term.Name, request.GradeLevel,
                     strand.Track.Name, strand.Code, $"{request.GradeLevel}-{strand.Code}-{section.Name}",
                     subjects.Select(s => s.Name).ToList(),
-                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, meets, subjects.Select(x => x.Units).ToList(), leftStrand),
+                    NewAccount: newLogin is not null, newLogin?.Email ?? student.User.Email, newLogin?.Password, student.User.PhoneNumber, subjects.Select(x => x.Units).ToList(), leftStrand),
                 []);
         }
         catch (DbUpdateException ex) when (ex.InnerException is MySqlException { ErrorCode: MySqlErrorCode.DuplicateKeyEntry } duplicate)

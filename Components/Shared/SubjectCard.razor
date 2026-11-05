@@ -16,8 +16,8 @@
     <div class="body">
         <h3 title="@Name">@Name</h3>
 
-        @* The teacher, the section and the schedule, one under the other at the left, all in the same style. *@
-        @if (Teacher is not null || Section is not null || Meets is not null)
+        @* The teacher, the section and the term, one under the other at the left, all in the same style. *@
+        @if (Teacher is not null || Section is not null || Term is not null)
         {
             <ul class="details" aria-label="The course">
                 @if (Teacher is not null)
@@ -26,11 +26,12 @@
                 }
                 @if (Section is not null)
                 {
-                    <li class="section"><Icon Name="layers" Size="16" /><span class="txt">@Section</span></li>
+                    @* The section is the name of the class: a chip that stands out, with how many students it has (for a teacher). *@
+                    <li class="section"><span class="chip"><Icon Name="layers" Size="14" /><span class="txt">@Section</span></span>@if (Students is { } many) { <span class="students"><Icon Name="users-round" Size="14" /> @many @(many == 1 ? "student" : "students")</span> }</li>
                 }
-                @if (Meets is not null)
+                @if (Term is not null)
                 {
-                    <li class="meets"><Icon Name="clock" Size="16" /><span class="txt">@Meets</span></li>
+                    <li class="term"><Icon Name="clock" Size="16" /><span class="txt">@Term</span></li>
                 }
             </ul>
         }
@@ -39,7 +40,7 @@
         @if (Modules is { } modules)
         {
             <ul class="details counts" aria-label="What is in the course">
-                <li><Icon Name="book-open" Size="16" /><span class="txt"><b class="n">@modules</b> @(modules == 1 ? "Module" : "Modules")@if (ModulesNote is not null) { <span class="note"> · @ModulesNote</span> }</span></li>
+                <li><Icon Name="book-open" Size="16" /><span class="txt"><b class="n">@modules</b> @(modules == 1 ? "Handout" : "Handouts")@if (ModulesNote is not null) { <span class="note"> · @ModulesNote</span> }</span></li>
                 <li><Icon Name="notebook-pen" Size="16" /><span class="txt"><b class="n">@Activities</b> @(Activities == 1 ? "Assignment" : "Assignments")</span></li>
                 <li><Icon Name="file-question" Size="16" /><span class="txt"><b class="n">@Quizzes</b> @(Quizzes == 1 ? "Quiz" : "Quizzes")</span></li>
                 <li><Icon Name="clipboard-check" Size="16" /><span class="txt"><b class="n">@TaskPerformances</b> Task performance</span></li>
@@ -87,8 +88,11 @@
     /// <summary>The section, like "11-BUSSENT-A".</summary>
     [Parameter] public string? Section { get; set; }
 
-    /// <summary>When the class meets, like "AM · MWF · 8:00 AM – 9:00 AM". Empty: no line.</summary>
-    [Parameter] public string? Meets { get; set; }
+    /// <summary>How many students the section has (a teacher's card). Empty: nothing is said.</summary>
+    [Parameter] public int? Students { get; set; }
+
+    /// <summary>The term of the course, like "1st Term". Empty: no line.</summary>
+    [Parameter] public string? Term { get; set; }
 
     /// <summary>How many modules the course has. Empty: the card shows no counts at all (a course with no teacher yet).</summary>
     [Parameter] public int? Modules { get; set; }

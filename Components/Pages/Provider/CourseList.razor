@@ -47,11 +47,6 @@ else
                     <option value="@c.SubjectId" selected="@(CourseId == c.SubjectId)">@c.Name</option>
                 }
             </select>
-            @* Uncompleted (the main page) or Complete: a course that the provider marked Complete leaves the main page and is only here. *@
-            <select id="f-state" name="state" aria-label="Complete or Uncompleted" class="state-select">
-                <option value="" selected="@(!ShowComplete)">Uncompleted</option>
-                <option value="complete" selected="@ShowComplete">Complete</option>
-            </select>
             <noscript><button type="submit" class="button secondary small">Show</button></noscript>
         </form>
 
@@ -65,14 +60,7 @@ else
     {
         <Card>
             <EmptyState IconName="search-x" Title="No course matches">
-                @if (ShowComplete)
-                {
-                    <p>No course is marked Complete here. Open a course and press <strong>Complete</strong> when its syllabus, modules and summative exam are ready: it leaves the main page and is listed here.</p>
-                }
-                else
-                {
-                    <p>Try another name or code, or choose All in the lists. Courses are made in the academic setup, and the library shows the courses of the term that is going on. A course that is Complete is under Complete.</p>
-                }
+                <p>Try another name or code, or choose All in the lists. Courses are made in the academic setup, and the library shows the courses of the term that is going on.</p>
                 <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary">Show all courses</ButtonLink>
             </EmptyState>
         </Card>
@@ -90,7 +78,7 @@ else
                             <th scope="col">Grade</th>
                             <th scope="col">Term</th>
                             <th scope="col">Syllabus</th>
-                            <th scope="col" class="num">Modules</th>
+                            <th scope="col" class="num">Handouts</th>
                             <th scope="col" class="num">Exam</th>
                             <th scope="col" class="num">Sections</th>
                             <th scope="col" class="c-open"><span class="sr-only">Open the course</span></th>
@@ -102,7 +90,7 @@ else
                             <tr data-course="@c.Code">
                                 <td class="c-course">
                                     <strong>@c.Name</strong>
-                                    <small>@c.Code @(c.Complete ? "· Complete" : "")</small>
+                                    <small>@c.Code</small>
                                 </td>
                                 <td>@c.TrackCode · @c.StrandCode</td>
                                 <td>Grade @c.GradeLevel</td>
@@ -134,7 +122,7 @@ else
             @foreach (var c in shown)
             {
                 <SubjectCard Name="@c.Name" Cover="@StrandArt.For(c.StrandCode, c.StrandName)" CoverLabel="@c.StrandName"
-                             Section="@($"{c.TrackCode} · {c.StrandCode} · Grade {c.GradeLevel}")" Meets="@SchoolCalendar.TermName(c.TermNumber)"
+                             Section="@($"{c.TrackCode} · {c.StrandCode} · Grade {c.GradeLevel}")" Term="@SchoolCalendar.TermName(c.TermNumber)"
                              Href="@($"provider/library/{c.SubjectId}?track={c.TrackId}&strand={c.StrandId}&term={c.TermNumber}")" OffText="Open">
                     <span class="card-facts" data-course="@c.Code">
                         @if (c.HasSyllabus)
@@ -145,7 +133,7 @@ else
                         {
                             <Badge Tone="Tone.Warning">No syllabus yet</Badge>
                         }
-                        <span class="fact">@Plural(c.Modules, "module")</span>
+                        <span class="fact">@Plural(c.Modules, "handout")</span>
                         <span class="fact">@Plural(c.Exams, "summative exam")</span>
                     </span>
                 </SubjectCard>
@@ -161,7 +149,6 @@ else
     [SupplyParameterFromQuery(Name = "strand")] private string? StrandText { get; set; }
     [SupplyParameterFromQuery(Name = "course")] private string? CourseText { get; set; }
     [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
-    [SupplyParameterFromQuery(Name = "state")] private string? StateText { get; set; }
 
     [CascadingParameter] private HttpContext? Http { get; set; }
 
@@ -173,9 +160,6 @@ else
     private int? Grade => ParseNumber(GradeText) is 11 or 12 ? ParseNumber(GradeText) : null;
     private int? CourseId => ParseNumber(CourseText);
 
-    /// <summary>True under Complete: only the courses the provider marked Complete. Otherwise (the main page) only the courses that are not complete.</summary>
-    private bool ShowComplete => StateText == "complete";
-
     // A strand that does not belong to the track that is chosen is not a choice any more (the lists follow each other: track, then strand, then course).
     private int? StrandId => ParseNumber(StrandText) is { } id && Strands.Any(s => s.Id == id) ? id : null;
 
@@ -186,7 +170,7 @@ else
     private IEnumerable<(int Id, string Code)> Strands => cards!.Where(c => TrackId is null || c.TrackId == TrackId).Select(c => (c.StrandId, c.StrandCode)).Distinct().OrderBy(s => s.StrandCode);
 
     private IEnumerable<(int SubjectId, string Name)> CourseChoices => cards!
-        .Where(c => c.Complete == ShowComplete && (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId))
+        .Where(c => (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId))
         .Select(c => (c.SubjectId, c.Name)).Distinct().OrderBy(c => c.Name);
 
     private IReadOnlyList<MaterialCourseRow> ListRows => [.. shown.Select(c => new MaterialCourseRow(c.SubjectId, c.Code, c.Name, c.HasSyllabus, c.Modules, c.Exams, c.Teachers, c.Sent, $"{c.TrackCode} · {c.StrandCode} · Grade {c.GradeLevel} · {SchoolCalendar.TermName(c.TermNumber)}"))];
@@ -197,7 +181,7 @@ else
         cards = await Library.ListLibraryCardsAsync();
         var words = (Q ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         shown = [.. cards.Where(c =>
-            c.Complete == ShowComplete && (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId) && (CourseId is null || c.SubjectId == CourseId)
+            (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId) && (CourseId is null || c.SubjectId == CourseId)
             && words.All(w => c.Name.Contains(w, StringComparison.OrdinalIgnoreCase) || c.Code.Contains(w, StringComparison.OrdinalIgnoreCase)))];
     }
 
@@ -213,7 +197,6 @@ else
         if (Grade is { } g) { parts.Add("grade=" + g); }
         if (StrandId is { } s) { parts.Add("strand=" + s); }
         if (CourseId is { } c) { parts.Add("course=" + c); }
-        if (ShowComplete) { parts.Add("state=complete"); }
         var chosen = viewName ?? view;
         if (chosen == "list" || explicitView) { parts.Add("view=" + chosen); }
         return "provider/library" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));

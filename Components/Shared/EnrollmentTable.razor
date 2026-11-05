@@ -7,7 +7,10 @@
             <tr>
                 <th scope="col">Student</th>
                 <th scope="col">Section</th>
-                <th scope="col">Term</th>
+                @if (ShowTerm)
+                {
+                    <th scope="col">Term</th>
+                }
                 @if (ShowSubjects)
                 {
                     <th scope="col" class="col-subjects">Courses</th>
@@ -47,15 +50,22 @@
                     <td>
                         <span class="section">@row.Section</span>
                         <span class="sub">@row.Track</span>
-                    </td>
-                    <td class="col-term">
-                        <span>@row.Term</span>
-                        <span class="sub">@row.SchoolYear</span>
-                        @if (row.Status != "Enrolled")
+                        @if (!ShowTerm && row.Status != "Enrolled")
                         {
                             <Badge Tone="Tone.Warning">@row.Status</Badge>
                         }
                     </td>
+                    @if (ShowTerm)
+                    {
+                        <td class="col-term">
+                            <span>@row.Term</span>
+                            <span class="sub">@row.SchoolYear</span>
+                            @if (row.Status != "Enrolled")
+                            {
+                                <Badge Tone="Tone.Warning">@row.Status</Badge>
+                            }
+                        </td>
+                    }
                     @if (ShowSubjects)
                     {
                         <td class="col-subjects">
@@ -144,6 +154,9 @@
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<EnrollmentRow> Rows { get; set; } = [];
 
+    /// <summary>The Term column (the term and the school year of the enrollment). The registrar's Student's Accounts leaves it out.</summary>
+    [Parameter] public bool ShowTerm { get; set; } = true;
+
     /// <summary>The list of subjects makes the table wide, so the dashboard leaves it out.</summary>
     [Parameter] public bool ShowSubjects { get; set; }
 
@@ -156,7 +169,7 @@
     /// <summary>The column that says whether the student is enrolled for the next term, with the button to unenroll.</summary>
     [Parameter] public bool ShowNextTerm { get; set; }
 
-    /// <summary>The registrar's buttons at the end of each line: Edit and Drop out.</summary>
+    /// <summary>The registrar's buttons at the end of each line: Account, Edit and Drop out.</summary>
     [Parameter] public bool ShowActions { get; set; }
 
     /// <summary>The term after the current one (null when there is none).</summary>

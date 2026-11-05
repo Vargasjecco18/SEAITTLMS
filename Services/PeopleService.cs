@@ -23,7 +23,7 @@ public sealed record PersonCard(int UserId, string Name, string Role, string? De
 }
 
 /// <summary>Where a person is at school, for the table of the Users page: the grade level, the strand and the section (a student's enrollment, a teacher's profile) and the room (from the class schedule).</summary>
-public sealed record PersonPlacement(byte? GradeLevel, string? Strand, string? Section, string? Room);
+public sealed record PersonPlacement(byte? GradeLevel, string? Strand, string? Section);
 
 public sealed record FriendRequests(IReadOnlyList<PersonCard> Received, IReadOnlyList<PersonCard> Sent);
 
@@ -469,13 +469,9 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
             .ToListAsync(ct);
         var newest = enrollments.GroupBy(x => x.UserId)
             .Select(g => g.OrderByDescending(x => x.Year).ThenByDescending(x => x.TermNumber).ThenByDescending(x => x.Id).First()).ToList();
-        var sectionIds = newest.Select(x => x.SectionId).Distinct().ToList();
-        var sectionRooms = (await db.CourseSchedules.AsNoTracking().Where(c => sectionIds.Contains(c.SectionId) && c.RoomId != null)
-                .Select(c => new { c.SectionId, Room = c.Room!.Name }).Distinct().ToListAsync(ct))
-            .GroupBy(x => x.SectionId).ToDictionary(g => g.Key, g => RoomText(g.Select(x => x.Room)));
         foreach (var n in newest)
         {
-            result[n.UserId] = new PersonPlacement(n.GradeLevel, n.Strand, n.Section, sectionRooms.GetValueOrDefault(n.SectionId));
+            result[n.UserId] = new PersonPlacement(n.GradeLevel, n.Strand, n.Section);
         }
 
         // teachers
@@ -486,23 +482,11 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
                 Strand = t.StrandId == null ? null : db.Strands.Where(s => s.Id == t.StrandId).Select(s => s.Code).FirstOrDefault(),
                 Section = t.SectionId == null ? null : db.Sections.Where(s => s.Id == t.SectionId).Select(s => s.Name).FirstOrDefault(),
             }).ToListAsync(ct);
-        var teacherIds = teachers.Select(t => t.Id).ToList();
-        var teacherRooms = (await db.TeachingAssignments.AsNoTracking().Where(a => teacherIds.Contains(a.TeacherId))
-                .SelectMany(a => db.CourseSchedules.Where(c => c.SectionId == a.SectionId && c.SubjectId == a.SubjectId && c.RoomId != null).Select(c => new { a.TeacherId, Room = c.Room!.Name }))
-                .Distinct().ToListAsync(ct))
-            .GroupBy(x => x.TeacherId).ToDictionary(g => g.Key, g => RoomText(g.Select(x => x.Room)));
         foreach (var t in teachers)
         {
-            result[t.UserId] = new PersonPlacement(t.GradeLevel, t.Strand, t.Section, teacherRooms.GetValueOrDefault(t.Id));
+            result[t.UserId] = new PersonPlacement(t.GradeLevel, t.Strand, t.Section);
         }
 
         return result;
-    }
-
-    /// <summary>"Room 101", or "Room 101 +1" when the classes meet in more than one room.</summary>
-    private static string? RoomText(IEnumerable<string> names)
-    {
-        var rooms = names.Distinct().Order().ToList();
-        return rooms.Count switch { 0 => null, 1 => rooms[0], _ => $"{rooms[0]} +{rooms.Count - 1}" };
     }
 }

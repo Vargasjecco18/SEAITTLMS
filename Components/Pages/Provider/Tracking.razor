@@ -108,7 +108,7 @@
             <table class="data-table tracking">
                 <thead>
                     <tr>
-                        <th scope="col">@(part == "syllabus" ? "Syllabus" : "Module")</th>
+                        <th scope="col">@(part == "syllabus" ? "Syllabus" : "Handout")</th>
                         <th scope="col">Teacher</th>
                         <th scope="col">@(state == TrackStates.Scheduled ? "Appears for the students" : "What the teacher did")</th>
                     </tr>
@@ -150,7 +150,7 @@
                 <thead>
                     <tr>
                         <th scope="col">Student</th>
-                        <th scope="col">@(part == "syllabus" ? "Syllabus" : "Module")</th>
+                        <th scope="col">@(part == "syllabus" ? "Syllabus" : "Handout")</th>
                         <th scope="col">Teacher</th>
                     </tr>
                 </thead>
@@ -236,7 +236,7 @@
     private static readonly IReadOnlyList<PillTabs.Tab> PartTabs =
     [
         new("syllabus", "Syllabus", "book-open"),
-        new("modules", "Modules", "layers"),
+        new("modules", "Handouts", "layers"),
         new("exams", "Summative exams", "clipboard-list"),
     ];
 
@@ -258,7 +258,7 @@
         _ => "Students who have not opened what the teacher posted.",
     };
 
-    private string SearchHint => part == "exams" ? "Student, course, section…" : ShowsTeachers ? "Course, teacher, module…" : "Student, course, teacher…";
+    private string SearchHint => part == "exams" ? "Student, course, section…" : ShowsTeachers ? "Course, teacher, handout…" : "Student, course, teacher…";
 
     private bool ShowsTeachers => state is TrackStates.NotPosted or TrackStates.Scheduled;
 

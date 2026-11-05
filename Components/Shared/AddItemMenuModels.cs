@@ -20,9 +20,18 @@ public static class AddItemMenuLabels
     /// <summary>What the Add menu gives back (instead of a kind of work) when the person chose "Template and import (Excel)" for a module.</summary>
     public const string ExcelKind = "Excel";
 
-    /// <summary>"Module 2: Ledgers" for a module that is called Ledgers; a module whose title already starts with "Module" (like "Module 2: Ledgers") is shown as it is.</summary>
-    public static string ModuleLabel(int number, string title) =>
-        title.TrimStart().StartsWith("Module", StringComparison.OrdinalIgnoreCase) ? title : $"Module {number}: {title}";
+    /// <summary>"Handout 2: Ledgers" for a handout that is called Ledgers; a handout whose title already starts with "Handout" (like "Handout 2: Ledgers") is shown as it is.</summary>
+    public static string ModuleLabel(int number, string title)
+    {
+        var text = title.TrimStart();
+        if (text.StartsWith("Handout", StringComparison.OrdinalIgnoreCase))
+        {
+            return title;
+        }
+
+        // A title written when the word was Module ("Module 2: Ledgers") shows with the new word.
+        return text.StartsWith("Module", StringComparison.OrdinalIgnoreCase) ? "Handout" + text["Module".Length..] : $"Handout {number}: {title}";
+    }
 }
 
 /// <summary>One line inside a dropdown of the course menu: a module, or a seatwork, assignment, quiz or task performance.</summary>
@@ -57,7 +66,7 @@ public static class CourseMenuBuilder
         var groups = new List<CourseMenuGroup>();
         var number = 0;
         var modules = subject.Modules.Where(m => !m.IsExamSet).Select(m => new CourseMenuEntry(m.IsSyllabus ? "Syllabus" : Titled(++number, m.Title), $"{page}/modules/{m.Id}", m.Id == currentModuleId)).ToList();
-        groups.Add(new CourseMenuGroup("modules", "Modules", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
+        groups.Add(new CourseMenuGroup("modules", "Handouts", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
 
         // Activities: one dropdown with a dropdown of each kind inside it.
         var kinds = new List<CourseMenuGroup>();
@@ -83,7 +92,7 @@ public static class CourseMenuBuilder
         var groups = new List<CourseMenuGroup>();
         var number = 0;
         var modules = subject.Modules.Where(m => !m.IsExamSet).Select(m => new CourseMenuEntry(m.IsSyllabus ? "Syllabus" : Titled(++number, m.Title), $"student/modules/{m.Id}", m.Id == currentModuleId)).ToList();
-        groups.Add(new CourseMenuGroup("modules", "Modules", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
+        groups.Add(new CourseMenuGroup("modules", "Handouts", "layers", subject.Modules.Count(m => !m.IsSyllabus && !m.IsExamSet), page, modules));
 
         var kinds = new List<CourseMenuGroup>();
         foreach (var kind in KindOrder)
@@ -117,6 +126,6 @@ public static class CourseMenuBuilder
             new("Grades", "trending-up", "student/grades", current == "grades"),
         ];
 
-    /// <summary>"Module 2: Ledgers" for a module that is called Ledgers; a title that already starts with "Module" stays as it is.</summary>
+    /// <summary>"Handout 2: Ledgers" for a handout that is called Ledgers; a title that already starts with "Handout" stays as it is.</summary>
     private static string Titled(int number, string title) => AddItemMenuLabels.ModuleLabel(number, title);
 }

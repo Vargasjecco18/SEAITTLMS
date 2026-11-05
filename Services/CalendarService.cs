@@ -35,7 +35,7 @@ public static class CalendarKinds
         Announcement => "Announcement",
         Holiday => "Holiday",
         ItemKinds.Activity => "Assignment",
-        Module => "Module",
+        Module => "Handout",
         Personal => "Event",
         _ => kind,
     };
@@ -134,7 +134,7 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                                 && assignments.Any(a => a.Id == m.AssignmentId))
                     .Select(m => new { m.Id, m.Title, At = m.VisibleFromUtc!.Value, Subject = m.Assignment.Subject.Name })
                     .ToListAsync(ct);
-                events.AddRange(modules.Select(m => new CalendarEvent($"module-{m.Id}", PhilippineTime.DayOf(m.At), m.At, "New module: " + m.Title, m.Subject, CalendarKinds.Module, $"student/modules/{m.Id}", false, false)));
+                events.AddRange(modules.Select(m => new CalendarEvent($"module-{m.Id}", PhilippineTime.DayOf(m.At), m.At, "New handout: " + m.Title, m.Subject, CalendarKinds.Module, $"student/modules/{m.Id}", false, false)));
             }
         }
         else if (user.Role == AppRoles.Teacher)
@@ -162,7 +162,7 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                     })
                     .ToListAsync(ct);
                 events.AddRange(modules.Select(m => new CalendarEvent($"module-{m.Id}", PhilippineTime.DayOf(m.At), m.At,
-                    (m.At > now ? "Module posts: " : "Module posted: ") + m.Title, m.Subject, CalendarKinds.Module, $"teacher/subjects/{m.AssignmentId}", m.At <= now, false)));
+                    (m.At > now ? "Handout posts: " : "Handout posted: ") + m.Title, m.Subject, CalendarKinds.Module, $"teacher/subjects/{m.AssignmentId}", m.At <= now, false)));
             }
         }
 

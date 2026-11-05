@@ -1,7 +1,7 @@
 @* How much of a module has been read, at the right of its title. It only counts what happens inside the files of the module: the pages of a PDF that were in front of the reader and how far
    the reader scrolled inside it, how much of a sound or a video was played (wwwroot/app.js does the counting). Scrolling the rest of the page counts for nothing. It never goes back,
    and it is remembered on this computer. *@
-<div class="read-progress" data-read-progress data-read-key="@Key" data-read-module="@(ModuleId > 0 ? ModuleId.ToString() : null)" data-read-save="@(Save ? "1" : null)" data-read-server="@(ServerPercent is > 0 ? ServerPercent.ToString() : null)" role="progressbar" aria-label="How much of this module was read" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+<div class="read-progress" data-read-progress data-read-key="@Key" data-read-module="@(ModuleId > 0 ? ModuleId.ToString() : null)" data-read-save="@(Save ? "1" : null)" data-read-server="@(ServerPercent is > 0 ? ServerPercent.ToString() : null)" role="progressbar" aria-label="How much of this handout was read" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
      title="It grows as you read inside the files: the pages you look at and how far you scroll in them">
     <span class="rp-text">Read <b data-rp-value>0%</b></span>
     <span class="rp-track"><i data-rp-bar></i></span>

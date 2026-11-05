@@ -30,8 +30,6 @@
                  Contents="CoordinatorDashboard" />
         <NavItem Href="coordinator/academic-setup" Icon="school" Label="Academic setup"
                  Items="CoordinatorSetup" />
-        <NavItem Href="coordinator/class-schedule" Icon="calendar-clock" Label="Class schedule"
-                 Contents="CoordinatorSchedule" />
         <NavItem Href="coordinator/evaluations" Icon="clipboard-check" Label="Teacher evaluation"
                  Contents="CoordinatorEvaluations" />
         <NavItem Href="coordinator/announcements" Icon="megaphone" Label="Announcements"
@@ -218,22 +216,19 @@
     [
         new("School years", "coordinator/academic-setup/school-years", "calendar-range"),
         new("Tracks, strands and courses", "coordinator/academic-setup/curriculum", "layers"),
-        new("Rooms", "coordinator/academic-setup/rooms", "door-open"),
     ];
 
-
-    private static readonly IReadOnlyList<string> CoordinatorSchedule = ["A week like a spreadsheet", "Drag a course to a day and a time", "A room for each class"];
 
     private static readonly IReadOnlyList<string> CoordinatorDashboard = ["Evaluations that are open", "Announcements", "The school setup"];
 
     private static readonly IReadOnlyList<string> ProviderDashboard = ["Sent, opened and posted", "Waiting to be opened", "What the students opened"];
 
-    private static readonly IReadOnlyList<string> ProviderLibrary = ["A course at a time", "The syllabus first", "Modules, assignments, quizzes and task performances", "Send to the teachers as drafts"];
+    private static readonly IReadOnlyList<string> ProviderLibrary = ["A course at a time", "The syllabus first", "Handouts, assignments, quizzes and task performances", "Send to the teachers as drafts"];
 
     private static readonly IReadOnlyList<NavItem.Sub> ProviderTracking =
     [
         new("Syllabus", "provider/tracking?tab=syllabus", "book-open"),
-        new("Modules", "provider/tracking?tab=modules", "layers"),
+        new("Handouts", "provider/tracking?tab=modules", "layers"),
         new("Summative exams", "provider/tracking?tab=exams", "clipboard-list"),
     ];
 
@@ -275,7 +270,7 @@
 
     private static readonly IReadOnlyList<string> StaffGroups = ["Your groups", "Make a group", "Write in a group"];
 
-    private static readonly IReadOnlyList<string> StudentDashboard = ["Assignments to do and overdue", "Assignments and due dates", "New modules", "Recent grades", "Online classmates"];
+    private static readonly IReadOnlyList<string> StudentDashboard = ["Assignments to do and overdue", "Assignments and due dates", "New handouts", "Recent grades", "Online classmates"];
 
     private static readonly IReadOnlyList<string> StudentGrades = ["Your grade in each course", "Your progress", "Courses below 70"];
 

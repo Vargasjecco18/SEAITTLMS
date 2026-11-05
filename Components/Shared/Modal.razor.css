@@ -64,6 +64,10 @@
     width: min(1180px, 100%);
 }
 
+.dialog.wider {
+    width: min(1500px, 100%);
+}
+
 /* All the screen: the box has no margin and the body scrolls under its head. */
 .backdrop.full {
     padding: 0;

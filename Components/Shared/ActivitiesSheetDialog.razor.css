@@ -195,7 +195,8 @@
 
 .cell {
     width: 100%;
-    padding: 0.45rem 0.45rem;
+    min-height: 3.1rem;
+    padding: 0.8rem 0.55rem;
     border: 0;
     border-radius: 0;
     background: transparent;

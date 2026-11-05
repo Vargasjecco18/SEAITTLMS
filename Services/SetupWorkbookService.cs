@@ -8,10 +8,10 @@ public sealed record SetupImportResult(int Saved, IReadOnlyList<string> Errors);
 
 /// <summary>
 /// The Excel workbook of the academic setup (see <see cref="SetupSheets"/>): the export reads everything the setup has, the import saves the rows of a filled workbook. Every row goes through the same
-/// <see cref="SchoolSetupService"/> and <see cref="CourseScheduleService"/> methods the tabs of the page use, so the same rules apply (and the same check that the person is the academic coordinator):
+/// <see cref="SchoolSetupService"/> methods the tabs of the page use, so the same rules apply (and the same check that the person is the academic coordinator):
 /// a row that breaks a rule is left out and says why, the others are saved. A row whose code, name or section already exists changes it; nothing is ever deleted.
 /// </summary>
-public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFactory, SchoolSetupService setup, CourseScheduleService schedule)
+public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFactory, SchoolSetupService setup)
 {
     /// <summary>Everything the setup has, in the words of the workbook.</summary>
     public async Task<SetupSnapshot> GetSnapshotAsync(CancellationToken ct = default)
@@ -22,7 +22,6 @@ public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFacto
         var strands = await setup.ListStrandsAsync(ct);
         var courses = await setup.ListSubjectsAsync(ct);
         var sections = await setup.ListSectionsAsync(ct);
-        var dayParts = await schedule.GetDayPartsAsync(ct);
 
         var curriculum = new List<SetupCurriculumRow>();
         foreach (var strand in strands)
@@ -34,22 +33,9 @@ public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFacto
         var adviserIds = sections.Where(s => s.AdviserTeacherId is not null).Select(s => s.AdviserTeacherId!.Value).Distinct().ToList();
         var numbers = await db.Teachers.AsNoTracking().Where(t => adviserIds.Contains(t.Id)).Select(t => new { t.Id, t.EmployeeNumber }).ToDictionaryAsync(t => t.Id, t => t.EmployeeNumber, ct);
 
-        var classes = new List<SetupClassRow>();
-        foreach (var section in sections)
-        {
-            foreach (var course in await schedule.ListCoursesAsync(section.Id, ct))
-            {
-                if (course.Meeting is { } meeting)
-                {
-                    classes.Add(new SetupClassRow(section.SchoolYear, section.StrandCode, section.GradeLevel, section.Name, course.Code, meeting.Part ?? "", meeting.Days, meeting.Start, meeting.End));
-                }
-            }
-        }
-
         return new SetupSnapshot(
             years, terms, tracks, strands, courses, curriculum,
-            [.. sections.Select(s => new SetupSectionRow(s.SchoolYear, s.StrandCode, s.GradeLevel, s.Name, s.AdviserTeacherId is { } id ? numbers.GetValueOrDefault(id) : null))],
-            dayParts, classes);
+            [.. sections.Select(s => new SetupSectionRow(s.SchoolYear, s.StrandCode, s.GradeLevel, s.Name, s.AdviserTeacherId is { } id ? numbers.GetValueOrDefault(id) : null))]);
     }
 
     /// <summary>
@@ -79,38 +65,6 @@ public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFacto
             else
             {
                 errors.Add($"{line.Place}: {string.Join(" ", result.Errors)}");
-            }
-        }
-
-        // ---- the hours of AM, MID and PM (all together: they are checked together)
-        var partRows = book.DayParts.Where(p => p.Line.IsReady).ToList();
-        if (partRows.Count > 0)
-        {
-            var parts = await schedule.GetDayPartsAsync(ct);
-            var inputs = new List<DayPartInput>();
-            foreach (var row in partRows)
-            {
-                if (parts.FirstOrDefault(p => string.Equals(p.Code, row.Part, StringComparison.OrdinalIgnoreCase)) is { } part)
-                {
-                    inputs.Add(new DayPartInput(part.ScheduleId, row.Start, row.End));
-                }
-                else
-                {
-                    errors.Add($"{row.Line.Place}: there is no part of the day called {row.Part}.");
-                }
-            }
-
-            if (inputs.Count > 0)
-            {
-                var result = await schedule.SaveDayPartsAsync(actingUserId, inputs, ct);
-                if (result.Succeeded)
-                {
-                    saved += inputs.Count;
-                }
-                else
-                {
-                    errors.Add($"{SetupSheets.DayPartsSheet}: {string.Join(" ", result.Errors)}");
-                }
             }
         }
 
@@ -275,39 +229,6 @@ public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFacto
 
             Done(row.Line, await setup.SaveSectionAsync(new SectionInput { Id = old?.Id, SchoolYearId = year.Id, StrandId = strand.Id, GradeLevel = row.Grade, Name = row.Name, AdviserTeacherId = adviser }, actingUserId, ct));
             sectionList = await setup.ListSectionsAsync(ct);
-        }
-
-        // ---- the class times
-        var partList = await schedule.GetDayPartsAsync(ct);
-        foreach (var row in book.Classes.Where(c => c.Line.IsReady))
-        {
-            if (!years.TryGetValue(row.Year, out var year) || !strands.TryGetValue(row.Strand, out var strand))
-            {
-                errors.Add($"{row.Line.Place}: there is no section {row.Strand} {row.Section} in {row.Year}.");
-                continue;
-            }
-
-            var section = sectionList.FirstOrDefault(s => s.SchoolYearId == year.Id && s.StrandId == strand.Id && s.GradeLevel == row.Grade && string.Equals(s.Name, row.Section, StringComparison.OrdinalIgnoreCase));
-            if (section is null)
-            {
-                errors.Add($"{row.Line.Place}: there is no section {row.Strand} {row.Section} for grade {row.Grade} in {row.Year}. Add it in the sheet {SetupSheets.SectionsSheet}.");
-                continue;
-            }
-
-            if (!courses.TryGetValue(row.Course, out var course))
-            {
-                errors.Add($"{row.Line.Place}: there is no course with the code {row.Course}.");
-                continue;
-            }
-
-            var part = partList.FirstOrDefault(p => string.Equals(p.Code, row.Part, StringComparison.OrdinalIgnoreCase));
-            if (part is null)
-            {
-                errors.Add($"{row.Line.Place}: there is no part of the day called {row.Part}.");
-                continue;
-            }
-
-            Done(row.Line, await schedule.SaveAsync(actingUserId, section.Id, course.Id, part.ScheduleId, row.Days, row.Start, row.End, ct));
         }
 
         return new SetupImportResult(saved, errors);

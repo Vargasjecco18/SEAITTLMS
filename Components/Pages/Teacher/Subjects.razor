@@ -63,9 +63,9 @@ else
                     <thead>
                         <tr>
                             <th scope="col">Course</th>
-                            <th scope="col">Section</th>
+                            <th scope="col" class="col-section">Section</th>
                             <th scope="col" class="col-more">Students</th>
-                            <th scope="col">Modules</th>
+                            <th scope="col">Handouts</th>
                             <th scope="col">Assignments</th>
                             <th scope="col">To check</th>
                             <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
@@ -77,19 +77,18 @@ else
                             <tr>
                                 <td>
                                     <span class="name">@card.SubjectName</span>
-                                    @if (card.Meets is not null) { <span class="sub">@card.Meets</span> }
                                 </td>
-                                <td>@card.SectionLabel</td>
+                                <td class="col-section"><span class="section-chip">@card.SectionLabel</span></td>
                                 <td class="col-more">@card.Students</td>
                                 <td class="progress-cell">
                                     @if (card.ModulesTotal == 0)
                                     {
-                                        <span class="muted">No modules yet</span>
+                                        <span class="muted">No handouts yet</span>
                                     }
                                     else
                                     {
                                         <span class="posted">@card.ModulesPosted of @card.ModulesTotal</span>
-                                        <ProgressBar Percent="@(card.ModulesPosted * 100 / card.ModulesTotal)" Title="@($"{card.ModulesPosted} of {card.ModulesTotal} modules are posted")" />
+                                        <ProgressBar Percent="@(card.ModulesPosted * 100 / card.ModulesTotal)" Title="@($"{card.ModulesPosted} of {card.ModulesTotal} handouts are posted")" />
                                     }
                                 </td>
                                 <td>
@@ -129,7 +128,7 @@ else
             @foreach (var card in shown)
             {
                 <SubjectCard Name="@card.SubjectName" Cover="@StrandArt.For(card.StrandCode, card.StrandName)" CoverLabel="@card.StrandName"
-                             Section="@card.SectionLabel" Meets="@card.Meets"
+                             Section="@card.SectionLabel" Students="card.Students"
                              Modules="card.ModulesTotal" ModulesNote="@($"{card.ModulesPosted} posted")" Activities="card.Activities" Quizzes="card.Quizzes" TaskPerformances="card.TaskPerformances"
                              Href="@($"teacher/subjects/{card.AssignmentId}")">
                     @if (card.ToGrade > 0)

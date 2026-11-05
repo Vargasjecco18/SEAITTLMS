@@ -47,14 +47,14 @@ public static class ActivitySheets
         (ItemKinds.TaskPerformance, "Task performance"),
     ];
 
-    private static readonly string[] Headers = ["Module", "Type", "Title", "Instructions", "Highest score", "Time limit (minutes)", "Appears on", "Due date", "Files"];
+    private static readonly string[] Headers = ["Handout", "Type", "Title", "Instructions", "Highest score", "Time limit (minutes)", "Appears on", "Due date", "Files"];
     private static readonly string[] QuestionHeaders = ["Quiz", "Question", "Type", "Choices", "Right answer", "Points"];
 
     public static string FileName(string what) => FileDownloads.CleanName($"{what} - Activities.xlsx");
 
     /// <summary>The template of a course: a block for each module it has (or Module 1 to 3 when it has none yet), with a row for each kind.</summary>
     public static byte[] Template(IReadOnlyList<string>? moduleTitles = null) =>
-        Build([.. (moduleTitles is { Count: > 0 } ? moduleTitles : ["Module 1", "Module 2", "Module 3"]).Select(t => new ActivityModuleExport(t, []))], example: true);
+        Build([.. (moduleTitles is { Count: > 0 } ? moduleTitles : ["Handout 1", "Handout 2", "Handout 3"]).Select(t => new ActivityModuleExport(t, []))], example: true);
 
     public static byte[] Export(IReadOnlyList<ActivityModuleExport> modules) => Build(modules, example: false);
 
@@ -149,7 +149,7 @@ public static class ActivitySheets
         var titles = modules.Select(m => m.Title).ToList();
         if (titles.Count > 0)
         {
-            sheet.ListChoice($"A2:A{last}", [.. titles], "Choose the module from the list. Write it only on the first row of its block: the rows under it with no module belong to the same module.");
+            sheet.ListChoice($"A2:A{last}", [.. titles], "Choose the handout from the list. Write it only on the first row of its block: the rows under it with no handout belong to the same handout.");
         }
 
         sheet.ListChoice($"B2:B{last}", [.. Kinds.Select(k => k.Word)], "Choose the type from the list.");
@@ -206,13 +206,13 @@ public static class ActivitySheets
         const string Needed = "Needed", Optional = "Optional";
         TemplateGuide.Add(book, "How to fill the workbook",
         [
-            new(ActivitiesSheet, "Module", Needed, "The module the rows belong to. Write it once, on the first row of its block; the rows under it with no module belong to the same one.", "Choose it from the list."),
+            new(ActivitiesSheet, "Handout", Needed, "The handout the rows belong to. Write it once, on the first row of its block; the rows under it with no handout belong to the same one.", "Choose it from the list."),
             new(ActivitiesSheet, "Type", Needed, "Seatwork, Assignment, Quiz or Task performance.", "Choose it from the list."),
             new(ActivitiesSheet, "Title", Needed, "The name of the work, like Assignment 1: Journal entries. A row with no title adds nothing.", TemplateGuide.TypeIt),
             new(ActivitiesSheet, "Instructions", Optional, "What the students must do.", TemplateGuide.TypeIt),
             new(ActivitiesSheet, "Highest score", Optional, "A number from 1 to 1000. Empty: 50 (100 for a task performance). A quiz is worth the points of its questions.", TemplateGuide.TypeNumber),
             new(ActivitiesSheet, "Time limit (minutes)", Optional, "Quiz only: the minutes a student has once they start. Empty: no limit.", TemplateGuide.TypeNumber),
-            new(ActivitiesSheet, "Appears on", Optional, "The day and hour the students can see it (Philippine time). Empty: it appears with its module.", TemplateGuide.DateHow),
+            new(ActivitiesSheet, "Appears on", Optional, "The day and hour the students can see it (Philippine time). Empty: it appears with its handout.", TemplateGuide.DateHow),
             new(ActivitiesSheet, "Due date", Optional, "The last day and hour to hand it in (Philippine time). Empty: no due date.", TemplateGuide.DateHow),
             new(ActivitiesSheet, "Files", Optional, "The names of the files that go with it, like worksheet.pdf; rubric.docx.", "Type the names with a semicolon (;) between them. In the import box, choose the same files."),
             new(QuestionsSheet, "Quiz", Needed, "The quiz the question belongs to: its title, written like in the sheet " + ActivitiesSheet + ". This is what connects a question to its quiz.", TemplateGuide.TypeIt),
@@ -257,7 +257,7 @@ public static class ActivitySheets
         int Column(string name, int fallback) => headers.IndexOf(name) is >= 0 and var i ? i + 1 : fallback;
         if (!headers.Contains("title") || !headers.Contains("type"))
         {
-            return new ActivityImportParse([], $"The sheet {ActivitiesSheet} needs the columns Module, Type and Title in its first row. Download the template again.");
+            return new ActivityImportParse([], $"The sheet {ActivitiesSheet} needs the columns Handout, Type and Title in its first row. Download the template again.");
         }
 
         var moduleColumn = Column("module", 1);
@@ -312,7 +312,7 @@ public static class ActivitySheets
 
             if (currentModule.Length == 0)
             {
-                errors.Add("Write the module this row belongs to.");
+                errors.Add("Write the handout this row belongs to.");
             }
 
             if (title.Length == 0)

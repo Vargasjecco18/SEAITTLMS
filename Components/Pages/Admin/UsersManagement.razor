@@ -570,14 +570,14 @@
                     <li>
                         <div class="assigned-text">
                             <strong>@a.SubjectName</strong>
-                            <span>@a.SectionLabel · @a.Students @(a.Students == 1 ? "student" : "students") · @a.Modules @(a.Modules == 1 ? "module" : "modules")</span>
+                            <span>@a.SectionLabel · @a.Students @(a.Students == 1 ? "student" : "students") · @a.Modules @(a.Modules == 1 ? "handout" : "handouts")</span>
                         </div>
                         @if (removing?.Id == a.Id)
                         {
                             <div class="assigned-confirm">
                                 @if (removalImpact is { Modules: > 0 })
                                 {
-                                    <span>This deletes @removalImpact.Modules @(removalImpact.Modules == 1 ? "module" : "modules"), @removalImpact.Items @(removalImpact.Items == 1 ? "assignment" : "assignments") and @removalImpact.Submissions @(removalImpact.Submissions == 1 ? "piece" : "pieces") of handed-in work.</span>
+                                    <span>This deletes @removalImpact.Modules @(removalImpact.Modules == 1 ? "handout" : "handouts"), @removalImpact.Items @(removalImpact.Items == 1 ? "assignment" : "assignments") and @removalImpact.Submissions @(removalImpact.Submissions == 1 ? "piece" : "pieces") of handed-in work.</span>
                                 }
                                 <Button Small="true" Variant="ButtonVariant.Ghost" OnClick="CancelRemove">Keep</Button>
                                 <Button Small="true" Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="ConfirmRemoveAsync">Remove</Button>

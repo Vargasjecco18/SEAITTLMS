@@ -1,5 +1,5 @@
 @* A module as the student reads it: the files and the slides shown right in the page (a PDF, a picture ...), under the title of the module. There is no lesson text any more: the
-   title of the module is the title of its file. The teacher sees the same thing on the page of the module, with the form to edit it at the right. *@
+   title of the handout is the title of its file. The teacher sees the same thing on the page of the handout, with the form to edit it at the right. *@
 @{
     var slides = Files.Where(f => f.IsSlides).ToList();
     var others = Files.Where(f => !f.IsSlides).ToList();
@@ -10,7 +10,7 @@
     {
         <div id="module-files">
             <Card>
-                <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this module" ModuleLabel="@ModuleLabel" LinkUrl="@LinkUrl" />
+                <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this handout" ModuleLabel="@ModuleLabel" LinkUrl="@LinkUrl" />
             </Card>
         </div>
     }
@@ -20,7 +20,7 @@
         @* The Slides button of the course page comes here (#slides). *@
         <div id="slides">
             <Card>
-                <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this module" ModuleLabel="@ModuleLabel" LinkUrl="@(others.Count == 0 ? LinkUrl : null)" IsSlides="true" />
+                <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this handout" ModuleLabel="@ModuleLabel" LinkUrl="@(others.Count == 0 ? LinkUrl : null)" IsSlides="true" />
             </Card>
         </div>
     }
@@ -29,7 +29,7 @@
     {
         <Card>
             @LinkLine
-            <p class="muted">@(ShowText ? "This module has no file yet." : "This module has no file. Add one in Edit module, at the right.")</p>
+            <p class="muted">@(ShowText ? "This handout has no file yet." : "This handout has no file. Add one in Edit handout, at the right.")</p>
         </Card>
     }
 

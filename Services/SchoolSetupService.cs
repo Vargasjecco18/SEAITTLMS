@@ -61,7 +61,7 @@ public sealed record SetupLookups(
     IReadOnlyList<int> TermNumbers);
 
 /// <summary>How many rows each tab of the school setup has (the numbers on the tabs).</summary>
-public sealed record SetupCounts(int SchoolYears, int Terms, int Tracks, int Strands, int Subjects, int Sections, int Enrollments, int NotEnrolled, int CourseTimes = 0);
+public sealed record SetupCounts(int SchoolYears, int Terms, int Tracks, int Strands, int Subjects, int Sections, int Enrollments, int NotEnrolled);
 
 // ---- what the forms send. An Id of null means "add".
 public sealed class SchoolYearInput
@@ -144,7 +144,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         var (_, notEnrolled) = await NotEnrolledList.CountAsync(db, ct);
         return new SetupCounts(
             await db.SchoolYears.CountAsync(ct), await db.Terms.CountAsync(ct), await db.Tracks.CountAsync(ct), await db.Strands.CountAsync(ct),
-            await db.Subjects.CountAsync(ct), await db.Sections.CountAsync(ct), await db.Enrollments.CountAsync(ct), notEnrolled, await db.CourseSchedules.CountAsync(ct));
+            await db.Subjects.CountAsync(ct), await db.Sections.CountAsync(ct), await db.Enrollments.CountAsync(ct), notEnrolled);
     }
 
     public async Task<SetupLookups> GetLookupsAsync(CancellationToken ct = default)
@@ -401,6 +401,12 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
 
         await transaction.CommitAsync(ct);
 
+        // A term that was added again is wanted: the calendar may keep it from now on.
+        if (input.Id is null)
+        {
+            await SchoolCalendar.SetTermDeletedAsync(db, year.Name, input.TermNumber, false, (clock ?? TimeProvider.System).GetUtcNow().UtcDateTime, actingUserId, ct);
+        }
+
         // The current term follows the calendar: the term that includes today (see TermClock).
         await TermClock.SyncAsync(dbFactory, clock ?? TimeProvider.System, ct);
         return ServiceResult.Ok(input.Id is null ? $"The term {name} of {year.Name} was added." : $"The term {name} of {year.Name} was saved.");
@@ -414,7 +420,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             return ServiceResult.Fail(CoordinatorOnly);
         }
 
-        var term = await db.Terms.Where(t => t.Id == id).Select(t => new { t.Name, Year = t.SchoolYear.Name, t.IsCurrent, Enrollments = db.Enrollments.Count(e => e.TermId == id) }).FirstOrDefaultAsync(ct);
+        var term = await db.Terms.Where(t => t.Id == id).Select(t => new { t.Name, t.TermNumber, Year = t.SchoolYear.Name, t.IsCurrent, Enrollments = db.Enrollments.Count(e => e.TermId == id) }).FirstOrDefaultAsync(ct);
         if (term is null)
         {
             return ServiceResult.Fail("This term was already deleted.");
@@ -426,6 +432,10 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
 
         await db.Terms.Where(t => t.Id == id).ExecuteDeleteAsync(ct);
+
+        // The calendar keeps the three terms of a school year by itself; this one is remembered as deleted so it is not made again.
+        await SchoolCalendar.SetTermDeletedAsync(db, term.Year, term.TermNumber, true, (clock ?? TimeProvider.System).GetUtcNow().UtcDateTime, actingUserId, ct);
+        await TermClock.SyncAsync(dbFactory, clock ?? TimeProvider.System, ct);
         return ServiceResult.Ok($"The term {term.Name} of {term.Year} was deleted.");
     }
 
@@ -859,7 +869,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             return ServiceResult.Fail($"{subject.Name} is in use by students or teachers, so it can't be deleted. Switch it off instead.");
         }
 
-        await db.CourseSchedules.Where(c => c.SubjectId == id).ExecuteDeleteAsync(ct);
         await db.Subjects.Where(s => s.Id == id).ExecuteDeleteAsync(ct);
         return ServiceResult.Ok($"The course {subject.Name} was deleted.");
     }
@@ -961,12 +970,6 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                           || await db.Students.AnyAsync(s => s.SectionId == id, ct) || await db.Teachers.AnyAsync(t => t.SectionId == id, ct)))
             {
                 return ServiceResult.Fail("Students or teachers are in this section, so only its name and its adviser can change.");
-            }
-
-            // The class times belong to the courses of the old strand and grade level: a section that moves starts without them.
-            if (moved)
-            {
-                await db.CourseSchedules.Where(c => c.SectionId == id).ExecuteDeleteAsync(ct);
             }
 
             // The school year, strand and grade level are part of keys that enrollments use, so the row is updated directly.

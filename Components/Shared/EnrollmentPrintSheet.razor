@@ -80,20 +80,19 @@
         else
         {
             <table class="courses">
-                <thead><tr><th>Course</th><th class="units">Units</th><th class="meets">Schedule</th></tr></thead>
+                <thead><tr><th>Course</th><th class="units">Units</th></tr></thead>
                 <tbody>
                     @for (var n = 0; n < Receipt.Subjects.Count; n++)
                     {
                         <tr>
                             <td>@Receipt.Subjects[n]</td>
                             <td class="units">@UnitsOf(n)</td>
-                            <td class="meets">@(Receipt.SubjectMeets is { } meets && n < meets.Count && meets[n] is { } when ? when : "—")</td>
                         </tr>
                     }
                 </tbody>
                 @if (TotalUnits is { } total)
                 {
-                    <tfoot><tr><td>Total units</td><td class="units">@FormatUnits(total)</td><td class="meets"></td></tr></tfoot>
+                    <tfoot><tr><td>Total units</td><td class="units">@FormatUnits(total)</td></tr></tfoot>
                 }
             </table>
         }

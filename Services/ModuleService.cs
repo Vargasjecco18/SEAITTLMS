@@ -254,7 +254,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         };
         db.Modules.Add(module);
         await db.SaveChangesAsync(ct);
-        return ServiceResult.Ok("The module was made. Students can't see it until you post it.", module.Id);
+        return ServiceResult.Ok("The handout was made. Students can't see it until you post it.", module.Id);
     }
 
     public async Task<ServiceResult> UpdateModuleAsync(int teacherId, int moduleId, ModuleInput input, CancellationToken ct = default)
@@ -269,7 +269,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var module = await db.Modules.FirstOrDefaultAsync(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId, ct);
         if (module is null)
         {
-            return ServiceResult.Fail("This module was not found.");
+            return ServiceResult.Fail("This handout was not found.");
         }
 
         module.Title = input.Title.Trim();
@@ -278,14 +278,14 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         module.LinkUrl = Clean(input.LinkUrl);
         await db.SaveChangesAsync(ct);
         await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
-        return ServiceResult.Ok("The module was saved.");
+        return ServiceResult.Ok("The handout was saved.");
     }
 
     public async Task<ServiceResult> DeleteModuleAsync(int teacherId, int moduleId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var deleted = await db.Modules.Where(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId).ExecuteDeleteAsync(ct);
-        return deleted == 0 ? ServiceResult.Fail("This module was not found.") : ServiceResult.Ok("The module was deleted with its assignments and grades.");
+        return deleted == 0 ? ServiceResult.Fail("This handout was not found.") : ServiceResult.Ok("The handout was deleted with its assignments and grades.");
     }
 
     /// <summary>Posts the module now (<paramref name="atUtc"/> empty) or at a time in the future. Students are told when it appears.</summary>
@@ -301,7 +301,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var module = await db.Modules.FirstOrDefaultAsync(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId, ct);
         if (module is null)
         {
-            return ServiceResult.Fail("This module was not found.");
+            return ServiceResult.Fail("This handout was not found.");
         }
 
         module.VisibleFromUtc = atUtc ?? now;
@@ -312,10 +312,10 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         if (atUtc is null)
         {
             await AutomationService.NotifyNewContentAsync(dbFactory, notifications, now, ct);
-            return ServiceResult.Ok("The module is posted.");
+            return ServiceResult.Ok("The handout is posted.");
         }
 
-        return ServiceResult.Ok($"The module will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc.Value)}.");
+        return ServiceResult.Ok($"The handout will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc.Value)}.");
     }
 
     /// <summary>
@@ -329,7 +329,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var module = await db.Modules.FirstOrDefaultAsync(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId, ct);
         if (module is null)
         {
-            return ServiceResult.Fail("This module was not found.");
+            return ServiceResult.Fail("This handout was not found.");
         }
 
         var wasVisible = module.VisibleFromUtc is { } before && before <= now;
@@ -348,8 +348,8 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         }
 
         return ServiceResult.Ok(future
-            ? $"The module will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc)}."
-            : wasVisible ? $"The module appears from {Components.Shared.PhilippineTime.FormatDateTime(atUtc)}." : "The module is posted.");
+            ? $"The handout will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc)}."
+            : wasVisible ? $"The handout appears from {Components.Shared.PhilippineTime.FormatDateTime(atUtc)}." : "The handout is posted.");
     }
 
     /// <summary>Hides a posted or scheduled module again (it becomes a draft).</summary>
@@ -358,7 +358,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var changed = await db.Modules.Where(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId)
             .ExecuteUpdateAsync(set => set.SetProperty(m => m.VisibleFromUtc, (DateTime?)null).SetProperty(m => m.NotifiedAtUtc, (DateTime?)null), ct);
-        return changed == 0 ? ServiceResult.Fail("This module was not found.") : ServiceResult.Ok("The module is hidden from the students again.");
+        return changed == 0 ? ServiceResult.Fail("This handout was not found.") : ServiceResult.Ok("The handout is hidden from the students again.");
     }
 
     /// <summary>Moves a module one place up (-1) or down (+1) in the subject.</summary>
@@ -368,7 +368,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var module = await db.Modules.AsNoTracking().Where(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId).Select(m => new { m.Id, m.AssignmentId }).FirstOrDefaultAsync(ct);
         if (module is null)
         {
-            return ServiceResult.Fail("This module was not found.");
+            return ServiceResult.Fail("This handout was not found.");
         }
 
         var all = await db.Modules.Where(m => m.AssignmentId == module.AssignmentId).OrderBy(m => m.Position).ThenBy(m => m.Id).ToListAsync(ct);
@@ -409,7 +409,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var module = await db.Modules.AsNoTracking().Where(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId).Select(m => new { m.Id, m.VisibleFromUtc }).FirstOrDefaultAsync(ct);
         if (module is null)
         {
-            return ServiceResult.Fail("This module was not found.");
+            return ServiceResult.Fail("This handout was not found.");
         }
 
         await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
@@ -674,7 +674,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .Select(x => new { x.Assignment.SectionId, x.Assignment.SubjectId }).FirstOrDefaultAsync(ct);
         if (m is null || !await OnRosterAsync(db, studentId.Value, m.SectionId, m.SubjectId, ct))
         {
-            return ServiceResult.Fail("This module is not one of your courses.");
+            return ServiceResult.Fail("This handout is not one of your courses.");
         }
 
         var row = await db.ModuleReads.FirstOrDefaultAsync(r => r.ModuleId == moduleId && r.StudentId == studentId.Value, ct);
@@ -766,7 +766,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var errors = new List<string>();
         if (string.IsNullOrWhiteSpace(input.Title) || input.Title.Trim().Length > 200)
         {
-            errors.Add("Write the title of the module (up to 200 characters).");
+            errors.Add("Write the title of the handout (up to 200 characters).");
         }
 
         if (input.Description is { Length: > 1000 })

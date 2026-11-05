@@ -28,7 +28,7 @@
                 <Field For="d-due" Label="Due date" Required="true" Hint="Philippine time.">
                     <input id="d-due" type="datetime-local" value="@form.DueText" @onchange="e => form.DueText = e.Value?.ToString() ?? string.Empty" />
                 </Field>
-                <Field For="d-from" Label="Appears on" Hint="Leave empty to show it with its module.">
+                <Field For="d-from" Label="Appears on" Hint="Leave empty to show it with its handout.">
                     <input id="d-from" type="datetime-local" value="@form.VisibleText" @onchange="e => form.VisibleText = e.Value?.ToString() ?? string.Empty" />
                 </Field>
             </div>

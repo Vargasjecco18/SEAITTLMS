@@ -102,14 +102,14 @@ else
         @if (subject.Modules.All(m => m.IsExamSet))
         {
             <Card>
-                <EmptyState IconName="layers" Title="No modules yet">
-                    <p>Your teacher has not posted any module for this course. You will be told when one appears.</p>
+                <EmptyState IconName="layers" Title="No handouts yet">
+                    <p>Your teacher has not posted any handout for this course. You will be told when one appears.</p>
                 </EmptyState>
             </Card>
         }
         else
         {
-            <Card Title="Syllabus and modules" IconName="layers">
+            <Card Title="Syllabus and handouts" IconName="layers">
                 <ul class="course-rows">
                     @for (var n = 0; n < subject.Modules.Count; n++)
                     {
@@ -124,7 +124,7 @@ else
                         var moduleHref = $"student/modules/{module.Id}";
                         <li class="course-row" data-module="@module.Id">
                             @* The title opens the module; under it, at the left of what the module has (its activities), the progress bar (50 for the slides, 50 for the module, and 100 for the module when
-                               it has no slides). In the middle: the Slides (when there are slides) and Module buttons. *@
+                               it has no slides). In the middle: the Slides (when there are slides) and Handout buttons. *@
                             <a class="row-open" href="@moduleHref" aria-label="@(module.IsSyllabus ? "Open the syllabus" : $"Open {module.Title}")">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">
@@ -140,7 +140,7 @@ else
                                 {
                                     <ButtonLink Href="@($"{moduleHref}?slides=1")" Variant="ButtonVariant.Secondary" Small="true" IconName="presentation">Slides</ButtonLink>
                                 }
-                                <ButtonLink Href="@moduleHref" Small="true" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
+                                <ButtonLink Href="@moduleHref" Small="true" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Handout")</ButtonLink>
                             </span>
                         </li>
                     }
@@ -182,7 +182,7 @@ else
 
     /// <summary>The progress of a module: 50 for the slides the student saw, 50 for the module (opened), and 100 for the module when it has no slides.</summary>
     private static (int Percent, string Text) ProgressOf(StudentModule module) =>
-        (module.Progress, module.HasSlides ? $"{module.Progress}%: half is the slides you saw, half is opening the module" : $"{module.Progress}%: this module has no slides, so opening it is all of it");
+        (module.Progress, module.HasSlides ? $"{module.Progress}%: half is the slides you saw, half is opening the handout" : $"{module.Progress}%: this handout has no slides, so opening it is all of it");
 
     private bool loaded;
     private StudentSubject? subject;

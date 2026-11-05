@@ -22,7 +22,7 @@ else if (data.Sent == 0)
 {
     <Card>
         <EmptyState IconName="chart-column" Title="Nothing was sent yet">
-            <p>The analytics start when you send a syllabus or a module to the teachers of a course.</p>
+            <p>The analytics start when you send a syllabus or a handout to the teachers of a course.</p>
             <ButtonLink Href="provider/library" IconName="folder-open">Go to the Course library</ButtonLink>
         </EmptyState>
     </Card>
@@ -32,7 +32,7 @@ else
     <div class="kpis">
         <StatCard Label="Opened by the teachers" Text="@($"{data.TeacherOpenedPercent}%")" IconName="eye" Accent="@Level(data.TeacherOpenedPercent)" Hint="@($"of {data.Sent:N0} sent · in {ProviderUi.Duration(data.AverageHoursToOpen)} on average")" />
         <StatCard Label="Posted to the students" Text="@($"{data.PostedPercent}%")" IconName="circle-check" Accent="@Level(data.PostedPercent)" Hint="@(data.AverageHoursToPost is null ? "None posted" : $"after {ProviderUi.Duration(data.AverageHoursToPost)}")" />
-        <StatCard Label="Modules opened by students" Text="@($"{data.StudentModulePercent}%")" IconName="book-open" Accent="@Level(data.StudentModulePercent)" Hint="Syllabi and modules posted" />
+        <StatCard Label="Handouts opened by students" Text="@($"{data.StudentModulePercent}%")" IconName="book-open" Accent="@Level(data.StudentModulePercent)" Hint="Syllabi and handouts posted" />
         <StatCard Label="Activities opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Posted exams and activities" />
     </div>
 
@@ -159,7 +159,7 @@ else
                             <th scope="col" class="num">Sent</th>
                             <th scope="col" class="bar-cell">Opened by the teachers</th>
                             <th scope="col" class="bar-cell col-more">Posted</th>
-                            <th scope="col" class="bar-cell">Modules opened</th>
+                            <th scope="col" class="bar-cell">Handouts opened</th>
                             <th scope="col" class="bar-cell col-more">Assignments opened</th>
                         </tr>
                     </thead>

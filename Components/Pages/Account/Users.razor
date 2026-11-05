@@ -286,7 +286,7 @@
             found = await People.FindAsync(userId, findText);
         }
 
-        // Where each person is (grade level, strand, section and room): one lookup for everybody on the page.
+        // Where each person is (grade level, strand and section): one lookup for everybody on the page.
         var everybody = friends.Concat(students).Concat(colleagues).Concat(classmates).Concat(teachers).Concat(requests.Received).Concat(requests.Sent).Concat(found ?? []).Select(p => p.UserId).ToList();
         placements = await People.GetPlacementsAsync(everybody);
     }

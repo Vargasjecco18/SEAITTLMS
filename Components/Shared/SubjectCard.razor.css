@@ -51,7 +51,7 @@
 .cover {
     display: block;
     width: 100%;
-    aspect-ratio: 720 / 414;
+    aspect-ratio: 720 / 360;
     object-fit: cover;
     background: var(--surface-2);
 }
@@ -118,6 +118,45 @@ h3 {
 .details .txt {
     min-width: 0;
     overflow-wrap: anywhere;
+}
+
+/* The section: a chip in the color of the brand, and the number of students beside it. It never breaks in the middle of 11-BUSSENT-A. */
+.details .section {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
+}
+
+.details .section .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    padding: 0.18rem 0.65rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.details .section .chip ::deep .icon {
+    color: var(--brand-strong);
+}
+
+.details .section .chip .txt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.details .section .students {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    white-space: nowrap;
 }
 
 .details .teacher .txt {

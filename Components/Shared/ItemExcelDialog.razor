@@ -16,7 +16,7 @@
                         <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button>
                         @if (Existing.Count > 0)
                         {
-                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export what the module has (@Existing.Count)</Button>
+                            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export what the handout has (@Existing.Count)</Button>
                         }
                     </div>
                 </li>
@@ -71,7 +71,7 @@
         else
         {
             <p class="xl-summary" role="status">
-                <strong>@result.Created</strong> @(result.Created == 1 ? ItemKinds.Display(Kind).ToLowerInvariant() + " was" : ItemKinds.Plural(Kind).ToLowerInvariant() + " were") added to the module.
+                <strong>@result.Created</strong> @(result.Created == 1 ? ItemKinds.Display(Kind).ToLowerInvariant() + " was" : ItemKinds.Plural(Kind).ToLowerInvariant() + " were") added to the handout.
                 @if (result.Errors.Count > 0)
                 {
                     <span class="bad">@result.Errors.Count could not be added.</span>
@@ -148,7 +148,7 @@
 
     private async Task DownloadTemplateAsync() => await Downloads.SaveAsync(ItemSheets.FileName(Kind, "Template"), ItemSheets.Template(Kind));
 
-    private async Task ExportAsync() => await Downloads.SaveAsync(ItemSheets.FileName(Kind, ModuleTitle.Length == 0 ? "Module" : ModuleTitle), ItemSheets.Export(Kind, Existing));
+    private async Task ExportAsync() => await Downloads.SaveAsync(ItemSheets.FileName(Kind, ModuleTitle.Length == 0 ? "Handout" : ModuleTitle), ItemSheets.Export(Kind, Existing));
 
     private async Task FileChosenAsync(InputFileChangeEventArgs e)
     {

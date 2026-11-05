@@ -44,7 +44,7 @@ else
                     .SelectMany(m => m.Items.Where(i => i.Kind == listKind).Select(i => (Module: m, Item: i))).ToList();
             }
             <div class="kind-head">
-                <p class="muted">@(listed.Count == 0 ? $"No {ItemKinds.Plural(listKind).ToLowerInvariant()} in this course yet." : $"All the {ItemKinds.Plural(listKind).ToLowerInvariant()} of the course, module by module.")</p>
+                <p class="muted">@(listed.Count == 0 ? $"No {ItemKinds.Plural(listKind).ToLowerInvariant()} in this course yet." : $"All the {ItemKinds.Plural(listKind).ToLowerInvariant()} of the course, handout by handout.")</p>
                 @if (ItemKinds.All.Contains(listKind))
                 {
                     <AddItemMenu @key="@($"{listKind}-{AddQuery}")" Kind="@listKind" Label="@($"Add {ItemKinds.Display(listKind).ToLowerInvariant()}")" Modules="AddMenuModules" OnPick="PickNew" StartOpen="@(AddQuery == "1")" />
@@ -85,7 +85,7 @@ else
                                             <span title="Warns after @item.MaxViolations leaves of the quiz, copies, pastes, prints or screenshots"><Icon Name="shield-check" Size="14" /> Anti-cheat on</span>
                                         }
                                     }
-                                    <Badge Tone="@(module.State == Visibility.Posted ? Tone.Success : module.State == Visibility.Scheduled ? Tone.Warning : Tone.Neutral)">@(module.State == Visibility.Draft ? "Draft module" : module.State == Visibility.Scheduled ? "Module scheduled" : "Posted")</Badge>
+                                    <Badge Tone="@(module.State == Visibility.Posted ? Tone.Success : module.State == Visibility.Scheduled ? Tone.Warning : Tone.Neutral)">@(module.State == Visibility.Draft ? "Draft handout" : module.State == Visibility.Scheduled ? "Handout scheduled" : "Posted")</Badge>
                                 </div>
                             </div>
                             <div class="item-side">
@@ -123,20 +123,20 @@ else
         <CourseLayout Teacher="subject">
         <p class="hint-line">
             <Icon Name="eye-off" Size="16" />
-            <span>Modules from the provider are <strong>drafts</strong>. Students see them when you post them.</span>
+            <span>Handouts from the provider are <strong>drafts</strong>. Students see them when you post them.</span>
         </p>
 
         @if (subject.Modules.All(m => m.IsExamSet))
         {
             <Card>
-                <EmptyState IconName="layers" Title="No modules yet">
-                    <p>A module is a lesson with its files. The academic provider sends the syllabus and the modules of this course.</p>
+                <EmptyState IconName="layers" Title="No handouts yet">
+                    <p>A handout is a lesson with its files. The academic provider sends the syllabus and the handouts of this course.</p>
                 </EmptyState>
             </Card>
         }
         else
         {
-            <Card Title="Syllabus and modules" IconName="layers">
+            <Card Title="Syllabus and handouts" IconName="layers">
                 <ul class="course-rows">
                     @for (var n = 0; n < subject.Modules.Count; n++)
                     {
@@ -151,7 +151,7 @@ else
                         var moduleHref = $"teacher/subjects/{AssignmentId}/modules/{module.Id}";
                         <li class="course-row @module.State.ToLowerInvariant()" data-module="@module.Id">
                             @* The title opens the module; under it, at the left of what the module has (its activities), how far the class has got (50 for the slides, 50 for the module). In the middle: the Slides
-                               (when there are slides) and Module buttons. At the right: when it appears (press it to change the time) and Hide from students. *@
+                               (when there are slides) and Handout buttons. At the right: when it appears (press it to change the time) and Hide from students. *@
                             <a class="row-open" href="@moduleHref">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">
@@ -174,7 +174,7 @@ else
                                 {
                                     <ButtonLink Href="@($"{moduleHref}?slides=1")" Variant="ButtonVariant.Secondary" Small="true" IconName="presentation">Slides</ButtonLink>
                                 }
-                                <ButtonLink Href="@moduleHref" Small="true" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Module")</ButtonLink>
+                                <ButtonLink Href="@moduleHref" Small="true" IconName="book-open">@(module.IsSyllabus ? "Syllabus" : "Handout")</ButtonLink>
                             </span>
                             <span class="row-status">
                                 <span class="when">
@@ -251,7 +251,7 @@ else
                 </Field>
             }
             <div class="two">
-                <Field For="i-from" Label="Appears on" Hint="Leave empty to show it with its module.">
+                <Field For="i-from" Label="Appears on" Hint="Leave empty to show it with its handout.">
                     <input id="i-from" type="datetime-local" value="@itemForm.VisibleText" @onchange="SetVisible" />
                 </Field>
                 <Field For="i-due" Label="Due date" Hint="Philippine time. Leave empty for no due date.">
@@ -286,6 +286,27 @@ else
 
 @* ===== Add activities: the Excel template and import for the seatwork, assignments, quizzes and task performances of all the modules ===== *@
 <ActivitiesSheetDialog Open="activitiesOpen" CourseName="@(subject?.SubjectName ?? "")" Modules="SheetModules" StartModule="@activitiesStartModule" OnImport="ImportActivitiesAsync" OnClose="CloseActivities" />
+
+@* ===== Add quiz: the quiz is made with its questions, written in a sheet ===== *@
+<QuestionsSheetDialog Open="quizSheetOpen" Heading="@($"Add quiz · {subject?.SubjectName}")" Subject="quiz" Existing="noQuestions" Errors="quizErrors" Busy="busy"
+                      SaveBlocked="@(quizModuleId == 0 || string.IsNullOrWhiteSpace(quizTitle))"
+                      SaveStep="The quiz is made with these questions, in the handout you chose. Set its due date, its time limit and the anti-cheating watch afterwards, with Edit on the quiz."
+                      OnSave="SaveQuizAsync" OnClose="CloseQuizSheet">
+    <HeaderContent>
+        <Field For="quiz-module" Label="Handout" Required="true">
+            <select id="quiz-module" @bind="quizModuleId">
+                <option value="0">Choose a handout</option>
+                @foreach (var option in SheetModules)
+                {
+                    <option value="@option.Id">@option.Label</option>
+                }
+            </select>
+        </Field>
+        <Field For="quiz-title" Label="Title of the quiz" Required="true">
+            <input id="quiz-title" type="text" maxlength="200" autocomplete="off" placeholder="Quiz 1: Debits and credits" @bind="quizTitle" @bind:event="oninput" />
+        </Field>
+    </HeaderContent>
+</QuestionsSheetDialog>
 
 @* ===== Delete ===== *@
 <Modal Open="deleteTarget is not null" Title="@(deleteTarget?.Title ?? "")" OnClose="CloseDelete">
@@ -402,7 +423,7 @@ else
         {
             if (ModuleNamed(entry.Work.Module) is null)
             {
-                missing.Add($"{entry.Sheet}, row {entry.Row} ({entry.Work.Input.Title}): this course has no module called \"{entry.Work.Module}\".");
+                missing.Add($"{entry.Sheet}, row {entry.Row} ({entry.Work.Input.Title}): this course has no handout called \"{entry.Work.Module}\".");
             }
             else
             {
@@ -605,7 +626,7 @@ else
 
     /// <summary>How far the class has got in a module (the average of the students; the ones who did not open it count 0): 50 for the slides, 50 for the module, and 100 for the module when it has no slides.</summary>
     private static (int Percent, string Text) ProgressOf(TeacherModule module) =>
-        (module.Progress, module.HasSlides ? $"The class is at {module.Progress}% on average: half is the slides they saw, half is opening the module" : $"The class is at {module.Progress}% on average: the module, which has no slides, is all of it");
+        (module.Progress, module.HasSlides ? $"The class is at {module.Progress}% on average: half is the slides they saw, half is opening the handout" : $"The class is at {module.Progress}% on average: the handout, which has no slides, is all of it");
 
     /// <summary>"2 assignments · 1 quiz" under the title of a closed module.</summary>
     private static string ModuleSummary(TeacherModule module)
@@ -627,6 +648,73 @@ else
     private IReadOnlyList<AddMenuModule> AddMenuModules => subject is null ? [] :
         [.. subject.Modules.Where(m => !m.IsSyllabus).Select((m, n) => new AddMenuModule(m.Id, AddItemMenuLabels.ModuleLabel(n + 1, m.Title)))];
 
+    // ---------------------------------------------------------------- Add quiz (the questions of a new quiz, in a sheet)
+
+    private bool quizSheetOpen;
+    private int quizModuleId;
+    private string quizTitle = "";
+    private IReadOnlyList<string> quizErrors = [];
+    private static readonly IReadOnlyList<QuestionInput> noQuestions = [];
+
+    private void OpenQuizSheet(int moduleId)
+    {
+        quizModuleId = SheetModules.Any(m => m.Id == moduleId) ? moduleId : SheetModules.Count == 1 ? SheetModules[0].Id : 0;
+        quizTitle = "";
+        quizErrors = [];
+        quizSheetOpen = true;
+    }
+
+    private void CloseQuizSheet()
+    {
+        quizSheetOpen = false;
+        quizErrors = [];
+    }
+
+    /// <summary>A new quiz and its questions in one step: the quiz is made in the handout, then the questions are written; when they can't be, the quiz is taken out again.</summary>
+    private async Task SaveQuizAsync(IReadOnlyList<QuestionInput> questions)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        var title = quizTitle.Trim();
+        if (quizModuleId == 0 || title.Length == 0)
+        {
+            quizErrors = [quizModuleId == 0 ? "Choose the handout of the quiz." : "Write the title of the quiz."];
+            return;
+        }
+
+        busy = true;
+        quizErrors = [];
+        try
+        {
+            var made = await Modules.SaveItemAsync(teacherId, quizModuleId, null, new ItemInput { Kind = ItemKinds.Quiz, Title = title, MaxScore = questions.Sum(q => q.Points) });
+            if (!made.Succeeded || made.Id is not { } quizId)
+            {
+                quizErrors = [.. made.Errors];
+                return;
+            }
+
+            var written = await Modules.SaveQuestionsAsync(teacherId, quizId, questions);
+            if (!written.Succeeded)
+            {
+                await Modules.DeleteItemAsync(teacherId, quizId);
+                quizErrors = [.. written.Errors];
+                return;
+            }
+
+            quizSheetOpen = false;
+            message = $"The quiz {title} was added with {(questions.Count == 1 ? "1 question" : $"{questions.Count} questions")}.";
+            messageIsError = false;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
     private async Task PickNew(AddMenuPick pick)
     {
         if (pick.Kind == AddItemMenuLabels.ExcelKind && pick.ModuleId == 0)
@@ -636,11 +724,23 @@ else
             return;
         }
 
+        if (pick.Kind == ItemKinds.Quiz && pick.ModuleId == 0)
+        {
+            // "Add quiz" at the top of the course: the questions in a sheet; the handout is chosen inside it.
+            OpenQuizSheet(0);
+            return;
+        }
+
         if (subject?.Modules.FirstOrDefault(m => m.Id == pick.ModuleId) is { } module)
         {
             if (pick.Kind == AddItemMenuLabels.ExcelKind)
             {
                 await OpenActivitiesAsync(module.Id);
+            }
+            else if (pick.Kind == ItemKinds.Quiz)
+            {
+                // A quiz is made by writing its questions.
+                OpenQuizSheet(module.Id);
             }
             else
             {

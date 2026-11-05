@@ -29,7 +29,7 @@ else
         <StatCard Label="Posted to the students" Text="@(data.Sent == 0 ? "—" : $"{data.PostedPercent}%")" IconName="circle-check" Accent="AccentColor.Violet"
                   Hint="@($"{data.Posted:N0} posted · {data.Scheduled:N0} scheduled")" Href="provider/tracking?tab=modules&state=NotOpened" />
         <StatCard Label="Opened by the students" Text="@(data.StudentModuleExpected == 0 ? "—" : $"{data.StudentModulePercent}%")" IconName="users-round" Accent="AccentColor.Amber"
-                  Hint="Of the modules posted" Href="provider/analytics" />
+                  Hint="Of the handouts posted" Href="provider/analytics" />
     </div>
 
     <div class="pcards">
@@ -37,7 +37,7 @@ else
             @if (data.Waiting.Count == 0)
             {
                 <EmptyState IconName="circle-check" Title="Nothing is waiting">
-                    <p>@(data.Sent == 0 ? "Send a syllabus or a module to the teachers of a course and it appears here until they open it." : "Every teacher has opened what was sent to them.")</p>
+                    <p>@(data.Sent == 0 ? "Send a syllabus or a handout to the teachers of a course and it appears here until they open it." : "Every teacher has opened what was sent to them.")</p>
                 </EmptyState>
             }
             else
@@ -100,7 +100,7 @@ else
             {
                 <div class="rates">
                     <div>
-                        <span class="rate-label">Modules and syllabi</span>
+                        <span class="rate-label">Handouts and syllabi</span>
                         <ProgressBar Percent="data.StudentModulePercent" Title="@($"{data.StudentModuleOpens:N0} of {data.StudentModuleExpected:N0} opened")" Class="rate-bar" />
                         <span class="rate-sub">@data.StudentModuleOpens.ToString("N0") of @data.StudentModuleExpected.ToString("N0") opened</span>
                     </div>

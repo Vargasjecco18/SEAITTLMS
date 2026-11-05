@@ -5,10 +5,10 @@
 @inject ModuleService Modules
 @inject AttachmentService Attachments
 
-<PageTitle>@(module?.Title ?? "Module") · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>@(module?.Title ?? "Handout") · SEAITT Legazpi LMS</PageTitle>
 
 @* A module as the students read it, inside the system: the menu of the course at the left, the lesson with its files (a PDF opens here, not in another tab) in the middle and the form
-   to edit the module at the right. *@
+   to edit the handout at the right. *@
 @if (!loaded)
 {
     <p class="muted">Loading…</p>
@@ -16,8 +16,8 @@
 else if (subject is null || module is null)
 {
     <Card>
-        <EmptyState IconName="layers" Title="Module not found" IsPage="true">
-            <p>This is not a module of one of your courses.</p>
+        <EmptyState IconName="layers" Title="Handout not found" IsPage="true">
+            <p>This is not a handout of one of your courses.</p>
             <ButtonLink Href="teacher/subjects" Variant="ButtonVariant.Secondary">Back to your courses</ButtonLink>
         </EmptyState>
     </Card>
@@ -40,7 +40,7 @@ else
             <LessonContent Title="@module.Title" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" ModuleLabel="@FileLabel.OfModule(module.Title)" />
         </ChildContent>
         <Aside>
-            <Card Title="Edit module" IconName="pencil">
+            <Card Title="Edit handout" IconName="pencil">
                 <p class="state">
                     @if (module.State == Visibility.Posted)
                     {

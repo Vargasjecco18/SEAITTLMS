@@ -7,8 +7,9 @@ namespace SEAITT_LMS.Services;
 
 /// <summary>
 /// The school years and their terms keep themselves: there is always the school year that is running and the two after it, and every one of them has
-/// three terms. When a school year is over the next one is already there (with its terms), and a new one is added at the end. Nothing is ever deleted:
-/// a school year that is over is only put away in the setup page (its students, grades and attendance stay).
+/// three terms, except a term the academic coordinator deleted (it stays deleted until the coordinator adds it again). When a school year is over the next one
+/// is already there (with its terms), and a new one is added at the end. A school year is never deleted: one that is over is only put away in the setup page
+/// (its students, grades and attendance stay).
 /// </summary>
 public static class SchoolCalendar
 {
@@ -16,6 +17,45 @@ public static class SchoolCalendar
     public const int YearsAhead = 2;
 
     public const int TermsPerYear = 3;
+
+    /// <summary>The setting that remembers the terms the academic coordinator deleted ("2026-2027|3;2027-2028|1"), so the calendar does not make them again.</summary>
+    public const string DeletedTermsKey = "calendar.deleted_terms";
+
+    /// <summary>"2026-2027|3": the 3rd term of the school year 2026-2027.</summary>
+    public static string TermKey(string yearName, int number) => $"{yearName}|{number}";
+
+    /// <summary>The terms the academic coordinator deleted (as <see cref="TermKey"/> writes them).</summary>
+    public static async Task<HashSet<string>> DeletedTermsAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        var value = await db.SystemSettings.AsNoTracking().Where(x => x.Key == DeletedTermsKey).Select(x => x.Value).FirstOrDefaultAsync(ct);
+        return (value ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Remembers that a term was deleted (or, with <paramref name="deleted"/> false, that it is wanted again).</summary>
+    public static async Task SetTermDeletedAsync(AppDbContext db, string yearName, int number, bool deleted, DateTime nowUtc, int? userId, CancellationToken ct = default)
+    {
+        var set = await DeletedTermsAsync(db, ct);
+        var key = TermKey(yearName, number);
+        if (deleted ? !set.Add(key) : !set.Remove(key))
+        {
+            return;
+        }
+
+        var value = string.Join(';', set.Order(StringComparer.Ordinal));
+        var row = await db.SystemSettings.FirstOrDefaultAsync(x => x.Key == DeletedTermsKey, ct);
+        if (row is null)
+        {
+            db.SystemSettings.Add(new SystemSetting { Key = DeletedTermsKey, Value = value, UpdatedAtUtc = nowUtc, UpdatedByUserId = userId });
+        }
+        else
+        {
+            row.Value = value;
+            row.UpdatedAtUtc = nowUtc;
+            row.UpdatedByUserId = userId;
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
 
     /// <summary>"1st Term", "2nd Term", "3rd Term".</summary>
     public static string TermName(int number) => number switch
@@ -83,10 +123,11 @@ public static class SchoolCalendar
             years = await db.SchoolYears.AsNoTracking().OrderBy(y => y.StartDate).Select(y => new { y.Id, y.Name, y.StartDate, y.EndDate }).ToListAsync(ct);
         }
 
+        var deleted = await DeletedTermsAsync(db, ct);
         foreach (var year in years.Where(y => y.EndDate >= today))
         {
             var terms = await db.Terms.AsNoTracking().Where(t => t.SchoolYearId == year.Id).Select(t => new { t.TermNumber, t.StartDate, t.EndDate }).ToListAsync(ct);
-            var missing = Enumerable.Range(1, TermsPerYear).Where(n => terms.All(t => t.TermNumber != n)).ToList();
+            var missing = Enumerable.Range(1, TermsPerYear).Where(n => terms.All(t => t.TermNumber != n) && !deleted.Contains(TermKey(year.Name, n))).ToList();
             if (missing.Count == 0)
             {
                 continue;

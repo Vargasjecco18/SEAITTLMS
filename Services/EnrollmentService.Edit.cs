@@ -33,6 +33,9 @@ public sealed record EnrollmentChange(
     int EnrollmentId, string FirstName, string? MiddleName, string LastName, string? NameExtension, string? PhoneNumber,
     int TermId, byte GradeLevel, int TrackId, int StrandId, string SectionName, IReadOnlyList<int>? SubjectIds);
 
+/// <summary>The sign-in details of a student's account: the email, and the password when it is still the first one (null when the student changed it).</summary>
+public sealed record StudentSignIn(string StudentName, string Lrn, string Email, bool IsActive, string? Password);
+
 public sealed partial class EnrollmentService
 {
     /// <summary>
@@ -132,6 +135,33 @@ public sealed partial class EnrollmentService
 
         var grade = last.SchoolYearId == term.SchoolYearId ? last.GradeLevel : (byte)Math.Min(12, last.GradeLevel + 1);
         return new ReEnrollDefaults(grade, last.TrackId, last.StrandId, last.StrandCode, last.GradeLevel);
+    }
+
+    /// <summary>
+    /// The sign-in details of a student's account, for the registrar. The email is the account's. The password is only shown when it is still the one made at the enrollment
+    /// (the last name and the end of the LRN, checked against the saved password): after the student changed it, or an administrator set a new one, it is not known here.
+    /// </summary>
+    public async Task<StudentSignIn?> GetSignInAsync(int studentId, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.RegistrarId, ct))
+        {
+            return null;
+        }
+
+        var s = await db.Students.AsNoTracking().Where(x => x.Id == studentId)
+            .Select(x => new { x.FirstName, x.MiddleName, x.LastName, x.NameExtension, x.Lrn, x.User.Email, x.User.IsActive, x.User.PasswordHash })
+            .FirstOrDefaultAsync(ct);
+        if (s is null)
+        {
+            return null;
+        }
+
+        // The first password is the part of the email before the @ without the dot (vargas.111111@... gives vargas111111).
+        var local = s.Email.Split('@')[0].Replace(".", "", StringComparison.Ordinal);
+        var password = local.Length >= PasswordPolicy.MinLength && hasher.Verify(local, s.PasswordHash) ? local : null;
+        var name = string.Join(' ', new[] { s.FirstName, s.MiddleName, s.LastName, s.NameExtension }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return new StudentSignIn(name, s.Lrn, s.Email, s.IsActive, password);
     }
 
     public async Task<EnrollmentEditView?> GetEnrollmentForEditAsync(int enrollmentId, CancellationToken ct = default)

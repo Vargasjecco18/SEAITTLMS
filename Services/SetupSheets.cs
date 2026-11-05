@@ -8,17 +8,15 @@ public sealed record SetupCurriculumRow(string Strand, int Grade, int Term, stri
 
 public sealed record SetupSectionRow(string Year, string Strand, int Grade, string Name, string? Adviser);
 
-public sealed record SetupClassRow(string Year, string Strand, int Grade, string Section, string Course, string Part, string Days, TimeOnly Start, TimeOnly End);
-
 /// <summary>Everything of the academic setup that the workbook holds (the export), or nothing (the template).</summary>
 public sealed record SetupSnapshot(
     IReadOnlyList<SchoolYearRow> Years, IReadOnlyList<TermRow> Terms, IReadOnlyList<TrackRow> Tracks, IReadOnlyList<StrandRow> Strands, IReadOnlyList<SubjectRow> Courses,
-    IReadOnlyList<SetupCurriculumRow> Curriculum, IReadOnlyList<SetupSectionRow> Sections, IReadOnlyList<DayPart> DayParts, IReadOnlyList<SetupClassRow> Classes)
+    IReadOnlyList<SetupCurriculumRow> Curriculum, IReadOnlyList<SetupSectionRow> Sections)
 {
-    public static SetupSnapshot Empty { get; } = new([], [], [], [], [], [], [], [], []);
+    public static SetupSnapshot Empty { get; } = new([], [], [], [], [], [], []);
 
     /// <summary>The rows of all the sheets (the number on the button that exports them).</summary>
-    public int Total => Years.Count + Terms.Count + Tracks.Count + Strands.Count + Courses.Count + Curriculum.Count + Sections.Count + DayParts.Count + Classes.Count;
+    public int Total => Years.Count + Terms.Count + Tracks.Count + Strands.Count + Courses.Count + Curriculum.Count + Sections.Count;
 }
 
 /// <summary>Where a row of the workbook is, what it is called and what is wrong with it (nothing: it is ready).</summary>
@@ -43,23 +41,19 @@ public sealed record SetupCurriculum(SetupLine Line, string Strand, int Grade, i
 
 public sealed record SetupSection(SetupLine Line, string Year, string Strand, int Grade, string Name, string? Adviser);
 
-public sealed record SetupDayPart(SetupLine Line, string Part, TimeOnly Start, TimeOnly End);
-
-public sealed record SetupClass(SetupLine Line, string Year, string Strand, int Grade, string Section, string Course, string Part, string Days, TimeOnly Start, TimeOnly End);
-
 /// <summary>A workbook as it was read: every row of every sheet, each with its problems, in the order the sheets have to be saved.</summary>
 public sealed record SetupBook(
-    IReadOnlyList<SetupDayPart> DayParts, IReadOnlyList<SetupYear> Years, IReadOnlyList<SetupTerm> Terms, IReadOnlyList<SetupTrack> Tracks, IReadOnlyList<SetupStrand> Strands,
-    IReadOnlyList<SetupCourse> Courses, IReadOnlyList<SetupCurriculum> Curriculum, IReadOnlyList<SetupSection> Sections, IReadOnlyList<SetupClass> Classes, string? FileError)
+    IReadOnlyList<SetupYear> Years, IReadOnlyList<SetupTerm> Terms, IReadOnlyList<SetupTrack> Tracks, IReadOnlyList<SetupStrand> Strands,
+    IReadOnlyList<SetupCourse> Courses, IReadOnlyList<SetupCurriculum> Curriculum, IReadOnlyList<SetupSection> Sections, string? FileError)
 {
     /// <summary>Every row, sheet by sheet, in the order of the workbook.</summary>
     public IReadOnlyList<SetupLine> Lines => [.. Years.Select(r => r.Line), .. Terms.Select(r => r.Line), .. Tracks.Select(r => r.Line), .. Strands.Select(r => r.Line), .. Courses.Select(r => r.Line),
-        .. Curriculum.Select(r => r.Line), .. Sections.Select(r => r.Line), .. DayParts.Select(r => r.Line), .. Classes.Select(r => r.Line)];
+        .. Curriculum.Select(r => r.Line), .. Sections.Select(r => r.Line)];
 }
 
 /// <summary>
 /// The one Excel workbook for the academic setup (the academic coordinator's page): the sheets School Years, Terms, Tracks, Strands, Courses, Curriculum (the courses of each strand by grade level and
-/// term), Sections, Day Parts (the hours of AM, MID and PM) and Class Schedule. The template is empty and says how to fill each column; the export is the same workbook with everything the setup has,
+/// term) and Sections. The template is empty and says how to fill each column; the export is the same workbook with everything the setup has,
 /// so it can be changed and imported again. The columns that point to another sheet (the school year of a term, the track of a strand ...) have a drop-down list made from that sheet.
 /// </summary>
 public static class SetupSheets
@@ -73,8 +67,6 @@ public static class SetupSheets
     public const string CoursesSheet = "Courses";
     public const string CurriculumSheet = "Curriculum";
     public const string SectionsSheet = "Sections";
-    public const string DayPartsSheet = "Day Parts";
-    public const string ClassesSheet = "Class Schedule";
 
     /// <summary>The rows the drop-down lists that point to another sheet reach (the first column of it).</summary>
     private const int ListRows = 400;
@@ -88,8 +80,6 @@ public static class SetupSheets
     private static readonly string[] CourseHeaders = ["Code", "Name", "Units", "Description", "Active"];
     private static readonly string[] CurriculumHeaders = ["Strand", "Grade", "Term", "Course"];
     private static readonly string[] SectionHeaders = ["School year", "Strand", "Grade", "Section", "Adviser (employee number)"];
-    private static readonly string[] DayPartHeaders = ["Part", "Starts", "Ends"];
-    private static readonly string[] ClassHeaders = ["School year", "Strand", "Grade", "Section", "Course", "Part", "Days", "Starts", "Ends"];
 
     public static string FileName(string what) => FileDownloads.CleanName($"{what} - Academic setup.xlsx");
 
@@ -183,19 +173,6 @@ public static class SetupSheets
             .ListChoice($"C2:C{sectionsLast}", ["11", "12"], "Choose the grade level: 11 or 12.").Tip($"D2:D{sectionsLast}", "Type the name of the section, like A (letters, numbers, spaces and dashes).")
             .Tip($"E2:E{sectionsLast}", "Optional: the employee number of the teacher who is the adviser. Leave it empty for no adviser.");
 
-        var parts = Sheet(DayPartsSheet, DayPartHeaders, [10, 12, 12], [.. data.DayParts.Select(p => new[] { p.Code, ClassTime.Box(p.Start), ClassTime.Box(p.End) })]);
-        var partsLast = Last([.. data.DayParts]);
-        parts.ListChoice($"A2:A{partsLast}", ["AM", "MID", "PM"], "Choose the part of the day: AM, MID or PM.").Tip($"B2:C{partsLast}", "Type the hour like 07:30 or 13:00 (24 hours). A part is at least one hour long, between 5:00 AM and 10:00 PM.");
-
-        var classes = Sheet(ClassesSheet, ClassHeaders, [16, 16, 8, 12, 16, 8, 8, 10, 10], [.. data.Classes.Select(c => new[] { c.Year, c.Strand, c.Grade.ToString(CultureInfo.InvariantCulture), c.Section, c.Course, c.Part, c.Days, ClassTime.Box(c.Start), ClassTime.Box(c.End) })]);
-        var classesLast = Last([.. data.Classes]);
-        classes.ListFromOrOther($"A2:A{classesLast}", Refs(YearsSheet), "Choose the school year from the list.").ListFromOrOther($"B2:B{classesLast}", Refs(StrandsSheet), "Choose the strand from the list.")
-            .ListChoice($"C2:C{classesLast}", ["11", "12"], "Choose the grade level: 11 or 12.").Tip($"D2:D{classesLast}", "Type the name of the section, like A. It must be a section of the sheet Sections (or one that already exists).")
-            .ListFromOrOther($"E2:E{classesLast}", Refs(CoursesSheet), "Choose the course from the list. It must be one of the courses of the strand in that grade level.")
-            .ListChoice($"F2:F{classesLast}", ["AM", "MID", "PM"], "The part of the day follows the class time (before 12:00 AM, from 12:00 to 12:59 MID, after that PM). Choose the one that matches.")
-            .ListChoice($"G2:G{classesLast}", ["MWF", "TTH"], "Choose the days: MWF (Monday, Wednesday, Friday) or TTH (Tuesday, Thursday).")
-            .Tip($"H2:I{classesLast}", "Type the hour like 08:00 or 13:30 (24 hours). A class lasts from 30 minutes to 4 hours.");
-
         const string Needed = "Needed", Optional = "Optional";
         TemplateGuide.AddWithoutExample(book, "How to fill the academic setup workbook",
         [
@@ -220,13 +197,8 @@ public static class SetupSheets
             new(SectionsSheet, "School year, Strand", Needed, "The school year and the strand of the section, written as in the sheets School Years and Strands.", "Choose them from the lists."),
             new(SectionsSheet, "Grade, Section", Needed, "The grade level (11 or 12) and the name of the section, like A.", "Choose the grade from the list; type the name."),
             new(SectionsSheet, "Adviser (employee number)", Optional, "The employee number of the teacher who advises the section. Empty: no adviser.", TemplateGuide.TypeIt),
-            new(DayPartsSheet, "Part, Starts, Ends", Needed, "The hours of AM, MID and PM, like 07:30 and 11:30 (at least one hour, between 05:00 and 22:00).", "Choose the part from the list; type the hours like 07:30."),
-            new(ClassesSheet, "School year, Strand, Grade, Section", Needed, "The section whose class time it is. The section must exist (in the sheet Sections, or already in the system).", "Choose them from the lists; type the section."),
-            new(ClassesSheet, "Course", Needed, "The code of the course. It must be one of the courses of the strand in that grade level (the sheet Curriculum).", "Choose it from the list."),
-            new(ClassesSheet, "Part, Days", Needed, "The part of the day (AM, MID or PM) and the days (MWF or TTH).", "Choose them from the lists."),
-            new(ClassesSheet, "Starts, Ends", Needed, "The class time like 08:00 and 09:30. The part of the day (AM, MID or PM) follows the time it starts.", "Type them like 08:00 (24 hours)."),
         ],
-            "Leave a sheet empty to change nothing there. The sheets are saved in the order of the tabs: day parts, school years, terms, tracks, strands, courses, curriculum, sections, class schedule.",
+            "Leave a sheet empty to change nothing there. The sheets are saved in the order of the tabs: school years, terms, tracks, strands, courses, curriculum, sections.",
             "A row that already exists (the same code, name or section) is changed to what the row says; nothing is deleted if a row is missing. The export of the system is this same workbook with everything in it: change it and import it again.",
             $"At most {MaxRows} rows in a sheet. A row with a problem is left out and says why.");
         return book.ToBytes();
@@ -319,35 +291,6 @@ public static class SetupSheets
         return null;
     }
 
-    private static TimeOnly? ReadTime(string text, string label, List<string> errors)
-    {
-        if (text.Length == 0)
-        {
-            errors.Add($"{label}: write the hour like 08:00.");
-            return null;
-        }
-
-        if (ClassTime.Parse(text) is { } plain)
-        {
-            return plain;
-        }
-
-        // 8:00 AM, and a time typed in Excel (a fraction of a day).
-        if (TimeOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
-        {
-            return new TimeOnly(parsed.Hour, parsed.Minute);
-        }
-
-        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var fraction) && fraction is >= 0 and < 1)
-        {
-            var minutes = (int)Math.Round(fraction * 24 * 60);
-            return new TimeOnly(minutes / 60 % 24, minutes % 60);
-        }
-
-        errors.Add($"{label}: write the hour like 08:00 (24 hours).");
-        return null;
-    }
-
     private static int? ReadInt(string text, string label, int min, int max, List<string> errors)
     {
         if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var number) && number == decimal.Truncate(number) && number >= min && number <= max)
@@ -384,10 +327,8 @@ public static class SetupSheets
         var courses = Rows(Find(sheets, CoursesSheet, "Course", "Subjects"), CoursesSheet, CourseHeaders, [[], [], ["Unit"], [], ["On", "Is active"]]);
         var curriculum = Rows(Find(sheets, CurriculumSheet), CurriculumSheet, CurriculumHeaders, [["Strand code"], ["Grade level"], ["Term number"], ["Course code"]]);
         var sections = Rows(Find(sheets, SectionsSheet, "Section"), SectionsSheet, SectionHeaders, [["Year"], ["Strand code"], ["Grade level"], ["Name", "Section name"], ["Adviser", "Adviser employee number"]]);
-        var dayParts = Rows(Find(sheets, DayPartsSheet, "Day Part", "Schedules"), DayPartsSheet, DayPartHeaders, [["Code"], ["Start", "From"], ["End", "To"]]);
-        var classes = Rows(Find(sheets, ClassesSheet, "Class Times", "Classes", "Class time"), ClassesSheet, ClassHeaders, [["Year"], ["Strand code"], ["Grade level"], ["Section name"], ["Course code", "Subject"], ["Day part", "Schedule"], ["Meeting days"], ["Start", "From"], ["End", "To"]]);
 
-        var all = new[] { years, terms, tracks, strands, courses, curriculum, sections, dayParts, classes };
+        var all = new[] { years, terms, tracks, strands, courses, curriculum, sections };
         if (all.FirstOrDefault(s => s.FileError is not null) is { } bad)
         {
             return Empty(bad.FileError);
@@ -397,7 +338,7 @@ public static class SetupSheets
         {
             return Empty(sheets.Any(s => all.Any(a => string.Equals(a.Sheet, s.Name.Trim(), StringComparison.OrdinalIgnoreCase)))
                 ? "The file has nothing to import. Fill in the rows under the column titles."
-                : $"This is not the template: it has none of the sheets {YearsSheet}, {TermsSheet}, {TracksSheet}, {StrandsSheet}, {CoursesSheet}, {CurriculumSheet}, {SectionsSheet}, {DayPartsSheet} or {ClassesSheet}. Download the template again.");
+                : $"This is not the template: it has none of the sheets {YearsSheet}, {TermsSheet}, {TracksSheet}, {StrandsSheet}, {CoursesSheet}, {CurriculumSheet} or {SectionsSheet}. Download the template again.");
         }
 
         var seen = new HashSet<string>();
@@ -504,41 +445,8 @@ public static class SetupSheets
             sectionRows.Add(new SetupSection(Line(SectionsSheet, row, $"{c[1]} {c[3]}", errors), c[0], c[1], grade ?? 0, c[3], c[4].Length == 0 ? null : c[4]));
         }
 
-        var partRows = new List<SetupDayPart>();
-        foreach (var (row, c) in dayParts.Rows)
-        {
-            var errors = new List<string>();
-            var code = c[0].ToUpperInvariant();
-            if (code is not ("AM" or "MID" or "PM")) errors.Add("The part must be AM, MID or PM.");
-            else Fresh(errors, DayPartsSheet, row, code, $"{code}");
-            var start = ReadTime(c[1], "Starts", errors);
-            var end = ReadTime(c[2], "Ends", errors);
-            if (start is { } s0 && end is { } e0 && e0 <= s0) errors.Add("It must end after it starts.");
-            partRows.Add(new SetupDayPart(Line(DayPartsSheet, row, code, errors), code, start ?? default, end ?? default));
-        }
-
-        var classRows = new List<SetupClass>();
-        foreach (var (row, c) in classes.Rows)
-        {
-            var errors = new List<string>();
-            if (c[0].Length == 0) errors.Add("Write the school year of the section.");
-            if (c[1].Length == 0) errors.Add("Write the code of the strand.");
-            var grade = ReadInt(c[2], "The grade", 11, 12, errors);
-            if (c[3].Length == 0) errors.Add("Write the name of the section.");
-            if (c[4].Length == 0) errors.Add("Write the code of the course.");
-            var part = c[5].ToUpperInvariant();
-            if (part is not ("AM" or "MID" or "PM")) errors.Add("The part must be AM, MID or PM.");
-            var days = c[6].ToUpperInvariant();
-            if (!MeetingDays.IsValid(days)) errors.Add("The days must be MWF or TTH.");
-            var start = ReadTime(c[7], "Starts", errors);
-            var end = ReadTime(c[8], "Ends", errors);
-            if (start is { } s0 && end is { } e0 && e0 <= s0) errors.Add("The class must end after it starts.");
-            if (errors.Count == 0) Fresh(errors, ClassesSheet, row, $"{c[0]}|{c[1]}|{grade}|{c[3]}|{c[4]}", "This course of the section");
-            classRows.Add(new SetupClass(Line(ClassesSheet, row, $"{c[1]} {c[3]} · {c[4]}", errors), c[0], c[1], grade ?? 0, c[3], c[4], part, days, start ?? default, end ?? default));
-        }
-
-        return new SetupBook(partRows, yearRows, termRows, trackRows, strandRows, courseRows, curriculumRows, sectionRows, classRows, null);
+        return new SetupBook(yearRows, termRows, trackRows, strandRows, courseRows, curriculumRows, sectionRows, null);
     }
 
-    private static SetupBook Empty(string? error) => new([], [], [], [], [], [], [], [], [], error);
+    private static SetupBook Empty(string? error) => new([], [], [], [], [], [], [], error);
 }

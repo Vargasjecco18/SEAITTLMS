@@ -30,7 +30,7 @@
 }
 
 .sheet-wrap {
-    max-height: 52vh;
+    max-height: 56vh;
     overflow: auto;
     border: 1px solid var(--field-border);
     border-radius: var(--radius-sm);
@@ -128,7 +128,8 @@
 
 .cell {
     width: 100%;
-    padding: 0.55rem 0.55rem;
+    min-height: 3.1rem;
+    padding: 0.8rem 0.55rem;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -267,4 +268,18 @@ tr.bad .c-state {
     border: 1px solid var(--field-border);
     border-radius: var(--radius-sm);
     background: var(--surface);
+}
+
+/* Fields above the questions (Add quiz): the handout and the title side by side. */
+.sheet-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+}
+
+@media (max-width: 640px) {
+    .sheet-head {
+        grid-template-columns: 1fr;
+    }
 }

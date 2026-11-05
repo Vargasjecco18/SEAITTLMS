@@ -1,4 +1,4 @@
-@* The second menu of a course: Courses (to go to another course), Modules, and Activities (which holds Seatwork, Assignments, Quizzes and Task performance), each a dropdown that
+@* The second menu of a course: Courses (to go to another course), Handouts, and Activities (which holds Seatwork, Assignments, Quizzes and Task performance), each a dropdown that
    lists what is inside, and, under a line, the pages that belong to the course (for a teacher the students, the gradebook and the attendance, for a student the classmates, the
    teachers and the grades). The menu of the school stays as it is. The dropdowns are plain HTML (details), so they work without scripts. *@
 <nav class="course-menu" id="@Id" aria-label="Menu of the course">
@@ -51,7 +51,8 @@
             else
             {
                 <ul class="cm-list">
-                    @if (group.SeeAllHref.Length > 0)
+                    @* "See all" is only under Handouts: the kinds of work inside Activities (Seatwork, Assignments ...) list what they have, without a See all line. *@
+                    @if (group.SeeAllHref.Length > 0 && !nested)
                     {
                         <li><a class="cm-all @(group.Key == Selected ? "on" : "")" href="@group.SeeAllHref" data-course-menu="@group.Key"><Icon Name="list" Size="14" /> <span>See all @group.Label.ToLowerInvariant()</span></a></li>
                     }
@@ -82,7 +83,7 @@
     /// <summary>The id of the menu (the button that hides it points to it).</summary>
     [Parameter] public string? Id { get; set; }
 
-    /// <summary>The dropdowns: Modules and the kinds of work.</summary>
+    /// <summary>The dropdowns: Handouts and the kinds of work.</summary>
     [Parameter] public IReadOnlyList<CourseMenuGroup> Groups { get; set; } = [];
 
     /// <summary>True for the teacher of the course: a kind with nothing in it says "Add seatwork" (and so on) instead of "None yet".</summary>

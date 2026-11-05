@@ -151,18 +151,18 @@ public static class AnalyticsExport
         var summary = book.AddSheet("Summary");
         Title(summary, "Analytics of the academic provider", $"{nowPhilippine:MMMM d, yyyy}");
         summary.Row(4, ["What", "Number"], XlsxStyle.Header);
-        summary.Set(5, 1, "Syllabi and modules sent").Set(5, 2, a.Sent, XlsxStyle.Integer);
+        summary.Set(5, 1, "Syllabi and handouts sent").Set(5, 2, a.Sent, XlsxStyle.Integer);
         summary.Set(6, 1, "Teachers who opened it (%)").Set(6, 2, a.TeacherOpenedPercent, XlsxStyle.Integer);
         summary.Set(7, 1, "Posted for the students (%)").Set(7, 2, a.PostedPercent, XlsxStyle.Integer);
         summary.Set(8, 1, "Average hours until a teacher opened it").Set(8, 2, a.AverageHoursToOpen, XlsxStyle.Decimal);
         summary.Set(9, 1, "Average hours until it was posted").Set(9, 2, a.AverageHoursToPost, XlsxStyle.Decimal);
-        summary.Set(10, 1, "Modules opened by the students (%)").Set(10, 2, a.StudentModulePercent, XlsxStyle.Integer);
+        summary.Set(10, 1, "Handouts opened by the students (%)").Set(10, 2, a.StudentModulePercent, XlsxStyle.Integer);
         summary.Set(11, 1, "Assignments opened by the students (%)").Set(11, 2, a.StudentItemPercent, XlsxStyle.Integer);
         summary.Width(1, 48).Width(2, 14);
 
         var courses = book.AddSheet("By course");
         Title(courses, "By course", "What was sent for each course and how it was used");
-        courses.Row(4, ["Course", "Sent", "Teachers", "Teachers who opened it", "Posted", "Modules opened by students", "Modules expected", "Assignments opened", "Assignments expected"], XlsxStyle.Header);
+        courses.Row(4, ["Course", "Sent", "Teachers", "Teachers who opened it", "Posted", "Handouts opened by students", "Handouts expected", "Assignments opened", "Assignments expected"], XlsxStyle.Header);
         var line = 5;
         foreach (var c in a.ByCourse)
         {
@@ -175,7 +175,7 @@ public static class AnalyticsExport
         for (var col = 2; col <= 9; col++) { courses.Width(col, 16); }
 
         var kinds = book.AddSheet("By kind");
-        Title(kinds, "By kind", "Syllabi, modules, assignments, quizzes and task performances");
+        Title(kinds, "By kind", "Syllabi, handouts, assignments, quizzes and task performances");
         kinds.Row(4, ["Kind", "Sent", "Opened by students", "Expected", "Opened (%)"], XlsxStyle.Header);
         line = 5;
         foreach (var k in a.ByKind)

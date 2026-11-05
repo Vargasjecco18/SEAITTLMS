@@ -10,7 +10,7 @@ namespace SEAITT_LMS.Services;
 /// <summary>A course of the library as a card: where a strand studies it (track, strand, grade level, term) and what is prepared for it.</summary>
 public sealed record LibraryCard(
     int SubjectId, string Code, string Name, int TrackId, string TrackCode, int StrandId, string StrandCode, string StrandName, byte GradeLevel, byte TermNumber,
-    bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent, bool Complete = false);
+    bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent);
 
 public sealed record MaterialCourseRow(
     int SubjectId, string Code, string Name, bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent, string? Placement = null);
@@ -168,7 +168,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         var current = await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => (byte?)t.TermNumber).FirstOrDefaultAsync(ct);
 
         var lines = await db.StrandSubjects.AsNoTracking().Where(x => x.IsOffered && x.Subject.IsActive && x.Strand.IsActive && (current == null || x.TermNumber == current))
-            .Select(x => new { x.SubjectId, x.Subject.Code, x.Subject.Name, x.StrandId, StrandCode = x.Strand.Code, StrandName = x.Strand.Name, TrackId = x.Strand.TrackId, TrackCode = x.Strand.Track.Code, x.GradeLevel, x.TermNumber, Complete = x.Subject.LibraryCompletedAtUtc != null })
+            .Select(x => new { x.SubjectId, x.Subject.Code, x.Subject.Name, x.StrandId, StrandCode = x.Strand.Code, StrandName = x.Strand.Name, TrackId = x.Strand.TrackId, TrackCode = x.Strand.Track.Code, x.GradeLevel, x.TermNumber })
             .ToListAsync(ct);
         var modules = await db.MaterialModules.AsNoTracking().Where(m => !m.IsExamSet)
             .GroupBy(m => m.SubjectId)
@@ -184,39 +184,8 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var m = modules.FirstOrDefault(x => x.SubjectId == l.SubjectId);
             return new LibraryCard(l.SubjectId, l.Code, l.Name, l.TrackId, l.TrackCode, l.StrandId, l.StrandCode, l.StrandName, l.GradeLevel, l.TermNumber,
                 (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, exams.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0,
-                teachers.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, l.Complete);
+                teachers.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0);
         })];
-    }
-
-    /// <summary>Whether the provider marked the course of the library as Complete.</summary>
-    public async Task<bool> IsLibraryCompleteAsync(int subjectId, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        return await db.Subjects.AsNoTracking().AnyAsync(s => s.Id == subjectId && s.LibraryCompletedAtUtc != null, ct);
-    }
-
-    /// <summary>
-    /// Marks a course of the library as Complete (its syllabus, modules and exam are ready) or Uncomplete again. A complete course leaves the main page of the library and is only under Complete.
-    /// Only the academic provider does it.
-    /// </summary>
-    public async Task<ServiceResult> SetLibraryCompleteAsync(int userId, int subjectId, bool complete, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsProviderAsync(db, userId, ct))
-        {
-            return ServiceResult.Fail(ProviderOnly);
-        }
-
-        var name = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct);
-        if (name is null)
-        {
-            return ServiceResult.Fail("This course no longer exists.");
-        }
-
-        var now = clock.GetUtcNow().UtcDateTime;
-        await db.Subjects.Where(s => s.Id == subjectId)
-            .ExecuteUpdateAsync(set => set.SetProperty(s => s.LibraryCompletedAtUtc, complete ? now : (DateTime?)null).SetProperty(s => s.UpdatedAtUtc, now), ct);
-        return ServiceResult.Ok(complete ? $"{name} is marked Complete. It is only under Complete in the library now." : $"{name} is Uncompleted again. It is back on the main page of the library.");
     }
 
     /// <summary>The terms a strand studies in (1st Term, 2nd Term ...), for the provider to choose from after choosing a strand.</summary>
@@ -392,7 +361,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var found = await db.MaterialModules.FirstOrDefaultAsync(m => m.Id == id && m.SubjectId == subjectId && !m.IsExamSet, ct);
             if (found is null)
             {
-                return ServiceResult.Fail("This module was not found.");
+                return ServiceResult.Fail("This handout was not found.");
             }
 
             module = found;
@@ -414,7 +383,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         module.Body = ModuleService.Clean(input.Body);
         module.LinkUrl = ModuleService.Clean(input.LinkUrl);
         await db.SaveChangesAsync(ct);
-        return ServiceResult.Ok(moduleId is null ? (isSyllabus ? "The syllabus was added." : "The module was added.") : "Saved.", module.Id);
+        return ServiceResult.Ok(moduleId is null ? (isSyllabus ? "The syllabus was added." : "The handout was added.") : "Saved.", module.Id);
     }
 
     public async Task<ServiceResult> DeleteModuleAsync(int userId, int moduleId, CancellationToken ct = default)
@@ -427,7 +396,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
         var deleted = await db.MaterialModules.Where(m => m.Id == moduleId && !m.IsExamSet).ExecuteDeleteAsync(ct);
         return deleted == 0
-            ? ServiceResult.Fail("This module was already deleted.")
+            ? ServiceResult.Fail("This handout was already deleted.")
             : ServiceResult.Ok("Deleted from the library. The copies the teachers already got stay with them.");
     }
 
@@ -771,7 +740,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         var moduleIds = await db.MaterialModules.AsNoTracking().Where(m => m.SubjectId == subjectId && !m.IsExamSet).Select(m => m.Id).ToListAsync(ct);
         if (moduleIds.Count == 0)
         {
-            return ServiceResult.Fail("This course has no syllabus or module in the library to copy yet.");
+            return ServiceResult.Fail("This course has no syllabus or handout in the library to copy yet.");
         }
 
         var assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.SubjectId == subjectId && a.Section.SchoolYearId == next.Id).Select(a => a.Id).ToListAsync(ct);

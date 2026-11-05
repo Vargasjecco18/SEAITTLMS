@@ -27,7 +27,7 @@ else
         <div class="stats">
             <StatCard Label="Assignments to check" Value="@data.ToCheck" IconName="clipboard-list" Accent="@(data.ToCheck > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="@(data.ToCheck == 0 ? "All checked" : "Waiting for a score")" />
             <StatCard Label="Flagged quizzes" Value="@data.FlaggedCount" IconName="shield-alert" Accent="@(data.FlaggedCount > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="Last 30 days. See who on the calendar." Href="calendar" />
-            <StatCard Label="Not posted yet" Value="@data.DraftCount" IconName="eye-off" Accent="AccentColor.Violet" Hint="Drafts and scheduled modules" />
+            <StatCard Label="Not posted yet" Value="@data.DraftCount" IconName="eye-off" Accent="AccentColor.Violet" Hint="Drafts and scheduled handouts" />
             <StatCard Label="Due this week" Value="@data.DueSoon" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="@($"{data.SubjectCount} courses · {data.StudentCount} students")" />
         </div>
 
@@ -56,11 +56,11 @@ else
                 }
             </Card>
 
-            <Card Title="Modules students can't see yet" IconName="eye-off">
+            <Card Title="Handouts students can't see yet" IconName="eye-off">
                 @if (data.Drafts.Count == 0)
                 {
                     <EmptyState IconName="layers" Title="Everything is posted">
-                        <p>Drafts and scheduled modules show up here.</p>
+                        <p>Drafts and scheduled handouts show up here.</p>
                     </EmptyState>
                 }
                 else

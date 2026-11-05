@@ -244,6 +244,48 @@ th.col-level {
     vertical-align: middle;
 }
 
+/* The columns have their own widths, so choosing a concern or what happened never makes the row wider or narrower: a long choice is cut with "…" in its box,
+   a long sentence wraps inside its column. A phone scrolls the table sideways. */
+.referral-table {
+    min-width: 56rem;
+    table-layout: fixed;
+}
+
+.referral-table .col-student {
+    width: 22%;
+}
+
+.referral-table .col-section {
+    width: 11%;
+}
+
+.referral-table .col-concern {
+    width: 21%;
+}
+
+.referral-table .col-happened {
+    width: 28%;
+}
+
+.referral-table th.col-notes {
+    width: 7rem;
+}
+
+.referral-table th.col-actions {
+    width: 6.5rem;
+}
+
+.referral-table td {
+    overflow-wrap: anywhere;
+}
+
+.referral-table .place {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
+}
+
 .col-notes {
     width: 6.5rem;
     text-align: center;
@@ -353,7 +395,10 @@ th.col-level {
 
 .concern-select {
     width: 100%;
-    min-width: 11rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     padding: 0.5rem 2rem 0.5rem 2.2rem;
     border: 1px solid var(--field-border);
     border-radius: 999px;

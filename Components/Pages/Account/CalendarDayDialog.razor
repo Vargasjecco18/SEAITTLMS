@@ -5,7 +5,7 @@
 @inject NavigationManager Navigation
 
 @* The box a click on a day of the week opens: everything on that day. Each line is a link: an assignment, quiz or task performance (a teacher gets
-   who handed it in), a module, or an event of the person's own calendar. *@
+   who handed it in), a handout, or an event of the person's own calendar. *@
 <Modal Open="loaded" Title="@Day.ToString("dddd, MMMM d", CultureInfo.InvariantCulture)" OnClose="Close">
     @if (events.Count == 0)
     {

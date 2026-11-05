@@ -31,7 +31,7 @@ else
         <div class="stats">
             <StatCard Label="Assignments to do" Value="@data.OpenWork" IconName="clipboard-list" Accent="AccentColor.Blue" Hint="@(data.DueThisWeek == 0 ? "Nothing due this week" : $"{data.DueThisWeek} due this week")" />
             <StatCard Label="Overdue" Value="@data.Overdue" IconName="triangle-alert" Accent="@(data.Overdue > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@(data.Overdue == 0 ? "You are on track" : "Hand these in soon")" />
-            <StatCard Label="New modules" Value="@data.UnopenedModules" IconName="layers" Accent="AccentColor.Amber" Hint="Not opened yet" />
+            <StatCard Label="New handouts" Value="@data.UnopenedModules" IconName="layers" Accent="AccentColor.Amber" Hint="Not opened yet" />
             <StatCard Label="Average grade" Text="@(data.Overall is { } avg ? $"{avg:0.#}%" : "—")" IconName="trending-up" Accent="@(data.Failing > 0 ? AccentColor.Rose : AccentColor.Violet)"
                       Hint="@(data.Failing > 0 ? $"{data.Failing} course{(data.Failing == 1 ? "" : "s")} below 70" : data.Overall is null ? "No grades yet" : "Keep it up")" Href="student/grades" />
         </div>
@@ -62,11 +62,11 @@ else
                 </div>
             }
 
-            <Card Title="Modules not opened yet" IconName="layers">
+            <Card Title="Handouts not opened yet" IconName="layers">
                 @if (data.Unopened.Count == 0)
                 {
                     <EmptyState IconName="book-open" Title="Nothing new">
-                        <p>You have opened every module your teachers posted.</p>
+                        <p>You have opened every handout your teachers posted.</p>
                     </EmptyState>
                 }
                 else

@@ -197,7 +197,7 @@
         }
 
         loads = await Enrollment.GetSectionLoadsAsync(TermId, strandId, grade);
-        plan = await Enrollment.GetCoursePlanAsync(TermId, strandId, grade, sectionName);
+        plan = await Enrollment.GetCoursePlanAsync(TermId, strandId, grade);
         if (loads.FirstOrDefault(l => l.Name == sectionName)?.IsFull == true)
         {
             sectionName = "";

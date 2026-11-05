@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Components.Web
-@* The Add button at the top right of a course: it opens a small menu. First the module (a lesson of the course), then what to add to it: an assignment,
-   a quiz or a task performance. With only one module the menu goes straight to the three kinds. *@
+@* The Add button at the top right of a course: it opens a small menu. First the handout (a lesson of the course), then what to add to it: an assignment,
+   a quiz or a task performance. With only one handout the menu goes straight to the three kinds. At the top of the course (Choice) the menu is "Add activities" (a sheet of
+   rows) or "Add quiz" (a sheet of questions): both ask for the handout inside the sheet. *@
 <div class="add-menu" @onkeydown="OnKeyDown">
     <Button IconName="plus" OnClick="Toggle" aria-haspopup="menu" aria-expanded="@(open ? "true" : "false")">@Label</Button>
 
@@ -10,11 +11,11 @@
         <div class="add-pop" role="menu" aria-label="Add to the course">
             @if (Modules.Count == 0)
             {
-                <p class="add-empty">There is no module yet. Add a module first.</p>
+                <p class="add-empty">There is no handout yet. Add a handout first.</p>
             }
-            else if (Choice && choosing)
+            else if (Choice)
             {
-                @* The Add button of the top of a course: add many activities in the sheet, or add one quiz (then the module is asked). *@
+                @* The Add button of the top of a course: add many activities in the sheet, or add a quiz by writing its questions (the sheet asks for the handout). *@
                 <p class="add-title">What do you want to add?</p>
                 <ul class="add-list">
                     <li>
@@ -24,20 +25,16 @@
                         </button>
                     </li>
                     <li>
-                        <button type="button" role="menuitem" class="add-item" data-add-kind="@ItemKinds.Quiz" @onclick="ChooseQuiz">
+                        <button type="button" role="menuitem" class="add-item" data-add-kind="@ItemKinds.Quiz" @onclick="() => PickAsync(ItemKinds.Quiz, 0)">
                             <Icon Name="@SubjectStyle.KindIcon(ItemKinds.Quiz)" Size="16" />
                             <span class="add-label">Add quiz</span>
-                            @if (Modules.Count > 1)
-                            {
-                                <Icon Name="chevron-right" Size="16" />
-                            }
                         </button>
                     </li>
                 </ul>
             }
-            else if (Current is null || Kind is not null || Choice)
+            else if (Current is null || Kind is not null)
             {
-                <p class="add-title">Choose a module</p>
+                <p class="add-title">Choose a handout</p>
                 <ul class="add-list">
                     @foreach (var m in Modules)
                     {
@@ -46,7 +43,7 @@
                             <button type="button" role="menuitem" class="add-item" @onclick="() => ChooseAsync(module)">
                                 <Icon Name="layers" Size="16" />
                                 <span class="add-label">@module.Label</span>
-                                @if (Kind is null && !Choice)
+                                @if (Kind is null)
                                 {
                                     <Icon Name="chevron-right" Size="16" />
                                 }
@@ -66,7 +63,7 @@
                     <p class="add-title">@Current.Label</p>
                 }
 
-                <p class="add-title">Add to this module</p>
+                <p class="add-title">Add to this handout</p>
                 <ul class="add-list">
                     @foreach (var kind in ItemKinds.All)
                     {
@@ -106,10 +103,8 @@
     /// <summary>When the kind is known (the list of assignments, for example) only the module is asked.</summary>
     [Parameter] public string? Kind { get; set; }
 
-    /// <summary>The button of the top of a course: the menu first asks "Add activities" (the sheet) or "Add quiz" (then the module).</summary>
+    /// <summary>The button of the top of a course: the menu asks "Add activities" (the sheet of rows) or "Add quiz" (the sheet of questions).</summary>
     [Parameter] public bool Choice { get; set; }
-
-    private bool choosing = true;
 
     /// <summary>The modules of the course (not the syllabus), in order. The label is like "Module 2: Journal entries".</summary>
     [Parameter, EditorRequired] public IReadOnlyList<AddMenuModule> Modules { get; set; } = [];
@@ -119,13 +114,6 @@
 
     private async Task ChooseAsync(AddMenuModule module)
     {
-        if (Choice)
-        {
-            Close();
-            await OnPick.InvokeAsync(new AddMenuPick(module.Id, ItemKinds.Quiz));
-            return;
-        }
-
         if (Kind is { } kind)
         {
             Close();
@@ -142,28 +130,12 @@
     {
         open = !open;
         chosen = null;
-        choosing = true;
     }
 
     private void Close()
     {
         open = false;
         chosen = null;
-        choosing = true;
-    }
-
-    /// <summary>"Add quiz": with one module the quiz goes straight to it, with more the module is asked.</summary>
-    private async Task ChooseQuiz()
-    {
-        if (Modules.Count == 1)
-        {
-            var only = Modules[0];
-            Close();
-            await OnPick.InvokeAsync(new AddMenuPick(only.Id, ItemKinds.Quiz));
-            return;
-        }
-
-        choosing = false;
     }
 
     private void OnKeyDown(KeyboardEventArgs e)

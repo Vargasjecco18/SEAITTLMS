@@ -2,11 +2,25 @@
    from), the choices, the Right answer (a list to choose from: the choice that is right, or True or False) and the Points, and the step by step at the right. A box is read when it is
    left (not at every key) and nothing is built until the box is opened. The questions of the exam are the rows of the sheet: Save gives the page the whole list (the exam is saved
    when the page's own Save is pressed). *@
-<Modal Open="Open" Title="@($"Questions · {ExamTitle}")" Wide="true" Top="true" OnClose="CloseAsync">
+<Modal Open="Open" Title="@(Heading ?? $"Questions · {ExamTitle}")" Wider="true" Top="true" OnClose="CloseAsync">
     @if (Open)
     {
         <div class="sheet-layout">
             <div class="sheet-main">
+                @if (HeaderContent is not null)
+                {
+                    @* Fields above the questions (the handout and the title of a new quiz). *@
+                    <div class="sheet-head">@HeaderContent</div>
+                }
+                @if (Errors.Count > 0)
+                {
+                    <ul class="sheet-errors" role="alert">
+                        @foreach (var error in Errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                }
                 <p class="sheet-summary" role="status">
                     <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "question is" : "questions are") ready.
                     @if (Filled.Count > ReadyCount)
@@ -15,12 +29,12 @@
                     }
                     else if (ReadyCount > 0)
                     {
-                        <span class="muted">The exam is worth @Filled.Sum(r => r.PointsValue).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) points.</span>
+                        <span class="muted">The @Subject is worth @Filled.Sum(r => r.PointsValue).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) points.</span>
                     }
                 </p>
 
                 <div class="sheet-wrap">
-                    <table class="sheet" aria-label="Questions of the exam">
+                    <table class="sheet" aria-label="@($"Questions of the {Subject}")">
                         <thead>
                             <tr>
                                 <th scope="col" class="c-n">#</th>
@@ -138,7 +152,7 @@
 
                 <div class="sheet-actions">
                     <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
-                    <Button IconName="circle-check" Disabled="@(Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
+                    <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
                 </div>
             </div>
 
@@ -151,7 +165,7 @@
                     <li><strong>Choose the right answer</strong> from the list: the choice that is right, or True or False. For a short answer, type the answer (several accepted answers are separated by <em>|</em>).</li>
                     <li><strong>Set the points</strong> of the question (1 if you leave it).</li>
                     <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                    <li><strong>Press Save.</strong> The questions are put in the exam. The exam is saved when you press Save in the exam box.</li>
+                    <li><strong>Press Save.</strong> @SaveStep</li>
                 </ol>
             </aside>
         </div>
@@ -194,6 +208,27 @@
 
     /// <summary>The exam the questions go to, for the heading.</summary>
     [Parameter] public string ExamTitle { get; set; } = "";
+
+    /// <summary>The whole heading of the box, when it is not "Questions · exam title" (Add quiz).</summary>
+    [Parameter] public string? Heading { get; set; }
+
+    /// <summary>What the questions belong to, in the sentences: "exam" or "quiz".</summary>
+    [Parameter] public string Subject { get; set; } = "exam";
+
+    /// <summary>Fields above the sheet (Add quiz asks for the handout and the title there).</summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+
+    /// <summary>True while something outside the sheet is missing (the title of the quiz): Save waits.</summary>
+    [Parameter] public bool SaveBlocked { get; set; }
+
+    /// <summary>True while the page is saving: the button says so and waits.</summary>
+    [Parameter] public bool Busy { get; set; }
+
+    /// <summary>What went wrong when the page tried to save (shown above the sheet).</summary>
+    [Parameter] public IReadOnlyList<string> Errors { get; set; } = [];
+
+    /// <summary>The last step of the step by step.</summary>
+    [Parameter] public string SaveStep { get; set; } = "The questions are put in the exam. The exam is saved when you press Save in the exam box.";
 
     /// <summary>The questions the exam has now: they are the first rows of the sheet.</summary>
     [Parameter] public IReadOnlyList<QuestionInput> Existing { get; set; } = [];

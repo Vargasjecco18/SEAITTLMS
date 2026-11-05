@@ -228,7 +228,7 @@
 
                                 @if (toCheck.DraftCount > 0)
                                 {
-                                    <li><Badge Tone="Tone.Info">@toCheck.DraftCount</Badge> @(toCheck.DraftCount == 1 ? "module is" : "modules are") not posted yet @if (toCheck.Drafts.Count > 0) { <a href="teacher/subjects/@toCheck.Drafts[0].AssignmentId">Open</a> }</li>
+                                    <li><Badge Tone="Tone.Info">@toCheck.DraftCount</Badge> @(toCheck.DraftCount == 1 ? "handout is" : "handouts are") not posted yet @if (toCheck.Drafts.Count > 0) { <a href="teacher/subjects/@toCheck.Drafts[0].AssignmentId">Open</a> }</li>
                                 }
                             </ul>
                         }

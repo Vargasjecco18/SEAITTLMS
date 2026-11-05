@@ -33,7 +33,7 @@ else
     var closedQuiz = item.IsQuiz && !fileQuiz && overdue && item.Status == "NotStarted";
 
     <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
-        <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the module</ButtonLink>
+        <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the handout</ButtonLink>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />

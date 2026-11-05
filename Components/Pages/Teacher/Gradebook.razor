@@ -62,7 +62,7 @@ else
             @if (book.Columns.Count == 0)
             {
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
-                    <p>Assignments, quizzes and task performances of posted modules appear as columns here.</p>
+                    <p>Assignments, quizzes and task performances of posted handouts appear as columns here.</p>
                     <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
                     <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
                 </EmptyState>
@@ -169,12 +169,12 @@ else
         }
         else
         {
-            <p class="dialog-text">Add an assignment, a quiz, a task performance, a seatwork or a recitation to give <strong>extra scores</strong>. It becomes a new column of the gradebook, and it is added to the module you choose, so the students see it too.</p>
+            <p class="dialog-text">Add an assignment, a quiz, a task performance, a seatwork or a recitation to give <strong>extra scores</strong>. It becomes a new column of the gradebook, and it is added to the handout you choose, so the students see it too.</p>
         }
         <FormErrors Errors="formErrors" />
         @if (extraModules.Count == 0)
         {
-            <p class="muted">There is no module that is posted yet. Post a module in the course first: the gradebook only has the work of posted modules.</p>
+            <p class="muted">There is no handout that is posted yet. Post a handout in the course first: the gradebook only has the work of posted handouts.</p>
         }
         else
         {
@@ -191,7 +191,7 @@ else
             }
             @if (extraKind != ItemKinds.Exam)
             {
-                <Field For="x-module" Label="Module" Required="true">
+                <Field For="x-module" Label="Handout" Required="true">
                     <select id="x-module" @bind="extraModuleId">
                         @foreach (var m in extraModules)
                         {

@@ -1,9 +1,9 @@
 @using Microsoft.AspNetCore.Components.Forms
 
 @* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Slides (optional), its Link and its Files, and the
-   step by step at the right. It is a plain table of boxes: a box is read when it is left (not at every key), the files are only remembered (they are read when Save is pressed, a few modules
-   at a time), and nothing is built until the box is opened, so it costs the server almost nothing. The page saves the modules (OnImport). *@
-<Modal Open="Open" Title="@($"Add modules · {CourseName}")" Wide="true" OnClose="CloseAsync">
+   step by step at the right. It is a plain table of boxes: a box is read when it is left (not at every key), the files are only remembered (they are read when Save is pressed, a few handouts
+   at a time), and nothing is built until the box is opened, so it costs the server almost nothing. The page saves the handouts (OnImport). *@
+<Modal Open="Open" Title="@($"Add handouts · {CourseName}")" Wide="true" OnClose="CloseAsync">
     @if (Open)
     {
         @if (result is null)
@@ -19,7 +19,7 @@
                     </p>
 
                     <div class="sheet-wrap">
-                        <table class="sheet" aria-label="Modules to add">
+                        <table class="sheet" aria-label="Handouts to add">
                             <thead>
                                 <tr>
                                     <th scope="col" class="c-n">#</th>
@@ -39,7 +39,7 @@
                                     <tr class="@(filled ? (problems.Count == 0 ? "ok" : "bad") : "empty")" data-row="@n">
                                         <td class="c-n">@n</td>
                                         <td class="c-title">
-                                            <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Title of row {n}")" placeholder="Title of the module" value="@row.Title" @key="@($"t-{row.Id}")"
+                                            <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Title of row {n}")" placeholder="Title of the handout" value="@row.Title" @key="@($"t-{row.Id}")"
                                                    @onchange="e => row.Title = e.Value?.ToString() ?? string.Empty" />
                                         </td>
                                         <td class="c-slides">
@@ -51,7 +51,7 @@
                                                         <button type="button" class="chip-x" aria-label="@($"Take {shown.Name} out of the slides of row {n}")" @onclick="() => row.Slides.Remove(shown)"><Icon Name="x" Size="12" /></button></span>
                                                 }
                                             </span>
-                                            <label class="add-files" title="Choose the slides of this module (a PowerPoint file or a PDF), if there are any">
+                                            <label class="add-files" title="Choose the slides of this handout (a PowerPoint file or a PDF), if there are any">
                                                 <Icon Name="plus" Size="14" /> <span>@(row.Slides.Count == 0 ? "Add slides" : "More")</span>
                                                 <InputFile class="file-input" OnChange="e => SlidesChosen(row, e)" multiple accept=".ppt,.pptx,.pps,.ppsx,.odp,.key,.pdf" aria-label="@($"Slides of row {n}")" />
                                             </label>
@@ -69,7 +69,7 @@
                                                         <button type="button" class="chip-x" aria-label="@($"Take {shown.Name} out of row {n}")" @onclick="() => row.Files.Remove(shown)"><Icon Name="x" Size="12" /></button></span>
                                                 }
                                             </span>
-                                            <label class="add-files" title="Choose one or more files for this module">
+                                            <label class="add-files" title="Choose one or more files for this handout">
                                                 <Icon Name="plus" Size="14" /> <span>@(row.Files.Count == 0 ? "Add files" : "More")</span>
                                                 <InputFile class="file-input" OnChange="e => FilesChosen(row, e)" multiple aria-label="@($"Files of row {n}")" />
                                             </label>
@@ -107,19 +107,19 @@
 
                     <div class="sheet-actions">
                         <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
-                        <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 module" : $"Save {ReadyCount} modules")</Button>
+                        <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 handout" : $"Save {ReadyCount} handouts")</Button>
                     </div>
                 </div>
 
                 <aside class="sheet-steps" aria-label="Step by step">
                     <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
                     <ol>
-                        <li><strong>Type the title</strong> of the module in a row. Press Tab to go to the next box.</li>
-                        <li><strong>Add slides</strong> if the module has them (a PowerPoint file or a PDF). It is optional: the teacher and the students get a <em>Slides</em> button when there are slides.</li>
+                        <li><strong>Type the title</strong> of the handout in a row. Press Tab to go to the next box.</li>
+                        <li><strong>Add slides</strong> if the handout has them (a PowerPoint file or a PDF). It is optional: the teacher and the students get a <em>Slides</em> button when there are slides.</li>
                         <li><strong>Paste a link</strong> to a video or a file online if there is one. It is optional and starts with <em>https://</em>.</li>
-                        <li><strong>Press Add files</strong> in the row and choose the files of the module (a PDF, a Word file, slides, a picture ...). <strong>A file is needed.</strong> There is no limit in MB.</li>
+                        <li><strong>Press Add files</strong> in the row and choose the files of the handout (a PDF, a Word file, slides, a picture ...). <strong>A file is needed.</strong> There is no limit in MB.</li>
                         <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                        <li><strong>Press Save.</strong> Each row becomes one module of the course, with its files, after the ones that are already there.</li>
+                        <li><strong>Press Save.</strong> Each row becomes one handout of the course, with its files, after the ones that are already there.</li>
                     </ol>
                 </aside>
             </div>
@@ -127,7 +127,7 @@
         else
         {
             <p class="sheet-summary" role="status">
-                <strong>@result.Created</strong> @(result.Created == 1 ? "module was" : "modules were") added to the course.
+                <strong>@result.Created</strong> @(result.Created == 1 ? "handout was" : "handouts were") added to the course.
                 @if (result.Errors.Count > 0)
                 {
                     <span class="bad">@result.Errors.Count @(result.Errors.Count == 1 ? "problem" : "problems").</span>
@@ -144,7 +144,7 @@
             }
 
             <div class="sheet-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Add more modules</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="Another">Add more handouts</Button>
                 <Button IconName="circle-check" OnClick="CloseAsync">Done</Button>
             </div>
         }
