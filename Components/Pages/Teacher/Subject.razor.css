@@ -466,8 +466,8 @@ h3 {
 
 .row-progress {
     display: block;
-    flex: 0 1 8.5rem;
-    min-width: 5.5rem;
+    flex: 0 1 10rem;
+    min-width: 6.5rem;
 }
 
 .row-progress ::deep .progress {
@@ -477,14 +477,16 @@ h3 {
 
 .row-progress ::deep .track {
     flex: 1;
-    min-width: 3.5rem;
+    min-width: 5rem;
 }
 
+/* A fixed width in the middle of the row, with the Module button always at its right end: the Module buttons of all the rows line up (a row without slides leaves the place of Slides empty). */
 .row-buttons {
     display: inline-flex;
     flex-wrap: nowrap;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 0.5rem;
+    min-width: 12.5rem;
 }
 
 .row-status {
@@ -594,6 +596,7 @@ h3 {
 
     .row-buttons {
         justify-content: flex-start;
+        min-width: 0;
     }
 
     .row-status {
