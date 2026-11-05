@@ -58,7 +58,7 @@
     private Timer? timer;
     private DateTime lastLoad;
 
-    private string SeeAllHref => Teachers ? "users?tab=teachers" : role == AppRoles.Teacher ? "users?tab=students" : "users?tab=classmates";
+    private string SeeAllHref => Teachers ? (role == AppRoles.Teacher ? "users?tab=teachers" : "users?tab=courseteachers") : role == AppRoles.Teacher ? "users?tab=handled" : "users?tab=classmates";
 
     protected override async Task OnInitializedAsync()
     {

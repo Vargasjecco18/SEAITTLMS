@@ -5,11 +5,13 @@
 @inject PopupGate Gate
 @inject IJSRuntime JS
 
-@* The box in the middle of the screen when a student has earned an achievement. One box for each new achievement; it is shown once
-   (the dashboard writes down that it was seen when the student closes it). It is its own live island, so it works on a page that is otherwise plain. *@
-<Modal Open="current is not null" Title="Achievement unlocked!" OnClose="NextAsync" Centered="true" Narrow="true">
-    @if (current is { } a)
+@* The box in the middle of the screen when a student has earned achievements. It is <b>one box</b> for everything earned since the last time: one achievement is shown big, several are
+   listed together in the same box (they are not shown one after the other). It is shown once (what is on it is written down as seen when the student closes it). It is its own live island,
+   so it works on a page that is otherwise plain. *@
+<Modal Open="queue.Count > 0 && !closed" Title="@(queue.Count == 1 ? "Achievement unlocked!" : $"{queue.Count} achievements unlocked!")" OnClose="CloseAsync" Centered="true" Narrow="@(queue.Count == 1)">
+    @if (queue.Count == 1)
     {
+        var a = queue[0];
         <div class="celebrate @a.Color.ToString().ToLowerInvariant()">
             <div class="confetti" aria-hidden="true">
                 @for (var i = 0; i < 16; i++)
@@ -20,22 +22,41 @@
             <span class="medal"><Icon Name="@a.Icon" Size="44" /></span>
             <h3>@a.Title</h3>
             <p class="what">@a.Description</p>
-            @if (queue.Count > 1)
-            {
-                <p class="count">@(shown + 1) of @queue.Count new achievements</p>
-            }
 
-            <Button IconName="@(shown + 1 < queue.Count ? "arrow-right" : "circle-check")" OnClick="NextAsync">@(shown + 1 < queue.Count ? "Next" : "Great!")</Button>
+            <Button IconName="circle-check" OnClick="CloseAsync">Great!</Button>
+        </div>
+    }
+    else if (queue.Count > 1)
+    {
+        <div class="celebrate many">
+            <div class="confetti" aria-hidden="true">
+                @for (var i = 0; i < 16; i++)
+                {
+                    <i style="--i: @i"></i>
+                }
+            </div>
+            <ul class="earned" aria-label="The achievements you earned">
+                @foreach (var a in queue)
+                {
+                    <li class="@a.Color.ToString().ToLowerInvariant()" data-achievement="@a.Key">
+                        <span class="mini-medal"><Icon Name="@a.Icon" Size="24" /></span>
+                        <span class="earned-text">
+                            <strong>@a.Title</strong>
+                            <span>@a.Description</span>
+                        </span>
+                    </li>
+                }
+            </ul>
+
+            <Button IconName="circle-check" OnClick="CloseAsync">Great!</Button>
         </div>
     }
 </Modal>
 
 @code {
     private IReadOnlyList<Achievement> queue = [];
-    private int shown;
+    private bool closed;
     private int studentId;
-
-    private Achievement? current => shown < queue.Count ? queue[shown] : null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -82,17 +103,16 @@
         }
     }
 
-    /// <summary>The student has seen this one (or closed the box): write it down and show the next, if any.</summary>
-    private async Task NextAsync()
+    /// <summary>The student has seen them (or closed the box): all of them are written down as seen, so the box does not come back.</summary>
+    private async Task CloseAsync()
     {
-        if (current is { } a)
+        if (closed)
         {
-            await Achievements.MarkSeenAsync(studentId, [a.Key]);
-            shown++;
-            if (current is null)
-            {
-                Release();
-            }
+            return;
         }
+
+        closed = true;
+        await Achievements.MarkSeenAsync(studentId, queue.Select(a => a.Key).ToList());
+        Release();
     }
 }

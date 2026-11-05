@@ -1657,10 +1657,17 @@ document.addEventListener('change', function (event) {
         var ids = fileIds();
         var total = 0;
         ids.forEach(function (id) { total += fraction(state.data.files[id]); });
-        var value = ids.length === 0 ? 0 : Math.round(100 * total / ids.length);
-        value = Math.max(state.data.best || 0, Math.min(100, value));
-        if (value !== state.data.best) { state.data.best = value; save(); }
+        var seen = ids.length === 0 ? 0 : Math.round(100 * total / ids.length);
+        seen = Math.max(state.data.best || 0, Math.min(100, seen));
+        // what is kept (on this computer and on the server) is the part of the slides that was seen; what the bar shows is the number of the handout in the course:
+        // 50 for opening it and 50 for the slides (half of the slides seen, rounded as the server rounds: a half goes to the even number), and 100 when the handout has no slides
+        if (seen !== state.data.best) { state.data.best = seen; save(); }
         report(state.data.best || 0);
+        var value = 100;
+        if (state.el.getAttribute('data-read-slides') === '1') {
+            var half = seen / 2, floor = Math.floor(half);
+            value = 50 + (half - floor === 0.5 ? (floor % 2 === 0 ? floor : floor + 1) : Math.round(half));
+        }
         // only write what changed: writing the same text again is a change of the page that wakes this code up again and again
         if (state.shown === value) { return; }
         state.shown = value;
@@ -1994,4 +2001,77 @@ document.addEventListener('change', function (event) {
     document.addEventListener('DOMContentLoaded', sync);
     new MutationObserver(later).observe(document.documentElement, { childList: true, subtree: true });
     sync();
+})();
+
+// ---------------------------------------------------------------- away from the keyboard
+// A person who does nothing for 30 minutes (no mouse, key, touch or scroll in any page of the app) sees a message at the top center: the account will be logged out
+// automatically in 10 minutes, with a countdown. A click, a key press or the button keeps it signed in; when the time is over the form of the Sign out button is sent.
+// The minutes come from the message itself (data-idle-warn and data-idle-logout, set from Auth:AfkWarnMinutes and Auth:AfkLogoutMinutes). Other pages of the app that are
+// open count too (the last time something was done is kept in the browser), so working in one window does not log out the others.
+(function () {
+    var KEY = 'seaitt-active';
+    var last = Date.now();
+    var written = 0;
+    var leaving = false;
+
+    function stored() {
+        try { var v = Number(window.localStorage.getItem(KEY)); return v > 0 ? v : 0; } catch (error) { return 0; }
+    }
+
+    function active() {
+        var now = Date.now();
+        last = now;
+        if (now - written > 3000) {
+            written = now;
+            try { window.localStorage.setItem(KEY, String(now)); } catch (error) { /* no storage: only this page counts */ }
+        }
+    }
+
+    function box() { return document.querySelector('[data-idle-alert]'); }
+
+    function clock(ms) {
+        var s = Math.max(0, Math.ceil(ms / 1000));
+        return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+    }
+
+    function tick() {
+        var el = box();
+        if (!el) { return; }
+        var warn = (Number(el.getAttribute('data-idle-warn')) || 30) * 60000;
+        var grace = (Number(el.getAttribute('data-idle-logout')) || 10) * 60000;
+        var now = Date.now();
+        var idle = now - Math.max(last, stored());
+        if (idle >= warn + grace) {
+            if (leaving) { return; }
+            leaving = true;
+            var form = document.querySelector('form[action="/account/logout"]');
+            if (form) { form.submit(); } else { window.location.href = '/login'; }
+            return;
+        }
+
+        var showing = idle >= warn;
+        if (el.hasAttribute('hidden') === showing) { if (showing) { el.removeAttribute('hidden'); } else { el.setAttribute('hidden', ''); } }
+        if (showing) {
+            var left = el.querySelector('[data-idle-left]');
+            var text = clock(warn + grace - idle);
+            if (left && left.textContent !== text) { left.textContent = text; }
+        }
+    }
+
+    // while the message is on the screen only a click, a key press or a touch keeps the account (a mouse that is moved or a page that is scrolled does not)
+    function deliberate() { active(); tick(); }
+    function movement() {
+        var el = box();
+        if (el && !el.hasAttribute('hidden')) { return; }
+        active();
+    }
+
+    ['mousedown', 'keydown', 'touchstart', 'wheel'].forEach(function (name) { document.addEventListener(name, deliberate, { capture: true, passive: true }); });
+    ['mousemove', 'scroll'].forEach(function (name) { document.addEventListener(name, movement, { capture: true, passive: true }); });
+    document.addEventListener('click', function (event) {
+        if (event.target.closest && event.target.closest('[data-idle-stay]')) { deliberate(); }
+    });
+    document.addEventListener('visibilitychange', tick);
+    window.setInterval(tick, 1000);
+    active();
 })();

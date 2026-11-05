@@ -18,7 +18,7 @@
     @if (slides.Count > 0)
     {
         @* The Slides button of the course page comes here (#slides). *@
-        <div id="slides">
+        <div id="slides" class="slides-card">
             <Card>
                 <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this handout" ModuleLabel="@ModuleLabel" LinkUrl="@(others.Count == 0 ? LinkUrl : null)" IsSlides="true" />
             </Card>

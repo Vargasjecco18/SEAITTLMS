@@ -25,7 +25,7 @@
         <div class="filter-bar">
             @if (tab != "friends")
             {
-                <SearchField Id="u-search" @bind-Value="filter" Live="true" SubmitText="" MaxLength="80" Placeholder="@(tab is "students" or "classmates" ? "A name or a section" : tab == "staff" ? "A name or a role" : "A name")" AriaLabel="Search people" />
+                <SearchField Id="u-search" @bind-Value="filter" Live="true" SubmitText="" MaxLength="80" Placeholder="@(tab is "students" or "classmates" or "handled" ? "A name or a section" : tab == "staff" ? "A name or a role" : "A name")" AriaLabel="Search people" />
             }
 
             <label class="online-only">
@@ -116,7 +116,7 @@
             }
             else
             {
-                <PeopleTable People="list" Placements="placements" ShowPlacement="@(tab != "staff")" CanFriend="canFriend" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
+                <PeopleTable People="list" Placements="placements" ShowPlacement="@(tab != "staff")" ShowSection="@(tab is not ("teachers" or "courseteachers"))" CanFriend="canFriend" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
             }
         }
     </Card>
@@ -149,7 +149,8 @@
     private string findText = "";
     private IReadOnlyList<PersonCard>? found;
     private IReadOnlyList<PersonCard> classmates = [];
-    private IReadOnlyList<PersonCard> teachers = [];
+    private IReadOnlyList<PersonCard> courseTeachers = [];
+    private IReadOnlyList<PersonCard> handled = [];
     private IReadOnlyList<PersonCard> students = [];
     private IReadOnlyList<PersonCard> colleagues = [];
     private IReadOnlyList<PersonCard> friends = [];
@@ -163,14 +164,24 @@
 
     [SupplyParameterFromQuery(Name = "online")] private string? OnlineQuery { get; set; }
 
-    /// <summary>The tabs in the order Friends, Students, Teachers, Staff / Non-teaching (a student also has Classmates, after Friends). Everybody but the administrator has Friends.</summary>
+    /// <summary>The tabs in the order Friends, Students, Teachers, Staff / Non-teaching. A student also has Classmates (after Friends) and Course teachers (left of Teachers); a teacher has Handled students (left of Students, which lists every student). Everybody but the administrator has Friends.</summary>
     private IReadOnlyList<PillTabs.Tab> Tabs => isStudent
         ?
         [
             new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
             new("classmates", "Classmates", "users-round", classmates.Count),
             new("students", "Students", "graduation-cap", students.Count),
-            new("teachers", "Teachers", "presentation", teachers.Count),
+            new("courseteachers", "Course teachers", "book-marked", courseTeachers.Count),
+            new("teachers", "Teachers", "presentation", colleagues.Count),
+            new("staff", "Staff / Non-teaching", "id-card", staff.Count),
+        ]
+        : isTeacher
+        ?
+        [
+            new("friends", "Friends", "handshake", friends.Count + (requests.Received.Count > 0 ? requests.Received.Count : 0)),
+            new("handled", "Handled students", "user-check", handled.Count),
+            new("students", "Students", "graduation-cap", students.Count),
+            new("teachers", "Teachers", "presentation", colleagues.Count),
             new("staff", "Staff / Non-teaching", "id-card", staff.Count),
         ]
         : canFriend
@@ -192,16 +203,20 @@
     {
         "staff" => "No other staff",
         "classmates" => "No classmates yet",
-        "students" => isStudent ? "No other students" : "No students yet",
-        _ => isStudent ? "No teachers yet" : "No other teachers",
+        "handled" => "No handled students yet",
+        "courseteachers" => "No course teachers yet",
+        "students" => "No students yet",
+        _ => "No other teachers",
     };
 
     private string EmptyText => tab switch
     {
         "staff" => "The registrar, the guidance counselor, the academic coordinator and the academic provider are listed here.",
         "classmates" => "When you are enrolled in a section, the students of it are listed here.",
-        "students" => isStudent ? "The other students of the school are listed here." : "The students of the courses you teach are listed here.",
-        _ => isStudent ? "The teachers of your courses are listed here once you are enrolled." : "All the other teachers of the school are listed here.",
+        "handled" => "The students of the sections you teach are listed here.",
+        "courseteachers" => "The teachers of your courses are listed here once you are enrolled.",
+        "students" => "All the students of the school are listed here.",
+        _ => "All the teachers of the school are listed here.",
     };
 
     private int OnlineCount => tab == "friends" ? OnlineIn(friends) : OnlineIn(CurrentList());
@@ -267,11 +282,13 @@
         {
             classmates = await People.GetClassmatesAsync(userId);
             students = await People.GetAllStudentsAsync(userId);
-            teachers = await People.GetMyTeachersAsync(userId);
+            courseTeachers = await People.GetMyTeachersAsync(userId);
+            colleagues = await People.GetColleaguesAsync(userId);
         }
         else if (isTeacher)
         {
-            students = await People.GetMyStudentsAsync(userId);
+            handled = await People.GetMyStudentsAsync(userId);
+            students = await People.GetAllStudentsAsync(userId);
             colleagues = await People.GetColleaguesAsync(userId);
         }
         else
@@ -287,7 +304,7 @@
         }
 
         // Where each person is (grade level, strand and section): one lookup for everybody on the page.
-        var everybody = friends.Concat(students).Concat(colleagues).Concat(classmates).Concat(teachers).Concat(requests.Received).Concat(requests.Sent).Concat(found ?? []).Select(p => p.UserId).ToList();
+        var everybody = friends.Concat(students).Concat(colleagues).Concat(classmates).Concat(courseTeachers).Concat(handled).Concat(requests.Received).Concat(requests.Sent).Concat(found ?? []).Select(p => p.UserId).ToList();
         placements = await People.GetPlacementsAsync(everybody);
     }
 
@@ -303,7 +320,9 @@
     private IReadOnlyList<PersonCard> CurrentList() => tab switch
     {
         "classmates" => classmates,
-        "teachers" => isStudent ? teachers : colleagues,
+        "handled" => handled,
+        "courseteachers" => courseTeachers,
+        "teachers" => colleagues,
         "students" => students,
         "staff" => staff,
         _ => friends,

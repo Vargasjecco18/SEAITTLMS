@@ -41,12 +41,24 @@
     white-space: nowrap;
 }
 
+/* The name takes the room; the Message button and the Friend status are together at the right end of the row. */
+.people-table .c-name {
+    width: 38%;
+}
+
 .c-message {
-    width: 8.5rem;
+    width: 9rem;
+    text-align: right;
 }
 
 .c-status {
     white-space: nowrap;
+    text-align: right;
+}
+
+.people-table th.c-message,
+.people-table th.c-status {
+    text-align: right;
 }
 
 .muted {

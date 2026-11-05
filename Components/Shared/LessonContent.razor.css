@@ -50,3 +50,10 @@
     margin: 1rem 0 0.5rem;
     font-size: 0.92rem;
 }
+
+/* On a phone the slides are not shown again inside the page (a card with a small slide): the Slides button at the top opens them, one slide at a time, in the whole screen. */
+@media (max-width: 640px) {
+    .slides-card {
+        display: none;
+    }
+}

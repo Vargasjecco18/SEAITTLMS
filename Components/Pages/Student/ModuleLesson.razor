@@ -23,7 +23,7 @@ else if (module is null)
 else
 {
     <PageHeader Title="@module.Title" IconName="layers">
-        <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" Save="true" ServerPercent="module.ReadPercent" />
+        <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" Save="true" HasSlides="module.HasSlides" ServerPercent="module.ReadPercent" />
         @if (slideFiles.Count > 0)
         {
             <Button Variant="ButtonVariant.Secondary" IconName="presentation" OnClick="() => slidesOpen = true">Slides</Button>

@@ -75,7 +75,7 @@ else
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span><strong>Syllabus</strong> and <strong>handouts</strong> go to the teachers as drafts. <strong>Summative exams</strong> go straight to the students.</span>
+        <span><strong>Syllabus</strong> and <strong>handouts</strong> go to the teachers, <strong>hidden from the students</strong> until the teacher posts them. <strong>Summative exams</strong> go straight to the students.</span>
     </p>
 
     <div class="tiles">
@@ -408,7 +408,7 @@ else
     }
     else if (sending && course is not null)
     {
-        <p class="dialog-text">Each teacher gets their own copy as a <strong>draft</strong>. A handout that a teacher's course already got is not sent again.</p>
+        <p class="dialog-text">Each teacher gets their own copy, <strong>hidden from the students</strong> until the teacher posts it. A handout that a teacher's course already got is not sent again.</p>
         <FormErrors Errors="formErrors" />
 
         <p class="pick-title">What to send</p>

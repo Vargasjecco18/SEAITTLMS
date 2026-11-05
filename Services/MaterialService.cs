@@ -701,7 +701,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var list = string.Join(", ", teacher.Titles);
             await notifications.AddAsync(
                 teacher.UserId, "materials", "Course materials from the academic provider",
-                $"{subject} · {teacher.Section}: {list}. They are drafts: set when to post them.",
+                $"{subject} · {teacher.Section}: {list}. They are hidden from your students until you post them.",
                 $"teacher/subjects/{teacher.AssignmentId}", ct);
         }
 
@@ -713,7 +713,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
         return ServiceResult.Ok(
             $"Sent {Plural(library.Count, "module")} to {Plural(teachersTold, "teacher")}"
-            + (skipped > 0 ? $" ({skipped} already sent before were skipped)." : ". They are drafts in the teachers' courses."), copied);
+            + (skipped > 0 ? $" ({skipped} already sent before were skipped)." : ". They arrive hidden from the students: each teacher posts them."), copied);
     }
 
     /// <summary>

@@ -124,7 +124,7 @@ else
                         var moduleHref = $"student/modules/{module.Id}";
                         <li class="course-row" data-module="@module.Id">
                             @* The title opens the module; under it, at the left of what the module has (its activities), the progress bar (50 for the slides, 50 for the module, and 100 for the module when
-                               it has no slides). In the middle: the Slides (when there are slides) and Handout buttons. *@
+                               it has no slides). At the right of the row: the Slides (when there are slides) and Handout buttons. *@
                             <a class="row-open" href="@moduleHref" aria-label="@(module.IsSyllabus ? "Open the syllabus" : $"Open {module.Title}")">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">

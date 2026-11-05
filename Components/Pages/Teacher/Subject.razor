@@ -123,7 +123,7 @@ else
         <CourseLayout Teacher="subject">
         <p class="hint-line">
             <Icon Name="eye-off" Size="16" />
-            <span>Handouts from the provider are <strong>drafts</strong>. Students see them when you post them.</span>
+            <span>The syllabus and the handouts from the academic provider arrive <strong>hidden from your students</strong>. They see them when you post them.</span>
         </p>
 
         @if (subject.Modules.All(m => m.IsExamSet))
@@ -191,7 +191,7 @@ else
                                         }
                                         else
                                         {
-                                            <span>Draft · hidden</span>
+                                            <span>Hidden from students</span>
                                         }
                                         <Icon Name="pencil" Size="13" />
                                     </button>

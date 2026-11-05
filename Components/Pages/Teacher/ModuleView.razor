@@ -25,7 +25,7 @@ else if (subject is null || module is null)
 else
 {
     <PageHeader Title="@module.Title" IconName="layers">
-        <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" />
+        <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" HasSlides="module.HasSlides" ClassPercent="module.Progress" />
         @if (slideFiles.Count > 0)
         {
             <Button Variant="ButtonVariant.Secondary" IconName="presentation" OnClick="() => slidesOpen = true">Slides</Button>
@@ -52,7 +52,7 @@ else
                     }
                     else
                     {
-                        <Badge>Draft · hidden from students</Badge>
+                        <Badge>Hidden from students</Badge>
                     }
                 </p>
                 <ModuleEditor TeacherId="teacherId" Module="module" Files="files" BodyRows="6" OnSaved="SavedAsync" />

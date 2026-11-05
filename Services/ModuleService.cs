@@ -732,8 +732,11 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         }
 
         var items = await LoadStudentItemsAsync(db, studentId, [moduleId], now, ct);
+        // the slides the student already saw: the bar of the page starts where the row of the course is
+        var hasSlides = (await ModulesWithSlidesAsync(db, [moduleId], ct)).Contains(moduleId);
+        var seen = await db.ModuleReads.AsNoTracking().Where(r => r.StudentId == studentId && r.ModuleId == moduleId).Select(r => (int?)r.Percent).FirstOrDefaultAsync(ct) ?? 0;
         return new StudentModule(m.Module.Id, m.Module.Title, m.Module.Description, m.Module.Body, m.Module.LinkUrl, m.Module.Position, m.Module.VisibleFromUtc!.Value, true, items,
-            m.Module.AssignmentId, m.SubjectName, m.Module.IsSyllabus);
+            m.Module.AssignmentId, m.SubjectName, m.Module.IsSyllabus, HasSlides: hasSlides, ReadPercent: seen, Progress: ModuleProgress.Of(hasSlides, true, seen));
     }
 
     private static async Task<List<StudentItem>> LoadStudentItemsAsync(AppDbContext db, int studentId, IReadOnlyCollection<int> moduleIds, DateTime now, CancellationToken ct)

@@ -1,22 +1,40 @@
-@* How much of a module has been read, at the right of its title. It only counts what happens inside the files of the module: the pages of a PDF that were in front of the reader and how far
-   the reader scrolled inside it, how much of a sound or a video was played (wwwroot/app.js does the counting). Scrolling the rest of the page counts for nothing. It never goes back,
-   and it is remembered on this computer. *@
-<div class="read-progress" data-read-progress data-read-key="@Key" data-read-module="@(ModuleId > 0 ? ModuleId.ToString() : null)" data-read-save="@(Save ? "1" : null)" data-read-server="@(ServerPercent is > 0 ? ServerPercent.ToString() : null)" role="progressbar" aria-label="How much of this handout was read" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-     title="It grows as you read inside the files: the pages you look at and how far you scroll in them">
-    <span class="rp-text">Read <b data-rp-value>0%</b></span>
-    <span class="rp-track"><i data-rp-bar></i></span>
-</div>
+@* The progress of a handout, at the right of its title. It is the same number as the bar of the handout in the course page: 50 for opening the handout and 50 for the slides that were
+   seen (a handout with no slides is 100 as soon as it is opened). The student's page counts the slides in front of the reader (wwwroot/app.js does the counting), never goes back, keeps
+   it on the server and on this computer. The teacher's page shows the class: the average of the students, which is the bar of the handout in the course page of the teacher. *@
+@if (ClassPercent is { } classPercent)
+{
+    <div class="read-progress class @(classPercent >= 100 ? "done" : "")" role="progressbar" aria-label="How far the class has got in this handout" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@classPercent"
+         title="@(HasSlides ? "The average of the class: half is the slides they saw, half is opening the handout" : "The average of the class: this handout has no slides, so opening it is all of it")">
+        <span class="rp-text">Class progress <b>@classPercent%</b></span>
+        <span class="rp-track"><i style="width: @(classPercent)%"></i></span>
+    </div>
+}
+else
+{
+    <div class="read-progress" data-read-progress data-read-key="@Key" data-read-module="@(ModuleId > 0 ? ModuleId.ToString() : null)" data-read-save="@(Save ? "1" : null)" data-read-slides="@(HasSlides ? "1" : "0")"
+         data-read-server="@(ServerPercent is > 0 ? ServerPercent.ToString() : null)" role="progressbar" aria-label="Your progress in this handout" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+         title="@(HasSlides ? "The same as the bar in your course: half is opening the handout, half is the slides you saw" : "The same as the bar in your course: this handout has no slides, so opening it is all of it")">
+        <span class="rp-text">Progress <b data-rp-value>0%</b></span>
+        <span class="rp-track"><i data-rp-bar></i></span>
+    </div>
+}
 
 @code {
-    /// <summary>What the progress belongs to (the module), so each module remembers its own.</summary>
+    /// <summary>What the progress belongs to (the handout), so each one remembers its own.</summary>
     [Parameter, EditorRequired] public string Key { get; set; } = "";
 
-    /// <summary>The module, for the bar to be kept on the server (the student's page): the bar of the module in the course reads it.</summary>
+    /// <summary>The handout, for the progress to be kept on the server (the student's page): the bar of the handout in the course reads it.</summary>
     [Parameter] public int ModuleId { get; set; }
 
-    /// <summary>True on the page of a student: the bar is sent to the server. (The teacher's page only shows it.)</summary>
+    /// <summary>True on the page of a student: the progress is sent to the server.</summary>
     [Parameter] public bool Save { get; set; }
 
-    /// <summary>What the server already has for this student (so the bar starts there on another computer, and matches the bar of the course page).</summary>
+    /// <summary>The handout has slides: opening it is 50 and the slides seen are the other 50. Without slides, opening it is 100.</summary>
+    [Parameter] public bool HasSlides { get; set; }
+
+    /// <summary>The slides the server already has for this student (0 to 100), so the bar starts there on another computer, and matches the bar of the course page.</summary>
     [Parameter] public int? ServerPercent { get; set; }
+
+    /// <summary>On the teacher's page: the progress of the class (the bar of the handout in the course). The page does not count any reading then.</summary>
+    [Parameter] public int? ClassPercent { get; set; }
 }

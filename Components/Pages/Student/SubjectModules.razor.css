@@ -289,13 +289,13 @@ h2 {
     }
 }
 
-/* A row of the first page of a course: at the left the title (it opens the module) and under it the progress bar, next to what the module has (its activities); the Slides and Module buttons
-   in the exact middle of the row. */
+/* A row of the first page of a course: at the left the title (it opens the handout) and under it the progress bar, next to what the handout has (its activities); the Slides and Handout
+   buttons at the right side of the row. */
 .course-row {
     display: grid;
     align-items: center;
     column-gap: 1.1rem;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .row-open {
@@ -327,7 +327,7 @@ h2 {
     min-width: 5rem;
 }
 
-/* A fixed width in the middle of the row, with the Module button always at its right end: the Module buttons of all the rows line up (a row without slides leaves the place of Slides empty). */
+/* A fixed width at the right of the row, with the Handout button always at its right end: the Handout buttons of all the rows line up (a row without slides leaves the place of Slides empty). */
 .row-buttons {
     display: inline-flex;
     flex-wrap: nowrap;

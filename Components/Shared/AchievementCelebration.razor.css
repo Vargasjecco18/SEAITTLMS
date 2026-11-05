@@ -39,10 +39,56 @@ h3 {
     color: var(--text-muted);
 }
 
-.count {
-    margin: 0.2rem 0 0;
+/* Several achievements in one box: a row for each, with its small medal. */
+.many {
+    justify-items: stretch;
+    text-align: left;
+}
+
+.earned {
+    position: relative;
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.earned li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.75rem;
+    background: var(--accent-soft);
+}
+
+.mini-medal {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.earned-text {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.earned-text span {
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.88rem;
+}
+
+.many ::deep .button {
+    justify-self: center;
 }
 
 .celebrate ::deep .button {
