@@ -71,7 +71,7 @@
 }
 
 .c-type {
-    width: 7.6rem;
+    width: 9.4rem;
 }
 
 .c-title {
@@ -195,8 +195,8 @@
 
 .cell {
     width: 100%;
-    min-height: 3.1rem;
-    padding: 0.8rem 0.55rem;
+    min-height: 3.8rem;
+    padding: 1rem 0.6rem;
     border: 0;
     border-radius: 0;
     background: transparent;

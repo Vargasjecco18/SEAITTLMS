@@ -83,8 +83,8 @@
 }
 
 .c-type {
-    width: 8.8rem;
-    min-width: 8.8rem;
+    width: 10.5rem;
+    min-width: 10.5rem;
 }
 
 .c-choice {
@@ -128,8 +128,8 @@
 
 .cell {
     width: 100%;
-    min-height: 3.1rem;
-    padding: 0.8rem 0.55rem;
+    min-height: 3.8rem;
+    padding: 1rem 0.6rem;
     border: 0;
     border-radius: 0;
     background: transparent;

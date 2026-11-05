@@ -382,7 +382,7 @@
         {
             var saved = await Desk.AddConcernAsync(student.StudentId, reasonKey, happened, null, userId);
             messageIsError = !saved.Succeeded;
-            message = saved.Succeeded ? $"{student.StudentName}: {saved.Message}" : string.Join(" ", saved.Errors);
+            message = saved.Succeeded ? saved.Message : string.Join(" ", saved.Errors);
             if (saved.Succeeded)
             {
                 rowReasons.Remove(student.StudentId);
@@ -407,7 +407,7 @@
         {
             var solved = await Desk.SolveStudentAsync(student.StudentId, userId);
             messageIsError = !solved.Succeeded;
-            message = solved.Succeeded ? $"{student.StudentName}: {solved.Message}" : string.Join(" ", solved.Errors);
+            message = solved.Succeeded ? solved.Message : string.Join(" ", solved.Errors);
             rowReasons.Remove(student.StudentId);
             await LoadAsync();
         }

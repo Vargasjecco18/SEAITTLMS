@@ -66,7 +66,7 @@ public static class HelpContent
         new("What is the menu on the left?",
         [
             "It lists the pages for your role. Rest the pointer on a page and a small box opens beside it showing what is inside, with links to its parts (for example, Courses shows your courses, and a click opens one).",
-            "On a phone, the menu button at the top left opens it. On some pages (the academic setup, the enrollment, the course library, the class schedule) the menu folds to its icons by itself so the page has more room: the button at the top of the menu, “Hide Nav bar”, shows the names again.",
+            "On a phone, the menu button at the top left opens it. On some pages (the academic setup, the enrollment, the course library) the menu folds to its icons by itself so the page has more room: the button at the top of the menu, “Hide Nav bar”, shows the names again.",
         ]),
         new("Where is the calendar?",
         [
@@ -144,7 +144,7 @@ public static class HelpContent
         ], "student/evaluations", "Open the evaluations"),
         new("How do I add friends and see my classmates?",
         [
-            "Open Users. The tabs are Friends, Classmates, Students, Teachers and Staff / Non-teaching. Students and Teachers are tables with the name, the grade level, the strand, the section, the room (from the class schedule), a Message button and the friend status; Staff / Non-teaching has the name, the role, and at the right the Message button and the friend status. The Message button is there for everybody, friends or not.",
+            "Open Users. The tabs are Friends, Classmates, Students, Teachers and Staff / Non-teaching. Students and Teachers are tables with the name, the grade level, the strand, the section, a Message button and the friend status; Staff / Non-teaching has the name, the role, and at the right the Message button and the friend status. The Message button is there for everybody, friends or not.",
             "Press “Add friend” beside a person (a student, a teacher or a member of the staff). They get a request and must accept. In Friends you can also find any student or teacher by name.",
             "Friends can write to each other, put each other in groups and share files.",
         ], "users", "Open Users"),
@@ -174,19 +174,19 @@ public static class HelpContent
             "Open a course and press “Add handout”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many handouts at once: press “Add many handouts in a sheet” in the same box: a row for each handout with its Title, its Slides (optional), its Link and its Files. There is no Excel file to download.",
             "Press Open on a handout, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit handout at the right.",
             "A handout is a draft until you post it. In its row of the course, press the date (it says Draft · hidden, Posted Oct 6, 2026 or Scheduled for Nov 10, 2026, 8:00 AM): a small box has the time it appears. Choose a time and press Save time (a later time schedules it, an earlier one posts it from that date), or press Post now. The Hide from students button of the row makes it a draft again. Students see a handout only after it is posted. The bar of each row is how far the class is: 50 for the slides and 50 for the handout (100 for the handout when it has no slides), the average of the class.",
-            "Press “Add activities” at the top right of the course. It offers “Add activities” and “Add quiz”. “Add activities” opens a sheet inside the system: a row for each activity, with its Handout and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files; fill the rows you want and press Save (the sheet fits the box: no scroll bars). “Add quiz” asks for the handout, then the box of the quiz: after saving it you write its questions in a sheet. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
+            "Press “Add activities” at the top right of the course. It offers “Add activities” and “Add quiz”. “Add activities” opens a sheet inside the system: a row for each activity, with its Handout and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files; fill the rows you want and press Save (the sheet fits the box: no scroll bars). “Add quiz” opens a sheet of questions: choose the Handout of the quiz and write its Title, then write a row for each question (its type and its right answer are chosen from lists) and press Save: the quiz is made with its questions. Set its due date, its time limit and the anti-cheat rules afterwards with Edit on the quiz. To add one at a time, open Activities in the Course Menu, then a kind (for example Quizzes) and press its Add button.",
         ]),
         new("What is the menu inside a course?",
         [
             "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Handouts, Activities (Seatwork, Assignments, Quizzes and Task performances, each one listing that kind of work for the whole course), then Students (each with a Message button), Gradebook and Attendance. The first page of the course lists the syllabus and the handouts: each row shows how far the class has read the slides (the average of the class), with the Slides and the Handout buttons.",
             "The menu stays in view while you scroll. The button at its top hides it, to give the page more room, and shows it again; the system remembers your choice.",
-            "Every kind ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. Inside an activity the Course Menu is at the left of the page, and a double click on the title of the activity shows what you gave (the instructions and the files). There are no exams in your menu: the summative exams come from the academic provider.",
+            "Only Courses and Handouts have a “See all” line; every kind of activity ends with an “Add seatwork” (or “Add assignment” ...) line, also when it already has activities. Inside an activity the Course Menu is at the left of the page, and a double click on the title of the activity shows what you gave (the instructions and the files). There are no exams in your menu: the summative exams come from the academic provider.",
         ]),
         new("Can I add many activities at once?",
         [
-            "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment, quiz or task performance. Choose its handout and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
-            "To add more rows choose the type (Seatwork, Assignment, Quiz or Task performance) and the number at the bottom, then press Add (“Add [type] [number] rows”), like the questions of a summative exam. The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its handout.",
-            "The questions of a quiz are written in the quiz itself (Questions), in a sheet like the one of a summative exam: press “Add questions” (or “Edit the questions”), write a row for each question (its type and its right answer are chosen from lists), and use “Add [type] [number] rows” to add many rows of one type. There is no Excel for the questions any more.",
+            "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment or task performance (a quiz is added with “Add quiz”). Choose its handout and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
+            "To add more rows choose the type (Seatwork, Assignment or Task performance) and the number at the bottom, then press Add (“Add [type] [number] rows”), like the questions of a summative exam. The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its handout.",
+            "The questions of a quiz are written in a sheet like the one of a summative exam, in a wide box with tall rows: “Add quiz” opens it for a new quiz, and “Questions” on a quiz that is there opens it again. Write a row for each question (its type and its right answer are chosen from lists), and use “Add [type] [number] rows” to add many rows of one type. There is no Excel for the questions any more.",
         ]),
         new("A student handed in after the due date. What do I do?",
         [
@@ -200,7 +200,7 @@ public static class HelpContent
         ]),
         new("How do I make a quiz?",
         [
-            "Add a quiz to a handout, then press Questions. Add multiple choice, true or false and short answer questions with their points. A quiz that has a file has no questions: the students answer with a file and you give the score.",
+            "Press “Add activities”, then “Add quiz”: choose the handout, write the title and the questions. Open a quiz that is there and press Questions to change them. Add multiple choice, true or false and short answer questions with their points. A quiz that has a file has no questions: the students answer with a file and you give the score.",
             "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules (how many times a student may leave the page, copy, print or take a screenshot). A photo taken with another device can't be detected, but the student's name is shown faintly over the quiz.",
         ]),
         new("How do I check and grade the assignments of my students?",
@@ -298,7 +298,7 @@ public static class HelpContent
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
-            "Open Student's Accounts. Filter by term, strand, schedule or search by name or LRN. Press a student's courses to see them.",
+            "Open Student's Accounts. Filter by term, strand or next term, or search by name or LRN. The Account button of a row (at the left of Edit) shows the sign-in details of the student: the email and, while the student has not changed it, the first password. Press a student's courses to see them.",
             "You can also see who is enrolled for the next term, and unenroll a student.",
             "“View Enrolled Student Today” (top right) lists the students enrolled today, the newest first, with their LRN, grade level, strand, section and term.",
         ], "registrar/student-accounts", "Open Student's Accounts"),
@@ -317,8 +317,8 @@ public static class HelpContent
     [
         new("How do I set up the school years, terms, tracks, strands and courses?",
         [
-            "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses, Class sections and Rooms; a tab opens a dropdown with what is inside (the school years, the tracks and strands, the grade levels, the rooms) to go straight to one. The menu of the school folds by itself on this page, and the button above the tabs (Hide tabs) hides only the tabs. The search box at the top searches the tab that is open.",
-            "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button.",
+            "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses and Class sections; a tab opens a dropdown with what is inside (the school years, the tracks and strands, the grade levels) to go straight to one. The menu of the school folds by itself on this page, and the button above the tabs (Hide tabs) hides only the tabs. The search box at the top searches the tab that is open.",
+            "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button. The bin of a term deletes it, after asking (not a term that has students enrolled); a school year with fewer than three terms has an “Add a term” button.",
             "Tracks, strands and courses are three cards side by side, each with its columns (tracks: Code, Name, Strands, Offered, Delete; strands: Code, Name, Courses, Offered, Delete): press a track to see its strands, press a strand to see its courses. Change a name, the code or the unit in place, or use the row at the bottom of a card to add one. A course has the columns Code, Course, Unit, Offered and Delete: uncheck Offered and the registrar can't enroll students in it; Delete takes it out of the strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
             "To fill many rows at once press the Excel button at the top and choose “Template and import (Excel)”: the workbook has a sheet for each step. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
         ], "coordinator/academic-setup", "Open Academic setup"),
@@ -327,14 +327,7 @@ public static class HelpContent
             "Class sections is a tab of the Academic setup. The tab opens a list of the levels: Grade level (11 and 12), inside it the Strands and inside each strand the Sections A, B and C; press a grade level to see all its strands and sections. In the page there is a tab for each class too, and inside each strand the sections are cards. Press a card to choose its adviser (a teacher of the same strand) and to see the students in it.",
             "A card that says “Add section” makes the section that is missing (A, B and C). The bin on a card deletes the section, after asking.",
         ], "coordinator/academic-setup/sections", "Open Class sections"),
-        new("How do I set the days and the time of a course (MWF or TTH)?",
-        [
-            "Open the Class schedule (in the menu of the school). It is a week like a spreadsheet: the days are the columns and the hours, 7:00 AM to 6:00 PM, are the rows. Choose the school year, the term and the room at the top (a school year or a term that is over is not in the lists). “View all class schedule” shows every class over all the screen.",
-            "At the left are the sections with the courses that have no time yet. Each section says its room and how many courses are on the schedule (6 of 6), and a section with nothing left to place goes to the bottom. Drag a course to a day and a time (it is one hour long; the box on the class changes it): dropped on a Monday, Wednesday or Friday it meets MWF, dropped on a Tuesday or Thursday it meets TTH. Once it is on the week the course leaves the list; use the box on a class to change how long it is, the X to take it off (it goes back to the list), or drag it to move it.",
-            "Every room has its own schedule: press the room box to pick a room, add a room or remove one. Two classes can't be in one room at the same time, a section can't have two classes at the same time, and a teacher can't have two classes at the same time.",
-            "Double click a section to choose its adviser (a teacher of the same strand) and to see the students in it.",
-        ], "coordinator/class-schedule", "Open the class schedule"),
-        new("Who sends the syllabus, handouts and assignments to the teachers?",
+                new("Who sends the syllabus, handouts and assignments to the teachers?",
         [
             "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",
             "If a course has no syllabus or a teacher did not get the handouts, write to the academic provider (Messages).",
@@ -377,7 +370,7 @@ public static class HelpContent
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
             "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
-            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam and Post to students | Complete | Copy to next school year. “Complete” marks the course as finished: it leaves the main page of the library and is only under Complete (the list at the right of All courses: Uncompleted or Complete); “Uncomplete” puts it back. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the handouts to the teachers who have the course in the next school year, as drafts.",
+            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam and Post to students | Copy to next school year. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the handouts to the teachers who have the course in the next school year, as drafts.",
             "Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result; they are in four columns under the highest score). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",

@@ -90,11 +90,13 @@ i.none { background: var(--border); }
 
 .subjects {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.75rem;
 }
 
 /* A course is an open card: its name, the progress at the top, then the gradebook (read only). */
 .subject {
+    min-width: 0;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -130,6 +132,7 @@ i.none { background: var(--border); }
 }
 
 .subject-body {
+    overflow-x: auto;
     padding: 0.2rem 1.1rem 1.1rem;
     border-top: 1px solid var(--border);
 }
