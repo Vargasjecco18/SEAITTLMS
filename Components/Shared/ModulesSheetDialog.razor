@@ -3,7 +3,7 @@
 @* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Slides (optional), its Link and its Files, and the
    step by step at the right. It is a plain table of boxes: a box is read when it is left (not at every key), the files are only remembered (they are read when Save is pressed, a few handouts
    at a time), and nothing is built until the box is opened, so it costs the server almost nothing. The page saves the handouts (OnImport). *@
-<Modal Open="Open" Title="@($"Add handouts · {CourseName}")" Wide="true" OnClose="CloseAsync">
+<Modal Open="Open" Title="@($"Add handouts · {CourseName}")" Wider="true" Top="true" OnClose="CloseAsync">
     @if (Open)
     {
         @if (result is null)

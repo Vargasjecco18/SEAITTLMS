@@ -1,0 +1,114 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject MaterialService Library
+@inject NavigationManager Navigation
+
+@* "Post summative exam to students", at the right of the lists of the Course library. It posts the summative exam of every course of the list (or of the course that is chosen) to all the sections that
+   have the course. A course with no summative exam stops it: the page goes to that course, and says so at the top. The settings of the exam and when it opens and closes are asked here, not when
+   the exam is added. *@
+<Button Variant="ButtonVariant.Secondary" Small="true" IconName="send" OnClick="Start" Title="Post the summative exam of the courses in this list to the students">Post summative exam to students</Button>
+
+<Modal Open="open" Title="Post summative exam to students" OnClose="Close" Large="true">
+    @if (open)
+    {
+        <p class="dialog-text">The summative exam of @(Courses.Count == 1 ? "this course goes" : $"these {Courses.Count} courses go") <strong>straight to the students</strong> of every section that has @(Courses.Count == 1 ? "it" : "them"), and opens and closes at the times you set below. The students and the teachers are told. An exam that a section already got is not posted again.</p>
+        <p class="courses" aria-label="Courses to post">
+            @foreach (var c in Courses)
+            {
+                <span class="chip">@c.Name</span>
+            }
+        </p>
+        <FormErrors Errors="errors" />
+        <ExamPostForm Draft="draft" IdPrefix="all" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="Close">Cancel</Button>
+            <Button IconName="send" Disabled="busy" OnClick="PostAsync">@(busy ? "Posting…" : "Post to students")</Button>
+        </div>
+    }
+</Modal>
+
+<Notice Message="@done" IsError="false" OnDismiss="@(() => done = null)" />
+
+@code {
+    /// <summary>The courses of the list on the page: their number, their name, how many summative exams they have and the address of their page.</summary>
+    [Parameter, EditorRequired] public List<PostCourse> Courses { get; set; } = [];
+
+    public sealed class PostCourse
+    {
+        public int SubjectId { get; set; }
+        public string Name { get; set; } = "";
+        public int Exams { get; set; }
+
+        /// <summary>The address of the page of the course in the library (with the way back to the list).</summary>
+        public string Href { get; set; } = "";
+    }
+
+    private bool open;
+    private bool busy;
+    private List<string> errors = [];
+    private string? done;
+    private readonly ExamPostDraft draft = new();
+
+    private void Start()
+    {
+        errors = [];
+        if (Courses.Count == 0)
+        {
+            done = "There is no course in this list to post. Change the lists above.";
+            return;
+        }
+
+        // A course with no summative exam: the page goes to that course, and the top of the page says why.
+        if (Courses.FirstOrDefault(c => c.Exams == 0) is { } without)
+        {
+            GoToMissing(without.Href);
+            return;
+        }
+
+        open = true;
+    }
+
+    private void Close() => open = false;
+
+    private void GoToMissing(string href) => Navigation.NavigateTo(href + (href.Contains('?') ? "&" : "?") + "alert=no-exam", forceLoad: true);
+
+    private async Task PostAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        var (settings, problem) = draft.Read();
+        if (settings is null)
+        {
+            errors = [problem ?? "Check the settings."];
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var userId = (await Me.GetAsync())?.UserId ?? 0;
+            var result = await Library.PostSummativeExamsAsync(userId, [.. Courses.Select(c => c.SubjectId)], settings);
+            if (!result.Succeeded)
+            {
+                if (result.Id is { } missingId && Courses.FirstOrDefault(c => c.SubjectId == missingId) is { } course)
+                {
+                    GoToMissing(course.Href);
+                    return;
+                }
+
+                errors = [.. result.Errors];
+                return;
+            }
+
+            open = false;
+            done = result.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

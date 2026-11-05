@@ -1,0 +1,22 @@
+@* What the provider chooses when posting a summative exam to the students: the Summative Exam Settings (time, anti-cheating watch, order, what the student sees afterwards) and when it
+   opens and closes. They are not asked when the exam is added: the exam is written first, and these are chosen when it goes to the students. Used by the button of the Course library
+   (all the courses of the list) and by Post to students inside a course. *@
+<QuizSettings IdPrefix="@IdPrefix" Title="Summative Exam Settings" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
+              @bind-TimeLimit="Draft.TimeLimitMinutes" @bind-MaxViolations="Draft.MaxViolations" @bind-AntiCheat="Draft.AntiCheat"
+              @bind-ShuffleQuestions="Draft.ShuffleQuestions" @bind-ShuffleOptions="Draft.ShuffleOptions" @bind-ShowResult="Draft.ShowResult" />
+
+<div class="two">
+    <Field For="@($"{IdPrefix}-opens")" Label="Opens on" Required="true" Hint="Philippine time.">
+        <input id="@($"{IdPrefix}-opens")" type="datetime-local" value="@Draft.OpensText" @onchange="e => Draft.OpensText = e.Value?.ToString() ?? string.Empty" />
+    </Field>
+    <Field For="@($"{IdPrefix}-closes")" Label="Closes on" Required="true" Hint="After it opens.">
+        <input id="@($"{IdPrefix}-closes")" type="datetime-local" value="@Draft.DueText" @onchange="e => Draft.DueText = e.Value?.ToString() ?? string.Empty" />
+    </Field>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ExamPostDraft Draft { get; set; } = new();
+
+    /// <summary>The start of the ids of the fields (so a page with two of these keeps them apart).</summary>
+    [Parameter] public string IdPrefix { get; set; } = "post";
+}

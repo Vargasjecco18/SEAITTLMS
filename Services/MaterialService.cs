@@ -63,6 +63,36 @@ public sealed class ExamInput
     public string DueText { get; set; } = "";
 }
 
+/// <summary>
+/// What the provider chooses when posting a summative exam to the students (the button Post summative exam to students): the Summative Exam Settings, and when the exam opens and closes.
+/// They are written into the exam of the library and into the copy each section gets.
+/// </summary>
+public sealed record ExamPostSettings(
+    DateTime OpensAtUtc, DateTime DueAtUtc, int? TimeLimitMinutes = null, bool AntiCheat = true, int MaxViolations = 3, bool ShuffleQuestions = true, bool ShuffleOptions = true, bool ShowResult = true)
+{
+    /// <summary>The problems of the settings, in words for the provider.</summary>
+    public IReadOnlyList<string> Problems()
+    {
+        var errors = new List<string>();
+        if (DueAtUtc <= OpensAtUtc)
+        {
+            errors.Add("The exam must close after it opens.");
+        }
+
+        if (TimeLimitMinutes is { } limit && (limit < 1 || limit > 600))
+        {
+            errors.Add("The time limit must be between 1 and 600 minutes.");
+        }
+
+        if (MaxViolations is < 1 or > 10)
+        {
+            errors.Add("The number of warnings before the exam is handed in must be between 1 and 10.");
+        }
+
+        return errors;
+    }
+}
+
 /// <summary>One teacher's course (a teacher, a section) that the materials of the course can be sent to, and which modules it got.</summary>
 public sealed record MaterialTeacherRow(
     int AssignmentId, int TeacherUserId, string TeacherName, string SectionLabel, int Students, IReadOnlyList<int> Received, int ExamsGot = 0);
@@ -402,7 +432,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
     // ======================================================================= summative exams
 
-    /// <summary>The problems of an exam: a title, a highest score, and a schedule with both ends (it closes after it opens).</summary>
+    /// <summary>The problems of an exam: a title, a highest score, the questions, and (when it has them) a schedule that closes after it opens.</summary>
     public static List<string> ValidateExam(ExamInput input)
     {
         var errors = new List<string>();
@@ -437,11 +467,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             errors.Add("The instructions can have at most 5000 characters.");
         }
 
-        if (input.OpensAtUtc is null || input.DueAtUtc is null)
-        {
-            errors.Add("Set the schedule: when the exam opens and when it closes.");
-        }
-        else if (input.DueAtUtc <= input.OpensAtUtc)
+        // The settings and the schedule are asked when the exam is posted to the students (Post summative exam to students), not when it is added: here they are optional, but if both are given
+        // the exam closes after it opens.
+        if (input.OpensAtUtc is { } opensAt && input.DueAtUtc is { } closesAt && closesAt <= opensAt)
         {
             errors.Add("The exam must close after it opens.");
         }
@@ -559,7 +587,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         var subject = await db.Subjects.AsNoTracking().Where(s => s.Id == subjectId).Select(s => s.Name).FirstOrDefaultAsync(ct) ?? "a course";
         var when = exam.VisibleFromUtc is { } opens && exam.DueAtUtc is { } closes
             ? $"It opens {PhilippineTime.FormatDateTime(opens)} and closes {PhilippineTime.FormatDateTime(closes)}."
-            : exam.DueAtUtc is { } onlyCloses ? $"It closes {PhilippineTime.FormatDateTime(onlyCloses)}." : "Its dates are not set yet.";
+            : exam.DueAtUtc is { } onlyCloses ? $"It closes {PhilippineTime.FormatDateTime(onlyCloses)}." : "When it opens and closes is set when the provider posts it to the students.";
         var title = $"Summative exam: {exam.Title} · {subject}";
         db.Announcements.Add(new Announcement
         {
@@ -717,49 +745,17 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     }
 
     /// <summary>
-    /// Copies the syllabus and the modules of the library of a course to the teachers who have the course in the school year that comes after the current one (the button "Copy to the next school
-    /// year"): every teacher of the course in that year gets them as drafts, like Send to teachers does. What a teacher already got is skipped, so pressing it twice sends nothing twice.
-    /// </summary>
-    public async Task<ServiceResult> CopyToNextYearAsync(int userId, int subjectId, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsProviderAsync(db, userId, ct))
-        {
-            return ServiceResult.Fail(ProviderOnly);
-        }
-
-        var current = await CurrentYearIdAsync(db, ct);
-        var currentStart = await db.SchoolYears.AsNoTracking().Where(y => y.Id == current).Select(y => (DateOnly?)y.StartDate).FirstOrDefaultAsync(ct);
-        var next = currentStart is null ? null : await db.SchoolYears.AsNoTracking().Where(y => y.StartDate > currentStart).OrderBy(y => y.StartDate)
-            .Select(y => new { y.Id, y.Name }).FirstOrDefaultAsync(ct);
-        if (next is null)
-        {
-            return ServiceResult.Fail("There is no school year after the current one yet. The academic coordinator makes it in the academic setup.");
-        }
-
-        var moduleIds = await db.MaterialModules.AsNoTracking().Where(m => m.SubjectId == subjectId && !m.IsExamSet).Select(m => m.Id).ToListAsync(ct);
-        if (moduleIds.Count == 0)
-        {
-            return ServiceResult.Fail("This course has no syllabus or handout in the library to copy yet.");
-        }
-
-        var assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.SubjectId == subjectId && a.Section.SchoolYearId == next.Id).Select(a => a.Id).ToListAsync(ct);
-        if (assignmentIds.Count == 0)
-        {
-            return ServiceResult.Fail($"No teacher has this course in {next.Name} yet. The administrator gives the courses to the teachers in Users Management; press the button again after that.");
-        }
-
-        var result = await SendAsync(userId, subjectId, moduleIds, assignmentIds, ct, next.Id);
-        return result.Succeeded ? ServiceResult.Ok($"{result.Message} (school year {next.Name})", result.Id) : result;
-    }
-
-    /// <summary>
     /// Posts summative exams straight to the students of some courses (a section and its teacher). Nothing waits for the teacher: each course gets a copy of the exam in its
     /// "Summative exams" box (posted at once, not listed as a module) with the questions and the settings of the exam, and it opens and closes at the times the provider chose.
     /// The students are told, the teacher too. The score of each student goes to the gradebook of the teacher by itself. An exam that a course got before is skipped.
     /// </summary>
-    public async Task<ServiceResult> PostExamsAsync(int userId, int subjectId, IReadOnlyCollection<int> examIds, IReadOnlyCollection<int> assignmentIds, CancellationToken ct = default)
+    public async Task<ServiceResult> PostExamsAsync(int userId, int subjectId, IReadOnlyCollection<int> examIds, IReadOnlyCollection<int> assignmentIds, ExamPostSettings? settings = null, CancellationToken ct = default)
     {
+        if (settings is not null && settings.Problems() is { Count: > 0 } problems)
+        {
+            return ServiceResult.Fail([.. problems]);
+        }
+
         if (examIds.Count == 0)
         {
             return ServiceResult.Fail("Choose the exams to post.");
@@ -792,6 +788,32 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         if (exams.Count == 0)
         {
             return ServiceResult.Fail("What you chose is not in the library of this course any more.");
+        }
+
+        // The settings the provider chose now are written into the exam (and so into the copies); an exam with no dates can't be posted.
+        if (settings is not null)
+        {
+            var ids = exams.Select(e => e.Id).ToList();
+            await db.MaterialItems.Where(i => ids.Contains(i.Id)).ExecuteUpdateAsync(set => set
+                .SetProperty(i => i.VisibleFromUtc, settings.OpensAtUtc).SetProperty(i => i.DueAtUtc, settings.DueAtUtc).SetProperty(i => i.TimeLimitMinutes, settings.TimeLimitMinutes)
+                .SetProperty(i => i.AntiCheat, settings.AntiCheat).SetProperty(i => i.MaxViolations, settings.MaxViolations)
+                .SetProperty(i => i.ShuffleQuestions, settings.ShuffleQuestions).SetProperty(i => i.ShuffleOptions, settings.ShuffleOptions).SetProperty(i => i.ShowResult, settings.ShowResult), ct);
+            foreach (var e in exams)
+            {
+                e.VisibleFromUtc = settings.OpensAtUtc;
+                e.DueAtUtc = settings.DueAtUtc;
+                e.TimeLimitMinutes = settings.TimeLimitMinutes;
+                e.AntiCheat = settings.AntiCheat;
+                e.MaxViolations = settings.MaxViolations;
+                e.ShuffleQuestions = settings.ShuffleQuestions;
+                e.ShuffleOptions = settings.ShuffleOptions;
+                e.ShowResult = settings.ShowResult;
+            }
+        }
+
+        if (exams.Any(e => e.VisibleFromUtc is null || e.DueAtUtc is null))
+        {
+            return ServiceResult.Fail("Set when the exam opens and when it closes.");
         }
 
         var yearId = await CurrentYearIdAsync(db, ct);
@@ -878,6 +900,72 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         return ServiceResult.Ok(
             $"Posted {Plural(exams.Count, "exam")} to {Plural(students.Count, "student")}"
             + (skipped > 0 ? $" ({skipped} already posted before were skipped)." : ". They open at the times you set."), posted);
+    }
+
+    /// <summary>
+    /// "Post summative exam to students" for several courses at once (the button of the Course library list): the summative exam of each course goes to every section that has the course now,
+    /// with the same settings, opening and closing. A course with no summative exam yet stops it: nothing is posted, and the answer names the first of them (<see cref="ServiceResult.Id"/> is its
+    /// course) so the page can go there.
+    /// </summary>
+    public async Task<ServiceResult> PostSummativeExamsAsync(int userId, IReadOnlyCollection<int> subjectIds, ExamPostSettings settings, CancellationToken ct = default)
+    {
+        if (subjectIds.Count == 0)
+        {
+            return ServiceResult.Fail("There is no course to post.");
+        }
+
+        if (settings.Problems() is { Count: > 0 } problems)
+        {
+            return ServiceResult.Fail([.. problems]);
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsProviderAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(ProviderOnly);
+        }
+
+        var subjects = await db.Subjects.AsNoTracking().Where(s => subjectIds.Contains(s.Id)).OrderBy(s => s.Name).Select(s => new { s.Id, s.Name }).ToListAsync(ct);
+        var exams = (await db.MaterialItems.AsNoTracking().Where(i => i.Kind == ItemKinds.Exam && i.Module.IsExamSet && subjectIds.Contains(i.Module.SubjectId))
+            .Select(i => new { i.Id, i.Module.SubjectId }).ToListAsync(ct)).ToLookup(e => e.SubjectId, e => e.Id);
+        var without = subjects.Where(s => !exams[s.Id].Any()).ToList();
+        if (without.Count > 0)
+        {
+            return ServiceResult.Fail($"{(without.Count == 1 ? without[0].Name : string.Join(", ", without.Select(s => s.Name)))} {(without.Count == 1 ? "has" : "have")} no summative exam yet. Add it first, then post it.")
+                with { Id = without[0].Id };
+        }
+
+        var yearId = await CurrentYearIdAsync(db, ct);
+        var posted = 0;
+        var sections = 0;
+        var problemsFound = new List<string>();
+        foreach (var subject in subjects)
+        {
+            var assignmentIds = await db.TeachingAssignments.AsNoTracking().Where(a => a.SubjectId == subject.Id && a.Section.SchoolYearId == yearId).Select(a => a.Id).ToListAsync(ct);
+            if (assignmentIds.Count == 0)
+            {
+                continue;
+            }
+
+            var result = await PostExamsAsync(userId, subject.Id, [.. exams[subject.Id]], assignmentIds, settings, ct);
+            if (!result.Succeeded)
+            {
+                problemsFound.Add($"{subject.Name}: {string.Join(" ", result.Errors)}");
+                continue;
+            }
+
+            posted += result.Id ?? 0;
+            sections += assignmentIds.Count;
+        }
+
+        if (problemsFound.Count > 0)
+        {
+            return ServiceResult.Fail(problemsFound);
+        }
+
+        return posted == 0
+            ? ServiceResult.Ok("Nothing new to post: the sections already have the summative exams (or no section has these courses now).", 0)
+            : ServiceResult.Ok($"Posted the summative exam of {Plural(subjects.Count, "course")} to {Plural(sections, "section")}. They open and close at the times you set.", posted);
     }
 
     // ======================================================================= helpers

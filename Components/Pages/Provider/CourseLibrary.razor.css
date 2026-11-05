@@ -60,12 +60,6 @@
     outline-offset: 2px;
 }
 
-.chevron {
-    display: inline-flex;
-    flex-shrink: 0;
-    color: var(--text-muted);
-}
-
 .module-heading {
     display: flex;
     flex-direction: column;
@@ -373,14 +367,20 @@ h3 {
     list-style: none;
 }
 
+/* The name and section at the left, and Handouts n of m in a column of its own at the right: the badges line up in every row. */
 .teachers li {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 9.5rem;
     align-items: center;
-    justify-content: space-between;
     gap: 0.4rem 1rem;
     padding: 0.55rem 0;
     border-top: 1px solid var(--border);
+}
+
+.teachers .got {
+    display: flex;
+    justify-content: flex-end;
+    text-align: right;
 }
 
 .teachers li:first-child {

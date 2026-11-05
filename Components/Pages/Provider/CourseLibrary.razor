@@ -57,7 +57,7 @@ else
         {
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
-        @* The buttons of the course in groups, with a bar | between the groups: the handouts, the summative exam and the next school year. *@
+        @* The buttons of the course in groups, with a bar | between the groups: the handouts, and the summative exam. *@
         <span class="head-group">
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add handout</Button>
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
@@ -65,9 +65,6 @@ else
         <span class="head-group">
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
-        </span>
-        <span class="head-group">
-            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="@(course.Modules.Count == 0 || busy)" Title="Copy the syllabus and the handouts to the teachers of this course in the next school year" OnClick="CopyToNextYearAsync">Copy to next school year</Button>
         </span>
     </PageHeader>
 
@@ -98,22 +95,17 @@ else
                         var got = t.Received.Count;
                         <li>
                             <span class="who"><strong>@t.TeacherName</strong><span>@t.SectionLabel · @t.Students @(t.Students == 1 ? "student" : "students")</span></span>
-                            @if (course.Modules.Count + course.Exams.Count == 0)
-                            {
-                                <span class="muted">Nothing to send yet</span>
-                            }
-                            else
-                            {
-                                @if (course.Modules.Count > 0)
+                            @* Handouts n of m, in a column of its own at the right, so it lines up in every row. (The exams are posted from Post summative exam to students.) *@
+                            <span class="got">
+                                @if (course.Modules.Count == 0)
+                                {
+                                    <span class="muted">Nothing to send yet</span>
+                                }
+                                else
                                 {
                                     <Badge Tone="@(got == 0 ? Tone.Neutral : got >= course.Modules.Count ? Tone.Success : Tone.Info)">Handouts @got of @course.Modules.Count</Badge>
                                 }
-                                @if (course.Exams.Count > 0)
-                                {
-                                    var posted = Math.Min(t.ExamsGot, course.Exams.Count);
-                                    <Badge Tone="@(posted == 0 ? Tone.Neutral : posted >= course.Exams.Count ? Tone.Success : Tone.Info)">Exams posted @posted of @course.Exams.Count</Badge>
-                                }
-                            }
+                            </span>
                         </li>
                     }
                 </ul>
@@ -160,13 +152,11 @@ else
             {
                 var number = module.IsSyllabus ? 0 : modules.IndexOf(module) + 1;
                 var id = module.Id;
-                var isOpen = openModules.Contains(id);
                 var moduleFiles = FilesOf(moduleAttachments, id);
-                <section class="module @(module.IsSyllabus ? "syllabus" : "library") @(isOpen ? "open" : "")" id="@(module.IsSyllabus ? "syllabus" : $"module-section-{module.Id}")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Handout {number}")">
-                    @* A click on the title opens the syllabus or the module: its text, its files and its assignments, quizzes and task performances. *@
+                <section class="module @(module.IsSyllabus ? "syllabus" : "library")" id="@(module.IsSyllabus ? "syllabus" : $"module-section-{module.Id}")" aria-label="@(module.IsSyllabus ? "Syllabus" : $"Handout {number}")">
+                    @* A click on the row opens the syllabus or the handout in a box: the other handouts at the left, the preview of the files in the center and the upload form at the right. There is no dropdown and no Edit button. *@
                     <header class="module-head">
-                        <button type="button" class="module-toggle" aria-expanded="@(isOpen ? "true" : "false")" aria-controls="@($"module-{id}")" @onclick="() => ToggleModule(id)">
-                            <span class="chevron" aria-hidden="true"><Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" Size="18" /></span>
+                        <button type="button" class="module-toggle" data-open-handout="@id" title="@($"Open {module.Title}")" @onclick="() => OpenView(id)">
                             <span class="module-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                             <span class="module-heading">
                                 <span class="module-name">@module.Title</span>
@@ -181,31 +171,9 @@ else
                             </span>
                         </button>
                         <div class="module-actions">
-                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditModule(module)">Edit</Button>
                             <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="trash-2" Title="Delete" OnClick="() => AskDeleteModule(module)" />
                         </div>
                     </header>
-
-                    @if (isOpen)
-                    {
-                        <div class="module-body" id="@($"module-{id}")">
-                            @if (!string.IsNullOrWhiteSpace(module.LinkUrl))
-                            {
-                                <p class="module-lesson">
-                                    <Icon Name="link" Size="16" />
-                                    <a href="@module.LinkUrl" target="_blank" rel="noopener noreferrer">Link to the file</a>
-                                </p>
-                            }
-
-                            <AttachmentList Items="moduleFiles.Where(f => !f.IsSlides).ToList()" Label="@($"Files of {module.Title}")" />
-                            @if (moduleFiles.Any(f => f.IsSlides))
-                            {
-                                <h3 class="slides-title"><Icon Name="presentation" Size="16" /> Slides</h3>
-                                <AttachmentList Items="moduleFiles.Where(f => f.IsSlides).ToList()" Label="@($"Slides of {module.Title}")" />
-                            }
-
-                        </div>
-                    }
                 </section>
             }
         </div>
@@ -221,7 +189,7 @@ else
                 <Button Small="true" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
             </span>
         </header>
-        <p class="exams-note">Questions come from Excel. Set when it opens and closes, then <strong>Post to students</strong>. Scores go to the gradebook.</p>
+        <p class="exams-note">Write the questions here or bring them from Excel. Then <strong>Post to students</strong>: that is where you choose the settings and when it opens and closes. Scores go to the gradebook.</p>
         @if (course.Exams.Count == 0)
         {
             <p class="none">No summative exam yet.</p>
@@ -269,7 +237,7 @@ else
 }
 
 @* ===== Module or syllabus: add or edit ===== *@
-<Modal Open="moduleForm is not null" Title="@ModuleModalTitle" OnClose="CloseModuleForm">
+<Modal Open="moduleForm is not null" Title="@ModuleModalTitle" OnClose="CloseModuleForm" Wider="true">
     @if (moduleForm is not null)
     {
         <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
@@ -319,18 +287,8 @@ else
                 <InputNumber id="x-score" Value="@(examQuestions.Count > 0 ? examQuestions.Sum(q => q.Points) : examForm.MaxScore)" ValueChanged="@((decimal v) => examForm.MaxScore = v)" ValueExpression="@(() => examForm.MaxScore)" disabled="@(examQuestions.Count > 0)" />
             </Field>
 
-            <QuizSettings IdPrefix="x" Title="Summative Exam Settings" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
-                          @bind-TimeLimit="examForm.TimeLimitMinutes" @bind-MaxViolations="examForm.MaxViolations" @bind-AntiCheat="examForm.AntiCheat"
-                          @bind-ShuffleQuestions="examForm.ShuffleQuestions" @bind-ShuffleOptions="examForm.ShuffleOptions" @bind-ShowResult="examForm.ShowResult" />
-
-            <div class="two">
-                <Field For="x-opens" Label="Opens on" Required="true" Hint="Philippine time.">
-                    <input id="x-opens" type="datetime-local" value="@examForm.OpensText" @onchange="SetOpens" />
-                </Field>
-                <Field For="x-closes" Label="Closes on" Required="true" Hint="After it opens.">
-                    <input id="x-closes" type="datetime-local" value="@examForm.DueText" @onchange="SetCloses" />
-                </Field>
-            </div>
+            @* The Summative Exam Settings and when the exam opens and closes are not asked here: they are chosen when the exam is posted (Post summative exam to students). *@
+            <p class="exams-note">The settings and the days it opens and closes are chosen when you <strong>post it to the students</strong>.</p>
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseExamForm">Cancel</Button>
@@ -350,6 +308,10 @@ else
 <QuestionsSheetDialog Open="questionsSheetOpen" ExamTitle="@(string.IsNullOrWhiteSpace(examForm?.Title) ? "Summative exam" : examForm!.Title)" Existing="examQuestions"
                       OnSave="QuestionsSaved" OnClose="CloseQuestionsSheet" />
 <ModulesSheetDialog Open="modulesExcelOpen" CourseName="@(course?.Name ?? "")" OnImport="ImportModulesAsync" OnClose="CloseModulesExcel" />
+@if (course is not null)
+{
+    <LibraryHandoutDialog Course="course" OpenId="viewId" UserId="userId" OnClose="CloseView" OnSaved="LoadAsync" />
+}
 
 @* ===== Send to teachers (syllabus and modules) / Post to students (summative exams) ===== *@
 <Modal Open="sending" Title="@(postingExams ? "Post to students" : "Send to teachers")" OnClose="CloseSend" Large="true">
@@ -400,6 +362,9 @@ else
                 }
             </ul>
         }
+
+        @* The Summative Exam Settings and when it opens and closes are chosen here, when the exam goes to the students. *@
+        <ExamPostForm Draft="postDraft" IdPrefix="course" />
 
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseSend">Cancel</Button>
@@ -520,8 +485,15 @@ else
 
     private DeleteTarget? deleteTarget;
 
-    // which syllabus or modules are open (their text and files, and their assignments, quizzes and task performances)
-    private readonly HashSet<int> openModules = [];
+    // the syllabus or handout that is open in its box (the other handouts, the preview and the upload form)
+    private int? viewId;
+
+    // what the provider chooses when the summative exams go to the students
+    private ExamPostDraft postDraft = new();
+
+    private void OpenView(int id) => viewId = id;
+
+    private void CloseView() => viewId = null;
 
     // the files of the library, by syllabus or module and by exam
     private IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> moduleAttachments = new Dictionary<int, IReadOnlyList<AttachmentRow>>();
@@ -561,7 +533,6 @@ else
             }
 
             created++;
-            openModules.Add(id);
             if (m.Files.Count > 0)
             {
                 var added = await Files.AddAsync(userId, new AttachmentOwner(AttachmentOwnerKind.MaterialModule, id), m.Files);
@@ -650,14 +621,6 @@ else
     private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>
         id is { } key && map.TryGetValue(key, out var list) ? list : [];
 
-    private void ToggleModule(int id)
-    {
-        if (!openModules.Remove(id))
-        {
-            openModules.Add(id);
-        }
-    }
-
     /// <summary>Saves the files chosen in a form for the syllabus, module or item with this number: the new ones are attached, the ones taken off are removed.</summary>
     private async Task<List<string>> ApplyFilesAsync(AttachmentPicker? picker, AttachmentOwner owner, bool slides = false)
     {
@@ -686,7 +649,7 @@ else
     private static string ScheduleText(MaterialExamView exam) =>
         exam.OpensAtUtc is { } opens && exam.DueAtUtc is { } closes
             ? $"{PhilippineTime.FormatDateTime(opens)} to {PhilippineTime.FormatDateTime(closes)}"
-            : "No schedule";
+            : "Opens and closes when you post it";
 
     private void Say(ServiceResult result, string? fallback = null)
     {
@@ -716,15 +679,6 @@ else
         moduleForm = new ModuleInput { Title = course is null ? "Syllabus" : $"Syllabus: {course.Name}" };
     }
 
-    private void OpenEditModule(MaterialModuleView module)
-    {
-        formErrors = [];
-        editingModuleId = module.Id;
-        editingIsSyllabus = module.IsSyllabus;
-        moduleFormKey++;
-        moduleForm = new ModuleInput { Title = module.Title, Description = module.Description, Body = module.Body, LinkUrl = module.LinkUrl };
-    }
-
     private void CloseModuleForm() => moduleForm = null;
 
     private async Task SaveModuleAsync()
@@ -751,11 +705,6 @@ else
             }
 
             moduleForm = null;
-            if (result.Id is { } newModuleId)
-            {
-                openModules.Add(newModuleId);
-            }
-
             Say(result);
             if (fileProblems.Count > 0)
             {
@@ -791,7 +740,7 @@ else
         examForm = new ExamInput
         {
             Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
-            OpensText = PhilippineTime.ToInputValue(exam.OpensAtUtc), DueText = PhilippineTime.ToInputValue(exam.DueAtUtc),
+            OpensAtUtc = exam.OpensAtUtc, DueAtUtc = exam.DueAtUtc,
             TimeLimitMinutes = exam.TimeLimitMinutes, AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations,
             ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions, ShowResult = exam.ShowResult,
         };
@@ -819,10 +768,6 @@ else
 
     private void CloseExamForm() => examForm = null;
 
-    private void SetOpens(ChangeEventArgs e) => examForm!.OpensText = e.Value?.ToString() ?? "";
-
-    private void SetCloses(ChangeEventArgs e) => examForm!.DueText = e.Value?.ToString() ?? "";
-
     private async Task SaveExamAsync()
     {
         if (examForm is null || busy)
@@ -833,9 +778,7 @@ else
         busy = true;
         try
         {
-            // The date boxes are written out (not @bind) because their text is converted by PhilippineTime, not by Blazor.
-            examForm.OpensAtUtc = PhilippineTime.FromInputValue(examForm.OpensText);
-            examForm.DueAtUtc = PhilippineTime.FromInputValue(examForm.DueText);
+            // (the settings and the days it opens and closes are the ones the exam has: they are chosen when it is posted)
             examForm.Questions = examQuestionsChanged ? examQuestions : null;
             if (examQuestions.Count > 0)
             {
@@ -948,6 +891,7 @@ else
 
         formErrors = [];
         postingExams = true;
+        postDraft = NewDraft(course.Exams.FirstOrDefault());
         sendModules.Clear();
         sendExams.Clear();
         sendTargets.Clear();
@@ -966,25 +910,12 @@ else
 
     private void CloseSend() => sending = false;
 
-    /// <summary>Copies the syllabus and the modules to the teachers of the course in the next school year.</summary>
-    private async Task CopyToNextYearAsync()
+    /// <summary>The boxes of the post form start with what the exam already has (its settings, and its days when they were set before).</summary>
+    private static ExamPostDraft NewDraft(MaterialExamView? exam) => exam is null ? new ExamPostDraft() : new ExamPostDraft
     {
-        if (busy)
-        {
-            return;
-        }
-
-        busy = true;
-        try
-        {
-            Say(await Library.CopyToNextYearAsync(userId, SubjectId));
-            await LoadAsync();
-        }
-        finally
-        {
-            busy = false;
-        }
-    }
+        TimeLimitMinutes = exam.TimeLimitMinutes, AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations, ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions,
+        ShowResult = exam.ShowResult, OpensText = PhilippineTime.ToInputValue(exam.OpensAtUtc), DueText = PhilippineTime.ToInputValue(exam.DueAtUtc),
+    };
 
     // "Add syllabus" inside the send window: the window closes and the form of the syllabus opens.
     private void AddSyllabusFromSend()
@@ -1090,10 +1021,17 @@ else
             return;
         }
 
+        var (settings, problem) = postDraft.Read();
+        if (settings is null)
+        {
+            formErrors = [problem ?? "Check the settings of the exam."];
+            return;
+        }
+
         busy = true;
         try
         {
-            var result = await Library.PostExamsAsync(userId, SubjectId, [.. sendExams], [.. sendTargets]);
+            var result = await Library.PostExamsAsync(userId, SubjectId, [.. sendExams], [.. sendTargets], settings);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

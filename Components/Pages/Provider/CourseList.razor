@@ -50,6 +50,11 @@ else
             <noscript><button type="submit" class="button secondary small">Show</button></noscript>
         </form>
 
+        @* At the right of the lists (All courses ...): post the summative exam of the courses that are listed to their students. It is its own live island and sits outside the form, so its boxes do not send the filters. *@
+        <div class="post-exams">
+            <PostExamsButton Courses="PostCourses" />
+        </div>
+
         <nav class="views" aria-label="View">
             <a class="view @(view == "cards" ? "on" : "")" href="@Url(Q, null, null, null, "cards", true)" title="Cards" aria-label="Cards"><Icon Name="layout-grid" Size="18" /></a>
             <a class="view @(view == "list" ? "on" : "")" href="@Url(Q, null, null, null, "list", true)" title="List" aria-label="List"><Icon Name="list" Size="18" /></a>
@@ -184,6 +189,13 @@ else
             (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId) && (CourseId is null || c.SubjectId == CourseId)
             && words.All(w => c.Name.Contains(w, StringComparison.OrdinalIgnoreCase) || c.Code.Contains(w, StringComparison.OrdinalIgnoreCase)))];
     }
+
+    /// <summary>The courses the button of the list posts: the ones that are listed now (the lists above decide), with the page of each to go to when it has no summative exam.</summary>
+    private List<PostExamsButton.PostCourse> PostCourses => [.. shown.Select(c => new PostExamsButton.PostCourse
+    {
+        SubjectId = c.SubjectId, Name = c.Name, Exams = c.Exams,
+        Href = $"provider/library/{c.SubjectId}?track={c.TrackId}&strand={c.StrandId}&term={c.TermNumber}",
+    })];
 
     private string? PathOf(int? _) => null;
 

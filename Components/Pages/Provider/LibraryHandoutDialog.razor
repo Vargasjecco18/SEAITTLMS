@@ -1,0 +1,206 @@
+@inject MaterialService Library
+@inject AttachmentService Files
+
+@* A syllabus or a handout of the library in one box (it opens when a row of the course library is pressed): at the left the other handouts of the course (press one to see it), in the center
+   the preview of the files of the one that is open, and at the right the form to upload its files (Upload saves and the center shows the file). *@
+<Modal Open="Open && current is not null" Title="@(current is null ? "Handout" : current.IsSyllabus ? $"Syllabus · {Course.Name}" : $"Handout · {Course.Name}")" OnClose="CloseAsync" Full="true">
+    @if (Open && current is { } module)
+    {
+        <div class="handout-box" data-handout="@module.Id">
+            <aside class="side" aria-label="The syllabus and the handouts of this course">
+                <h3>@(Course.Modules.Count == 1 ? "This handout" : "Syllabus and handouts")</h3>
+                @if (Ordered.Count <= 1)
+                {
+                    <p class="none">There is no other handout in this course yet.</p>
+                }
+
+                <ul>
+                    @foreach (var m in Ordered)
+                    {
+                        var id = m.Id;
+                        <li>
+                            <button type="button" class="item @(id == module.Id ? "on" : "")" aria-current="@(id == module.Id ? "true" : null)" data-handout-item="@id" @onclick="() => SelectAsync(id)">
+                                <span class="num">@if (m.IsSyllabus) { <Icon Name="book-marked" Size="16" /> } else { @NumberOf(m) }</span>
+                                <span class="name">@m.Title</span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </aside>
+
+            <section class="center" aria-label="Preview of the files">
+                <LessonContent Title="@module.Title" LinkUrl="@form.LinkUrl" Files="files" ShowText="true" ModuleLabel="@FileLabel.OfModule(module.Title)" />
+            </section>
+
+            <section class="form" aria-label="Upload the handout">
+                <h3><Icon Name="upload" Size="16" /> Upload</h3>
+                <EditForm Model="form" OnValidSubmit="SaveAsync" @key="@($"form-{module.Id}")">
+                    <FormErrors Errors="errors" />
+                    @if (saved is not null)
+                    {
+                        <p class="saved" role="status">@saved</p>
+                    }
+
+                    <Field For="@($"lh-title-{module.Id}")" Label="Title" Required="true">
+                        <InputText id="@($"lh-title-{module.Id}")" @bind-Value="form.Title" maxlength="200" autocomplete="off" />
+                    </Field>
+                    <Field For="@($"lh-link-{module.Id}")" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
+                        <InputText id="@($"lh-link-{module.Id}")" @bind-Value="form.LinkUrl" maxlength="500" autocomplete="off" />
+                    </Field>
+                    <AttachmentPicker @ref="slidesPicker" @key="@($"slides-{module.Id}-{pickerKey}")" NoSizeLimit="true" Slides="true" Title="@(module.IsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the handout (PowerPoint or PDF)")"
+                                      Existing="@files.Where(f => f.IsSlides).ToList()" />
+                    <AttachmentPicker @ref="filesPicker" @key="@($"files-{module.Id}-{pickerKey}")" NoSizeLimit="true" Title="@(module.IsSyllabus ? "Files of the syllabus" : "Files of the handout")"
+                                      Existing="@files.Where(f => !f.IsSlides).ToList()" />
+                    <div class="modal-actions">
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Close</Button>
+                        <Button Type="submit" IconName="upload" Disabled="busy">@(busy ? "Uploading…" : "Upload")</Button>
+                    </div>
+                </EditForm>
+            </section>
+        </div>
+    }
+</Modal>
+
+@code {
+    /// <summary>The course (its syllabus and handouts, for the list at the left).</summary>
+    [Parameter, EditorRequired] public CourseMaterials Course { get; set; } = null!;
+
+    /// <summary>The syllabus or handout that is open; null keeps the box closed.</summary>
+    [Parameter] public int? OpenId { get; set; }
+
+    [Parameter] public int UserId { get; set; }
+
+    /// <summary>Called when the box closes.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    /// <summary>Called after something was saved, so the page reads the course again.</summary>
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool Open => OpenId is not null;
+    private MaterialModuleView? current;
+    private IReadOnlyList<AttachmentRow> files = [];
+    private ModuleInput form = new();
+    private List<string> errors = [];
+    private string? saved;
+    private bool busy;
+    private int pickerKey;
+    private int loadedFor;
+    private AttachmentPicker? slidesPicker;
+    private AttachmentPicker? filesPicker;
+
+    /// <summary>The syllabus first, then the handouts in order.</summary>
+    private IReadOnlyList<MaterialModuleView> Ordered => [.. Course.Modules.OrderByDescending(m => m.IsSyllabus)];
+
+    private int NumberOf(MaterialModuleView module) => Course.Modules.Where(m => !m.IsSyllabus).ToList().IndexOf(module) + 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (OpenId is not { } id)
+        {
+            loadedFor = 0;
+            current = null;
+            return;
+        }
+
+        if (loadedFor != id)
+        {
+            await LoadAsync(id);
+        }
+    }
+
+    private async Task LoadAsync(int id)
+    {
+        current = Course.Modules.FirstOrDefault(m => m.Id == id);
+        loadedFor = id;
+        errors = [];
+        saved = null;
+        pickerKey++;
+        if (current is null)
+        {
+            files = [];
+            return;
+        }
+
+        form = new ModuleInput { Title = current.Title, Description = current.Description, Body = current.Body, LinkUrl = current.LinkUrl };
+        files = await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.MaterialModule, id));
+    }
+
+    private async Task SelectAsync(int id)
+    {
+        if (id != loadedFor)
+        {
+            await LoadAsync(id);
+        }
+    }
+
+    private async Task CloseAsync()
+    {
+        loadedFor = 0;
+        await OnClose.InvokeAsync();
+    }
+
+    /// <summary>Upload: the title and the link are saved, the files taken off are removed and the new ones are added; the center then shows the files.</summary>
+    private async Task SaveAsync()
+    {
+        if (current is null || busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            errors = [];
+            var result = await Library.SaveModuleAsync(UserId, Course.SubjectId, current.Id, form, current.IsSyllabus);
+            if (!result.Succeeded)
+            {
+                errors = [.. result.Errors];
+                return;
+            }
+
+            var owner = new AttachmentOwner(AttachmentOwnerKind.MaterialModule, current.Id);
+            var problems = new List<string>();
+            problems.AddRange(await ApplyAsync(slidesPicker, owner, slides: true));
+            problems.AddRange(await ApplyAsync(filesPicker, owner, slides: false));
+            if (problems.Count > 0)
+            {
+                errors = problems;
+            }
+            else
+            {
+                saved = "Uploaded. The files are in the preview.";
+            }
+
+            files = await Files.ListAsync(owner);
+            pickerKey++;
+            await OnSaved.InvokeAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task<List<string>> ApplyAsync(AttachmentPicker? picker, AttachmentOwner owner, bool slides)
+    {
+        var problems = new List<string>();
+        if (picker is null)
+        {
+            return problems;
+        }
+
+        var removed = await Files.RemoveAsync(UserId, [.. picker.Removed]);
+        if (!removed.Succeeded)
+        {
+            problems.AddRange(removed.Errors);
+        }
+
+        var added = await Files.AddAsync(UserId, owner, picker.Pending, slides: slides);
+        if (!added.Succeeded)
+        {
+            problems.AddRange(added.Errors);
+        }
+
+        return problems;
+    }
+}
