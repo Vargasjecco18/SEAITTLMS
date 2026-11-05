@@ -26,6 +26,9 @@
 
 USE seaittlms;
 
+-- The connection speaks utf8mb4 whatever the program that runs this file starts with (so Nuñez is read right).
+SET NAMES utf8mb4;
+
 SET @now = UTC_TIMESTAMP(6);
 
 -- The people to add, in a temporary table that disappears when the connection closes. It has no character set of its own,

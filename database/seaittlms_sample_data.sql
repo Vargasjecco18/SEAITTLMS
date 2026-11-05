@@ -1,7 +1,7 @@
 -- Practice data for SEAITT Legazpi LMS: fills the tables so every page has something to show.
 --
 -- The people are the sample accounts of seaittlms_sample_accounts.sql (run that file first). This file then adds, for those people:
---   * the enrollment of the 40 students in 10 sections of the eight strands (grade 11 and grade 12, ACAD and TECH-PRO) and their courses, with the days and hours each course meets;
+--   * the enrollment of the 40 students in 10 sections of the eight strands (grade 11 and grade 12, ACAD and TECH-PRO) and their courses;
 --   * the courses of the 12 teachers, and for each course: handouts (posted, one scheduled), activities, a quiz with questions and a task performance;
 --   * slides for the first lessons, who opened what and how much they read, the work handed in, the scores and the attendance of the last four weeks (all of it worked out from
 --     the courses, the dates and the students, not typed one row at a time; a few students struggle, so the guidance counselor has referrals);
@@ -15,8 +15,12 @@
 
 USE seaittlms;
 
-SET @now = UTC_TIMESTAMP(6);
-SET @day0 = TIMESTAMP(UTC_DATE());   -- midnight today (UTC); the dates below are days before and after it
+-- The connection speaks utf8mb4 whatever the program that runs this file starts with (so Nuñez is read right), and the two times below are kept as utf8mb4 text:
+-- a time put in a variable is text, and MySQL refuses to mix its character set (latin1) with the utf8mb4 of the other texts ("Illegal mix of collations ... 'least'").
+SET NAMES utf8mb4;
+
+SET @now = CONVERT(UTC_TIMESTAMP(6) USING utf8mb4);
+SET @day0 = CONVERT(TIMESTAMP(UTC_DATE()) USING utf8mb4);   -- midnight today (UTC); the dates below are days before and after it
 
 -- ---- the current term and school year (the term that includes today; between two terms the one that starts next; after the last one the latest)
 SET @term = (SELECT id FROM terms WHERE CURDATE() BETWEEN start_date AND end_date ORDER BY id LIMIT 1);
