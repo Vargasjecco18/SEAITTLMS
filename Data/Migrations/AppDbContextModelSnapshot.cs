@@ -1761,7 +1761,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("module_items", null, t =>
                         {
-                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam')");
+                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other')");
 
                             t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
                         });
@@ -3248,6 +3248,12 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("GradesHidden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("grades_hidden");
 
                     b.Property<int>("SectionId")
                         .HasColumnType("int")

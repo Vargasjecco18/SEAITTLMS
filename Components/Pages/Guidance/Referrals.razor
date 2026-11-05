@@ -80,9 +80,12 @@
                             </td>
                             <td><span class="place">@(student.Placement ?? "—")</span></td>
                             <td>
-                                <div class="pick @(picked != "" ? "is-set" : "")">
-                                    <Icon Name="flag" Size="16" />
-                                    <select class="concern-select" aria-label="@($"Concern of {student.StudentName}")" value="@picked" @onchange="e => PickReason(student, e.Value?.ToString())">
+                                @* Once a concern is recorded (what happened was chosen, or the system found it) it can't be changed here: Solved ends it, and the name opens all the concerns of the student. *@
+                                <div class="pick @(picked != "" ? "is-set" : "") @(student.HasOpen ? "is-locked" : "")">
+                                    <Icon Name="@(student.HasOpen ? "lock" : "flag")" Size="16" />
+                                    <select class="concern-select" aria-label="@($"Concern of {student.StudentName}")" value="@picked" disabled="@student.HasOpen"
+                                            title="@(student.HasOpen ? "The concern is recorded, so it can't be changed. Press Solved when it is over." : "Choose the concern")"
+                                            @onchange="e => PickReason(student, e.Value?.ToString())">
                                         <option value="">None</option>
                                         @foreach (var r in ReferralReasons.All)
                                         {
@@ -367,7 +370,14 @@
     private static List<ReferralRow> OpenOf(ReferralStudentRow student, string reason) =>
         reason == "" ? [] : [.. student.OpenReferrals.Where(r => r.Reason == reason).OrderByDescending(r => r.CreatedAtUtc)];
 
-    private void PickReason(ReferralStudentRow student, string? value) => rowReasons[student.StudentId] = value ?? "";
+    private void PickReason(ReferralStudentRow student, string? value)
+    {
+        // a concern that is recorded can't be changed (the select is locked); only a student with no open concern picks one
+        if (!student.HasOpen)
+        {
+            rowReasons[student.StudentId] = value ?? "";
+        }
+    }
 
     /// <summary>A student with no such concern yet: choosing what happened on the row records it.</summary>
     private async Task AddHereAsync(ReferralStudentRow student, string reasonKey, string? happened)

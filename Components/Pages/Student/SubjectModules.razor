@@ -95,7 +95,7 @@ else
                       Hint="@(gradeOf is null ? "" : gradeOf.Missing > 0 ? $"{gradeOf.Missing} missing" : "Nothing missing")" />
             <StatCard Label="Grade" Text="@(gradeOf?.Percent is { } pct ? $"{pct:0.#}%" : "—")" IconName="trending-up"
                       Accent="@(gradeOf?.Percent is { } p2 && p2 < GradeRules.PassingPercent ? AccentColor.Rose : AccentColor.Green)"
-                      Hint="@(gradeOf?.Percent is { } p3 ? GradeRules.Descriptor(p3) : "No grade yet")" />
+                      Hint="@(gradeOf?.Percent is { } p3 ? GradeRules.Descriptor(p3) : gradeOf?.GradesHidden == true ? "Hidden by your teacher" : "No grade yet")" />
         </div>
 
         @* The first page of a course: only the syllabus and the modules, one line each. A click on the line opens it. *@

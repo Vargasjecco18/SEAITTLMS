@@ -10,7 +10,7 @@ namespace SEAITT_LMS.Services;
 /// </summary>
 public static class GradebookExport
 {
-    private static readonly string[] Kinds = [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam];
+    private static readonly string[] Kinds = [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other];
 
     private const int KindRow = 5;
     private const int TitleRow = 6;
@@ -22,10 +22,37 @@ public static class GradebookExport
 
     private static string ShortKind(string kind) => ItemKinds.Code(kind);
 
+    /// <summary>The file of every course of a teacher: the same sheets for each course (Grades and Breakdown, with their own formulas), then the sheet that says the rule in words once.</summary>
+    public static string FileNameAll() => FileDownloads.CleanName("Gradebook - all courses.xlsx");
+
     public static byte[] Build(SubjectGradebook book)
     {
         var workbook = new XlsxBook();
-        var grades = workbook.AddSheet("Grades");
+        AddCourse(workbook, book, "Grades", "Breakdown");
+        AddRules(workbook);
+        return workbook.ToBytes();
+    }
+
+    /// <summary>One workbook with all the courses: a sheet <c>1. Course</c> and a sheet <c>1. Breakdown Course</c> for each, and the rule in words at the end.</summary>
+    public static byte[] BuildAll(IReadOnlyList<SubjectGradebook> books)
+    {
+        var workbook = new XlsxBook();
+        for (var i = 0; i < books.Count; i++)
+        {
+            AddCourse(workbook, books[i], $"{i + 1}. {books[i].SubjectName}", $"{i + 1}. Breakdown {books[i].SubjectName}");
+        }
+
+        AddRules(workbook);
+        return workbook.ToBytes();
+    }
+
+    /// <summary>A sheet name as a formula writes it: in single quotes, a quote inside it doubled.</summary>
+    private static string Quote(string sheetName) => "'" + sheetName.Replace("'", "''") + "'";
+
+    private static void AddCourse(XlsxBook workbook, SubjectGradebook book, string gradesName, string breakdownName)
+    {
+        var grades = workbook.AddSheet(gradesName);
+        var gradesRef = Quote(grades.Name);
         var n = book.Columns.Count;
         var lastItem = FirstItemColumn + Math.Max(n, 1) - 1;
         var earnedColumn = lastItem + 1;
@@ -94,7 +121,7 @@ public static class GradebookExport
         grades.FrozenColumns = 2;
 
         // ---- the breakdown: the same calculation for each kind of work apart
-        var breakdown = workbook.AddSheet("Breakdown");
+        var breakdown = workbook.AddSheet(breakdownName);
         breakdown.Set(1, 1, $"Breakdown of the grades · {book.SubjectName} · {book.SectionLabel}", XlsxStyle.Title);
         breakdown.Set(2, 1, "Points earned and possible of each kind of work, worked out with formulas from the sheet Grades.", XlsxStyle.Note);
         breakdown.Row(4, ["Student", "LRN"], XlsxStyle.Header);
@@ -119,8 +146,8 @@ public static class GradebookExport
             breakdown.Width(c, 14);
         }
 
-        var kindRange = $"Grades!${itemFirst}${KindRow}:${itemLast}${KindRow}";
-        var maxRowRange = $"Grades!${itemFirst}${MaxRowOfHeader}:${itemLast}${MaxRowOfHeader}";
+        var kindRange = $"{gradesRef}!${itemFirst}${KindRow}:${itemLast}${KindRow}";
+        var maxRowRange = $"{gradesRef}!${itemFirst}${MaxRowOfHeader}:${itemLast}${MaxRowOfHeader}";
         row = 5;
         var gradesRow = FirstStudentRow;
         foreach (var student in book.Rows)
@@ -143,7 +170,7 @@ public static class GradebookExport
                 allPossible += possible;
                 var (e, p, pc) = kindColumns[kind];
                 var name = ItemKinds.Display(kind);
-                var scores = $"Grades!{itemFirst}{gradesRow}:{itemLast}{gradesRow}";
+                var scores = $"{gradesRef}!{itemFirst}{gradesRow}:{itemLast}{gradesRow}";
                 breakdown.Formula(row, e, $"SUMIF({kindRange},\"{name}\",{scores})", XlsxStyle.Decimal, (double)earned);
                 breakdown.Formula(row, p, $"SUMPRODUCT(({kindRange}=\"{name}\")*({scores}<>\"\")*{maxRowRange})", XlsxStyle.Decimal, (double)possible);
                 breakdown.Formula(row, pc, $"IF({XlsxSheet.Ref(row, p)}=0,\"\",ROUND({XlsxSheet.Ref(row, e)}/{XlsxSheet.Ref(row, p)}*100,1))", XlsxStyle.Decimal, possible == 0 ? null : (double)Math.Round(earned / possible * 100, 1));
@@ -155,15 +182,18 @@ public static class GradebookExport
             breakdown.Formula(row, totalPossible, possibleParts, XlsxStyle.BoldDecimal, (double)allPossible);
             breakdown.Formula(row, totalAverage, $"IF({XlsxSheet.Ref(row, totalPossible)}=0,\"\",ROUND({XlsxSheet.Ref(row, totalEarned)}/{XlsxSheet.Ref(row, totalPossible)}*100,1))", XlsxStyle.BoldDecimal,
                 allPossible == 0 ? null : (double)Math.Round(allEarned / allPossible * 100, 1));
-            breakdown.Formula(row, totalFinal, $"IF(Grades!{XlsxSheet.Ref(gradesRow, finalColumn)}=\"\",\"\",Grades!{XlsxSheet.Ref(gradesRow, finalColumn)})", XlsxStyle.Decimal, student.FinalGrade is { } f ? (double)f : null);
+            breakdown.Formula(row, totalFinal, $"IF({gradesRef}!{XlsxSheet.Ref(gradesRow, finalColumn)}=\"\",\"\",{gradesRef}!{XlsxSheet.Ref(gradesRow, finalColumn)})", XlsxStyle.Decimal, student.FinalGrade is { } f ? (double)f : null);
             row++;
             gradesRow++;
         }
 
         breakdown.FrozenRows = 4;
         breakdown.FrozenColumns = 2;
+    }
 
-        // ---- the rule in words
+    /// <summary>The rule in words: one sheet at the end of the workbook, for the course (or the courses) in it.</summary>
+    private static void AddRules(XlsxBook workbook)
+    {
         var how = workbook.AddSheet("How it is worked out");
         how.Set(1, 1, "How the grades are worked out", XlsxStyle.Title);
         var lines = new[]
@@ -173,7 +203,7 @@ public static class GradebookExport
             "3. Points possible = the sum of the highest scores of the work that has a score. Work that is not graded yet is left out, so it does not lower the average.",
             "4. Average (%) = points earned ÷ points possible × 100, rounded to one decimal.",
             $"5. A student whose average is below {GradeRules.PassingPercent:0}% is failing.",
-            "6. The sheet Breakdown does the same for each kind of work apart (assignments, quizzes, task performances) and then for all of it together.",
+            "6. The sheet Breakdown (of each course) does the same for each kind of work apart (assignments, quizzes, task performances) and then for all of it together.",
             "7. The final grade is the number the teacher wrote in the gradebook (it is shown next to the average and is not worked out from it).",
         };
         for (var i = 0; i < lines.Length; i++)
@@ -182,6 +212,5 @@ public static class GradebookExport
         }
 
         how.Width(1, 110);
-        return workbook.ToBytes();
     }
 }

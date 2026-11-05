@@ -15,6 +15,7 @@ internal sealed class TeachingAssignmentConfiguration : IEntityTypeConfiguration
 
         // A subject of a section has one teacher.
         b.HasIndex(a => new { a.SectionId, a.SubjectId }).IsUnique();
+        b.Property(a => a.GradesHidden).HasDefaultValue(false);
     }
 }
 
@@ -52,7 +53,7 @@ internal sealed class ModuleItemConfiguration : IEntityTypeConfiguration<ModuleI
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam')");
+            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other')");
             t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
         });
     }

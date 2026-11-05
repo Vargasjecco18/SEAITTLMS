@@ -2041,5 +2041,14 @@ ALTER TABLE `subjects` DROP COLUMN `library_completed_at_utc`;
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261105102323_RemoveClassScheduleRoomsAndLibraryComplete', '9.0.20');
 
+ALTER TABLE `module_items` DROP CONSTRAINT `ck_module_items_kind`;
+
+ALTER TABLE `teaching_assignments` ADD `grades_hidden` tinyint(1) NOT NULL DEFAULT FALSE;
+
+ALTER TABLE `module_items` ADD CONSTRAINT `ck_module_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261105160325_HideGradesAndOthersKind', '9.0.20');
+
 COMMIT;
 

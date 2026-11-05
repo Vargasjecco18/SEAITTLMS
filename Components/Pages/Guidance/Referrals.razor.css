@@ -434,6 +434,18 @@ th.col-level {
     font-weight: 700;
 }
 
+/* A recorded concern can't be changed: no arrow, the pointer says so, and the text stays as readable as a chosen one. */
+.pick.is-locked::after {
+    display: none;
+}
+
+.pick.is-locked .concern-select {
+    padding-right: 0.9rem;
+    cursor: not-allowed;
+    opacity: 1;
+    -webkit-text-fill-color: var(--brand-strong);
+}
+
 /* What happened: a small card with the sentence, and View attendance as a button with an outline. */
 .detail {
     display: flex;

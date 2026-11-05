@@ -96,7 +96,9 @@
                                         <ul class="tab-names" aria-label="@($"Sections of {st.Code}")">
                                             @foreach (var name in names)
                                             {
-                                                <li><a href="@($"coordinator/academic-setup/sections?grade={grade}#sec-{grade}-{st.Code}-{name}")" title="@($"Section {name} of {st.Code}")">@name</a></li>
+                                                var sectionKey = $"{grade}-{st.Code}-{name}";
+                                                <li><a href="@($"coordinator/academic-setup/sections?grade={grade}#sec-{sectionKey}")" title="@($"Adviser and students of section {sectionKey}")" data-section-link="@sectionKey"
+                                                       @onclick="() => OpenSectionBox(sectionKey)" @onclick:preventDefault="true">@name</a></li>
                                             }
                                         </ul>
                                     </li>
@@ -128,7 +130,7 @@
                     <CurriculumStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" InitialTrack="TrackQuery" InitialStrand="StrandQuery" />
                     break;
                 case "sections":
-                    <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" InitialGrade="GradeQuery" />
+                    <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" InitialGrade="GradeQuery" OpenSection="@openSection" OpenStamp="openStamp" />
                     break;
                 default:
                     <CalendarStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
@@ -161,6 +163,16 @@
     /// <summary>The sections a strand has at a grade level in the school years that are not over (A, B, C ...), for the list under the Class sections tab.</summary>
     private IEnumerable<string> SectionNamesOf(int grade, string strandCode) =>
         sectionRows.Where(r => r.GradeLevel == grade && r.StrandCode == strandCode).Select(r => r.Name).Distinct().Order(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>A letter (A, B, C) of the Class sections tab was pressed: the box of that section (its adviser and its students) opens. The stamp makes the same letter open again after it was closed.</summary>
+    private string? openSection;
+    private int openStamp;
+
+    private void OpenSectionBox(string key)
+    {
+        openSection = key;
+        openStamp++;
+    }
 
     private SetupCounts? counts;
     private int reloadKey;

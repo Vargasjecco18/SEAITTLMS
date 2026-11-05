@@ -44,7 +44,7 @@ public sealed record CourseMenuGroup(string Key, string Label, string Icon, int 
 public static class CourseMenuBuilder
 {
     /// <summary>The order of the menu: Modules, then the kinds of work (seatwork, assignments, quizzes, task performance) and, once the course has them, recitations and exams.</summary>
-    private static readonly string[] KindOrder = [ItemKinds.Seatwork, ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Recitation, ItemKinds.Exam];
+    private static readonly string[] KindOrder = [ItemKinds.Seatwork, ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other];
 
     public static string Label(string kind) => kind switch
     {
@@ -54,6 +54,7 @@ public static class CourseMenuBuilder
         ItemKinds.TaskPerformance => "Task performance",
         ItemKinds.Recitation => "Recitations",
         ItemKinds.Exam => "Exams",
+        ItemKinds.Other => "Others",
         _ => ItemKinds.Plural(kind),
     };
 

@@ -32,7 +32,7 @@ public static class GradeRules
     };
 }
 
-public sealed record GradedWork(int ItemId, string Title, string Kind, decimal Score, decimal Max, DateTime? GradedAtUtc, bool IsLate)
+public sealed record GradedWork(int ItemId, string Title, string Kind, decimal Score, decimal Max, DateTime? GradedAtUtc, bool IsLate, bool Summative = false)
 {
     public decimal Percent => Max <= 0 ? 0 : Score / Max * 100;
 }
@@ -46,13 +46,16 @@ public sealed record SubjectGrade(
     {
         get
         {
-            var exams = Graded.Where(g => g.Kind == ItemKinds.Exam && g.Max > 0).ToList();
+            var exams = Graded.Where(g => g.Kind == ItemKinds.Exam && g.Summative && g.Max > 0).ToList();
             return exams.Count == 0 ? null : Math.Round(exams.Sum(e => e.Score) / exams.Sum(e => e.Max) * 100, 1);
         }
     }
 
     /// <summary>True when the course has a summative exam (graded or not).</summary>
     public bool HasExam { get; init; }
+
+    /// <summary>True while the teacher hides the grades of this course from the students (the button Hide from students in the gradebook): there is no percent, no final grade and no graded work to show.</summary>
+    public bool GradesHidden { get; init; }
 }
 
 public sealed record StudentGradeSummary(IReadOnlyList<SubjectGrade> Subjects, decimal? Overall, int FailingSubjects, int GradedCount)
@@ -75,7 +78,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
             .OrderBy(a => a.Subject.Name)
             .Select(a => new
             {
-                a.Id, SubjectName = a.Subject.Name, Teacher = a.Teacher.FirstName + " " + a.Teacher.LastName,
+                a.Id, SubjectName = a.Subject.Name, Teacher = a.Teacher.FirstName + " " + a.Teacher.LastName, a.GradesHidden,
                 a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name,
             })
             .ToListAsync(ct);
@@ -86,7 +89,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
                         && (i.VisibleFromUtc == null || i.VisibleFromUtc <= now))
             .Select(i => new
             {
-                i.Id, i.Title, i.Kind, i.MaxScore, i.DueAtUtc, i.ShowResult, AssignmentId = i.Module.AssignmentId,
+                i.Id, i.Title, i.Kind, i.MaxScore, i.DueAtUtc, i.ShowResult, AssignmentId = i.Module.AssignmentId, Summative = i.MaterialItemId != null,
                 Mine = i.Submissions.Where(s => s.StudentId == studentId).Select(s => new { s.Status, s.Score, s.GradedAtUtc, s.IsLate }).FirstOrDefault(),
             })
             .ToListAsync(ct);
@@ -100,15 +103,25 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
             var mine = items.Where(i => i.AssignmentId == a.Id).ToList();
             var graded = mine
                 .Where(i => i.Mine is { Status: SubmissionStatus.Graded, Score: not null } && !(ItemKinds.IsQuizLike(i.Kind) && !i.ShowResult))
-                .Select(i => new GradedWork(i.Id, i.Title, i.Kind, i.Mine!.Score!.Value, i.MaxScore, i.Mine.GradedAtUtc, i.Mine.IsLate))
+                .Select(i => new GradedWork(i.Id, i.Title, i.Kind, i.Mine!.Score!.Value, i.MaxScore, i.Mine.GradedAtUtc, i.Mine.IsLate, i.Summative))
                 .OrderByDescending(g => g.GradedAtUtc)
                 .ToList();
+            // the teacher hides the grades of this course: nothing of the scores is told (the number of graded works is left at 0 too)
+            if (a.GradesHidden)
+            {
+                graded = [];
+            }
+
             var possible = graded.Sum(g => g.Max);
             decimal? percent = possible <= 0 ? null : Math.Round(graded.Sum(g => g.Score) / possible * 100, 1);
             var open = mine.Count(i => i.Mine is null or { Status: SubmissionStatus.InProgress });
             var missing = mine.Count(i => (i.Mine is null or { Status: SubmissionStatus.InProgress }) && i.DueAtUtc is { } due && due < now);
 
-            subjects.Add(new SubjectGrade(a.Id, a.SubjectName, a.Teacher, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), percent, graded.Count, mine.Count, open, missing, graded, finals.TryGetValue(a.Id, out var final) ? final : null) { HasExam = mine.Any(i => i.Kind == ItemKinds.Exam) });
+            subjects.Add(new SubjectGrade(a.Id, a.SubjectName, a.Teacher, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), percent, graded.Count, mine.Count, open, missing, graded, a.GradesHidden ? null : finals.TryGetValue(a.Id, out var final) ? final : null)
+            {
+                HasExam = mine.Any(i => i.Kind == ItemKinds.Exam && i.Summative),
+                GradesHidden = a.GradesHidden,
+            });
         }
 
         var withGrade = subjects.Where(s => s.Percent is not null).ToList();

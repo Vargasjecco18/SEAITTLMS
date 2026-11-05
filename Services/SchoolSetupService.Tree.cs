@@ -19,8 +19,8 @@ public sealed partial class SchoolSetupService
     }
 
     /// <summary>
-    /// The teachers who can be the adviser of a section: the ones of the same strand (the strand of the teacher's profile, or a strand the teacher gives courses in). The adviser of the section
-    /// stays in the list even when that is not so any more.
+    /// The teachers who can be the adviser of a section: the ones of the strand of the section (the strand of the teacher's profile; a teacher of another strand who only has a class there is not
+    /// offered). The adviser of the section stays in the list even when that is not so any more.
     /// </summary>
     public async Task<IReadOnlyList<TeacherChoice>> ListAdviserChoicesAsync(int sectionId, CancellationToken ct = default)
     {
@@ -32,9 +32,8 @@ public sealed partial class SchoolSetupService
         }
 
         var teachers = await db.Teachers.AsNoTracking()
-            .Where(t => t.StrandId == section.StrandId
-                        || t.Id == section.AdviserTeacherId
-                        || db.TeachingAssignments.Any(a => a.TeacherId == t.Id && a.Section.StrandId == section.StrandId))
+            // the teachers of the strand of the section (a teacher who only has a class there, from another strand, is not offered); the adviser of today stays in the list so the box shows them
+            .Where(t => t.StrandId == section.StrandId || t.Id == section.AdviserTeacherId)
             .OrderBy(t => t.LastName).ThenBy(t => t.FirstName)
             .Select(t => new { t.Id, t.FirstName, t.LastName, t.GradeLevel })
             .ToListAsync(ct);
@@ -46,7 +45,7 @@ public sealed partial class SchoolSetupService
             classes.Where(c => c.TeacherId == t.Id).Select(c => c.Course).Order().ToList()))];
     }
 
-    /// <summary>Chooses the adviser of a section (null: none). Only a teacher of the same strand can be the adviser.</summary>
+    /// <summary>Chooses the adviser of a section (null: none). Only a teacher of the strand of the section (the strand the teacher belongs to) can be the adviser.</summary>
     public async Task<ServiceResult> SetAdviserAsync(int sectionId, int? teacherId, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -66,7 +65,7 @@ public sealed partial class SchoolSetupService
         if (teacherId is { } id)
         {
             var teacher = await db.Teachers.AsNoTracking().Where(t => t.Id == id)
-                .Select(t => new { t.FirstName, t.LastName, SameStrand = t.StrandId == section.StrandId || db.TeachingAssignments.Any(a => a.TeacherId == t.Id && a.Section.StrandId == section.StrandId) })
+                .Select(t => new { t.FirstName, t.LastName, SameStrand = t.StrandId == section.StrandId })
                 .FirstOrDefaultAsync(ct);
             if (teacher is null)
             {

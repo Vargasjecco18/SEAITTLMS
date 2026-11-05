@@ -239,7 +239,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         {
             var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
             cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
-                KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName,
+                KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation) + KindCount(r.Id, ItemKinds.Other), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName,
                 Completed(r.StrandId, r.GradeLevel, r.SubjectId, r.SchoolYearId, r.YearEnd)));
         }
 
@@ -357,7 +357,7 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
                     IsCompleted: e.EnrollmentStatus == EnrollmentStatus.Completed || (!e.IsCurrent && e.EndDate < today),
                     AttendancePercent: marked.Count == 0 ? null : Math.Round(came * 100m / marked.Count, 1),
                     NextDueUtc: nextDue,
-                    Activities: its.Count(i => i.Kind is ItemKinds.Activity or ItemKinds.Seatwork or ItemKinds.Recitation), Quizzes: its.Count(i => i.Kind == ItemKinds.Quiz), TaskPerformances: its.Count(i => i.Kind == ItemKinds.TaskPerformance),
+                    Activities: its.Count(i => i.Kind is ItemKinds.Activity or ItemKinds.Seatwork or ItemKinds.Recitation or ItemKinds.Other), Quizzes: its.Count(i => i.Kind == ItemKinds.Quiz), TaskPerformances: its.Count(i => i.Kind == ItemKinds.TaskPerformance),
                     StrandCode: e.StrandCode, StrandName: e.StrandName);
             })
             .ToList();

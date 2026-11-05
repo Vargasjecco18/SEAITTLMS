@@ -8,7 +8,7 @@
             <FormErrors Errors="Errors" />
             <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
 
-            <Field For="sd-adviser" Label="Adviser" Hint="@($"Only teachers of the same strand ({Section.StrandCode}) can be the adviser.")">
+            <Field For="sd-adviser" Label="Adviser" Hint="@($"Only the teachers of the strand {Section.StrandCode} can be the adviser.")">
                 <select id="sd-adviser" @key="@($"adv-{Section.Id}-{stamp}")" @onchange="SaveAdviserAsync">
                     <option value="0" selected="@(adviserId == 0)">No adviser</option>
                     @foreach (var teacher in choices)

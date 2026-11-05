@@ -24,6 +24,7 @@ public static class SubjectStyle
         ItemKinds.Seatwork => "clipboard-pen",
         ItemKinds.Recitation => "message-square-text",
         ItemKinds.Exam => "clipboard-list",
+        ItemKinds.Other => "sparkles",
         _ => "notebook-pen",
     };
 

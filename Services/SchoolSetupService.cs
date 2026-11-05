@@ -945,9 +945,19 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             return ServiceResult.Fail("Pick the school year of the section.");
         }
 
-        if (input.AdviserTeacherId is { } adviserId && !await db.Teachers.AnyAsync(t => t.Id == adviserId, ct))
+        if (input.AdviserTeacherId is { } adviserId)
         {
-            return ServiceResult.Fail("The adviser was not found.");
+            var adviser = await db.Teachers.AsNoTracking().Where(t => t.Id == adviserId).Select(t => new { t.StrandId }).FirstOrDefaultAsync(ct);
+            if (adviser is null)
+            {
+                return ServiceResult.Fail("The adviser was not found.");
+            }
+
+            // the adviser of a section is a teacher of the strand of the section
+            if (adviser.StrandId != strand.Id)
+            {
+                return ServiceResult.Fail($"The adviser has to be a teacher of the strand {strand.Code}.");
+            }
         }
 
         if (await db.Sections.AnyAsync(s => s.SchoolYearId == input.SchoolYearId && s.StrandId == strand.Id && s.GradeLevel == input.GradeLevel && s.Name == name && s.Id != input.Id, ct))

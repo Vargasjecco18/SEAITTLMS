@@ -182,7 +182,7 @@
 
     /// <summary>What the legend says: the students and the teachers have the work; the staff only the announcements, the holidays and their own events.</summary>
     private IReadOnlyList<string> LegendKinds => isStudent || isTeacher
-        ? [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal]
+        ? [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal]
         : [CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal];
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
@@ -239,7 +239,7 @@
     /// <summary>"2 assignments", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
     private static IEnumerable<DaySummary> Summary(IReadOnlyList<CalendarEvent> onDay)
     {
-        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal })
+        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal })
         {
             var these = onDay.Where(e => e.Kind == kind).ToList();
             if (these.Count == 0)
@@ -255,6 +255,7 @@
                 ItemKinds.Seatwork => these.Count == 1 ? "seatwork" : "seatworks",
                 ItemKinds.Recitation => these.Count == 1 ? "recitation" : "recitations",
                 ItemKinds.Exam => these.Count == 1 ? "exam" : "exams",
+                ItemKinds.Other => these.Count == 1 ? "other work" : "other works",
                 CalendarKinds.Summative => these.Count == 1 ? "summative exam" : "summative exams",
                 CalendarKinds.Module => these.Count == 1 ? "handout" : "handouts",
                 CalendarKinds.Announcement => these.Count == 1 ? "announcement" : "announcements",

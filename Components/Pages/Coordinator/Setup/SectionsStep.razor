@@ -128,6 +128,13 @@
 
     private int? askedGrade;
 
+    /// <summary>The section to open in its box ("11-STEM-A": grade level, strand, name): a letter of the Class sections tab was pressed. <see cref="OpenStamp"/> changes with every press.</summary>
+    [Parameter] public string? OpenSection { get; set; }
+
+    [Parameter] public int OpenStamp { get; set; }
+
+    private int askedStamp;
+
     protected override void OnParametersSet()
     {
         if (InitialGrade != askedGrade)
@@ -136,6 +143,17 @@
             if (InitialGrade is 11 or 12)
             {
                 gradeTab = InitialGrade.ToString()!;
+            }
+        }
+
+        if (OpenStamp != askedStamp)
+        {
+            askedStamp = OpenStamp;
+            var wanted = rows?.Where(r => $"{r.GradeLevel}-{r.StrandCode}-{r.Name}" == OpenSection).OrderByDescending(r => r.SchoolYearId == yearId).FirstOrDefault();
+            if (wanted is not null)
+            {
+                gradeTab = wanted.GradeLevel == 12 ? "12" : "11";
+                dialogSection = wanted;
             }
         }
     }

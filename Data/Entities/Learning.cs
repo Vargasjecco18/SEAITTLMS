@@ -16,6 +16,9 @@ public class TeachingAssignment : AuditableEntity
     public int SubjectId { get; set; }
     public Subject Subject { get; set; } = null!;
 
+    /// <summary>True while the teacher hides the grades of this course from the students (the button Hide from students in the gradebook): their Grades page and the grade of the course say so instead of showing the numbers.</summary>
+    public bool GradesHidden { get; set; }
+
     public List<LearningModule> Modules { get; set; } = [];
 }
 
@@ -78,14 +81,17 @@ public static class ItemKinds
     /// <summary>A major test (a midterm, a final): it is added from the gradebook, where its scores are typed. It is not one of the kinds a teacher adds to a module.</summary>
     public const string Exam = "Exam";
 
+    /// <summary>Anything else a teacher grades (a project, a drill, a bonus ...): a column that is only added from the gradebook, "Add Others", where its scores are typed. Handled like a recitation.</summary>
+    public const string Other = "Other";
+
     /// <summary>The kinds a teacher adds to a module, in the order of the course menu and of the Excel template: seatwork, assignment, quiz, task performance. (The recitation is only a column of the gradebook.)</summary>
     public static readonly string[] All = [Seatwork, Activity, Quiz, TaskPerformance];
 
-    /// <summary>Every kind that is listed in the module, in the menu of the course and in the gradebook: the kinds of <see cref="All"/>, the recitation (gradebook) and the exam.</summary>
-    public static readonly string[] Listed = [Seatwork, Activity, Quiz, TaskPerformance, Recitation, Exam];
+    /// <summary>Every kind that is listed in the module, in the menu of the course and in the gradebook: the kinds of <see cref="All"/>, the recitation (gradebook) and the exam and the others.</summary>
+    public static readonly string[] Listed = [Seatwork, Activity, Quiz, TaskPerformance, Recitation, Exam, Other];
 
-    /// <summary>The kinds whose tab (in the menu of the course and in a module) is only there once the course has one: the recitation and the exam.</summary>
-    public static bool IsOptionalTab(string kind) => kind is Exam or Recitation;
+    /// <summary>The kinds whose tab (in the menu of the course and in a module) is only there once the course has one: the recitation, the exam and the others.</summary>
+    public static bool IsOptionalTab(string kind) => kind is Exam or Recitation or Other;
 
     /// <summary>A quiz and a summative exam are taken on the screen: they have questions, a time limit and the anti-cheating watch, and the system gives the score.</summary>
     public static bool IsQuizLike(string? kind) => kind is Quiz or Exam;
@@ -97,6 +103,7 @@ public static class ItemKinds
         Seatwork => "Seatwork",
         Recitation => "Recitation",
         Exam => "Exam",
+        Other => "Others",
         _ => "Assignment",
     };
 
@@ -107,10 +114,11 @@ public static class ItemKinds
         Seatwork => "Seatworks",
         Recitation => "Recitations",
         Exam => "Exams",
+        Other => "Others",
         _ => "Assignments",
     };
 
-    /// <summary>The short code of the column in the gradebook: A, Q, TP, S, R, E (an exam of the teacher). A summative exam of the academic provider is SE (the gradebook says so).</summary>
+    /// <summary>The short code of the column in the gradebook: A, Q, TP, S, R, E (an exam of the teacher), O (others). A summative exam of the academic provider is SE (the gradebook says so).</summary>
     public static string Code(string kind) => kind switch
     {
         Quiz => "Q",
@@ -118,6 +126,7 @@ public static class ItemKinds
         Seatwork => "S",
         Recitation => "R",
         Exam => "E",
+        Other => "O",
         _ => "A",
     };
 }

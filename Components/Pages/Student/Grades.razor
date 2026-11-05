@@ -85,6 +85,10 @@ else
                                 {
                                     <Badge Tone="@GradeRules.ToneOf(pp)">@GradeRules.Descriptor(pp)</Badge>
                                 }
+                                else if (s.GradesHidden)
+                                {
+                                    <Badge>Hidden by your teacher</Badge>
+                                }
                                 else
                                 {
                                     <Badge>No grade yet</Badge>
@@ -96,7 +100,14 @@ else
                             {
                                 <span class="att @(attRate < AttendanceService.LowAttendancePercent ? "low" : "")" title="@($"{att.Present} present, {att.Late} late, {att.Absent} absent")">Attendance @attRate.ToString("0.#")% · </span>
                             }
-                            @s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "activity" : "activities") graded
+                            @if (s.GradesHidden)
+                            {
+                                <span>Your teacher is not showing the grades of this course now.</span>
+                            }
+                            else
+                            {
+                                @:@s.GradedCount of @s.TotalItems @(s.TotalItems == 1 ? "activity" : "activities") graded
+                            }
                             @if (s.OpenItems > 0) { <span> · @s.OpenItems to do</span> }
                             @if (s.Missing > 0) { <span class="missing"> · @s.Missing missing</span> }
                             <span class="note-inline"> · The line on the bar is the passing grade, @GradeRules.PassingPercent.ToString("0").</span>
@@ -105,6 +116,10 @@ else
                         @if (book is null || book.Columns.Count == 0)
                         {
                             <p class="muted">No activity is open in this course yet.</p>
+                        }
+                        else if (book.Hidden)
+                        {
+                            <p class="muted hidden-note"><Icon Name="eye-off" Size="16" /> Your teacher is not showing the scores of this course for now. You can still open each activity and read its feedback; the scores, the average and the final grade come back when your teacher shows them.</p>
                         }
                         else
                         {
@@ -146,7 +161,7 @@ else
                                     </tbody>
                                 </table>
                             </div>
-                            <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>SE</strong> summative exam. Press a code to open the activity. You can only read this table: your teacher gives the scores.</p>
+                            <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>E</strong> exam &nbsp; <strong>O</strong> others &nbsp; <strong>SE</strong> summative exam. Press a code to open the activity. You can only read this table: your teacher gives the scores.</p>
                         }
 
                         @if (s.HasExam)

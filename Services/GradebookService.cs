@@ -16,10 +16,14 @@ public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bo
 public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null);
 
 /// <summary>The gradebook of one course as the student sees it: the columns and the one row of the student (nothing to change).</summary>
-public sealed record StudentBook(int AssignmentId, IReadOnlyList<GradebookColumn> Columns, GradebookRow Row);
+public sealed record StudentBook(int AssignmentId, IReadOnlyList<GradebookColumn> Columns, GradebookRow Row)
+{
+    /// <summary>True while the teacher hides the grades of the course from the students: the columns are listed but there are no scores, no average and no final grade.</summary>
+    public bool Hidden { get; init; }
+}
 
 public sealed record SubjectGradebook(
-    int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing);
+    int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing, bool GradesHidden = false);
 
 /// <summary>
 /// The teacher's gradebook of one subject: a row per student, a column per activity, quiz and task performance of the modules that
@@ -34,7 +38,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var now = clock.GetUtcNow().UtcDateTime;
 
         var a = await db.TeachingAssignments.AsNoTracking().Where(x => x.Id == assignmentId && x.TeacherId == teacherId)
-            .Select(x => new { x.Id, x.SectionId, x.SubjectId, Subject = x.Subject.Name, x.Section.GradeLevel, Strand = x.Section.Strand.Code, Section = x.Section.Name })
+            .Select(x => new { x.Id, x.SectionId, x.SubjectId, Subject = x.Subject.Name, x.Section.GradeLevel, Strand = x.Section.Strand.Code, Section = x.Section.Name, x.GradesHidden })
             .FirstOrDefaultAsync(ct);
         if (a is null)
         {
@@ -84,7 +88,24 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
 
         var graded = rows.Where(r => r.Percent is not null).ToList();
         return new SubjectGradebook(a.Id, a.Subject, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), columns, rows,
-            graded.Count == 0 ? null : Math.Round(graded.Average(r => r.Percent!.Value), 1), graded.Count(r => r.Percent < GradeRules.PassingPercent));
+            graded.Count == 0 ? null : Math.Round(graded.Average(r => r.Percent!.Value), 1), graded.Count(r => r.Percent < GradeRules.PassingPercent), a.GradesHidden);
+    }
+
+    /// <summary>
+    /// The button Hide from students of the gradebook: the grades of the course are hidden from the students (or shown again). The students keep seeing their work and their feedback, but not the
+    /// scores of the gradebook, the average, the grade of the course and the final grade.
+    /// </summary>
+    public async Task<ServiceResult> SetGradesHiddenAsync(int teacherId, int assignmentId, bool hidden, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var changed = await db.TeachingAssignments.Where(a => a.Id == assignmentId && a.TeacherId == teacherId)
+            .ExecuteUpdateAsync(set => set.SetProperty(a => a.GradesHidden, hidden), ct);
+        if (changed == 0)
+        {
+            return ServiceResult.Fail("This is not your course.");
+        }
+
+        return ServiceResult.Ok(hidden ? "The grades of this course are hidden from the students." : "The students can see their grades of this course again.");
     }
 
     /// <summary>
@@ -102,11 +123,20 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         var assignmentIds = await Roster.AssignmentsOf(db, studentId).Select(a => a.Id).ToListAsync(ct);
+        var hiddenIds = (await db.TeachingAssignments.AsNoTracking().Where(a => assignmentIds.Contains(a.Id) && a.GradesHidden).Select(a => a.Id).ToListAsync(ct)).ToHashSet();
         var finals = await db.FinalGrades.AsNoTracking().Where(g => g.StudentId == studentId && assignmentIds.Contains(g.AssignmentId)).ToDictionaryAsync(g => g.AssignmentId, g => g.Grade, ct);
         var books = new Dictionary<int, StudentBook>();
         foreach (var assignmentId in assignmentIds)
         {
             var columns = await GetColumnsAsync(db, assignmentId, now, ct, studentView: true);
+            if (hiddenIds.Contains(assignmentId))
+            {
+                // the teacher hides the grades: the columns are there, the scores, the average and the final grade are not
+                books[assignmentId] = new StudentBook(assignmentId, columns, new GradebookRow(studentId, $"{student.LastName}, {student.FirstName}", student.Lrn,
+                    [.. columns.Select(c => new GradebookCell(c.ItemId, "NotStarted", null, false, false))], null, 0, null)) { Hidden = true };
+                continue;
+            }
+
             var itemIds = columns.Select(c => c.ItemId).ToList();
             var mine = await db.Submissions.AsNoTracking().Where(s => s.StudentId == studentId && itemIds.Contains(s.ItemId))
                 .Select(s => new { s.ItemId, s.Status, s.Score, s.IsLate, s.LateDecision }).ToDictionaryAsync(s => s.ItemId, ct);

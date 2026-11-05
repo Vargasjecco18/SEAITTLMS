@@ -31,6 +31,7 @@ public static class CalendarKinds
         ItemKinds.Seatwork => "Seatwork",
         ItemKinds.Recitation => "Recitation",
         ItemKinds.Exam => "Exam",
+        ItemKinds.Other => "Others",
         Summative => "Summative exam",
         Announcement => "Announcement",
         Holiday => "Holiday",

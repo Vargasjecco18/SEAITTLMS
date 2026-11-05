@@ -349,3 +349,11 @@ i.none { background: var(--border); }
     margin: 0 0.3rem;
     font-size: 1.1rem;
 }
+
+/* The teacher hides the grades of a course: one line instead of the table. */
+.hidden-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.5rem 0 0;
+}

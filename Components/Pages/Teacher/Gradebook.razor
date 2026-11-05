@@ -53,8 +53,11 @@ else
                 @if (book is { Columns.Count: > 0, Rows.Count: > 0 })
                 {
                     <div class="tools">
-                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
-                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync">Export to Excel</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add Others</Button>
+                        @* Hide from students: the students do not see the scores, the average and the grade of this course until it is shown again. *@
+                        <Button Variant="ButtonVariant.Secondary" IconName="@(book.GradesHidden ? "eye" : "eye-off")" Disabled="busy" OnClick="ToggleHiddenAsync"
+                                Title="@(book.GradesHidden ? "The students can't see their grades of this course. Press to show them." : "The students see their scores, average and grade of this course. Press to hide them.")">@(book.GradesHidden ? "Show to students" : "Hide from students")</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Title="One Excel file with all your courses, a sheet for each">Export to Excel</Button>
                         <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
                     </div>
                 }
@@ -64,7 +67,7 @@ else
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
                     <p>Assignments, quizzes and task performances of posted handouts appear as columns here.</p>
                     <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
-                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="() => OpenExtra(false)">Add Activities</Button>
+                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add Others</Button>
                 </EmptyState>
             }
             else if (book.Rows.Count == 0)
@@ -153,24 +156,17 @@ else
                         </tbody>
                     </table>
                 </div>
-                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>E</strong> exam &nbsp; <strong>SE</strong> summative exam &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
+                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>E</strong> exam &nbsp; <strong>O</strong> others &nbsp; <strong>SE</strong> summative exam &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
             }
         </Card>
     }
 }
 
-@* ===== Extra grades: activities (an assignment, a quiz or a task performance) and exams that are only there to give scores ===== *@
-<Modal Open="extraOpen" Title="@(extraKind == ItemKinds.Exam ? "Add an exam" : "Add Activities")" OnClose="CloseExtra">
+@* ===== Add Others: a recitation, an exam or anything else that is only there to give scores (a new column of the gradebook) ===== *@
+<Modal Open="extraOpen" Title="Add Others" OnClose="CloseExtra">
     @if (extraOpen)
     {
-        @if (extraKind == ItemKinds.Exam)
-        {
-            <p class="dialog-text">Add an exam, like a midterm or a final, to give its scores. It becomes a new column of the gradebook, and the students see it under Exams in the course menu.</p>
-        }
-        else
-        {
-            <p class="dialog-text">Add an assignment, a quiz, a task performance, a seatwork or a recitation to give <strong>extra scores</strong>. It becomes a new column of the gradebook, and it is added to the handout you choose, so the students see it too.</p>
-        }
+        <p class="dialog-text">Add a <strong>recitation</strong>, an <strong>exam</strong> or <strong>others</strong> to give extra scores. It becomes a new column of the gradebook, and it is added to the handout you choose, so the students see it too.</p>
         <FormErrors Errors="formErrors" />
         @if (extraModules.Count == 0)
         {
@@ -178,28 +174,21 @@ else
         }
         else
         {
-            @if (extraKind != ItemKinds.Exam)
-            {
-                <div class="kind-choice" role="group" aria-label="What to add">
-                    @* The recitation is only a column of the gradebook, so it is offered here (and nowhere else). *@
-                    @foreach (var kind in ItemKinds.Listed.Where(k => k != ItemKinds.Exam))
+            <div class="kind-choice" role="group" aria-label="What to add">
+                @foreach (var kind in ExtraKinds)
+                {
+                    var k = kind;
+                    <button type="button" class="kind @(extraKind == k ? "on" : "")" data-kind="@k" aria-pressed="@(extraKind == k ? "true" : "false")" @onclick="() => extraKind = k"><Icon Name="@SubjectStyle.KindIcon(k)" Size="16" /> @ItemKinds.Display(k)</button>
+                }
+            </div>
+            <Field For="x-module" Label="Handout" Required="true">
+                <select id="x-module" @bind="extraModuleId">
+                    @foreach (var m in extraModules)
                     {
-                        var k = kind;
-                        <button type="button" class="kind @(extraKind == k ? "on" : "")" aria-pressed="@(extraKind == k ? "true" : "false")" @onclick="() => extraKind = k"><Icon Name="@SubjectStyle.KindIcon(k)" Size="16" /> @ItemKinds.Display(k)</button>
+                        <option value="@m.Id">@m.Title</option>
                     }
-                </div>
-            }
-            @if (extraKind != ItemKinds.Exam)
-            {
-                <Field For="x-module" Label="Handout" Required="true">
-                    <select id="x-module" @bind="extraModuleId">
-                        @foreach (var m in extraModules)
-                        {
-                            <option value="@m.Id">@m.Title</option>
-                        }
-                    </select>
-                </Field>
-            }
+                </select>
+            </Field>
             <Field For="x-title" Label="Title" Required="true">
                 <input id="x-title" type="text" maxlength="200" autocomplete="off" @bind="extraTitle" @bind:event="oninput" />
             </Field>
@@ -400,35 +389,71 @@ else
         }
     }
 
+    /// <summary>Export to Excel: every course of the teacher in one file, a sheet for each.</summary>
     private async Task ExportAsync()
     {
-        if (book is null)
+        var books = new List<SubjectGradebook>();
+        foreach (var s in subjects)
+        {
+            var one = s.AssignmentId == subjectId && book is not null ? book : await Books.GetAsync(teacherId, s.AssignmentId);
+            if (one is not null)
+            {
+                books.Add(one);
+            }
+        }
+
+        if (books.Count == 0)
         {
             return;
         }
 
-        await Downloads.SaveAsync(GradebookExport.FileName(book), GradebookExport.Build(book));
+        await Downloads.SaveAsync(GradebookExport.FileNameAll(), GradebookExport.BuildAll(books));
+    }
+
+    /// <summary>Hide from students / Show to students: the students see the grades of this course or not.</summary>
+    private async Task ToggleHiddenAsync()
+    {
+        if (busy || book is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Books.SetGradesHiddenAsync(teacherId, subjectId, !book.GradesHidden);
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            book = await Books.GetAsync(teacherId, subjectId);
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     // ---------------------------------------------------------------- extra grades
 
     private bool extraOpen;
-    private string extraKind = ItemKinds.Activity;
+    private string extraKind = ItemKinds.Recitation;
+
+    /// <summary>What "Add Others" gives: a recitation, an exam, or others. (The assignments, quizzes and task performances are made in the course.)</summary>
+    private static readonly string[] ExtraKinds = [ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other];
     private int extraModuleId;
     private string extraTitle = "";
     private decimal extraMax = 50;
     private IReadOnlyList<TeacherModule> extraModules = [];
 
-    private async Task OpenExtra(bool exam)
+    private async Task OpenExtra()
     {
         formErrors = [];
         var subject = await Modules.GetTeacherSubjectAsync(teacherId, subjectId);
         // the box of the summative exam is not a module of the course: nothing is added to it from here
         extraModules = subject?.Modules.Where(m => !m.IsSyllabus && !m.IsExamSet && m.State == Visibility.Posted).ToList() ?? [];
         extraModuleId = extraModules.LastOrDefault()?.Id ?? 0;
-        extraKind = exam ? ItemKinds.Exam : ItemKinds.Activity;
+        extraKind = ItemKinds.Recitation;
         extraTitle = "";
-        extraMax = exam ? 100 : 50;
+        extraMax = 50;
         extraOpen = true;
     }
 
@@ -444,7 +469,7 @@ else
         busy = true;
         try
         {
-            var result = await Modules.SaveItemAsync(teacherId, extraModuleId, null, new ItemInput { Kind = extraKind, Title = extraTitle, MaxScore = extraMax });
+            var result = await Modules.SaveItemAsync(teacherId, extraModuleId, null, new ItemInput { Kind = extraKind, Title = extraTitle, MaxScore = extraMax }, fromGradebook: true);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

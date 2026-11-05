@@ -391,7 +391,8 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
     // ======================================================================= the teacher: activities, quizzes, task performances
 
-    public async Task<ServiceResult> SaveItemAsync(int teacherId, int moduleId, int? itemId, ItemInput input, CancellationToken ct = default)
+    /// <param name="fromGradebook">True when the work is added from the gradebook ("Add Others"): only there a teacher can add an exam (a column whose scores the teacher types) or an "Others" column.</param>
+    public async Task<ServiceResult> SaveItemAsync(int teacherId, int moduleId, int? itemId, ItemInput input, CancellationToken ct = default, bool fromGradebook = false)
     {
         var errors = ValidateItem(input);
         if (errors.Count > 0)
@@ -399,10 +400,16 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             return ServiceResult.Fail(errors);
         }
 
-        // Exams are the summative exams of the academic provider: a teacher does not add one (the ones that were posted to the course stay and can still be changed).
-        if (itemId is null && input.Kind == ItemKinds.Exam)
+        // The summative exams come from the academic provider (the ones that were posted to the course stay and can still be changed). A teacher adds an exam, or work of the kind
+        // Others, only from the gradebook ("Add Others"), where its scores are typed.
+        if (itemId is null && input.Kind == ItemKinds.Exam && !fromGradebook)
         {
-            return ServiceResult.Fail("A teacher does not add exams: the summative exams come from the academic provider. Add a seatwork, an assignment, a quiz or a task performance.");
+            return ServiceResult.Fail("A teacher does not add exams here: the summative exams come from the academic provider. Add an exam from the gradebook (Add Others), or a seatwork, an assignment, a quiz or a task performance.");
+        }
+
+        if (itemId is null && input.Kind == ItemKinds.Other && !fromGradebook)
+        {
+            return ServiceResult.Fail("Others are added from the gradebook (Add Others).");
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
