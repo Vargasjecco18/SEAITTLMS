@@ -5750,7 +5750,7 @@ FROM sample_work w
 JOIN students st ON st.id = w.student_id
 JOIN teaching_assignments a ON a.id = w.assignment_id
 JOIN subjects sj ON sj.id = a.subject_id
-WHERE w.plan = 'None' AND w.quizlike = 0 AND w.due_at_utc > @now AND w.due_at_utc <= @now + INTERVAL 3 DAY;
+WHERE w.plan = 'None' AND w.quizlike = 0 AND w.due_at_utc > @now AND w.due_at_utc <= @now + INTERVAL 4 DAY;
 INSERT INTO notifications (user_id, kind, title, body, link, is_read, created_at_utc, updated_at_utc)
 SELECT tc.user_id, 'activity', 'Work waiting for a score', CONCAT(i.title, ' has ', COUNT(*), IF(COUNT(*) = 1, ' new answer.', ' new answers.')), CONCAT('teacher/items/', s.item_id), 0, MAX(s.submitted_at_utc), MAX(s.submitted_at_utc)
 FROM submissions s
