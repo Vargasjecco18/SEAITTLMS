@@ -423,7 +423,8 @@ else
     {
         formErrors = [];
         var subject = await Modules.GetTeacherSubjectAsync(teacherId, subjectId);
-        extraModules = subject?.Modules.Where(m => !m.IsSyllabus && m.State == Visibility.Posted).ToList() ?? [];
+        // the box of the summative exam is not a module of the course: nothing is added to it from here
+        extraModules = subject?.Modules.Where(m => !m.IsSyllabus && !m.IsExamSet && m.State == Visibility.Posted).ToList() ?? [];
         extraModuleId = extraModules.LastOrDefault()?.Id ?? 0;
         extraKind = exam ? ItemKinds.Exam : ItemKinds.Activity;
         extraTitle = "";

@@ -135,7 +135,7 @@ else
             </Card>
 
             <div class="area-actions">
-                <Button Type="button" Variant="ButtonVariant.Secondary" IconName="list" OnClick="() => printOpen = true">Print Enrollment</Button>
+                <Button Type="button" Variant="ButtonVariant.Secondary" IconName="list" OnClick="PrintAsync">Print Enrollment</Button>
                 <Button Type="submit" Variant="ButtonVariant.Primary" IconName="user-plus" Disabled="busy">@(busy ? "Enrolling…" : "Enroll student")</Button>
             </div>
 
@@ -257,20 +257,8 @@ else
     </EditForm>
     </div>
 
-    @* The paper that is printed for this student (a preview in the middle of the screen). What is on the paper is the form of EnrollmentPrintSheet; the Print button prints the same form. *@
+    @* The paper that is printed for this student: Print Enrollment opens the print preview of the browser at once (no box before it). What is on the paper is the form of EnrollmentPrintSheet. *@
     <EnrollmentPrintSheet Receipt="DraftReceipt" />
-    <Modal Open="printOpen" Title="Print Enrollment" Large="true" Centered="true" OnClose="() => printOpen = false">
-        @if (printOpen)
-        {
-            <div class="print-preview">
-                <EnrollmentPrintSheet Receipt="DraftReceipt" Preview="true" />
-            </div>
-            <div class="view-actions">
-                <Button Type="button" Variant="ButtonVariant.Ghost" OnClick="() => printOpen = false">Close</Button>
-                <Button Type="button" Variant="ButtonVariant.Primary" IconName="list" OnClick="PrintAsync">Print</Button>
-            </div>
-        }
-    </Modal>
 }
 
 <Modal Open="importOpen" Title="Import students from Excel" Large="true" OnClose="CloseImport">
@@ -411,8 +399,6 @@ else
         </Field>
     </text>;
 
-    // The Print Enrollment box.
-    private bool printOpen;
 
     /// <summary>What the paper shows before the student is enrolled: the form as it is now (the number of the enrollment is not made yet).</summary>
     private EnrollmentReceipt DraftReceipt

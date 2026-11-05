@@ -560,3 +560,20 @@ h3 {
 .crumbs a:hover {
     text-decoration: underline;
 }
+
+/* The groups of buttons in the header of a course, with a bar | between them (the bar belongs to the group after it, so it never stays alone at the end of a line). */
+.head-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.head-group + .head-group::before {
+    content: "|";
+    margin-right: 0.35rem;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    font-weight: 300;
+    line-height: 1;
+}

@@ -160,14 +160,27 @@
                     <div class="choices" role="group" aria-label="Appearance">
                         <button type="button" class="choice" data-theme-choice="light"><Icon Name="sun" Size="18" /><span>Light</span></button>
                         <button type="button" class="choice" data-theme-choice="dark"><Icon Name="moon" Size="18" /><span>Dark</span></button>
-                        <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
+                        <button type="button" class="choice look" data-theme-choice="midnight"><span class="dots midnight" aria-hidden="true"><i></i><i></i><i></i></span><span>Midnight</span></button>
                         <button type="button" class="choice look" data-theme-choice="ocean"><span class="dots ocean" aria-hidden="true"><i></i><i></i><i></i></span><span>Ocean</span></button>
                         <button type="button" class="choice look" data-theme-choice="forest"><span class="dots forest" aria-hidden="true"><i></i><i></i><i></i></span><span>Forest</span></button>
                         <button type="button" class="choice look" data-theme-choice="sunset"><span class="dots sunset" aria-hidden="true"><i></i><i></i><i></i></span><span>Sunset</span></button>
                         <button type="button" class="choice look" data-theme-choice="paper"><span class="dots paper" aria-hidden="true"><i></i><i></i><i></i></span><span>Paper</span></button>
-                        <button type="button" class="choice look" data-theme-choice="midnight"><span class="dots midnight" aria-hidden="true"><i></i><i></i><i></i></span><span>Midnight</span></button>
+                        <button type="button" class="choice" data-theme-choice="auto"><Icon Name="monitor" Size="18" /><span>Auto</span></button>
+                        <button type="button" class="choice" data-theme-choice="custom"><Icon Name="sliders-horizontal" Size="18" /><span>Customize</span></button>
                     </div>
-                    <p class="hint">Auto follows the setting of your computer. Ocean, Forest, Sunset and Paper are light looks with their own colors; Midnight is a dark blue one.</p>
+
+                    @* Customize appearance: the person picks four colors (the page, the cards, the text and the accent); every other color of the look is worked out from them (App.razor.css,
+                       data-theme="custom"). The choice is kept in this browser and in a cookie, like the other looks (wwwroot/app.js, data-custom-color). *@
+                    <div class="custom-panel" role="group" aria-label="Customize appearance">
+                        <div class="custom-grid">
+                            <label class="custom-field"><span>Page</span><input type="color" data-custom-color="bg" value="#f4f6fb" aria-label="Page color" /></label>
+                            <label class="custom-field"><span>Cards</span><input type="color" data-custom-color="surface" value="#ffffff" aria-label="Card color" /></label>
+                            <label class="custom-field"><span>Text</span><input type="color" data-custom-color="text" value="#1b2433" aria-label="Text color" /></label>
+                            <label class="custom-field"><span>Accent</span><input type="color" data-custom-color="brand" value="#2563eb" aria-label="Accent color" /></label>
+                        </div>
+                        <button type="button" class="custom-reset" data-custom-reset>Reset the colors</button>
+                    </div>
+                    <p class="hint">Auto follows the setting of your computer. Customize lets you choose the colors of the page, the cards, the text and the accent. Ocean, Forest, Sunset and Paper are light looks with their own colors; Midnight is a dark blue one.</p>
 
                     <button type="button" class="switch" data-motion-toggle>
                         <span class="switch-text">

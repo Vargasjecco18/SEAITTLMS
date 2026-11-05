@@ -77,7 +77,7 @@ public sealed record ItemForEdit(
 
 public sealed record TeacherModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime? VisibleFromUtc, string State,
-    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false, bool HasSlides = false, int? ReadPercent = null);
+    IReadOnlyList<TeacherItem> Items, bool IsSyllabus = false, bool FromProvider = false, bool IsExamSet = false, bool HasSlides = false, int? ReadPercent = null, int Progress = 0);
 
 public sealed record TeacherSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, int Students, IReadOnlyList<TeacherModule> Modules);
@@ -89,7 +89,37 @@ public sealed record StudentItem(
 
 public sealed record StudentModule(
     int Id, string Title, string? Description, string? Body, string? LinkUrl, int Position, DateTime VisibleFromUtc, bool Opened, IReadOnlyList<StudentItem> Items,
-    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false, bool HasSlides = false, int? ReadPercent = null);
+    int AssignmentId = 0, string SubjectName = "", bool IsSyllabus = false, bool IsExamSet = false, bool HasSlides = false, int? ReadPercent = null, int Progress = 0);
+
+/// <summary>
+/// The progress of a module in the course page, the same for a student and (as the average of the class) for the teacher: <b>50</b> points for the slides, when the module has slides (the part of the
+/// slides that the student has seen), and <b>50</b> points for the module itself (the student opened it). A module with <b>no slides</b> is <b>100</b> as soon as the student has opened it.
+/// </summary>
+public static class ModuleProgress
+{
+    /// <summary>One student: <paramref name="slidesPercent"/> is how much of the slides was seen (0 to 100).</summary>
+    public static int Of(bool hasSlides, bool opened, int slidesPercent)
+    {
+        if (!opened)
+        {
+            return 0;
+        }
+
+        return hasSlides ? 50 + (int)Math.Round(Math.Clamp(slidesPercent, 0, 100) / 2.0) : 100;
+    }
+
+    /// <summary>The class: the average of the students (a student who did not open the module counts 0).</summary>
+    public static int OfClass(bool hasSlides, int students, int opened, int slidesPercentSum)
+    {
+        if (students <= 0)
+        {
+            return 0;
+        }
+
+        var total = hasSlides ? 50.0 * opened + slidesPercentSum / 2.0 : 100.0 * opened;
+        return (int)Math.Round(total / students);
+    }
+}
 
 public sealed record StudentSubject(
     int AssignmentId, int SubjectId, string SubjectName, string SectionLabel, string TeacherName, IReadOnlyList<StudentModule> Modules);
@@ -139,14 +169,20 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var fromProvider = (await db.MaterialDeliveries.AsNoTracking().Where(d => d.AssignmentId == assignmentId).Select(d => d.ModuleId).ToListAsync(ct)).ToHashSet();
         var withSlides = await ModulesWithSlidesAsync(db, moduleIds, ct);
         var withFiles = await ModulesWithFilesAsync(db, moduleIds, ct);
-        var readSums = (await db.ModuleReads.AsNoTracking().Where(r => moduleIds.Contains(r.ModuleId)).GroupBy(r => r.ModuleId).Select(g => new { ModuleId = g.Key, Sum = g.Sum(r => (int)r.Percent) }).ToListAsync(ct))
+        var roster = Roster.StudentIds(db, a.SectionId, a.SubjectId);
+        // the slides a student has seen only count for a student who is on the roster
+        var readSums = (await db.ModuleReads.AsNoTracking().Where(r => moduleIds.Contains(r.ModuleId) && roster.Contains(r.StudentId)).GroupBy(r => r.ModuleId).Select(g => new { ModuleId = g.Key, Sum = g.Sum(r => (int)r.Percent) }).ToListAsync(ct))
             .ToDictionary(x => x.ModuleId, x => x.Sum);
+        var openedBy = (await db.ModuleViews.AsNoTracking().Where(v => moduleIds.Contains(v.ModuleId) && roster.Contains(v.StudentId)).GroupBy(v => v.ModuleId).Select(g => new { ModuleId = g.Key, Count = g.Count() }).ToListAsync(ct))
+            .ToDictionary(x => x.ModuleId, x => x.Count);
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
             items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
             m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet, withSlides.Contains(m.Id),
             // the average of the class (the students who have not read count as 0); null when the module has no file to read
-            withFiles.Contains(m.Id) ? (students == 0 ? 0 : (int)Math.Round(readSums.GetValueOrDefault(m.Id) / (double)students)) : null)).ToList();
+            withFiles.Contains(m.Id) ? (students == 0 ? 0 : (int)Math.Round(readSums.GetValueOrDefault(m.Id) / (double)students)) : null,
+            // 50 for the slides and 50 for the module (100 for the module when there are no slides): the average of the class
+            ModuleProgress.OfClass(withSlides.Contains(m.Id), students, openedBy.GetValueOrDefault(m.Id), readSums.GetValueOrDefault(m.Id)))).ToList();
 
         return new TeacherSubject(a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students, result);
     }
@@ -280,6 +316,40 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         }
 
         return ServiceResult.Ok($"The module will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc.Value)}.");
+    }
+
+    /// <summary>
+    /// Sets the time a module appears for the students (the chip of its row in the course page): a later time hides it until then (the students are told when it appears), an earlier time makes it
+    /// appear from that time (a module that was a draft or scheduled is posted now and the students are told; one that was already posted only changes its date).
+    /// </summary>
+    public async Task<ServiceResult> SetModuleTimeAsync(int teacherId, int moduleId, DateTime atUtc, CancellationToken ct = default)
+    {
+        var now = Now;
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var module = await db.Modules.FirstOrDefaultAsync(m => m.Id == moduleId && m.Assignment.TeacherId == teacherId, ct);
+        if (module is null)
+        {
+            return ServiceResult.Fail("This module was not found.");
+        }
+
+        var wasVisible = module.VisibleFromUtc is { } before && before <= now;
+        var future = atUtc > now.AddMinutes(1);
+        module.VisibleFromUtc = atUtc;
+        if (future || !wasVisible)
+        {
+            module.NotifiedAtUtc = null;
+        }
+
+        await db.SaveChangesAsync(ct);
+        await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
+        if (!future && !wasVisible)
+        {
+            await AutomationService.NotifyNewContentAsync(dbFactory, notifications, now, ct);
+        }
+
+        return ServiceResult.Ok(future
+            ? $"The module will appear for the students on {Components.Shared.PhilippineTime.FormatDateTime(atUtc)}."
+            : wasVisible ? $"The module appears from {Components.Shared.PhilippineTime.FormatDateTime(atUtc)}." : "The module is posted.");
     }
 
     /// <summary>Hides a posted or scheduled module again (it becomes a draft).</summary>
@@ -573,7 +643,8 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         return new StudentSubject(
             a.Id, a.SubjectId, a.SubjectName, TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), a.Teacher,
             modules.Select(m => new StudentModule(m.Id, m.Title, m.Description, null, null, m.Position, m.VisibleFromUtc!.Value, opened.Contains(m.Id),
-                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet, HasSlides: withSlides.Contains(m.Id), ReadPercent: withFiles.Contains(m.Id) ? reads.GetValueOrDefault(m.Id) : null)).ToList());
+                items.Where(i => i.ModuleId == m.Id).ToList(), IsSyllabus: m.IsSyllabus, IsExamSet: m.IsExamSet, HasSlides: withSlides.Contains(m.Id), ReadPercent: withFiles.Contains(m.Id) ? reads.GetValueOrDefault(m.Id) : null,
+                Progress: ModuleProgress.Of(withSlides.Contains(m.Id), opened.Contains(m.Id), reads.GetValueOrDefault(m.Id)))).ToList());
     }
 
     /// <summary>The modules (of the ones given) that have slides, so the course page can offer a Slides button only where there are some.</summary>

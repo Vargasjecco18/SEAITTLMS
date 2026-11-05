@@ -8,10 +8,10 @@
     align-items: start;
 }
 
-/* Instructions (a little narrower) and the answer, with the details and the feedback of the teacher under the answer. */
+/* The instructions take the room that is left, and the answer (with the details and the feedback of the teacher under it) is a narrower column. */
 @media (min-width: 1000px) {
     .layout {
-        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+        grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
     }
 
     /* The question stays in view while the answer is written. */

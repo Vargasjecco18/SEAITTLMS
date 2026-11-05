@@ -282,9 +282,11 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
         var ids = await db.Users.AsNoTracking().Where(u => u.IsActive && u.Id != userId && roleIds.Contains(u.RoleId)).Select(u => u.Id).ToListAsync(ct);
         var named = await UserDirectory.LoadAsync(db, ids, ct);
         var order = UserManagementService.NonTeachingRoles.ToList();
-        return [.. named.Values
+        var cards = named.Values
             .OrderBy(p => order.IndexOf(p.Role)).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, RoleLabel(p.Role)))];
+            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, RoleLabel(p.Role))).ToList();
+        // a member of the staff can be a friend too: each card says if the person is one, was asked, or asked
+        return await WithStatesAsync(db, userId, cards, ct);
     }
 
     /// <summary>The people who are friends with the person (accepted).</summary>
@@ -400,10 +402,10 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
             .Select(f => f.RequesterUserId == userId ? f.AddresseeUserId : f.RequesterUserId)
             .ToListAsync(ct);
 
-    /// <summary>Cards (name, role, a short detail) for accounts, in no special order. Only students and teachers who are active.</summary>
+    /// <summary>Cards (name, role, a short detail) for accounts, in no special order. Only active accounts that can be friends: students, teachers and the staff.</summary>
     private static async Task<List<PersonCard>> CardsAsync(AppDbContext db, IReadOnlyCollection<int> userIds, CancellationToken ct)
     {
-        var active = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id) && u.IsActive && (u.RoleId == AppRoles.StudentId || u.RoleId == AppRoles.TeacherId))
+        var active = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id) && u.IsActive && u.RoleId != AppRoles.AdminId && u.RoleId >= AppRoles.TeacherId && u.RoleId <= AppRoles.AcademicProviderId)
             .Select(u => u.Id).ToListAsync(ct);
         var people = await UserDirectory.LoadAsync(db, active, ct);
 
@@ -416,7 +418,7 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
             .ToDictionary(g => g.Key, g => string.Join(", ", g.Select(s => TeachingService.SectionLabel(s.GradeLevel, s.Strand, s.Section)).Distinct()));
 
         return people.Values
-            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, p.Role == AppRoles.Student ? sectionOf.GetValueOrDefault(p.UserId, "Student") : "Teacher"))
+            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, p.Role == AppRoles.Student ? sectionOf.GetValueOrDefault(p.UserId, "Student") : p.Role == AppRoles.Teacher ? "Teacher" : RoleLabel(p.Role)))
             .ToList();
     }
 

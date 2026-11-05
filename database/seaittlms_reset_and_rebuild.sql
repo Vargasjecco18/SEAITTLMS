@@ -2025,5 +2025,10 @@ CREATE INDEX `ix_module_reads_student_id` ON `module_reads` (`student_id`);
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261104174415_ModuleReadingProgress', '9.0.20');
 
+ALTER TABLE `subjects` ADD `library_completed_at_utc` datetime(6) NULL;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261105052011_LibraryCompleteCourses', '9.0.20');
+
 COMMIT;
 

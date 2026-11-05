@@ -289,11 +289,13 @@ h2 {
     }
 }
 
-/* A row of the first page of a course: the title (it opens the module) at the left; in the middle how far the slides were read (a wide bar) and the Slides and Module buttons; the status at the right. */
+/* A row of the first page of a course: at the left the title (it opens the module) and under it the progress bar, next to what the module has (its activities); the Slides and Module buttons
+   in the exact middle of the row. */
 .course-row {
     display: grid;
     align-items: center;
     column-gap: 1.1rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
 .row-open {
@@ -311,7 +313,8 @@ h2 {
 
 .row-progress {
     display: block;
-    min-width: 0;
+    flex: 0 1 8.5rem;
+    min-width: 5.5rem;
 }
 
 .row-progress ::deep .progress {
@@ -321,16 +324,12 @@ h2 {
 
 .row-progress ::deep .track {
     flex: 1;
-    min-width: 6rem;
-}
-
-.no-file {
-    font-size: 0.82rem;
+    min-width: 3.5rem;
 }
 
 .row-buttons {
     display: inline-flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     gap: 0.5rem;
 }
@@ -344,8 +343,4 @@ h2 {
     .row-buttons {
         justify-content: flex-start;
     }
-}
-
-.course-row {
-    grid-template-columns: minmax(0, 1.5fr) minmax(11rem, 1fr) auto;
 }

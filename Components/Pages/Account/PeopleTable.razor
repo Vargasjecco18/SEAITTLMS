@@ -1,12 +1,16 @@
 @inject PresenceService Presence
 
 @* The people of the Users page as a table: the name, and for students and teachers the grade level, the strand, the section and the room (from the class schedule); then the Message button and
-   the friend status. A member of the staff has only the name, the message and the status. A person who is not a friend can be written to when the role allows it (a student to a student too). *@
+   the friend status. The staff table (Staff / Non-teaching) has the Name, the Role, and, at the right, the Message button and the Friend status (with Add friend). A person who is not a friend can be written to when the role allows it (a student to a student too). *@
 <div class="table-wrap">
     <table class="people-table @(ShowPlacement ? "" : "staff-only")">
         <thead>
             <tr>
                 <th scope="col">Name</th>
+                @if (!ShowPlacement)
+                {
+                    <th scope="col" class="c-role">Role</th>
+                }
                 @if (ShowPlacement)
                 {
                     <th scope="col" class="c-grade">Grade level</th>
@@ -25,8 +29,12 @@
                 var isStaff = person.Role is not (AppRoles.Student or AppRoles.Teacher);
                 <tr data-user="@person.UserId">
                     <td class="c-name">
-                        <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@(isStaff ? PeopleService.RoleLabel(person.Role) : person.Role == AppRoles.Teacher && !ShowPlacement ? person.Detail : null)" Online="Presence.IsOnline(person.UserId)" />
+                        <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@(isStaff && ShowPlacement ? PeopleService.RoleLabel(person.Role) : person.Role == AppRoles.Teacher && !ShowPlacement ? person.Detail : null)" Online="Presence.IsOnline(person.UserId)" />
                     </td>
+                    @if (!ShowPlacement)
+                    {
+                        <td class="c-role">@PeopleService.RoleLabel(person.Role)</td>
+                    }
                     @if (ShowPlacement)
                     {
                         <td class="c-grade">@(place?.GradeLevel is { } grade ? $"Grade {grade}" : "—")</td>
@@ -59,13 +67,13 @@
                             <Badge Tone="Tone.Success">Friends</Badge>
                             <Button Small="true" Variant="ButtonVariant.Ghost" IconOnly="true" IconName="user-round-x" Title="@($"Unfriend {person.Name}")" Disabled="Busy" OnClick="() => OnUnfriend.InvokeAsync(person)" />
                         }
-                        else if (!isStaff)
+                        else if (CanFriend)
                         {
                             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="user-round-plus" Disabled="Busy" OnClick="() => OnAdd.InvokeAsync(person)">Add friend</Button>
                         }
                         else
                         {
-                            <span class="muted" title="The staff are not added as friends">—</span>
+                            <span class="muted" title="The administrator does not add friends">—</span>
                         }
                     </td>
                 </tr>
@@ -84,6 +92,9 @@
     [Parameter] public bool ShowPlacement { get; set; } = true;
 
     [Parameter] public bool Busy { get; set; }
+
+    /// <summary>True when the person looking can add friends (everybody but the administrator): the Friend status column then has the Add friend button.</summary>
+    [Parameter] public bool CanFriend { get; set; } = true;
 
     /// <summary>Tells if the button to write is shown for a person (the role of the viewer may write to that role, or they are friends).</summary>
     [Parameter] public Func<PersonCard, bool> CanWrite { get; set; } = _ => true;

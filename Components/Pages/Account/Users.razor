@@ -82,7 +82,7 @@
             }
             else
             {
-                <PeopleTable People="shownFriends" Placements="placements" ShowPlacement="true" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
+                <PeopleTable People="shownFriends" Placements="placements" ShowPlacement="true" CanFriend="canFriend" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
             }
 
             <h2 class="section">Find people</h2>
@@ -97,7 +97,7 @@
                 }
                 else
                 {
-                    <PeopleTable People="found" Placements="placements" ShowPlacement="true" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
+                    <PeopleTable People="found" Placements="placements" ShowPlacement="true" CanFriend="canFriend" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
                 }
             }
         }
@@ -116,7 +116,7 @@
             }
             else
             {
-                <PeopleTable People="list" Placements="placements" ShowPlacement="@(tab != "staff")" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
+                <PeopleTable People="list" Placements="placements" ShowPlacement="@(tab != "staff")" CanFriend="canFriend" Busy="busy" CanWrite="CanWrite" OnMessage="OpenMessage" OnAdd="AddAsync" OnUnfriend="AskUnfriend" OnCancel="CancelAsync" OnAccept="AcceptAsync" OnDecline="DeclineAsync" />
             }
         }
     </Card>
@@ -137,6 +137,7 @@
     private int userId;
     private string myRole = "";
     private bool isStudent;
+    private bool isTeacher;
     private bool canFriend;
     private bool loaded;
     private string tab = "";
@@ -162,7 +163,7 @@
 
     [SupplyParameterFromQuery(Name = "online")] private string? OnlineQuery { get; set; }
 
-    /// <summary>The tabs in the order Friends, Students, Teachers, Staff / Non-teaching (a student also has Classmates, after Friends). The staff have no Friends.</summary>
+    /// <summary>The tabs in the order Friends, Students, Teachers, Staff / Non-teaching (a student also has Classmates, after Friends). Everybody but the administrator has Friends.</summary>
     private IReadOnlyList<PillTabs.Tab> Tabs => isStudent
         ?
         [
@@ -211,7 +212,8 @@
         userId = me?.UserId ?? 0;
         myRole = me?.Role ?? "";
         isStudent = myRole == AppRoles.Student;
-        canFriend = isStudent || myRole == AppRoles.Teacher;
+        isTeacher = myRole == AppRoles.Teacher;
+        canFriend = myRole != AppRoles.Admin;   // students, teachers and the staff can all be friends (round 35)
         tab = isStudent ? "classmates" : canFriend ? "friends" : "students";
         onlineOnly = OnlineQuery == "1";
         await LoadAsync();
@@ -267,7 +269,7 @@
             students = await People.GetAllStudentsAsync(userId);
             teachers = await People.GetMyTeachersAsync(userId);
         }
-        else if (canFriend)
+        else if (isTeacher)
         {
             students = await People.GetMyStudentsAsync(userId);
             colleagues = await People.GetColleaguesAsync(userId);

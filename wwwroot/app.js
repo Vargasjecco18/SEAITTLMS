@@ -213,7 +213,59 @@
         } catch (error) { }
     }
 
+    // Customize appearance: four colors the person chooses (the page, the cards, the text and the accent). They are written on <html> as --c-bg, --c-surface, --c-text and --c-brand and the style
+    // sheet works out every other color from them (App.razor.css, data-theme="custom"). They are kept in this browser, and in a cookie so the server draws them on every page.
+    var CUSTOM_DEFAULT = { bg: '#f4f6fb', surface: '#ffffff', text: '#1b2433', brand: '#2563eb' };
+    var CUSTOM_KEYS = ['bg', 'surface', 'text', 'brand'];
+    function isHex(v) { return typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v); }
+
+    function loadCustom() {
+        var out = {};
+        var stored = null;
+        try { stored = JSON.parse(localStorage.getItem('seaitt-custom') || 'null'); } catch (error) { }
+        CUSTOM_KEYS.forEach(function (k) { out[k] = stored && isHex(stored[k]) ? stored[k].toLowerCase() : CUSTOM_DEFAULT[k]; });
+        return out;
+    }
+
+    function isDarkColor(hex) {
+        var n = parseInt(hex.slice(1), 16);
+        return (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) < 128;
+    }
+
+    function applyCustom(colors) {
+        var dark = isDarkColor(colors.bg);
+        root.style.setProperty('--c-bg', colors.bg);
+        root.style.setProperty('--c-surface', colors.surface);
+        root.style.setProperty('--c-text', colors.text);
+        root.style.setProperty('--c-brand', colors.brand);
+        root.style.setProperty('--c-scheme', dark ? 'dark' : 'light');
+        root.setAttribute('data-custom-scheme', dark ? 'dark' : 'light');
+    }
+
+    function clearCustom() {
+        ['--c-bg', '--c-surface', '--c-text', '--c-brand', '--c-scheme'].forEach(function (v) { root.style.removeProperty(v); });
+        root.removeAttribute('data-custom-scheme');
+    }
+
+    function saveCustom(colors) {
+        // the browser keeps the colors as JSON (localStorage), the server gets them as "page,cards,text,accent" in a cookie (six hex digits each)
+        try { localStorage.setItem('seaitt-custom', JSON.stringify(colors)); } catch (error) { }
+        try { document.cookie = 'seaitt-custom=' + CUSTOM_KEYS.map(function (k) { return colors[k].slice(1); }).join(',') + '; path=/; samesite=lax; max-age=31536000'; } catch (error) { }
+    }
+
     function setTheme(choice) {
+        if (choice === 'custom') {
+            var colors = loadCustom();
+            root.setAttribute('data-theme', 'custom');
+            root.setAttribute('data-theme-pref', 'custom');
+            applyCustom(colors);
+            saveCustom(colors);
+            save('seaitt-theme', 'custom');
+            syncCustomInputs();
+            return;
+        }
+
+        clearCustom();
         if (['light', 'dark', 'ocean', 'forest', 'sunset', 'paper', 'midnight'].indexOf(choice) >= 0) {
             root.setAttribute('data-theme', choice);
             root.setAttribute('data-theme-pref', choice);
@@ -224,6 +276,36 @@
             save('seaitt-theme', null);
         }
     }
+
+    // The color boxes of the settings box show the colors that are kept (the box is built when the settings open, so they are filled in as soon as they are there).
+    function syncCustomInputs() {
+        var colors = loadCustom();
+        document.querySelectorAll('[data-custom-color]').forEach(function (input) {
+            var key = input.getAttribute('data-custom-color');
+            if (document.activeElement !== input && input.value !== colors[key]) { input.value = colors[key]; }
+        });
+    }
+
+    var syncQueued = false;
+    new MutationObserver(function () {
+        if (syncQueued) { return; }
+        syncQueued = true;
+        window.requestAnimationFrame(function () { syncQueued = false; if (document.querySelector('[data-custom-color]:not([data-custom-ready])')) { document.querySelectorAll('[data-custom-color]').forEach(function (i) { i.setAttribute('data-custom-ready', '1'); }); syncCustomInputs(); } });
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    document.addEventListener('input', function (event) {
+        var input = event.target;
+        if (!(input instanceof Element) || !input.matches('[data-custom-color]')) { return; }
+        var colors = loadCustom();
+        colors[input.getAttribute('data-custom-color')] = String(input.value).toLowerCase();
+        applyCustom(colors);
+        saveCustom(colors);
+        if (root.getAttribute('data-theme') !== 'custom') {
+            root.setAttribute('data-theme', 'custom');
+            root.setAttribute('data-theme-pref', 'custom');
+            save('seaitt-theme', 'custom');
+        }
+    });
 
     function setMotion(on) {
         if (on) { root.removeAttribute('data-motion'); save('seaitt-motion', null); }
@@ -239,6 +321,13 @@
         var theme = target.closest('[data-theme-choice]');
         if (theme) {
             setTheme(theme.getAttribute('data-theme-choice'));
+            return;
+        }
+
+        if (target.closest('[data-custom-reset]')) {
+            saveCustom(CUSTOM_DEFAULT);
+            applyCustom(CUSTOM_DEFAULT);
+            syncCustomInputs();
             return;
         }
 

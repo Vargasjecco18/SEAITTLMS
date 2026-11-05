@@ -123,23 +123,18 @@ else
                         var progress = ProgressOf(module);
                         var moduleHref = $"student/modules/{module.Id}";
                         <li class="course-row" data-module="@module.Id">
+                            @* The title opens the module; under it, at the left of what the module has (its activities), the progress bar (50 for the slides, 50 for the module, and 100 for the module when
+                               it has no slides). In the middle: the Slides (when there are slides) and Module buttons. *@
                             <a class="row-open" href="@moduleHref" aria-label="@(module.IsSyllabus ? "Open the syllabus" : $"Open {module.Title}")">
                                 <span class="row-number">@if (module.IsSyllabus) { <Icon Name="book-marked" Size="18" /> } else { @number }</span>
                                 <span class="row-text">
                                     <span class="row-title">@module.Title @if (module.IsSyllabus) { <Badge Tone="Tone.Info">Syllabus</Badge> } @if (!module.Opened) { <Badge Tone="Tone.Warning">New</Badge> }</span>
-                                    <span class="row-meta"><span>@ModuleSummary(module)</span></span>
+                                    <span class="row-meta">
+                                        <span class="row-progress"><ProgressBar Percent="progress.Percent" Title="@progress.Text" /></span>
+                                        <span>@ModuleSummary(module)</span>
+                                    </span>
                                 </span>
                             </a>
-                            <span class="row-progress">
-                                @if (progress is { } done)
-                                {
-                                    <ProgressBar Percent="done.Percent" Title="@done.Text" />
-                                }
-                                else
-                                {
-                                    <span class="muted no-file" title="This module has no slide or file to read yet">No file yet</span>
-                                }
-                            </span>
                             <span class="row-buttons">
                                 @if (module.HasSlides)
                                 {
@@ -185,9 +180,9 @@ else
         return parts.Count == 0 ? "Lesson only" : string.Join(" · ", parts);
     }
 
-    /// <summary>How much of the slides of the module the student has read (of its files when it has no slides). None when the module has nothing to read.</summary>
-    private static (int Percent, string Text)? ProgressOf(StudentModule module) =>
-        module.ReadPercent is { } percent ? (percent, module.HasSlides ? $"You have read {percent}% of the slides" : $"You have read {percent}% of the files") : null;
+    /// <summary>The progress of a module: 50 for the slides the student saw, 50 for the module (opened), and 100 for the module when it has no slides.</summary>
+    private static (int Percent, string Text) ProgressOf(StudentModule module) =>
+        (module.Progress, module.HasSlides ? $"{module.Progress}%: half is the slides you saw, half is opening the module" : $"{module.Progress}%: this module has no slides, so opening it is all of it");
 
     private bool loaded;
     private StudentSubject? subject;

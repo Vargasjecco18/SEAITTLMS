@@ -150,15 +150,19 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             .Select(i => new { i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder, Summative = i.MaterialItemId != null })
             .ToListAsync(ct);
 
-        // E is an exam the teacher added in the gradebook; SE is a summative exam of the academic provider.
+        // E is an exam the teacher added in the gradebook; SE is the summative exam of the academic provider. A course has ONE summative exam, so its column is just "SE" (no number), and an
+        // older second copy of it (what used to be SE2) is not a column of the gradebook.
+        var firstSummative = rows.FirstOrDefault(r => r.Kind == ItemKinds.Exam && r.Summative)?.Id;
+        rows = [.. rows.Where(r => !(r.Kind == ItemKinds.Exam && r.Summative) || r.Id == firstSummative)];
         var counters = new Dictionary<string, int>();
         var columns = new List<(GradebookColumn Column, int Order, int Index)>();
         for (var n = 0; n < rows.Count; n++)
         {
             var r = rows[n];
-            var letters = r.Kind == ItemKinds.Exam && r.Summative ? "SE" : ItemKinds.Code(r.Kind);
+            var summative = r.Kind == ItemKinds.Exam && r.Summative;
+            var letters = summative ? "SE" : ItemKinds.Code(r.Kind);
             counters[letters] = counters.GetValueOrDefault(letters) + 1;
-            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle) { Code = $"{letters}{counters[letters]}" }, r.GradebookOrder, n));
+            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle) { Code = summative ? "SE" : $"{letters}{counters[letters]}" }, r.GradebookOrder, n));
         }
 
         return columns.OrderBy(c => c.Order == 0 ? 1 : 0).ThenBy(c => c.Order).ThenBy(c => c.Index).Select(c => c.Column).ToList();

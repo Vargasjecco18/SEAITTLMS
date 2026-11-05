@@ -54,6 +54,27 @@
     color: var(--text-muted);
 }
 
+/* The staff table: the name and the role at the left, and the Message button and the Friend status together at the right. */
 .staff-only .c-name {
-    width: 55%;
+    width: 40%;
+}
+
+.staff-only .c-role {
+    width: 22%;
+    white-space: nowrap;
+}
+
+.staff-only .c-message {
+    width: 9rem;
+    text-align: right;
+}
+
+.staff-only .c-status {
+    width: 16rem;
+    text-align: right;
+}
+
+.staff-only th.c-message,
+.staff-only th.c-status {
+    text-align: right;
 }

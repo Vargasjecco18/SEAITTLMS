@@ -222,6 +222,56 @@ html[data-theme="paper"] {
     color-scheme: light;
 }
 
+/* Customize appearance (data-theme="custom"): the person chose four colors (--c-bg, --c-surface, --c-text and --c-brand are written on <html> by the server from the cookie, and by wwwroot/app.js
+   when they are changed). Every other color of the look is worked out from them, so the page always hangs together. A dark page (data-custom-scheme="dark") also gets the dark meaning colors. */
+html[data-theme="custom"] {
+    --bg: var(--c-bg, #f4f6fb);
+    --surface: var(--c-surface, #ffffff);
+    --text: var(--c-text, #1b2433);
+    --brand: var(--c-brand, #2563eb);
+    --surface-2: color-mix(in srgb, var(--surface) 90%, var(--text));
+    --border: color-mix(in srgb, var(--surface) 78%, var(--text));
+    --field-border: color-mix(in srgb, var(--surface) 42%, var(--text));
+    --text-muted: color-mix(in srgb, var(--text) 68%, var(--surface));
+    --brand-strong: color-mix(in srgb, var(--brand) 75%, black);
+    --brand-soft: color-mix(in srgb, var(--brand) 14%, var(--surface));
+    --brand-ring: color-mix(in srgb, var(--brand) 32%, transparent);
+    --brand-gradient: linear-gradient(135deg, var(--brand), var(--brand-strong));
+    --btn-bg: var(--brand);
+    --btn-bg-hover: var(--brand-strong);
+    --info: var(--brand);
+    --info-soft: var(--brand-soft);
+    --blue: var(--brand);
+    --blue-soft: var(--brand-soft);
+    color-scheme: var(--c-scheme, light);
+}
+
+html[data-theme="custom"][data-custom-scheme="dark"] {
+    --brand-strong: color-mix(in srgb, var(--brand) 70%, white);
+    --success: #86efac;
+    --success-soft: rgba(34, 197, 94, 0.16);
+    --warning: #fcd34d;
+    --warning-soft: rgba(245, 158, 11, 0.16);
+    --danger: #fca5a5;
+    --danger-soft: rgba(239, 68, 68, 0.18);
+    --danger-solid: #c62828;
+    --danger-solid-hover: #b71c1c;
+    --green: #86efac;
+    --green-soft: rgba(34, 197, 94, 0.16);
+    --amber: #fcd34d;
+    --amber-soft: rgba(245, 158, 11, 0.16);
+    --violet: #c4b5fd;
+    --violet-soft: rgba(139, 92, 246, 0.2);
+    --rose: #fda4af;
+    --rose-soft: rgba(244, 63, 94, 0.16);
+    --teal: #2dd4bf;
+    --teal-soft: rgba(45, 212, 191, 0.16);
+    --slate: #cbd5e1;
+    --slate-soft: rgba(148, 163, 184, 0.16);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
 html[data-theme="midnight"] {
     --bg: #0a1024;
     --surface: #111a36;

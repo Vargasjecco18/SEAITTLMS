@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="@Theme" data-theme-pref="@(Theme ?? "auto")" data-motion="@Motion" data-sound="@Sound">
+<html lang="en" data-theme="@Theme" data-theme-pref="@(Theme ?? "auto")" data-motion="@Motion" data-sound="@Sound" data-custom-scheme="@CustomScheme" style="@CustomStyle">
 
 <head>
     <meta charset="utf-8" />
@@ -17,9 +17,18 @@
             try {
                 var root = document.documentElement;
                 var theme = localStorage.getItem('seaitt-theme');
-                var looks = ['light', 'dark', 'ocean', 'forest', 'sunset', 'paper', 'midnight'];
+                var looks = ['light', 'dark', 'ocean', 'forest', 'sunset', 'paper', 'midnight', 'custom'];
                 var known = looks.indexOf(theme) >= 0;
                 if (known) { root.setAttribute('data-theme', theme); }
+                if (theme === 'custom' && !root.getAttribute('style')) {
+                    // the colors of Customize appearance, when the cookie that carries them to the server is missing
+                    var c = JSON.parse(localStorage.getItem('seaitt-custom') || 'null');
+                    if (c && /^#[0-9a-f]{6}$/i.test(c.bg) && /^#[0-9a-f]{6}$/i.test(c.surface) && /^#[0-9a-f]{6}$/i.test(c.text) && /^#[0-9a-f]{6}$/i.test(c.brand)) {
+                        var n = parseInt(c.bg.slice(1), 16), dark = (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) < 128;
+                        root.style.cssText = '--c-bg:' + c.bg + ';--c-surface:' + c.surface + ';--c-text:' + c.text + ';--c-brand:' + c.brand + ';--c-scheme:' + (dark ? 'dark' : 'light');
+                        root.setAttribute('data-custom-scheme', dark ? 'dark' : 'light');
+                    }
+                }
                 root.setAttribute('data-theme-pref', known ? theme : 'auto');
                 if (localStorage.getItem('seaitt-motion') === 'off') { root.setAttribute('data-motion', 'off'); }
                 if (localStorage.getItem('seaitt-sound') === 'off') { root.setAttribute('data-sound', 'off'); }
@@ -50,9 +59,41 @@
         get
         {
             var choice = HttpContext?.Request.Cookies["seaitt-theme"];
-            return choice is "light" or "dark" or "ocean" or "forest" or "sunset" or "paper" or "midnight" ? choice : null;
+            return choice is "light" or "dark" or "ocean" or "forest" or "sunset" or "paper" or "midnight" or "custom" ? choice : null;
         }
     }
+
+    /// <summary>The four colors of Customize appearance from the cookie ("page,card,text,accent" as six hex digits each), checked: only hex colors are ever written onto the page.</summary>
+    private string[]? CustomColors
+    {
+        get
+        {
+            if (Theme != "custom" || HttpContext?.Request.Cookies["seaitt-custom"] is not { } raw)
+            {
+                return null;
+            }
+
+            var parts = raw.Split(',');
+            return parts.Length == 4 && parts.All(p => p.Length == 6 && p.All(Uri.IsHexDigit)) ? parts : null;
+        }
+    }
+
+    /// <summary>"dark" when the page color of Customize appearance is dark (so the dark meaning colors are used), otherwise "light"; null when nothing custom is chosen.</summary>
+    private string? CustomScheme
+    {
+        get
+        {
+            if (CustomColors is not { } c)
+            {
+                return null;
+            }
+
+            var n = Convert.ToInt32(c[0], 16);
+            return 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255) < 128 ? "dark" : "light";
+        }
+    }
+
+    private string? CustomStyle => CustomColors is { } c ? $"--c-bg:#{c[0]};--c-surface:#{c[1]};--c-text:#{c[2]};--c-brand:#{c[3]};--c-scheme:{CustomScheme}" : null;
 
     /// <summary>"off" when the person switched the animations off, otherwise null.</summary>
     private string? Motion => HttpContext?.Request.Cookies["seaitt-motion"] == "off" ? "off" : null;

@@ -57,10 +57,23 @@ else
         {
             <Button Variant="ButtonVariant.Secondary" IconName="book-marked" OnClick="OpenNewSyllabus">Add syllabus</Button>
         }
-        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
-        <Button Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
-        <Button Variant="ButtonVariant.Secondary" IconName="copy" Disabled="@(course.Modules.Count == 0 || busy)" Title="Copy the syllabus and the modules to the teachers of this course in the next school year" OnClick="CopyToNextYearAsync">Copy to next school year</Button>
-        <Button Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
+        @* The buttons of the course in groups, with a bar | between the groups: the modules, the summative exam, Complete, and the next school year. *@
+        <span class="head-group">
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewModule">Add module</Button>
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Modules.Count == 0)" OnClick="OpenSend">Send to teachers</Button>
+        </span>
+        <span class="head-group">
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
+        </span>
+        <span class="head-group">
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="@(libraryComplete ? "rotate-ccw" : "circle-check")" Disabled="busy"
+                    Title="@(libraryComplete ? "Put this course back on the main page of the library" : "Mark this course Complete: it leaves the main page of the library and is only under Complete")"
+                    OnClick="ToggleCompleteAsync">@(libraryComplete ? "Uncomplete" : "Complete")</Button>
+        </span>
+        <span class="head-group">
+            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="@(course.Modules.Count == 0 || busy)" Title="Copy the syllabus and the modules to the teachers of this course in the next school year" OnClick="CopyToNextYearAsync">Copy to next school year</Button>
+        </span>
     </PageHeader>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
@@ -637,6 +650,30 @@ else
         moduleAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialModule, modules.Select(m => m.Id).ToList());
         itemAttachments = await Files.ListForAsync(AttachmentOwnerKind.MaterialItem, (course?.Exams ?? []).Select(e => e.Id).ToList());
         questionsByExam = await Library.GetExamQuestionsAsync((course?.Exams ?? []).Select(e => e.Id).ToList());
+        libraryComplete = await Library.IsLibraryCompleteAsync(SubjectId);
+    }
+
+    /// <summary>True when the provider marked this course Complete (it is only under Complete in the library).</summary>
+    private bool libraryComplete;
+
+    private async Task ToggleCompleteAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Library.SetLibraryCompleteAsync(userId, SubjectId, !libraryComplete);
+            Say(result);
+            libraryComplete = await Library.IsLibraryCompleteAsync(SubjectId);
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private static IReadOnlyList<AttachmentRow> FilesOf(IReadOnlyDictionary<int, IReadOnlyList<AttachmentRow>> map, int? id) =>

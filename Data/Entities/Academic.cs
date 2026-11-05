@@ -63,6 +63,9 @@ public class Subject : AuditableEntity
 
     /// <summary>The units of the course (credit units), 0.5 to 12. It is printed on the enrollment form.</summary>
     public decimal Units { get; set; } = 3;
+
+    /// <summary>When the academic provider marked the course of the library as Complete (its syllabus, modules and exam are ready). Null: not complete, so it is on the main page of the library; a complete course is only under Complete.</summary>
+    public DateTime? LibraryCompletedAtUtc { get; set; }
 }
 
 /// <summary>The part of the day a class meets: AM (morning), MID (midday) or PM (afternoon), with the hours of that part of the day. A course of a section is given one of them.</summary>

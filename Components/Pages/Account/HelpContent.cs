@@ -77,7 +77,7 @@ public static class HelpContent
         [
             "Press the gear at the top right (Settings).",
             "Under Profile picture, press “Upload a picture” and choose a photo. It is made small for you. “Remove” brings back your initials.",
-            "Under Appearance choose Light, Dark, Auto (Auto follows your computer) or one of the colors: Ocean, Forest, Sunset, Paper and Midnight. You can also switch the animations off.",
+            "Under Appearance choose Light, Dark, Midnight, Ocean, Forest, Sunset, Paper, Auto (Auto follows your computer) or Customize: Customize shows four color boxes (the page, the cards, the text and the accent) and works out the other colors from them; Reset the colors brings the first ones back. You can also switch the animations off.",
         ]),
         new("What does the Save button of Settings keep?",
         [
@@ -111,7 +111,7 @@ public static class HelpContent
             "Under a module you find its assignments, quizzes and task performances. Open one, read the instructions and send your answer before the due date.",
             "A module appears when your teacher posts it. The ones you have not opened yet show on your dashboard.",
             "When you open a course from Courses there is the Course Menu at the left: Courses (your courses, to go from one to another), Modules, Activities (Seatwork, Assignments, Quizzes and Task performances, and Exams when your teacher gave one), then Classmates, Teachers (with a Message button to write to the teacher) and Grades. It stays in view while you scroll, and the button at its top hides it or shows it again.",
-            "Each row of the course (the syllabus and the modules) has its progress bar. The bar grows as you read the slides: the Slides button opens them first, one slide at a time, from left to right (the arrows, the keys of the keyboard or the dots), and the Module button opens the lesson. At the right of the lesson are the activities of the module, each one a link with how you did; the button above them hides them. A reference link of a module is at the left of “Open in a new tab”.",
+            "Each row of the course (the syllabus and the modules) has its progress bar, at the left of what the module has (its activities). A module with slides is worth 50 for opening the module and 50 for the slides you saw (the Slides button opens them first, one slide at a time, from left to right: the arrows, the keys of the keyboard or the dots). A module with no slides is 100 as soon as you open it. The Slides and the Module buttons are in the middle of the row. At the right of the lesson are the activities of the module, each one a link with how you did; the button above them hides them. A reference link of a module is at the left of “Open in a new tab”.",
             "On an activity the Course Menu is at the left too, then the instructions, and your answer with its Details and the Feedback of your teacher under it.",
             "When you read a lesson, or read it again, the main menu folds to its icons to give the lesson more room. The button at the top of the icons shows the names again.",
         ]),
@@ -144,8 +144,8 @@ public static class HelpContent
         ], "student/evaluations", "Open the evaluations"),
         new("How do I add friends and see my classmates?",
         [
-            "Open Users. The tabs are Friends, Classmates, Students, Teachers and Staff / Non-teaching. Students and Teachers are tables with the name, the grade level, the strand, the section, the room (from the class schedule), a Message button and the friend status; Staff / Non-teaching have only the name, the Message button and the friend status. The Message button is there for everybody, friends or not.",
-            "Press “Add friend” beside a person. They get a request and must accept. In Friends you can also find any student or teacher by name.",
+            "Open Users. The tabs are Friends, Classmates, Students, Teachers and Staff / Non-teaching. Students and Teachers are tables with the name, the grade level, the strand, the section, the room (from the class schedule), a Message button and the friend status; Staff / Non-teaching has the name, the role, and at the right the Message button and the friend status. The Message button is there for everybody, friends or not.",
+            "Press “Add friend” beside a person (a student, a teacher or a member of the staff). They get a request and must accept. In Friends you can also find any student or teacher by name.",
             "Friends can write to each other, put each other in groups and share files.",
         ], "users", "Open Users"),
         new("How do groups work?",
@@ -173,7 +173,7 @@ public static class HelpContent
         [
             "Open a course and press “Add module”. Write the lesson and add a link to a file or a video if you have one. You can also attach slides (a PowerPoint file or a PDF) apart from the other files. Many modules at once: press “Add many modules in a sheet” in the same box: a row for each module with its Title, its Slides (optional), its Link and its Files. There is no Excel file to download.",
             "Press Open on a module, or a PDF of it, to read it inside the system, like the students do: the course menu is at the left and Edit module at the right.",
-            "A module is a draft until you post it. Choose “post now” or a date and time to post it later. Students see it only after it is posted.",
+            "A module is a draft until you post it. In its row of the course, press the date (it says Draft · hidden, Posted Oct 6, 2026 or Scheduled for Nov 10, 2026, 8:00 AM): a small box has the time it appears. Choose a time and press Save time (a later time schedules it, an earlier one posts it from that date), or press Post now. The Hide from students button of the row makes it a draft again. Students see a module only after it is posted. The bar of each row is how far the class is: 50 for the slides and 50 for the module (100 for the module when it has no slides), the average of the class.",
             "Press “Add activities” at the top right of the course. It offers “Add activities” and “Add quiz”. “Add activities” opens a sheet inside the system: a row for each activity, with its Module and its Type (lists to choose from), the Title, the Instructions, the Points, the Due date and the Files; fill the rows you want and press Save (the sheet fits the box: no scroll bars). “Add quiz” asks for the module, then the box of the quiz: after saving it you write its questions in a sheet. To add one at a time, open Activities in the Course Menu, then a kind (for example “See all quizzes”) and press its Add button.",
         ]),
         new("What is the menu inside a course?",
@@ -185,7 +185,7 @@ public static class HelpContent
         new("Can I add many activities at once?",
         [
             "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen, with the step by step at the right. Each row is one seatwork, assignment, quiz or task performance. Choose its module and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
-            "The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its module.",
+            "To add more rows choose the type (Seatwork, Assignment, Quiz or Task performance) and the number at the bottom, then press Add (“Add [type] [number] rows”), like the questions of a summative exam. The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its module.",
             "The questions of a quiz are written in the quiz itself (Questions), in a sheet like the one of a summative exam: press “Add questions” (or “Edit the questions”), write a row for each question (its type and its right answer are chosen from lists), and use “Add [type] [number] rows” to add many rows of one type. There is no Excel for the questions any more.",
         ]),
         new("A student handed in after the due date. What do I do?",
@@ -294,7 +294,7 @@ public static class HelpContent
         new("How do I enroll a student?",
         [
             "Open Enrollment. Type the 12-digit LRN (digits only, like the phone number) and the names (letters only). If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” to see the enrollment form in a box in the middle of the screen (and print it), then “Enroll student” to enroll.",
+            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” and the print preview of the browser opens at once, with the enrollment form of this student; then “Enroll student” to enroll.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
@@ -377,7 +377,7 @@ public static class HelpContent
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
             "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. Choose when it opens and when it closes. It must close after it opens. The academic coordinator gets a notification and an announcement with the dates.",
-            "To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the modules to the teachers who have the course in the next school year, as drafts.",
+            "In a course the buttons are in groups: Add module and Send to teachers | Add summative exam and Post to students | Complete | Copy to next school year. “Complete” marks the course as finished: it leaves the main page of the library and is only under Complete (the list at the right of All courses: Uncompleted or Complete); “Uncomplete” puts it back. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the modules. “Export” gives the exams of the course in the same file. “Copy to next school year” (top of a course) sends the syllabus and the modules to the teachers who have the course in the next school year, as drafts.",
             "Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result; they are in four columns under the highest score). Then press “Post to students” and choose the sections: the exam goes straight to the students, opens and closes at the times you set, and the system gives the scores. The teacher sees them in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",

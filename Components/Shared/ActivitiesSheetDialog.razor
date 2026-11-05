@@ -125,8 +125,19 @@
                     </div>
 
                     <div class="sheet-tools">
-                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="() => AddRows(1)">Add a row</Button>
-                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="() => AddRows(5)">Add 5 rows</Button>
+                        @* Add [type] [number] rows: the type of the new rows is chosen from a list and how many from a number box (like the questions of a summative exam). *@
+                        <span class="add-rows" role="group" aria-label="Add rows">
+                            <span>Add</span>
+                            <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
+                                @foreach (var kind in Kinds)
+                                {
+                                    <option value="@kind">@ItemKinds.Display(kind)</option>
+                                }
+                            </select>
+                            <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="@MaxRows" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                            <span>@(addCount == 1 ? "row" : "rows")</span>
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
+                        </span>
                         <span class="muted">@rows.Count of @MaxRows rows</span>
                     </div>
 
@@ -236,13 +247,19 @@
         AddRows(5);
     }
 
-    private void AddRows(int count)
+    // The type and the number of the rows that "Add [type] [number] rows" puts at the end.
+    private string addKind = ItemKinds.Seatwork;
+    private int addCount = 1;
+
+    private void AddChosenRows() => AddRows(Math.Clamp(addCount, 1, MaxRows), addKind);
+
+    private void AddRows(int count, string? kind = null)
     {
         for (var n = 0; n < count && rows.Count < MaxRows; n++)
         {
-            // A new row starts in the module of the row before it (a teacher fills one module at a time) and with the same type.
+            // A new row starts in the module of the row before it (a teacher fills one module at a time); its type is the one chosen (or the one of the row before it).
             var last = rows.Count > 0 ? rows[^1] : null;
-            rows.Add(new SheetRow { Id = ++nextId, Module = last?.Module ?? StartModule ?? (Modules.Count == 1 ? Modules[0].Label : ""), Kind = last?.Kind ?? ItemKinds.Seatwork });
+            rows.Add(new SheetRow { Id = ++nextId, Module = last?.Module ?? StartModule ?? (Modules.Count == 1 ? Modules[0].Label : ""), Kind = kind ?? last?.Kind ?? ItemKinds.Seatwork });
         }
     }
 

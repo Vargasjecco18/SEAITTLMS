@@ -3061,6 +3061,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_active");
 
+                    b.Property<DateTime?>("LibraryCompletedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("library_completed_at_utc");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)

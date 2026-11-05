@@ -21,11 +21,11 @@ public sealed class FriendService(IDbContextFactory<AppDbContext> dbFactory, Tim
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var people = await db.Users.AsNoTracking()
-            .Where(u => (u.Id == userId || u.Id == otherUserId) && u.IsActive && (u.RoleId == AppRoles.StudentId || u.RoleId == AppRoles.TeacherId))
+            .Where(u => (u.Id == userId || u.Id == otherUserId) && u.IsActive && u.RoleId != AppRoles.AdminId && u.RoleId >= AppRoles.TeacherId && u.RoleId <= AppRoles.AcademicProviderId)
             .Select(u => u.Id).ToListAsync(ct);
         if (people.Count != 2)
         {
-            return ServiceResult.Fail("Friends can only be students and teachers.");
+            return ServiceResult.Fail("Friends can only be students, teachers and the staff of the school.");
         }
 
         var existing = await db.Friendships.FirstOrDefaultAsync(f =>

@@ -442,11 +442,13 @@ h3 {
     margin-bottom: 1rem;
 }
 
-/* A row of the first page of a course: the title (it opens the module) at the left; in the middle how far the slides were read (a wide bar) and the Slides and Module buttons; the status at the right. */
+/* A row of the first page of a course: at the left the title (it opens the module) and under it a bar of how far the class got, next to what the module has (its activities); the Slides and
+   Module buttons in the exact middle; at the right when it appears (press it to change the time) and Hide from students. */
 .course-row {
     display: grid;
     align-items: center;
     column-gap: 1.1rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
 .row-open {
@@ -464,7 +466,8 @@ h3 {
 
 .row-progress {
     display: block;
-    min-width: 0;
+    flex: 0 1 8.5rem;
+    min-width: 5.5rem;
 }
 
 .row-progress ::deep .progress {
@@ -474,17 +477,112 @@ h3 {
 
 .row-progress ::deep .track {
     flex: 1;
-    min-width: 6rem;
-}
-
-.no-file {
-    font-size: 0.82rem;
+    min-width: 3.5rem;
 }
 
 .row-buttons {
     display: inline-flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+    gap: 0.5rem;
+}
+
+.row-status {
+    justify-content: flex-end;
+}
+
+/* The chip that says when the module appears: it is a button, and it opens a small box under it to change the time. */
+.when {
+    position: relative;
+    display: inline-block;
+}
+
+.when-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, filter 0.15s;
+}
+
+.when-chip.posted {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.when-chip.scheduled {
+    background: var(--warning-soft);
+    color: var(--warning);
+}
+
+.when-chip:hover,
+.when-chip:focus-visible {
+    border-color: currentColor;
+}
+
+.when-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: transparent;
+}
+
+.when-pop {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 41;
+    display: grid;
+    gap: 0.5rem;
+    width: 17.5rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    box-shadow: var(--shadow-lg);
+    text-align: left;
+}
+
+.when-label {
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.when-label small {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.when-pop input[type="datetime-local"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+.when-hint {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.when-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.5rem;
 }
 
@@ -497,8 +595,13 @@ h3 {
     .row-buttons {
         justify-content: flex-start;
     }
-}
 
-.course-row {
-    grid-template-columns: minmax(0, 1.5fr) minmax(11rem, 1fr) auto auto;
+    .row-status {
+        justify-content: flex-start;
+    }
+
+    .when-pop {
+        right: auto;
+        left: 0;
+    }
 }

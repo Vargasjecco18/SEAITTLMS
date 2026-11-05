@@ -390,10 +390,64 @@ html[data-theme-pref="ocean"] .choice[data-theme-choice="ocean"],
 html[data-theme-pref="forest"] .choice[data-theme-choice="forest"],
 html[data-theme-pref="sunset"] .choice[data-theme-choice="sunset"],
 html[data-theme-pref="paper"] .choice[data-theme-choice="paper"],
-html[data-theme-pref="midnight"] .choice[data-theme-choice="midnight"] {
+html[data-theme-pref="midnight"] .choice[data-theme-choice="midnight"],
+html[data-theme-pref="custom"] .choice[data-theme-choice="custom"] {
     border-color: var(--brand);
     background: var(--brand-soft);
     color: var(--brand-strong);
+}
+
+/* Customize appearance: the four color boxes show only while Customize is the look that is on. */
+.custom-panel {
+    display: none;
+    margin: 0.6rem 0 0;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+html[data-theme-pref="custom"] .custom-panel {
+    display: block;
+}
+
+.custom-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
+.custom-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.custom-field input[type="color"] {
+    width: 100%;
+    height: 2.2rem;
+    padding: 0;
+    border: 1px solid var(--field-border);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.custom-reset {
+    margin-top: 0.6rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .hint {
