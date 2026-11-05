@@ -430,6 +430,21 @@ app.MapGet("/files/a/{id:int}", async (int id, HttpContext http, AttachmentServi
     return file is null ? Results.NotFound() : ServeFile(http, file.Name, file.Data);
 });
 
+// A picture of a question of a quiz or of a summative exam: the teacher of the course and the students who have it (once it is posted) open it.
+app.MapGet("/files/q/{id:int}", async (int id, HttpContext http, QuizService quizzes) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var picture = await quizzes.OpenImageAsync(userId, id, http.RequestAborted);
+    if (picture is null)
+    {
+        return Results.NotFound();
+    }
+
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers.CacheControl = "private, no-store";
+    return Results.File(picture.Value.Data, QuestionPicture.Types.Contains(picture.Value.ContentType) ? picture.Value.ContentType : "application/octet-stream");
+});
+
 // A person's picture (settings menu). The address has the version of the picture (?v=), so the browser may keep it for good
 // and asks again only when the picture changed. Only signed-in people get it (the fallback policy of the app).
 app.MapGet("/photos/{userId:int}", async (int userId, ProfilePhotoService photos, HttpContext http) =>

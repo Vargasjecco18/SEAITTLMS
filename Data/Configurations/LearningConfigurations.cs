@@ -66,13 +66,26 @@ internal sealed class QuizQuestionConfiguration : IEntityTypeConfiguration<QuizQ
         b.Property(q => q.Text).HasMaxLength(1000).IsRequired();
         b.Property(q => q.Kind).HasMaxLength(20).IsRequired();
         b.Property(q => q.OptionsText).HasColumnType("text");
-        b.Property(q => q.CorrectAnswer).HasMaxLength(500).IsRequired();
+        b.Property(q => q.CorrectAnswer).HasMaxLength(2000).IsRequired();
         b.Property(q => q.Points).HasPrecision(6, 2);
 
         b.HasOne(q => q.Item).WithMany(i => i.Questions).HasForeignKey(q => q.ItemId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(q => new { q.ItemId, q.Position });
 
-        b.ToTable(t => t.HasCheckConstraint("ck_quiz_questions_kind", "kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer')"));
+        b.ToTable(t => t.HasCheckConstraint("ck_quiz_questions_kind", "kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer', 'FillInTheBlank', 'Matching', 'Identification', 'MultipleSelect', 'Essay')"));
+    }
+}
+
+internal sealed class QuizQuestionImageConfiguration : IEntityTypeConfiguration<QuizQuestionImage>
+{
+    public void Configure(EntityTypeBuilder<QuizQuestionImage> b)
+    {
+        b.ToTable("quiz_question_images");
+        b.Property(i => i.Name).HasMaxLength(200).IsRequired();
+        b.Property(i => i.ContentType).HasMaxLength(100).IsRequired();
+        b.Property(i => i.Data).HasColumnType("longblob");
+        b.HasOne(i => i.Question).WithMany().HasForeignKey(i => i.QuestionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(i => new { i.QuestionId, i.Slot }).IsUnique();
     }
 }
 

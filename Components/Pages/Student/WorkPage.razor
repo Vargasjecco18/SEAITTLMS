@@ -110,10 +110,10 @@ else
                             <ol class="review">
                                 @foreach (var answer in review)
                                 {
-                                    <li class="@(answer.IsCorrect ? "right" : "wrong")">
-                                        <div class="q">@answer.Question <span class="pts">@answer.Earned.ToString("0.##") / @answer.Points.ToString("0.##")</span></div>
+                                    <li class="@(answer.Manual ? "manual" : answer.IsCorrect ? "right" : "wrong")">
+                                        <div class="q"><span class="q-lines">@answer.Question</span> <span class="pts">@(answer.Manual ? $"your teacher scores it · up to {answer.Points:0.##}" : $"{answer.Earned:0.##} / {answer.Points:0.##}")</span></div>
                                         <div class="a"><span>Your answer:</span> @(answer.Given ?? "— no answer —")</div>
-                                        @if (!answer.IsCorrect)
+                                        @if (!answer.IsCorrect && !answer.Manual)
                                         {
                                             <div class="a ok"><span>Right answer:</span> @answer.Correct</div>
                                         }

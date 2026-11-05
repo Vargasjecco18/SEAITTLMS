@@ -75,27 +75,111 @@ else
             <li class="question" id="question-@question.Id">
                 <div class="q-head">
                     <span class="number">@question.Number</span>
-                    <span class="q-text">@question.Text</span>
+                    @if (question.Kind == QuestionKinds.FillInTheBlank)
+                    {
+                        @* the blanks are boxes inside the sentence *@
+                        var parts = QuestionRules.SplitAtBlanks(question.Text);
+                        var blanks = parts.Count - 1;
+                        var given = SlotsOf(question, blanks);
+                        <span class="q-text blanks">
+                            @for (var n = 0; n < parts.Count; n++)
+                            {
+                                var at = n;
+                                @parts[n]
+                                @if (at < blanks)
+                                {
+                                    <input type="text" class="blank" maxlength="200" autocomplete="off" spellcheck="false" aria-label="Blank @(at + 1) of question @question.Number"
+                                           value="@given[at]" @onchange="e => BlankAsync(question, at, blanks, e.Value?.ToString())" />
+                                }
+                            }
+                        </span>
+                    }
+                    else if (question.Kind == QuestionKinds.Matching)
+                    {
+                        <span class="q-text">Match each item of Column A with its pair in Column B.</span>
+                    }
+                    else
+                    {
+                        <span class="q-text">@question.Text</span>
+                    }
                     <span class="points">@question.Points.ToString("0.##") @(question.Points == 1 ? "pt" : "pts")</span>
                 </div>
 
-                @if (question.Kind == QuestionKinds.ShortAnswer)
+                @if (question.ImageId is { } pictureId)
                 {
-                    <input type="text" class="short" maxlength="500" autocomplete="off" spellcheck="false" aria-label="Your answer to question @question.Number"
-                           value="@AnswerOf(question)" @onchange="e => AnswerAsync(question, e.Value?.ToString())" />
+                    <img class="q-image" src="files/q/@pictureId" alt="Picture of question @question.Number" />
                 }
-                else
+
+                @switch (question.Kind)
                 {
-                    <div class="options" role="radiogroup" aria-label="Choices of question @question.Number">
-                        @foreach (var option in question.Options)
-                        {
-                            var choice = option;
-                            <label class="option @(AnswerOf(question) == choice ? "picked" : "")">
-                                <input type="radio" name="q-@question.Id" value="@choice" checked="@(AnswerOf(question) == choice)" @onchange="() => AnswerAsync(question, choice)" />
-                                <span>@choice</span>
-                            </label>
-                        }
-                    </div>
+                    case QuestionKinds.ShortAnswer:
+                    case QuestionKinds.Identification:
+                        <input type="text" class="short" maxlength="500" autocomplete="off" spellcheck="false" aria-label="Your answer to question @question.Number"
+                               value="@AnswerOf(question)" @onchange="e => AnswerAsync(question, e.Value?.ToString())" />
+                        break;
+                    case QuestionKinds.Essay:
+                        <textarea class="essay" rows="8" maxlength="@QuestionRules.MaxAnswerLength" aria-label="Your essay for question @question.Number" placeholder="Write your answer here"
+                                  @onchange="e => AnswerAsync(question, e.Value?.ToString())">@AnswerOf(question)</textarea>
+                        break;
+                    case QuestionKinds.FillInTheBlank:
+                        break;
+                    case QuestionKinds.MultipleSelect:
+                        <div class="options" role="group" aria-label="Choices of question @question.Number. Tick every right one.">
+                            @for (var n = 0; n < question.Options.Count; n++)
+                            {
+                                var choice = question.Options[n];
+                                var imageId = question.OptionImageIds is { } ids && n < ids.Count ? ids[n] : null;
+                                var on = QuestionRules.Lines(AnswerOf(question)).Contains(choice, StringComparer.OrdinalIgnoreCase);
+                                <label class="option @(on ? "picked" : "")">
+                                    <input type="checkbox" checked="@on" @onchange="e => TickAsync(question, choice, e.Value is true)" />
+                                    <span>@choice @if (imageId is { } oid) { <img class="o-image" src="files/q/@oid" alt="Picture of choice @(n + 1)" /> }</span>
+                                </label>
+                            }
+                        </div>
+                        <p class="hint">Tick every right choice.</p>
+                        break;
+                    case QuestionKinds.Matching:
+                        var rowsA = QuestionRules.Lines(question.Text);
+                        var chosen = SlotsOf(question, rowsA.Count);
+                        <div class="matching">
+                            <ol class="col-a" aria-label="Column A">
+                                @for (var n = 0; n < rowsA.Count; n++)
+                                {
+                                    var row = n;
+                                    <li>
+                                        <span class="a-text">@rowsA[n]</span>
+                                        <select aria-label="Column B for: @rowsA[n]" @onchange="e => MatchAsync(question, row, rowsA.Count, e.Value?.ToString())">
+                                            <option value="">Choose</option>
+                                            @for (var m = 0; m < question.Options.Count; m++)
+                                            {
+                                                <option value="@question.Options[m]" selected="@string.Equals(chosen[row], question.Options[m], StringComparison.OrdinalIgnoreCase)">@Letter(m). @question.Options[m]</option>
+                                            }
+                                        </select>
+                                    </li>
+                                }
+                            </ol>
+                            <ul class="col-b" aria-label="Column B">
+                                @for (var m = 0; m < question.Options.Count; m++)
+                                {
+                                    var imageId = question.OptionImageIds is { } ids && m < ids.Count ? ids[m] : null;
+                                    <li><b>@Letter(m)</b> <span>@question.Options[m]</span> @if (imageId is { } oid) { <img class="o-image" src="files/q/@oid" alt="Picture of Column B @Letter(m)" /> }</li>
+                                }
+                            </ul>
+                        </div>
+                        break;
+                    default:
+                        <div class="options" role="radiogroup" aria-label="Choices of question @question.Number">
+                            @for (var n = 0; n < question.Options.Count; n++)
+                            {
+                                var choice = question.Options[n];
+                                var imageId = question.OptionImageIds is { } ids && n < ids.Count ? ids[n] : null;
+                                <label class="option @(AnswerOf(question) == choice ? "picked" : "")">
+                                    <input type="radio" name="q-@question.Id" value="@choice" checked="@(AnswerOf(question) == choice)" @onchange="() => AnswerAsync(question, choice)" />
+                                    <span>@choice @if (imageId is { } oid) { <img class="o-image" src="files/q/@oid" alt="Picture of choice @(n + 1)" /> }</span>
+                                </label>
+                            }
+                        </div>
+                        break;
                 }
             </li>
         }
@@ -152,6 +236,46 @@ else
     private int AnsweredCount => attempt is null ? 0 : attempt.Questions.Count(q => !string.IsNullOrWhiteSpace(AnswerOf(q)));
 
     private string? AnswerOf(AttemptQuestion q) => answers.GetValueOrDefault(q.Id);
+
+    private static string Letter(int n) => ((char)('A' + n)).ToString();
+
+    /// <summary>The answers of the blanks (or of the Column A rows) of a question, each in its place (an empty one for a blank not answered).</summary>
+    private string[] SlotsOf(AttemptQuestion q, int count)
+    {
+        var list = QuestionRules.Slots(AnswerOf(q));
+        while (list.Count < count)
+        {
+            list.Add("");
+        }
+
+        return [.. list.Take(count)];
+    }
+
+    private Task BlankAsync(AttemptQuestion q, int index, int count, string? value)
+    {
+        var slots = SlotsOf(q, count);
+        slots[index] = (value ?? "").Replace("\n", " ").Trim();
+        return AnswerAsync(q, string.Join('\n', slots));
+    }
+
+    private Task MatchAsync(AttemptQuestion q, int row, int count, string? value)
+    {
+        var slots = SlotsOf(q, count);
+        slots[row] = value ?? "";
+        return AnswerAsync(q, string.Join('\n', slots));
+    }
+
+    private Task TickAsync(AttemptQuestion q, string choice, bool on)
+    {
+        var picked = QuestionRules.Lines(AnswerOf(q));
+        picked.RemoveAll(p => string.Equals(p, choice, StringComparison.OrdinalIgnoreCase));
+        if (on)
+        {
+            picked.Add(choice);
+        }
+
+        return AnswerAsync(q, string.Join('\n', picked));
+    }
 
     protected override async Task OnInitializedAsync()
     {

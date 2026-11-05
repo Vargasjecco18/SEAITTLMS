@@ -1,0 +1,415 @@
+@using Microsoft.AspNetCore.Components.Forms
+
+@* One question of the sheet in a box of its own (it opens with a double click on the question or its choices, or with the box button of the row): the sentence, a picture for the question, all
+   the choices with a picture for each, the right answers, and for a matching type the two columns with a row of Column B chosen for each row of Column A. Cancel throws the changes away;
+   Save question puts them back in the sheet. *@
+<Modal Open="Row is not null && work is not null" Title="@($"Question {Number} · {(work is null ? "" : QuestionKinds.Display(work.Kind))}")" OnClose="CloseAsync" Large="true" Top="true">
+    @if (work is { } w)
+    {
+        <div class="row-box" data-question-box="@Number">
+            @if (errors.Count > 0)
+            {
+                <ul class="problems" role="alert">
+                    @foreach (var e in errors)
+                    {
+                        <li>@e</li>
+                    }
+                </ul>
+            }
+
+            <div class="line two">
+                <label class="field"><span>Type</span>
+                    <select id="qb-kind" @onchange="e => Change(e.Value?.ToString())">
+                        @foreach (var k in QuestionKinds.All)
+                        {
+                            <option value="@k" selected="@(w.Kind == k)">@QuestionKinds.Display(k)</option>
+                        }
+                    </select>
+                </label>
+                <label class="field"><span>Points</span>
+                    <input id="qb-points" type="number" min="0.01" max="100" step="any" value="@w.Points" @onchange="e => w.Points = e.Value?.ToString() ?? string.Empty" />
+                </label>
+            </div>
+
+            @* ---- the question: a sentence, the blanks of a sentence, or the rows of Column A *@
+            @if (w.Kind == QuestionKinds.Matching)
+            {
+                <fieldset class="columns">
+                    <legend>Match Column A with Column B</legend>
+                    <div class="cols">
+                        <div class="col">
+                            <h4>Column A <small>the question</small></h4>
+                            @for (var n = 0; n < w.ColumnA.Count; n++)
+                            {
+                                var at = n;
+                                <div class="pair">
+                                    <span class="tag">@(n + 1)</span>
+                                    <input type="text" class="box" maxlength="200" autocomplete="off" aria-label="Column A row @(n + 1)" placeholder="Item @(n + 1)" value="@w.ColumnA[n]"
+                                           @onchange="e => w.ColumnA[at] = e.Value?.ToString() ?? string.Empty" />
+                                    <select class="box" aria-label="Right Column B row for Column A row @(n + 1)" @onchange="e => w.Pairs[at] = e.Value?.ToString() ?? string.Empty">
+                                        <option value="">Right match…</option>
+                                        @for (var m = 0; m < w.Options.Count; m++)
+                                        {
+                                            if (w.Options[m].Trim().Length > 0)
+                                            {
+                                                <option value="@w.Options[m]" selected="@string.Equals(w.Pairs[at], w.Options[m], StringComparison.OrdinalIgnoreCase)">@QuestionSheetRow.Letter(m) · @w.Options[m]</option>
+                                            }
+                                        }
+                                    </select>
+                                    <button type="button" class="x" title="Take this row out" aria-label="Take Column A row @(n + 1) out" disabled="@(w.ColumnA.Count <= 2)" @onclick="() => RemovePair(at)"><Icon Name="x" Size="14" /></button>
+                                </div>
+                            }
+
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(w.ColumnA.Count >= QuestionSheetRow.MaxPairs)" OnClick="AddPair">Add a row to Column A</Button>
+                        </div>
+                        <div class="col">
+                            <h4>Column B <small>the choices</small></h4>
+                            @for (var n = 0; n < w.Options.Count; n++)
+                            {
+                                var at = n;
+                                <div class="choice">
+                                    <span class="tag">@QuestionSheetRow.Letter(n)</span>
+                                    <input type="text" class="box" maxlength="200" autocomplete="off" aria-label="Column B row @QuestionSheetRow.Letter(n)" placeholder="Choice @QuestionSheetRow.Letter(n)" value="@w.Options[n]"
+                                           @onchange="e => ChangeOption(at, e.Value?.ToString())" />
+                                    @PictureTools(w.OptionImages[n], $"Column B row {QuestionSheetRow.Letter(n)}", f => ChoosePicture(f, at), () => ClearPicture(at))
+                                    <button type="button" class="x" title="Take this row out" aria-label="Take Column B row @QuestionSheetRow.Letter(n) out" disabled="@(w.Options.Count <= 2)" @onclick="() => RemoveOption(at)"><Icon Name="x" Size="14" /></button>
+                                </div>
+                            }
+
+                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(w.Options.Count >= QuestionSheetRow.MaxOptions)" OnClick="AddOption">Add a row to Column B</Button>
+                        </div>
+                    </div>
+                </fieldset>
+            }
+            else
+            {
+                <label class="field"><span>@(w.Kind == QuestionKinds.FillInTheBlank ? "Sentence (write ___ where a blank goes)" : "Question")</span>
+                    <textarea id="qb-text" rows="@(w.Kind == QuestionKinds.FillInTheBlank ? 3 : 4)" maxlength="1000" placeholder="@(w.Kind == QuestionKinds.FillInTheBlank ? "The capital of the Philippines is ___." : "Write the question")" @onchange="e => w.Text = e.Value?.ToString() ?? string.Empty">@w.Text</textarea>
+                </label>
+                @if (w.Kind == QuestionKinds.FillInTheBlank)
+                {
+                    <div class="blank-tools">
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="AddBlank">Add a blank at the end</Button>
+                        <span class="muted">@(w.BlankCount == 0 ? "No blank yet." : $"{w.BlankCount} {(w.BlankCount == 1 ? "blank" : "blanks")}")</span>
+                    </div>
+                    @for (var n = 0; n < w.BlankCount; n++)
+                    {
+                        var at = n;
+                        <label class="field"><span>Answer of blank @(n + 1) <small>(several right answers: a | b)</small></span>
+                            <input type="text" class="box" maxlength="200" autocomplete="off" aria-label="Answer of blank @(n + 1)" value="@BlankAt(at)" @onchange="e => SetBlank(at, e.Value?.ToString())" />
+                        </label>
+                    }
+                }
+            }
+
+            @* ---- the picture of the question *@
+            <div class="picture-line">
+                <strong>Picture of the question</strong>
+                @PictureTools(w.Image, "the question", f => ChooseQuestionPicture(f), () => w.Image = null)
+            </div>
+
+            @* ---- choices (multiple choice, multiple select) *@
+            @if (w.Kind is QuestionKinds.MultipleChoice or QuestionKinds.MultipleSelect)
+            {
+                <fieldset class="choices">
+                    <legend>Choices <small>@(w.Kind == QuestionKinds.MultipleChoice ? "pick the one right choice" : "tick every right choice")</small></legend>
+                    @for (var n = 0; n < w.Options.Count; n++)
+                    {
+                        var at = n;
+                        <div class="choice">
+                            @if (w.Kind == QuestionKinds.MultipleChoice)
+                            {
+                                <input type="radio" name="qb-right" aria-label="Choice @QuestionSheetRow.Letter(n) is the right one" checked="@(w.Right == QuestionSheetRow.Letter(at))" @onchange="() => w.Right = QuestionSheetRow.Letter(at)" />
+                            }
+                            else
+                            {
+                                <input type="checkbox" aria-label="Choice @QuestionSheetRow.Letter(n) is right" checked="@w.RightSet.Contains(at)" @onchange="e => ToggleRight(at, e.Value is true)" />
+                            }
+
+                            <span class="tag">@QuestionSheetRow.Letter(n)</span>
+                            <input type="text" class="box" maxlength="200" autocomplete="off" aria-label="Choice @QuestionSheetRow.Letter(n)" placeholder="Choice @QuestionSheetRow.Letter(n)" value="@w.Options[n]"
+                                   @onchange="e => ChangeOption(at, e.Value?.ToString())" />
+                            @PictureTools(w.OptionImages[n], $"choice {QuestionSheetRow.Letter(n)}", f => ChoosePicture(f, at), () => ClearPicture(at))
+                            <button type="button" class="x" title="Take this choice out" aria-label="Take choice @QuestionSheetRow.Letter(n) out" disabled="@(w.Options.Count <= 2)" @onclick="() => RemoveOption(at)"><Icon Name="x" Size="14" /></button>
+                        </div>
+                    }
+
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(w.Options.Count >= QuestionSheetRow.MaxOptions)" OnClick="AddOption">Add a choice</Button>
+                </fieldset>
+            }
+            else if (w.Kind == QuestionKinds.TrueFalse)
+            {
+                <fieldset class="choices">
+                    <legend>Right answer</legend>
+                    <label class="choice"><input type="radio" name="qb-tf" checked="@(w.Right == "True")" @onchange='() => w.Right = "True"' /> <span>True</span></label>
+                    <label class="choice"><input type="radio" name="qb-tf" checked="@(w.Right == "False")" @onchange='() => w.Right = "False"' /> <span>False</span></label>
+                </fieldset>
+            }
+            else if (w.Kind is QuestionKinds.ShortAnswer or QuestionKinds.Identification)
+            {
+                <label class="field"><span>Right answer <small>(several right answers: a | b)</small></span>
+                    <input id="qb-short" type="text" class="box" maxlength="500" autocomplete="off" value="@w.Short" @onchange="e => w.Short = e.Value?.ToString() ?? string.Empty" />
+                </label>
+            }
+            else if (w.Kind == QuestionKinds.Essay)
+            {
+                <p class="note"><Icon Name="info" Size="16" /> The student writes the answer and you give the score yourself: the quiz is handed in and waits for your score.</p>
+            }
+
+            <div class="actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                <Button IconName="circle-check" OnClick="SaveAsync">Save question</Button>
+            </div>
+        </div>
+    }
+</Modal>
+
+@code {
+    /// <summary>The row of the sheet to edit; null keeps the box closed.</summary>
+    [Parameter] public QuestionSheetRow? Row { get; set; }
+
+    /// <summary>The place of the row in the sheet (for the heading).</summary>
+    [Parameter] public int Number { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private QuestionSheetRow? work;
+    private QuestionSheetRow? source;
+    private List<string> errors = [];
+
+    protected override void OnParametersSet()
+    {
+        if (Row is null)
+        {
+            work = null;
+            source = null;
+        }
+        else if (!ReferenceEquals(Row, source))
+        {
+            source = Row;
+            work = Row.Clone();
+            work.Fit();
+            errors = [];
+        }
+    }
+
+    private Task CloseAsync()
+    {
+        work = null;
+        source = null;
+        return OnClose.InvokeAsync();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (work is null || source is null)
+        {
+            return;
+        }
+
+        var found = work.Problems();
+        if (found.Count > 0)
+        {
+            errors = found;
+            return;
+        }
+
+        source.CopyFrom(work);
+        await CloseAsync();
+    }
+
+    private void Change(string? kind)
+    {
+        if (kind is not null && work is not null)
+        {
+            work.ChangeKind(kind);
+        }
+    }
+
+    private void ChangeOption(int at, string? text)
+    {
+        if (work is not null && at < work.Options.Count)
+        {
+            var old = work.Options[at];
+            work.Options[at] = text ?? string.Empty;
+            // a pair or a right answer follows the text of the choice it points to
+            for (var n = 0; n < work.Pairs.Count; n++)
+            {
+                if (old.Length > 0 && string.Equals(work.Pairs[n], old, StringComparison.OrdinalIgnoreCase))
+                {
+                    work.Pairs[n] = work.Options[at];
+                }
+            }
+        }
+    }
+
+    private void AddOption()
+    {
+        if (work is not null && work.Options.Count < QuestionSheetRow.MaxOptions)
+        {
+            work.Options.Add("");
+            work.OptionImages.Add(null);
+        }
+    }
+
+    private void RemoveOption(int at)
+    {
+        if (work is null || work.Options.Count <= 2 || at >= work.Options.Count)
+        {
+            return;
+        }
+
+        var text = work.Options[at];
+        work.Options.RemoveAt(at);
+        work.OptionImages.RemoveAt(at);
+        work.RightSet = [.. work.RightSet.Where(i => i != at).Select(i => i > at ? i - 1 : i)];
+        if (work.Right.Length == 1)
+        {
+            var was = work.Right[0] - 'A';
+            work.Right = was == at ? "" : was > at ? QuestionSheetRow.Letter(was - 1) : work.Right;
+        }
+
+        for (var n = 0; n < work.Pairs.Count; n++)
+        {
+            if (text.Length > 0 && string.Equals(work.Pairs[n], text, StringComparison.OrdinalIgnoreCase))
+            {
+                work.Pairs[n] = "";
+            }
+        }
+
+        work.Fit();
+    }
+
+    private void ToggleRight(int at, bool on)
+    {
+        if (work is null)
+        {
+            return;
+        }
+
+        if (on)
+        {
+            work.RightSet.Add(at);
+        }
+        else
+        {
+            work.RightSet.Remove(at);
+        }
+    }
+
+    private void AddPair()
+    {
+        if (work is not null && work.ColumnA.Count < QuestionSheetRow.MaxPairs)
+        {
+            work.ColumnA.Add("");
+            work.Pairs.Add("");
+        }
+    }
+
+    private void RemovePair(int at)
+    {
+        if (work is not null && work.ColumnA.Count > 2 && at < work.ColumnA.Count)
+        {
+            work.ColumnA.RemoveAt(at);
+            work.Pairs.RemoveAt(at);
+        }
+    }
+
+    private void AddBlank()
+    {
+        if (work is not null)
+        {
+            work.Text = work.Text.TrimEnd() + (work.Text.Length == 0 ? "___" : " ___");
+        }
+    }
+
+    private string BlankAt(int at) => work is not null && at < work.Blanks.Count ? work.Blanks[at] : "";
+
+    private void SetBlank(int at, string? text)
+    {
+        if (work is null)
+        {
+            return;
+        }
+
+        while (work.Blanks.Count <= at)
+        {
+            work.Blanks.Add("");
+        }
+
+        work.Blanks[at] = text ?? string.Empty;
+    }
+
+    // ---------------------------------------------------------------- pictures
+
+    private static async Task<QuestionPicture?> ReadAsync(IBrowserFile file, List<string> problems)
+    {
+        if (!QuestionPicture.Types.Contains(file.ContentType))
+        {
+            problems.Add("The picture has to be a PNG, JPG, GIF or WebP file.");
+            return null;
+        }
+
+        if (file.Size > QuestionPicture.MaxBytes)
+        {
+            problems.Add($"The picture has to be at most {QuestionPicture.MaxBytes / (1024 * 1024)} MB.");
+            return null;
+        }
+
+        await using var stream = file.OpenReadStream(QuestionPicture.MaxBytes);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        return new QuestionPicture { Name = file.Name.Length > 200 ? file.Name[..200] : file.Name, ContentType = file.ContentType, Data = memory.ToArray() };
+    }
+
+    private async Task ChooseQuestionPicture(InputFileChangeEventArgs e)
+    {
+        var problems = new List<string>();
+        if (work is not null && await ReadAsync(e.File, problems) is { } picture)
+        {
+            work.Image = picture;
+            errors = [];
+        }
+        else
+        {
+            errors = problems;
+        }
+    }
+
+    private async Task ChoosePicture(InputFileChangeEventArgs e, int at)
+    {
+        var problems = new List<string>();
+        if (work is not null && at < work.OptionImages.Count && await ReadAsync(e.File, problems) is { } picture)
+        {
+            work.OptionImages[at] = picture;
+            errors = [];
+        }
+        else
+        {
+            errors = problems;
+        }
+    }
+
+    private void ClearPicture(int at)
+    {
+        if (work is not null && at < work.OptionImages.Count)
+        {
+            work.OptionImages[at] = null;
+        }
+    }
+
+    /// <summary>The button that adds a picture, the little picture that was added, and the button that takes it off.</summary>
+    private RenderFragment PictureTools(QuestionPicture? picture, string what, Func<InputFileChangeEventArgs, Task> choose, Action clear) => @<span class="picture">
+        @if (picture is not null)
+        {
+            <img class="thumb" src="@picture.DataUri" alt="Picture of @what" />
+            <button type="button" class="x" title="Take the picture off" aria-label="Take the picture of @what off" @onclick="clear"><Icon Name="x" Size="14" /></button>
+        }
+        else
+        {
+            <label class="add-picture" title="Add a picture to @what"><Icon Name="image" Size="15" /> <span>Picture</span>
+                <InputFile OnChange="choose" accept="image/png,image/jpeg,image/gif,image/webp" aria-label="@($"Add a picture to {what}")" />
+            </label>
+        }
+    </span>;
+}

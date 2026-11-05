@@ -189,6 +189,42 @@ public static class QuestionKinds
     public const string MultipleChoice = "MultipleChoice";
     public const string TrueFalse = "TrueFalse";
     public const string ShortAnswer = "ShortAnswer";
+
+    /// <summary>The question has blanks (three or more underscores, ___) in its text; the answers of the blanks are the right answer, one per line.</summary>
+    public const string FillInTheBlank = "FillInTheBlank";
+
+    /// <summary>Column A is the text of the question (one item per line), Column B is the choices (one per line), and the right answer is the Column B item of each Column A line.</summary>
+    public const string Matching = "Matching";
+
+    /// <summary>The student types the answer (like a short answer; the right answers are separated by |).</summary>
+    public const string Identification = "Identification";
+
+    /// <summary>Several choices are right: the student ticks all of them. The right answer is the text of each right choice, one per line.</summary>
+    public const string MultipleSelect = "MultipleSelect";
+
+    /// <summary>The student writes a text and the teacher gives the score: the quiz is handed in and waits for it.</summary>
+    public const string Essay = "Essay";
+
+    /// <summary>The kinds in the order of the lists (the sheets of questions).</summary>
+    public static readonly string[] All = [MultipleChoice, TrueFalse, ShortAnswer, Identification, FillInTheBlank, Matching, MultipleSelect, Essay];
+
+    public static string Display(string kind) => kind switch
+    {
+        TrueFalse => "True or false",
+        ShortAnswer => "Short answer",
+        FillInTheBlank => "Fill in the blank",
+        Matching => "Matching type",
+        Identification => "Identification",
+        MultipleSelect => "Multiple select",
+        Essay => "Essay",
+        _ => "Multiple choice",
+    };
+
+    /// <summary>The kinds that have a list of choices (multiple choice, multiple select) or two columns (matching).</summary>
+    public static bool HasOptions(string kind) => kind is MultipleChoice or MultipleSelect or Matching;
+
+    /// <summary>The system gives the score of every kind except the essay, which the teacher scores.</summary>
+    public static bool IsAutomatic(string kind) => kind != Essay;
 }
 
 public class QuizQuestion : AuditableEntity
@@ -206,12 +242,27 @@ public class QuizQuestion : AuditableEntity
     public string? OptionsText { get; set; }
 
     /// <summary>
-    /// The right answer: the text of the right choice, "True" or "False", or for a short answer the accepted answers
-    /// separated by "|".
+    /// The right answer: the text of the right choice, "True" or "False", or for a short answer or an identification the accepted answers separated by "|". For a fill in the blank: the answers
+    /// of the blanks, one per line; for a multiple select: the right choices, one per line; for a matching type: the Column B item of each Column A line, one per line. An essay has none.
     /// </summary>
     public string CorrectAnswer { get; set; } = "";
 
     public decimal Points { get; set; } = 1;
+}
+
+/// <summary>
+/// A picture of a question of a quiz (or of a summative exam posted to a course): <see cref="Slot"/> 0 is the picture of the question, 1 and up are the pictures of its choices (the first choice is 1;
+/// for a matching type the items of Column B).
+/// </summary>
+public class QuizQuestionImage : AuditableEntity
+{
+    public int QuestionId { get; set; }
+    public QuizQuestion Question { get; set; } = null!;
+
+    public int Slot { get; set; }
+    public string Name { get; set; } = "";
+    public string ContentType { get; set; } = "image/png";
+    public byte[] Data { get; set; } = [];
 }
 
 public static class SubmissionStatus

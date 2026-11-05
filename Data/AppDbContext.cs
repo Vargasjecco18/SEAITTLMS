@@ -41,6 +41,7 @@ public class AppDbContext : DbContext
     public DbSet<LearningModule> Modules => Set<LearningModule>();
     public DbSet<ModuleItem> ModuleItems => Set<ModuleItem>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<QuizQuestionImage> QuizQuestionImages => Set<QuizQuestionImage>();
     public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<FinalGrade> FinalGrades => Set<FinalGrade>();
     public DbSet<ModuleView> ModuleViews => Set<ModuleView>();
@@ -56,6 +57,7 @@ public class AppDbContext : DbContext
     public DbSet<MaterialModule> MaterialModules => Set<MaterialModule>();
     public DbSet<MaterialItem> MaterialItems => Set<MaterialItem>();
     public DbSet<MaterialQuestion> MaterialQuestions => Set<MaterialQuestion>();
+    public DbSet<MaterialQuestionImage> MaterialQuestionImages => Set<MaterialQuestionImage>();
     public DbSet<MaterialDelivery> MaterialDeliveries => Set<MaterialDelivery>();
     public DbSet<TeacherEvaluation> TeacherEvaluations => Set<TeacherEvaluation>();
     public DbSet<EvaluationQuestion> EvaluationQuestions => Set<EvaluationQuestion>();

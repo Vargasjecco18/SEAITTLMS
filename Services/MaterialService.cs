@@ -544,16 +544,13 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             var position = 0;
             foreach (var q in questions)
             {
-                var options = q.Kind == QuestionKinds.MultipleChoice ? ModuleService.SplitOptions(q.OptionsText) : [];
-                db.MaterialQuestions.Add(new MaterialQuestion
+                var (options, correct) = QuestionRules.ToStored(q);
+                var row = new MaterialQuestion { ItemId = item.Id, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind, OptionsText = options, CorrectAnswer = correct, Points = q.Points };
+                db.MaterialQuestions.Add(row);
+                foreach (var (slot, picture) in QuestionRules.SlotsOf(q))
                 {
-                    ItemId = item.Id, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
-                    OptionsText = q.Kind == QuestionKinds.MultipleChoice ? string.Join('\n', options) : null,
-                    CorrectAnswer = q.Kind == QuestionKinds.MultipleChoice
-                        ? options.First(o => string.Equals(o, q.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
-                        : q.CorrectAnswer.Trim(),
-                    Points = q.Points,
-                });
+                    db.MaterialQuestionImages.Add(new MaterialQuestionImage { Question = row, Slot = slot, Name = picture.Name, ContentType = picture.ContentType, Data = picture.Data });
+                }
             }
 
             if (questions.Count > 0)
@@ -614,8 +611,16 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.MaterialQuestions.AsNoTracking().Where(q => examIds.Contains(q.ItemId)).OrderBy(q => q.Position).ThenBy(q => q.Id)
-            .Select(q => new { q.ItemId, Question = new QuestionInput { Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points } })
+            .Select(q => new { q.Id, q.ItemId, Question = new QuestionInput { Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points } })
             .ToListAsync(ct);
+        var questionIds = rows.Select(r => r.Id).ToList();
+        var pictures = (await db.MaterialQuestionImages.AsNoTracking().Where(i => questionIds.Contains(i.QuestionId)).Select(i => new { i.QuestionId, i.Slot, i.Name, i.ContentType, i.Data }).ToListAsync(ct))
+            .ToLookup(i => i.QuestionId, i => (i.Slot, new QuestionPicture { Name = i.Name, ContentType = i.ContentType, Data = i.Data }));
+        foreach (var r in rows)
+        {
+            QuestionRules.AttachPictures(r.Question, pictures[r.Id]);
+        }
+
         return rows.GroupBy(r => r.ItemId).ToDictionary(g => g.Key, g => (IReadOnlyList<QuestionInput>)[.. g.Select(r => r.Question)]);
     }
 
@@ -785,6 +790,9 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             .AsSplitQuery()
             .OrderBy(i => i.VisibleFromUtc).ThenBy(i => i.Position).ThenBy(i => i.Id)
             .ToListAsync(ct);
+        // the pictures of the questions go with the questions into the copy of each section
+        var examQuestionIds = exams.SelectMany(e => e.Questions.Select(q => q.Id)).ToList();
+        var examPictures = (await db.MaterialQuestionImages.AsNoTracking().Where(i => examQuestionIds.Contains(i.QuestionId)).ToListAsync(ct)).ToLookup(i => i.QuestionId);
         if (exams.Count == 0)
         {
             return ServiceResult.Fail("What you chose is not in the library of this course any more.");
@@ -867,10 +875,17 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                     AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations, ShowResult = exam.ShowResult,
                 };
                 copy.Attachments.AddRange(exam.Attachments.Select(a => CopyOf(a, userId)));
-                copy.Questions.AddRange(exam.Questions.OrderBy(q => q.Position).ThenBy(q => q.Id).Select((q, n) => new QuizQuestion
+                var copiedQuestions = exam.Questions.OrderBy(q => q.Position).ThenBy(q => q.Id).Select((q, n) =>
                 {
-                    Position = n + 1, Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points,
-                }));
+                    var row = new QuizQuestion { Position = n + 1, Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points };
+                    foreach (var picture in examPictures[q.Id])
+                    {
+                        db.QuizQuestionImages.Add(new QuizQuestionImage { Question = row, Slot = picture.Slot, Name = picture.Name, ContentType = picture.ContentType, Data = picture.Data });
+                    }
+
+                    return row;
+                }).ToList();
+                copy.Questions.AddRange(copiedQuestions);
                 db.ModuleItems.Add(copy);
                 posted++;
             }

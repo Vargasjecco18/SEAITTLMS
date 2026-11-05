@@ -211,12 +211,27 @@ public static class ItemSheets
 
     public static byte[] ExportQuestions(IEnumerable<QuestionInput> questions) => BuildQuestions(questions.ToList(), example: false);
 
-    private static string TypeText(string kind) => kind switch
+    /// <summary>The names of the types, as the lists of the sheets give them.</summary>
+    public static string[] TypeNames => [.. QuestionKinds.All.Select(QuestionKinds.Display)];
+
+    private static string TypeText(string kind) => QuestionKinds.Display(kind);
+
+    /// <summary>What a question looks like in the cells of a sheet: the question (for a matching type: the Column A items with a semicolon between them), its type, the choices and the right answer.</summary>
+    public readonly record struct QuestionCells(string Text, string Type, string Choices, string Answer);
+
+    public static QuestionCells CellsOf(QuestionInput q)
     {
-        QuestionKinds.TrueFalse => "True or false",
-        QuestionKinds.ShortAnswer => "Short answer",
-        _ => "Multiple choice",
-    };
+        var options = ModuleService.SplitOptions(q.OptionsText);
+        return q.Kind switch
+        {
+            QuestionKinds.MultipleChoice => new(q.Text, TypeText(q.Kind), string.Join("; ", options), q.CorrectAnswer),
+            QuestionKinds.MultipleSelect => new(q.Text, TypeText(q.Kind), string.Join("; ", options), string.Join("; ", QuestionRules.Lines(q.CorrectAnswer))),
+            QuestionKinds.Matching => new(string.Join("; ", QuestionRules.Lines(q.Text)), TypeText(q.Kind), string.Join("; ", options), string.Join("; ", QuestionRules.Slots(q.CorrectAnswer))),
+            QuestionKinds.FillInTheBlank => new(q.Text, TypeText(q.Kind), "", string.Join("; ", QuestionRules.Slots(q.CorrectAnswer))),
+            QuestionKinds.Essay => new(q.Text, TypeText(q.Kind), "", ""),
+            _ => new(q.Text, TypeText(q.Kind), "", q.CorrectAnswer),
+        };
+    }
 
     private static byte[] BuildQuestions(IReadOnlyList<QuestionInput> questions, bool example)
     {
@@ -227,9 +242,10 @@ public static class ItemSheets
         var row = 2;
         foreach (var q in questions)
         {
-            sheet.Set(row, 1, q.Text, XlsxStyle.Wrap).Set(row, 2, TypeText(q.Kind), XlsxStyle.InputText)
-                .Set(row, 3, q.Kind == QuestionKinds.MultipleChoice ? string.Join("; ", ModuleService.SplitOptions(q.OptionsText)) : "", XlsxStyle.Wrap)
-                .Set(row, 4, q.CorrectAnswer, XlsxStyle.InputText).Set(row, 5, q.Points, XlsxStyle.Input);
+            var cells = CellsOf(q);
+            sheet.Set(row, 1, cells.Text, XlsxStyle.Wrap).Set(row, 2, cells.Type, XlsxStyle.InputText)
+                .Set(row, 3, cells.Choices, XlsxStyle.Wrap)
+                .Set(row, 4, cells.Answer, XlsxStyle.InputText).Set(row, 5, q.Points, XlsxStyle.Input);
             row++;
         }
 
@@ -255,7 +271,7 @@ public static class ItemSheets
         }
 
         sheet.FrozenRows = 1;
-        sheet.ListChoice($"B2:B{Math.Max(TemplateRows + 1, questions.Count + 2)}", ["Multiple choice", "True or false", "Short answer"], "Choose the type from the list.");
+        sheet.ListChoice($"B2:B{Math.Max(TemplateRows + 1, questions.Count + 2)}", TypeNames, "Choose the type from the list.");
 
         var lastQuestion = Math.Max(TemplateRows + 1, questions.Count + 2);
         sheet.Tip($"A2:A{lastQuestion}", "Type the question (needed).").Tip($"C2:C{lastQuestion}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.")
@@ -264,7 +280,7 @@ public static class ItemSheets
         TemplateGuide.Add(book, "How to fill the Questions sheet",
         [
             new("Questions", "Question", "Needed", "The question the students read.", TemplateGuide.TypeIt),
-            new("Questions", "Type", "Needed", "Multiple choice, True or false, or Short answer.", "Choose it from the list."),
+            new("Questions", "Type", "Needed", "Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay.", "Choose it from the list."),
             new("Questions", "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
             new("Questions", "Right answer", "Needed", "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
             new("Questions", "Points", "Optional", "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),
@@ -284,11 +300,16 @@ public static class ItemSheets
             "multiplechoice" or "multiple" or "mc" or "" => QuestionKinds.MultipleChoice,
             "trueorfalse" or "truefalse" or "tf" or "t/f" => QuestionKinds.TrueFalse,
             "shortanswer" or "short" or "sa" => QuestionKinds.ShortAnswer,
+            "identification" or "ident" => QuestionKinds.Identification,
+            "fillintheblank" or "fillintheblanks" or "blank" or "fib" => QuestionKinds.FillInTheBlank,
+            "matchingtype" or "matching" => QuestionKinds.Matching,
+            "multipleselect" or "multiselect" or "select" or "ms" => QuestionKinds.MultipleSelect,
+            "essay" => QuestionKinds.Essay,
             _ => null,
         };
         if (kind is null)
         {
-            return (null, ["the type must be Multiple choice, True or false, or Short answer."]);
+            return (null, ["the type must be Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay."]);
         }
 
         var pointsValue = 1m;
@@ -297,22 +318,41 @@ public static class ItemSheets
             return (null, ["the points must be a number."]);
         }
 
+        static List<string> Split(string value) => value.Split([';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+        // A letter (A is the first) or the text of a choice gives the choice.
+        static string Pick(IReadOnlyList<string> options, string answer) =>
+            options.FirstOrDefault(o => string.Equals(o, answer, StringComparison.OrdinalIgnoreCase))
+            ?? (answer.Length == 1 && char.ToUpperInvariant(answer[0]) - 'A' is >= 0 and var index && index < options.Count ? options[index] : answer);
+
         var question = new QuestionInput { Text = text, Kind = kind, Points = pointsValue };
-        if (kind == QuestionKinds.MultipleChoice)
+        var list = Split(choices);
+        switch (kind)
         {
-            var options = choices.Split([';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-            question.OptionsText = string.Join('\n', options);
-            // The right answer is the text of the right choice, or its letter (A is the first).
-            var byText = options.FirstOrDefault(o => string.Equals(o, answer, StringComparison.OrdinalIgnoreCase));
-            question.CorrectAnswer = byText ?? (answer.Length == 1 && char.ToUpperInvariant(answer[0]) - 'A' is >= 0 and var index && index < options.Count ? options[index] : answer);
-        }
-        else if (kind == QuestionKinds.TrueFalse)
-        {
-            question.CorrectAnswer = answer.ToLowerInvariant() switch { "true" or "t" or "yes" => "True", "false" or "f" or "no" => "False", _ => answer };
-        }
-        else
-        {
-            question.CorrectAnswer = answer;
+            case QuestionKinds.MultipleChoice:
+                question.OptionsText = string.Join('\n', list);
+                question.CorrectAnswer = Pick(list, answer);
+                break;
+            case QuestionKinds.MultipleSelect:
+                question.OptionsText = string.Join('\n', list);
+                question.CorrectAnswer = string.Join('\n', Split(answer.Replace("|", ";")).Select(a => Pick(list, a)));
+                break;
+            case QuestionKinds.Matching:
+                question.Text = string.Join('\n', Split(text));
+                question.OptionsText = string.Join('\n', list);
+                question.CorrectAnswer = string.Join('\n', Split(answer).Select(a => Pick(list, a)));
+                break;
+            case QuestionKinds.FillInTheBlank:
+                question.CorrectAnswer = string.Join('\n', Split(answer));
+                break;
+            case QuestionKinds.TrueFalse:
+                question.CorrectAnswer = answer.ToLowerInvariant() switch { "true" or "t" or "yes" => "True", "false" or "f" or "no" => "False", _ => answer };
+                break;
+            case QuestionKinds.Essay:
+                break;
+            default:
+                question.CorrectAnswer = answer;
+                break;
         }
 
         var found = ModuleService.ValidateQuestions([question]);

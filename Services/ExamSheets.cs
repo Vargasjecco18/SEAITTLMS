@@ -36,12 +36,7 @@ public static class ExamSheets
 
     public static byte[] Export(IEnumerable<ExamExportRow> exams) => Build(exams.ToList(), example: false);
 
-    private static string TypeText(string kind) => kind switch
-    {
-        QuestionKinds.TrueFalse => "True or false",
-        QuestionKinds.ShortAnswer => "Short answer",
-        _ => "Multiple choice",
-    };
+    private static string TypeText(string kind) => QuestionKinds.Display(kind);
 
     private static byte[] Build(IReadOnlyList<ExamExportRow> exams, bool example)
     {
@@ -99,9 +94,10 @@ public static class ExamSheets
         {
             foreach (var q in exam.Questions ?? [])
             {
-                questions.Set(qRow, 1, exam.Title, XlsxStyle.InputText).Set(qRow, 2, q.Text, XlsxStyle.Wrap).Set(qRow, 3, TypeText(q.Kind), XlsxStyle.InputText)
-                    .Set(qRow, 4, q.Kind == QuestionKinds.MultipleChoice ? string.Join("; ", ModuleService.SplitOptions(q.OptionsText)) : "", XlsxStyle.Wrap)
-                    .Set(qRow, 5, q.CorrectAnswer, XlsxStyle.InputText).Set(qRow, 6, q.Points, XlsxStyle.Input);
+                var cells = ItemSheets.CellsOf(q);
+                questions.Set(qRow, 1, exam.Title, XlsxStyle.InputText).Set(qRow, 2, cells.Text, XlsxStyle.Wrap).Set(qRow, 3, cells.Type, XlsxStyle.InputText)
+                    .Set(qRow, 4, cells.Choices, XlsxStyle.Wrap)
+                    .Set(qRow, 5, cells.Answer, XlsxStyle.InputText).Set(qRow, 6, q.Points, XlsxStyle.Input);
                 qRow++;
             }
         }
@@ -130,7 +126,7 @@ public static class ExamSheets
         }
 
         questions.FrozenRows = 1;
-        questions.ListChoice($"C2:C{lastQuestion}", ["Multiple choice", "True or false", "Short answer"], "Choose the type from the list.");
+        questions.ListChoice($"C2:C{lastQuestion}", ItemSheets.TypeNames, "Choose the type from the list.");
         questions.Tip($"A2:A{lastQuestion}", "Type the title of the exam this question belongs to, the same as in the sheet Summative exams.").Tip($"B2:B{lastQuestion}", "Type the question (needed).")
             .Tip($"D2:D{lastQuestion}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.")
             .Tip($"E2:E{lastQuestion}", "Type the right answer: the right choice (or its letter), True or False, or the answer. Other accepted answers go after a | sign.");
@@ -147,7 +143,7 @@ public static class ExamSheets
             new(SheetName, "Anti-cheat", "Optional", "Yes: the student is warned when leaving the exam page, copying, pasting, printing or taking a screenshot; after 3 warnings the exam is handed in. Empty: Yes.", "Choose it from the list."),
             new(QuestionsSheetName, "Exam", "Needed", "The title of the exam the question belongs to, the same as in the sheet Summative exams.", TemplateGuide.TypeIt),
             new(QuestionsSheetName, "Question", "Needed", "The question the students read.", TemplateGuide.TypeIt),
-            new(QuestionsSheetName, "Type", "Needed", "Multiple choice, True or false, or Short answer.", "Choose it from the list."),
+            new(QuestionsSheetName, "Type", "Needed", "Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay.", "Choose it from the list."),
             new(QuestionsSheetName, "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
             new(QuestionsSheetName, "Right answer", "Needed", "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
             new(QuestionsSheetName, "Points", "Optional", "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),

@@ -94,6 +94,18 @@ public class MaterialQuestion : AuditableEntity
     public decimal Points { get; set; } = 1;
 }
 
+/// <summary>A picture of a question of a summative exam of the library (slot 0: the question, 1 and up: its choices). It goes with the question into the copy each section gets.</summary>
+public class MaterialQuestionImage : AuditableEntity
+{
+    public int QuestionId { get; set; }
+    public MaterialQuestion Question { get; set; } = null!;
+
+    public int Slot { get; set; }
+    public string Name { get; set; } = "";
+    public string ContentType { get; set; } = "image/png";
+    public byte[] Data { get; set; } = [];
+}
+
 /// <summary>
 /// That a module of the library was sent to a teacher's course: <see cref="ModuleId"/> is the draft the teacher got. One per
 /// library module and course of a teacher. When the teacher deletes their copy this row goes too, and the provider can send it again.

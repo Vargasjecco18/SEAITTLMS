@@ -6,7 +6,9 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-public sealed record AttemptQuestion(int Id, int Number, string Text, string Kind, IReadOnlyList<string> Options, decimal Points, string? Answer);
+/// <param name="ImageId">The picture of the question (the number for the address <c>files/q/{id}</c>), if it has one.</param>
+/// <param name="OptionImageIds">The pictures of the choices, in the order they are shown (an entry is null for a choice with no picture).</param>
+public sealed record AttemptQuestion(int Id, int Number, string Text, string Kind, IReadOnlyList<string> Options, decimal Points, string? Answer, int? ImageId = null, IReadOnlyList<int?>? OptionImageIds = null);
 
 /// <summary>A quiz a student is taking. It never carries the right answers.</summary>
 public sealed record QuizAttempt(
@@ -102,7 +104,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
                 return new StartResult(null, "The time for this quiz is over. Your answers were handed in.");
             }
 
-            return new StartResult(BuildAttempt(context, submission, questions), null);
+            return new StartResult(await BuildAttemptAsync(db, context, submission, questions, ct), null);
         }
 
         if (item.DueAtUtc is { } due && now > due)
@@ -113,7 +115,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         var state = new AttemptState();
         var ids = questions.Select(q => q.Id).ToList();
         state.Order = item.ShuffleQuestions ? ids.OrderBy(_ => Random.Shared.Next()).ToList() : ids;
-        foreach (var q in questions.Where(q => q.Kind == QuestionKinds.MultipleChoice))
+        foreach (var q in questions.Where(q => q.Kind is QuestionKinds.MultipleChoice or QuestionKinds.MultipleSelect))
         {
             var count = ModuleService.SplitOptions(q.OptionsText).Count;
             var order = Enumerable.Range(0, count).ToList();
@@ -131,11 +133,13 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             return new StartResult(null, "The quiz is already open in another window.");
         }
 
-        return new StartResult(BuildAttempt(context, submission, questions), null);
+        return new StartResult(await BuildAttemptAsync(db, context, submission, questions, ct), null);
     }
 
-    private static QuizAttempt BuildAttempt(ItemContext context, Submission submission, List<QuizQuestion> questions)
+    private static async Task<QuizAttempt> BuildAttemptAsync(AppDbContext db, ItemContext context, Submission submission, List<QuizQuestion> questions, CancellationToken ct)
     {
+        var questionIds = questions.Select(q => q.Id).ToList();
+        var pictures = (await db.QuizQuestionImages.AsNoTracking().Where(i => questionIds.Contains(i.QuestionId)).Select(i => new { i.Id, i.QuestionId, i.Slot }).ToListAsync(ct)).ToLookup(i => i.QuestionId);
         var state = ReadState(submission.AnswersJson);
         var byId = questions.ToDictionary(q => q.Id);
         var order = state.Order.Where(byId.ContainsKey).ToList();
@@ -147,18 +151,27 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         {
             var q = byId[id];
             var options = new List<string>();
-            if (q.Kind == QuestionKinds.MultipleChoice)
+            var optionImages = new List<int?>();
+            var mine = pictures[id].ToList();
+            if (q.Kind is QuestionKinds.MultipleChoice or QuestionKinds.MultipleSelect)
             {
                 var all = ModuleService.SplitOptions(q.OptionsText);
                 var sequence = state.OptionOrder.TryGetValue(id, out var o) && o.Count == all.Count ? o : Enumerable.Range(0, all.Count).ToList();
                 options = sequence.Select(n => all[n]).ToList();
+                optionImages = sequence.Select(n => mine.FirstOrDefault(p => p.Slot == n + 1)?.Id).ToList();
+            }
+            else if (q.Kind == QuestionKinds.Matching)
+            {
+                // Column B in the order it was written (the letters A, B, C ... follow it)
+                options = ModuleService.SplitOptions(q.OptionsText);
+                optionImages = options.Select((_, n) => mine.FirstOrDefault(p => p.Slot == n + 1)?.Id).ToList();
             }
             else if (q.Kind == QuestionKinds.TrueFalse)
             {
                 options = ["True", "False"];
             }
 
-            shown.Add(new AttemptQuestion(id, ++number, q.Text, q.Kind, options, q.Points, state.Answers.GetValueOrDefault(id)));
+            shown.Add(new AttemptQuestion(id, ++number, q.Text, q.Kind, options, q.Points, state.Answers.GetValueOrDefault(id), mine.FirstOrDefault(p => p.Slot == 0)?.Id, optionImages));
         }
 
         var started = submission.StartedAtUtc ?? submission.CreatedAtUtc;
@@ -190,7 +203,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         if (questions.Any(q => q.Id == questionId))
         {
             var state = ReadState(submission.AnswersJson);
-            state.Answers[questionId] = (answer ?? "").Length > 500 ? answer![..500] : answer ?? "";
+            state.Answers[questionId] = (answer ?? "").Length > QuestionRules.MaxAnswerLength ? answer![..QuestionRules.MaxAnswerLength] : answer ?? "";
             submission.AnswersJson = JsonSerializer.Serialize(state, Json);
             await db.SaveChangesAsync(ct);
         }
@@ -219,7 +232,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             foreach (var q in questions.Where(q => answers.ContainsKey(q.Id)))
             {
                 var text = answers[q.Id] ?? "";
-                state.Answers[q.Id] = text.Length > 500 ? text[..500] : text;
+                state.Answers[q.Id] = text.Length > QuestionRules.MaxAnswerLength ? text[..QuestionRules.MaxAnswerLength] : text;
             }
 
             submission.AnswersJson = JsonSerializer.Serialize(state, Json);
@@ -227,6 +240,11 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         Finalize(submission, item, questions, now, late ? "time" : null);
         await db.SaveChangesAsync(ct);
+        if (submission.Status != SubmissionStatus.Graded)
+        {
+            return ServiceResult.Ok("Handed in. Your teacher will score your essay and share the result.");
+        }
+
         return ServiceResult.Ok(item.ShowResult ? $"Handed in. You got {submission.Score:0.##} out of {item.MaxScore:0.##}." : "Handed in. Your teacher will share the result.");
     }
 
@@ -317,8 +335,10 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         return questions.Select(q =>
         {
             var given = state.Answers.GetValueOrDefault(q.Id);
-            var correct = IsCorrect(q, given);
-            return new AnswerReview(q.Text, q.Kind, string.IsNullOrWhiteSpace(given) ? null : given, q.CorrectAnswer.Replace("|", " / "), correct, q.Points, correct ? q.Points : 0);
+            var earned = QuestionRules.Earned(q.Kind, q.Text, q.OptionsText, q.CorrectAnswer, q.Points, given);
+            var manual = q.Kind == QuestionKinds.Essay;
+            return new AnswerReview(q.Text, q.Kind, string.IsNullOrWhiteSpace(given) ? null : QuestionRules.ShowGiven(q.Kind, given), QuestionRules.Show(q.Kind, q.CorrectAnswer),
+                !manual && earned >= q.Points, q.Points, earned, manual);
         }).ToList();
     }
 
@@ -357,10 +377,13 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
     private static void Finalize(Submission submission, ModuleItem item, IReadOnlyList<QuizQuestion> questions, DateTime now, string? reason)
     {
         var state = ReadState(submission.AnswersJson);
-        submission.Score = Math.Round(questions.Where(q => IsCorrect(q, state.Answers.GetValueOrDefault(q.Id))).Sum(q => q.Points), 2);
-        submission.Status = SubmissionStatus.Graded;
+        var earned = Math.Round(questions.Sum(q => QuestionRules.Earned(q.Kind, q.Text, q.OptionsText, q.CorrectAnswer, q.Points, state.Answers.GetValueOrDefault(q.Id))), 2);
+        // A quiz with an essay waits for the teacher: it is handed in and the teacher gives the score (the score is empty until then).
+        var waits = questions.Any(q => q.Kind == QuestionKinds.Essay);
+        submission.Score = waits ? null : earned;
+        submission.Status = waits ? SubmissionStatus.Submitted : SubmissionStatus.Graded;
         submission.SubmittedAtUtc = now;
-        submission.GradedAtUtc = now;
+        submission.GradedAtUtc = waits ? null : now;
         submission.AutoSubmitReason = reason;
         submission.IsLate = false;
         if (reason is "violations")
@@ -369,20 +392,36 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
         }
     }
 
-    public static bool IsCorrect(QuizQuestion q, string? given)
+    /// <summary>Whether the answer earns all the points of the question (an essay never does by itself).</summary>
+    public static bool IsCorrect(QuizQuestion q, string? given) =>
+        q.Kind != QuestionKinds.Essay && QuestionRules.Earned(q.Kind, q.Text, q.OptionsText, q.CorrectAnswer, q.Points, given) >= q.Points;
+
+    /// <summary>
+    /// A picture of a question, for the student who has the quiz (once it is posted) or the teacher of the course. The address is <c>files/q/{id}</c>; the picture is the one of the copy
+    /// the course has, so a student can't open a picture of another course.
+    /// </summary>
+    public async Task<(string Name, string ContentType, byte[] Data)?> OpenImageAsync(int userId, int imageId, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(given))
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var image = await db.QuizQuestionImages.AsNoTracking().Where(i => i.Id == imageId)
+            .Select(i => new { i.Name, i.ContentType, i.Data, i.Question.ItemId, TeacherUserId = i.Question.Item.Module.Assignment.Teacher.UserId })
+            .FirstOrDefaultAsync(ct);
+        if (image is null)
         {
-            return false;
+            return null;
         }
 
-        return q.Kind switch
+        if (image.TeacherUserId == userId)
         {
-            QuestionKinds.ShortAnswer => q.CorrectAnswer.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Any(a => string.Equals(Normalize(a), Normalize(given), StringComparison.OrdinalIgnoreCase)),
-            _ => string.Equals(q.CorrectAnswer.Trim(), given.Trim(), StringComparison.OrdinalIgnoreCase),
-        };
-    }
+            return (image.Name, image.ContentType, image.Data);
+        }
 
-    private static string Normalize(string text) => string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        var studentId = await db.Students.AsNoTracking().Where(s => s.UserId == userId).Select(s => (int?)s.Id).FirstOrDefaultAsync(ct);
+        if (studentId is { } sid && await ItemAccess.ForStudentAsync(db, sid, image.ItemId, Now, tracking: false, ct) is not null)
+        {
+            return (image.Name, image.ContentType, image.Data);
+        }
+
+        return null;
+    }
 }

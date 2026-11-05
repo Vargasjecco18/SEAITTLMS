@@ -47,64 +47,92 @@
                                 <th scope="col" class="c-right">Right answer</th>
                                 <th scope="col" class="c-points">Points</th>
                                 <th scope="col" class="c-state">Ready</th>
+                                <th scope="col" class="c-open"><span class="sr-only">Open the question in a box</span></th>
                                 <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var (row, n) in rows.Select((r, i) => (r, i + 1)))
                             {
-                                var problems = ProblemsOf(row);
-                                var filled = IsFilled(row);
-                                var isChoice = row.Kind == QuestionKinds.MultipleChoice;
+                                var problems = row.Problems();
+                                var filled = row.IsFilled;
+                                var kind = row.Kind;
+                                var isChoice = kind is QuestionKinds.MultipleChoice or QuestionKinds.MultipleSelect;
                                 <tr class="@(filled ? (problems.Count == 0 ? "ok" : "bad") : "empty")" data-row="@n">
                                     <td class="c-n">@n</td>
-                                    <td class="c-q">
-                                        <input class="cell" type="text" maxlength="1000" autocomplete="off" aria-label="@($"Question {n}")" placeholder="Write the question" value="@row.Text" @key="@($"q-{row.Id}")"
-                                               @onchange="e => row.Text = e.Value?.ToString() ?? string.Empty" />
+                                    @* The question and the choices open in a box of their own (a double click, or the button): there the pictures and all the choices are. *@
+                                    <td class="c-q" @ondblclick="() => OpenRow(row)">
+                                        @if (kind == QuestionKinds.Matching)
+                                        {
+                                            <button type="button" class="cell summary" aria-label="@($"Open matching question {n}")" @onclick="() => OpenRow(row)">@MatchingSummary(row)</button>
+                                        }
+                                        else
+                                        {
+                                            <input class="cell" type="text" maxlength="1000" autocomplete="off" aria-label="@($"Question {n}")" placeholder="@(kind == QuestionKinds.FillInTheBlank ? "Write the sentence with ___ for each blank" : "Write the question")" value="@row.Text" @key="@($"q-{row.Id}-{kind}")"
+                                                   @onchange="e => row.Text = e.Value?.ToString() ?? string.Empty" />
+                                        }
+                                        @if (row.Image is not null)
+                                        {
+                                            <span class="has-picture" title="This question has a picture"><Icon Name="image" Size="14" /></span>
+                                        }
                                     </td>
                                     <td class="c-type">
                                         <select class="cell pick" aria-label="@($"Type of question {n}")" @onchange="e => ChangeKind(row, e.Value?.ToString())">
-                                            <option value="@QuestionKinds.MultipleChoice" selected="@(row.Kind == QuestionKinds.MultipleChoice)">Multiple choice</option>
-                                            <option value="@QuestionKinds.TrueFalse" selected="@(row.Kind == QuestionKinds.TrueFalse)">True or false</option>
-                                            <option value="@QuestionKinds.ShortAnswer" selected="@(row.Kind == QuestionKinds.ShortAnswer)">Short answer</option>
+                                            @foreach (var k in QuestionKinds.All)
+                                            {
+                                                <option value="@k" selected="@(kind == k)">@QuestionKinds.Display(k)</option>
+                                            }
                                         </select>
                                     </td>
                                     @for (var c = 0; c < Columns; c++)
                                     {
                                         var at = c;
-                                        <td class="c-choice">
+                                        <td class="c-choice" @ondblclick="() => OpenRow(row)">
                                             <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Choice {(char)('A' + at)} of question {n}")" disabled="@(!isChoice)"
-                                                   placeholder="@(isChoice ? "" : "—")" value="@row.Choices[at]" @key="@($"c{at}-{row.Id}-{row.Kind}")"
-                                                   @onchange="e => row.Choices[at] = e.Value?.ToString() ?? string.Empty" />
+                                                   placeholder="@(isChoice ? "" : "—")" value="@(isChoice ? row.Options[at] : "")" @key="@($"c{at}-{row.Id}-{kind}")"
+                                                   @onchange="e => row.Options[at] = e.Value?.ToString() ?? string.Empty" />
                                         </td>
                                     }
-                                    <td class="c-right">
-                                        @if (row.Kind == QuestionKinds.ShortAnswer)
+                                    <td class="c-right" @ondblclick="() => OpenRow(row)">
+                                        @switch (kind)
                                         {
-                                            <input class="cell" type="text" maxlength="500" autocomplete="off" aria-label="@($"Right answer of question {n}")" placeholder="Answer (or a | b)" value="@row.Short" @key="@($"s-{row.Id}")"
-                                                   @onchange="e => row.Short = e.Value?.ToString() ?? string.Empty" />
-                                        }
-                                        else
-                                        {
-                                            <select class="cell pick" aria-label="@($"Right answer of question {n}")" @onchange="e => row.Right = e.Value?.ToString() ?? string.Empty">
-                                                <option value="" selected="@(row.Right.Length == 0)">Choose</option>
-                                                @if (isChoice)
-                                                {
-                                                    @for (var c = 0; c < Columns; c++)
-                                                    {
-                                                        var letter = ((char)('A' + c)).ToString();
-                                                        if (row.Choices[c].Trim().Length > 0)
-                                                        {
-                                                            <option value="@letter" selected="@(row.Right == letter)">@letter · @Shorten(row.Choices[c])</option>
-                                                        }
-                                                    }
-                                                }
-                                                else
-                                                {
+                                            case QuestionKinds.ShortAnswer:
+                                            case QuestionKinds.Identification:
+                                                <input class="cell" type="text" maxlength="500" autocomplete="off" aria-label="@($"Right answer of question {n}")" placeholder="Answer (or a | b)" value="@row.Short" @key="@($"s-{row.Id}")"
+                                                       @onchange="e => row.Short = e.Value?.ToString() ?? string.Empty" />
+                                                break;
+                                            case QuestionKinds.TrueFalse:
+                                                <select class="cell pick" aria-label="@($"Right answer of question {n}")" @onchange="e => row.Right = e.Value?.ToString() ?? string.Empty">
+                                                    <option value="" selected="@(row.Right.Length == 0)">Choose</option>
                                                     <option value="True" selected="@(row.Right == "True")">True</option>
                                                     <option value="False" selected="@(row.Right == "False")">False</option>
-                                                }
-                                            </select>
+                                                </select>
+                                                break;
+                                            case QuestionKinds.MultipleChoice:
+                                                <select class="cell pick" aria-label="@($"Right answer of question {n}")" @onchange="e => row.Right = e.Value?.ToString() ?? string.Empty">
+                                                    <option value="" selected="@(row.Right.Length == 0)">Choose</option>
+                                                    @for (var c = 0; c < row.Options.Count; c++)
+                                                    {
+                                                        var letter = QuestionSheetRow.Letter(c);
+                                                        if (row.Options[c].Trim().Length > 0)
+                                                        {
+                                                            <option value="@letter" selected="@(row.Right == letter)">@letter · @Shorten(row.Options[c])</option>
+                                                        }
+                                                    }
+                                                </select>
+                                                break;
+                                            case QuestionKinds.MultipleSelect:
+                                                <button type="button" class="cell summary" aria-label="@($"Right answers of question {n}")" @onclick="() => OpenRow(row)">@(row.RightSet.Count == 0 ? "Choose the right ones" : string.Join(", ", row.RightSet.OrderBy(x => x).Select(QuestionSheetRow.Letter)))</button>
+                                                break;
+                                            case QuestionKinds.FillInTheBlank:
+                                                <button type="button" class="cell summary" aria-label="@($"Answers of the blanks of question {n}")" @onclick="() => OpenRow(row)">@(row.BlankCount == 0 ? "Add a blank ___ first" : $"{row.Blanks.Count(b => b.Trim().Length > 0)} of {row.BlankCount} answers")</button>
+                                                break;
+                                            case QuestionKinds.Matching:
+                                                <button type="button" class="cell summary" aria-label="@($"Pairs of question {n}")" @onclick="() => OpenRow(row)">@(row.Pairs.Count(p => p.Trim().Length > 0)) of @(row.ColumnA.Count(a => a.Trim().Length > 0)) pairs</button>
+                                                break;
+                                            default:
+                                                <span class="cell muted-cell">Scored by the teacher</span>
+                                                break;
                                         }
                                     </td>
                                     <td class="c-points">
@@ -125,6 +153,9 @@
                                             <span class="state-bad" title="@string.Join(" ", problems)"><Icon Name="circle-alert" Size="15" /> @problems[0]</span>
                                         }
                                     </td>
+                                    <td class="c-open">
+                                        <button type="button" class="row-open" data-open-row="@n" title="@($"Open question {n} in a box: pictures, all the choices")" aria-label="@($"Open question {n} in a box")" @onclick="() => OpenRow(row)"><Icon Name="pencil" Size="15" /></button>
+                                    </td>
                                     <td class="c-x">
                                         <button type="button" class="row-x" title="@($"Take row {n} out")" aria-label="@($"Take row {n} out")" disabled="@(rows.Count <= 1)" @onclick="() => RemoveRow(row)"><Icon Name="trash-2" Size="15" /></button>
                                     </td>
@@ -139,9 +170,10 @@
                     <span class="add-rows" role="group" aria-label="Add rows">
                         <span>Add</span>
                         <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
-                            <option value="@QuestionKinds.MultipleChoice">Multiple choice</option>
-                            <option value="@QuestionKinds.TrueFalse">True or false</option>
-                            <option value="@QuestionKinds.ShortAnswer">Short answer</option>
+                            @foreach (var k in QuestionKinds.All)
+                            {
+                                <option value="@k">@QuestionKinds.Display(k)</option>
+                            }
                         </select>
                         <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
                         <span>@(addCount == 1 ? "row" : "rows")</span>
@@ -160,9 +192,10 @@
                 <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
                 <ol>
                     <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
-                    <li><strong>Choose the type</strong> from the list: multiple choice, true or false, or short answer.</li>
-                    <li>For <em>multiple choice</em>, <strong>write the choices</strong> in A to D (at least two).</li>
-                    <li><strong>Choose the right answer</strong> from the list: the choice that is right, or True or False. For a short answer, type the answer (several accepted answers are separated by <em>|</em>).</li>
+                    <li><strong>Choose the type</strong> from the list: multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select or essay.</li>
+                    <li>For <em>multiple choice</em> and <em>multiple select</em>, <strong>write the choices</strong> in A to D (at least two).</li>
+                    <li><strong>Choose the right answer</strong> from the list: the choice that is right, or True or False. For a short answer or an identification, type the answer (several accepted answers are separated by <em>|</em>).</li>
+                    <li><strong>Double click a question</strong> (or press the box button at the end of the row) to open it in a box: there you can <strong>add a picture</strong> to the question and to each choice, write more choices, the blanks, the two columns of a matching type, and pick the right answers.</li>
                     <li><strong>Set the points</strong> of the question (1 if you leave it).</li>
                     <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
                     <li><strong>Press Save.</strong> @SaveStep</li>
@@ -172,33 +205,15 @@
     }
 </Modal>
 
+<QuestionRowDialog Row="opened" Number="@(opened is null ? 0 : rows.IndexOf(opened) + 1)" OnClose="CloseRow" />
+
 @code {
-    /// <summary>Choice A to D: four boxes. A question that has more choices (from an earlier import) keeps them in <see cref="SheetRow.More"/>.</summary>
+    /// <summary>Choice A to D: four boxes in the sheet. The box of a row has all the choices (up to eight).</summary>
     private const int Columns = 4;
 
-    private sealed class SheetRow
-    {
-        public int Id { get; init; }
-        public string Text { get; set; } = "";
-        public string Kind { get; set; } = QuestionKinds.MultipleChoice;
-        public string[] Choices { get; } = new string[Columns].Select(_ => "").ToArray();
-
-        /// <summary>The choices after D of a question that was written before this sheet (they stay as they are).</summary>
-        public List<string> More { get; } = [];
-
-        /// <summary>The right answer of a multiple choice (the letter, A to D) or of a true or false (True or False).</summary>
-        public string Right { get; set; } = "";
-
-        /// <summary>The right answer of a short answer.</summary>
-        public string Short { get; set; } = "";
-
-        public string Points { get; set; } = "1";
-
-        public decimal PointsValue => decimal.TryParse(Points, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var p) ? p : 0;
-    }
-
-    private readonly List<SheetRow> rows = [];
+    private readonly List<QuestionSheetRow> rows = [];
     private int nextId;
+    private QuestionSheetRow? opened;
 
     // The type and the number of the rows that "Add [type] [number] rows" puts at the end.
     private string addKind = QuestionKinds.MultipleChoice;
@@ -245,6 +260,7 @@
         if (!Open)
         {
             rows.Clear();
+            opened = null;
         }
         else if (!wasOpen)
         {
@@ -252,7 +268,7 @@
             rows.Clear();
             foreach (var q in Existing)
             {
-                rows.Add(FromQuestion(q));
+                rows.Add(QuestionSheetRow.From(q, ++nextId));
             }
 
             AddRows(rows.Count == 0 ? 3 : 1, QuestionKinds.MultipleChoice);
@@ -261,52 +277,21 @@
         wasOpen = Open;
     }
 
-    private SheetRow FromQuestion(QuestionInput q)
-    {
-        var row = new SheetRow { Id = ++nextId, Text = q.Text, Kind = q.Kind, Points = q.Points.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) };
-        if (q.Kind == QuestionKinds.MultipleChoice)
-        {
-            var options = (q.OptionsText ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-            for (var c = 0; c < options.Count; c++)
-            {
-                if (c < Columns)
-                {
-                    row.Choices[c] = options[c];
-                }
-                else
-                {
-                    row.More.Add(options[c]);
-                }
-            }
-
-            var at = options.FindIndex(o => string.Equals(o, q.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase));
-            row.Right = at is >= 0 and < Columns ? ((char)('A' + at)).ToString() : "";
-        }
-        else if (q.Kind == QuestionKinds.TrueFalse)
-        {
-            row.Right = q.CorrectAnswer;
-        }
-        else
-        {
-            row.Short = q.CorrectAnswer;
-        }
-
-        return row;
-    }
-
     private Task CloseAsync() => OnClose.InvokeAsync();
 
     private void AddRows(int count, string kind)
     {
         for (var n = 0; n < count && rows.Count < ItemSheets.MaxQuestions; n++)
         {
-            rows.Add(new SheetRow { Id = ++nextId, Kind = kind });
+            var row = new QuestionSheetRow { Id = ++nextId, Kind = kind };
+            row.Fit();
+            rows.Add(row);
         }
     }
 
     private void AddChosenRows() => AddRows(Math.Clamp(addCount, 1, 50), addKind);
 
-    private void RemoveRow(SheetRow row)
+    private void RemoveRow(QuestionSheetRow row)
     {
         if (rows.Count > 1)
         {
@@ -314,91 +299,36 @@
         }
     }
 
-    /// <summary>A new type clears what only fits the old one (the right answer, and the choices when it is not multiple choice).</summary>
-    private static void ChangeKind(SheetRow row, string? kind)
+    private static void ChangeKind(QuestionSheetRow row, string? kind)
     {
-        if (kind is null || kind == row.Kind)
+        if (kind is not null)
         {
-            return;
-        }
-
-        row.Kind = kind;
-        row.Right = "";
-        row.Short = "";
-        if (kind != QuestionKinds.MultipleChoice)
-        {
-            for (var c = 0; c < Columns; c++)
-            {
-                row.Choices[c] = "";
-            }
-
-            row.More.Clear();
+            row.ChangeKind(kind);
         }
     }
+
+    private void OpenRow(QuestionSheetRow row) => opened = row;
+
+    private void CloseRow() => opened = null;
 
     private static string Shorten(string text) => text.Length <= 18 ? text : text[..17] + "…";
 
-    private static bool IsFilled(SheetRow row) =>
-        row.Text.Trim().Length > 0 || row.Choices.Any(c => c.Trim().Length > 0) || row.Right.Length > 0 || row.Short.Trim().Length > 0;
-
-    private IReadOnlyList<SheetRow> Filled => [.. rows.Where(IsFilled)];
-
-    private int ReadyCount => Filled.Count(r => ProblemsOf(r).Count == 0);
-
-    private static QuestionInput ToQuestion(SheetRow row)
+    private static string MatchingSummary(QuestionSheetRow row)
     {
-        var question = new QuestionInput { Text = row.Text.Trim(), Kind = row.Kind, Points = row.PointsValue };
-        if (row.Kind == QuestionKinds.MultipleChoice)
-        {
-            var texts = row.Choices.Select(c => c.Trim()).ToList();
-            question.OptionsText = string.Join('\n', texts.Where(t => t.Length > 0).Concat(row.More));
-            var at = row.Right.Length == 1 ? row.Right[0] - 'A' : -1;
-            question.CorrectAnswer = at is >= 0 and < Columns ? texts[at] : "";
-        }
-        else if (row.Kind == QuestionKinds.TrueFalse)
-        {
-            question.CorrectAnswer = row.Right;
-        }
-        else
-        {
-            question.CorrectAnswer = row.Short.Trim();
-        }
-
-        return question;
+        var a = row.ColumnA.Count(x => x.Trim().Length > 0);
+        var b = row.Options.Count(x => x.Trim().Length > 0);
+        return a + b == 0 ? "Matching: open to write Column A and B" : $"Column A: {a} · Column B: {b}";
     }
 
-    private static List<string> ProblemsOf(SheetRow row)
-    {
-        var problems = new List<string>();
-        if (row.Points.Trim().Length > 0 && row.PointsValue <= 0)
-        {
-            problems.Add("The points must be a number from 0.01 to 100.");
-        }
+    private IReadOnlyList<QuestionSheetRow> Filled => [.. rows.Where(r => r.IsFilled)];
 
-        if (row.Kind == QuestionKinds.MultipleChoice && row.Right.Length == 0 && row.Choices.Count(c => c.Trim().Length > 0) >= 2)
-        {
-            problems.Add("Choose the right answer.");
-        }
-
-        if (problems.Count == 0)
-        {
-            var question = ToQuestion(row);
-            if (row.Points.Trim().Length == 0)
-            {
-                question.Points = 1;
-            }
-
-            problems.AddRange(ModuleService.ValidateQuestions([question]).Select(e => e.Replace("Question 1: ", "")));
-        }
-
-        return problems;
-    }
+    private int ReadyCount => Filled.Count(r => r.Problems().Count == 0);
 
     private async Task SaveAsync()
     {
         var list = Filled.Select(r =>
         {
-            var q = ToQuestion(r);
+            var q = r.ToQuestion();
             if (r.Points.Trim().Length == 0)
             {
                 q.Points = 1;

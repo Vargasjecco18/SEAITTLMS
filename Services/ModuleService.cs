@@ -57,6 +57,12 @@ public sealed class QuestionInput
 
     public string CorrectAnswer { get; set; } = "";
     public decimal Points { get; set; } = 1;
+
+    /// <summary>The picture of the question (optional).</summary>
+    public QuestionPicture? Image { get; set; }
+
+    /// <summary>The pictures of the choices (multiple choice and multiple select) or of the rows of Column B (matching), in the order of the lines of the choices; an entry is null for a choice with no picture.</summary>
+    public List<QuestionPicture?> OptionImages { get; set; } = [];
 }
 
 // ---------------------------------------------------------------------- what the teacher sees
@@ -490,9 +496,18 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             return null;
         }
 
-        return await db.QuizQuestions.AsNoTracking().Where(q => q.ItemId == itemId).OrderBy(q => q.Position).ThenBy(q => q.Id)
-            .Select(q => new QuestionInput { Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points })
+        var rows = await db.QuizQuestions.AsNoTracking().Where(q => q.ItemId == itemId).OrderBy(q => q.Position).ThenBy(q => q.Id)
+            .Select(q => new { q.Id, Input = new QuestionInput { Text = q.Text, Kind = q.Kind, OptionsText = q.OptionsText, CorrectAnswer = q.CorrectAnswer, Points = q.Points } })
             .ToListAsync(ct);
+        var ids = rows.Select(r => r.Id).ToList();
+        var pictures = (await db.QuizQuestionImages.AsNoTracking().Where(i => ids.Contains(i.QuestionId)).Select(i => new { i.QuestionId, i.Slot, i.Name, i.ContentType, i.Data }).ToListAsync(ct))
+            .ToLookup(i => i.QuestionId, i => (i.Slot, new QuestionPicture { Name = i.Name, ContentType = i.ContentType, Data = i.Data }));
+        foreach (var r in rows)
+        {
+            QuestionRules.AttachPictures(r.Input, pictures[r.Id]);
+        }
+
+        return [.. rows.Select(r => r.Input)];
     }
 
     internal const string FileQuizHasNoQuestions = "This quiz is a file, so it has no questions. Take the file off first to write questions.";
@@ -529,15 +544,13 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var position = 0;
         foreach (var q in questions)
         {
-            db.QuizQuestions.Add(new QuizQuestion
+            var (options, correct) = QuestionRules.ToStored(q);
+            var row = new QuizQuestion { ItemId = itemId, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind, OptionsText = options, CorrectAnswer = correct, Points = q.Points };
+            db.QuizQuestions.Add(row);
+            foreach (var (slot, picture) in QuestionRules.SlotsOf(q))
             {
-                ItemId = itemId, Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
-                OptionsText = q.Kind == QuestionKinds.MultipleChoice ? string.Join('\n', SplitOptions(q.OptionsText)) : null,
-                CorrectAnswer = q.Kind == QuestionKinds.MultipleChoice
-                    ? SplitOptions(q.OptionsText).First(o => string.Equals(o, q.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
-                    : q.CorrectAnswer.Trim(),
-                Points = q.Points,
-            });
+                db.QuizQuestionImages.Add(new QuizQuestionImage { Question = row, Slot = slot, Name = picture.Name, ContentType = picture.ContentType, Data = picture.Data });
+            }
         }
 
         item.MaxScore = questions.Count == 0 ? 100 : questions.Sum(q => q.Points);
@@ -552,54 +565,9 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var errors = new List<string>();
         for (var n = 0; n < questions.Count; n++)
         {
-            var q = questions[n];
             var label = $"Question {n + 1}";
-            if (string.IsNullOrWhiteSpace(q.Text) || q.Text.Trim().Length > 1000)
-            {
-                errors.Add($"{label}: write the question (up to 1000 characters).");
-            }
-
-            if (q.Points is <= 0 or > 100)
-            {
-                errors.Add($"{label}: the points must be between 0.01 and 100.");
-            }
-
-            switch (q.Kind)
-            {
-                case QuestionKinds.MultipleChoice:
-                    var options = SplitOptions(q.OptionsText);
-                    if (options.Count < 2)
-                    {
-                        errors.Add($"{label}: write at least two choices, one per line.");
-                    }
-                    else if (options.Distinct(StringComparer.OrdinalIgnoreCase).Count() != options.Count)
-                    {
-                        errors.Add($"{label}: two choices are the same.");
-                    }
-                    else if (!options.Contains(q.CorrectAnswer.Trim(), StringComparer.OrdinalIgnoreCase))
-                    {
-                        errors.Add($"{label}: pick the right choice.");
-                    }
-
-                    break;
-                case QuestionKinds.TrueFalse:
-                    if (q.CorrectAnswer is not ("True" or "False"))
-                    {
-                        errors.Add($"{label}: say whether the statement is true or false.");
-                    }
-
-                    break;
-                case QuestionKinds.ShortAnswer:
-                    if (string.IsNullOrWhiteSpace(q.CorrectAnswer) || q.CorrectAnswer.Length > 500)
-                    {
-                        errors.Add($"{label}: write the right answer (several can be separated by |).");
-                    }
-
-                    break;
-                default:
-                    errors.Add($"{label}: unknown kind of question.");
-                    break;
-            }
+            errors.AddRange(QuestionRules.Validate(questions[n], label));
+            errors.AddRange(QuestionRules.ValidatePictures(questions[n], label));
         }
 
         if (questions.Count > 100)

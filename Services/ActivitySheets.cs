@@ -60,12 +60,7 @@ public static class ActivitySheets
 
     private static string DateText(DateTime? utc) => utc is { } at ? PhilippineTime.ToLocal(at).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) : "";
 
-    private static string TypeText(string kind) => kind switch
-    {
-        QuestionKinds.TrueFalse => "True or false",
-        QuestionKinds.ShortAnswer => "Short answer",
-        _ => "Multiple choice",
-    };
+    private static string TypeText(string kind) => QuestionKinds.Display(kind);
 
     private static byte[] Build(IReadOnlyList<ActivityModuleExport> modules, bool example)
     {
@@ -168,9 +163,10 @@ public static class ActivitySheets
         {
             foreach (var q in quiz.Questions)
             {
-                questions.Set(qRow, 1, quiz.Row.Title, XlsxStyle.InputText).Set(qRow, 2, q.Text, XlsxStyle.Wrap).Set(qRow, 3, TypeText(q.Kind), XlsxStyle.InputText)
-                    .Set(qRow, 4, q.Kind == QuestionKinds.MultipleChoice ? string.Join("; ", ModuleService.SplitOptions(q.OptionsText)) : "", XlsxStyle.Wrap)
-                    .Set(qRow, 5, q.CorrectAnswer, XlsxStyle.InputText).Set(qRow, 6, q.Points, XlsxStyle.Input);
+                var cells = ItemSheets.CellsOf(q);
+                questions.Set(qRow, 1, quiz.Row.Title, XlsxStyle.InputText).Set(qRow, 2, cells.Text, XlsxStyle.Wrap).Set(qRow, 3, cells.Type, XlsxStyle.InputText)
+                    .Set(qRow, 4, cells.Choices, XlsxStyle.Wrap)
+                    .Set(qRow, 5, cells.Answer, XlsxStyle.InputText).Set(qRow, 6, q.Points, XlsxStyle.Input);
                 qRow++;
             }
         }
@@ -196,7 +192,7 @@ public static class ActivitySheets
         }
 
         questions.FrozenRows = 1;
-        questions.ListChoice($"C2:C{lastQuestionRow}", ["Multiple choice", "True or false", "Short answer"], "Choose the type from the list.");
+        questions.ListChoice($"C2:C{lastQuestionRow}", ItemSheets.TypeNames, "Choose the type from the list.");
         questions.Tip($"A2:A{lastQuestionRow}", "Type the title of the quiz this question belongs to, exactly as in the sheet " + ActivitiesSheet + ".");
         questions.Tip($"B2:B{lastQuestionRow}", "Type the question.");
         questions.Tip($"D2:D{lastQuestionRow}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.");
@@ -217,7 +213,7 @@ public static class ActivitySheets
             new(ActivitiesSheet, "Files", Optional, "The names of the files that go with it, like worksheet.pdf; rubric.docx.", "Type the names with a semicolon (;) between them. In the import box, choose the same files."),
             new(QuestionsSheet, "Quiz", Needed, "The quiz the question belongs to: its title, written like in the sheet " + ActivitiesSheet + ". This is what connects a question to its quiz.", TemplateGuide.TypeIt),
             new(QuestionsSheet, "Question", Needed, "The question the students read.", TemplateGuide.TypeIt),
-            new(QuestionsSheet, "Type", Needed, "Multiple choice, True or false, or Short answer.", "Choose it from the list."),
+            new(QuestionsSheet, "Type", Needed, "Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay.", "Choose it from the list."),
             new(QuestionsSheet, "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
             new(QuestionsSheet, "Right answer", Needed, "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
             new(QuestionsSheet, "Points", Optional, "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),

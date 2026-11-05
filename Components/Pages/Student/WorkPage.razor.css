@@ -197,3 +197,12 @@
     font-size: 0.92rem;
 }
 
+
+/* A question of a matching type has its Column A rows on separate lines; an essay waits for the score of the teacher. */
+.q-lines {
+    white-space: pre-line;
+}
+
+.manual {
+    border-left-color: var(--info, var(--brand));
+}

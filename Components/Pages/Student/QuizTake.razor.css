@@ -235,3 +235,106 @@
     75% { transform: translateX(-3px); }
     100% { transform: none; }
 }
+
+/* The pictures of a question and of its choices. */
+.q-image {
+    display: block;
+    max-width: min(100%, 34rem);
+    max-height: 22rem;
+    margin: 0.5rem 0 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+}
+
+.o-image {
+    display: block;
+    max-width: 14rem;
+    max-height: 9rem;
+    margin-top: 0.35rem;
+    border-radius: 0.4rem;
+    object-fit: contain;
+}
+
+/* A sentence with its blanks: the boxes sit inside the sentence. */
+.blanks {
+    line-height: 2.2;
+}
+
+.blank {
+    width: 9rem;
+    margin: 0 0.3rem;
+    padding: 0.2rem 0.5rem;
+    border: 0;
+    border-bottom: 2px solid var(--brand);
+    border-radius: 0;
+    background: var(--surface-2);
+    color: inherit;
+    font: inherit;
+    text-align: center;
+}
+
+.essay {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    resize: vertical;
+}
+
+.hint {
+    margin: 0.4rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* Matching type: Column A at the left with a list to choose from, Column B at the right with its letters. */
+.matching {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 1rem 1.5rem;
+    align-items: start;
+}
+
+.col-a,
+.col-b {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
+}
+
+.col-a li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 14rem);
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.col-b {
+    list-style: none;
+    padding: 0.7rem 0.85rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.col-a select {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: inherit;
+    font: inherit;
+}
+
+@media (max-width: 700px) {
+    .matching,
+    .col-a li {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

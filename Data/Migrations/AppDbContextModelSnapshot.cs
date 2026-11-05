@@ -1554,8 +1554,8 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<string>("CorrectAnswer")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
                         .HasColumnName("correct_answer");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -1603,8 +1603,60 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("material_questions", null, t =>
                         {
-                            t.HasCheckConstraint("ck_material_questions_kind", "kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer')");
+                            t.HasCheckConstraint("ck_material_questions_kind", "kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer', 'FillInTheBlank', 'Matching', 'Identification', 'MultipleSelect', 'Essay')");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialQuestionImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("longblob")
+                        .HasColumnName("data");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int")
+                        .HasColumnName("question_id");
+
+                    b.Property<int>("Slot")
+                        .HasColumnType("int")
+                        .HasColumnName("slot");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_material_question_images");
+
+                    b.HasIndex("QuestionId", "Slot")
+                        .IsUnique()
+                        .HasDatabaseName("ix_material_question_images_question_id_slot");
+
+                    b.ToTable("material_question_images", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Message", b =>
@@ -1966,8 +2018,8 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<string>("CorrectAnswer")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)")
                         .HasColumnName("correct_answer");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -2015,8 +2067,60 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.ToTable("quiz_questions", null, t =>
                         {
-                            t.HasCheckConstraint("ck_quiz_questions_kind", "kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer')");
+                            t.HasCheckConstraint("ck_quiz_questions_kind", "kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer', 'FillInTheBlank', 'Matching', 'Identification', 'MultipleSelect', 'Essay')");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.QuizQuestionImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("longblob")
+                        .HasColumnName("data");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int")
+                        .HasColumnName("question_id");
+
+                    b.Property<int>("Slot")
+                        .HasColumnType("int")
+                        .HasColumnName("slot");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quiz_question_images");
+
+                    b.HasIndex("QuestionId", "Slot")
+                        .IsUnique()
+                        .HasDatabaseName("ix_quiz_question_images_question_id_slot");
+
+                    b.ToTable("quiz_question_images", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Referral", b =>
@@ -4079,6 +4183,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Item");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialQuestionImage", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.MaterialQuestion", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_material_question_images_material_questions_question_id");
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Message", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "Recipient")
@@ -4199,6 +4315,18 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_quiz_questions_module_items_item_id");
 
                     b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.QuizQuestionImage", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.QuizQuestion", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quiz_question_images_quiz_questions_question_id");
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Referral", b =>

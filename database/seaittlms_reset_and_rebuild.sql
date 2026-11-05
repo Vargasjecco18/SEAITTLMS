@@ -2050,5 +2050,50 @@ ALTER TABLE `module_items` ADD CONSTRAINT `ck_module_items_kind` CHECK (kind IN 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261105160325_HideGradesAndOthersKind', '9.0.20');
 
+ALTER TABLE `quiz_questions` DROP CONSTRAINT `ck_quiz_questions_kind`;
+
+ALTER TABLE `material_questions` DROP CONSTRAINT `ck_material_questions_kind`;
+
+ALTER TABLE `quiz_questions` MODIFY COLUMN `correct_answer` varchar(2000) CHARACTER SET utf8mb4 NOT NULL;
+
+ALTER TABLE `material_questions` MODIFY COLUMN `correct_answer` varchar(2000) CHARACTER SET utf8mb4 NOT NULL;
+
+CREATE TABLE `material_question_images` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `question_id` int NOT NULL,
+    `slot` int NOT NULL,
+    `name` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `content_type` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `data` longblob NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_material_question_images` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_material_question_images_material_questions_question_id` FOREIGN KEY (`question_id`) REFERENCES `material_questions` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `quiz_question_images` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `question_id` int NOT NULL,
+    `slot` int NOT NULL,
+    `name` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `content_type` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `data` longblob NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_quiz_question_images` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_quiz_question_images_quiz_questions_question_id` FOREIGN KEY (`question_id`) REFERENCES `quiz_questions` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+ALTER TABLE `quiz_questions` ADD CONSTRAINT `ck_quiz_questions_kind` CHECK (kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer', 'FillInTheBlank', 'Matching', 'Identification', 'MultipleSelect', 'Essay'));
+
+ALTER TABLE `material_questions` ADD CONSTRAINT `ck_material_questions_kind` CHECK (kind IN ('MultipleChoice', 'TrueFalse', 'ShortAnswer', 'FillInTheBlank', 'Matching', 'Identification', 'MultipleSelect', 'Essay'));
+
+CREATE UNIQUE INDEX `ix_material_question_images_question_id_slot` ON `material_question_images` (`question_id`, `slot`);
+
+CREATE UNIQUE INDEX `ix_quiz_question_images_question_id_slot` ON `quiz_question_images` (`question_id`, `slot`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261105164837_QuestionKindsAndPictures', '9.0.20');
+
 COMMIT;
 

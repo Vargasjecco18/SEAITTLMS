@@ -31,7 +31,8 @@ public sealed record ItemSubmissionList(
     int ItemId, string Kind, string Title, decimal MaxScore, DateTime? DueAtUtc, int ModuleId, string ModuleTitle,
     int AssignmentId, string SubjectName, string SectionLabel, bool AntiCheat, int Questions, IReadOnlyList<SubmissionRow> Rows, string? Instructions = null);
 
-public sealed record AnswerReview(string Question, string Kind, string? Given, string Correct, bool IsCorrect, decimal Points, decimal Earned);
+/// <param name="Manual">An essay: the system does not score it, the teacher does (Earned is 0 until then).</param>
+public sealed record AnswerReview(string Question, string Kind, string? Given, string Correct, bool IsCorrect, decimal Points, decimal Earned, bool Manual = false);
 
 public sealed record SubmissionDetail(
     int StudentId, string StudentName, string Kind, string ItemTitle, decimal MaxScore, string Status,
