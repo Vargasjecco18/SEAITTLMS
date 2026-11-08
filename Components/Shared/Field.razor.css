@@ -70,3 +70,20 @@ label {
     color: var(--text-muted);
     font-size: 0.82rem;
 }
+
+/* A box with a problem (an empty required box, a wrong number): red border and a red line under it. */
+.field.invalid ::deep input:not([type="checkbox"]):not([type="radio"]),
+.field.invalid ::deep select,
+.field.invalid ::deep textarea {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.field-error {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--danger);
+    font-size: 0.82rem;
+    font-weight: 600;
+}

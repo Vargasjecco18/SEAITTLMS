@@ -1,4 +1,4 @@
-<div class="field @Class">
+<div class="field @Class @(string.IsNullOrEmpty(Error) ? "" : "invalid")">
     <label for="@For">
         @Label
         @if (Required)
@@ -7,7 +7,11 @@
         }
     </label>
     @ChildContent
-    @if (!string.IsNullOrEmpty(Hint))
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <small class="field-error" role="alert"><Icon Name="circle-alert" Size="13" /> @Error</small>
+    }
+    else if (!string.IsNullOrEmpty(Hint))
     {
         <small class="hint">@Hint</small>
     }
@@ -24,6 +28,9 @@
 
     /// <summary>Shows a star after the label. (Put the required attribute on the input itself.)</summary>
     [Parameter] public bool Required { get; set; }
+
+    /// <summary>What is wrong with the box (it is empty or not right): a red line under it and a red border. Empty: nothing is shown.</summary>
+    [Parameter] public string? Error { get; set; }
 
     [Parameter] public string? Class { get; set; }
 

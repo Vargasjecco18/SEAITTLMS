@@ -177,8 +177,8 @@
     private DateOnly? addDay;
     private string? eventMode;
 
-    /// <summary>The widgets at the right: a student's assignments (no separate due dates card), or the teacher's unchecked assignments and then the ones that have no due date yet.</summary>
-    private string AsideShow => isTeacher ? "unchecked,unassigned" : isStudent ? "activities" : "notices,holidays";
+    /// <summary>The widgets at the right: a student's assignments and the holidays of the Philippines (no separate due dates card), or the teacher's unchecked activities (including quizzes) and then the ones that have no due date yet.</summary>
+    private string AsideShow => isTeacher ? "unchecked,unassigned" : isStudent ? "activities,holidays" : "notices,holidays";
 
     /// <summary>What the legend says: the students and the teachers have the work; the staff only the announcements, the holidays and their own events.</summary>
     private IReadOnlyList<string> LegendKinds => isStudent || isTeacher

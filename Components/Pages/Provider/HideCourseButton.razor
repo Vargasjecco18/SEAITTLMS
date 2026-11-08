@@ -1,0 +1,57 @@
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject MaterialService Library
+@inject NavigationManager Navigation
+
+@* "Hide" after Open on a course of the Course library (and "Show" in the Hidden list). It hides the course of that strand, grade level and term from the library list, or shows it again. It is its own
+   live island so the list, which is a plain page, stays a plain page. The page is loaded again after the change so the course moves to the other list. *@
+<Button Small="true" Variant="ButtonVariant.Secondary" IconName="@(Hidden ? "eye" : "eye-off")" Disabled="busy" Title="@(Hidden ? $"Show {Name} in the library list again" : $"Hide {Name} from the library list")" OnClick="ToggleAsync">@(Hidden ? "Show" : "Hide")</Button>
+@if (error is not null)
+{
+    <span class="sr-only" role="alert">@error</span>
+}
+
+@code {
+    [Parameter, EditorRequired] public int SubjectId { get; set; }
+    [Parameter, EditorRequired] public int StrandId { get; set; }
+    [Parameter, EditorRequired] public byte GradeLevel { get; set; }
+    [Parameter, EditorRequired] public byte TermNumber { get; set; }
+
+    /// <summary>The name of the course, for the hint of the button.</summary>
+    [Parameter] public string Name { get; set; } = "";
+
+    /// <summary>True when the course is in the Hidden list now: the button shows it again.</summary>
+    [Parameter] public bool Hidden { get; set; }
+
+    private bool busy;
+    private string? error;
+
+    private async Task ToggleAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null
+                ? ServiceResult.Fail("Please sign in again.")
+                : await Library.SetLibraryCourseHiddenAsync(me.UserId, SubjectId, StrandId, GradeLevel, TermNumber, !Hidden);
+            if (!result.Succeeded)
+            {
+                error = string.Join(" ", result.Errors);
+                return;
+            }
+
+            // The page is a plain page: it is loaded again (same address, same lists) so the course is in the other list.
+            Navigation.Refresh(forceReload: true);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

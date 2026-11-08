@@ -148,13 +148,13 @@ public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFacto
         foreach (var row in book.Courses.Where(c => c.Line.IsReady))
         {
             courses.TryGetValue(row.Code, out var old);
-            if (old is not null && old.Name == row.Name && old.Units == row.Units && (old.Description ?? "") == (row.Description ?? "") && old.IsActive == row.Active)
+            if (old is not null && old.Name == row.Name && old.Units == row.Units && old.IsActive == row.Active)
             {
                 saved++;
                 continue;
             }
 
-            Done(row.Line, await setup.SaveSubjectAsync(new SubjectInput { Id = old?.Id, Code = row.Code, Name = row.Name, Description = row.Description, IsActive = row.Active, Units = row.Units }, actingUserId, ct));
+            Done(row.Line, await setup.SaveSubjectAsync(new SubjectInput { Id = old?.Id, Code = row.Code, Name = row.Name, Description = old?.Description, IsActive = row.Active, Units = row.Units }, actingUserId, ct));
         }
 
         courses = (await setup.ListSubjectsAsync(ct)).ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase);

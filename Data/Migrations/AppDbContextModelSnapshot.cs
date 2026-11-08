@@ -2745,6 +2745,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_offered");
 
+                    b.Property<DateTime?>("LibraryHiddenAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("library_hidden_at_utc");
+
                     b.HasKey("StrandId", "GradeLevel", "TermNumber", "SubjectId")
                         .HasName("pk_strand_subjects");
 

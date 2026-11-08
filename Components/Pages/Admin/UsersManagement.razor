@@ -413,7 +413,21 @@
                     </select>
                 </Field>
                 <Button Variant="ButtonVariant.Secondary" IconName="plus" Small="true" Title="Make a new role" OnClick="OpenAddRole">Add role</Button>
+                @* A role the administrator made can be taken out of the list (the usual roles can't). *@
+                <Button Variant="ButtonVariant.Ghost" IconName="trash-2" Small="true" Disabled="@(add.CustomRoleId is null)"
+                        Title="@(add.CustomRoleId is null ? "Choose a role you made to remove it. The usual roles can't be removed." : "Remove this role from the list")" OnClick="AskRemoveRole">Remove role</Button>
             </div>
+
+            @if (removingRole && add.CustomRoleId is { } removeId && customRoles.FirstOrDefault(c => c.Id == removeId) is { } removeRole)
+            {
+                <section class="role-box" aria-label="Remove the role" data-remove-role>
+                    <p class="note-line">Remove the role <strong>@removeRole.Name</strong> from the list? The people who have it keep their account and the same pages: they are shown as <strong>@AppRoles.DisplayName(removeRole.BaseRole)</strong> from now on.</p>
+                    <div class="role-actions">
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CancelRemoveRole">Keep it</Button>
+                        <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="RemoveRoleAsync">Remove this role</Button>
+                    </div>
+                </section>
+            }
 
             @if (addingRole)
             {
@@ -425,6 +439,20 @@
                     <Field For="r-name" Label="Name of the new role" Required="true" Hint="Like Librarian or Assistant Registrar. Many people can have it.">
                         <input id="r-name" maxlength="40" autocomplete="off" @bind="newRoleName" @bind:event="oninput" @onkeydown="RoleNameKeyAsync" />
                     </Field>
+                    <fieldset class="page-picks">
+                        <legend>What pages can the people of this role open?</legend>
+                        @foreach (var area in UserManagementService.NonTeachingRoles)
+                        {
+                            var chosen = area;
+                            <label class="page-pick @(newRoleBase == chosen ? "on" : "")">
+                                <input type="radio" name="r-pages" value="@chosen" checked="@(newRoleBase == chosen)" @onchange="() => newRoleBase = chosen" />
+                                <span>
+                                    <strong>The pages of the @AppRoles.DisplayName(chosen).ToLowerInvariant()</strong>
+                                    <small>@string.Join(" · ", UserManagementService.PagesOf(chosen))</small>
+                                </span>
+                            </label>
+                        }
+                    </fieldset>
                     <div class="role-actions">
                         <Button Variant="ButtonVariant.Ghost" OnClick="CloseAddRole">Cancel</Button>
                         <Button IconName="plus" Disabled="@(busy || string.IsNullOrWhiteSpace(newRoleName))" OnClick="SaveRoleAsync">Add this role</Button>
@@ -456,13 +484,9 @@
                     <InputText id="a-ext" @bind-Value="add.NameExtension" autocomplete="off" />
                 </Field>
             </div>
-            <Field For="a-email" Label="Email" Required="true" Hint="This is what they sign in with.">
-                <InputText id="a-email" type="email" @bind-Value="add.Email" autocomplete="off" />
-                <ValidationMessage For="() => add.Email" />
-            </Field>
             <div class="two">
-                <Field For="a-emp" Label="Employee number">
-                    <InputText id="a-emp" @bind-Value="add.EmployeeNumber" autocomplete="off" />
+                <Field For="a-emp" Label="Employee number" Required="true" Hint="Like T-014. The email and the password are made from the last name and its digits.">
+                    <InputText id="a-emp" @bind-Value="add.EmployeeNumber" maxlength="30" autocomplete="off" />
                 </Field>
                 <Field For="a-phone" Label="Phone number" Hint="Like 09171234567">
                     <InputText id="a-phone" @bind-Value="add.PhoneNumber" inputmode="tel" autocomplete="off" />
@@ -474,10 +498,22 @@
                     <option value="Inactive">Inactive</option>
                 </select>
             </Field>
-            <Field For="a-password" Label="First password" Required="true" Hint="At least 8 characters. Tell it to the person; they can ask an administrator to change it later.">
-                <InputText id="a-password" type="password" @bind-Value="add.Password" autocomplete="new-password" />
-                <ValidationMessage For="() => add.Password" />
-            </Field>
+            @* The email and the password are made by the system, like a student's: the last name and the digits of the employee number. *@
+            <section class="signin" aria-label="Sign-in details">
+                <h4><Icon Name="key-round" Size="16" /> Sign-in details</h4>
+                @if (Management.PreviewLogin(add.LastName, add.EmployeeNumber) is { } login)
+                {
+                    <dl class="preview">
+                        <div><dt>Email</dt><dd class="mono" id="a-preview-email">@login.Email</dd></div>
+                        <div><dt>First password</dt><dd class="mono" id="a-preview-password">@login.Password</dd></div>
+                    </dl>
+                    <p class="hint">Made from the last name and the digits of the employee number. They are created when you press the button below. Tell the password to the person: they can ask an administrator to change it later.</p>
+                }
+                else
+                {
+                    <p class="muted">Type the last name and the employee number and the email and the password appear here.</p>
+                }
+            </section>
 
             @if (tab.Role == AppRoles.Teacher && teachingLookups is not null)
             {
@@ -721,7 +757,7 @@
         [StringLength(10, ErrorMessage = "At most 10 characters.")]
         public string? NameExtension { get; set; }
 
-        [Required(ErrorMessage = "Enter the email."), StringLength(254)]
+        // (not asked: the system makes the email and the password of a teacher or a member of the staff)
         public string Email { get; set; } = "";
 
         public string? PhoneNumber { get; set; }
@@ -729,7 +765,6 @@
         [StringLength(30, ErrorMessage = "At most 30 characters.")]
         public string? EmployeeNumber { get; set; }
 
-        [Required(ErrorMessage = "Enter the first password."), StringLength(128)]
         public string Password { get; set; } = "";
 
         public bool IsActive { get; set; } = true;
@@ -776,6 +811,8 @@
     private bool addingRole;
     private string newRoleName = "";
     private string? roleError;
+    private string newRoleBase = CustomRole.DefaultBaseRole;
+    private bool removingRole;
 
     private string RoleChoice => add is null ? "" : add.CustomRoleId is { } id ? $"custom:{id}" : add.Role;
 
@@ -805,7 +842,48 @@
     {
         roleError = null;
         newRoleName = "";
+        newRoleBase = CustomRole.DefaultBaseRole;
+        removingRole = false;
         addingRole = true;
+    }
+
+    private void AskRemoveRole()
+    {
+        if (add?.CustomRoleId is not null)
+        {
+            addingRole = false;
+            removingRole = true;
+        }
+    }
+
+    private void CancelRemoveRole() => removingRole = false;
+
+    private async Task RemoveRoleAsync()
+    {
+        if (busy || add?.CustomRoleId is not { } id)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Management.RemoveRoleAsync(id, currentUserId);
+            formErrors = result.Succeeded ? [] : [.. result.Errors];
+            removingRole = false;
+            if (result.Succeeded)
+            {
+                message = result.Message;
+                customRoles = await Management.ListCustomRolesAsync();
+                add.CustomRoleId = null;
+                add.Role = AvailableStaffRoles.FirstOrDefault() ?? AppRoles.AcademicProvider;
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private void CloseAddRole()
@@ -832,7 +910,7 @@
         busy = true;
         try
         {
-            var result = await Management.AddRoleAsync(newRoleName, currentUserId);
+            var result = await Management.AddRoleAsync(newRoleName, newRoleBase, currentUserId);
             if (!result.Succeeded)
             {
                 roleError = result.Errors.FirstOrDefault() ?? "The role could not be added.";

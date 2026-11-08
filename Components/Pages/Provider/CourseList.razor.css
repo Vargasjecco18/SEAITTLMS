@@ -35,6 +35,11 @@
     font-weight: 600;
 }
 
+/* The Term list says "2nd Term (now)": it needs more room than the others so the words are not cut. */
+.filters select[name="term"] {
+    min-width: 10.2rem;
+}
+
 /* The button that posts the summative exams of the listed courses: right after the lists, at the right of All courses. */
 .post-exams {
     flex: 0 0 auto;
@@ -142,4 +147,11 @@
 .table-wrap {
     margin: -1.25rem;
     overflow-x: auto;
+}
+
+/* Open and Hide side by side in a row of the list. */
+.open-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
 }

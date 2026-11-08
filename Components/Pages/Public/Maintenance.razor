@@ -2,7 +2,6 @@
 @layout BlankLayout
 @attribute [AllowAnonymous]
 @inject SystemSettingsService School
-@inject NavigationManager Navigation
 
 <PageTitle>Maintenance · @School.Current.SchoolTitle</PageTitle>
 
@@ -29,7 +28,7 @@
         // Nothing to wait for: go on to the home page.
         if (!School.IsClosed)
         {
-            Navigation.NavigateTo("/", replace: true);
+            throw new NavigationException("/");
         }
     }
 }

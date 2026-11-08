@@ -64,7 +64,6 @@ else
         </span>
         <span class="head-group">
             <Button Small="true" Variant="ButtonVariant.Secondary" IconName="clipboard-list" OnClick="OpenNewExam">Add summative exam</Button>
-            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
         </span>
     </PageHeader>
 
@@ -72,7 +71,7 @@ else
 
     <p class="hint-line">
         <Icon Name="send" Size="16" />
-        <span><strong>Syllabus</strong> and <strong>handouts</strong> go to the teachers, <strong>hidden from the students</strong> until the teacher posts them. <strong>Summative exams</strong> go straight to the students.</span>
+        <span><strong>Syllabus</strong> and <strong>handouts</strong> go to the teachers, <strong>hidden from the students</strong> until the teacher posts them. <strong>Summative exams</strong> are posted to the students from the Course library list.</span>
     </p>
 
     <div class="tiles">
@@ -186,10 +185,9 @@ else
             <span class="exams-actions">
                 <Button Small="true" Variant="ButtonVariant.Ghost" IconName="file-spreadsheet" Title="Template, import and export in Excel" OnClick="OpenExamsExcel">Excel</Button>
                 <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenNewExam">Add summative exam</Button>
-                <Button Small="true" IconName="send" Disabled="@(course.Exams.Count == 0)" OnClick="OpenPostExams">Post to students</Button>
             </span>
         </header>
-        <p class="exams-note">Write the questions here or bring them from Excel. Then <strong>Post to students</strong>: that is where you choose the settings and when it opens and closes. Scores go to the gradebook.</p>
+        <p class="exams-note">Write the questions here. The exam is posted to the students from the Course library list: <strong>Post summative exam to students</strong>, at the right of the lists. Scores go to the gradebook.</p>
         @if (course.Exams.Count == 0)
         {
             <p class="none">No summative exam yet.</p>
@@ -313,65 +311,9 @@ else
     <LibraryHandoutDialog Course="course" OpenId="viewId" UserId="userId" OnClose="CloseView" OnSaved="LoadAsync" />
 }
 
-@* ===== Send to teachers (syllabus and modules) / Post to students (summative exams) ===== *@
-<Modal Open="sending" Title="@(postingExams ? "Post to students" : "Send to teachers")" OnClose="CloseSend" Large="true">
-    @if (sending && course is not null && postingExams)
-    {
-        <p class="dialog-text">The exam goes <strong>straight to the students</strong> of the sections you choose, and opens and closes at the times you set. The students and the teacher are told. An exam that a section already got is not posted again.</p>
-        <FormErrors Errors="formErrors" />
-
-        <p class="pick-title">Which exams</p>
-        <button type="button" class="link-button" @onclick="ToggleAllExams">@(sendExams.Count == course.Exams.Count ? "Clear all" : "Select all")</button>
-        <ul class="picks">
-            @foreach (var exam in course.Exams)
-            {
-                var id = exam.Id;
-                <li>
-                    <label class="pick">
-                        <input type="checkbox" checked="@sendExams.Contains(id)" @onchange="e => TogglePick(sendExams, id, e)" />
-                        <span>
-                            <strong>@exam.Title</strong>
-                            <small>@ScheduleText(exam) · @(exam.Questions == 1 ? "1 question" : $"{exam.Questions} questions") · posted to @exam.SentTo of @course.Teachers.Count</small>
-                        </span>
-                    </label>
-                </li>
-            }
-        </ul>
-
-        <p class="pick-title">Which sections</p>
-        @if (course.Teachers.Count == 0)
-        {
-            <p class="muted">No section has this course this school year.</p>
-        }
-        else
-        {
-            <button type="button" class="link-button" @onclick="ToggleAllTeachers">@(sendTargets.Count == course.Teachers.Count ? "Clear all" : "Select all")</button>
-            <ul class="picks">
-                @foreach (var t in course.Teachers)
-                {
-                    var id = t.AssignmentId;
-                    <li>
-                        <label class="pick">
-                            <input type="checkbox" checked="@sendTargets.Contains(id)" @onchange="e => TogglePick(sendTargets, id, e)" />
-                            <span>
-                                <strong>@t.SectionLabel</strong>
-                                <small>@t.TeacherName · @t.Students @(t.Students == 1 ? "student" : "students")</small>
-                            </span>
-                        </label>
-                    </li>
-                }
-            </ul>
-        }
-
-        @* The Summative Exam Settings and when it opens and closes are chosen here, when the exam goes to the students. *@
-        <ExamPostForm Draft="postDraft" IdPrefix="course" />
-
-        <div class="modal-actions">
-            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSend">Cancel</Button>
-            <Button IconName="send" Disabled="@(busy || course.Teachers.Count == 0)" OnClick="PostExamsAsync">@(busy ? "Posting…" : "Post to students")</Button>
-        </div>
-    }
-    else if (sending && course is not null)
+@* ===== Send to teachers (syllabus and handouts) ===== *@
+<Modal Open="sending" Title="Send to teachers" OnClose="CloseSend" Large="true">
+    @if (sending && course is not null)
     {
         <p class="dialog-text">Each teacher gets their own copy, <strong>hidden from the students</strong> until the teacher posts it. A handout that a teacher's course already got is not sent again.</p>
         <FormErrors Errors="formErrors" />
@@ -478,18 +420,13 @@ else
     private IReadOnlyDictionary<int, IReadOnlyList<QuestionInput>> questionsByExam = new Dictionary<int, IReadOnlyList<QuestionInput>>();
 
     private bool sending;
-    private bool postingExams;
     private readonly HashSet<int> sendModules = [];
-    private readonly HashSet<int> sendExams = [];
     private readonly HashSet<int> sendTargets = [];
 
     private DeleteTarget? deleteTarget;
 
     // the syllabus or handout that is open in its box (the other handouts, the preview and the upload form)
     private int? viewId;
-
-    // what the provider chooses when the summative exams go to the students
-    private ExamPostDraft postDraft = new();
 
     private void OpenView(int id) => viewId = id;
 
@@ -862,9 +799,7 @@ else
         }
 
         formErrors = [];
-        postingExams = false;
         sendModules.Clear();
-        sendExams.Clear();
         sendTargets.Clear();
 
         // What a teacher's course still lacks is chosen at the start; the teachers are all chosen.
@@ -881,41 +816,7 @@ else
         sending = true;
     }
 
-    /// <summary>The summative exams go straight to the students of the sections that are chosen.</summary>
-    private void OpenPostExams()
-    {
-        if (course is null)
-        {
-            return;
-        }
-
-        formErrors = [];
-        postingExams = true;
-        postDraft = NewDraft(course.Exams.FirstOrDefault());
-        sendModules.Clear();
-        sendExams.Clear();
-        sendTargets.Clear();
-        foreach (var exam in course.Exams.Where(e => e.SentTo < course.Teachers.Count || course.Teachers.Count == 0))
-        {
-            sendExams.Add(exam.Id);
-        }
-
-        foreach (var teacher in course.Teachers)
-        {
-            sendTargets.Add(teacher.AssignmentId);
-        }
-
-        sending = true;
-    }
-
     private void CloseSend() => sending = false;
-
-    /// <summary>The boxes of the post form start with what the exam already has (its settings, and its days when they were set before).</summary>
-    private static ExamPostDraft NewDraft(MaterialExamView? exam) => exam is null ? new ExamPostDraft() : new ExamPostDraft
-    {
-        TimeLimitMinutes = exam.TimeLimitMinutes, AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations, ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions,
-        ShowResult = exam.ShowResult, OpensText = PhilippineTime.ToInputValue(exam.OpensAtUtc), DueText = PhilippineTime.ToInputValue(exam.DueAtUtc),
-    };
 
     // "Add syllabus" inside the send window: the window closes and the form of the syllabus opens.
     private void AddSyllabusFromSend()
@@ -953,23 +854,6 @@ else
         }
     }
 
-    private void ToggleAllExams()
-    {
-        if (course is null)
-        {
-            return;
-        }
-
-        if (sendExams.Count == course.Exams.Count)
-        {
-            sendExams.Clear();
-        }
-        else
-        {
-            sendExams.UnionWith(course.Exams.Select(e => e.Id));
-        }
-    }
-
     private void ToggleAllTeachers()
     {
         if (course is null)
@@ -998,40 +882,6 @@ else
         try
         {
             var result = await Library.SendAsync(userId, SubjectId, [.. sendModules], [.. sendTargets]);
-            if (!result.Succeeded)
-            {
-                formErrors = [.. result.Errors];
-                return;
-            }
-
-            sending = false;
-            Say(result);
-            await LoadAsync();
-        }
-        finally
-        {
-            busy = false;
-        }
-    }
-
-    private async Task PostExamsAsync()
-    {
-        if (busy)
-        {
-            return;
-        }
-
-        var (settings, problem) = postDraft.Read();
-        if (settings is null)
-        {
-            formErrors = [problem ?? "Check the settings of the exam."];
-            return;
-        }
-
-        busy = true;
-        try
-        {
-            var result = await Library.PostExamsAsync(userId, SubjectId, [.. sendExams], [.. sendTargets], settings);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

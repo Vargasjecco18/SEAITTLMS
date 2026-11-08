@@ -69,6 +69,11 @@
             {
                 <span class="open off" title="@OffText">@(OffText ?? "Not open yet")</span>
             }
+            @if (Actions is not null)
+            {
+                @* Buttons after Open (the Hide button of the Course library). *@
+                <span class="foot-actions">@Actions</span>
+            }
         </div>
     </div>
 </article>
@@ -118,4 +123,7 @@
 
     /// <summary>The small facts (badges, numbers) between the name and the button.</summary>
     [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Buttons after Open, in the foot of the card.</summary>
+    [Parameter] public RenderFragment? Actions { get; set; }
 }

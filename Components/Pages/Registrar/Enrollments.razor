@@ -104,7 +104,7 @@ else if (receipt is not null)
 else
 {
     <div class="screen-only">
-    <EditForm Model="form" OnSubmit="SubmitAsync" class="enroll-form">
+    <EditForm Model="form" OnSubmit="SubmitAsync" class="enroll-form" novalidate>
 
         <FormErrors Errors="errors" />
 
@@ -152,7 +152,7 @@ else
                             <option value="12">Grade 12</option>
                         </select>
                     </Field>
-                    <Field For="track" Label="Track" Required="true">
+                    <Field For="track" Label="Track" Required="true" Error="@FieldError("track")">
                         <select id="track" required @bind="form.TrackId" @bind:after="OnTrackChangedAsync">
                             <option value="0">Choose a track</option>
                             @foreach (var track in lookups.Tracks)
@@ -163,7 +163,7 @@ else
                     </Field>
                 </div>
 
-                <Field For="strand" Label="Strand" Required="true">
+                <Field For="strand" Label="Strand" Required="true" Error="@FieldError("strand")">
                     <select id="strand" required disabled="@(form.TrackId == 0)" @bind="form.StrandId" @bind:after="OnStrandChangedAsync">
                         <option value="0">@(form.TrackId == 0 ? "Choose a track first" : "Choose a strand")</option>
                         @foreach (var strand in StrandsOfTrack)
@@ -173,7 +173,7 @@ else
                     </select>
                 </Field>
 
-                <Field For="section" Label="Section" Required="true" Hint="@SectionHint">
+                <Field For="section" Label="Section" Required="true" Hint="@SectionHint" Error="@FieldError("section")">
                         <select id="section" required @bind="form.SectionName" @bind:after="OnSectionChangedAsync">
                             <option value="">Choose</option>
                             @foreach (var load in SectionLoads)
@@ -350,7 +350,7 @@ else
 
     /// <summary>The boxes about the student. They are on the page and again in the box of the enrolling student: the same values, a prefix for the ids.</summary>
     private RenderFragment StudentFields(string p) => @<text>
-        <Field For="@(p + "lrn")" Label="LRN" Required="true" Hint="The 12 digits of the Learner Reference Number.">
+        <Field For="@(p + "lrn")" Label="LRN" Required="true" Hint="The 12 digits of the Learner Reference Number." Error="@FieldError("lrn")">
             <input id="@(p + "lrn")" type="text" inputmode="numeric" data-digits maxlength="12" pattern="[0-9]{12}" autocomplete="off" required
                    title="12 digits" @bind="LrnValue" @bind:event="oninput" @bind:after="OnLrnChangedAsync" />
         </Field>
@@ -374,7 +374,7 @@ else
             </div>
         }
 
-        <Field For="@(p + "first-name")" Label="First name" Required="true">
+        <Field For="@(p + "first-name")" Label="First name" Required="true" Error="@FieldError("first-name")">
             <input id="@(p + "first-name")" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap" data-letters
                    @bind="FirstNameValue" @onblur="WriteNamesWithCapitals" />
         </Field>
@@ -382,7 +382,7 @@ else
             <input id="@(p + "middle-name")" type="text" maxlength="100" autocomplete="off" readonly="@(existing is not null)" class="cap" data-letters
                    @bind="MiddleNameValue" @onblur="WriteNamesWithCapitals" />
         </Field>
-        <Field For="@(p + "last-name")" Label="Last name" Required="true">
+        <Field For="@(p + "last-name")" Label="Last name" Required="true" Error="@FieldError("last-name")">
             <input id="@(p + "last-name")" type="text" maxlength="100" autocomplete="off" required readonly="@(existing is not null)" class="cap" data-letters
                    @bind="LastNameValue" @bind:event="oninput" @onblur="WriteNamesWithCapitals" />
         </Field>
@@ -443,7 +443,7 @@ else
     private string FirstNameValue
     {
         get => existing?.FirstName ?? form.FirstName;
-        set => form.FirstName = NameCase.KeepLetters(value);
+        set { form.FirstName = NameCase.KeepLetters(value); boxProblems.Remove("first-name"); }
     }
 
     private string MiddleNameValue
@@ -455,7 +455,7 @@ else
     private string LastNameValue
     {
         get => existing?.LastName ?? form.LastName;
-        set => form.LastName = NameCase.KeepLetters(value);
+        set { form.LastName = NameCase.KeepLetters(value); boxProblems.Remove("last-name"); }
     }
 
     private string NameExtensionValue
@@ -468,7 +468,7 @@ else
     private string LrnValue
     {
         get => form.Lrn;
-        set => form.Lrn = NameCase.KeepDigits(value);
+        set { form.Lrn = NameCase.KeepDigits(value); boxProblems.Remove("lrn"); }
     }
 
     // A student who already has a number shows it (read-only); otherwise what is typed is kept and saved with the enrollment.
@@ -564,12 +564,15 @@ else
 
     private async Task OnTrackChangedAsync()
     {
+        boxProblems.Remove("track");
+        boxProblems.Remove("strand");
         form.StrandId = 0;
         await ReloadChoicesAsync();
     }
 
     private async Task OnStrandChangedAsync()
     {
+        boxProblems.Remove("strand");
         // A student who goes to another strand starts again in Grade 11 (the grade level of the last strand comes back if the old strand is chosen again).
         if (existing?.LastPlacement is { } last && form.StrandId != 0)
         {
@@ -589,6 +592,7 @@ else
 
     private async Task OnSectionChangedAsync()
     {
+        boxProblems.Remove("section");
         // "+ Add a section…" is not a section: it opens the little box to type the name of a new one.
         if (form.SectionName == AddSectionChoice)
         {
@@ -667,6 +671,12 @@ else
             return;
         }
 
+        // The boxes that are empty or not right are shown first, on the boxes themselves: a red line under each, the message at the top, and the cursor goes to the first one.
+        if (!await CheckBoxesAsync())
+        {
+            return;
+        }
+
         busy = true;
         errors = [];
 
@@ -700,6 +710,73 @@ else
         {
             busy = false;
         }
+    }
+
+    /// <summary>The boxes with a problem (the id of the box without its prefix, and what is wrong), shown on the form.</summary>
+    private readonly Dictionary<string, string> boxProblems = [];
+
+    private static readonly string[] BoxOrder = ["lrn", "first-name", "last-name", "track", "strand", "section"];
+
+    private string? FieldError(string box) => boxProblems.GetValueOrDefault(box);
+
+    /// <summary>Looks at the boxes that are needed. Nothing is sent while one has a problem.</summary>
+    private async Task<bool> CheckBoxesAsync()
+    {
+        boxProblems.Clear();
+        var lrn = (form.Lrn ?? "").Trim();
+        if (lrn.Length == 0)
+        {
+            boxProblems["lrn"] = "Enter the LRN.";
+        }
+        else if (lrn.Length != 12 || !lrn.All(char.IsAsciiDigit))
+        {
+            boxProblems["lrn"] = "The LRN has to be exactly 12 digits.";
+        }
+
+        if (existing is null)
+        {
+            if (string.IsNullOrWhiteSpace(form.FirstName))
+            {
+                boxProblems["first-name"] = "Enter the first name.";
+            }
+
+            if (string.IsNullOrWhiteSpace(form.LastName))
+            {
+                boxProblems["last-name"] = "Enter the last name.";
+            }
+        }
+
+        if (form.TrackId == 0)
+        {
+            boxProblems["track"] = "Choose the track.";
+        }
+
+        if (form.StrandId == 0)
+        {
+            boxProblems["strand"] = form.TrackId == 0 ? "Choose a track first, then the strand." : "Choose the strand.";
+        }
+
+        if (string.IsNullOrWhiteSpace(form.SectionName))
+        {
+            boxProblems["section"] = "Choose the section.";
+        }
+
+        if (boxProblems.Count == 0)
+        {
+            return true;
+        }
+
+        errors = [.. BoxOrder.Where(boxProblems.ContainsKey).Select(b => boxProblems[b])];
+        try
+        {
+            await JS.InvokeVoidAsync("seaitt.focusField", BoxOrder.First(boxProblems.ContainsKey));
+        }
+        catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or TaskCanceledException)
+        {
+            // the page is closing: nothing to focus
+        }
+
+        return false;
     }
 
     /// <summary>Back to an empty student, keeping the choices that usually stay the same for the next one.</summary>

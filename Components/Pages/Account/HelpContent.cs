@@ -211,7 +211,7 @@ public static class HelpContent
         [
             "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press the row of a student (or the Answer tag in the Answers column): a box opens with the students who handed in at the left, the answer in the middle, with a preview of the files the student sent, and the score and the comment at the right. Read it, save the score, and press another student at the left to go on.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
-            "“Assignments to check” on your dashboard lists what waits for you.",
+            "“Activities to check” and “Unchecked activities (including quiz)” on your dashboard list what waits for you.",
         ]),
         new("How do I take attendance?",
         [
@@ -258,8 +258,9 @@ public static class HelpContent
         new("How do I make a new staff role, like Assistant Registrar?",
         [
             "Open Users Management, the Staff tab, and press Add staff. Next to the Role list press “Add role”.",
-            "Type the name of the role (for example Librarian) and press “Add this role”: it is chosen in the Role list, so you can finish adding the person.",
-            "Many people can have a role you made. The staff list and the person's card show its name.",
+            "Type the name of the role (for example Librarian), choose what pages the people of the role can open (the pages of the registrar, the guidance counselor, the academic coordinator or the academic provider; the pages of each one are listed) and press “Add this role”: it is chosen in the Role list, so you can finish adding the person.",
+            "Many people can have a role you made. The staff list and the person's card show its name. To take a role you made out of the list, choose it in Add staff and press “Remove role”: the people who had it keep their account and the same pages.",
+            "Adding a teacher or a staff member needs the last name and the employee number (like T-014): the email and the password are made from them (villanueva.014@... and villanueva014) and shown before you press Add.",
         ], "admin/users/staff", "Open the staff list"),
         new("A teacher needs courses.",
         [
@@ -299,6 +300,7 @@ public static class HelpContent
         [
             "Open Enrollment. Type the 12-digit LRN (digits only, like the phone number) and the names (letters only). If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
             "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” and the print preview of the browser opens at once, with the enrollment form of this student; then “Enroll student” to enroll.",
+            "If something is missing when you press “Enroll student”, each box with a problem turns red with a message under it, a red alert at the top lists them, and the cursor goes to the first one. Fix the box and its message goes away.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
@@ -341,7 +343,7 @@ public static class HelpContent
             "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Add a question by choosing how the students answer: a 5-point Likert scale, a 5-point performance scale, a frequency scale, a binary (Yes/No) scale, a ranking, select-all-that-apply, or a comment. Choose who it is about and the due date, then send it.",
             "Students answer once for each of their teachers; answers are anonymous. The page shows how many answered and who has not.",
             "Close it early, or let it close on its due date.",
-            "To write many questions at once press “Template and import (Excel)”: download the template, fill it in and import it. “Export” makes the same file from a questionnaire.",
+            "New evaluation opens a sheet like the one of a quiz: write the title and the instructions, then a row for each question. Choose its type from the list (5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment), write its area and, for a ranking or a select-all, its options. The Ready column tells you what is missing. “Add [type] [number] rows” adds many rows. A draft has the same sheet: press “Write the questions in a sheet”. “Export to Excel” saves a questionnaire as a file.",
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
@@ -350,7 +352,7 @@ public static class HelpContent
         new("How do I write an announcement?",
         [
             "Open Announcements and press “New announcement”. Choose what it is about (an exam, a holiday, the semester break, a teachers' meeting or other), write the title and the text, choose who reads it (everybody: the staff, the teachers and the students; the students; the teachers; the staff; or the staff and the teachers; a teachers' meeting is for the teachers) and, if you want, its Start and its End (the days it is about). It is shown until its End, and the people it is for see every day from Start to End in their calendar.",
-            "To write many announcements at once press “Template and import (Excel)”; “Export” makes the same file from the announcements you have.",
+            "To write many announcements at once press “Announcements sheet”: each row has a Title, a Message, what it is About, who it is For, and a Start and an End day. The Ready column tells you what is missing; press Post and every ready row is posted. “Export to Excel” saves the announcements you have as a file.",
             "The Philippine holidays are on the calendar of the announcements. Press one to see it and to delete it: it is deleted from the calendars of all the years (under “Deleted holidays” you can bring it back).",
         ], "coordinator/announcements", "Open Announcements"),
         new("How do I find people and make a group?",
@@ -374,8 +376,8 @@ public static class HelpContent
         [
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
             "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. The settings and when it opens and closes are not asked here: you choose them when you post it. The academic coordinator gets a notification and an announcement.",
-            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam and Post to students . The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. Press a syllabus or a handout of the course to open it in one box: the other handouts are at the left, the preview of the files in the center and the upload form at the right (“Upload” saves the files and the center shows them).",
-            "Press “Post summative exam to students” at the right of the lists of the library to post the exam of every course in the list (choose a course in All courses to post only that one), or “Post to students” inside a course to choose the sections. Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result) and when it opens and closes: the exam goes straight to the students and the system gives the scores. A course with no summative exam stops it: the page goes to that course and tells you. The teacher sees the scores in the gradebook.",
+            "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. Press a syllabus or a handout of the course to open it in one box: the other handouts are at the left, the preview of the files in the center and the upload form at the right (“Upload” saves the files and the center shows them).",
+            "Press “Post summative exam to students” at the right of the lists of the library to post the exam of every course in the list (choose a course in All courses to post only that one), (there is no Post to students inside a course). Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result) and when it opens and closes: the exam goes straight to the students and the system gives the scores. A course with no summative exam stops it: the page goes to that course and tells you. The teacher sees the scores in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [

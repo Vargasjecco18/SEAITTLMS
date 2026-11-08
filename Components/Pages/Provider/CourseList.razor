@@ -33,6 +33,13 @@ else
                 <option value="11" selected="@(Grade == 11)">Grade 11</option>
                 <option value="12" selected="@(Grade == 12)">Grade 12</option>
             </select>
+            <select id="f-term" name="term" aria-label="Term">
+                <option value="all" selected="@(Term is null)">All terms</option>
+                @foreach (var t in TermNumbers)
+                {
+                    <option value="@t" selected="@(Term == t)">@SchoolCalendar.TermName(t)@(t == currentTerm ? " (now)" : "")</option>
+                }
+            </select>
             <select id="f-strand" name="strand" aria-label="Strand">
                 <option value="">All strands</option>
                 @foreach (var st in Strands)
@@ -46,6 +53,11 @@ else
                 {
                     <option value="@c.SubjectId" selected="@(CourseId == c.SubjectId)">@c.Name</option>
                 }
+            </select>
+            @* At the right of All courses: the courses that are shown, or the ones that were hidden with the Hide button. *@
+            <select id="f-shown" name="shown" aria-label="Shown or hidden courses">
+                <option value="" selected="@(!ShowHidden)">Shown courses</option>
+                <option value="hidden" selected="@ShowHidden">Hidden courses (@hiddenCount)</option>
             </select>
             <noscript><button type="submit" class="button secondary small">Show</button></noscript>
         </form>
@@ -64,8 +76,8 @@ else
     @if (shown.Count == 0)
     {
         <Card>
-            <EmptyState IconName="search-x" Title="No course matches">
-                <p>Try another name or code, or choose All in the lists. Courses are made in the academic setup, and the library shows the courses of the term that is going on.</p>
+            <EmptyState IconName="search-x" Title="@(ShowHidden && hiddenCount == 0 ? "No hidden course" : "No course matches")">
+                <p>@(ShowHidden && hiddenCount == 0 ? "A course you hide with the Hide button next to Open waits here until you show it again." : "Try another name or code, or choose All in the lists. Courses are made in the academic setup, and the library shows the courses of the term that is going on.")</p>
                 <ButtonLink Href="provider/library" Variant="ButtonVariant.Secondary">Show all courses</ButtonLink>
             </EmptyState>
         </Card>
@@ -113,7 +125,12 @@ else
                                 <td class="num">@c.Modules</td>
                                 <td class="num">@(c.Exams == 0 ? "—" : c.Exams)</td>
                                 <td class="num">@Plural(c.Teachers, "section")</td>
-                                <td class="c-open"><ButtonLink Href="@($"provider/library/{c.SubjectId}?track={c.TrackId}&strand={c.StrandId}&term={c.TermNumber}")" Small="true" Variant="ButtonVariant.Secondary" IconName="arrow-right">Open</ButtonLink></td>
+                                <td class="c-open">
+                                    <span class="open-row">
+                                        <ButtonLink Href="@($"provider/library/{c.SubjectId}?track={c.TrackId}&strand={c.StrandId}&term={c.TermNumber}")" Small="true" Variant="ButtonVariant.Secondary" IconName="arrow-right">Open</ButtonLink>
+                                        <HideCourseButton SubjectId="c.SubjectId" StrandId="c.StrandId" GradeLevel="c.GradeLevel" TermNumber="c.TermNumber" Name="@c.Name" Hidden="c.Hidden" />
+                                    </span>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -129,18 +146,23 @@ else
                 <SubjectCard Name="@c.Name" Cover="@StrandArt.For(c.StrandCode, c.StrandName)" CoverLabel="@c.StrandName"
                              Section="@($"{c.TrackCode} · {c.StrandCode} · Grade {c.GradeLevel}")" Term="@SchoolCalendar.TermName(c.TermNumber)"
                              Href="@($"provider/library/{c.SubjectId}?track={c.TrackId}&strand={c.StrandId}&term={c.TermNumber}")" OffText="Open">
-                    <span class="card-facts" data-course="@c.Code">
-                        @if (c.HasSyllabus)
-                        {
-                            <Badge Tone="Tone.Success">Syllabus ready</Badge>
-                        }
-                        else
-                        {
-                            <Badge Tone="Tone.Warning">No syllabus yet</Badge>
-                        }
-                        <span class="fact">@Plural(c.Modules, "handout")</span>
-                        <span class="fact">@Plural(c.Exams, "summative exam")</span>
-                    </span>
+                    <Actions>
+                        <HideCourseButton SubjectId="c.SubjectId" StrandId="c.StrandId" GradeLevel="c.GradeLevel" TermNumber="c.TermNumber" Name="@c.Name" Hidden="c.Hidden" />
+                    </Actions>
+                    <ChildContent>
+                        <span class="card-facts" data-course="@c.Code">
+                            @if (c.HasSyllabus)
+                            {
+                                <Badge Tone="Tone.Success">Syllabus ready</Badge>
+                            }
+                            else
+                            {
+                                <Badge Tone="Tone.Warning">No syllabus yet</Badge>
+                            }
+                            <span class="fact">@Plural(c.Modules, "handout")</span>
+                            <span class="fact">@Plural(c.Exams, "summative exam")</span>
+                        </span>
+                    </ChildContent>
                 </SubjectCard>
             }
         </div>
@@ -154,12 +176,26 @@ else
     [SupplyParameterFromQuery(Name = "strand")] private string? StrandText { get; set; }
     [SupplyParameterFromQuery(Name = "course")] private string? CourseText { get; set; }
     [SupplyParameterFromQuery(Name = "view")] private string? ViewText { get; set; }
+    [SupplyParameterFromQuery(Name = "term")] private string? TermText { get; set; }
+    [SupplyParameterFromQuery(Name = "shown")] private string? ShownText { get; set; }
 
     [CascadingParameter] private HttpContext? Http { get; set; }
 
     private IReadOnlyList<LibraryCard>? cards;
     private List<LibraryCard> shown = [];
     private string view = "cards";
+
+    private int? currentTerm;
+    private int hiddenCount;
+
+    // The Term list: the term that is going on unless the provider chooses another one (or All terms).
+    private int? Term => string.Equals(TermText, "all", StringComparison.OrdinalIgnoreCase) ? null : ParseNumber(TermText) ?? currentTerm;
+    private bool ShowHidden => string.Equals(ShownText, "hidden", StringComparison.OrdinalIgnoreCase);
+
+    private IEnumerable<int> TermNumbers => cards!.Select(c => (int)c.TermNumber).Distinct().Order();
+
+    // What the lists choose from: the courses of the chosen term that are shown (or, in the Hidden list, the hidden ones).
+    private IEnumerable<LibraryCard> Scoped => cards!.Where(c => (Term is null || c.TermNumber == Term) && c.Hidden == ShowHidden);
 
     private int? TrackId => ParseNumber(TrackText);
     private int? Grade => ParseNumber(GradeText) is 11 or 12 ? ParseNumber(GradeText) : null;
@@ -170,11 +206,11 @@ else
 
     private static int? ParseNumber(string? text) => int.TryParse(text, out var number) && number > 0 ? number : null;
 
-    private IEnumerable<(int Id, string Code)> Tracks => cards!.Select(c => (c.TrackId, c.TrackCode)).Distinct().OrderBy(t => t.TrackCode);
+    private IEnumerable<(int Id, string Code)> Tracks => Scoped.Select(c => (c.TrackId, c.TrackCode)).Distinct().OrderBy(t => t.TrackCode);
 
-    private IEnumerable<(int Id, string Code)> Strands => cards!.Where(c => TrackId is null || c.TrackId == TrackId).Select(c => (c.StrandId, c.StrandCode)).Distinct().OrderBy(s => s.StrandCode);
+    private IEnumerable<(int Id, string Code)> Strands => Scoped.Where(c => TrackId is null || c.TrackId == TrackId).Select(c => (c.StrandId, c.StrandCode)).Distinct().OrderBy(s => s.StrandCode);
 
-    private IEnumerable<(int SubjectId, string Name)> CourseChoices => cards!
+    private IEnumerable<(int SubjectId, string Name)> CourseChoices => Scoped
         .Where(c => (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId))
         .Select(c => (c.SubjectId, c.Name)).Distinct().OrderBy(c => c.Name);
 
@@ -184,8 +220,10 @@ else
     {
         view = ViewPreference.Resolve(Http, "library", ViewText, "cards", "list");
         cards = await Library.ListLibraryCardsAsync();
+        currentTerm = await Library.CurrentTermNumberAsync();
+        hiddenCount = cards.Count(c => c.Hidden && (Term is null || c.TermNumber == Term));
         var words = (Q ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        shown = [.. cards.Where(c =>
+        shown = [.. Scoped.Where(c =>
             (TrackId is null || c.TrackId == TrackId) && (Grade is null || c.GradeLevel == Grade) && (StrandId is null || c.StrandId == StrandId) && (CourseId is null || c.SubjectId == CourseId)
             && words.All(w => c.Name.Contains(w, StringComparison.OrdinalIgnoreCase) || c.Code.Contains(w, StringComparison.OrdinalIgnoreCase)))];
     }
@@ -209,6 +247,8 @@ else
         if (Grade is { } g) { parts.Add("grade=" + g); }
         if (StrandId is { } s) { parts.Add("strand=" + s); }
         if (CourseId is { } c) { parts.Add("course=" + c); }
+        if (TermText is { Length: > 0 }) { parts.Add("term=" + Uri.EscapeDataString(TermText)); }
+        if (ShowHidden) { parts.Add("shown=hidden"); }
         var chosen = viewName ?? view;
         if (chosen == "list" || explicitView) { parts.Add("view=" + chosen); }
         return "provider/library" + (parts.Count == 0 ? "" : "?" + string.Join('&', parts));

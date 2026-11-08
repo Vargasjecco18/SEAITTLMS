@@ -265,8 +265,30 @@ public sealed class UserManagementService(
     /// Makes a new role for the staff, like "Librarian". Many people can have it. The administrator only gives the name; underneath the people of the role sign in to the pages of
     /// <see cref="CustomRole.DefaultBaseRole"/> (the account needs one of the real roles to have pages to land on). The name is 2 to 40 letters, numbers, spaces and dashes, and is not the name of a role that is there already.
     /// </summary>
-    public async Task<ServiceResult> AddRoleAsync(string? name, int actingUserId, CancellationToken ct = default)
+    public Task<ServiceResult> AddRoleAsync(string? name, int actingUserId, CancellationToken ct = default) => AddRoleAsync(name, CustomRole.DefaultBaseRole, actingUserId, ct);
+
+    /// <summary>The pages of each area of the staff, in words, for the administrator who chooses what the people of a new role can open.</summary>
+    public static IReadOnlyList<string> PagesOf(string baseRole) => baseRole switch
     {
+        AppRoles.Registrar => ["Dashboard", "Enrollment", "Student's Accounts", "Calendar", "Users", "Groups"],
+        AppRoles.GuidanceCounselor => ["Dashboard", "Referrals", "Calendar", "Analytics", "Users", "Groups"],
+        AppRoles.AcademicCoordinator => ["Dashboard", "Academic setup", "Teacher evaluation", "Announcements", "Analytics", "Users", "Groups"],
+        AppRoles.AcademicProvider => ["Dashboard", "Course library", "Tracking", "Calendar", "Analytics", "Users", "Groups"],
+        _ => [],
+    };
+
+    /// <summary>
+    /// Makes a new role for the staff. <paramref name="baseRole"/> is what the administrator chose as the pages the people of the role can open: the pages of the registrar, the guidance counselor, the
+    /// academic coordinator or the academic provider (<see cref="PagesOf"/>).
+    /// </summary>
+    public async Task<ServiceResult> AddRoleAsync(string? name, string? baseRole, int actingUserId, CancellationToken ct = default)
+    {
+        baseRole = string.IsNullOrWhiteSpace(baseRole) ? CustomRole.DefaultBaseRole : baseRole;
+        if (!NonTeachingRoles.Contains(baseRole))
+        {
+            return ServiceResult.Fail("Choose the pages the new role can open.");
+        }
+
         name = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         if (name.Length is < 2 or > 40 || !name.All(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '\''))
         {
@@ -296,7 +318,7 @@ public sealed class UserManagementService(
             return ServiceResult.Fail("There are 30 roles already. That is the most.");
         }
 
-        var role = new CustomRole { Name = name, BaseRole = CustomRole.DefaultBaseRole };
+        var role = new CustomRole { Name = name, BaseRole = baseRole };
         db.CustomRoles.Add(role);
         try
         {
@@ -312,11 +334,62 @@ public sealed class UserManagementService(
             await securityLog.AddAsync(SecurityEvents.AccountCreated, null, details: $"The role {name} was added.", actorUserId: actingUserId, ct: ct);
         }
 
-        return ServiceResult.Ok($"The role {name} was added.", role.Id);
+        return ServiceResult.Ok($"The role {name} was added. Its people open the pages of the {AppRoles.DisplayName(baseRole).ToLowerInvariant()}.", role.Id);
     }
+
+    /// <summary>
+    /// Takes a role the administrator made out of the list. The people who have it keep their account and the same pages: they show as the plain role they work like (the academic provider, ...)
+    /// from now on. The usual roles (registrar, guidance counselor, academic coordinator, academic provider) can't be removed.
+    /// </summary>
+    public async Task<ServiceResult> RemoveRoleAsync(int roleId, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsActiveAdminAsync(db, actingUserId, ct))
+        {
+            return ServiceResult.Fail("Only an administrator can remove a role.");
+        }
+
+        var role = await db.CustomRoles.FirstOrDefaultAsync(r => r.Id == roleId, ct);
+        if (role is null)
+        {
+            return ServiceResult.Fail("This role was removed already.");
+        }
+
+        var people = await db.Users.Where(u => u.CustomRoleId == roleId).ExecuteUpdateAsync(set => set.SetProperty(u => u.CustomRoleId, (int?)null), ct);
+        db.CustomRoles.Remove(role);
+        await db.SaveChangesAsync(ct);
+        if (securityLog is not null)
+        {
+            await securityLog.AddAsync(SecurityEvents.AccountCreated, null, details: $"The role {role.Name} was removed ({people} accounts keep the pages of the {AppRoles.DisplayName(role.BaseRole).ToLowerInvariant()}).", actorUserId: actingUserId, ct: ct);
+        }
+
+        return ServiceResult.Ok(people == 0
+            ? $"The role {role.Name} was removed."
+            : $"The role {role.Name} was removed. The {people} {(people == 1 ? "person who had" : "people who had")} it {(people == 1 ? "is" : "are")} now {AppRoles.WithArticle(AppRoles.DisplayName(role.BaseRole).ToLowerInvariant())}.");
+    }
+
+    /// <summary>The email and the password a new teacher or staff member gets (shown before the account is added): made from the last name and the digits of the employee number.</summary>
+    public StudentLogin? PreviewLogin(string? lastName, string? employeeNumber) =>
+        StaffCredentials.Create(NameCase.Title(lastName), employeeNumber, enrollmentOptions?.Value.EmailDomain ?? new EnrollmentOptions().EmailDomain);
 
     private async Task<ServiceResult> CreateStaffAsync(NewAccount account, int actingUserId, CancellationToken ct)
     {
+        // Like a student, a teacher or a member of the staff gets the email and the password made by the system (last name and the digits of the employee number) when they are not given.
+        if (string.IsNullOrWhiteSpace(account.Email) || string.IsNullOrEmpty(account.Password))
+        {
+            var made = StaffCredentials.Create(NameCase.Title(account.LastName), account.EmployeeNumber, enrollmentOptions?.Value.EmailDomain ?? new EnrollmentOptions().EmailDomain);
+            if (made is null)
+            {
+                return ServiceResult.Fail("Enter the employee number (with its digits, like T-014): the email and the password are made from the last name and the employee number.");
+            }
+
+            account = account with
+            {
+                Email = string.IsNullOrWhiteSpace(account.Email) ? made.Email : account.Email,
+                Password = string.IsNullOrEmpty(account.Password) ? made.Password : account.Password,
+            };
+        }
+
         var result = await accounts.CreateAsync(account, ct);
         if (result.Succeeded && securityLog is not null)
         {
@@ -324,7 +397,7 @@ public sealed class UserManagementService(
         }
 
         return result.Succeeded
-            ? ServiceResult.Ok($"Added {FullName(account.FirstName.Trim(), NullIfBlank(account.MiddleName), account.LastName.Trim(), NullIfBlank(account.NameExtension))}.", result.UserId)
+            ? ServiceResult.Ok($"Added {FullName(account.FirstName.Trim(), NullIfBlank(account.MiddleName), account.LastName.Trim(), NullIfBlank(account.NameExtension))}. Email: {account.Email}", result.UserId)
             : ServiceResult.Fail(result.Errors);
     }
 

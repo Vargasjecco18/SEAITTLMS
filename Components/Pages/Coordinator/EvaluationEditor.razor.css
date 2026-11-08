@@ -450,3 +450,7 @@
         columns: 1;
     }
 }
+
+.sheet-open {
+    margin: 0 0 0.6rem;
+}

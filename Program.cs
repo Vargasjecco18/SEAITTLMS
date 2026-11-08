@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using SEAITT_LMS.Auth;
 using SEAITT_LMS.Components;
@@ -130,6 +131,11 @@ builder.Services
         options.ExpireTimeSpan = TimeSpan.FromHours(authOptions.SessionHours);
         options.SlidingExpiration = true;
         options.Events.OnValidatePrincipal = AuthCookieEvents.ValidatePrincipalAsync;
+
+        // The pages that need a sign-in or a role send the person on with a RELATIVE address ("/login?returnUrl=..."), not "http://localhost:5000/login...": behind a forwarded port (the Ports tab of
+        // VS Code) the server only knows localhost, and an address built from it does not open on the computer of the person.
+        options.Events.OnRedirectToLogin = context => RedirectRelativeAsync(context.Request, context.Response, context.RedirectUri, StatusCodes.Status401Unauthorized);
+        options.Events.OnRedirectToAccessDenied = context => RedirectRelativeAsync(context.Request, context.Response, context.RedirectUri, StatusCodes.Status403Forbidden);
     });
 
 builder.Services.AddAuthorization(options =>
@@ -147,6 +153,34 @@ builder.Services.AddRazorComponents()
 
 
 var app = builder.Build();
+
+static Task RedirectRelativeAsync(HttpRequest request, HttpResponse response, string redirectUri, int ajaxStatus)
+{
+    // A call made by script (not by the address bar) is answered with the status, as the cookie handler does by itself.
+    if (string.Equals(request.Headers.XRequestedWith, "XMLHttpRequest", StringComparison.Ordinal))
+    {
+        response.StatusCode = ajaxStatus;
+    }
+    else
+    {
+        response.Redirect(Uri.TryCreate(redirectUri, UriKind.Absolute, out var absolute) ? absolute.PathAndQuery : redirectUri);
+    }
+
+    return Task.CompletedTask;
+}
+
+// The site can be opened through something that forwards it (the Ports tab of VS Code, a dev tunnel, a reverse proxy): the request then reaches this server as http://localhost:5000, and the
+// proxy tells the real address in X-Forwarded-Host and X-Forwarded-Proto. Reading them keeps the addresses the app makes (a redirect, the cookie's Secure flag) on the address the person used.
+// It can be switched off with Hosting:TrustForwardedHeaders = false in appsettings.json.
+if (app.Configuration.GetValue("Hosting:TrustForwardedHeaders", true))
+{
+    var forwarded = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost };
+    #pragma warning disable ASPDEPR005 // KnownNetworks is called KnownIPNetworks in newer versions of ASP.NET Core
+    forwarded.KnownNetworks.Clear();
+#pragma warning restore ASPDEPR005
+    forwarded.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwarded);
+}
 
 if (!app.Environment.IsDevelopment())
 {

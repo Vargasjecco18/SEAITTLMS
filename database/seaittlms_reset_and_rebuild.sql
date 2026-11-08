@@ -2095,5 +2095,10 @@ CREATE UNIQUE INDEX `ix_quiz_question_images_question_id_slot` ON `quiz_question
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261105164837_QuestionKindsAndPictures', '9.0.20');
 
+ALTER TABLE `strand_subjects` ADD `library_hidden_at_utc` datetime(6) NULL;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261108151347_LibraryHideCourse', '9.0.20');
+
 COMMIT;
 

@@ -480,6 +480,14 @@
 
 // Used by the pages that show a login to hand over (called from C# as "seaitt.copyText" and "seaitt.print").
 window.seaitt = Object.assign(window.seaitt || {}, {
+    // Takes the person to a box of a form (the first one that has a problem): scrolls to it and puts the cursor in it.
+    focusField: function (id) {
+        var box = document.getElementById(id);
+        if (!box) { return false; }
+        box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        try { box.focus({ preventScroll: true }); } catch (error) { box.focus(); }
+        return true;
+    },
     copyText: async function (text) {
         try {
             await navigator.clipboard.writeText(text);

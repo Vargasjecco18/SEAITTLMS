@@ -6,7 +6,6 @@
 @using SEAITT_LMS.Auth
 @using SEAITT_LMS.Data
 @using SEAITT_LMS.Data.Queries
-@inject NavigationManager Navigation
 @inject IDbContextFactory<AppDbContext> DbFactory
 
 <PageTitle>SEAITT Legazpi LMS</PageTitle>
@@ -219,8 +218,8 @@
         var user = (await AuthState).User;
         if (user.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo(RoleHome.For(user.FindFirstValue(ClaimTypes.Role)), replace: true);
-            return;
+            // A relative address (see Login.razor): the home page may be opened through a forwarded port, where the server only knows localhost.
+            throw new NavigationException(RoleHome.For(user.FindFirstValue(ClaimTypes.Role)));
         }
 
         await using var db = await DbFactory.CreateDbContextAsync();

@@ -10,7 +10,7 @@
 
 <PageHeader Title="Announcements" IconName="megaphone">
     <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Disabled="@(rows is null || rows.Count == 0)">Export to Excel</Button>
-    <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenExcel">Template and import (Excel)</Button>
+    <Button Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenSheet">Announcements sheet</Button>
     <Button IconName="plus" OnClick="() => OpenAdd(null)">New announcement</Button>
 </PageHeader>
 
@@ -235,53 +235,68 @@ else
     }
 </Modal>
 
-<SheetImportDialog Open="excelOpen" Title="Announcements in Excel" Lead="Fill in the template, then import it: every row becomes an announcement, and the people it is for are told."
-                   Single="announcement was" Plural="announcements were" TemplateName="@AnnouncementSheets.FileName("Template")" Template="AnnouncementSheets.Template"
-                   Export="ExportBytes" ExportName="@AnnouncementSheets.FileName("Announcements")" ExportLabel="Export the announcements" ExportCount="@(rows?.Count ?? 0)"
-                   Read="ReadSheet" OnImport="ImportSheetAsync" OnClose="CloseExcel" />
+@* Several announcements written in a sheet, like the questions of a quiz: Title, Message, About, For, Start and End in a row. *@
+<AnnouncementsSheetDialog Open="sheetOpen" Today="today" Busy="busy" Errors="sheetErrors" OnPost="PostSheetAsync" OnClose="CloseSheet" />
 
 @code {
-    private bool excelOpen;
-
-    private void OpenExcel() => excelOpen = true;
-
-    private void CloseExcel() => excelOpen = false;
-
-    private byte[] ExportBytes() => AnnouncementSheets.Export(rows ?? []);
-
     [Inject] private FileDownloads Downloads { get; set; } = null!;
 
-    private async Task ExportAsync() => await Downloads.SaveAsync(AnnouncementSheets.FileName("Announcements"), ExportBytes());
+    private async Task ExportAsync() => await Downloads.SaveAsync(AnnouncementSheets.FileName("Announcements"), AnnouncementSheets.Export(rows ?? []));
 
-    private static SheetImportDialog.SheetPreview ReadSheet(byte[] data)
+    private bool sheetOpen;
+    private IReadOnlyList<string> sheetErrors = [];
+
+    private void OpenSheet()
     {
-        var parsed = AnnouncementSheets.Parse(data);
-        return new SheetImportDialog.SheetPreview([.. parsed.Rows.Select(r => new SheetImportDialog.SheetPreviewRow($"Row {r.Row}", r.Title, r.Input is null ? string.Join(" ", r.Errors) : null))], parsed.FileError);
+        sheetErrors = [];
+        sheetOpen = true;
     }
 
-    /// <summary>Every row is written like the box writes one (the same rules, the same notification to the people it is for).</summary>
-    private async Task<ItemImportSummary> ImportSheetAsync(byte[] data)
+    private void CloseSheet() => sheetOpen = false;
+
+    /// <summary>Every row is posted like the box posts one (the same rules, the same notification to the people it is for). The rows that could not be posted stay in the sheet with the reason.</summary>
+    private async Task<IReadOnlyList<int>> PostSheetAsync(IReadOnlyList<AnnouncementInput> inputs)
     {
-        var created = 0;
+        var posted = new List<int>();
         var problems = new List<string>();
-        if (me is not null)
+        if (busy || me is null)
         {
-            foreach (var row in AnnouncementSheets.Parse(data).Rows.Where(r => r.Input is not null))
+            return posted;
+        }
+
+        busy = true;
+        try
+        {
+            for (var place = 0; place < inputs.Count; place++)
             {
-                var saved = await Service.SaveAsync(me, row.Input!);
+                var saved = await Service.SaveAsync(me, inputs[place]);
                 if (saved.Succeeded)
                 {
-                    created++;
+                    posted.Add(place);
                 }
                 else
                 {
-                    problems.Add($"Row {row.Row} ({row.Title}): {string.Join(" ", saved.Errors)}");
+                    problems.Add($"{inputs[place].Title}: {string.Join(" ", saved.Errors)}");
                 }
             }
+
+            sheetErrors = problems;
+            await LoadAsync();
+            if (problems.Count == 0)
+            {
+                sheetOpen = false;
+                messageIsError = false;
+                message = $"{posted.Count} announcement{(posted.Count == 1 ? " was" : "s were")} posted.";
+            }
+        }
+        finally
+        {
+            busy = false;
         }
 
-        await LoadAsync();
-        return new ItemImportSummary(created, problems);
+        // The sheet called this directly (not through a button of this page), so the page is drawn again here: the sheet closes, the list shows the new announcements.
+        StateHasChanged();
+        return posted;
     }
 
     private CurrentUserInfo? me;

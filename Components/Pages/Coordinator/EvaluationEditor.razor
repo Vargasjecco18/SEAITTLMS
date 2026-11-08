@@ -114,6 +114,7 @@ else
                 @* How a question is added: pick the kind of answer first. Each kind shows what the students will see. *@
                 <section class="palette" aria-labelledby="add-title">
                     <h3 id="add-title">Add a question</h3>
+                    <p class="sheet-open"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenSheet">Write the questions in a sheet</Button></p>
                     <div class="types">
                         @foreach (var kind in EvaluationQuestionKinds.All)
                         {
@@ -279,6 +280,9 @@ else
 }
 
 @* ===== Send ===== *@
+@* The same sheet as a new evaluation has: a row for each question, the type from a list, the area and the options. Save keeps the whole list in the draft. *@
+<EvaluationSheetDialog Open="sheetOpen" Heading="@($"Questions · {detail?.Title}")" Existing="questions" Busy="busy" Errors="sheetErrors" SaveStep="The questions are saved in the draft." OnSave="SaveSheetAsync" OnClose="CloseSheet" />
+
 <Modal Open="sending" Title="Send to the students" OnClose="CloseSend" Large="true">
     @if (sending)
     {
@@ -430,6 +434,45 @@ else
         form.Instructions = detail.Instructions;
         dueText = PhilippineTime.ToInputValue(detail.DueAtUtc);
         questions = detail.Questions.Select(q => new EvaluationQuestionInput { Text = q.Text, Kind = q.Kind, Category = q.Category, Options = [.. q.Options ?? []] }).ToList();
+    }
+
+    private bool sheetOpen;
+    private IReadOnlyList<string> sheetErrors = [];
+
+    private void OpenSheet()
+    {
+        sheetErrors = [];
+        sheetOpen = true;
+    }
+
+    private void CloseSheet() => sheetOpen = false;
+
+    private async Task SaveSheetAsync(IReadOnlyList<EvaluationQuestionInput> list)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            sheetErrors = [];
+            var result = await Service.SaveQuestionsAsync(userId, EvaluationId, list);
+            if (!result.Succeeded)
+            {
+                sheetErrors = [.. result.Errors];
+                return;
+            }
+
+            sheetOpen = false;
+            Say(result);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private void Say(ServiceResult result)

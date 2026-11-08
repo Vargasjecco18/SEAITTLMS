@@ -1,0 +1,312 @@
+@* The sheet for writing announcements inside the system, like the sheet of the quiz: a row for each announcement with its Title, Message, About (what it is about, a list), For (who reads it, a list), Start
+   and End, and the step by step at the right. A box is read when it is left (not at every key). Every row that is ready is posted like the box of the page posts one (the same rules, the people it is for
+   are told). A row the system could not post stays in the sheet with the reason. There is no Excel to download, fill in and import. *@
+<Modal Open="Open" Title="Announcements" Wider="true" Top="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        <div class="sheet-layout">
+            <div class="sheet-main">
+                @if (Errors.Count > 0)
+                {
+                    <ul class="sheet-errors" role="alert">
+                        @foreach (var error in Errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                }
+                <p class="sheet-summary" role="status">
+                    <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "announcement is" : "announcements are") ready.
+                    @if (Filled.Count > ReadyCount)
+                    {
+                        <span class="bad">Every announcement must be ready to post. The reason is on its line.</span>
+                    }
+                </p>
+
+                <div class="sheet-wrap">
+                    <table class="sheet" aria-label="Announcements to post">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="c-n">#</th>
+                                <th scope="col" class="c-title">Title</th>
+                                <th scope="col" class="c-message">Message</th>
+                                <th scope="col" class="c-about">About</th>
+                                <th scope="col" class="c-for">For</th>
+                                <th scope="col" class="c-date">Start</th>
+                                <th scope="col" class="c-date">End</th>
+                                <th scope="col" class="c-state">Ready</th>
+                                <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (row, n) in rows.Select((r, i) => (r, i + 1)))
+                            {
+                                var problems = row.Problems(Today);
+                                var filled = row.IsFilled;
+                                var meeting = row.Category == AnnouncementCategories.TeachersMeeting;
+                                <tr class="@(filled ? (problems.Count == 0 ? "ok" : "bad") : "empty")" data-row="@n">
+                                    <td class="c-n">@n</td>
+                                    <td class="c-title">
+                                        <input class="cell" type="text" maxlength="@AnnouncementService.MaxTitleLength" autocomplete="off" aria-label="@($"Title of announcement {n}")" placeholder="Title" value="@row.Title" @key="@($"t-{row.Id}")"
+                                               @onchange="e => row.Title = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
+                                    <td class="c-message">
+                                        <input class="cell" type="text" maxlength="@AnnouncementService.MaxBodyLength" autocomplete="off" aria-label="@($"Message of announcement {n}")" placeholder="What people read" value="@row.Body" @key="@($"m-{row.Id}")"
+                                               @onchange="e => row.Body = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
+                                    <td class="c-about">
+                                        <select class="cell pick" aria-label="@($"What announcement {n} is about")" @onchange="e => ChangeCategory(row, e.Value?.ToString())">
+                                            @foreach (var c in AnnouncementCategories.All)
+                                            {
+                                                <option value="@c" selected="@(row.Category == c)">@AnnouncementCategories.Display(c)</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="c-for">
+                                        <select class="cell pick" aria-label="@($"Who announcement {n} is for")" disabled="@meeting" title="@(meeting ? "A teachers' meeting is for the teachers." : "")" @onchange="e => row.Audience = e.Value?.ToString() ?? AnnouncementAudiences.Everyone">
+                                            @foreach (var a in AnnouncementAudiences.All)
+                                            {
+                                                <option value="@a" selected="@(row.Audience == a)">@AnnouncementAudiences.Display(a)</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="c-date">
+                                        <input class="cell" type="date" aria-label="@($"Start day of announcement {n}")" value="@Format(row.StartsOn)" @key="@($"s-{row.Id}")"
+                                               @onchange="e => row.StartsOn = ParseDay(e.Value?.ToString())" />
+                                    </td>
+                                    <td class="c-date">
+                                        <input class="cell" type="date" aria-label="@($"End day of announcement {n}")" value="@Format(row.ExpiresOn)" @key="@($"e-{row.Id}")"
+                                               @onchange="e => row.ExpiresOn = ParseDay(e.Value?.ToString())" />
+                                    </td>
+                                    <td class="c-state">
+                                        @if (!filled)
+                                        {
+                                            <span class="muted">—</span>
+                                        }
+                                        else if (problems.Count == 0)
+                                        {
+                                            <span class="state-ok"><Icon Name="circle-check" Size="15" /> Ready</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="state-bad" title="@string.Join(" ", problems)"><Icon Name="circle-alert" Size="15" /> @problems[0]</span>
+                                        }
+                                    </td>
+                                    <td class="c-x">
+                                        <button type="button" class="row-x" title="@($"Take row {n} out")" aria-label="@($"Take row {n} out")" disabled="@(rows.Count <= 1)" @onclick="() => RemoveRow(row)"><Icon Name="trash-2" Size="15" /></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sheet-tools">
+                    @* Add [about] [number] row: what the new rows are about is chosen from a list and how many from a number box. *@
+                    <span class="add-rows" role="group" aria-label="Add rows">
+                        <span>Add</span>
+                        <select id="add-kind" class="cell pick add-kind" aria-label="What the rows to add are about" @bind="addKind">
+                            @foreach (var c in AnnouncementCategories.All)
+                            {
+                                <option value="@c">@AnnouncementCategories.Display(c)</option>
+                            }
+                        </select>
+                        <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                        <span>@(addCount == 1 ? "row" : "rows")</span>
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
+                    </span>
+                    <span class="muted">@rows.Count of @MaxRows rows</span>
+                </div>
+
+                <div class="sheet-actions">
+                    <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                    <Button IconName="send" Disabled="@(Busy || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Posting…" : Filled.Count == 1 ? "Post 1 announcement" : $"Post {Filled.Count} announcements")</Button>
+                </div>
+            </div>
+
+            <aside class="sheet-steps" aria-label="Step by step">
+                <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
+                <ol>
+                    <li><strong>Write the title</strong> and the <strong>message</strong> in a row. Press Tab to go to the next box.</li>
+                    <li><strong>Choose what it is about</strong> (About): an exam, a holiday, the semester break, a teachers' meeting or other.</li>
+                    <li><strong>Choose who reads it</strong> (For): everybody, the students, the teachers, the staff, or the staff and the teachers. A teachers' meeting is always for the teachers.</li>
+                    <li><strong>Choose the days</strong>: Start is the first day it is about, End is the last day it is shown. Leave End empty to show it until you delete it.</li>
+                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                    <li><strong>Press Post.</strong> The people each one is for are told, and see the days in their calendar.</li>
+                </ol>
+            </aside>
+        </div>
+    }
+</Modal>
+
+@code {
+    private const int MaxRows = 50;
+
+    private sealed class Row
+    {
+        public int Id { get; init; }
+        public string Title { get; set; } = "";
+        public string Body { get; set; } = "";
+        public string Category { get; set; } = AnnouncementCategories.Other;
+        public string Audience { get; set; } = AnnouncementAudiences.Everyone;
+        public DateOnly? StartsOn { get; set; }
+        public DateOnly? ExpiresOn { get; set; }
+
+        public bool IsFilled => Title.Trim().Length > 0 || Body.Trim().Length > 0;
+
+        public AnnouncementInput ToInput() => new()
+        {
+            Title = Title.Trim(), Body = Body.Trim(), Category = Category,
+            Audience = Category == AnnouncementCategories.TeachersMeeting ? AnnouncementAudiences.Teachers : Audience,
+            StartsOn = StartsOn, ExpiresOn = ExpiresOn,
+        };
+
+        public List<string> Problems(DateOnly today)
+        {
+            var list = new List<string>();
+            if (Title.Trim().Length == 0)
+            {
+                list.Add("Write the title.");
+            }
+            else if (Title.Trim().Length > AnnouncementService.MaxTitleLength)
+            {
+                list.Add($"The title can have at most {AnnouncementService.MaxTitleLength} characters.");
+            }
+
+            if (Body.Trim().Length == 0)
+            {
+                list.Add("Write the message.");
+            }
+            else if (Body.Trim().Length > AnnouncementService.MaxBodyLength)
+            {
+                list.Add($"The message can have at most {AnnouncementService.MaxBodyLength} characters.");
+            }
+
+            if (ExpiresOn is { } end && end < today)
+            {
+                list.Add("The End day can't be in the past.");
+            }
+
+            if (StartsOn is { } start && ExpiresOn is { } until && until < start)
+            {
+                list.Add("The End day can't be before the Start day.");
+            }
+
+            return list;
+        }
+    }
+
+    private readonly List<Row> rows = [];
+    private int nextId;
+
+    // What the rows that "Add [about] [number] rows" puts at the end are about, and how many.
+    private string addKind = AnnouncementCategories.Other;
+    private int addCount = 1;
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>Today in the Philippines: an End day before it is a problem.</summary>
+    [Parameter] public DateOnly Today { get; set; }
+
+    [Parameter] public bool Busy { get; set; }
+
+    /// <summary>What went wrong when the page tried to post (shown above the sheet).</summary>
+    [Parameter] public IReadOnlyList<string> Errors { get; set; } = [];
+
+    /// <summary>
+    /// Called with the announcements of the rows that are ready. It gives back the places (0 is the first) of the ones that were posted: those rows leave the sheet, the others stay
+    /// with what went wrong in <see cref="Errors"/>.
+    /// </summary>
+    [Parameter] public Func<IReadOnlyList<AnnouncementInput>, Task<IReadOnlyList<int>>>? OnPost { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool wasOpen;
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            rows.Clear();
+        }
+        else if (!wasOpen)
+        {
+            rows.Clear();
+            AddRows(3, AnnouncementCategories.Other);
+        }
+
+        wasOpen = Open;
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void AddRows(int count, string category)
+    {
+        for (var n = 0; n < count && rows.Count < MaxRows; n++)
+        {
+            rows.Add(new Row
+            {
+                Id = ++nextId, Category = category,
+                Audience = category == AnnouncementCategories.TeachersMeeting ? AnnouncementAudiences.Teachers : AnnouncementAudiences.Everyone,
+            });
+        }
+    }
+
+    private void AddChosenRows() => AddRows(Math.Clamp(addCount, 1, 50), addKind);
+
+    private void RemoveRow(Row row)
+    {
+        if (rows.Count > 1)
+        {
+            rows.Remove(row);
+        }
+    }
+
+    private static void ChangeCategory(Row row, string? category)
+    {
+        if (category is null || !AnnouncementCategories.All.Contains(category))
+        {
+            return;
+        }
+
+        row.Category = category;
+        if (category == AnnouncementCategories.TeachersMeeting)
+        {
+            row.Audience = AnnouncementAudiences.Teachers;
+        }
+    }
+
+    private static string Format(DateOnly? day) => day?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+
+    private static DateOnly? ParseDay(string? text) =>
+        DateOnly.TryParseExact(text, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day) ? day : null;
+
+    private IReadOnlyList<Row> Filled => [.. rows.Where(r => r.IsFilled)];
+
+    private int ReadyCount => Filled.Count(r => r.Problems(Today).Count == 0);
+
+    private async Task SaveAsync()
+    {
+        if (OnPost is null)
+        {
+            return;
+        }
+
+        var ready = Filled;
+        var posted = await OnPost([.. ready.Select(r => r.ToInput())]);
+
+        // The rows that were posted leave the sheet; the others stay to be corrected.
+        foreach (var place in posted.OrderByDescending(p => p))
+        {
+            if (place >= 0 && place < ready.Count)
+            {
+                rows.Remove(ready[place]);
+            }
+        }
+
+        if (rows.Count == 0)
+        {
+            AddRows(1, AnnouncementCategories.Other);
+        }
+    }
+}

@@ -3,28 +3,19 @@ using SEAITT_LMS.Data.Entities;
 
 namespace SEAITT_LMS.Services;
 
-/// <summary>A row of the announcements workbook: the announcement that is ready, or what is wrong with it.</summary>
-public sealed record AnnouncementImportRow(int Row, string Title, AnnouncementInput? Input, IReadOnlyList<string> Errors);
-
-public sealed record AnnouncementImportParse(IReadOnlyList<AnnouncementImportRow> Rows, string? FileError);
-
 /// <summary>
-/// The Excel workbook for the announcements of the school (the academic coordinator): the template to fill in, the export of the announcements that exist, and the reading of a filled
-/// workbook (every row becomes one announcement, written like the box of the page writes one).
+/// The Excel workbook for the announcements of the school (the academic coordinator): the export of the announcements that exist, with the columns Title, Message, About, For, Start and End.
+/// (Announcements are written in the sheet of the system, not in an Excel template.)
 /// </summary>
 public static class AnnouncementSheets
 {
-    public const int MaxRows = 100;
-    private const int TemplateRows = 20;
     private static readonly string[] Headers = ["Title", "Message", "About", "For", "Start", "End"];
 
     public static string FileName(string what) => FileDownloads.CleanName($"{what} - Announcements.xlsx");
 
-    public static byte[] Template() => Build([], example: true);
+    public static byte[] Export(IEnumerable<AnnouncementView> announcements) => Build(announcements.ToList());
 
-    public static byte[] Export(IEnumerable<AnnouncementView> announcements) => Build(announcements.ToList(), example: false);
-
-    private static byte[] Build(IReadOnlyList<AnnouncementView> items, bool example)
+    private static byte[] Build(IReadOnlyList<AnnouncementView> items)
     {
         var book = new XlsxBook();
         var sheet = book.AddSheet("Announcements");
@@ -40,170 +31,7 @@ public static class AnnouncementSheets
             row++;
         }
 
-        if (example)
-        {
-            sheet.Set(row, 1, "Midterm exams", XlsxStyle.InputText).Set(row, 2, "The midterm exams are on November 18 and 19. Bring a pen and your school ID.", XlsxStyle.Wrap)
-                .Set(row, 3, "Exam", XlsxStyle.InputText).Set(row, 4, "Students", XlsxStyle.InputText)
-                .Set(row, 5, "2026-11-18", XlsxStyle.InputText).Set(row, 6, "2026-11-19", XlsxStyle.InputText);
-            row++;
-        }
-
-        var last = Math.Max(TemplateRows + 1, items.Count + 2);
-        for (; row <= last; row++)
-        {
-            for (var column = 1; column <= Headers.Length; column++)
-            {
-                sheet.Set(row, column, null, column == 2 ? XlsxStyle.Wrap : XlsxStyle.InputText);
-            }
-        }
-
         sheet.FrozenRows = 1;
-        sheet.ListChoice($"C2:C{last}", AnnouncementCategories.All.Select(AnnouncementCategories.Display).ToArray(), "Choose what the announcement is about from the list.");
-        sheet.ListChoice($"D2:D{last}", AnnouncementAudiences.All, "Choose who reads it from the list (Everyone, Students, Teachers, Staff or StaffTeachers).");
-        sheet.Tip($"A2:A{last}", "Type the title (needed).").Tip($"B2:B{last}", "Type the message people read (needed).").Tip($"E2:E{last}", "Type the first day it is about, like 2026-11-18. Leave it empty if it is about one day (the End).")
-            .Tip($"F2:F{last}", "Type the last day it is shown, like 2026-11-19. Leave it empty to show it until you delete it.");
-
-        TemplateGuide.Add(book, "How to fill the Announcements sheet",
-        [
-            new("Announcements", "Title", "Needed", $"The title people see (up to {AnnouncementService.MaxTitleLength} characters).", TemplateGuide.TypeIt),
-            new("Announcements", "Message", "Needed", $"What people read (up to {AnnouncementService.MaxBodyLength} characters).", TemplateGuide.TypeIt),
-            new("Announcements", "About", "Optional", "Exam, Holiday, Semester break, Teachers' meeting or Other. Empty: Other. A teachers' meeting is for the teachers only.", "Choose it from the list."),
-            new("Announcements", "For", "Optional", "Everyone (staff, teachers and students), Students, Teachers, Staff or StaffTeachers (the staff and the teachers). Empty: Everyone.", "Choose it from the list."),
-            new("Announcements", "Start", "Optional", "The first day it is about (an exam week, a holiday). Empty: it is about the End day only.", "Type it like 2026-11-18 (year-month-day)."),
-            new("Announcements", "End", "Optional", "The last day it is about and shown. Empty: it is shown until you delete it.", "Type it like 2026-11-19 (year-month-day)."),
-        ],
-            $"At most {MaxRows} rows.",
-            "People see the days from Start to End in their calendar.",
-            "The people each one is for are told, as when you write one by hand.");
         return book.ToBytes();
-    }
-
-    private static string Key(string text) => new string(text.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
-
-    public static AnnouncementImportParse Parse(byte[] data)
-    {
-        IReadOnlyList<XlsxSheetData> sheets;
-        try
-        {
-            sheets = XlsxReader.Read(data);
-        }
-        catch (InvalidDataException problem)
-        {
-            return new AnnouncementImportParse([], problem.Message);
-        }
-
-        var sheet = sheets.FirstOrDefault();
-        if (sheet is null || sheet.Rows.Count == 0)
-        {
-            return new AnnouncementImportParse([], "The file has no rows.");
-        }
-
-        var headers = Enumerable.Range(1, 9).Select(c => sheet.Cell(1, c).Trim().ToLowerInvariant()).ToList();
-        if (!headers.Contains("title") || !headers.Contains("message"))
-        {
-            return new AnnouncementImportParse([], "This is not the template: the first row must have the column titles (Title, Message, About ...). Download the template again.");
-        }
-
-        int Column(string name, int fallback) => headers.IndexOf(name) is >= 0 and var i ? i + 1 : fallback;
-        var title = Column("title", 1);
-        var message = Column("message", 2);
-        var about = Column("about", 3);
-        var audience = Column("for", 4);
-        var start = Column("start", 5);
-
-        // the first template had one column, "Last day to show", where End is now
-        var until = headers.Contains("end") ? Column("end", 6) : headers.Contains("last day to show") ? Column("last day to show", 5) : 6;
-        if (!headers.Contains("start") && headers.Contains("last day to show"))
-        {
-            start = 0;
-        }
-
-        var categories = AnnouncementCategories.All.ToDictionary(c => Key(AnnouncementCategories.Display(c)), c => c);
-        var audiences = AnnouncementAudiences.All.ToDictionary(a => Key(a), a => a);
-        audiences["staffandteachers"] = AnnouncementAudiences.StaffTeachers;
-
-        var rows = new List<AnnouncementImportRow>();
-        for (var r = 2; r <= sheet.Rows.Count; r++)
-        {
-            var cells = new[] { title, message, about, audience, until, start }.Select(c => c == 0 ? "" : sheet.Cell(r, c).Trim()).ToList();
-            if (cells.All(c => c.Length == 0))
-            {
-                continue;
-            }
-
-            if (rows.Count >= MaxRows)
-            {
-                return new AnnouncementImportParse(rows, $"The file has more than {MaxRows} rows. Import it in parts.");
-            }
-
-            var errors = new List<string>();
-            var input = new AnnouncementInput { Title = cells[0], Body = cells[1], Category = AnnouncementCategories.Other, Audience = AnnouncementAudiences.Everyone };
-            if (cells[0].Length is 0 or > AnnouncementService.MaxTitleLength)
-            {
-                errors.Add($"Write a title (up to {AnnouncementService.MaxTitleLength} characters).");
-            }
-
-            if (cells[1].Length is 0 or > AnnouncementService.MaxBodyLength)
-            {
-                errors.Add($"Write the message (up to {AnnouncementService.MaxBodyLength} characters).");
-            }
-
-            if (cells[2].Length > 0)
-            {
-                if (categories.TryGetValue(Key(cells[2]), out var category))
-                {
-                    input.Category = category;
-                }
-                else
-                {
-                    errors.Add("About must be Exam, Holiday, Semester break, Teachers' meeting or Other.");
-                }
-            }
-
-            if (cells[3].Length > 0)
-            {
-                if (audiences.TryGetValue(Key(cells[3]), out var who))
-                {
-                    input.Audience = who;
-                }
-                else
-                {
-                    errors.Add("For must be Everyone, Students, Teachers, Staff or StaffTeachers.");
-                }
-            }
-
-            if (cells[4].Length > 0)
-            {
-                if (XlsxReader.ToDate(cells[4]) is { } day)
-                {
-                    input.ExpiresOn = DateOnly.FromDateTime(day);
-                }
-                else
-                {
-                    errors.Add("End: write the day like 2026-11-19.");
-                }
-            }
-
-            if (cells[5].Length > 0)
-            {
-                if (XlsxReader.ToDate(cells[5]) is { } first)
-                {
-                    input.StartsOn = DateOnly.FromDateTime(first);
-                }
-                else
-                {
-                    errors.Add("Start: write the day like 2026-11-18.");
-                }
-            }
-
-            if (input.StartsOn is { } begins && input.ExpiresOn is { } ends && ends < begins)
-            {
-                errors.Add("End can't be before Start.");
-            }
-
-            rows.Add(new AnnouncementImportRow(r, cells[0], errors.Count == 0 ? input : null, errors));
-        }
-
-        return rows.Count == 0 ? new AnnouncementImportParse([], "The file has no announcements. Fill in the rows under the column titles.") : new AnnouncementImportParse(rows, null);
     }
 }

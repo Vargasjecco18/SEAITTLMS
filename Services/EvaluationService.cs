@@ -129,6 +129,9 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
 
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
 
+    /// <summary>What a new evaluation tells the students before the questions.</summary>
+    public const string DefaultInstructions = "Answer honestly. Your answers are anonymous: your teachers will not know who wrote what.";
+
     /// <summary>The questions a new evaluation starts with, in the areas a teacher is usually looked at. The coordinator changes, adds and removes them.</summary>
     public static readonly IReadOnlyList<EvaluationQuestionInput> DefaultQuestions =
     [
@@ -299,6 +302,14 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
 
     // ======================================================================= the coordinator: making and sending
 
+    /// <summary>The title a new evaluation starts with: "Teacher evaluation" and the current term.</summary>
+    public async Task<string> DefaultTitleAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var term = await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => t.Name + " · " + t.SchoolYear.Name).FirstOrDefaultAsync(ct);
+        return term is null ? "Teacher evaluation" : $"Teacher evaluation · {term}";
+    }
+
     /// <summary>A new draft with the usual questions. Returns its id.</summary>
     public async Task<ServiceResult> CreateAsync(int userId, CancellationToken ct = default)
     {
@@ -308,11 +319,10 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             return ServiceResult.Fail(CoordinatorOnly);
         }
 
-        var term = await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => t.Name + " · " + t.SchoolYear.Name).FirstOrDefaultAsync(ct);
         var evaluation = new TeacherEvaluation
         {
-            Title = term is null ? "Teacher evaluation" : $"Teacher evaluation · {term}",
-            Instructions = "Answer honestly. Your answers are anonymous: your teachers will not know who wrote what.",
+            Title = await DefaultTitleAsync(ct),
+            Instructions = DefaultInstructions,
             CreatedByUserId = userId,
         };
         var position = 0;
@@ -419,7 +429,8 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         return ServiceResult.Ok("Saved.");
     }
 
-    public async Task<ServiceResult> SaveQuestionsAsync(int userId, int id, IReadOnlyList<EvaluationQuestionInput> questions, CancellationToken ct = default)
+    /// <summary>What is wrong with a list of questions, one sentence for each problem (empty when it can be saved). The sheet and the saving use the same rules.</summary>
+    public static List<string> ValidateQuestions(IReadOnlyList<EvaluationQuestionInput> questions)
     {
         var errors = new List<string>();
         for (var n = 0; n < questions.Count; n++)
@@ -464,6 +475,64 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             errors.Add($"An evaluation can have at most {MaxQuestions} questions.");
         }
 
+        return errors;
+    }
+
+    /// <summary>
+    /// A new draft with the title, the instructions and the questions of the sheet, all at once (or nothing, when something is wrong), so a sheet that
+    /// cannot be saved leaves no half made draft. Returns its id.
+    /// </summary>
+    public async Task<ServiceResult> CreateWithQuestionsAsync(int userId, string title, string? instructions, IReadOnlyList<EvaluationQuestionInput> questions, CancellationToken ct = default)
+    {
+        var errors = new List<string>();
+        title = (title ?? "").Trim();
+        if (title.Length is 0 or > 200)
+        {
+            errors.Add("Write a title (up to 200 characters).");
+        }
+
+        if (instructions is { Length: > 2000 })
+        {
+            errors.Add("The instructions can have at most 2,000 characters.");
+        }
+
+        errors.AddRange(ValidateQuestions(questions));
+        if (errors.Count > 0)
+        {
+            return ServiceResult.Fail(errors);
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsCoordinatorAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(CoordinatorOnly);
+        }
+
+        var evaluation = new TeacherEvaluation
+        {
+            Title = title,
+            Instructions = string.IsNullOrWhiteSpace(instructions) ? null : instructions.Trim(),
+            CreatedByUserId = userId,
+        };
+        var position = 0;
+        foreach (var q in questions)
+        {
+            evaluation.Questions.Add(new EvaluationQuestion
+            {
+                Position = ++position, Text = q.Text.Trim(), Kind = q.Kind,
+                Category = string.IsNullOrWhiteSpace(q.Category) ? null : q.Category.Trim(),
+                OptionsText = EvaluationQuestionKinds.HasOptions(q.Kind) ? string.Join('\n', CleanOptions(q.Options)) : null,
+            });
+        }
+
+        db.TeacherEvaluations.Add(evaluation);
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok($"The evaluation was made as a draft with {questions.Count} question{(questions.Count == 1 ? "" : "s")}. Open it to choose the courses, then send it.", evaluation.Id);
+    }
+
+    public async Task<ServiceResult> SaveQuestionsAsync(int userId, int id, IReadOnlyList<EvaluationQuestionInput> questions, CancellationToken ct = default)
+    {
+        var errors = ValidateQuestions(questions);
         if (errors.Count > 0)
         {
             return ServiceResult.Fail(errors);

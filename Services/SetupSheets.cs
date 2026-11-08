@@ -35,7 +35,7 @@ public sealed record SetupTrack(SetupLine Line, string Code, string Name, bool A
 
 public sealed record SetupStrand(SetupLine Line, string Code, string Name, string Track, bool Active);
 
-public sealed record SetupCourse(SetupLine Line, string Code, string Name, decimal Units, string? Description, bool Active);
+public sealed record SetupCourse(SetupLine Line, string Code, string Name, decimal Units, bool Active);
 
 public sealed record SetupCurriculum(SetupLine Line, string Strand, int Grade, int Term, string Course);
 
@@ -77,7 +77,7 @@ public static class SetupSheets
     private static readonly string[] TermHeaders = ["School year", "Term", "Name", "First day", "Last day", "Current term"];
     private static readonly string[] TrackHeaders = ["Code", "Name", "Active"];
     private static readonly string[] StrandHeaders = ["Code", "Name", "Track", "Active"];
-    private static readonly string[] CourseHeaders = ["Code", "Name", "Units", "Description", "Active"];
+    private static readonly string[] CourseHeaders = ["Code", "Name", "Units", "Active"];
     private static readonly string[] CurriculumHeaders = ["Strand", "Grade", "Term", "Course"];
     private static readonly string[] SectionHeaders = ["School year", "Strand", "Grade", "Section", "Adviser (employee number)"];
 
@@ -155,11 +155,11 @@ public static class SetupSheets
             .ListFromOrOther($"C2:C{strandsLast}", Refs(TracksSheet), "Choose the track from the list (it shows the codes of the sheet Tracks).")
             .ListChoice($"D2:D{strandsLast}", ["Yes", "No"], "Yes: the strand can be used. No: it is switched off.");
 
-        var courses = Sheet(CoursesSheet, CourseHeaders, [16, 46, 8, 40, 10], [.. data.Courses.OrderBy(c => c.Name).Select(c => new[] { c.Code, c.Name, c.Units.ToString("0.#", CultureInfo.InvariantCulture), c.Description ?? "", YesNo(c.IsActive) })], [3]);
+        var courses = Sheet(CoursesSheet, CourseHeaders, [16, 46, 8, 10], [.. data.Courses.OrderBy(c => c.Name).Select(c => new[] { c.Code, c.Name, c.Units.ToString("0.#", CultureInfo.InvariantCulture), YesNo(c.IsActive) })]);
         var coursesLast = Last([.. data.Courses]);
         courses.Tip($"A2:A{coursesLast}", "Type the code of the course (up to 30 characters).").Tip($"B2:B{coursesLast}", "Type the name of the course.")
-            .Number($"C2:C{coursesLast}", 0.5m, 12, "Type the units, from 0.5 to 12, like 3 or 1.5.").Tip($"D2:D{coursesLast}", "Optional: a short description (up to 500 characters).")
-            .ListChoice($"E2:E{coursesLast}", ["Yes", "No"], "Yes: the course can be used. No: it is switched off.");
+            .Number($"C2:C{coursesLast}", 0.5m, 12, "Type the units, from 0.5 to 12, like 3 or 1.5.")
+            .ListChoice($"D2:D{coursesLast}", ["Yes", "No"], "Yes: the course can be used. No: it is switched off.");
 
         var curriculum = Sheet(CurriculumSheet, CurriculumHeaders, [16, 8, 8, 16], [.. data.Curriculum.Select(c => new[] { c.Strand, c.Grade.ToString(CultureInfo.InvariantCulture), c.Term.ToString(CultureInfo.InvariantCulture), c.Course })]);
         var curriculumLast = Last([.. data.Curriculum]);
@@ -190,7 +190,6 @@ public static class SetupSheets
             new(StrandsSheet, "Active", Optional, "Yes or No. Empty: Yes.", "Choose it from the list."),
             new(CoursesSheet, "Code, Name", Needed, "The code of the course (up to 30 characters) and its name.", TemplateGuide.TypeIt),
             new(CoursesSheet, "Units", Optional, "From 0.5 to 12, one decimal at most. Empty: 3.", TemplateGuide.TypeNumber),
-            new(CoursesSheet, "Description", Optional, "A short description (up to 500 characters).", TemplateGuide.TypeIt),
             new(CoursesSheet, "Active", Optional, "Yes or No. Empty: Yes. A course that is switched off can't be put in a strand.", "Choose it from the list."),
             new(CurriculumSheet, "Strand, Course", Needed, "One row for each course a strand takes in a term of a grade level: the code of the strand and the code of the course.", "Choose them from the lists."),
             new(CurriculumSheet, "Grade, Term", Needed, "The grade level (11 or 12) and the term number (1 or 2).", "Choose them from the lists."),
@@ -324,7 +323,7 @@ public static class SetupSheets
         var terms = Rows(Find(sheets, TermsSheet, "Term"), TermsSheet, TermHeaders, [["Year", "Schoolyear"], ["Term number", "No"], [], ["Start", "Starts", "First"], ["End", "Ends", "Last"], ["Current", "Is current"]]);
         var tracks = Rows(Find(sheets, TracksSheet, "Track"), TracksSheet, TrackHeaders, [[], [], ["On", "Is active"]]);
         var strands = Rows(Find(sheets, StrandsSheet, "Strand"), StrandsSheet, StrandHeaders, [[], [], ["Track code"], ["On", "Is active"]]);
-        var courses = Rows(Find(sheets, CoursesSheet, "Course", "Subjects"), CoursesSheet, CourseHeaders, [[], [], ["Unit"], [], ["On", "Is active"]]);
+        var courses = Rows(Find(sheets, CoursesSheet, "Course", "Subjects"), CoursesSheet, CourseHeaders, [[], [], ["Unit"], ["On", "Is active"]]);
         var curriculum = Rows(Find(sheets, CurriculumSheet), CurriculumSheet, CurriculumHeaders, [["Strand code"], ["Grade level"], ["Term number"], ["Course code"]]);
         var sections = Rows(Find(sheets, SectionsSheet, "Section"), SectionsSheet, SectionHeaders, [["Year"], ["Strand code"], ["Grade level"], ["Name", "Section name"], ["Adviser", "Adviser employee number"]]);
 
@@ -416,9 +415,8 @@ public static class SetupSheets
                 if (!decimal.TryParse(c[2], NumberStyles.Number, CultureInfo.InvariantCulture, out units) || units < 0.5m || units > 12 || decimal.Round(units, 1) != units) errors.Add("The units are from 0.5 to 12 (one decimal at most, like 1.5 or 3).");
             }
 
-            if (c[3].Length > 500) errors.Add("The description can have at most 500 characters.");
-            var active = ReadYesNo(c[4], true, errors, "Active");
-            courseRows.Add(new SetupCourse(Line(CoursesSheet, row, c[0], errors), c[0], c[1], units, c[3].Length == 0 ? null : c[3], active ?? true));
+            var active = ReadYesNo(c[3], true, errors, "Active");
+            courseRows.Add(new SetupCourse(Line(CoursesSheet, row, c[0], errors), c[0], c[1], units, active ?? true));
         }
 
         var curriculumRows = new List<SetupCurriculum>();

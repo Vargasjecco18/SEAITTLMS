@@ -103,11 +103,11 @@
 
     protected override void OnInitialized()
     {
-        // Somebody is signed in on this browser already: nobody else can log in here. The person goes back to their own page, with a message at the top.
+        // Somebody is signed in on this browser already (the person came back to this page with the Back button, or typed the address): the login page has nothing to do, so the person goes
+        // straight to their own page, with no message. (Nobody else can log in on this browser until that person signs out.)
         if (HttpContext.User.Identity?.IsAuthenticated == true)
         {
-            Navigation.NavigateTo(RoleHome.For(HttpContext.User.FindFirstValue(ClaimTypes.Role)) + "?alert=signed-in", forceLoad: true);
-            return;
+            GoTo(RoleHome.For(HttpContext.User.FindFirstValue(ClaimTypes.Role)));
         }
 
         // The page is opened again while the timer of this browser still runs: it is still there.
@@ -189,8 +189,15 @@
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.Principal!, properties);
 
-        Navigation.NavigateTo(LocalUrl.Sanitize(ReturnUrl), forceLoad: true);
+        GoTo(LocalUrl.Sanitize(ReturnUrl));
     }
+
+    /// <summary>
+    /// Goes to a page of this site with a <b>relative</b> address (<c>/student</c>). NavigationManager.NavigateTo makes an absolute address from the Host of the request, which is
+    /// <c>localhost:5000</c> when the site is opened through a forwarded port (VS Code ports, a dev tunnel, a proxy), and then the browser is sent to a place it can't reach.
+    /// A relative address keeps the person on the address they used.
+    /// </summary>
+    private static void GoTo(string path) => throw new NavigationException(path);
 
     private sealed class LoginInput
     {

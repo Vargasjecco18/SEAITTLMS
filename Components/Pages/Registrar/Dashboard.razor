@@ -26,8 +26,25 @@
         </div>
     </section>
 
-    @* The four cards after "At a glance": Not enrolled and the latest enrollments on top, the students by strand and by section below. *@
+    @* The four cards after "At a glance": the latest enrollments and Not enrolled on top (round 39: Latest enrollments is first), the students by strand and by section below. *@
     <div class="quad">
+        <Card Title="Latest enrollments" IconName="list">
+        @if (overview.Recent.Count == 0)
+        {
+            <EmptyState IconName="clipboard-list" Title="No enrollments yet">
+                <p>Enrolled students will show up here.</p>
+                <ButtonLink Href="registrar/enrollments" IconName="user-plus">Enroll the first student</ButtonLink>
+            </EmptyState>
+        }
+        else
+        {
+            <div class="table-in-card">
+                <EnrollmentTable Rows="overview.Recent" />
+            </div>
+            <p class="see-all"><a href="registrar/student-accounts">See all student accounts <Icon Name="arrow-right" Size="16" /></a></p>
+        }
+    </Card>
+
         <Card Title="Not enrolled" IconName="user-x" Class="not-enrolled">
                 @if (overview.NotEnrolled is not { Term: not null } notEnrolled)
                 {
@@ -64,23 +81,6 @@
                     }
                 }
             </Card>
-
-        <Card Title="Latest enrollments" IconName="list">
-        @if (overview.Recent.Count == 0)
-        {
-            <EmptyState IconName="clipboard-list" Title="No enrollments yet">
-                <p>Enrolled students will show up here.</p>
-                <ButtonLink Href="registrar/enrollments" IconName="user-plus">Enroll the first student</ButtonLink>
-            </EmptyState>
-        }
-        else
-        {
-            <div class="table-in-card">
-                <EnrollmentTable Rows="overview.Recent" />
-            </div>
-            <p class="see-all"><a href="registrar/student-accounts">See all student accounts <Icon Name="arrow-right" Size="16" /></a></p>
-        }
-    </Card>
 
         <Card Title="By strand" IconName="layers">
                 @if (overview.ByStrand.Count == 0)

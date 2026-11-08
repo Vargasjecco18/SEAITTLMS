@@ -85,6 +85,12 @@ public class StrandSubject
 
     /// <summary>Offered: the registrar enrolls students in this course of the strand and it is in the class schedule. Unchecked, it stays in the curriculum but is left out.</summary>
     public bool IsOffered { get; set; } = true;
+
+    /// <summary>
+    /// When the academic provider hid this course of the strand from the Course library list (the Hide button next to Open). Empty: it is shown. A hidden course stays in the curriculum and in
+    /// the classes; only the library list stops showing it until the provider shows it again from the Hidden list.
+    /// </summary>
+    public DateTime? LibraryHiddenAtUtc { get; set; }
 }
 
 /// <summary>The section names the registrar can choose when enrolling a student: A, B and C. (Sections with other names can exist; the registrar can still pick those.)</summary>

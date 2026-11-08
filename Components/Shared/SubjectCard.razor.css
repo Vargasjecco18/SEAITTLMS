@@ -190,8 +190,26 @@ h3 {
 }
 
 .foot {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
     margin-top: auto;
     padding-top: 0.6rem;
+}
+
+/* Buttons after Open (Hide, in the Course library): they keep their size, Open takes the rest of the row. */
+.foot-actions {
+    display: inline-flex;
+    flex: none;
+    align-items: stretch;
+
+    /* Above the link that covers the whole card (a.open::after), so the button after Open can be pressed. */
+    position: relative;
+    z-index: 1;
+}
+
+.foot-actions ::deep .button {
+    height: 100%;
 }
 
 .open {

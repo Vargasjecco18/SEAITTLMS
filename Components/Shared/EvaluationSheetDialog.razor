@@ -1,0 +1,284 @@
+@* The sheet for writing the questions of a teacher evaluation inside the system, like the sheet of the quiz: a row for each question with the Question, its Type (a list of the seven types), the Area
+   and the options of a ranking or select-all question, and the step by step at the right. A box is read when it is left (not at every key). The questions of the evaluation are the rows of the
+   sheet: Save gives the page the whole list. There is no Excel to download, fill in and import. *@
+<Modal Open="Open" Title="@Heading" Wider="true" Top="true" OnClose="CloseAsync">
+    @if (Open)
+    {
+        <div class="sheet-layout">
+            <div class="sheet-main">
+                @if (HeaderContent is not null)
+                {
+                    @* Fields above the questions (the title and the instructions of a new evaluation). *@
+                    <div class="sheet-head">@HeaderContent</div>
+                }
+                @if (Errors.Count > 0)
+                {
+                    <ul class="sheet-errors" role="alert">
+                        @foreach (var error in Errors)
+                        {
+                            <li>@error</li>
+                        }
+                    </ul>
+                }
+                <p class="sheet-summary" role="status">
+                    <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "question is" : "questions are") ready.
+                    @if (Filled.Count > ReadyCount)
+                    {
+                        <span class="bad">Every question must be ready to save. The reason is on its line.</span>
+                    }
+                    else if (Filled.Count > 0 && !Filled.Any(r => EvaluationQuestionKinds.IsScale(r.Kind)))
+                    {
+                        <span class="bad">Keep at least one 5-point question (Likert, Performance or Frequency), so the teachers can be compared.</span>
+                    }
+                </p>
+
+                <div class="sheet-wrap">
+                    <table class="sheet" aria-label="Questions of the evaluation">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="c-n">#</th>
+                                <th scope="col" class="c-q">Question</th>
+                                <th scope="col" class="c-type">Type</th>
+                                <th scope="col" class="c-area">Area</th>
+                                @for (var c = 0; c < columns; c++)
+                                {
+                                    <th scope="col" class="c-choice">Option @QuestionSheetRow.Letter(c)</th>
+                                }
+                                <th scope="col" class="c-state">Ready</th>
+                                <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (row, n) in rows.Select((r, i) => (r, i + 1)))
+                            {
+                                var problems = row.Problems();
+                                var filled = row.IsFilled;
+                                var kind = row.Kind;
+                                var hasOptions = EvaluationQuestionKinds.HasOptions(kind);
+                                <tr class="@(filled ? (problems.Count == 0 ? "ok" : "bad") : "empty")" data-row="@n">
+                                    <td class="c-n">@n</td>
+                                    <td class="c-q">
+                                        <input class="cell" type="text" maxlength="500" autocomplete="off" aria-label="@($"Question {n}")" placeholder="Write the question" value="@row.Text" @key="@($"q-{row.Id}")"
+                                               @onchange="e => row.Text = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
+                                    <td class="c-type">
+                                        <select class="cell pick" aria-label="@($"Type of question {n}")" title="@EvaluationQuestionKinds.Describe(kind)" @onchange="e => ChangeKind(row, e.Value?.ToString())">
+                                            @foreach (var k in EvaluationQuestionKinds.All)
+                                            {
+                                                <option value="@k" selected="@(kind == k)">@EvaluationQuestionKinds.Display(k)</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="c-area">
+                                        <input class="cell" type="text" list="eval-areas" maxlength="60" autocomplete="off" aria-label="@($"Area of question {n}")" placeholder="Area" value="@row.Category" @key="@($"a-{row.Id}")"
+                                               @onchange="e => row.Category = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
+                                    @for (var c = 0; c < columns; c++)
+                                    {
+                                        var at = c;
+                                        <td class="c-choice">
+                                            <input class="cell" type="text" maxlength="120" autocomplete="off" aria-label="@($"Option {QuestionSheetRow.Letter(at)} of question {n}")" disabled="@(!hasOptions)"
+                                                   placeholder="@(hasOptions ? "" : "—")" value="@(hasOptions && at < row.Options.Count ? row.Options[at] : "")" @key="@($"o{at}-{row.Id}-{kind}")"
+                                                   @onchange="e => SetOption(row, at, e.Value?.ToString())" />
+                                        </td>
+                                    }
+                                    <td class="c-state">
+                                        @if (!filled)
+                                        {
+                                            <span class="muted">—</span>
+                                        }
+                                        else if (problems.Count == 0)
+                                        {
+                                            <span class="state-ok"><Icon Name="circle-check" Size="15" /> Ready</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="state-bad" title="@string.Join(" ", problems)"><Icon Name="circle-alert" Size="15" /> @problems[0]</span>
+                                        }
+                                    </td>
+                                    <td class="c-x">
+                                        <button type="button" class="row-x" title="@($"Take row {n} out")" aria-label="@($"Take row {n} out")" disabled="@(rows.Count <= 1)" @onclick="() => RemoveRow(row)"><Icon Name="trash-2" Size="15" /></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <datalist id="eval-areas">
+                        @foreach (var area in Areas)
+                        {
+                            <option value="@area"></option>
+                        }
+                    </datalist>
+                </div>
+
+                <div class="sheet-tools">
+                    @* Add [type] [number] row: the type of the new rows is chosen from a list and how many from a number box. *@
+                    <span class="add-rows" role="group" aria-label="Add rows">
+                        <span>Add</span>
+                        <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
+                            @foreach (var k in EvaluationQuestionKinds.All)
+                            {
+                                <option value="@k">@EvaluationQuestionKinds.Display(k)</option>
+                            }
+                        </select>
+                        <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                        <span>@(addCount == 1 ? "row" : "rows")</span>
+                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
+                    </span>
+                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(columns >= EvaluationQuestionKinds.MaxOptions)" OnClick="AddColumn">Option column</Button>
+                    <span class="muted">@rows.Count of @MaxRows rows</span>
+                </div>
+
+                <div class="sheet-actions">
+                    <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                    <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
+                </div>
+            </div>
+
+            <aside class="sheet-steps" aria-label="Step by step">
+                <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
+                <ol>
+                    <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
+                    <li><strong>Choose the type</strong> from the list. This is how the students answer.</li>
+                    <li><strong>Write the area</strong> it is about (Teaching, Support…). The results are grouped by area.</li>
+                    <li>For a <em>Ranking Scale</em> and a <em>Select-All-That-Apply</em>, <strong>write the options</strong> (at least two). Press <em>Option column</em> for more boxes.</li>
+                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                    <li><strong>Press Save.</strong> @SaveStep</li>
+                </ol>
+                <h3><Icon Name="clipboard-list" Size="18" /> The types</h3>
+                <ul class="sheet-types">
+                    @foreach (var k in EvaluationQuestionKinds.All)
+                    {
+                        <li><strong>@EvaluationQuestionKinds.Display(k)</strong><span>@EvaluationQuestionKinds.Describe(k)</span></li>
+                    }
+                </ul>
+            </aside>
+        </div>
+    }
+</Modal>
+
+@code {
+    private const int MaxRows = 40;
+
+    private readonly List<EvaluationSheetRow> rows = [];
+    private int nextId;
+    private int columns = 4;
+
+    // The type and the number of the rows that "Add [type] [number] rows" puts at the end.
+    private string addKind = EvaluationQuestionKinds.Likert;
+    private int addCount = 1;
+
+    [Parameter] public bool Open { get; set; }
+
+    /// <summary>The heading of the box.</summary>
+    [Parameter] public string Heading { get; set; } = "Evaluation questions";
+
+    /// <summary>Fields above the sheet (the title and the instructions of a new evaluation).</summary>
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+
+    /// <summary>True while something outside the sheet is missing (the title): Save waits.</summary>
+    [Parameter] public bool SaveBlocked { get; set; }
+
+    /// <summary>True while the page is saving: the button says so and waits.</summary>
+    [Parameter] public bool Busy { get; set; }
+
+    /// <summary>What went wrong when the page tried to save (shown above the sheet).</summary>
+    [Parameter] public IReadOnlyList<string> Errors { get; set; } = [];
+
+    /// <summary>The last step of the step by step.</summary>
+    [Parameter] public string SaveStep { get; set; } = "The questions are put in the evaluation.";
+
+    /// <summary>The questions the evaluation has now: they are the first rows of the sheet.</summary>
+    [Parameter] public IReadOnlyList<EvaluationQuestionInput> Existing { get; set; } = [];
+
+    /// <summary>Called with the whole list of questions of the sheet (the ones with something in them) when Save is pressed.</summary>
+    [Parameter] public EventCallback<IReadOnlyList<EvaluationQuestionInput>> OnSave { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool wasOpen;
+
+    protected override void OnParametersSet()
+    {
+        if (!Open)
+        {
+            rows.Clear();
+        }
+        else if (!wasOpen)
+        {
+            // It opens with the questions the evaluation has, and an empty row after them.
+            rows.Clear();
+            foreach (var q in Existing)
+            {
+                rows.Add(EvaluationSheetRow.From(q, ++nextId));
+            }
+
+            columns = Math.Clamp(Math.Max(4, rows.Count == 0 ? 4 : rows.Max(r => r.Options.Count)), 4, EvaluationQuestionKinds.MaxOptions);
+            AddRows(rows.Count == 0 ? 3 : 1, EvaluationQuestionKinds.Likert);
+            FitRows();
+        }
+
+        wasOpen = Open;
+    }
+
+    private IEnumerable<string> Areas => EvaluationService.DefaultQuestions.Select(q => q.Category!).Concat(rows.Select(r => r.Category.Trim())).Where(a => a.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase);
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private void FitRows()
+    {
+        foreach (var row in rows)
+        {
+            row.Fit(columns);
+        }
+    }
+
+    private void AddRows(int count, string kind)
+    {
+        for (var n = 0; n < count && rows.Count < MaxRows; n++)
+        {
+            var row = new EvaluationSheetRow { Id = ++nextId, Kind = kind };
+            row.Fit(columns);
+            rows.Add(row);
+        }
+    }
+
+    private void AddChosenRows() => AddRows(Math.Clamp(addCount, 1, 50), addKind);
+
+    private void AddColumn()
+    {
+        if (columns < EvaluationQuestionKinds.MaxOptions)
+        {
+            columns++;
+            FitRows();
+        }
+    }
+
+    private void RemoveRow(EvaluationSheetRow row)
+    {
+        if (rows.Count > 1)
+        {
+            rows.Remove(row);
+        }
+    }
+
+    private static void ChangeKind(EvaluationSheetRow row, string? kind)
+    {
+        if (kind is not null && EvaluationQuestionKinds.All.Contains(kind))
+        {
+            row.ChangeKind(kind);
+        }
+    }
+
+    private static void SetOption(EvaluationSheetRow row, int place, string? value)
+    {
+        row.Fit(place + 1);
+        row.Options[place] = value ?? string.Empty;
+    }
+
+    private IReadOnlyList<EvaluationSheetRow> Filled => [.. rows.Where(r => r.IsFilled)];
+
+    private int ReadyCount => Filled.Count(r => r.Problems().Count == 0);
+
+    private Task SaveAsync() => OnSave.InvokeAsync([.. Filled.Select(r => r.ToInput())]);
+}

@@ -6,11 +6,12 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>A course in the list of the course materials, with what the provider has prepared for it.</summary>
+/// <param name="Hidden">The provider hid it from the library list (the Hide button next to Open). It comes back from the Hidden list.</param>
 /// <param name="Placement">In a strand's list: where the course is studied, like "Grade 11 · 1st Term, Grade 12 · 1st Term".</param>
 /// <summary>A course of the library as a card: where a strand studies it (track, strand, grade level, term) and what is prepared for it.</summary>
 public sealed record LibraryCard(
     int SubjectId, string Code, string Name, int TrackId, string TrackCode, int StrandId, string StrandCode, string StrandName, byte GradeLevel, byte TermNumber,
-    bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent);
+    bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent, bool Hidden = false);
 
 public sealed record MaterialCourseRow(
     int SubjectId, string Code, string Name, bool HasSyllabus, int Modules, int Exams, int Teachers, int Sent, string? Placement = null);
@@ -188,17 +189,17 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
     }
 
     /// <summary>
-    /// The courses of the library as cards, one for each course of each strand (a course that two strands study has a card for each). Only the courses of the term that is going on are
-    /// listed: what is prepared is for the current term, and the courses of the terms before it are not shown. (When no term is marked as current, every term is listed.)
+    /// The courses of the library as cards, one for each course of each strand (a course that two strands study has a card for each), of every term of the school. The page shows the term
+    /// that is going on unless the provider chooses another one with the Term list (see <see cref="CurrentTermNumberAsync"/>), and the courses the provider hid (see
+    /// <see cref="SetLibraryCourseHiddenAsync"/>) only in the Hidden list.
     /// </summary>
     public async Task<IReadOnlyList<LibraryCard>> ListLibraryCardsAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var yearId = await CurrentYearIdAsync(db, ct);
-        var current = await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => (byte?)t.TermNumber).FirstOrDefaultAsync(ct);
 
-        var lines = await db.StrandSubjects.AsNoTracking().Where(x => x.IsOffered && x.Subject.IsActive && x.Strand.IsActive && (current == null || x.TermNumber == current))
-            .Select(x => new { x.SubjectId, x.Subject.Code, x.Subject.Name, x.StrandId, StrandCode = x.Strand.Code, StrandName = x.Strand.Name, TrackId = x.Strand.TrackId, TrackCode = x.Strand.Track.Code, x.GradeLevel, x.TermNumber })
+        var lines = await db.StrandSubjects.AsNoTracking().Where(x => x.IsOffered && x.Subject.IsActive && x.Strand.IsActive)
+            .Select(x => new { x.SubjectId, x.Subject.Code, x.Subject.Name, x.StrandId, StrandCode = x.Strand.Code, StrandName = x.Strand.Name, TrackId = x.Strand.TrackId, TrackCode = x.Strand.Track.Code, x.GradeLevel, x.TermNumber, Hidden = x.LibraryHiddenAtUtc != null })
             .ToListAsync(ct);
         var modules = await db.MaterialModules.AsNoTracking().Where(m => !m.IsExamSet)
             .GroupBy(m => m.SubjectId)
@@ -209,13 +210,43 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             .GroupBy(a => a.SubjectId).Select(g => new { SubjectId = g.Key, Count = g.Count() }).ToListAsync(ct);
         var sent = await db.MaterialDeliveries.AsNoTracking().GroupBy(d => d.MaterialModule.SubjectId).Select(g => new { SubjectId = g.Key, Count = g.Count() }).ToListAsync(ct);
 
-        return [.. lines.OrderBy(l => l.TrackCode).ThenBy(l => l.StrandCode).ThenBy(l => l.GradeLevel).ThenBy(l => l.Name).Select(l =>
+        return [.. lines.OrderBy(l => l.TrackCode).ThenBy(l => l.StrandCode).ThenBy(l => l.GradeLevel).ThenBy(l => l.TermNumber).ThenBy(l => l.Name).Select(l =>
         {
             var m = modules.FirstOrDefault(x => x.SubjectId == l.SubjectId);
             return new LibraryCard(l.SubjectId, l.Code, l.Name, l.TrackId, l.TrackCode, l.StrandId, l.StrandCode, l.StrandName, l.GradeLevel, l.TermNumber,
                 (m?.Syllabus ?? 0) > 0, m?.Modules ?? 0, exams.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0,
-                teachers.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0);
+                teachers.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, sent.FirstOrDefault(x => x.SubjectId == l.SubjectId)?.Count ?? 0, l.Hidden);
         })];
+    }
+
+    /// <summary>The number of the term that is going on (1 for the 1st term), or null when no term is marked as current.</summary>
+    public async Task<int?> CurrentTermNumberAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => (int?)t.TermNumber).FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// The Hide button of the Course library: hides a course of a strand (in a grade level and term) from the library list, or shows it again. Nothing else changes: the course stays in the curriculum,
+    /// its material stays, and the classes keep going.
+    /// </summary>
+    public async Task<ServiceResult> SetLibraryCourseHiddenAsync(int userId, int subjectId, int strandId, byte gradeLevel, byte termNumber, bool hidden, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsProviderAsync(db, userId, ct))
+        {
+            return ServiceResult.Fail(ProviderOnly);
+        }
+
+        var line = await db.StrandSubjects.Include(x => x.Subject).FirstOrDefaultAsync(x => x.SubjectId == subjectId && x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber, ct);
+        if (line is null)
+        {
+            return ServiceResult.Fail("This course is not in the library any more.");
+        }
+
+        line.LibraryHiddenAtUtc = hidden ? clock.GetUtcNow().UtcDateTime : null;
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok(hidden ? $"{line.Subject.Name} is hidden from the library list. Choose Hidden in the list at the right of the courses to show it again." : $"{line.Subject.Name} is shown in the library list again.");
     }
 
     /// <summary>The terms a strand studies in (1st Term, 2nd Term ...), for the provider to choose from after choosing a strand.</summary>
