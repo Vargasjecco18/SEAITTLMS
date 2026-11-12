@@ -322,12 +322,8 @@ else
     private bool loaded;
     private TeacherSubject? course;
 
-    /// <summary>The words of the button for what the student sent: only the answer, only files, or both in one.</summary>
-    private static string AnswerButtonText(int files) => files switch
-    {
-        0 => "View answer",
-        _ => $"View answer and {files} {(files == 1 ? "file" : "files")}",
-    };
+    /// <summary>The words of the button for what the student sent. It is always "View answer", even when the student sent files too (round 41): the files are inside the box.</summary>
+    private static string AnswerButtonText(int files) => "View answer";
 
     /// <summary>"2 days", "5 hours", "20 minutes": how long after the due date it was handed in.</summary>
     private static string LateBy(DateTime due, DateTime sent)

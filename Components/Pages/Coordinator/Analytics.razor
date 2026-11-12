@@ -47,87 +47,7 @@ else
         <StatCard Label="Teachers" Value="@data.Teachers.Count" IconName="presentation" Accent="AccentColor.Slate" Hint="Evaluated in this round" />
     </div>
 
-    @if (detail is not null)
-    {
-        <section class="detail" aria-label="@($"Results of {detail.TeacherName}")">
-            <Card Title="@($"{detail.TeacherName}")" IconName="presentation">
-                <div class="detail-top">
-                    <div class="big">
-                        <strong>@(detail.Average is { } da ? da.ToString("0.00") : "—")</strong><span> / 5</span>
-                        @if (detail.Average is { } dv)
-                        {
-                            <Badge Tone="@AverageTone(dv)">@EvaluationQuestionKinds.AverageLabel(dv)</Badge>
-                        }
-                    </div>
-                    <p class="muted">@detail.Responses of @detail.Expected students answered.</p>
-                    <ButtonLink Href="@($"coordinator/analytics?evaluation={data.EvaluationId}")" Variant="ButtonVariant.Ghost" IconName="x" Small="true">Close the details</ButtonLink>
-                </div>
-
-                <h3>By course</h3>
-                <div class="table-wrap">
-                    <table class="table">
-                        <thead><tr><th scope="col">Course</th><th scope="col">Answered</th><th scope="col">Average</th></tr></thead>
-                        <tbody>
-                            @foreach (var c in detail.Courses)
-                            {
-                                <tr>
-                                    <td>@c.SubjectName<span class="sub">@c.SectionLabel</span></td>
-                                    <td>@c.Responses / @c.Expected · @c.RatePercent%</td>
-                                    <td>@(c.Average is { } cv ? $"{cv:0.00} / 5" : "—")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                <h3>By question</h3>
-                <ul class="bars">
-                    @foreach (var q in detail.Questions)
-                    {
-                        <li>
-                            <span class="bar-label">@q.Text</span>
-                            <Meter Value="q.Average" />
-                        </li>
-                    }
-                </ul>
-
-                @if (detail.OtherQuestions is { Count: > 0 } detailOthers)
-                {
-                    <h3>Yes or No, rankings and choices</h3>
-                    @OtherResults(detailOthers)
-                }
-
-                <h3>What the students wrote <span class="count">@detail.Comments.Count</span></h3>
-                @if (detail.Comments.Count == 0)
-                {
-                    <p class="muted">No comments yet.</p>
-                }
-                else
-                {
-                    <ul class="comments">
-                        @foreach (var c in detail.Comments)
-                        {
-                            <li>
-                                <p>@c.Text</p>
-                                <span class="sub">@c.Question · @c.SubjectName · @c.SectionLabel · @PhilippineTime.FormatDate(c.AtUtc)</span>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
-        </section>
-    }
-
-    <ChartRow>
-        <Card Title="Who answered" IconName="chart-pie">
-            <PieChart Title="Students who answered and who did not" Slices="AnswerSlices" CenterText="@($"{data.RatePercent}%")" />
-            <p class="note">@data.Responses of @data.Expected.ToString("N0") answers.</p>
-        </Card>
-        <Card Title="Average rating by teacher" IconName="chart-column">
-            <BarChart Title="Average rating by teacher (out of 5)" Items="TeacherBars" Full="5" />
-        </Card>
-    </ChartRow>
-
+    @* Round 41: the charts "Who answered" and "Average rating by teacher" were taken out; Details of a teacher opens a box. *@
     <div class="grid">
         <div class="wide">
             <Card Title="By teacher" IconName="presentation">
@@ -152,7 +72,7 @@ else
                             <tbody>
                                 @foreach (var t in data.Teachers)
                                 {
-                                    <tr class="@(detail?.TeacherId == t.TeacherId ? "picked" : "")">
+                                    <tr>
                                         <td class="rank">@(t.Average is null ? "—" : t.Rank)</td>
                                         <td class="name">@t.TeacherName</td>
                                         <td class="col-more">@t.Courses</td>
@@ -169,7 +89,7 @@ else
                                             }
                                         </td>
                                         <td class="col-actions">
-                                            <ButtonLink Href="@($"coordinator/analytics?evaluation={data.EvaluationId}&teacher={t.TeacherId}")" Variant="ButtonVariant.Secondary" Small="true" IconName="eye">Details</ButtonLink>
+                                            <TeacherDetails EvaluationId="data.EvaluationId.Value" TeacherId="t.TeacherId" TeacherName="@t.TeacherName" />
                                         </td>
                                     </tr>
                                 }
@@ -248,7 +168,7 @@ else
         {
             <div class="wide">
                 <Card Title="Yes or No, rankings and choices" IconName="list-ordered">
-                    @OtherResults(others)
+                    <OtherResults Results="others" />
                 </Card>
             </div>
         }
@@ -280,66 +200,9 @@ else
 }
 
 @code {
-    private IReadOnlyList<ChartSlice> AnswerSlices => data is null ? [] :
-    [
-        new("Answered", data.Responses, ChartColors.Green),
-        new("Not answered yet", Math.Max(0, data.Expected - data.Responses), ChartColors.Red),
-    ];
-
-    private IReadOnlyList<ChartSlice> TeacherBars => data is null ? [] :
-        [.. data.Teachers.Where(t => t.Average is not null).OrderByDescending(t => t.Average).Take(8).Select((t, i) => new ChartSlice(t.TeacherName, (double)t.Average!.Value, ChartColors.At(i)))];
-
-    /// <summary>The binary, ranking and select-all questions: each with its options as bars (the share who chose it, or the average place).</summary>
-    private RenderFragment OtherResults(IReadOnlyList<QuestionResult> results) => @<div class="others">
-        @foreach (var r in results)
-        {
-            <section class="other">
-                <h4>@r.Text <small>@EvaluationQuestionKinds.Display(r.Kind) · @r.Answers @(r.Answers == 1 ? "answer" : "answers")@(string.IsNullOrWhiteSpace(r.Category) ? "" : " · " + r.Category)</small></h4>
-                @if (r.Answers == 0)
-                {
-                    <p class="muted">No answers yet.</p>
-                }
-                else
-                {
-                    <ul class="bars">
-                        @foreach (var o in r.Options)
-                        {
-                            var width = r.Kind == EvaluationQuestionKinds.Ranking
-                                ? (o.Value is { } place ? (int)Math.Round((r.Options.Count + 1 - place) * 100m / r.Options.Count) : 0)
-                                : (int)Math.Round(o.Value ?? 0);
-                            <li>
-                                <span class="bar-label">@o.Label</span>
-                                <span class="dist"><span class="dist-fill r@(r.Kind == EvaluationQuestionKinds.Ranking ? 4 : o.Label == EvaluationQuestionKinds.No ? 2 : 5)" style="width: @(Math.Clamp(width, 0, 100))%"></span></span>
-                                <span class="dist-n">
-                                    @if (r.Kind == EvaluationQuestionKinds.Ranking)
-                                    {
-                                        @($"place {o.Value:0.0} · {o.Count} first")
-                                    }
-                                    else
-                                    {
-                                        @($"{o.Count} ({o.Value:0.#}%)")
-                                    }
-                                </span>
-                            </li>
-                        }
-                    </ul>
-                }
-            </section>
-        }
-    </div>;
-
     [SupplyParameterFromQuery(Name = "evaluation")] private int? EvaluationQuery { get; set; }
 
-    [SupplyParameterFromQuery(Name = "teacher")] private int? TeacherQuery { get; set; }
-
     private EvaluationAnalytics? data;
-    private TeacherDetail? detail;
 
-    protected override async Task OnParametersSetAsync()
-    {
-        data = await Service.GetAnalyticsAsync(EvaluationQuery);
-        detail = data.EvaluationId is { } id && TeacherQuery is { } teacher ? await Service.GetTeacherDetailAsync(id, teacher) : null;
-    }
-
-    private static Tone AverageTone(decimal average) => average >= 4 ? Tone.Success : average >= 3 ? Tone.Info : average >= 2 ? Tone.Warning : Tone.Danger;
+    protected override async Task OnParametersSetAsync() => data = await Service.GetAnalyticsAsync(EvaluationQuery);
 }

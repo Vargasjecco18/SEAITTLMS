@@ -18,15 +18,26 @@
         {
             <EditForm Model="form" OnSubmit="SaveAsync">
                 <FormErrors Errors="errors" />
-                <Field For="ca-class" Label="Class" Required="true" Hint="Only the students of this class see it.">
-                    <select id="ca-class" @bind="form.AssignmentId">
-                        <option value="">Choose a class…</option>
-                        @foreach (var c in courses)
-                        {
-                            <option value="@c.Id">@c.SubjectName · @c.SectionLabel</option>
-                        }
-                    </select>
-                </Field>
+                @* Several classes can be chosen at once (round 41): one announcement is posted for each class that is ticked. *@
+                <fieldset class="class-picks" aria-describedby="ca-class-hint">
+                    <legend>Class <span class="req" aria-hidden="true">*</span></legend>
+                    @if (courses.Count > 1)
+                    {
+                        <label class="class-pick all">
+                            <input type="checkbox" id="ca-class-all" checked="@(picked.Count == courses.Count)" @onchange="e => PickAll(e.Value is true)" />
+                            <span><strong>All my classes</strong></span>
+                        </label>
+                    }
+                    @foreach (var c in courses)
+                    {
+                        var id = c.Id;
+                        <label class="class-pick @(picked.Contains(id) ? "on" : "")">
+                            <input type="checkbox" name="ca-class" value="@id" checked="@picked.Contains(id)" @onchange="e => Pick(id, e.Value is true)" />
+                            <span>@c.SubjectName · @c.SectionLabel</span>
+                        </label>
+                    }
+                    <small id="ca-class-hint" class="hint-line">Only the students of the classes you tick see it. @(picked.Count == 0 ? "Tick at least one class." : picked.Count == 1 ? "1 class is ticked." : $"{picked.Count} classes are ticked.")</small>
+                </fieldset>
                 <Field For="ca-title" Label="Title" Required="true">
                     <input id="ca-title" maxlength="@AnnouncementService.MaxTitleLength" autocomplete="off" @bind="form.Title" />
                 </Field>
@@ -63,6 +74,31 @@
     private IReadOnlyList<AssignmentRow> courses = [];
     private AnnouncementInput form = new();
     private List<string> errors = [];
+    private readonly HashSet<int> picked = [];
+
+    private void Pick(int id, bool on)
+    {
+        if (on)
+        {
+            picked.Add(id);
+        }
+        else
+        {
+            picked.Remove(id);
+        }
+    }
+
+    private void PickAll(bool on)
+    {
+        picked.Clear();
+        if (on)
+        {
+            foreach (var c in courses)
+            {
+                picked.Add(c.Id);
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,7 +106,11 @@
         if (me is not null && me.Role == AppRoles.Teacher)
         {
             courses = await Teaching.ListForTeacherUserAsync(me.UserId);
-            form = new AnnouncementInput { Category = AnnouncementCategories.Other, Audience = AnnouncementAudiences.Students, StartsOn = Day, AssignmentId = courses.Count == 1 ? courses[0].Id : null };
+            form = new AnnouncementInput { Category = AnnouncementCategories.Other, Audience = AnnouncementAudiences.Students, StartsOn = Day };
+            if (courses.Count == 1)
+            {
+                picked.Add(courses[0].Id);
+            }
         }
 
         loaded = true;
@@ -85,18 +125,34 @@
             return;
         }
 
+        if (picked.Count == 0)
+        {
+            errors = ["Tick at least one class."];
+            return;
+        }
+
         busy = true;
         errors = [];
         try
         {
-            var result = await Service.SaveAsync(me, form);
-            if (result.Succeeded)
+            // One announcement for each class that is ticked; the first problem stops it (what was posted before stays posted).
+            foreach (var id in courses.Select(c => c.Id).Where(picked.Contains).ToList())
             {
-                Navigation.NavigateTo(CloseUrl);
-                return;
+                var one = new AnnouncementInput
+                {
+                    Title = form.Title, Body = form.Body, Audience = form.Audience, Category = form.Category,
+                    StartsOn = form.StartsOn, ExpiresOn = form.ExpiresOn, AssignmentId = id,
+                };
+                var result = await Service.SaveAsync(me, one);
+                if (!result.Succeeded)
+                {
+                    var name = courses.First(c => c.Id == id);
+                    errors = [.. result.Errors.Select(e => picked.Count > 1 ? $"{name.SubjectName} · {name.SectionLabel}: {e}" : e)];
+                    return;
+                }
             }
 
-            errors = result.Errors.ToList();
+            Navigation.NavigateTo(CloseUrl);
         }
         finally
         {

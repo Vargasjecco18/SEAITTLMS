@@ -137,7 +137,7 @@ public static class HelpContent
         ], "student/grades", "Open Grades"),
         new("Where are the details and the feedback of an activity?",
         [
-            "Open an assignment, a quiz or a task. In the header, before “Back to the handout”, there are two buttons: Details (the status, the due date, the highest score and your score) and Feedback (what your teacher wrote about your work; a red dot means there is feedback). Each one opens a small box right under its button.",
+            "Open an assignment, a quiz or a task. In the header, before “Back to the handout”, there are two buttons: Details (the status, the due date, the highest score and your score) and Feedback (what your teacher wrote about your work; a red dot means there is feedback). Each one opens a box that slides in from the right side of the screen (close it with the X or Escape).",
         ]),
         new("How do I see my deadlines?",
         [
@@ -213,7 +213,7 @@ public static class HelpContent
         ]),
         new("How do I check and grade the assignments of my students?",
         [
-            "Open the assignment, quiz or task performance to see who handed in. In the Answers column one button (“View answer”, or “View answer and 2 files”) opens the work of the student; pressing the row does the same. A box opens with the students who handed in at the left, the answer in the middle, with a preview of the files, and the score and the feedback at the right.",
+            "Open the assignment, quiz or task performance to see who handed in. In the Answers column one button (“View answer”, also when the student sent files) opens the work of the student; pressing the row does the same. A box opens with the students who handed in at the left, the answer in the middle, with a preview of the files, and the score and the feedback at the right.",
             "A seatwork, an assignment or a task performance that was handed in after the due date shows a warning with how late it was (“Late by 2 days”), and the course page shows “n late” on that activity. Accept the late work to grade it, or decline it.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
             "“Activities to check” and “Unchecked activities (including quiz)” on your dashboard list what waits for you.",
@@ -240,7 +240,7 @@ public static class HelpContent
         ], "users", "Open Users"),
         new("How do I write to my class?",
         [
-            "Open Calendar and press “Announcement to my class”, or double click a day and choose Announcement. Choose the class (one of your courses), what it is about (an exam or other), and write it. Only the students of that class see it, and they are told with a notification.",
+            "Open Calendar and press “Announcement to my class”, or double click a day and choose Announcement. Tick the classes (one or more of your courses, or “All my classes”), and write it. One announcement is posted for each class that is ticked: only the students of that class see it, and they are told with a notification.",
             "“From the school” lists the notices of the academic coordinator for the teachers: exams, holidays, the semester break and teachers' meetings.",
         ], "calendar", "Open Calendar"),
         new("How do I share a file with my students?",
@@ -357,7 +357,7 @@ public static class HelpContent
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
-            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments. “Export to Excel” puts everything of the page in one workbook, one sheet for each part, with the result of every teacher.",
+            "Open Analytics. Choose the questionnaire to see the rating of each teacher, the ratings by area, the Yes/No, ranking and select-all results, and the comments. Press “Details” on a teacher: a box opens over the page with the rating by course, by question and the comments of the students. “Export to Excel” puts everything of the page in one workbook, one sheet for each part, with the result of every teacher.",
         ], "coordinator/analytics", "Open Analytics"),
         new("How do I write an announcement?",
         [
@@ -387,7 +387,7 @@ public static class HelpContent
             "Open Course library, choose a course and press “Add summative exam” (or the same button in the card Summative exams).",
             "Write the title and the instructions, then press “Add questions” (it is under the instructions, and the highest score is under the questions): a sheet opens where each row is a question, with its type and its right answer chosen from lists; “Add [type] [number] rows” adds many rows of one type. The settings and when it opens and closes are not asked here: you choose them when you post it. The academic coordinator gets a notification and an announcement.",
             "In a course the buttons are in groups: Add handout and Send to teachers | Add summative exam. The library also has a list view (a table with a line for each course). To make many exams at once press “Excel” in the card: download the template, fill it in and import it, like the handouts. “Export” gives the exams of the course in the same file. Press a syllabus or a handout of the course to open it in one box: the other handouts are at the left, the preview of the files in the center and the upload form at the right (“Upload” saves the files and the center shows them).",
-            "Press “Post summative exam to students” at the right of the lists of the library to post the exam of every course in the list (choose a course in All courses to post only that one), (there is no Post to students inside a course). Choose the Summative Exam Settings (time limit, anti-cheating watch, order, result) and when it opens and closes: the exam goes straight to the students and the system gives the scores. A course with no summative exam stops it: the page goes to that course and tells you. The teacher sees the scores in the gradebook.",
+            "Press “Post summative exam to students” at the right of the lists of the library to post the exam of every course in the list (choose a course in All courses to post only that one), (there is no Post to students inside a course). The box shows only the Summative Exam Settings (time limit, anti-cheating watch, order, result) and “Opens on” and “Closes on”; choose them and press “Post to students” (Cancel and Post to students are at the right): the exam goes straight to the students and the system gives the scores. A course with no summative exam stops it: the page goes to that course and tells you. The teacher sees the scores in the gradebook.",
         ], "provider/library", "Open Course library"),
         new("Who has not posted what I sent?",
         [

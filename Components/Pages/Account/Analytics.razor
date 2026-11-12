@@ -124,16 +124,7 @@ else
         <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Near failing or missing work" />
     </div>
 
-    <ChartRow>
-        <Card Title="My students by grade" IconName="chart-pie">
-            <PieChart Title="My students by the band of their grade" Slices="TeacherBandSlices" CenterText="@report.Bands.Sum(g => g.Bands.Total).ToString()" />
-            <p class="note">Every student in every course counts once for each course.</p>
-        </Card>
-        <Card Title="Average grade by course" IconName="chart-column">
-            <BarChart Title="Average grade by course" Items="CourseBars" Suffix="%" Full="100" />
-        </Card>
-    </ChartRow>
-
+    @* Round 41: the charts "My students by grade" and "Average grade by course" were taken out. *@
     <section class="my-courses" aria-label="My courses">
         <h2><Icon Name="book-open" Size="20" /> My courses <span class="count">@report.Performance.Count</span></h2>
         <div class="course-tiles">
@@ -253,11 +244,6 @@ else
 
     private IReadOnlyList<ChartSlice> BandBars => report is null ? [] :
         [.. Bands.Select((band, i) => new ChartSlice(band.Label, report.Bands.Sum(g => band.Count(g.Bands)), BandColors[i]))];
-
-    private IReadOnlyList<ChartSlice> TeacherBandSlices => BandBars;
-
-    private IReadOnlyList<ChartSlice> CourseBars => report is null ? [] :
-        [.. report.Performance.Where(p => p.Average is not null).Select((p, i) => new ChartSlice(p.Label, (double)p.Average!.Value, ChartColors.At(i)))];
 
     private RenderFragment Legend => @<ul class="legend" aria-label="Legend">
         @foreach (var band in Bands)

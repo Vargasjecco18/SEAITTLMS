@@ -1,0 +1,115 @@
+@rendermode InteractiveServer
+@inject EvaluationService Service
+
+@* Round 41: "Details" of a teacher in the analytics of the evaluations opens a box (a modal) over the page instead of a card above it. It is its own live island, so the box opens and closes without leaving the page. *@
+<Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye" OnClick="OpenAsync">Details</Button>
+
+<Modal Open="open" Title="@($"{TeacherName} · details")" Large="true" OnClose="Close">
+    @if (open)
+    {
+        @if (detail is null)
+        {
+            <p class="muted">@(loading ? "Loading…" : "There are no results for this teacher yet.")</p>
+        }
+        else
+        {
+            <div class="detail-top">
+                <div class="big">
+                    <strong>@(detail.Average is { } da ? da.ToString("0.00") : "—")</strong><span> / 5</span>
+                    @if (detail.Average is { } dv)
+                    {
+                        <Badge Tone="@AverageTone(dv)">@EvaluationQuestionKinds.AverageLabel(dv)</Badge>
+                    }
+                </div>
+                <p class="muted">@detail.Responses of @detail.Expected students answered.</p>
+            </div>
+
+            <h3>By course</h3>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th scope="col">Course</th><th scope="col">Answered</th><th scope="col">Average</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in detail.Courses)
+                        {
+                            <tr>
+                                <td>@c.SubjectName<span class="sub">@c.SectionLabel</span></td>
+                                <td>@c.Responses / @c.Expected · @c.RatePercent%</td>
+                                <td>@(c.Average is { } cv ? $"{cv:0.00} / 5" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>By question</h3>
+            <ul class="bars">
+                @foreach (var q in detail.Questions)
+                {
+                    <li>
+                        <span class="bar-label">@q.Text</span>
+                        <Meter Value="q.Average" />
+                    </li>
+                }
+            </ul>
+
+            @if (detail.OtherQuestions is { Count: > 0 } others)
+            {
+                <h3>Yes or No, rankings and choices</h3>
+                <OtherResults Results="others" />
+            }
+
+            <h3>What the students wrote <span class="count">@detail.Comments.Count</span></h3>
+            @if (detail.Comments.Count == 0)
+            {
+                <p class="muted">No comments yet.</p>
+            }
+            else
+            {
+                <ul class="comments">
+                    @foreach (var c in detail.Comments)
+                    {
+                        <li>
+                            <p>@c.Text</p>
+                            <span class="sub">@c.Question · @c.SubjectName · @c.SectionLabel · @PhilippineTime.FormatDate(c.AtUtc)</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <div class="actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
+            </div>
+        }
+    }
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public int EvaluationId { get; set; }
+
+    [Parameter, EditorRequired] public int TeacherId { get; set; }
+
+    [Parameter, EditorRequired] public string TeacherName { get; set; } = "";
+
+    private bool open;
+    private bool loading;
+    private TeacherDetail? detail;
+
+    private async Task OpenAsync()
+    {
+        open = true;
+        loading = true;
+        detail = null;
+        try
+        {
+            detail = await Service.GetTeacherDetailAsync(EvaluationId, TeacherId);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void Close() => open = false;
+
+    private static Tone AverageTone(decimal average) => average >= 4 ? Tone.Success : average >= 3 ? Tone.Info : average >= 2 ? Tone.Warning : Tone.Danger;
+}

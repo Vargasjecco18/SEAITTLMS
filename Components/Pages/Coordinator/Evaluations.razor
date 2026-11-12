@@ -78,7 +78,6 @@
                                 <div class="row-actions">
                                     <ButtonLink Href="@($"coordinator/evaluations/{row.Id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="busy" Title="@($"Make a copy of {row.Title}")" OnClick="() => CopyAsync(row.Id)">Copy</Button>
-                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" Disabled="busy" Title="@($"Export {row.Title} to Excel")" OnClick="() => ExportAsync(row.Id)">Excel</Button>
                                 </div>
                             </td>
                         </tr>
@@ -103,16 +102,6 @@
 </EvaluationSheetDialog>
 
 @code {
-    [Inject] private FileDownloads Downloads { get; set; } = null!;
-
-    private async Task ExportAsync(int id)
-    {
-        if (await Service.GetAsync(id) is { } detail)
-        {
-            await Downloads.SaveAsync(EvaluationSheets.FileName(detail.Title), EvaluationSheets.Export(detail));
-        }
-    }
-
     private static IReadOnlyList<EvaluationQuestionInput> DefaultQuestions => EvaluationService.DefaultQuestions;
 
     private bool sheetOpen;

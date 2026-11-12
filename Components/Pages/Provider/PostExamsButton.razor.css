@@ -1,15 +1,8 @@
-.courses {
+/* Cancel and Post to students are at the right of the box. */
+.modal-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    margin: 0 0 1rem;
-}
-
-.chip {
-    padding: 0.2rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface-2);
-    font-size: 0.82rem;
-    font-weight: 600;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
 }

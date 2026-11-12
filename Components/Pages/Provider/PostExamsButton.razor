@@ -5,19 +5,12 @@
 
 @* "Post summative exam to students", at the right of the lists of the Course library. It posts the summative exam of every course of the list (or of the course that is chosen) to all the sections that
    have the course. A course with no summative exam stops it: the page goes to that course, and says so at the top. The settings of the exam and when it opens and closes are asked here, not when
-   the exam is added. *@
+   the exam is added. The box shows only that (round 41): the Summative Exam Settings, Opens on and Closes on, with Cancel and Post to students at the right. *@
 <Button Variant="ButtonVariant.Secondary" Small="true" IconName="send" OnClick="Start" Title="Post the summative exam of the courses in this list to the students">Post summative exam to students</Button>
 
 <Modal Open="open" Title="Post summative exam to students" OnClose="Close" Large="true">
     @if (open)
     {
-        <p class="dialog-text">The summative exam of @(Courses.Count == 1 ? "this course goes" : $"these {Courses.Count} courses go") <strong>straight to the students</strong> of every section that has @(Courses.Count == 1 ? "it" : "them"), and opens and closes at the times you set below. The students and the teachers are told. An exam that a section already got is not posted again.</p>
-        <p class="courses" aria-label="Courses to post">
-            @foreach (var c in Courses)
-            {
-                <span class="chip">@c.Name</span>
-            }
-        </p>
         <FormErrors Errors="errors" />
         <ExamPostForm Draft="draft" IdPrefix="all" />
         <div class="modal-actions">

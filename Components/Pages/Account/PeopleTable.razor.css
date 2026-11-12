@@ -61,19 +61,26 @@
     width: auto;
 }
 
+/* Round 41: the Message and Friend status columns are centered, the header and the buttons under it on the same line. */
 .c-message {
     width: 9rem;
-    text-align: right;
+    text-align: center;
 }
 
 .c-status {
     width: 17rem;
-    text-align: right;
+    text-align: center;
 }
 
 .people-table th.c-message,
 .people-table th.c-status {
-    text-align: right;
+    text-align: center;
+}
+
+.c-message ::deep .button,
+.c-status ::deep .button,
+.c-status ::deep .badge {
+    vertical-align: middle;
 }
 
 .muted {
@@ -92,15 +99,15 @@
 
 .staff-only .c-message {
     width: 9rem;
-    text-align: right;
+    text-align: center;
 }
 
 .staff-only .c-status {
     width: 17rem;
-    text-align: right;
+    text-align: center;
 }
 
 .staff-only th.c-message,
 .staff-only th.c-status {
-    text-align: right;
+    text-align: center;
 }
