@@ -7,6 +7,9 @@
 
 <PageTitle>Referrals · SEAITT Legazpi LMS</PageTitle>
 
+@* The sidebar folds on this page (round 41). *@
+<span data-side-rail hidden></span>
+
 <PageHeader Title="Referrals" IconName="flag" />
 
 <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
@@ -61,6 +64,7 @@
                         <th scope="col" class="col-concern">Concern</th>
                         <th scope="col" class="col-happened">What happened</th>
                         <th scope="col" class="col-notes">Notes</th>
+                        <th scope="col" class="col-status">Status</th>
                         <th scope="col" class="col-schedule">Schedule</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Solved</span></th>
                     </tr>
@@ -77,19 +81,6 @@
                                     <div class="who-text">
                                         <button type="button" class="name-link" title="Open the concerns of @student.StudentName, the earlier ones and where to add one" @onclick="() => ViewAll(student)">@student.StudentName</button>
                                         <span class="sub">@student.Lrn</span>
-                                        @* After the counselor wrote to the student: whether the student pressed OK on it (Seen), and what the student answered (going or not going). *@
-                                        @if (student.Notified)
-                                        {
-                                            <span class="indicators">
-                                                <span class="seen @(student.Seen ? "is-seen" : "")" data-seen="@(student.Seen ? "yes" : "no")" title="@(student.Seen ? $"The student pressed OK on {(student.SeenAtUtc is { } seenAt ? PhilippineTime.FormatDate(seenAt) + " at " + PhilippineTime.FormatTime(seenAt) : "your message")}" : "The student has not pressed OK on your message yet")">
-                                                    <Icon Name="@(student.Seen ? "check-check" : "clock")" Size="12" /> @(student.Seen ? "Seen" : "Not seen yet")
-                                                </span>
-                                                @if (student.Response is { } answer)
-                                                {
-                                                    <span class="answer @(answer == ReferralResponses.Going ? "going" : "not-going")" data-answer="@answer">@ReferralResponses.Display(answer)</span>
-                                                }
-                                            </span>
-                                        }
                                     </div>
                                 </div>
                             </td>
@@ -151,29 +142,53 @@
                                     <button type="button" class="notes-button @(noted ? "is-noted" : "")" title="@(noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)"><Icon Name="@(noted ? "notebook-pen" : "pencil")" Size="14" /> @(noted ? "Noted" : "None")</button>
                                 }
                             </td>
+                            <td class="col-status">
+                                @* Right of Notes: what happened to the message the counselor wrote: Not seen yet, Seen (the student pressed OK) or Ignored (the student closed the box without answering). *@
+                                @if (!student.HasOpen || !student.Notified)
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                else if (student.Ignored)
+                                {
+                                    <span class="seen is-ignored" data-seen="ignored" title="The student closed your message without answering"><Icon Name="eye-off" Size="12" /> Ignored</span>
+                                }
+                                else if (student.Seen)
+                                {
+                                    <span class="seen is-seen" data-seen="yes" title="@($"The student pressed OK on {(student.SeenAtUtc is { } seenAt ? PhilippineTime.FormatDate(seenAt) + " at " + PhilippineTime.FormatTime(seenAt) : "your message")}")"><Icon Name="check-check" Size="12" /> Seen</span>
+                                }
+                                else
+                                {
+                                    <span class="seen" data-seen="no" title="The student has not pressed OK on your message yet"><Icon Name="clock" Size="12" /> Not seen yet</span>
+                                }
+                            </td>
                             <td class="col-schedule">
-                                @* To the right of Notes: the day and the time the counselor will see the student, once the student answered Going. *@
+                                @* The answer of the student (Going or Not going) and the day and the time the counselor will see the student; a schedule is on the calendar of the counselor and of the student. *@
                                 @if (!student.HasOpen)
                                 {
                                     <span class="muted">—</span>
                                 }
-                                else if (student.Response == ReferralResponses.NotGoing)
-                                {
-                                    <span class="muted" title="The student answered Not going, so there is no schedule">Not going</span>
-                                }
-                                else if (student.Response is null)
-                                {
-                                    <span class="muted" title="You can set the schedule after the student answers Going">@(student.Notified ? "Waiting for the student" : "—")</span>
-                                }
                                 else if (student.ScheduledAtUtc is { } scheduled)
                                 {
+                                    @if (student.Response is { } answered)
+                                    {
+                                        <span class="answer @(answered == ReferralResponses.Going ? "going" : "not-going")" data-answer="@answered">@ReferralResponses.Display(answered)</span>
+                                    }
                                     <button type="button" class="schedule-button is-set" title="Move the schedule" data-schedule="set" @onclick="() => OpenSchedule(student)">
                                         <Icon Name="calendar-clock" Size="14" />
                                         <span class="when">@PhilippineTime.ToLocal(scheduled).ToString("ddd, MMM d")<small>@PhilippineTime.FormatTime(scheduled)</small></span>
                                     </button>
                                 }
+                                else if (student.Response == ReferralResponses.NotGoing)
+                                {
+                                    <span class="answer not-going" data-answer="@ReferralResponses.NotGoing" title="The student answered Not going, so there is no schedule">@ReferralResponses.Display(ReferralResponses.NotGoing)</span>
+                                }
+                                else if (student.Response is null)
+                                {
+                                    <span class="muted" title="You can set the schedule after the student answers Going">@(student.Ignored ? "Not answered" : student.Notified ? "Waiting for the student" : "—")</span>
+                                }
                                 else
                                 {
+                                    <span class="answer going" data-answer="@ReferralResponses.Going">@ReferralResponses.Display(ReferralResponses.Going)</span>
                                     <button type="button" class="schedule-button" title="Choose the day and the time to see the student" data-schedule="none" @onclick="() => OpenSchedule(student)"><Icon Name="calendar-plus" Size="14" /> Set schedule</button>
                                 }
                             </td>
@@ -510,8 +525,9 @@
                 try
                 {
                     var saved = await Desk.AddConcernAsync(othersStudent.StudentId, othersReason, InterventionTypes.Others, text, userId);
+                    // no alert at the top when it worked (round 41); a problem is still told
                     messageIsError = !saved.Succeeded;
-                    message = saved.Succeeded ? saved.Message : string.Join(" ", saved.Errors);
+                    message = saved.Succeeded ? null : string.Join(" ", saved.Errors);
                     if (saved.Succeeded)
                     {
                         rowReasons.Remove(othersStudent.StudentId);
@@ -623,7 +639,7 @@
         {
             var saved = await Desk.AddConcernAsync(student.StudentId, reasonKey, happened, null, userId);
             messageIsError = !saved.Succeeded;
-            message = saved.Succeeded ? saved.Message : string.Join(" ", saved.Errors);
+            message = saved.Succeeded ? null : string.Join(" ", saved.Errors);
             if (saved.Succeeded)
             {
                 rowReasons.Remove(student.StudentId);
@@ -759,7 +775,7 @@
             newMore = "";
             newOtherText = "";
             messageIsError = false;
-            message = saved.Message;
+            message = null;
             await LoadAsync();
             await RefreshViewingAsync();
         }
@@ -844,7 +860,7 @@
             }
 
             messageIsError = false;
-            message = $"{viewing.StudentName}: {saved.Message}";
+            message = null;
             CloseNotes();
             await LoadAsync();
             await RefreshViewingAsync();

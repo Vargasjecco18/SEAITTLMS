@@ -82,7 +82,7 @@
     </div>
 
     @* The counselor saved something about the student: a box in the middle of the screen, like an achievement, until the student presses OK. *@
-    <Modal Open="@(guidance is not null && !Gate.Busy)" Title="Your guidance counselor" Centered="true" Narrow="true" Top="true" OnClose="CloseGuidanceAsync">
+    <Modal Open="@(guidance is not null && !Gate.Busy)" Title="Your guidance counselor" Centered="true" Narrow="true" Top="true" OnClose="DismissGuidanceAsync">
         @if (guidance is { } note)
         {
             <div class="guidance-box">
@@ -458,6 +458,33 @@
             {
                 guidanceBusy = false;
             }
+        }
+    }
+
+    /// <summary>
+    /// The X or Escape on the box (round 41). When the box was asking Going or Not going, closing it without an answer means the student ignored it: the counselor sees "Ignored" on the row.
+    /// A box that only gives news is closed like OK.
+    /// </summary>
+    private async Task DismissGuidanceAsync()
+    {
+        if (!guidanceInvite || guidance is not { } shown || user is null || guidanceBusy)
+        {
+            await CloseGuidanceAsync();
+            return;
+        }
+
+        guidanceBusy = true;
+        try
+        {
+            guidanceQueue.RemoveAt(0);
+            await Notifications.MarkReadAsync(user.UserId, shown.Id);
+            await Referrals.StudentIgnoredAsync(user.UserId);
+            guidanceInvite = guidanceQueue.Count > 0 && await Referrals.HasPendingInviteAsync(user.UserId);
+            await RefreshCountsAsync();
+        }
+        finally
+        {
+            guidanceBusy = false;
         }
     }
 

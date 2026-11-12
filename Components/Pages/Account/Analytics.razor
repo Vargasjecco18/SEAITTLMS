@@ -107,16 +107,7 @@ else if (Role == AppRoles.GuidanceCounselor)
         </div>
     </section>
 
-    <ChartRow>
-        <Card Title="Concerns by kind" IconName="chart-pie">
-            <PieChart Title="Concerns by kind" Slices="ConcernSlices" CenterText="@report.Concerns.Sum(c => c.Count).ToString()" />
-        </Card>
-        <Card Title="Students absent, day by day" IconName="chart-column">
-            <BarChart Title="Students absent by day" Items="AbsentBars" />
-            <p class="note">The last days a teacher marked someone absent.</p>
-        </Card>
-    </ChartRow>
-
+    @* Round 41: the charts "Concerns by kind" and "Students absent, day by day" were taken out. *@
     <div class="board">
         @AttendanceCard(report)
         @ConcernStudentsCard(report)
@@ -264,12 +255,6 @@ else
         [.. Bands.Select((band, i) => new ChartSlice(band.Label, report.Bands.Sum(g => band.Count(g.Bands)), BandColors[i]))];
 
     private IReadOnlyList<ChartSlice> TeacherBandSlices => BandBars;
-
-    private IReadOnlyList<ChartSlice> ConcernSlices => report is null ? [] :
-        [.. report.Concerns.Select(c => new ChartSlice(ReferralReasons.Display(c.Reason), c.Count, c.Reason == ReferralReasons.Violation ? ChartColors.Violet : ChartColors.Orange))];
-
-    private IReadOnlyList<ChartSlice> AbsentBars => report?.AbsentHistory is null ? [] :
-        [.. report.AbsentHistory.Take(10).Reverse().Select(d => new ChartSlice(d.Day.ToString("MMM d", CultureInfo.InvariantCulture), d.Students.Count, ChartColors.Red, $"{d.Day:ddd, MMM d}: {d.Students.Count} absent"))];
 
     private IReadOnlyList<ChartSlice> CourseBars => report is null ? [] :
         [.. report.Performance.Where(p => p.Average is not null).Select((p, i) => new ChartSlice(p.Label, (double)p.Average!.Value, ChartColors.At(i)))];

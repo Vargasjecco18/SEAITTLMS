@@ -130,4 +130,10 @@ public class Referral : AuditableEntity
 
     /// <summary>The day and time the counselor will see the student (set after the student said Going; the counselor can move it).</summary>
     public DateTime? ScheduledAtUtc { get; set; }
+
+    /// <summary>
+    /// When the student closed the box of the counselor (the X or Escape) without pressing OK, Going or Not going: the counselor sees "Ignored". New notes from the counselor, and an
+    /// answer or OK of the student, empty it again (round 41).
+    /// </summary>
+    public DateTime? StudentIgnoredAtUtc { get; set; }
 }

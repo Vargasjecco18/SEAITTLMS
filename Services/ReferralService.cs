@@ -9,7 +9,7 @@ public sealed record ReferralRow(
     int Id, int StudentId, string StudentName, string Lrn, string? Placement, int? AssignmentId, string? SubjectName, string? TeacherName,
     string Reason, string Detail, decimal? Metric, string Status, string? Intervention, string? Notes, string? Outcome, DateTime CreatedAtUtc, DateTime? ResolvedAtUtc,
     byte? GradeLevel = null, string? Strand = null,
-    DateTime? StudentSeenAtUtc = null, string? StudentResponse = null, DateTime? ScheduledAtUtc = null);
+    DateTime? StudentSeenAtUtc = null, string? StudentResponse = null, DateTime? ScheduledAtUtc = null, DateTime? StudentIgnoredAtUtc = null);
 
 public sealed record ReferralPage(IReadOnlyList<ReferralRow> Items, int Total, int Page, int PageCount);
 
@@ -37,6 +37,9 @@ public sealed record ReferralStudentRow(
 
     /// <summary>When the student saw it (the first time among the concerns), or nothing.</summary>
     public DateTime? SeenAtUtc => Seen ? OpenReferrals.Where(r => r.Status == ReferralStatus.InProgress).Max(r => r.StudentSeenAtUtc) : null;
+
+    /// <summary>The student closed the box of the counselor without pressing OK or answering (and has not read it since).</summary>
+    public bool Ignored => Notified && !Seen && Response is null && OpenReferrals.Where(r => r.Status == ReferralStatus.InProgress).Any(r => r.StudentIgnoredAtUtc is not null);
 
     /// <summary><see cref="ReferralResponses"/>: what the student answered (going or not going), or nothing until they answer.</summary>
     public string? Response => OpenReferrals.Select(r => r.StudentResponse).FirstOrDefault(x => x is not null);
@@ -475,7 +478,8 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         var wasOpen = open.Any(r => r.Status == ReferralStatus.Open);
-        var changed = wasOpen || open.Any(r => r.Intervention != intervention || r.Notes != notes);
+        // Saving the notes again after the student ignored the message tells the student again, even when nothing in them changed (round 41).
+        var changed = wasOpen || open.Any(r => r.Intervention != intervention || r.Notes != notes || r.StudentIgnoredAtUtc is not null);
         foreach (var r in open)
         {
             r.Status = ReferralStatus.InProgress;
@@ -484,8 +488,11 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             r.HandledByUserId = actingUserId;
             if (changed)
             {
-                // The student is told again, so the counselor sees "Seen" only after the student presses OK on this new message.
+                // The student is told again, so the counselor sees "Seen" only after the student presses OK on this new message, and the student answers Going or Not going again.
                 r.StudentSeenAtUtc = null;
+                r.StudentIgnoredAtUtc = null;
+                r.StudentResponse = null;
+                r.StudentRespondedAtUtc = null;
             }
         }
 
@@ -669,10 +676,37 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         foreach (var r in open)
         {
             r.StudentSeenAtUtc = now;
+            r.StudentIgnoredAtUtc = null;
         }
 
         await db.SaveChangesAsync(ct);
         await TellCounselorsAsync(db, $"{ShortName(open[0].Student)} read your message", "The student pressed OK on the message you sent.", ct);
+        return true;
+    }
+
+    /// <summary>
+    /// The student closed the box of the counselor (the X or Escape) without pressing OK, Going or Not going: the row of the student says "Ignored" until the student reads or answers it
+    /// or the counselor writes notes again (round 41). Nothing happens when the message was already read or answered.
+    /// </summary>
+    public async Task<bool> StudentIgnoredAsync(int studentUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var open = await db.Referrals
+            .Where(r => r.Student.UserId == studentUserId && r.Status == ReferralStatus.InProgress && r.StudentSeenAtUtc == null && r.StudentResponse == null && r.StudentIgnoredAtUtc == null
+                        && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .ToListAsync(ct);
+        if (open.Count == 0)
+        {
+            return false;
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        foreach (var r in open)
+        {
+            r.StudentIgnoredAtUtc = now;
+        }
+
+        await db.SaveChangesAsync(ct);
         return true;
     }
 
@@ -695,6 +729,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             r.StudentResponse = going ? ReferralResponses.Going : ReferralResponses.NotGoing;
             r.StudentRespondedAtUtc = now;
             r.StudentSeenAtUtc ??= now;
+            r.StudentIgnoredAtUtc = null;
             if (!going)
             {
                 // Not going: a schedule that was made no longer stands.
@@ -745,7 +780,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             return ServiceResult.Fail("This student has no concern to set a schedule for.");
         }
 
-        if (!open.Any(r => r.StudentResponse == ReferralResponses.Going))
+        if (!open.Any(r => r.StudentResponse == ReferralResponses.Going) && !open.Any(r => r.ScheduledAtUtc is not null))
         {
             return ServiceResult.Fail(open.Any(r => r.StudentResponse == ReferralResponses.NotGoing)
                 ? "The student is not going, so there is no schedule."
@@ -773,6 +808,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         {
             r.ScheduledAtUtc = when;
             r.StudentSeenAtUtc = null;
+            r.StudentIgnoredAtUtc = null;
             r.HandledByUserId = actingUserId;
         }
 
@@ -807,12 +843,12 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             Subject = r.Assignment != null ? r.Assignment.Subject.Name : null,
             Teacher = r.Assignment != null ? r.Assignment.Teacher.FirstName + " " + r.Assignment.Teacher.LastName : null,
             r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc,
-            r.StudentSeenAtUtc, r.StudentResponse, r.ScheduledAtUtc,
+            r.StudentSeenAtUtc, r.StudentResponse, r.ScheduledAtUtc, r.StudentIgnoredAtUtc,
         }).ToListAsync(ct);
         var sections = await SectionLabelsAsync(db, ct);
         var strands = await db.Strands.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.Code, ct);
         return rows.Select(r => new ReferralRow(r.Id, r.StudentId, $"{r.LastName}, {r.FirstName}", r.Lrn, r.SectionId is { } s ? sections.GetValueOrDefault(s) : null, r.AssignmentId, r.Subject, r.Teacher,
             r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc, r.GradeLevel, r.StrandId is { } strandId ? strands.GetValueOrDefault(strandId) : null,
-            r.StudentSeenAtUtc, r.StudentResponse, r.ScheduledAtUtc)).ToList();
+            r.StudentSeenAtUtc, r.StudentResponse, r.ScheduledAtUtc, r.StudentIgnoredAtUtc)).ToList();
     }
 }

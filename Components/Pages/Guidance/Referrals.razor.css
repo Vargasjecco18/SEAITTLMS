@@ -271,8 +271,12 @@ th.col-level {
     width: 7rem;
 }
 
+.referral-table th.col-status {
+    width: 8.5rem;
+}
+
 .referral-table th.col-schedule {
-    width: 9rem;
+    width: 9.5rem;
 }
 
 .referral-table th.col-actions {
@@ -538,12 +542,9 @@ th.col-level {
 }
 
 
-/* What the student did with the counselor's message: "Seen" after OK, and Going / Not going. */
-.indicators {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-top: 0.25rem;
+/* What the student did with the counselor's message: Status (Not seen yet, Seen, Ignored) at the right of Notes, and the answer Going / Not going in the Schedule column (round 41). */
+.col-status {
+    text-align: center;
 }
 
 .seen,
@@ -566,6 +567,17 @@ th.col-level {
 .seen.is-seen {
     background: var(--success-soft);
     color: var(--success);
+}
+
+.seen.is-ignored {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.col-schedule .answer {
+    display: flex;
+    width: max-content;
+    margin: 0 auto 0.3rem;
 }
 
 .answer.going {

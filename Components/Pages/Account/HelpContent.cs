@@ -433,17 +433,17 @@ public static class HelpContent
         new("How do I write a violation or follow up a concern?",
         [
             "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded and the Concern list is locked (press Solved to change it). If it is not in the list choose “Others”: a box opens in the middle of the screen to type what happened. The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
-            "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave (“Others” opens a box to type it) and write your notes. Saving them tells the student. When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
+            "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave (“Others” opens a box to type it) and write your notes. Saving them tells the student (no message pops up at the top for you: the row just changes). When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
         ]),
         new("What does the student answer, and how do I set a schedule?",
         [
-            "Under the name of the student the row says “Seen” when the student pressed OK on your message (or “Not seen yet”), and “Going” or “Not going” when the student answered. The student's box has the buttons Going and Not going.",
-            "The Schedule column (at the right of Notes) waits for the answer. When the student is going, press “Set schedule”, choose the day and the time and save: the student is told. Press the day again to move it (the student is told that it has been moved) or to take it away.",
+            "The Status column (at the right of Notes) says “Not seen yet” until the student presses OK on your message, then “Seen”. If the student closes the box with the X (or Escape) without answering, it says “Ignored”. When you save notes again the student gets the message again, with the buttons Going and Not going, and the status starts over.",
+            "The Schedule column (at the right of Status) shows the answer of the student, “Going” or “Not going”. When the student is going, press “Set schedule”, choose the day and the time and save: the student is told and the day goes to the calendar of both of you (Calendar, as Counseling). Press the day again to move it (the student is told that it has been moved) or to take it away.",
         ]),
         new("Who goes to the referrals by themselves?",
         [
             "A student who is absent three times in a course, and a student whose attendance is under 80% over at least five marked days. You get a notification.",
-            "In Analytics the card “Absent by day” lists each day (the last 30 days) with the students who were marked absent and the courses.",
+            "In Analytics the card “Absent by day” lists each day (the last 30 days) with the students who were marked absent and the courses (weekdays only: classes are Monday to Friday).",
         ]),
         new("How do I find people and make a group?",
         [

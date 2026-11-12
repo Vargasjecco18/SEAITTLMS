@@ -167,6 +167,24 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
             }
         }
 
+        // The days the guidance counselor will see a student (round 41): once the counselor sets a schedule in Referrals it is on the calendar of the counselor and of the student.
+        if (user.Role is AppRoles.Student or AppRoles.GuidanceCounselor)
+        {
+            var scheduled = db.Referrals.AsNoTracking().Where(r => r.ScheduledAtUtc != null && r.ScheduledAtUtc >= fromUtc && r.ScheduledAtUtc < toUtc && r.Status != ReferralStatus.Resolved);
+            if (user.Role == AppRoles.Student)
+            {
+                var mine = await scheduled.Where(r => r.Student.UserId == user.UserId).Select(r => r.ScheduledAtUtc!.Value).Distinct().ToListAsync(ct);
+                events.AddRange(mine.Select(at => new CalendarEvent($"counseling-{at:yyyyMMddHHmm}", PhilippineTime.DayOf(at), at, "Guidance counselor",
+                    $"Please come to the guidance office · {PhilippineTime.FormatTime(at)}", CalendarKinds.Counseling, null, at <= now, false)));
+            }
+            else
+            {
+                var rows = await scheduled.Select(r => new { r.StudentId, r.Student.FirstName, r.Student.LastName, r.Student.Lrn, At = r.ScheduledAtUtc!.Value }).ToListAsync(ct);
+                events.AddRange(rows.GroupBy(r => (r.StudentId, r.At)).Select(g => g.First()).Select(r => new CalendarEvent($"counseling-{r.StudentId}-{r.At:yyyyMMddHHmm}", PhilippineTime.DayOf(r.At), r.At,
+                    $"Counseling · {r.LastName}, {r.FirstName}", $"LRN {r.Lrn} · {PhilippineTime.FormatTime(r.At)}", CalendarKinds.Counseling, $"guidance/referrals?q={r.Lrn}", r.At <= now, false)));
+            }
+        }
+
         events.AddRange(await GetAnnouncementEventsAsync(db, user, from, to, ct));
 
         // The holidays of the Philippines are on everybody's calendar (except the ones the academic coordinator deleted).
