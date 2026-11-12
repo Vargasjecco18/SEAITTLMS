@@ -160,7 +160,7 @@ else
                             <th scope="col" class="bar-cell">Opened by the teachers</th>
                             <th scope="col" class="bar-cell col-more">Posted</th>
                             <th scope="col" class="bar-cell">Handouts opened</th>
-                            <th scope="col" class="bar-cell col-more">Assignments opened</th>
+                            <th scope="col" class="bar-cell col-more">Handed in summative exam</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -179,8 +179,8 @@ else
                                     else { <span class="na">Not posted</span> }
                                 </td>
                                 <td class="bar-cell col-more">
-                                    @if (c.ItemPercent is { } ip) { <ProgressBar Percent="ip" Title="@($"{c.ItemOpens:N0} of {c.ItemExpected:N0}")" /> }
-                                    else { <span class="na">—</span> }
+                                    @if (c.ExamPercent is { } ep) { <ProgressBar Percent="ep" Title="@($"{c.ExamHandedIn:N0} of {c.ExamExpected:N0} students handed it in")" /> }
+                                    else { <span class="na">Not posted</span> }
                                 </td>
                             </tr>
                         }

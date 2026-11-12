@@ -316,3 +316,11 @@
     gap: 0.6rem;
     margin-top: 0.8rem;
 }
+
+
+/* A final grade that is only the average the system filled in (it is not sent yet). */
+.final-input.auto {
+    border-style: dashed;
+    color: var(--text-muted);
+    font-style: italic;
+}

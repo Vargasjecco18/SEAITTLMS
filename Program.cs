@@ -154,8 +154,11 @@ builder.Services.AddCascadingAuthenticationState();
 
 // A list with a live button on every line (the registrar's enrollments: two islands a line) tells the server about all of its
 // islands in one message when the page is opened from another page. The default limit of 32 KB is too small for that.
+//
+// The number of live islands one page may have is limited too (100 by default: "Exceeded the maximum number of allowed server interactive root components").
+// The Course library with All terms chosen has a Hide button on every course, and the registrar's lists have two islands a line, so the limit is raised.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
+    .AddInteractiveServerComponents(options => options.RootComponents.MaxJSRootComponents = 2000)
     .AddHubOptions(options => options.MaximumReceiveMessageSize = 1024 * 1024);
 
 

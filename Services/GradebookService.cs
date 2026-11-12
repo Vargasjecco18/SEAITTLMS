@@ -296,7 +296,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         await db.SaveChangesAsync(ct);
-        return ServiceResult.Ok(changed == 0 ? "The final grades did not change." : changed == 1 ? "Saved the final grade of 1 student." : $"Saved the final grades of {changed} students.");
+        return ServiceResult.Ok(changed == 0 ? "The final grades did not change." : changed == 1 ? "Sent the final grade of 1 student." : $"Sent the final grades of {changed} students.");
     }
 
     /// <summary>

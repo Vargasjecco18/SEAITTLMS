@@ -58,7 +58,7 @@ else
                         <Button Variant="ButtonVariant.Secondary" IconName="@(book.GradesHidden ? "eye" : "eye-off")" Disabled="busy" OnClick="ToggleHiddenAsync"
                                 Title="@(book.GradesHidden ? "The students can't see their grades of this course. Press to show them." : "The students see their scores, average and grade of this course. Press to hide them.")">@(book.GradesHidden ? "Show to students" : "Hide from students")</Button>
                         <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Title="One Excel file with all your courses, a sheet for each">Export to Excel</Button>
-                        <Button IconName="circle-check" Disabled="busy" OnClick="SaveFinalGradesAsync">Save final grades</Button>
+                        <Button IconName="send" Disabled="busy" OnClick="SaveFinalGradesAsync" Title="Send the final grades to the students (the last column; it starts with the average)">Send final grades</Button>
                     </div>
                 }
             </div>
@@ -147,9 +147,11 @@ else
                                         }
                                     </td>
                                     <td class="final">
-                                        <input type="number" inputmode="decimal" step="0.01" min="0" max="100" class="input final-input" placeholder="—"
+                                        @* It starts with the average once there is one; the teacher can change it, and Send final grades gives it to the students. *@
+                                        <input type="number" inputmode="decimal" step="0.01" min="0" max="100" class="input final-input @(IsAutoFinal(row) ? "auto" : "")" placeholder="—"
                                                aria-label="@($"Final grade of {row.Name}")" value="@finalInputs.GetValueOrDefault(row.StudentId)"
-                                               @onchange="e => finalInputs[row.StudentId] = e.Value?.ToString() ?? string.Empty" />
+                                               title="@(IsAutoFinal(row) ? "Filled in from the average. Change it if you like, then press Send final grades." : "")"
+                                               @onchange="e => TypedFinal(row, e.Value?.ToString())" />
                                     </td>
                                 </tr>
                             }
@@ -212,6 +214,9 @@ else
     private int subjectId;
     private SubjectGradebook? book;
     private readonly Dictionary<int, string> finalInputs = [];
+
+    // The students whose final grade the teacher typed by hand: the average no longer fills it in.
+    private readonly HashSet<int> typedFinals = [];
     private int renderStamp;
     private readonly SemaphoreSlim saveLock = new(1, 1);
     private string? message;
@@ -237,19 +242,43 @@ else
         ReadBook();
     }
 
-    /// <summary>The final grades that are saved (the short names of the columns, A1, Q1 ..., come with the columns).</summary>
+    /// <summary>
+    /// The final grades: the one that was sent, else the one the teacher typed, else the average as soon as there is one (it follows the average while the scores change).
+    /// </summary>
     private void ReadBook()
     {
+        var kept = finalInputs.ToDictionary(x => x.Key, x => x.Value);
         finalInputs.Clear();
         if (book is null)
         {
+            typedFinals.Clear();
             return;
         }
 
         foreach (var row in book.Rows)
         {
-            finalInputs[row.StudentId] = row.FinalGrade is { } g ? g.ToString("0.##", CultureInfo.InvariantCulture) : "";
+            if (row.FinalGrade is { } g)
+            {
+                finalInputs[row.StudentId] = g.ToString("0.##", CultureInfo.InvariantCulture);
+            }
+            else if (typedFinals.Contains(row.StudentId) && kept.TryGetValue(row.StudentId, out var typed))
+            {
+                finalInputs[row.StudentId] = typed;
+            }
+            else
+            {
+                finalInputs[row.StudentId] = row.Percent is { } avg ? Math.Round(avg, 2).ToString("0.##", CultureInfo.InvariantCulture) : "";
+            }
         }
+    }
+
+    /// <summary>The box still has the average the system put in (nothing was sent or typed yet).</summary>
+    private bool IsAutoFinal(GradebookRow row) => row.FinalGrade is null && !typedFinals.Contains(row.StudentId) && row.Percent is not null;
+
+    private void TypedFinal(GradebookRow row, string? text)
+    {
+        finalInputs[row.StudentId] = text ?? string.Empty;
+        typedFinals.Add(row.StudentId);
     }
 
     private async Task SubjectChanged(ChangeEventArgs e)
@@ -305,6 +334,7 @@ else
             formErrors = [];
             messageIsError = false;
             message = result.Message;
+            typedFinals.Clear();
             book = await Books.GetAsync(teacherId, subjectId);
             ReadBook();
         }

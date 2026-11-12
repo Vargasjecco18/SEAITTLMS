@@ -235,14 +235,14 @@ else
 }
 
 @* ===== Module or syllabus: add or edit ===== *@
-<Modal Open="moduleForm is not null" Title="@ModuleModalTitle" OnClose="CloseModuleForm" Wider="true">
+<Modal Open="moduleForm is not null" Title="@ModuleModalTitle" OnClose="CloseModuleForm" Large="true">
     @if (moduleForm is not null)
     {
         <EditForm Model="moduleForm" OnValidSubmit="SaveModuleAsync">
             <FormErrors Errors="formErrors" />
             @if (editingModuleId is null && !editingIsSyllabus)
             {
-                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenModulesExcel">Add many handouts in a sheet</Button> <span class="muted">title, link and files, no Excel needed</span></p>
+                <p class="from-excel"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenModulesExcel">Add many handouts in a sheet</Button></p>
             }
 
             <Field For="m-title" Label="Title" Required="true">

@@ -66,77 +66,35 @@ else
                         <tr>
                             <th scope="col">Course</th>
                             <th scope="col" class="col-more">Teacher</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Handouts</th>
                             <th scope="col">Progress</th>
-                            <th scope="col">Assignments</th>
-                            <th scope="col">Next due</th>
                             <th scope="col" class="col-more">Grade</th>
                             <th scope="col" class="col-more">Attendance</th>
-                            <th scope="col" class="col-actions"><span class="sr-only">Open</span></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var card in shown)
                         {
-                            <tr>
+                            @* The whole row opens the course (wwwroot/app.js: data-row-href); the name is also a link, so the keyboard reaches it. *@
+                            <tr class="@(card.AssignmentId is null ? "" : "clickable")" data-row-href="@(card.AssignmentId is { } rowId ? $"student/subjects/{rowId}" : null)" title="@(card.AssignmentId is null ? "Not open yet: no teacher yet" : $"Open {card.SubjectName}")">
                                 <td>
-                                    <span class="name">@card.SubjectName</span>
-                                    <span class="sub">@card.TermName</span>
+                                    @if (card.AssignmentId is { } linkId)
+                                    {
+                                        <a class="name row-link" href="student/subjects/@linkId">@card.SubjectName</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="name">@card.SubjectName</span>
+                                    }
+                                    <span class="sub">@card.TermName@(card.IsCompleted ? " · Completed" : "")</span>
                                 </td>
                                 <td class="col-more">
                                     @(card.TeacherName ?? "—")
                                     <span class="sub">@card.SectionLabel</span>
                                 </td>
-                                <td><Badge Tone="@(card.IsCompleted ? Tone.Neutral : Tone.Success)">@(card.IsCompleted ? "Completed" : "Enrolled")</Badge></td>
-                                <td>
-                                    @if (card.AssignmentId is null)
-                                    {
-                                        <span class="muted">No teacher yet</span>
-                                    }
-                                    else
-                                    {
-                                        <span>@card.ModulesVisible @(card.ModulesVisible == 1 ? "handout" : "handouts")</span>
-                                        @if (card.ModulesUnopened > 0) { <Badge Tone="Tone.Warning">@card.ModulesUnopened new</Badge> }
-                                    }
-                                </td>
                                 <td class="progress-cell">
                                     @if (card.ProgressPercent is { } percent)
                                     {
                                         <ProgressBar Percent="percent" Title="@card.ProgressText" />
-                                    }
-                                    else
-                                    {
-                                        <span class="muted">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (card.AssignmentId is not { } workId)
-                                    {
-                                        <span class="muted">—</span>
-                                    }
-                                    else if (card.Activities + card.Quizzes + card.TaskPerformances == 0)
-                                    {
-                                        <span class="muted">No assignments yet</span>
-                                    }
-                                    else
-                                    {
-                                        @if (card.ItemsOpen > 0)
-                                        {
-                                            @* The number is a button: it opens the assignments, quizzes and task performances still to do, each one a link. *@
-                                            <CourseWorkButton AssignmentId="workId" CourseName="@card.SubjectName" Text="@($"{card.ItemsOpen} to do")" Student="true" />
-                                        }
-                                        else
-                                        {
-                                            <Badge Tone="Tone.Success">All done</Badge>
-                                        }
-                                        <span class="sub" title="@WorkTitle(card)">@WorkSummary(card)</span>
-                                    }
-                                </td>
-                                <td>
-                                    @if (card.NextDueUtc is { } due)
-                                    {
-                                        <Badge Tone="@(due < now.UtcDateTime ? Tone.Danger : Tone.Neutral)">@PhilippineTime.DueText(due, now)</Badge>
                                     }
                                     else
                                     {
@@ -161,16 +119,6 @@ else
                                     else
                                     {
                                         <span class="muted">—</span>
-                                    }
-                                </td>
-                                <td class="col-actions">
-                                    @if (card.AssignmentId is { } id)
-                                    {
-                                        <ButtonLink Href="@($"student/subjects/{id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
-                                    }
-                                    else
-                                    {
-                                        <span class="muted">Not open yet</span>
                                     }
                                 </td>
                             </tr>

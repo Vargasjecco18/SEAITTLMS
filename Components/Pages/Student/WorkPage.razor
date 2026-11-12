@@ -33,6 +33,28 @@ else
     var closedQuiz = item.IsQuiz && !fileQuiz && overdue && item.Status == "NotStarted";
 
     <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
+        @* In this order: Details, Feedback, Back to the handout. Details and Feedback open a box right under their button. *@
+        <HeaderPopover Text="Details" IconName="info" Title="The status, the due date and the score">
+            <dl class="facts">
+                <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
+                <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
+                <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
+                @if (item.ScoreVisible && item.Score is { } s)
+                {
+                    <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
+                }
+            </dl>
+        </HeaderPopover>
+        <HeaderPopover Text="Feedback" IconName="message-square" Title="What your teacher wrote about your work" Dot="@(!string.IsNullOrWhiteSpace(item.Feedback))">
+            @if (string.IsNullOrWhiteSpace(item.Feedback))
+            {
+                <p class="muted no-feedback">Your teacher has not written feedback yet.</p>
+            }
+            else
+            {
+                <div class="text">@item.Feedback</div>
+            }
+        </HeaderPopover>
         <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the handout</ButtonLink>
     </PageHeader>
 
@@ -191,25 +213,6 @@ else
                 </Card>
             }
 
-            @* Under the answer: the details of the work and, once the teacher wrote one, the feedback. *@
-            <Card Title="Details" IconName="info">
-                <dl class="facts">
-                    <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
-                    <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
-                    <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
-                    @if (item.ScoreVisible && item.Score is { } s)
-                    {
-                        <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
-                    }
-                </dl>
-            </Card>
-
-            @if (!string.IsNullOrWhiteSpace(item.Feedback))
-            {
-                <Card Title="Feedback from your teacher" IconName="message-square">
-                    <div class="text">@item.Feedback</div>
-                </Card>
-            }
         </div>
     </div>
     </CourseLayout>

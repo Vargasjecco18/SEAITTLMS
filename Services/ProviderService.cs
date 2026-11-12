@@ -117,7 +117,10 @@ public sealed record ProviderOverview(
     public int StudentItemPercent => ProviderMath.Percent(StudentItemOpens, StudentItemExpected);
 }
 
-public sealed record CourseTrack(int SubjectId, string Name, int Sent, int Teachers, int TeacherOpened, int Posted, int ModuleOpens, int ModuleExpected, int ItemOpens, int ItemExpected)
+/// <param name="ExamHandedIn">How many students handed in the summative exam of the course (the exam the provider posted).</param>
+/// <param name="ExamExpected">How many students were asked to (the students of every section it was posted to).</param>
+public sealed record CourseTrack(int SubjectId, string Name, int Sent, int Teachers, int TeacherOpened, int Posted, int ModuleOpens, int ModuleExpected, int ItemOpens, int ItemExpected,
+    int ExamHandedIn = 0, int ExamExpected = 0)
 {
     public int TeacherOpenedPercent => ProviderMath.Percent(TeacherOpened, Sent);
 
@@ -126,6 +129,9 @@ public sealed record CourseTrack(int SubjectId, string Name, int Sent, int Teach
     public int? ModulePercent => ModuleExpected > 0 ? ProviderMath.Percent(ModuleOpens, ModuleExpected) : null;
 
     public int? ItemPercent => ItemExpected > 0 ? ProviderMath.Percent(ItemOpens, ItemExpected) : null;
+
+    /// <summary>The percent of the students who handed in the summative exam, or nothing while the exam is not posted.</summary>
+    public int? ExamPercent => ExamExpected > 0 ? ProviderMath.Percent(ExamHandedIn, ExamExpected) : null;
 }
 
 /// <param name="Kind">"Syllabus", "Handout", or the kind of the activity.</param>
@@ -666,13 +672,18 @@ public sealed partial class ProviderService(IDbContextFactory<AppDbContext> dbFa
         var openedHours = facts.Where(d => d.TeacherOpenedAt is not null).Select(d => Math.Max(0, (d.TeacherOpenedAt!.Value - d.SentAtUtc).TotalHours)).ToList();
         var postedHours = facts.Where(d => d.IsPosted(now)).Select(d => Math.Max(0, (d.VisibleFromUtc!.Value - d.SentAtUtc).TotalHours)).ToList();
 
+        // The summative exam of each course: how many students handed it in (an exam counts from the moment it opens).
+        var exams = (await ListExamTrackingAsync(null, ct)).Where(e => e.OpensAtUtc is { } opens && opens <= now).GroupBy(e => e.SubjectId)
+            .ToDictionary(g => g.Key, g => (HandedIn: g.Sum(e => e.HandedIn), Expected: g.Sum(e => e.Students)));
+
         var byCourse = facts.GroupBy(d => (d.SubjectId, d.SubjectName)).Select(g =>
         {
             var r = g.Select(snap.Row).ToList();
             var p = r.Where(x => x.IsPosted).ToList();
+            var exam = exams.GetValueOrDefault(g.Key.SubjectId);
             return new CourseTrack(
                 g.Key.SubjectId, g.Key.SubjectName, g.Count(), g.Select(d => d.TeacherUserId).Distinct().Count(), r.Count(x => x.State != DeliveryStates.NotOpened), p.Count,
-                p.Sum(x => x.ModuleOpens), p.Sum(x => x.Audience), p.Sum(x => x.ItemOpens), p.Sum(x => x.ItemExpected));
+                p.Sum(x => x.ModuleOpens), p.Sum(x => x.Audience), p.Sum(x => x.ItemOpens), p.Sum(x => x.ItemExpected), exam.HandedIn, exam.Expected);
         }).OrderBy(c => c.ModulePercent ?? 101).ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase).ToList();
 
         // By kind: the syllabus and the modules count the students who opened them; each kind of activity counts the students who opened it.

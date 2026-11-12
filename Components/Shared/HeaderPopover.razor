@@ -1,0 +1,26 @@
+@* A button that opens a small panel right under it (Details, Feedback ...). It is a plain <details class="pop">, so it works without a live circuit, and wwwroot/app.js closes it when the
+   person clicks somewhere else or presses Escape. *@
+<details class="pop hp">
+    <summary class="hp-button" title="@Title">
+        <Icon Name="@IconName" Size="16" />
+        <span>@Text</span>
+        @if (Dot)
+        {
+            <i class="hp-dot" aria-hidden="true"></i>
+        }
+    </summary>
+    <div class="hp-panel" role="region" aria-label="@Text">
+        @ChildContent
+    </div>
+</details>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+    [Parameter] public string? IconName { get; set; }
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>A small dot on the button: there is something new inside (feedback the teacher wrote).</summary>
+    [Parameter] public bool Dot { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

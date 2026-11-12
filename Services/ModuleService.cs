@@ -70,7 +70,7 @@ public sealed class QuestionInput
 public sealed record TeacherItem(
     int Id, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc, DateTime? VisibleFromUtc, string State,
     int? TimeLimitMinutes, bool ShuffleQuestions, bool ShuffleOptions, bool AntiCheat, int MaxViolations, bool ShowResult,
-    int Questions, int Students, int Submitted, int Graded, int Flagged);
+    int Questions, int Students, int Submitted, int Graded, int Flagged, int Late = 0);
 
 /// <summary>An activity, quiz or task performance with the settings the calendar's edit box shows, and where it belongs.</summary>
 public sealed record ItemForEdit(
@@ -169,6 +169,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
                 Submitted = i.Submissions.Count(s => s.Status != SubmissionStatus.InProgress),
                 Graded = i.Submissions.Count(s => s.Status == SubmissionStatus.Graded),
                 Flagged = i.Submissions.Count(s => s.IsFlagged),
+                Late = i.Submissions.Count(s => s.IsLate && s.Status != SubmissionStatus.InProgress),
             })
             .ToListAsync(ct);
 
@@ -183,7 +184,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .ToDictionary(x => x.ModuleId, x => x.Count);
         var result = modules.Select(m => new TeacherModule(
             m.Id, m.Title, m.Description, m.Body, m.LinkUrl, m.Position, m.VisibleFromUtc, Visibility.State(m.VisibleFromUtc, now),
-            items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged)).ToList(),
+            items.Where(x => x.Item.ModuleId == m.Id).Select(x => ToTeacherItem(x.Item, now, x.Questions, students, x.Submitted, x.Graded, x.Flagged, x.Late)).ToList(),
             m.IsSyllabus, fromProvider.Contains(m.Id), m.IsExamSet, withSlides.Contains(m.Id),
             // the average of the class (the students who have not read count as 0); null when the module has no file to read
             withFiles.Contains(m.Id) ? (students == 0 ? 0 : (int)Math.Round(readSums.GetValueOrDefault(m.Id) / (double)students)) : null,
@@ -232,9 +233,9 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             .FirstOrDefaultAsync(ct);
     }
 
-    private static TeacherItem ToTeacherItem(ModuleItem i, DateTime now, int questions, int students, int submitted, int graded, int flagged) => new(
+    private static TeacherItem ToTeacherItem(ModuleItem i, DateTime now, int questions, int students, int submitted, int graded, int flagged, int late = 0) => new(
         i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, i.VisibleFromUtc, i.VisibleFromUtc is null ? "WithModule" : Visibility.State(i.VisibleFromUtc, now),
-        i.TimeLimitMinutes, i.ShuffleQuestions, i.ShuffleOptions, i.AntiCheat, i.MaxViolations, i.ShowResult, questions, students, submitted, graded, flagged);
+        i.TimeLimitMinutes, i.ShuffleQuestions, i.ShuffleOptions, i.AntiCheat, i.MaxViolations, i.ShowResult, questions, students, submitted, graded, flagged, late);
 
     // ======================================================================= the teacher: modules
 

@@ -94,6 +94,11 @@ else
                                 {
                                     <Badge Tone="Tone.Warning">@(item.Submitted - item.Graded) to check</Badge>
                                 }
+                                @if (item.Late > 0 && !ItemKinds.IsQuizLike(item.Kind))
+                                {
+                                    @* A warning for the seatwork, the assignments and the task performances that were handed in after the due date. *@
+                                    <Badge Tone="Tone.Warning"><Icon Name="alarm-clock" Size="12" /> @item.Late late</Badge>
+                                }
                                 @if (item.Flagged > 0)
                                 {
                                     <Badge Tone="Tone.Danger"><Icon Name="flag" Size="12" /> @item.Flagged flagged</Badge>

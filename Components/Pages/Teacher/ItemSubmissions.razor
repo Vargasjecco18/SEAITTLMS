@@ -82,8 +82,8 @@ else
                             <th scope="col">Student</th>
                             <th scope="col">Status</th>
                             <th scope="col" class="col-more">Handed in</th>
-                            <th scope="col">Score</th>
                             <th scope="col" class="col-files">Answers</th>
+                            <th scope="col">Score</th>
                             @if (data.AntiCheat)
                             {
                                 <th scope="col" class="col-more">Warnings</th>
@@ -103,33 +103,29 @@ else
                                     </div>
                                 </td>
                                 <td><Badge Tone="@tone">@text</Badge>@if (row.IsLate) { <Badge Tone="Tone.Warning">Late</Badge> }</td>
-                                <td class="col-more">@(row.SubmittedAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "—")</td>
-                                <td>@(row.Score is { } score ? $"{score:0.##} / {data.MaxScore:0.##}" : "—")</td>
+                                <td class="col-more">
+                                    @(row.SubmittedAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "—")
+                                    @if (row.IsLate && row.SubmittedAtUtc is { } sentAt && data.DueAtUtc is { } dueAt && !ItemKinds.IsQuizLike(data.Kind))
+                                    {
+                                        @* A warning for a late seatwork, assignment or task performance: how late it was. *@
+                                        <span class="late-warn" title="Handed in after the due date"><Icon Name="triangle-alert" Size="13" /> Late by @LateBy(dueAt, sentAt)</span>
+                                    }
+                                </td>
                                 <td class="col-files">
-                                    @* The answer and the files of the student: pressing them opens the work in the box (the row does it). *@
+                                    @* What the student sent (the answer and the files) is ONE button that opens the work in the box (the row does it too). *@
                                     @if (row.Status is SubmissionStatus.Submitted or SubmissionStatus.Graded)
                                     {
-                                        <span class="answer-chips">
-                                            <span class="answer-chip"><Icon Name="file-text" Size="13" /> Answer</span>
-                                            @if (row.SubmissionId is { } submissionId && rowFiles.TryGetValue(submissionId, out var sent))
-                                            {
-                                                @foreach (var file in sent.Take(3))
-                                                {
-                                                    <span class="answer-chip file" title="@file.Name"><Icon Name="paperclip" Size="13" /> <span class="chip-name">@file.Name</span></span>
-                                                }
-
-                                                @if (sent.Count > 3)
-                                                {
-                                                    <span class="answer-chip">+@(sent.Count - 3)</span>
-                                                }
-                                            }
-                                        </span>
+                                        var fileCount = row.SubmissionId is { } submissionId && rowFiles.TryGetValue(submissionId, out var sent) ? sent.Count : 0;
+                                        <button type="button" class="answer-chip one" data-answer-button title="@($"Open the work of {row.StudentName}")" @onclick="() => OpenAsync(row)" @onclick:stopPropagation="true">
+                                            <Icon Name="@(fileCount > 0 ? "paperclip" : "file-text")" Size="14" /> <span>@AnswerButtonText(fileCount)</span>
+                                        </button>
                                     }
                                     else
                                     {
                                         <span class="muted">—</span>
                                     }
                                 </td>
+                                <td>@(row.Score is { } score ? $"{score:0.##} / {data.MaxScore:0.##}" : "—")</td>
                                 @if (data.AntiCheat)
                                 {
                                     <td class="col-more">
@@ -325,6 +321,22 @@ else
     private int teacherId;
     private bool loaded;
     private TeacherSubject? course;
+
+    /// <summary>The words of the button for what the student sent: only the answer, only files, or both in one.</summary>
+    private static string AnswerButtonText(int files) => files switch
+    {
+        0 => "View answer",
+        _ => $"View answer and {files} {(files == 1 ? "file" : "files")}",
+    };
+
+    /// <summary>"2 days", "5 hours", "20 minutes": how long after the due date it was handed in.</summary>
+    private static string LateBy(DateTime due, DateTime sent)
+    {
+        var span = sent - due;
+        return span.TotalDays >= 1 ? $"{(int)span.TotalDays} {((int)span.TotalDays == 1 ? "day" : "days")}"
+            : span.TotalHours >= 1 ? $"{(int)span.TotalHours} {((int)span.TotalHours == 1 ? "hour" : "hours")}"
+            : $"{Math.Max(1, (int)span.TotalMinutes)} min";
+    }
 
     private async Task OpenKey(KeyboardEventArgs e, SubmissionRow row)
     {

@@ -1005,6 +1005,19 @@ document.addEventListener('toggle', function (event) {
         else if (kind === 'formatBlock') { run(editor, 'formatBlock', box.value === 'p' ? 'p' : box.value); }
     });
 
+    // A row of a list that opens something when it is pressed (data-row-href): the click goes to its address, unless it was on a link, a button or a box inside the row, or the person
+    // is selecting text. The row is a plain row of a page that is not live, so this is how it works there.
+    document.addEventListener('click', function (event) {
+        var row = event.target.closest && event.target.closest('tr[data-row-href]');
+        if (!row || event.target.closest('a, button, input, select, textarea, label, summary')) { return; }
+        var picked = window.getSelection ? String(window.getSelection()) : '';
+        if (picked.length > 0) { return; }
+        var href = row.getAttribute('data-row-href');
+        if (!href) { return; }
+        var url = new URL(href, document.baseURI).toString();
+        if (window.Blazor && typeof window.Blazor.navigateTo === 'function') { window.Blazor.navigateTo(url); } else { window.location.assign(url); }
+    });
+
     // Boxes that take only digits (data-digits: the LRN, the phone number) or only letters (data-letters: the names): what else is typed or pasted is dropped at once.
     // It listens first (capture), so the page already gets the clean text.
     document.addEventListener('input', function (event) {

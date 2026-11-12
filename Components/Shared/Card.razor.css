@@ -36,3 +36,11 @@ h2 {
     flex: 1;
     padding: 1.25rem;
 }
+
+.card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}

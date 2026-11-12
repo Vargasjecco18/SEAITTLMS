@@ -162,12 +162,12 @@ public static class AnalyticsExport
 
         var courses = book.AddSheet("By course");
         Title(courses, "By course", "What was sent for each course and how it was used");
-        courses.Row(4, ["Course", "Sent", "Teachers", "Teachers who opened it", "Posted", "Handouts opened by students", "Handouts expected", "Assignments opened", "Assignments expected"], XlsxStyle.Header);
+        courses.Row(4, ["Course", "Sent", "Teachers", "Teachers who opened it", "Posted", "Handouts opened by students", "Handouts expected", "Handed in the summative exam", "Students asked to hand it in"], XlsxStyle.Header);
         var line = 5;
         foreach (var c in a.ByCourse)
         {
             courses.Set(line, 1, c.Name).Set(line, 2, c.Sent, XlsxStyle.Integer).Set(line, 3, c.Teachers, XlsxStyle.Integer).Set(line, 4, c.TeacherOpened, XlsxStyle.Integer).Set(line, 5, c.Posted, XlsxStyle.Integer)
-                .Set(line, 6, c.ModuleOpens, XlsxStyle.Integer).Set(line, 7, c.ModuleExpected, XlsxStyle.Integer).Set(line, 8, c.ItemOpens, XlsxStyle.Integer).Set(line, 9, c.ItemExpected, XlsxStyle.Integer);
+                .Set(line, 6, c.ModuleOpens, XlsxStyle.Integer).Set(line, 7, c.ModuleExpected, XlsxStyle.Integer).Set(line, 8, c.ExamHandedIn, XlsxStyle.Integer).Set(line, 9, c.ExamExpected, XlsxStyle.Integer);
             line++;
         }
 

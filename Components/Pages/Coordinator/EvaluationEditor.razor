@@ -60,27 +60,6 @@ else
     }
 
     <div class="layout">
-        <Card Title="Details" IconName="file-text">
-            <EditForm Model="form" OnValidSubmit="SaveAsync">
-                <FormErrors Errors="formErrors" />
-                <Field For="e-title" Label="Title" Required="true">
-                    <InputText id="e-title" @bind-Value="form.Title" maxlength="200" autocomplete="off" />
-                </Field>
-                <Field For="e-text" Label="Instructions for the students">
-                    <InputTextArea id="e-text" @bind-Value="form.Instructions" rows="3" maxlength="2000" />
-                </Field>
-                <Field For="e-due" Label="Due date" Hint="@(draft ? "Philippine time. You can also choose it when you send." : "Philippine time. The last moment the students can answer.")">
-                    <input id="e-due" type="datetime-local" value="@dueText" @onchange="e => dueText = e.Value?.ToString() ?? string.Empty" />
-                </Field>
-                @if (!draft)
-                {
-                    <div class="modal-actions">
-                        <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
-                    </div>
-                }
-            </EditForm>
-        </Card>
-
         <Card Title="@($"Questions ({(draft ? questions.Count : detail.Questions.Count)})")" IconName="list-checks">
             @if (!draft)
             {
@@ -219,11 +198,37 @@ else
                 </div>
             }
         </Card>
+
+        <Card Title="Details" IconName="file-text">
+            <EditForm Model="form" OnValidSubmit="SaveAsync">
+                <FormErrors Errors="formErrors" />
+                <Field For="e-title" Label="Title" Required="true">
+                    <InputText id="e-title" @bind-Value="form.Title" maxlength="200" autocomplete="off" />
+                </Field>
+                <Field For="e-text" Label="Instructions for the students">
+                    <InputTextArea id="e-text" @bind-Value="form.Instructions" rows="3" maxlength="2000" />
+                </Field>
+                <Field For="e-due" Label="Due date" Hint="@(draft ? "Philippine time. You can also choose it when you send." : "Philippine time. The last moment the students can answer.")">
+                    <input id="e-due" type="datetime-local" value="@dueText" @onchange="e => dueText = e.Value?.ToString() ?? string.Empty" />
+                </Field>
+                @if (!draft)
+                {
+                    <div class="modal-actions">
+                        <Button Type="submit" IconName="circle-check" Disabled="busy">@(busy ? "Saving…" : "Save")</Button>
+                    </div>
+                }
+            </EditForm>
+        </Card>
     </div>
 
     @if (!draft)
     {
         <Card Title="Answers by course" IconName="inbox">
+            <Actions>
+                @* One message for every student who has not answered yet, in any course (each course also has its own Message button). *@
+                <Button Small="true" IconName="megaphone" Disabled="@(busy || detail.State != EvaluationStates.Open || detail.Courses.All(c => c.Responses >= c.Expected))" Title="Message every student who has not answered yet" OnClick="OpenMessageAll">Message all not answered</Button>
+            </Actions>
+            <ChildContent>
             @if (detail.Courses.Count == 0)
             {
                 <p class="muted">No course was chosen.</p>
@@ -275,6 +280,7 @@ else
                 </div>
                 <p class="muted small-text note">The answers are anonymous: you see the averages and the comments, never who wrote them. See the comments and the details of a teacher in <a href="@($"coordinator/analytics?evaluation={detail.Id}")">Analytics</a>.</p>
             }
+            </ChildContent>
         </Card>
     }
 }
@@ -354,8 +360,21 @@ else
 </Modal>
 
 @* ===== Message the students who have not answered (a box in the middle of the screen) ===== *@
-<Modal Open="messageFor is not null" Title="@(messageFor is null ? "" : $"Message · {messageFor.SubjectName}")" Centered="true" OnClose="CloseMessage">
-    @if (messageFor is not null)
+<Modal Open="messageFor is not null || messageAll" Title="@(messageAll ? "Message · all who have not answered" : messageFor is null ? "" : $"Message · {messageFor.SubjectName}")" Centered="true" OnClose="CloseMessage">
+    @if (messageAll)
+    {
+        var waiting = detail?.Courses.Sum(c => Math.Max(0, c.Expected - c.Responses)) ?? 0;
+        <p class="dialog-text">Every student who has not answered the evaluation yet, in any course (@waiting @(waiting == 1 ? "answer is" : "answers are") still missing). A student with several courses gets one message.</p>
+        <FormErrors Errors="messageErrors" />
+        <Field For="eval-message" Label="Message" Hint="Up to 500 characters. You can change the words.">
+            <textarea id="eval-message" rows="4" maxlength="500" @bind="messageText" @bind:event="oninput"></textarea>
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseMessage">Cancel</Button>
+            <Button IconName="send" Disabled="busy" OnClick="SendMessageAsync">@(busy ? "Sending…" : "Send to all")</Button>
+        </div>
+    }
+    else if (messageFor is not null)
     {
         <p class="dialog-text">@messageFor.TeacherName · @messageFor.SectionLabel · @(messageFor.Expected - messageFor.Responses) @(messageFor.Expected - messageFor.Responses == 1 ? "student has" : "students have") not answered yet. Each one gets a notification.</p>
         <FormErrors Errors="messageErrors" />
@@ -676,11 +695,25 @@ else
         messageText = $"Please answer the teacher evaluation for {course.SubjectName} before it closes. Your answers are anonymous.";
     }
 
-    private void CloseMessage() => messageFor = null;
+    private bool messageAll;
+
+    private void OpenMessageAll()
+    {
+        messageAll = true;
+        messageFor = null;
+        messageErrors = [];
+        messageText = "Please answer the teacher evaluation of your teachers before it closes. Your answers are anonymous.";
+    }
+
+    private void CloseMessage()
+    {
+        messageFor = null;
+        messageAll = false;
+    }
 
     private async Task SendMessageAsync()
     {
-        if (busy || messageFor is null)
+        if (busy || (messageFor is null && !messageAll))
         {
             return;
         }
@@ -688,10 +721,13 @@ else
         busy = true;
         try
         {
-            var result = await Service.MessageNotAnsweredAsync(userId, EvaluationId, messageFor.AssignmentId, messageText);
+            var result = messageAll
+                ? await Service.MessageAllNotAnsweredAsync(userId, EvaluationId, messageText)
+                : await Service.MessageNotAnsweredAsync(userId, EvaluationId, messageFor!.AssignmentId, messageText);
             if (result.Succeeded)
             {
                 messageFor = null;
+                messageAll = false;
                 Say(result);
             }
             else
