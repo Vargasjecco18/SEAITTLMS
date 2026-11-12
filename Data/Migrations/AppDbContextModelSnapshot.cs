@@ -549,6 +549,8 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("attendance_records", null, t =>
                         {
                             t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')");
+
+                            t.HasCheckConstraint("ck_attendance_records_weekday", "WEEKDAY(attended_on) < 5");
                         });
                 });
 
@@ -2201,6 +2203,10 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Property<int>("StudentId")
                         .HasColumnType("int")
                         .HasColumnName("student_id");
+
+                    b.Property<DateTime?>("StudentIgnoredAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("student_ignored_at_utc");
 
                     b.Property<DateTime?>("StudentRespondedAtUtc")
                         .HasColumnType("datetime(6)")

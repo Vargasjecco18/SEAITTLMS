@@ -2242,5 +2242,14 @@ SELECT ROW_COUNT();
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261112142032_RemoveAdmission', '9.0.20');
 
+DELETE FROM `attendance_records` WHERE `id` > 0 AND WEEKDAY(`attended_on`) >= 5;
+
+ALTER TABLE `referrals` ADD `student_ignored_at_utc` datetime(6) NULL;
+
+ALTER TABLE `attendance_records` ADD CONSTRAINT `ck_attendance_records_weekday` CHECK (WEEKDAY(attended_on) < 5);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261112144726_WeekdayAttendanceAndIgnoredReferrals', '9.0.20');
+
 COMMIT;
 
