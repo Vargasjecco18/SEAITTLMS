@@ -94,7 +94,7 @@ public sealed record RegistrarOverview(
 }
 
 /// <param name="NextTerm">"enrolled" or "none": only students who are (or are not) enrolled for the next term. Empty for all.</param>
-public sealed record EnrollmentFilter(string? Search, int? TermId, int? StrandId, string? NextTerm = null);
+public sealed record EnrollmentFilter(string? Search, int? TermId, int? StrandId, string? NextTerm = null, int? GradeLevel = null);
 
 /// <param name="NextTerm">The term after the current one, or null when there is none.</param>
 public sealed record EnrollmentPage(IReadOnlyList<EnrollmentRow> Items, int Total, int Page, int PageSize, TermRef? NextTerm = null)
@@ -129,6 +129,12 @@ public static class EnrollmentList
         if (filter.StrandId is { } strandId)
         {
             query = query.Where(e => e.StrandId == strandId);
+        }
+
+        // the admission office of one grade level sees the students of that grade level only
+        if (filter.GradeLevel is { } gradeLevel)
+        {
+            query = query.Where(e => e.GradeLevel == gradeLevel);
         }
 
         // Who is enrolled for the next term (the registrar can unenroll them) and who still has to be enrolled.

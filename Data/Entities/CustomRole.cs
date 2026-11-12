@@ -14,4 +14,10 @@ public class CustomRole : AuditableEntity
 
     /// <summary>One of the staff roles in <see cref="AppRoles"/> (Registrar, GuidanceCounselor, AcademicCoordinator or AcademicProvider).</summary>
     public string BaseRole { get; set; } = DefaultBaseRole;
+
+    /// <summary>
+    /// The pages the administrator ticked for the role, as the keys of <c>StaffPages</c> separated by commas ("calendar,users,groups"). The people of the role open only these pages (and their own
+    /// dashboard). Empty: only the dashboard.
+    /// </summary>
+    public string Pages { get; set; } = "";
 }

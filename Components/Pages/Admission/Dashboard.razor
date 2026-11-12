@@ -1,0 +1,106 @@
+@page "/admission"
+@attribute [Authorize(Roles = AppRoles.Admission)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ApplicationService Applications
+@inject TimeProvider Clock
+
+<PageTitle>Dashboard · SEAITT Legazpi LMS</PageTitle>
+<AutoRefresh />
+
+@{
+    var now = PhilippineTime.Now(Clock);
+}
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, admission")" IconName="layout-dashboard" />
+
+@if (counts is null)
+{
+    <p class="muted">Loading…</p>
+}
+else
+{
+    <div class="stats">
+        <StatCard Label="Waiting for an answer" Value="@counts.Pending" IconName="inbox" Accent="@(counts.Pending > 0 ? AccentColor.Amber : AccentColor.Green)" Hint="Pending applications" Href="admission/applications?state=Pending" />
+        <StatCard Label="Accepted" Value="@counts.Accepted" IconName="circle-check" Accent="AccentColor.Green" Hint="The registrar can enroll them" Href="admission/applications?state=Accepted" />
+        <StatCard Label="Declined" Value="@counts.Declined" IconName="circle-x" Accent="AccentColor.Rose" Hint="Not accepted" Href="admission/applications?state=Declined" />
+        <StatCard Label="Visits coming" Value="@counts.VisitsAhead" IconName="calendar-clock" Accent="AccentColor.Blue" Hint="Students who will come to confirm" Href="calendar" />
+    </div>
+
+    <div class="cards">
+        <Card Title="New applications" IconName="inbox">
+            @if (newest.Count == 0)
+            {
+                <EmptyState IconName="inbox" Title="No application waiting">
+                    <p>When a student sends an application from the home page, it appears here and you are told.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="rows">
+                    @foreach (var a in newest)
+                    {
+                        <li>
+                            <a href="admission/applications?state=Pending">
+                                <span class="row-icon"><Icon Name="user-plus" Size="18" /></span>
+                                <span class="row-text">
+                                    <span class="row-title">@a.Name</span>
+                                    <span class="row-sub">@a.Reference · Grade @a.GradeLevel @a.Strand · @PhilippineTime.FormatDate(a.CreatedAtUtc)</span>
+                                </span>
+                                <Badge Tone="Tone.Warning">Pending</Badge>
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <p class="more"><a href="admission/applications">All the applications <Icon Name="arrow-right" Size="14" /></a></p>
+            }
+        </Card>
+
+        <Card Title="Students coming to the school" IconName="calendar-clock">
+            @if (visits.Count == 0)
+            {
+                <EmptyState IconName="calendar-clock" Title="No visit coming">
+                    <p>Each student chooses the day and the hour they will come to confirm their application. It is listed here and in your calendar.</p>
+                </EmptyState>
+            }
+            else
+            {
+                <ul class="rows">
+                    @foreach (var a in visits)
+                    {
+                        <li>
+                            <a href="admission/applications">
+                                <span class="row-icon"><Icon Name="clock" Size="18" /></span>
+                                <span class="row-text">
+                                    <span class="row-title">@a.Name</span>
+                                    <span class="row-sub">@PhilippineTime.FormatDateTime(a.VisitAtUtc!.Value) · Grade @a.GradeLevel @a.Strand</span>
+                                </span>
+                                <Badge Tone="@(a.Status == ApplicationStates.Pending ? Tone.Warning : Tone.Success)">@ApplicationStates.Display(a.Status)</Badge>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </Card>
+    </div>
+}
+
+@code {
+    private ApplicationCounts? counts;
+    private IReadOnlyList<ApplicationRow> newest = [];
+    private IReadOnlyList<ApplicationRow> visits = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Me.GetAsync();
+        if (me is null)
+        {
+            return;
+        }
+
+        counts = await Applications.GetCountsAsync(me.UserId);
+        newest = (await Applications.ListAsync(me.UserId, ApplicationStates.Pending)).Take(6).ToList();
+        var from = Clock.GetUtcNow().UtcDateTime;
+        visits = (await Applications.ListVisitsAsync(me.UserId, from, from.AddDays(30))).Take(8).ToList();
+    }
+}

@@ -63,6 +63,19 @@ public sealed record StudentGradeSummary(IReadOnlyList<SubjectGrade> Subjects, d
     public IEnumerable<GradedWork> AllGraded => Subjects.SelectMany(s => s.Graded);
 }
 
+/// <summary>One course of a term of a student's history: the percent of the graded work and the final grade the teacher sent, when there is one.</summary>
+public sealed record HistoryCourse(string Subject, string Teacher, decimal? Percent, decimal? Final)
+{
+    /// <summary>The number the course counts as: the final grade the teacher sent, else the percent of the graded work.</summary>
+    public decimal? Grade => Final ?? Percent;
+}
+
+/// <summary>A term of a student's schooling with its courses and their grades (for the registrar's overall grade box and the archive).</summary>
+public sealed record HistoryTerm(int EnrollmentId, string SchoolYear, string Term, byte GradeLevel, string Track, string Strand, string Section, string Status, IReadOnlyList<HistoryCourse> Courses)
+{
+    public decimal? Average => Courses.Where(c => c.Grade is not null).Select(c => c.Grade!.Value).DefaultIfEmpty().Average() is var avg && Courses.Any(c => c.Grade is not null) ? Math.Round(avg, 1) : null;
+}
+
 /// <summary>
 /// Grades from the scores of the work. A subject's grade is the points earned divided by the points possible, of the work that has
 /// been graded (so one graded activity already gives a grade). A quiz whose result the teacher hides is left out for the student.
@@ -127,5 +140,54 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
         var withGrade = subjects.Where(s => s.Percent is not null).ToList();
         decimal? overall = withGrade.Count == 0 ? null : Math.Round(withGrade.Average(s => s.Percent!.Value), 1);
         return new StudentGradeSummary(subjects, overall, withGrade.Count(s => s.Percent < GradeRules.PassingPercent), subjects.Sum(s => s.GradedCount));
+    }
+
+    /// <summary>
+    /// Every term of a student's schooling, the oldest first (from the first enrollment, with the strand the student was in then, so a student who shifted shows both), with the courses and
+    /// their grades. Staff look at it: nothing is hidden.
+    /// </summary>
+    public async Task<IReadOnlyList<HistoryTerm>> GetHistoryAsync(int studentId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var enrollments = await db.Enrollments.AsNoTracking().Where(e => e.StudentId == studentId)
+            .OrderBy(e => e.Term.SchoolYear.StartDate).ThenBy(e => e.Term.TermNumber).ThenBy(e => e.Id)
+            .Select(e => new { e.Id, e.SectionId, e.GradeLevel, Track = e.Track.Code, Strand = e.Strand.Code, Section = e.Section.Name, Term = e.Term.Name, SchoolYear = e.Term.SchoolYear.Name, Status = e.Status.ToString() })
+            .ToListAsync(ct);
+        if (enrollments.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = enrollments.Select(e => e.Id).ToList();
+        var subjects = await db.EnrollmentSubjects.AsNoTracking().Where(x => ids.Contains(x.EnrollmentId))
+            .Select(x => new { x.EnrollmentId, x.SubjectId, Name = x.Subject.Name }).ToListAsync(ct);
+        var sectionIds = enrollments.Select(e => e.SectionId).Distinct().ToList();
+        var assignments = await db.TeachingAssignments.AsNoTracking().Where(a => sectionIds.Contains(a.SectionId))
+            .Select(a => new { a.Id, a.SectionId, a.SubjectId, Teacher = a.Teacher.FirstName + " " + a.Teacher.LastName }).ToListAsync(ct);
+        var assignmentIds = assignments.Select(a => a.Id).ToList();
+        var scores = await db.Submissions.AsNoTracking()
+            .Where(s => s.StudentId == studentId && s.Status == SubmissionStatus.Graded && s.Score != null && assignmentIds.Contains(s.Item.Module.AssignmentId))
+            .Select(s => new { AssignmentId = s.Item.Module.AssignmentId, Score = s.Score!.Value, Max = s.Item.MaxScore }).ToListAsync(ct);
+        var byAssignment = scores.GroupBy(s => s.AssignmentId).ToDictionary(g => g.Key, g => (Earned: g.Sum(x => x.Score), Possible: g.Sum(x => x.Max)));
+        var finals = await db.FinalGrades.AsNoTracking().Where(g => g.StudentId == studentId && assignmentIds.Contains(g.AssignmentId)).ToDictionaryAsync(g => g.AssignmentId, g => g.Grade, ct);
+
+        return [.. enrollments.Select(e => new HistoryTerm(e.Id, e.SchoolYear, e.Term, e.GradeLevel, e.Track, e.Strand, e.Section, e.Status,
+            [.. subjects.Where(x => x.EnrollmentId == e.Id).OrderBy(x => x.Name).Select(x =>
+            {
+                var assignment = assignments.FirstOrDefault(a => a.SectionId == e.SectionId && a.SubjectId == x.SubjectId);
+                decimal? percent = null;
+                decimal? final = null;
+                if (assignment is not null)
+                {
+                    if (byAssignment.TryGetValue(assignment.Id, out var total) && total.Possible > 0)
+                    {
+                        percent = Math.Round(total.Earned / total.Possible * 100, 1);
+                    }
+
+                    final = finals.TryGetValue(assignment.Id, out var grade) ? grade : null;
+                }
+
+                return new HistoryCourse(x.Name, assignment?.Teacher ?? "—", percent, final);
+            })]))];
     }
 }

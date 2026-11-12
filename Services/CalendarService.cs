@@ -22,6 +22,9 @@ public static class CalendarKinds
     /// <summary>A holiday of the Philippines (<see cref="PhilippineHolidays"/>): on the calendar of every role.</summary>
     public const string Holiday = "Holiday";
 
+    /// <summary>The day and hour a student who applied will come to the school to confirm the application: on the calendar of the admission office.</summary>
+    public const string Visit = "Visit";
+
     // The kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance, Seatwork, Recitation (and Exam).
 
     public static string Label(string kind) => kind switch
@@ -35,6 +38,7 @@ public static class CalendarKinds
         Summative => "Summative exam",
         Announcement => "Announcement",
         Holiday => "Holiday",
+        Visit => "Visit",
         ItemKinds.Activity => "Assignment",
         Module => "Handout",
         Personal => "Event",
@@ -48,6 +52,7 @@ public static class CalendarKinds
         Summative => "clipboard-list",
         Announcement => "megaphone",
         Holiday => "flag",
+        Visit => "user-plus",
         _ => SubjectStyle.KindIcon(kind),
     };
 }
@@ -115,7 +120,7 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                 var assignments = Roster.AssignmentsOf(db, sid);
 
                 var due = await db.ModuleItems.AsNoTracking()
-                    .Where(i => i.DueAtUtc != null && i.DueAtUtc >= fromUtc && i.DueAtUtc < toUtc
+                    .Where(i => i.DueAtUtc != null && i.DueAtUtc >= fromUtc && i.DueAtUtc < toUtc && i.Kind != ItemKinds.Recitation
                                 && (i.VisibleFromUtc == null || i.VisibleFromUtc <= now) && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
                                 && assignments.Any(a => a.Id == i.Module.AssignmentId))
                     .Select(i => new
@@ -130,12 +135,21 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                     events.Add(new CalendarEvent($"item-{i.Id}", PhilippineTime.DayOf(i.Due), i.Due, i.Title, $"{i.Subject} · due {PhilippineTime.FormatTime(i.Due)}", i.Summative ? CalendarKinds.Summative : i.Kind, $"student/items/{i.Id}", done, !done && i.Due < now));
                 }
 
-                var modules = await db.Modules.AsNoTracking()
-                    .Where(m => m.VisibleFromUtc != null && m.VisibleFromUtc >= fromUtc && m.VisibleFromUtc < toUtc && m.VisibleFromUtc <= now
-                                && assignments.Any(a => a.Id == m.AssignmentId))
-                    .Select(m => new { m.Id, m.Title, At = m.VisibleFromUtc!.Value, Subject = m.Assignment.Subject.Name })
+                // (round 40: the handouts and the recitations are not on the calendar any more)
+            }
+        }
+        else if (user.Role == AppRoles.Admission)
+        {
+            // the students who will come to the school to confirm their application (the grade level of the admission officer), one event with the hour for each
+            var grade = await db.AdmissionOfficers.AsNoTracking().Where(o => o.UserId == user.UserId).Select(o => (byte?)o.GradeLevel).FirstOrDefaultAsync(ct);
+            if (grade is { } level)
+            {
+                var visits = await db.StudentApplications.AsNoTracking()
+                    .Where(a => a.GradeLevel == level && a.VisitAtUtc != null && a.VisitAtUtc >= fromUtc && a.VisitAtUtc < toUtc && a.Status != ApplicationStates.Declined)
+                    .Select(a => new { a.Id, a.FirstName, a.LastName, a.Reference, Strand = a.Strand.Code, At = a.VisitAtUtc!.Value, a.Status })
                     .ToListAsync(ct);
-                events.AddRange(modules.Select(m => new CalendarEvent($"module-{m.Id}", PhilippineTime.DayOf(m.At), m.At, "New handout: " + m.Title, m.Subject, CalendarKinds.Module, $"student/modules/{m.Id}", false, false)));
+                events.AddRange(visits.Select(v => new CalendarEvent($"visit-{v.Id}", PhilippineTime.DayOf(v.At), v.At, $"Visit: {v.FirstName} {v.LastName}",
+                    $"{v.Reference} · Grade {level} {v.Strand} · {ApplicationStates.Display(v.Status)} · {PhilippineTime.FormatTime(v.At)}", CalendarKinds.Visit, "admission/applications", v.Status != ApplicationStates.Pending, false)));
             }
         }
         else if (user.Role == AppRoles.Teacher)
@@ -144,7 +158,7 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
             if (teacherId is { } tid)
             {
                 var due = await db.ModuleItems.AsNoTracking()
-                    .Where(i => i.DueAtUtc != null && i.DueAtUtc >= fromUtc && i.DueAtUtc < toUtc && i.Module.Assignment.TeacherId == tid)
+                    .Where(i => i.DueAtUtc != null && i.DueAtUtc >= fromUtc && i.DueAtUtc < toUtc && i.Module.Assignment.TeacherId == tid && i.Kind != ItemKinds.Recitation)
                     .Select(i => new
                     {
                         i.Id, i.Title, i.Kind, Summative = i.MaterialItemId != null, Due = i.DueAtUtc!.Value, Subject = i.Module.Assignment.Subject.Name,

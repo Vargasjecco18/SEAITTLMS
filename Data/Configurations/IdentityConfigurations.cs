@@ -27,6 +27,7 @@ internal sealed class CustomRoleConfiguration : IEntityTypeConfiguration<CustomR
         b.ToTable("custom_roles");
         b.Property(r => r.Name).HasMaxLength(40).IsRequired();
         b.Property(r => r.BaseRole).HasMaxLength(30).IsRequired();
+        b.Property(r => r.Pages).HasMaxLength(500).IsRequired().HasDefaultValue("");
         b.HasIndex(r => r.Name).IsUnique();
         b.ToTable(t => t.HasCheckConstraint("ck_custom_roles_base", "base_role IN ('Registrar', 'GuidanceCounselor', 'AcademicCoordinator', 'AcademicProvider')"));
     }

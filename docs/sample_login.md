@@ -1,6 +1,6 @@
 # Sample logins
 
-The accounts made by [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) (1 administrator, 5 staff — two of them academic coordinators —, 12 teachers and 40 students), with their passwords.
+The accounts made by [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) (1 administrator, 7 staff — two of them academic coordinators and two admission officers, one for each grade level —, 12 teachers and 40 students), with their passwords.
 They are **sample accounts for trying the system**: the passwords are easy on purpose and they are written here. **Do not use these accounts or passwords with real people:**
 give every real person a new password (Users Management > Edit), or delete the sample accounts.
 
@@ -20,6 +20,8 @@ How they are made, like the app does for a new person:
 | Academic coordinator | Lourdes Garcia Villareal | villareal.023@legazpi.seaitt.edu.ph | villareal023 |
 | Academic coordinator | Marissa Santos Ramos | ramos.026@legazpi.seaitt.edu.ph | ramos026 |
 | Academic provider | Elena Cruz Pangilinan | pangilinan.024@legazpi.seaitt.edu.ph | pangilinan024 |
+| Admission (Grade 11) | Cecilia Ramos Dizon | dizon.031@legazpi.seaitt.edu.ph | dizon031 |
+| Admission (Grade 12) | Marco Villegas Aguilar | aguilar.032@legazpi.seaitt.edu.ph | aguilar032 |
 | Teacher | Rafael Mendoza Vargas | vargas.013@legazpi.seaitt.edu.ph | vargas013 |
 | Teacher | Ricardo Dizon Villanueva | villanueva.001@legazpi.seaitt.edu.ph | villanueva001 |
 | Teacher | Angelica Lopez Bautista | bautista.002@legazpi.seaitt.edu.ph | bautista002 |

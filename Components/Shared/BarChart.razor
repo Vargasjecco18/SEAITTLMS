@@ -1,0 +1,34 @@
+@* A bar chart: a bar for each item, as long as its number (the longest is the full width), with the number at the end. *@
+<div class="bars" role="list" aria-label="@Title">
+    @if (Items.Count == 0 || Max <= 0)
+    {
+        <p class="none">Nothing to show yet.</p>
+    }
+    else
+    {
+        @foreach (var item in Items)
+        {
+            <div class="bar-row" role="listitem" title="@(item.Hint ?? $"{item.Label}: {item.Value:0.##}")">
+                <span class="bar-label">@item.Label</span>
+                <span class="bar-track"><i style="width: @Width(item.Value)%; background: @item.Color"></i></span>
+                <strong class="bar-value">@item.Value.ToString("0.##")@Suffix</strong>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ChartSlice> Items { get; set; } = [];
+
+    [Parameter] public string Title { get; set; } = "Bar chart";
+
+    /// <summary>A sign after each number ("%").</summary>
+    [Parameter] public string Suffix { get; set; } = "";
+
+    /// <summary>The number that is the full width (the biggest item when empty).</summary>
+    [Parameter] public double? Full { get; set; }
+
+    private double Max => Full ?? Items.Select(i => i.Value).DefaultIfEmpty(0).Max();
+
+    private string Width(double value) => Math.Clamp(value * 100.0 / Max, value > 0 ? 2 : 0, 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+}

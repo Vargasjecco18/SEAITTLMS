@@ -1,0 +1,92 @@
+@rendermode InteractiveServer
+@inject GradeService Grades
+
+@* The final grade of a line of Student's Accounts as a button: it opens a box in the middle of the screen with every course of the student and its final grade, term by term (the terms the student was
+   enrolled in, from the first one). It is its own live island, so it works inside a list that is otherwise plain. *@
+<button type="button" class="overall" title="@($"Every course of {StudentName} with its final grade")" @onclick="OpenAsync">
+    @if (Grade is { } grade)
+    {
+        <Badge Tone="@GradeRules.ToneOf(grade)">@grade.ToString("0.#")%</Badge>
+        <span class="label">Overall grade</span>
+    }
+    else
+    {
+        <span class="label">Overall grade</span>
+        <span class="none">No grades yet</span>
+    }
+</button>
+
+<Modal Open="open" Title="@($"Overall grade · {StudentName}")" Centered="true" Large="true" OnClose="() => open = false">
+    @if (open)
+    {
+        @if (history is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else if (history.Count == 0)
+        {
+            <p class="muted">This student has no enrollment yet.</p>
+        }
+        else
+        {
+            @foreach (var term in history)
+            {
+                <section class="term">
+                    <h3>@term.Term · @term.SchoolYear <small>Grade @term.GradeLevel · @term.Strand · Section @term.Section@(term.Status == "Enrolled" ? "" : " · " + term.Status)</small></h3>
+                    @if (term.Courses.Count == 0)
+                    {
+                        <p class="muted">No courses were chosen for this term.</p>
+                    }
+                    else
+                    {
+                        <table class="table" aria-label="@($"Courses of {term.Term}, {term.SchoolYear}")">
+                            <thead><tr><th scope="col">Course</th><th scope="col">Teacher</th><th scope="col" class="num">Final grade</th></tr></thead>
+                            <tbody>
+                                @foreach (var course in term.Courses)
+                                {
+                                    <tr>
+                                        <td>@course.Subject</td>
+                                        <td>@course.Teacher</td>
+                                        <td class="num">
+                                            @if (course.Grade is { } g)
+                                            {
+                                                <Badge Tone="@GradeRules.ToneOf(g)">@g.ToString("0.#")%</Badge>
+                                            }
+                                            else
+                                            {
+                                                <span class="muted">No grade yet</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            @if (term.Average is { } average)
+                            {
+                                <tfoot><tr><th scope="row" colspan="2">Overall grade of the term</th><td class="num"><strong>@average.ToString("0.#")%</strong> <span class="muted">@GradeRules.Descriptor(average)</span></td></tr></tfoot>
+                            }
+                        </table>
+                    }
+                </section>
+            }
+        }
+
+        <div class="actions"><Button OnClick="() => open = false">Close</Button></div>
+    }
+</Modal>
+
+@code {
+    [Parameter, EditorRequired] public int StudentId { get; set; }
+    [Parameter] public string StudentName { get; set; } = "";
+
+    /// <summary>The overall grade of the line (the average of its courses), or nothing when there is no grade yet.</summary>
+    [Parameter] public decimal? Grade { get; set; }
+
+    private bool open;
+    private IReadOnlyList<HistoryTerm>? history;
+
+    private async Task OpenAsync()
+    {
+        open = true;
+        history = await Grades.GetHistoryAsync(StudentId);
+    }
+}

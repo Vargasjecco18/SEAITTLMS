@@ -1,0 +1,23 @@
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.row-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4rem;
+}
+
+.col-actions {
+    text-align: right;
+}

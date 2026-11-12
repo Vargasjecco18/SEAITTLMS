@@ -27,4 +27,18 @@ public static class LocalUrl
 
         return url;
     }
+
+    /// <summary>The pages every signed-in person has (not the pages of one role).</summary>
+    private static readonly string[] SharedPages = ["/calendar", "/users", "/groups", "/resources", "/analytics", "/help", "/messages", "/notifications"];
+
+    /// <summary>
+    /// True when <paramref name="path"/> is a page of the role whose home page is <paramref name="home"/> ("/teacher/subjects/5" is a page of "/teacher"), or a page everybody has. After a sign-in
+    /// it keeps a person from being sent to a page of another role.
+    /// </summary>
+    public static bool IsPageOf(string path, string home)
+    {
+        var clean = path.Split('?', '#')[0];
+        bool Under(string root) => clean.Equals(root, StringComparison.OrdinalIgnoreCase) || clean.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
+        return clean.Length > 1 && (Under(home) || SharedPages.Any(Under));
+    }
 }

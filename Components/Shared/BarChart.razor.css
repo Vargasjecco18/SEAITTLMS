@@ -1,0 +1,43 @@
+.bars {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: minmax(5rem, 9rem) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.9rem;
+}
+
+.bar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bar-track {
+    display: block;
+    height: 0.7rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.bar-track i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+}
+
+.bar-value {
+    min-width: 2.2rem;
+    text-align: right;
+}
+
+.none {
+    margin: 0;
+    color: var(--text-muted);
+}

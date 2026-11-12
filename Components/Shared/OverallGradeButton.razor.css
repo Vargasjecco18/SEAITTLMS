@@ -1,0 +1,64 @@
+.overall {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.overall:hover {
+    border-color: var(--brand);
+}
+
+.label {
+    font-weight: 600;
+}
+
+.none,
+.muted {
+    color: var(--text-muted);
+}
+
+.term {
+    margin: 0 0 1.1rem;
+}
+
+.term h3 {
+    margin: 0 0 0.45rem;
+    font-size: 1rem;
+}
+
+.term h3 small {
+    margin-left: 0.4rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+
+.num {
+    text-align: right;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.8rem;
+}

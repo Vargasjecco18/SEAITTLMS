@@ -2100,5 +2100,116 @@ ALTER TABLE `strand_subjects` ADD `library_hidden_at_utc` datetime(6) NULL;
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261108151347_LibraryHideCourse', '9.0.20');
 
+ALTER TABLE `custom_roles` ADD `pages` varchar(500) CHARACTER SET utf8mb4 NOT NULL DEFAULT '';
+
+UPDATE `custom_roles` SET `pages` = 'calendar,users,groups' WHERE `id` > 0 AND `pages` = '';
+
+CREATE TABLE `admission_officers` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `grade_level` tinyint unsigned NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    `user_id` int NOT NULL,
+    `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `employee_number` varchar(30) CHARACTER SET utf8mb4 NULL,
+    `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    CONSTRAINT `pk_admission_officers` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_admission_officers_grade` CHECK (grade_level IN (11, 12)),
+    CONSTRAINT `ck_admission_officers_status` CHECK (status IN ('Active', 'Inactive')),
+    CONSTRAINT `fk_admission_officers_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `student_applications` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `reference` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `suffix` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `birth_date` date NOT NULL,
+    `sex` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `civil_status` varchar(30) CHARACTER SET utf8mb4 NOT NULL,
+    `nationality` varchar(60) CHARACTER SET utf8mb4 NOT NULL,
+    `religion` varchar(80) CHARACTER SET utf8mb4 NOT NULL,
+    `lrn` varchar(12) CHARACTER SET utf8mb4 NULL,
+    `email` varchar(254) CHARACTER SET utf8mb4 NOT NULL,
+    `mobile_number` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `address` varchar(250) CHARACTER SET utf8mb4 NOT NULL,
+    `province` varchar(80) CHARACTER SET utf8mb4 NOT NULL,
+    `city` varchar(80) CHARACTER SET utf8mb4 NOT NULL,
+    `barangay` varchar(80) CHARACTER SET utf8mb4 NOT NULL,
+    `zip_code` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `grade_level` tinyint unsigned NOT NULL,
+    `academic_year` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `term_number` tinyint unsigned NOT NULL,
+    `track_id` int NOT NULL,
+    `strand_id` int NOT NULL,
+    `father_name` varchar(150) CHARACTER SET utf8mb4 NULL,
+    `father_contact` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `mother_name` varchar(150) CHARACTER SET utf8mb4 NULL,
+    `mother_contact` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `guardian_name` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
+    `guardian_relationship` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `guardian_contact` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `guardian_address` varchar(250) CHARACTER SET utf8mb4 NOT NULL,
+    `visit_at_utc` datetime(6) NULL,
+    `status` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `decision_note` varchar(500) CHARACTER SET utf8mb4 NULL,
+    `decided_by_user_id` int NULL,
+    `decided_at_utc` datetime(6) NULL,
+    `enrolled_student_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_student_applications` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_student_applications_grade` CHECK (grade_level = 11),
+    CONSTRAINT `ck_student_applications_status` CHECK (status IN ('Pending', 'Accepted', 'Declined', 'Enrolled')),
+    CONSTRAINT `fk_student_applications_strands_strand_id` FOREIGN KEY (`strand_id`) REFERENCES `strands` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_student_applications_students_enrolled_student_id` FOREIGN KEY (`enrolled_student_id`) REFERENCES `students` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_student_applications_tracks_track_id` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_student_applications_users_decided_by_user_id` FOREIGN KEY (`decided_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `application_files` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `application_id` int NOT NULL,
+    `kind` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `name` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+    `content_type` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `size_bytes` bigint NOT NULL,
+    `data` longblob NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_application_files` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_application_files_student_applications_application_id` FOREIGN KEY (`application_id`) REFERENCES `student_applications` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `roles` (`id`, `name`)
+VALUES (8, 'Admission');
+
+CREATE UNIQUE INDEX `ix_admission_officers_employee_number` ON `admission_officers` (`employee_number`);
+
+CREATE UNIQUE INDEX `ix_admission_officers_user_id` ON `admission_officers` (`user_id`);
+
+CREATE UNIQUE INDEX `ix_application_files_application_id_kind` ON `application_files` (`application_id`, `kind`);
+
+CREATE INDEX `ix_student_applications_decided_by_user_id` ON `student_applications` (`decided_by_user_id`);
+
+CREATE INDEX `ix_student_applications_enrolled_student_id` ON `student_applications` (`enrolled_student_id`);
+
+CREATE UNIQUE INDEX `ix_student_applications_reference` ON `student_applications` (`reference`);
+
+CREATE INDEX `ix_student_applications_status` ON `student_applications` (`status`);
+
+CREATE INDEX `ix_student_applications_strand_id` ON `student_applications` (`strand_id`);
+
+CREATE INDEX `ix_student_applications_track_id` ON `student_applications` (`track_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261112080737_AdmissionAndRolePages', '9.0.20');
+
 COMMIT;
 

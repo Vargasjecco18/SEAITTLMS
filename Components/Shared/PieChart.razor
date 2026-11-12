@@ -1,0 +1,53 @@
+@* A pie (a ring) chart with its legend beside it: every part has its color, its number and its percent. With nothing to show it says so. *@
+<figure class="pie" aria-label="@Title">
+    @if (Total <= 0)
+    {
+        <p class="none">Nothing to show yet.</p>
+    }
+    else
+    {
+        <svg viewBox="0 0 42 42" class="ring" role="img" aria-label="@Title">
+            <circle class="track" cx="21" cy="21" r="15.915" fill="none" stroke-width="6" />
+            @{
+                var offset = 25.0;   // starts at the top
+            }
+            @foreach (var slice in Slices.Where(s => s.Value > 0))
+            {
+                var share = slice.Value * 100.0 / Total;
+                <circle cx="21" cy="21" r="15.915" fill="none" stroke="@slice.Color" stroke-width="6"
+                        stroke-dasharray="@Share(share) @Share(100 - share)" stroke-dashoffset="@Share(offset)">
+                    <title>@slice.Label: @slice.Value.ToString("0.##") (@share.ToString("0.#")%)</title>
+                </circle>
+                offset -= share;
+            }
+            <text x="21" y="21" class="center-number" text-anchor="middle" dominant-baseline="central">@(CenterText ?? Total.ToString("0.##"))</text>
+        </svg>
+        <figcaption>
+            <ul class="legend">
+                @foreach (var slice in Slices)
+                {
+                    <li>
+                        <span class="swatch" style="background: @slice.Color"></span>
+                        <span class="label">@slice.Label</span>
+                        <strong>@slice.Value.ToString("0.##")</strong>
+                        <span class="percent">@((slice.Value * 100.0 / Total).ToString("0.#"))%</span>
+                    </li>
+                }
+            </ul>
+        </figcaption>
+    }
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<ChartSlice> Slices { get; set; } = [];
+
+    /// <summary>What the chart is, for a screen reader.</summary>
+    [Parameter] public string Title { get; set; } = "Pie chart";
+
+    /// <summary>The text in the middle of the ring (the total when empty).</summary>
+    [Parameter] public string? CenterText { get; set; }
+
+    private double Total => Slices.Sum(s => Math.Max(0, s.Value));
+
+    private static string Share(double value) => value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+}

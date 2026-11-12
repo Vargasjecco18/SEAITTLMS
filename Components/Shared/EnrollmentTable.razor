@@ -24,7 +24,7 @@
                     <th scope="col" class="col-next">Next term</th>
                 }
                 <th scope="col" class="col-date">Enrolled</th>
-                @if (ShowActions)
+                @if (ShowActions || InfoOnly)
                 {
                     <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
                 }
@@ -103,14 +103,11 @@
                     @if (ShowFinalGrade)
                     {
                         <td class="col-grade">
+                            @* The overall grade is a button: it opens every course of the student with its final grade. *@
+                            <OverallGradeButton StudentId="row.StudentId" StudentName="@row.StudentName" Grade="row.FinalGrade" />
                             @if (row.FinalGrade is { } grade)
                             {
-                                <Badge Tone="@GradeRules.ToneOf(grade)">@grade.ToString("0.#")%</Badge>
                                 <span class="sub">@GradeRules.Descriptor(grade)</span>
-                            }
-                            else
-                            {
-                                <span class="sub">No grades yet</span>
                             }
                         </td>
                     }
@@ -123,14 +120,12 @@
                             }
                             else if (row.NextEnrollmentId is not null)
                             {
-                                <Badge Tone="Tone.Success">Enrolled</Badge>
-                                <span class="sub">@NextTerm.Name</span>
+                                <span class="next-line"><Badge Tone="Tone.Success">Enrolled</Badge><span class="sub">@NextTerm.Name</span></span>
                                 <UnenrollButton StudentId="row.StudentId" StudentName="@row.StudentName" TermLabel="@NextTerm.Label" />
                             }
                             else
                             {
-                                <Badge>Not enrolled</Badge>
-                                <span class="sub">@NextTerm.Name</span>
+                                <span class="next-line"><Badge>Not enrolled</Badge><span class="sub">@NextTerm.Name</span></span>
                                 <ReEnrollButton Lrn="@row.Lrn" StudentName="@row.StudentName" TermId="NextTerm.Id" TermLabel="@NextTerm.Label" />
                             }
                         </td>
@@ -144,6 +139,10 @@
                         <td class="col-actions">
                             <EnrollmentActions EnrollmentId="row.Id" StudentId="row.StudentId" StudentName="@row.StudentName" Lrn="@row.Lrn" Status="@row.Status" StudentActive="row.StudentActive" />
                         </td>
+                    }
+                    else if (InfoOnly)
+                    {
+                        <td class="col-actions"><ApplicationInfoButton StudentId="row.StudentId" StudentName="@row.StudentName" /></td>
                     }
                 </tr>
             }
@@ -171,6 +170,9 @@
 
     /// <summary>The registrar's buttons at the end of each line: Account, Edit and Drop out.</summary>
     [Parameter] public bool ShowActions { get; set; }
+
+    /// <summary>Only the Info button (the application the student sent): the admission office's Student's Accounts.</summary>
+    [Parameter] public bool InfoOnly { get; set; }
 
     /// <summary>The term after the current one (null when there is none).</summary>
     [Parameter] public TermRef? NextTerm { get; set; }

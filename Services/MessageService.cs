@@ -23,12 +23,10 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
     /// <summary>The roles a person may write to.</summary>
     private static string[] AllowedRoles(string role) => role switch
     {
-        AppRoles.Student => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar],
-        AppRoles.Teacher => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
-        AppRoles.Registrar => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
-        AppRoles.AcademicCoordinator => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
-        AppRoles.AcademicProvider => [AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
-        _ => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admin, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider],
+        // A student writes to the people of the school who help them (and to the other students); everybody else may write to everybody, so every student can be written to by anyone,
+        // friends or not (round 40).
+        AppRoles.Student => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admission],
+        _ => [.. AppRoles.Ids.Keys],
     };
 
     /// <summary>True when a person of the role <paramref name="fromRole"/> may write to a person of the role <paramref name="toRole"/> (friends may always write to each other).</summary>

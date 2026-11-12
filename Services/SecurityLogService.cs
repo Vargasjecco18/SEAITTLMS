@@ -116,6 +116,7 @@ public sealed class SecurityLogService(IDbContextFactory<AppDbContext> dbFactory
                 || (u.GuidanceCounselor != null && (u.GuidanceCounselor.FirstName.Contains(t) || u.GuidanceCounselor.LastName.Contains(t)))
                 || (u.AcademicCoordinator != null && (u.AcademicCoordinator.FirstName.Contains(t) || u.AcademicCoordinator.LastName.Contains(t)))
                 || (u.AcademicProvider != null && (u.AcademicProvider.FirstName.Contains(t) || u.AcademicProvider.LastName.Contains(t)))
+                || (u.AdmissionOfficer != null && (u.AdmissionOfficer.FirstName.Contains(t) || u.AdmissionOfficer.LastName.Contains(t)))
                 || (u.Administrator != null && (u.Administrator.FirstName.Contains(t) || u.Administrator.LastName.Contains(t))));
         }
 

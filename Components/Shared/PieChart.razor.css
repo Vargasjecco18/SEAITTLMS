@@ -1,0 +1,58 @@
+.pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem 1.6rem;
+    margin: 0;
+}
+
+.ring {
+    flex: none;
+    width: 10.5rem;
+    height: 10.5rem;
+}
+
+.track {
+    stroke: var(--surface-2);
+}
+
+.center-number {
+    fill: var(--text);
+    font-size: 6px;
+    font-weight: 700;
+}
+
+.legend {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 11rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.legend li {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.swatch {
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 3px;
+}
+
+.percent {
+    min-width: 3rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+.none {
+    margin: 0;
+    color: var(--text-muted);
+}

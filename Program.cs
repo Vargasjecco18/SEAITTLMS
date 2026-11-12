@@ -58,6 +58,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(EnrollmentOptions.SectionName));
 builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<ApplicationService>();
 builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<EnrollmentImportService>();
 builder.Services.AddScoped<FileDownloads>();
@@ -141,7 +142,13 @@ builder.Services
 builder.Services.AddAuthorization(options =>
 {
     // Every page needs a signed-in user unless it says [AllowAnonymous] (the login page does).
-    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    // The live connection of a page (/_blazor) is opened before anybody is asked who they are, and the public pages that are live (the student application) need it for people who are not signed in.
+    // It can only show the pages that are allowed to the person, so a signed-out person is not given anything by it.
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAssertion(context => context.User.Identity?.IsAuthenticated == true
+            || context.Resource is HttpContext { Request.Path.Value: { } path } && path.StartsWith("/_blazor", StringComparison.OrdinalIgnoreCase)
+            || context.Resource is Microsoft.AspNetCore.Http.Endpoint { DisplayName: { } name } && name.Contains("_blazor", StringComparison.OrdinalIgnoreCase))
+        .Build();
 });
 builder.Services.AddCascadingAuthenticationState();
 
@@ -462,6 +469,14 @@ app.MapGet("/files/a/{id:int}", async (int id, HttpContext http, AttachmentServi
     var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
     var file = await attachments.OpenAsync(userId, id, http.RequestAborted);
     return file is null ? Results.NotFound() : ServeFile(http, file.Name, file.Data);
+});
+
+// A paper of a student's application (the birth certificate, the report card ...): the admission office of that grade level, the registrar (once the application is accepted) and the administrator.
+app.MapGet("/files/app/{id:int}", async (int id, HttpContext http, ApplicationService applications) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var file = await applications.OpenFileAsync(userId, id, http.RequestAborted);
+    return file is null ? Results.NotFound() : ServeFile(http, file.Value.Name, file.Value.Data);
 });
 
 // A picture of a question of a quiz or of a summative exam: the teacher of the course and the students who have it (once it is posted) open it.

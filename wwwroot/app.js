@@ -1020,6 +1020,14 @@ document.addEventListener('toggle', function (event) {
         try { box.setSelectionRange(kept, kept); } catch (e) { /* some input types have no caret */ }
     }, true);
 
+    // A name box (data-letters): when the person leaves it (Tab) the first letter of every word is a capital. It listens before the page does (capture), so the page already gets the capital letters.
+    document.addEventListener('change', function (event) {
+        var box = event.target;
+        if (!box || box.tagName !== 'INPUT' || !box.hasAttribute('data-letters')) { return; }
+        var capital = box.value.replace(/(^|[\s.'\u2019-])(\p{L})/gu, function (all, before, letter) { return before + letter.toUpperCase(); });
+        if (capital !== box.value) { box.value = capital; }
+    }, true);
+
     document.addEventListener('input', function (event) {
         var color = event.target.closest && event.target.closest('[data-rte] .bar input[type="color"]');
         if (color) {
@@ -1587,8 +1595,9 @@ document.addEventListener('change', function (event) {
 (function () {
     var PDFJS = 'lib/pdfjs/pdf.min.js';
     var PDFJS_WORKER = 'lib/pdfjs/pdf.worker.min.js';
-    var PAGE_SECONDS = 1.5;     // how long a page has to be in front of the reader to count as seen
-    var LOOK_SECONDS = 2.5;     // a picture, or a text that does not scroll
+    var PAGE_SECONDS = 1;       // how long a page has to be in front of the reader to count as seen
+    var LOOK_SECONDS = 1.5;     // a picture, or a text that does not scroll
+    var EASY = 0.7;             // reading 70% of the slides counts as all of them (round 40: the progress is easier to fill)
     var state = null;           // { el, key, data: { files: {} }, best, timer }
     var pdfLoader = null;
 
@@ -1665,7 +1674,7 @@ document.addEventListener('change', function (event) {
         var ids = fileIds();
         var total = 0;
         ids.forEach(function (id) { total += fraction(state.data.files[id]); });
-        var seen = ids.length === 0 ? 0 : Math.round(100 * total / ids.length);
+        var seen = ids.length === 0 ? 0 : Math.min(100, Math.round(100 * total / ids.length / EASY));
         seen = Math.max(state.data.best || 0, Math.min(100, seen));
         // what is kept (on this computer and on the server) is the part of the slides that was seen; what the bar shows is the number of the handout in the course:
         // 50 for opening it and 50 for the slides (half of the slides seen, rounded as the server rounds: a half goes to the even number), and 100 when the handout has no slides

@@ -267,3 +267,12 @@
         min-width: 0;
     }
 }
+
+/* "Not enrolled 3rd Term": the badge and the term on one row (the button to enroll is under them). */
+.next-line {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}

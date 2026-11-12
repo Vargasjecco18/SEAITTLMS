@@ -1,0 +1,77 @@
+@* A list to choose from that ends with "Others": when Others is chosen a box opens to type what is not in the list (the suffix of a name, the province, the city or municipality, the barangay ...).
+   The value is the choice, or what was typed. *@
+<select id="@Id" class="pick" required="@Required" disabled="@Disabled" aria-label="@(AriaLabel ?? Id)" @onchange="Picked">
+    <option value="" selected="@(string.IsNullOrEmpty(Value) && !other)">@Placeholder</option>
+    @foreach (var choice in Choices.Where(c => c != PhilippineAddresses.Others))
+    {
+        <option value="@choice" selected="@(!other && Value == choice)">@choice</option>
+    }
+    @if (Choices.Contains(PhilippineAddresses.Others))
+    {
+        <option value="@PhilippineAddresses.Others" selected="@other">Others (type it)</option>
+    }
+</select>
+@if (other)
+{
+    <input id="@(Id)-other" type="text" class="other" maxlength="@MaxLength" autocomplete="off" placeholder="@OtherPlaceholder" aria-label="@((AriaLabel ?? Id) + " (type it)")" data-letters="@(Letters ? "" : null)"
+           value="@(typed)" @onchange="Typed" />
+}
+
+@code {
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<string> Choices { get; set; } = [];
+    [Parameter] public string Placeholder { get; set; } = "Choose";
+    [Parameter] public string OtherPlaceholder { get; set; } = "Type it";
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public int MaxLength { get; set; } = 80;
+
+    /// <summary>The typed text takes letters only (names of places do not have digits).</summary>
+    [Parameter] public bool Letters { get; set; } = true;
+
+    private bool other;
+    private string typed = "";
+
+    protected override void OnParametersSet()
+    {
+        // A value that is not one of the choices is a typed one: the list shows Others and the box shows the text.
+        if (!string.IsNullOrEmpty(Value) && !Choices.Contains(Value) && Choices.Contains(PhilippineAddresses.Others))
+        {
+            other = true;
+            typed = Value;
+        }
+        else if (Choices.Contains(Value))
+        {
+            other = false;
+        }
+        else if (string.IsNullOrEmpty(Value) && !other)
+        {
+            typed = "";
+        }
+    }
+
+    private async Task Picked(ChangeEventArgs e)
+    {
+        var choice = e.Value?.ToString() ?? "";
+        if (choice == PhilippineAddresses.Others)
+        {
+            other = true;
+            typed = "";
+            await ValueChanged.InvokeAsync("");
+        }
+        else
+        {
+            other = false;
+            await ValueChanged.InvokeAsync(choice);
+        }
+    }
+
+    private async Task Typed(ChangeEventArgs e)
+    {
+        typed = e.Value?.ToString() ?? "";
+        await ValueChanged.InvokeAsync(typed);
+    }
+}

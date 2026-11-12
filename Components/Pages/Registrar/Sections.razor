@@ -1,0 +1,19 @@
+@page "/registrar/sections"
+@attribute [Authorize(Roles = AppRoles.Registrar)]
+@rendermode InteractiveServer
+@using SEAITT_LMS.Components.Pages.Coordinator.Setup
+
+<PageTitle>Class sections · SEAITT Legazpi LMS</PageTitle>
+
+@* All the class sections (Grade 11 and Grade 12), to look at: the academic coordinator makes them. *@
+<PageHeader Title="Class sections" IconName="users" />
+
+<form class="sections-search" role="search" @onsubmit="() => { }">
+    <SearchField Id="sections-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a strand, a section or an adviser" AriaLabel="Search the sections" />
+</form>
+
+<SectionsStep Search="@search" ReadOnly="true" />
+
+@code {
+    private string search = "";
+}

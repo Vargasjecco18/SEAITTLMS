@@ -1,4 +1,4 @@
--- Sample sign-ins for SEAITT Legazpi LMS: 1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 1 academic provider (central team), 12 teachers and 40 students.
+-- Sample sign-ins for SEAITT Legazpi LMS: 1 administrator, 1 registrar, 1 guidance counselor, 2 academic coordinators, 1 academic provider (central team), 2 admission officers (Grade 11 and Grade 12), 12 teachers and 40 students.
 --
 -- The sign-in of each person is made from the name and the number they have at school, the same way the app makes the sign-in of a new person:
 --   * staff and teachers: the last name, a dot and the digits of the employee number     for example villanueva.001@legazpi.seaitt.edu.ph (employee number T-001);
@@ -46,6 +46,8 @@ INSERT INTO sample_people (role_id, email, old_email, password_hash, security_st
     (6, 'villareal.023@legazpi.seaitt.edu.ph', 'coordinator1@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$7OnvImMDOU5mi2SPN9IGQw==$FHCqwwL8djISRbrmX3lhxzdNA83kxhWIfgMZqVvIOG0=', 'ef1724406a544ec1a1c4c106f824b0c3', 'Lourdes', 'Garcia', 'Villareal', 'C-023', NULL, NULL),
     (6, 'ramos.026@legazpi.seaitt.edu.ph', 'coordinator2@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$byjI0XhBJafcwzZ+SqisLA==$iWS637LWM4NO+x3i9y3jxajmyf8SBaSM5C+dGHH2KtI=', '9c8be15982473c6dc6d3d708c60a6f42', 'Marissa', 'Santos', 'Ramos', 'C-026', NULL, NULL),
     (7, 'pangilinan.024@legazpi.seaitt.edu.ph', 'provider1@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$4bRCt5aBUeqzgMqo6ZcB6w==$dMcm49R19nIrKUWSkGOtZ3xmwPJkswT2y6fp1ixSDas=', '70ac06d8b6ef4f38a003a36417059864', 'Elena', 'Cruz', 'Pangilinan', 'P-024', NULL, NULL),
+    (8, 'dizon.031@legazpi.seaitt.edu.ph', 'admission11@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$mE4jkyIii7DMdgx9I/t7cA==$rzFGNQNSlUArmbMjv+Kn8yjjwuSmZPkou+lt3mctZ1Y=', '59532de9c962426eb6746230670b165b', 'Cecilia', 'Ramos', 'Dizon', 'A-031', NULL, NULL),
+    (8, 'aguilar.032@legazpi.seaitt.edu.ph', 'admission12@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$0K+GaBAw2bzCQv+7M1Phdg==$jMqq/uHkCLh9b3uWQT3Sk1n8xs84BTQxCIoi0Uqa7LM=', 'ffedc17c2c1d424585fb27ac7f4ddaff', 'Marco', 'Villegas', 'Aguilar', 'A-032', NULL, NULL),
     (2, 'vargas.013@legazpi.seaitt.edu.ph', 'vargas@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$sHC8daSgqvfjanx2Uc/5tg==$AUI1uMNUiFV3i9k1EhRf/KVjJqxlxmLSjwS97s7ZJKM=', '11c4c5d178f241b6a57c88e0c23ebe43', 'Rafael', 'Mendoza', 'Vargas', 'T-013', NULL, NULL),
     (2, 'villanueva.001@legazpi.seaitt.edu.ph', 'villanueva@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$p2KAcyDfrKqcZXw4bb+w/g==$iGRbgaujDbEBDZTVTxiydzy49zoSAISbBY8Ww7iRz48=', '5e90eff5b5c241bb90735eb13d15c97d', 'Ricardo', 'Dizon', 'Villanueva', 'T-001', NULL, NULL),
     (2, 'bautista.002@legazpi.seaitt.edu.ph', 'bautista@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$LHHVUsLi3KDtL1sq8i46HA==$glMMCN+MFYPZqdc5x6x+Nz6Dnv94wfqAs9BbF+JwFMg=', 'd72266c7c4d14ca7aca04841b487728c', 'Angelica', 'Lopez', 'Bautista', 'T-002', NULL, NULL),
@@ -99,7 +101,7 @@ INSERT INTO sample_people (role_id, email, old_email, password_hash, security_st
     (3, 'ramirez.600044@legazpi.seaitt.edu.ph', 'ramirez@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$mWh2VQyaLQUcRFcYcIRy4A==$KGXB1DwVKBSpl4NrPn6VhPynN3rQJCjY+G7Ng8MsIPk=', '9019bbc8edf749ffb4682d7d302e03c0', 'Oscar', 'Ubaldo', 'Ramirez', NULL, '105202600044', NULL),
     (3, 'sarmiento.600045@legazpi.seaitt.edu.ph', 'sarmiento@legazpi.seaitt.edu.ph', 'PBKDF2-SHA256$600000$lchsWY+zcVqlS8BEZXdc/Q==$H82k9LkmL42nn8B8ms/S/657o6qD0168a3qir4zAHPc=', 'c6a0d864671f438faed4b3d769a3dad6', 'Princess', 'Villanueva', 'Sarmiento', NULL, '105202600045', NULL);
 
--- 1) The accounts that are not there yet. Role 1 = administrator, 2 = teacher, 3 = student, 4 = registrar, 5 = guidance counselor, 6 = academic coordinator, 7 = academic provider.
+-- 1) The accounts that are not there yet. Role 1 = administrator, 2 = teacher, 3 = student, 4 = registrar, 5 = guidance counselor, 6 = academic coordinator, 7 = academic provider, 8 = admission.
 INSERT INTO users (email, password_hash, phone_number, role_id, is_active, security_stamp, failed_login_count, created_at_utc, updated_at_utc)
 SELECT p.email, p.password_hash, NULL, p.role_id, 1, p.security_stamp, 0, @now, @now
 FROM sample_people p
@@ -146,6 +148,13 @@ SELECT u.id, p.employee_number, p.first_name, p.middle_name, p.last_name, 'Activ
 FROM sample_people p JOIN users u ON u.email = p.email AND u.role_id = p.role_id
 WHERE p.role_id = 7 AND NOT EXISTS (SELECT 1 FROM academic_providers x WHERE x.user_id = u.id)
   AND NOT EXISTS (SELECT 1 FROM academic_providers y WHERE y.employee_number = p.employee_number);
+
+-- The admission officers: A-031 works for Grade 11 and A-032 for Grade 12.
+INSERT INTO admission_officers (user_id, employee_number, first_name, middle_name, last_name, status, grade_level, created_at_utc, updated_at_utc)
+SELECT u.id, p.employee_number, p.first_name, p.middle_name, p.last_name, 'Active', IF(p.employee_number = 'A-031', 11, 12), @now, @now
+FROM sample_people p JOIN users u ON u.email = p.email AND u.role_id = p.role_id
+WHERE p.role_id = 8 AND NOT EXISTS (SELECT 1 FROM admission_officers x WHERE x.user_id = u.id)
+  AND NOT EXISTS (SELECT 1 FROM admission_officers y WHERE y.employee_number = p.employee_number);
 
 INSERT INTO teachers (user_id, employee_number, first_name, middle_name, last_name, created_at_utc, updated_at_utc)
 SELECT u.id, p.employee_number, p.first_name, p.middle_name, p.last_name, @now, @now

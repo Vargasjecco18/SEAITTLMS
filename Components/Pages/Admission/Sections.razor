@@ -1,0 +1,35 @@
+@page "/admission/sections"
+@attribute [Authorize(Roles = AppRoles.Admission)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ApplicationService Applications
+@using SEAITT_LMS.Components.Pages.Coordinator.Setup
+
+<PageTitle>Class sections · SEAITT Legazpi LMS</PageTitle>
+
+@* The class sections of the grade level of the admission officer (Grade 11 sees Grade 11, Grade 12 sees Grade 12). Only to look at: the academic coordinator makes the sections. *@
+<PageHeader Title="@(grade is { } g ? $"Class sections · Grade {g}" : "Class sections")" IconName="users" />
+
+@if (grade is null)
+{
+    <p class="muted">Loading…</p>
+}
+else
+{
+    <form class="sections-search" role="search" @onsubmit="() => { }">
+        <SearchField Id="sections-search" @bind-Value="search" Live="true" SubmitText="" Placeholder="Search a strand or a section" AriaLabel="Search the sections" />
+    </form>
+
+    <SectionsStep Search="@search" ReadOnly="true" GradeScope="grade" />
+}
+
+@code {
+    private string search = "";
+    private int? grade;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Me.GetAsync();
+        grade = me is null ? null : await Applications.GradeOfOfficerAsync(me.UserId);
+    }
+}

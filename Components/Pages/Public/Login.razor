@@ -13,6 +13,7 @@
 @inject SystemSettingsService SystemSettings
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
+@inject SessionWatcher Watcher
 
 <PageTitle>Log-in · SEAITT Legazpi LMS</PageTitle>
 
@@ -88,6 +89,7 @@
     private string? lockedEmail;
 
     private const string LockCookie = "seaitt_login_lock";
+    private const string LastUserCookie = "seaitt_last_user";
 
     private int SecondsLeft => lockedUntil is { } until ? Math.Max(0, (int)Math.Ceiling((until - Clock.GetUtcNow().UtcDateTime).TotalSeconds)) : 0;
 
@@ -101,13 +103,20 @@
 
     [SupplyParameterFromForm] private LoginInput Input { get; set; } = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // Somebody is signed in on this browser already (the person came back to this page with the Back button, or typed the address): the login page has nothing to do, so the person goes
-        // straight to their own page, with no message. (Nobody else can log in on this browser until that person signs out.)
+        // Somebody is signed in on this browser and came to the login page (the Back button, or the address was typed): they are signed out at once, with no countdown and no message, and
+        // the login page is what they see. (Going back out of the system, or closing the browser, ends the sign-in the same way.)
         if (HttpContext.User.Identity?.IsAuthenticated == true)
         {
-            GoTo(RoleHome.For(HttpContext.User.FindFirstValue(ClaimTypes.Role)));
+            if (int.TryParse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            {
+                var session = HttpContext.User.FindFirstValue(AppClaimTypes.SessionId);
+                await Auth.EndSessionAsync(userId, session, HttpContext.RequestAborted);
+                Watcher.End(userId, session);
+            }
+
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
         // The page is opened again while the timer of this browser still runs: it is still there.
@@ -189,7 +198,14 @@
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.Principal!, properties);
 
-        GoTo(LocalUrl.Sanitize(ReturnUrl));
+        // A page the browser was asking for when the last sign-in ended (?returnUrl=/teacher/subjects/5) belongs to the person who was signed in then. Somebody else who signs in on the same
+        // browser would land on a page that is not theirs ("Course not found"), so it is only used when it is the same person (the browser remembers who signed in last) and a page of their role.
+        var me = result.Principal!.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+        var sameAsLast = HttpContext.Request.Cookies.TryGetValue(LastUserCookie, out var last) && last == me;
+        HttpContext.Response.Cookies.Append(LastUserCookie, me, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps, MaxAge = TimeSpan.FromDays(60) });
+        var home = RoleHome.For(result.Principal!.FindFirstValue(ClaimTypes.Role));
+        var wanted = LocalUrl.Sanitize(ReturnUrl);
+        GoTo(sameAsLast && LocalUrl.IsPageOf(wanted, home) ? wanted : home);
     }
 
     /// <summary>

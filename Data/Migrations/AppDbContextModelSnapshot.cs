@@ -295,6 +295,88 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionOfficer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("EmployeeNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("employee_number");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<byte>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_admission_officers");
+
+                    b.HasIndex("EmployeeNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_admission_officers_employee_number");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_admission_officers_user_id");
+
+                    b.ToTable("admission_officers", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_admission_officers_grade", "grade_level IN (11, 12)");
+
+                            t.HasCheckConstraint("ck_admission_officers_status", "status IN ('Active', 'Inactive')");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
                 {
                     b.Property<int>("Id")
@@ -380,6 +462,64 @@ namespace SEAITT_LMS.Data.Migrations
 
                             t.HasCheckConstraint("ck_announcements_schedule", "starts_on IS NULL OR expires_on IS NULL OR starts_on <= expires_on");
                         });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ApplicationFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("int")
+                        .HasColumnName("application_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("longblob")
+                        .HasColumnName("data");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("name");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_application_files");
+
+                    b.HasIndex("ApplicationId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_application_files_application_id_kind");
+
+                    b.ToTable("application_files", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>
@@ -648,6 +788,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("varchar(40)")
                         .HasColumnName("name");
+
+                    b.Property<string>("Pages")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasDefaultValue("")
+                        .HasColumnName("pages");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -2351,6 +2499,11 @@ namespace SEAITT_LMS.Data.Migrations
                         {
                             Id = 7,
                             Name = "AcademicProvider"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Name = "Admission"
                         });
                 });
 
@@ -2896,6 +3049,249 @@ namespace SEAITT_LMS.Data.Migrations
                             t.HasCheckConstraint("ck_students_status", "status IN ('Active', 'Graduated', 'DroppedOut')");
 
                             t.HasCheckConstraint("ck_students_strand_needs_track", "strand_id IS NULL OR track_id IS NOT NULL");
+                        });
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudentApplication", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcademicYear")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("academic_year");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("Barangay")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("barangay");
+
+                    b.Property<DateOnly>("BirthDate")
+                        .HasColumnType("date")
+                        .HasColumnName("birth_date");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("city");
+
+                    b.Property<string>("CivilStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("civil_status");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("decided_at_utc");
+
+                    b.Property<int?>("DecidedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("decision_note");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("varchar(254)")
+                        .HasColumnName("email");
+
+                    b.Property<int?>("EnrolledStudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("enrolled_student_id");
+
+                    b.Property<string>("FatherContact")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("father_contact");
+
+                    b.Property<string>("FatherName")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("father_name");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<byte>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<string>("GuardianAddress")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)")
+                        .HasColumnName("guardian_address");
+
+                    b.Property<string>("GuardianContact")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("guardian_contact");
+
+                    b.Property<string>("GuardianName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("guardian_name");
+
+                    b.Property<string>("GuardianRelationship")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("guardian_relationship");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("Lrn")
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)")
+                        .HasColumnName("lrn");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("MobileNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("mobile_number");
+
+                    b.Property<string>("MotherContact")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("mother_contact");
+
+                    b.Property<string>("MotherName")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("mother_name");
+
+                    b.Property<string>("Nationality")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)")
+                        .HasColumnName("nationality");
+
+                    b.Property<string>("Province")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("province");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Religion")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)")
+                        .HasColumnName("religion");
+
+                    b.Property<string>("Sex")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("sex");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
+                    b.Property<string>("Suffix")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("suffix");
+
+                    b.Property<byte>("TermNumber")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("term_number");
+
+                    b.Property<int>("TrackId")
+                        .HasColumnType("int")
+                        .HasColumnName("track_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<DateTime?>("VisitAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("visit_at_utc");
+
+                    b.Property<string>("ZipCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("zip_code");
+
+                    b.HasKey("Id")
+                        .HasName("pk_student_applications");
+
+                    b.HasIndex("DecidedByUserId")
+                        .HasDatabaseName("ix_student_applications_decided_by_user_id");
+
+                    b.HasIndex("EnrolledStudentId")
+                        .HasDatabaseName("ix_student_applications_enrolled_student_id");
+
+                    b.HasIndex("Reference")
+                        .IsUnique()
+                        .HasDatabaseName("ix_student_applications_reference");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_student_applications_status");
+
+                    b.HasIndex("StrandId")
+                        .HasDatabaseName("ix_student_applications_strand_id");
+
+                    b.HasIndex("TrackId")
+                        .HasDatabaseName("ix_student_applications_track_id");
+
+                    b.ToTable("student_applications", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_student_applications_grade", "grade_level = 11");
+
+                            t.HasCheckConstraint("ck_student_applications_status", "status IN ('Pending', 'Accepted', 'Declined', 'Enrolled')");
                         });
                 });
 
@@ -3668,6 +4064,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionOfficer", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithOne("AdmissionOfficer")
+                        .HasForeignKey("SEAITT_LMS.Data.Entities.AdmissionOfficer", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_admission_officers_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.TeachingAssignment", "Assignment")
@@ -3694,6 +4102,18 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Author");
 
                     b.Navigation("Section");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.ApplicationFile", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.StudentApplication", "Application")
+                        .WithMany("Files")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_application_files_student_applications_application_id");
+
+                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>
@@ -4548,6 +4968,39 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudentApplication", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_student_applications_users_decided_by_user_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Student", null)
+                        .WithMany()
+                        .HasForeignKey("EnrolledStudentId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_student_applications_students_enrolled_student_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", "Strand")
+                        .WithMany()
+                        .HasForeignKey("StrandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_applications_strands_strand_id");
+
+                    b.HasOne("SEAITT_LMS.Data.Entities.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_student_applications_tracks_track_id");
+
+                    b.Navigation("Strand");
+
+                    b.Navigation("Track");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroup", b =>
                 {
                     b.HasOne("SEAITT_LMS.Data.Entities.User", "Owner")
@@ -4796,6 +5249,11 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("Shares");
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudentApplication", b =>
+                {
+                    b.Navigation("Files");
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.StudyGroup", b =>
                 {
                     b.Navigation("Members");
@@ -4829,6 +5287,8 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("AcademicProvider");
 
                     b.Navigation("Administrator");
+
+                    b.Navigation("AdmissionOfficer");
 
                     b.Navigation("GuidanceCounselor");
 

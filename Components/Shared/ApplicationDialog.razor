@@ -1,0 +1,147 @@
+@* The box in the middle of the screen with a student's application: what the student wrote (four parts), the day they will come to the school, and the papers they uploaded (a name opens the paper in the box of
+   the files). The admission office can accept or decline a pending one from here. *@
+<Modal Open="Detail is not null" Title="@(Detail is null ? "Application" : $"Student application · {Detail.FullName}")" Centered="true" Large="true" OnClose="CloseAsync">
+    @if (Detail is { } d)
+    {
+        <div class="head">
+            <span class="ref">@d.Reference</span>
+            <Badge Tone="@ToneOf(d.Status)">@ApplicationStates.Display(d.Status)</Badge>
+            <span class="sent">Sent @PhilippineTime.FormatDateTime(d.CreatedAtUtc)</span>
+        </div>
+
+        @if (d.VisitAtUtc is { } visit)
+        {
+            <p class="visit"><Icon Name="calendar-clock" Size="16" /> <span>Will come to the school on <strong>@PhilippineTime.FormatDateTime(visit)</strong> to confirm the application.</span></p>
+        }
+
+        @if (d.DecidedAtUtc is { } decided)
+        {
+            <p class="decision"><Icon Name="@(d.Status == ApplicationStates.Declined ? "circle-x" : "circle-check")" Size="16" />
+                <span>@ApplicationStates.Display(d.Status) @(d.DecidedBy is null ? "" : $"by {d.DecidedBy} ")on @PhilippineTime.FormatDateTime(decided).@(string.IsNullOrWhiteSpace(d.DecisionNote) ? "" : " " + d.DecisionNote)</span></p>
+        }
+
+        @foreach (var (heading, fields) in d.Sections)
+        {
+            <section class="part">
+                <h3>@heading</h3>
+                <dl>
+                    @foreach (var (label, value) in fields)
+                    {
+                        <div><dt>@label</dt><dd>@value</dd></div>
+                    }
+                </dl>
+            </section>
+        }
+
+        <section class="part">
+            <h3>5. Requirements upload</h3>
+            @if (d.Files.Count == 0)
+            {
+                <p class="muted">No file was uploaded.</p>
+            }
+            else
+            {
+                <ul class="files">
+                    @foreach (var f in d.Files)
+                    {
+                        <li>
+                            <span class="kind">@f.KindName</span>
+                            <a class="file-name" href="files/app/@f.Id" target="_blank" rel="noopener noreferrer" data-file="@f.Name" data-show="1" data-enhance-nav="false" title="Show the file">@f.Name</a>
+                            <span class="file-size">@FileSize.Text(f.SizeBytes)</span>
+                            <a class="file-save" href="files/app/@f.Id?download=1" download="@f.Name" aria-label="@($"Download {f.Name}")" title="Download"><Icon Name="download" Size="15" /></a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <FormErrors Errors="errors" />
+
+        @if (CanDecide && d.Status == ApplicationStates.Pending)
+        {
+            @if (declining)
+            {
+                <Field For="decline-note" Label="Why is it declined?" Required="true">
+                    <input id="decline-note" type="text" maxlength="500" autocomplete="off" @bind="note" @bind:event="oninput" />
+                </Field>
+            }
+
+            <div class="actions">
+                @if (declining)
+                {
+                    <Button Variant="ButtonVariant.Ghost" OnClick="() => declining = false">Back</Button>
+                    <Button Variant="ButtonVariant.Danger" IconName="circle-x" Disabled="busy" OnClick="DeclineAsync">@(busy ? "Saving…" : "Decline the application")</Button>
+                }
+                else
+                {
+                    <Button Variant="ButtonVariant.Secondary" IconName="circle-x" OnClick="() => declining = true">Decline</Button>
+                    <Button IconName="circle-check" Disabled="busy" OnClick="AcceptAsync">@(busy ? "Saving…" : "Accept")</Button>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="actions"><Button OnClick="CloseAsync">Close</Button></div>
+        }
+    }
+</Modal>
+
+@code {
+    /// <summary>The application to show. Empty: the box is closed.</summary>
+    [Parameter] public ApplicationDetail? Detail { get; set; }
+
+    /// <summary>The admission office sees Accept and Decline on a pending application.</summary>
+    [Parameter] public bool CanDecide { get; set; }
+
+    /// <summary>Called with true (accept) or false (decline) and the note. It gives back what went wrong, or nothing when it was saved (the box is closed by the page then).</summary>
+    [Parameter] public Func<bool, string?, Task<string?>>? OnDecide { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool declining;
+    private bool busy;
+    private string note = "";
+    private IReadOnlyList<string> errors = [];
+
+    protected override void OnParametersSet()
+    {
+        if (Detail is null)
+        {
+            declining = false;
+            note = "";
+            errors = [];
+        }
+    }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+
+    private async Task AcceptAsync() => await DecideAsync(true);
+
+    private async Task DeclineAsync() => await DecideAsync(false);
+
+    private async Task DecideAsync(bool accept)
+    {
+        if (busy || OnDecide is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var problem = await OnDecide(accept, note);
+            errors = problem is null ? [] : [problem];
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private static Tone ToneOf(string status) => status switch
+    {
+        ApplicationStates.Accepted or ApplicationStates.Enrolled => Tone.Success,
+        ApplicationStates.Declined => Tone.Danger,
+        _ => Tone.Warning,
+    };
+}

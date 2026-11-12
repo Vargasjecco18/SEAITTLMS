@@ -24,11 +24,14 @@
                     }
                 </select>
             </label>
+            @if (!ReadOnly)
+            {
             <form class="capacity" @onsubmit="SaveCapacityAsync">
                 <label for="sec-capacity">Students in one section (the limit)</label>
                 <input id="sec-capacity" type="number" class="ghost narrow limit-box" min="1" max="100" @bind="capacity" />
                 <Button Type="submit" Small="true" Variant="ButtonVariant.Secondary" IconName="save" Disabled="Busy">Save limit</Button>
             </form>
+            }
         </div>
 
         @if (StrandsShown.Count == 0)
@@ -60,13 +63,16 @@
                                         <span><Icon Name="users" Size="14" /> @(row.Students == 1 ? "1 student" : $"{row.Students} students")</span>
                                     </span>
                                 </span>
+                                @if (!ReadOnly)
+                                {
                                 <button type="button" class="card-delete" title="@($"Delete {row.Label}")" aria-label="@($"Delete {row.Label}")" @onclick="() => OpenDelete(row)" @onclick:stopPropagation="true">
                                     <Icon Name="trash-2" Size="16" />
                                 </button>
+                                }
                                 <span class="card-chevron" aria-hidden="true"><Icon Name="chevron-right" Size="20" /></span>
                             </article>
                         }
-                        else
+                        else if (!ReadOnly)
                         {
                             <button type="button" class="section-card add-card" data-add="@($"{Grade}-{strand.Code}-{name}")" disabled="@Busy" @onclick="() => AddAsync(strand, name)">
                                 <span class="card-icon add-icon"><Icon Name="plus" Size="26" /></span>
@@ -97,7 +103,7 @@
     }
 </div>
 
-<SectionDialog Section="dialogSection" OnClose="CloseDialogAsync" />
+<SectionDialog Section="dialogSection" ReadOnly="ReadOnly" OnClose="CloseDialogAsync" />
 
 <Modal Open="deleting is not null" Title="Delete this section?" OnClose="CloseDelete">
     @if (deleting is not null)
@@ -114,6 +120,12 @@
 @code {
     /// <summary>What is typed in the search box of the page.</summary>
     [Parameter] public string? Search { get; set; }
+
+    /// <summary>Only look: no limit to save, no section to add or delete, no adviser to choose (the registrar's and the admission office's page).</summary>
+    [Parameter] public bool ReadOnly { get; set; }
+
+    /// <summary>11 or 12: only the sections of that grade level (the admission office of Grade 11 sees Grade 11). Empty: both.</summary>
+    [Parameter] public int? GradeScope { get; set; }
 
     private IReadOnlyList<SectionRow>? rows;
     private SetupLookups? lookups;
@@ -137,7 +149,12 @@
 
     protected override void OnParametersSet()
     {
-        if (InitialGrade != askedGrade)
+        if (GradeScope is 11 or 12)
+        {
+            gradeTab = GradeScope.ToString()!;
+        }
+
+        if (InitialGrade != askedGrade && GradeScope is null)
         {
             askedGrade = InitialGrade;
             if (InitialGrade is 11 or 12)
@@ -169,11 +186,16 @@
 
     private IReadOnlyList<SectionRow> YearRows => rows is null ? [] : [.. rows.Where(r => r.SchoolYearId == yearId)];
 
-    private IReadOnlyList<PillTabs.Tab> ClassTabs =>
-    [
-        new("11", "Grade 11", "graduation-cap", YearRows.Count(r => r.GradeLevel == 11)),
-        new("12", "Grade 12", "graduation-cap", YearRows.Count(r => r.GradeLevel == 12)),
-    ];
+    private IReadOnlyList<PillTabs.Tab> ClassTabs => GradeScope switch
+    {
+        11 => [new("11", "Grade 11", "graduation-cap", YearRows.Count(r => r.GradeLevel == 11))],
+        12 => [new("12", "Grade 12", "graduation-cap", YearRows.Count(r => r.GradeLevel == 12))],
+        _ =>
+        [
+            new("11", "Grade 11", "graduation-cap", YearRows.Count(r => r.GradeLevel == 11)),
+            new("12", "Grade 12", "graduation-cap", YearRows.Count(r => r.GradeLevel == 12)),
+        ],
+    };
 
     private bool Matches(SectionRow r) => string.IsNullOrWhiteSpace(Search)
         || r.Label.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase) || (r.Adviser?.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false);
@@ -201,7 +223,7 @@
 
     private SectionRow? RowOf(StrandChoice strand, string name) => YearRows.FirstOrDefault(r => r.StrandId == strand.Id && r.GradeLevel == Grade && r.Name == name);
 
-    private IReadOnlyList<SectionRow> PastRows => rows is null ? [] : [.. rows.Where(r => !ActiveYearIds.Contains(r.SchoolYearId)).OrderByDescending(r => r.SchoolYear).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name)];
+    private IReadOnlyList<SectionRow> PastRows => rows is null ? [] : [.. rows.Where(r => !ActiveYearIds.Contains(r.SchoolYearId) && (GradeScope is null || r.GradeLevel == GradeScope)).OrderByDescending(r => r.SchoolYear).ThenBy(r => r.GradeLevel).ThenBy(r => r.StrandCode).ThenBy(r => r.Name)];
 
     private int IndexOf(StrandChoice strand) => Math.Max(0, (lookups?.Strands ?? []).OrderBy(s => s.Track).ThenBy(s => s.Code).ToList().FindIndex(s => s.Id == strand.Id));
 

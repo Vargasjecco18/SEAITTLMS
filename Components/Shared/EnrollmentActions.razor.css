@@ -118,3 +118,8 @@
 .account .mono {
     font-family: var(--font-mono, ui-monospace, monospace);
 }
+
+.act:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

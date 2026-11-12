@@ -13,7 +13,7 @@ public sealed record NotEnrolledPage(TermRef? Term, IReadOnlyList<NotEnrolledRow
 
 /// <summary>
 /// The students who are not enrolled for a term: active students with no enrollment (status Enrolled) in it. The term is the
-/// next term when there is one, otherwise the current term (see <see cref="TermLookup.TargetAsync"/>). The registrar's
+/// current term (round 40: it is no longer about the next term). The registrar's
 /// dashboard and the administrator's school setup both show this list; it is read-only.
 /// </summary>
 public static class NotEnrolledList
@@ -23,7 +23,7 @@ public static class NotEnrolledList
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var term = await TermLookup.TargetAsync(db, ct);
+        var term = await TermLookup.CurrentAsync(db, ct);
         if (term is null)
         {
             return new NotEnrolledPage(null, [], 0, 1, pageSize);
@@ -73,7 +73,7 @@ public static class NotEnrolledList
     /// <summary>How many students are not enrolled for the term the list is about.</summary>
     public static async Task<(TermRef? Term, int Count)> CountAsync(AppDbContext db, CancellationToken ct = default)
     {
-        var term = await TermLookup.TargetAsync(db, ct);
+        var term = await TermLookup.CurrentAsync(db, ct);
         if (term is null)
         {
             return (null, 0);

@@ -1,0 +1,174 @@
+@page "/admission/applications"
+@attribute [Authorize(Roles = AppRoles.Admission)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject ApplicationService Service
+
+<PageTitle>Applications · SEAITT Legazpi LMS</PageTitle>
+<AutoRefresh Seconds="60" />
+
+<PageHeader Title="Student applications" IconName="inbox" />
+
+<Notice Message="@message" IsError="messageIsError" OnDismiss="() => message = null" />
+
+@* The applications of the students who want to study at the school (Grade 11). Press Info to read an application and open the papers; Accept sends the student to the registrar, who enrolls them. *@
+<PillTabs Items="Tabs" Selected="@state" SelectedChanged="ChangeStateAsync" Label="Applications by state" />
+
+<Card>
+    <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+        <SearchField Id="app-search" @bind-Value="searchText" Placeholder="Name, reference, LRN or email" AriaLabel="Search the applications" OnClear="SearchAsync" />
+    </form>
+
+    @if (rows is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (rows.Count == 0)
+    {
+        <EmptyState IconName="inbox" Title="No application here">
+            <p>@(state == "" && string.IsNullOrWhiteSpace(searchText) ? "When a student sends an application from the home page, it is listed here." : "Try another part or another search.")</p>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table" aria-label="Student applications">
+                <thead>
+                    <tr>
+                        <th scope="col">Applicant</th>
+                        <th scope="col">Track · Strand</th>
+                        <th scope="col">Sent</th>
+                        <th scope="col">Will come</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        var r = row;
+                        <tr data-app="@r.Reference">
+                            <td>
+                                <strong>@r.Name</strong>
+                                <span class="sub">@r.Reference@(r.Lrn is null ? "" : " · LRN " + r.Lrn)</span>
+                            </td>
+                            <td>@r.Track · @r.Strand<span class="sub">Grade @r.GradeLevel</span></td>
+                            <td>@PhilippineTime.FormatDate(r.CreatedAtUtc)</td>
+                            <td>@(r.VisitAtUtc is { } visit ? PhilippineTime.FormatDateTime(visit) : "—")</td>
+                            <td><Badge Tone="@ToneOf(r.Status)">@ApplicationStates.Display(r.Status)</Badge></td>
+                            <td class="col-actions">
+                                <div class="row-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="info" Title="@($"Read the application of {r.Name}")" OnClick="() => OpenAsync(r.Id)">Info</Button>
+                                    @if (r.Status == ApplicationStates.Pending)
+                                    {
+                                        <Button Small="true" IconName="circle-check" Disabled="busy" OnClick="() => AcceptAsync(r)">Accept</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="circle-x" Disabled="busy" OnClick="() => OpenAsync(r.Id)">Decline</Button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Card>
+
+<ApplicationDialog Detail="detail" CanDecide="true" OnDecide="DecideAsync" OnClose="CloseDetail" />
+
+@code {
+    [SupplyParameterFromQuery(Name = "state")] private string? StateQuery { get; set; }
+
+    private int userId;
+    private string state = "";
+    private string searchText = "";
+    private IReadOnlyList<ApplicationRow>? rows;
+    private ApplicationCounts counts = new(0, 0, 0, 0, 0);
+    private ApplicationDetail? detail;
+    private string? message;
+    private bool messageIsError;
+    private bool busy;
+
+    private IReadOnlyList<PillTabs.Tab> Tabs =>
+    [
+        new("", "All", "inbox", counts.Pending + counts.Accepted + counts.Declined + counts.Enrolled),
+        new(ApplicationStates.Pending, "Pending", "clock", counts.Pending),
+        new(ApplicationStates.Accepted, "Accepted", "circle-check", counts.Accepted),
+        new(ApplicationStates.Declined, "Declined", "circle-x", counts.Declined),
+        new(ApplicationStates.Enrolled, "Enrolled", "graduation-cap", counts.Enrolled),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = (await Me.GetAsync())?.UserId ?? 0;
+        state = StateQuery is { } wanted && ApplicationStates.All.Contains(wanted) ? wanted : "";
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        counts = await Service.GetCountsAsync(userId);
+        rows = await Service.ListAsync(userId, string.IsNullOrEmpty(state) ? null : state, searchText);
+    }
+
+    private async Task ChangeStateAsync(string? key)
+    {
+        state = key ?? "";
+        await LoadAsync();
+    }
+
+    private Task SearchAsync() => LoadAsync();
+
+    private async Task OpenAsync(int id) => detail = await Service.GetAsync(userId, id);
+
+    private void CloseDetail() => detail = null;
+
+    private async Task AcceptAsync(ApplicationRow row)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Service.DecideAsync(userId, row.Id, true, null);
+            messageIsError = !result.Succeeded;
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    /// <summary>Accept or decline from the box of the application. Gives back what went wrong; nothing means it was saved (the box closes).</summary>
+    private async Task<string?> DecideAsync(bool accept, string? note)
+    {
+        if (detail is null)
+        {
+            return null;
+        }
+
+        var result = await Service.DecideAsync(userId, detail.Id, accept, note);
+        if (!result.Succeeded)
+        {
+            return string.Join(" ", result.Errors);
+        }
+
+        detail = null;
+        messageIsError = false;
+        message = result.Message;
+        await LoadAsync();
+        return null;
+    }
+
+    private static Tone ToneOf(string status) => status switch
+    {
+        ApplicationStates.Accepted or ApplicationStates.Enrolled => Tone.Success,
+        ApplicationStates.Declined => Tone.Danger,
+        _ => Tone.Warning,
+    };
+}

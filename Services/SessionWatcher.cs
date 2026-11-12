@@ -5,14 +5,14 @@ namespace SEAITT_LMS.Services;
 /// <summary>
 /// Knows which sign-ins still have a page open. Every page of the system is held open by a live connection to the server (a "circuit"); when the
 /// browser is closed, or the person goes back out of the system, that connection ends. When a sign-in has had no connection for
-/// <see cref="Grace"/> (long enough for a refresh or for moving from one page to the next), the sign-in is over: the person has to log in again,
+/// <see cref="Grace"/> (10 seconds: long enough for a refresh or for moving from one page to the next, no countdown is shown), the sign-in is over: the person has to log in again,
 /// and is offline. It lives as long as the app and keeps nothing on disk (the account's open sign-in is also cleared in the database, see
 /// <see cref="Auth.AuthService.EndSessionAsync"/>).
 /// </summary>
 public sealed class SessionWatcher(TimeProvider clock, PresenceService presence)
 {
     /// <summary>How long a sign-in may be without any page before it is ended.</summary>
-    public static readonly TimeSpan Grace = TimeSpan.FromSeconds(30);
+    public static readonly TimeSpan Grace = TimeSpan.FromSeconds(10);
 
     private sealed class Entry(int userId)
     {

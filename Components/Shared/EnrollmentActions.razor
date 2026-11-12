@@ -8,11 +8,11 @@
 @* The registrar's buttons for one line of the list of enrollments: Account (the sign-in details of the student), Edit (the name, the term, the course of study
    and the section) and Drop out. Each opens a box over the list. It is its own live island, so it works inside a list that is otherwise plain. *@
 <div class="buttons">
+    @* Info (at the left of Account): the application the student sent and the papers they uploaded, in a box in the middle of the screen. *@
+    <ApplicationInfoButton StudentId="StudentId" StudentName="@StudentName" />
     <button type="button" class="act" @onclick="OpenAccountAsync"><Icon Name="key-round" Size="14" /> Account</button>
-    @if (Status == "Enrolled")
-    {
-        <button type="button" class="act" @onclick="OpenEditAsync"><Icon Name="pencil" Size="14" /> Edit</button>
-    }
+    @* Edit is at the right of Account (it is off for a line that is not an enrolled one). *@
+    <button type="button" class="act" disabled="@(Status != "Enrolled")" title="@(Status == "Enrolled" ? "Edit the enrollment" : "Only an enrolled student can be edited")" @onclick="OpenEditAsync"><Icon Name="pencil" Size="14" /> Edit</button>
     @if (StudentActive)
     {
         <button type="button" class="act danger" @onclick="OpenDrop"><Icon Name="user-x" Size="14" /> Drop out</button>

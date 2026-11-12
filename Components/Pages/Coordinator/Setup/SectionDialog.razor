@@ -9,7 +9,7 @@
             <p class="saved-line" role="status" aria-live="polite">@(Message ?? "")</p>
 
             <Field For="sd-adviser" Label="Adviser" Hint="@($"Only the teachers of the strand {Section.StrandCode} can be the adviser.")">
-                <select id="sd-adviser" @key="@($"adv-{Section.Id}-{stamp}")" @onchange="SaveAdviserAsync">
+                <select id="sd-adviser" @key="@($"adv-{Section.Id}-{stamp}")" disabled="@ReadOnly" @onchange="SaveAdviserAsync">
                     <option value="0" selected="@(adviserId == 0)">No adviser</option>
                     @foreach (var teacher in choices)
                     {
@@ -56,6 +56,9 @@
 @code {
     /// <summary>The section to show; null keeps the box closed.</summary>
     [Parameter] public SectionRow? Section { get; set; }
+
+    /// <summary>Only look (the registrar and the admission office): the adviser can't be changed.</summary>
+    [Parameter] public bool ReadOnly { get; set; }
 
     [Parameter] public EventCallback OnClose { get; set; }
 

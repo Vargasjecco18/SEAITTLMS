@@ -37,8 +37,14 @@
 @media (min-width: 900px) {
     .quad {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: start;
+        align-items: stretch;
     }
+}
+
+/* Not enrolled and Latest enrollments are the same size: each card fills its place in the row. */
+.quad > ::deep .card,
+.quad > ::deep section {
+    height: 100%;
 }
 
 /* The little bar charts */

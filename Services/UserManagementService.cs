@@ -274,6 +274,7 @@ public sealed class UserManagementService(
         AppRoles.GuidanceCounselor => ["Dashboard", "Referrals", "Calendar", "Analytics", "Users", "Groups"],
         AppRoles.AcademicCoordinator => ["Dashboard", "Academic setup", "Teacher evaluation", "Announcements", "Analytics", "Users", "Groups"],
         AppRoles.AcademicProvider => ["Dashboard", "Course library", "Tracking", "Calendar", "Analytics", "Users", "Groups"],
+        AppRoles.Admission => ["Dashboard", "Applications", "Class sections", "Student's Accounts", "Calendar", "Analytics", "Users", "Groups"],
         _ => [],
     };
 
@@ -541,7 +542,7 @@ public sealed class UserManagementService(
     public const string NonTeachingRole = "NonTeaching";
 
     /// <summary>The roles of the non-teaching staff (the administrator is not in the list: the school has one and it is not managed here).</summary>
-    public static readonly string[] NonTeachingRoles = [AppRoles.Registrar, AppRoles.GuidanceCounselor, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider];
+    public static readonly string[] NonTeachingRoles = [AppRoles.Registrar, AppRoles.GuidanceCounselor, AppRoles.AcademicCoordinator, AppRoles.AcademicProvider, AppRoles.Admission];
 
     /// <summary>How the list is ordered: by name (the default), the newest accounts first, or the oldest first.</summary>
     public const string SortName = "name";
@@ -679,6 +680,9 @@ public sealed class UserManagementService(
             case AppRoles.AcademicProvider:
                 return await StaffPageAsync(db.AcademicProviders.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
+            case AppRoles.Admission:
+                return await StaffPageAsync(db.AdmissionOfficers.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
+
             case AppRoles.Admin:
                 return await StaffPageAsync(db.Administrators.AsNoTracking(), role, tokens, active, sort, page, pageSize, ct);
 
@@ -741,6 +745,7 @@ public sealed class UserManagementService(
         all.AddRange(await One(db.GuidanceCounselors, AppRoles.GuidanceCounselor));
         all.AddRange(await One(db.AcademicCoordinators, AppRoles.AcademicCoordinator));
         all.AddRange(await One(db.AcademicProviders, AppRoles.AcademicProvider));
+        all.AddRange(await One(db.AdmissionOfficers, AppRoles.Admission));
 
         IEnumerable<UserListItem> ordered = sort switch
         {
@@ -1109,6 +1114,7 @@ public sealed class UserManagementService(
         AppRoles.GuidanceCounselor => await db.GuidanceCounselors.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.AcademicCoordinator => await db.AcademicCoordinators.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.AcademicProvider => await db.AcademicProviders.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
+        AppRoles.Admission => await db.AdmissionOfficers.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         AppRoles.Admin => await db.Administrators.AnyAsync(p => p.EmployeeNumber == employeeNumber && p.UserId != user.Id, ct),
         _ => false,
     };
@@ -1158,6 +1164,7 @@ internal static class UserQueryExtensions
         .Include(u => u.GuidanceCounselor)
         .Include(u => u.AcademicCoordinator)
         .Include(u => u.AcademicProvider)
+        .Include(u => u.AdmissionOfficer)
         .Include(u => u.Registrar)
         .Include(u => u.Teacher)
         .Include(u => u.Student);

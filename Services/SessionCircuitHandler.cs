@@ -47,12 +47,12 @@ public sealed class SessionCircuitHandler(CurrentUser me, SessionWatcher watcher
     public override Task OnCircuitClosedAsync(Circuit circuit, CancellationToken cancellationToken) => OnConnectionDownAsync(circuit, cancellationToken);
 }
 
-/// <summary>Every few seconds: ends the sign-ins that have had no page for 30 seconds (see <see cref="SessionWatcher"/>).</summary>
+/// <summary>Every two seconds: ends the sign-ins that have had no page for 10 seconds (see <see cref="SessionWatcher"/>).</summary>
 public sealed class SessionWatcherWorker(SessionWatcher watcher, IServiceScopeFactory scopes, ILogger<SessionWatcherWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))

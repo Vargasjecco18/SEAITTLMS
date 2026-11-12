@@ -170,6 +170,7 @@
     private IReadOnlyList<CalendarEvent> events = [];
     private bool isTeacher;
     private bool isStudent;
+    private bool isAdmission;
     private int? editItemId;
     private int? workItemId;
     private DateOnly? editDay;
@@ -182,7 +183,8 @@
 
     /// <summary>What the legend says: the students and the teachers have the work; the staff only the announcements, the holidays and their own events.</summary>
     private IReadOnlyList<string> LegendKinds => isStudent || isTeacher
-        ? [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal]
+        ? [ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Exam, ItemKinds.Other, CalendarKinds.Summative, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal]
+        : isAdmission ? [CalendarKinds.Visit, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal]
         : [CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal];
 
     private IEnumerable<DateOnly> Days => Enumerable.Range(0, rangeDays).Select(n => rangeStart.AddDays(n));
@@ -213,6 +215,7 @@
         var user = await Me.GetAsync();
         isTeacher = user?.Role == AppRoles.Teacher;
         isStudent = user?.Role == AppRoles.Student;
+        isAdmission = user?.Role == AppRoles.Admission;
         events = user is null ? [] : await Events.GetEventsAsync(user, rangeStart, rangeStart.AddDays(rangeDays - 1));
 
         editItemId = isTeacher && int.TryParse(EditText, out var itemId) && itemId > 0 ? itemId : null;
@@ -239,7 +242,7 @@
     /// <summary>"2 assignments", "1 quiz", "1 event" ... for the day, in the order of the legend.</summary>
     private static IEnumerable<DaySummary> Summary(IReadOnlyList<CalendarEvent> onDay)
     {
-        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other, CalendarKinds.Summative, CalendarKinds.Module, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal })
+        foreach (var kind in new[] { ItemKinds.Activity, ItemKinds.Quiz, ItemKinds.TaskPerformance, ItemKinds.Seatwork, ItemKinds.Exam, ItemKinds.Other, CalendarKinds.Summative, CalendarKinds.Visit, CalendarKinds.Announcement, CalendarKinds.Holiday, CalendarKinds.Personal })
         {
             var these = onDay.Where(e => e.Kind == kind).ToList();
             if (these.Count == 0)
@@ -260,6 +263,7 @@
                 CalendarKinds.Module => these.Count == 1 ? "handout" : "handouts",
                 CalendarKinds.Announcement => these.Count == 1 ? "announcement" : "announcements",
                 CalendarKinds.Holiday => these.Count == 1 ? "holiday" : "holidays",
+                CalendarKinds.Visit => these.Count == 1 ? "visit" : "visits",
                 _ => these.Count == 1 ? "event" : "events",
             };
             yield return new DaySummary(kind, $"{these.Count} {name}", these.Any(e => e.Overdue));
