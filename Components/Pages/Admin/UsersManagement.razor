@@ -13,9 +13,12 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 @inject PresenceService Presence
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>@tab.Title · Users Management · SEAITT Legazpi LMS</PageTitle>
+
+<span data-side-rail hidden></span>
 
 <PageHeader Title="Users Management" IconName="users">
     @if (tab.Role == AppRoles.Student)
@@ -78,12 +81,11 @@
         <Field For="u-status" Label="Status">
             <select id="u-status" @bind="statusFilter" @bind:after="StatusChangedAsync">
                 <option value="">All statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="active">Activated</option>
+                <option value="inactive">Deactivated</option>
                 @if (tab.Role == AppRoles.Student)
                 {
-                    <option value="dropped">Dropped out</option>
-                    <option value="graduated">Graduated</option>
+                    <option value="archived">Archived</option>
                 }
             </select>
         </Field>
@@ -210,6 +212,8 @@
                                         <Button Small="true" Variant="ButtonVariant.Secondary" IconName="book-open" Title="@($"Give or take away the courses of {user.FullName}")"
                                                 OnClick="() => OpenTeachingAsync(user)">Assign courses</Button>
                                     }
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="key-round" Title="@($"The email and the password of {user.FullName}")"
+                                            OnClick="() => OpenSignInAsync(user)">Sign-in details</Button>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" Title="@($"Edit {user.FullName}")"
                                             OnClick="() => OpenEditAsync(user)">Edit</Button>
                                     @if (user.Role == AppRoles.Student && user.StudentStatus == StudentStatus.Active)
@@ -239,6 +243,57 @@
     }
 </Card>
 
+@* ===== The sign-in details of a row ===== *@
+<Modal Open="signInFor is not null" Title="@($"Sign-in details · {signInFor?.FullName}")" Centered="true" OnClose="CloseSignIn">
+    @if (signInFor is not null)
+    {
+        @if (signIn is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else
+        {
+            <dl class="account">
+                <div><dt>Name</dt><dd>@signIn.FullName</dd></div>
+                <div><dt>Role</dt><dd>@signIn.Role</dd></div>
+                <div><dt>Email</dt><dd class="mono" id="signin-email">@signIn.Email</dd></div>
+                <div>
+                    <dt>Password</dt>
+                    @if (signIn.Password is { } first)
+                    {
+                        <dd class="mono" id="signin-password">@first</dd>
+                    }
+                    else
+                    {
+                        <dd class="muted" id="signin-password">Not shown</dd>
+                    }
+                </div>
+            </dl>
+            @if (signIn.Password is null)
+            {
+                <p class="hint">The person changed the password, or it was set again in Edit, so nobody can read it. Set a new one in Edit to give it to the person.</p>
+            }
+            else
+            {
+                <p class="hint">This is the first password, made from the last name and the number of the person. Tell it to them and ask them to keep it private.</p>
+            }
+
+            @if (!signIn.IsActive)
+            {
+                <p class="hint">This account is deactivated, so the person can't sign in.</p>
+            }
+
+            <div class="modal-actions">
+                @if (signIn.Password is not null)
+                {
+                    <Button Variant="ButtonVariant.Secondary" IconName="@(signInCopied ? "circle-check" : "file-text")" OnClick="CopySignInAsync">@(signInCopied ? "Copied" : "Copy the login")</Button>
+                }
+                <Button OnClick="CloseSignIn">Close</Button>
+            </div>
+        }
+    }
+</Modal>
+
 @* ===== Edit ===== *@
 <Modal Open="edit is not null" Title="@($"Edit {EditTitle}")" OnClose="CloseEdit">
     @if (edit is not null)
@@ -250,22 +305,19 @@
 
             <div class="two">
                 <Field For="e-first" Label="First name" Required="true">
-                    <InputText id="e-first" @bind-Value="edit.FirstName" autocomplete="off" />
+                    <InputText id="e-first" @bind-Value="edit.FirstName" autocomplete="off" data-letters />
                     <ValidationMessage For="() => edit.FirstName" />
                 </Field>
                 <Field For="e-middle" Label="Middle name">
-                    <InputText id="e-middle" @bind-Value="edit.MiddleName" autocomplete="off" />
+                    <InputText id="e-middle" @bind-Value="edit.MiddleName" autocomplete="off" data-letters />
                 </Field>
             </div>
             <div class="two">
                 <Field For="e-last" Label="Last name" Required="true">
-                    <InputText id="e-last" @bind-Value="edit.LastName" autocomplete="off" />
+                    <InputText id="e-last" @bind-Value="edit.LastName" autocomplete="off" data-letters />
                     <ValidationMessage For="() => edit.LastName" />
                 </Field>
-                <Field For="e-ext" Label="Name extension" Hint="Jr., III, ...">
-                    <InputText id="e-ext" @bind-Value="edit.NameExtension" autocomplete="off" />
-                    <ValidationMessage For="() => edit.NameExtension" />
-                </Field>
+                <Field For="e-ext" Label="Suffix" Hint="Jr., Sr., I to V. Others lets you type another one."><SelectOther Id="e-ext" AriaLabel="Suffix" Choices="PhilippineAddresses.SuffixChoices()" Placeholder="None" MaxLength="10" @bind-Value="edit.NameExtension" /></Field>
             </div>
 
             <Field For="e-email" Label="Email" Required="true" Hint="This is what they sign in with.">
@@ -298,14 +350,14 @@
 
             <Field For="e-status" Label="Status" Hint="@EditStatusHint">
                 <select id="e-status" disabled="@(edit.UserId == currentUserId)" value="@editStatus" @onchange="SetEditStatus">
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="Active">Activated</option>
+                    <option value="Inactive">Deactivated</option>
                     @if (edit.Role == AppRoles.Student)
                     {
-                        <option value="DroppedOut">Dropped out</option>
+                        <option value="DroppedOut">Archived (dropped out)</option>
                         @if (edit.StudentStatus == StudentStatus.Graduated)
                         {
-                            <option value="Graduated">Graduated</option>
+                            <option value="Graduated">Archived (graduated)</option>
                         }
                     }
                 </select>
@@ -332,37 +384,46 @@
 
             <div class="two">
                 <Field For="s-first" Label="First name" Required="true">
-                    <InputText id="s-first" @bind-Value="newStudent.FirstName" autocomplete="off" />
+                    <InputText id="s-first" @bind-Value="newStudent.FirstName" autocomplete="off" data-letters />
                     <ValidationMessage For="() => newStudent.FirstName" />
                 </Field>
                 <Field For="s-middle" Label="Middle name">
-                    <InputText id="s-middle" @bind-Value="newStudent.MiddleName" autocomplete="off" />
+                    <InputText id="s-middle" @bind-Value="newStudent.MiddleName" autocomplete="off" data-letters />
                 </Field>
             </div>
             <div class="two">
                 <Field For="s-last" Label="Last name" Required="true">
-                    <InputText id="s-last" @bind-Value="newStudent.LastName" autocomplete="off" />
+                    <input id="s-last" @bind="newStudent.LastName" @bind:event="oninput" autocomplete="off" data-letters />
                     <ValidationMessage For="() => newStudent.LastName" />
                 </Field>
-                <Field For="s-ext" Label="Name extension" Hint="Jr., III, ...">
-                    <InputText id="s-ext" @bind-Value="newStudent.NameExtension" autocomplete="off" />
-                </Field>
+                <Field For="s-ext" Label="Suffix" Hint="Jr., Sr., I to V. Others lets you type another one."><SelectOther Id="s-ext" AriaLabel="Suffix" Choices="PhilippineAddresses.SuffixChoices()" Placeholder="None" MaxLength="10" @bind-Value="newStudent.NameExtension" /></Field>
             </div>
             <div class="two">
                 <Field For="s-lrn" Label="LRN" Required="true" Hint="12 digits.">
-                    <InputText id="s-lrn" @bind-Value="newStudent.Lrn" inputmode="numeric" maxlength="12" autocomplete="off" />
+                    <input id="s-lrn" @bind="newStudent.Lrn" @bind:event="oninput" inputmode="numeric" maxlength="12" autocomplete="off" data-digits />
                     <ValidationMessage For="() => newStudent.Lrn" />
                 </Field>
                 <Field For="s-phone" Label="Phone number" Hint="Like 09171234567">
                     <InputText id="s-phone" @bind-Value="newStudent.PhoneNumber" inputmode="tel" autocomplete="off" />
                 </Field>
             </div>
-            <Field For="s-email" Label="Email" Hint="Leave empty to make it from the last name and the LRN (like vargas.111111@legazpi.seaitt.edu.ph).">
-                <InputText id="s-email" type="email" @bind-Value="newStudent.Email" autocomplete="off" />
-            </Field>
-            <Field For="s-password" Label="First password" Hint="At least 8 characters. Leave empty to make it from the last name and the LRN (like vargas111111).">
-                <InputText id="s-password" type="password" @bind-Value="newStudent.Password" autocomplete="new-password" />
-            </Field>
+            @* The email and the first password are made by the system from the last name and the end of the LRN, like the registrar's form does. *@
+            <section class="signin" aria-label="Sign-in details">
+                <h4><Icon Name="key-round" Size="16" /> Sign-in details · student</h4>
+                @if (Management.PreviewStudentLogin(newStudent.LastName, newStudent.Lrn) is { } studentLogin)
+                {
+                    <dl class="preview">
+                        <div><dt>Role</dt><dd>Student</dd></div>
+                        <div><dt>Email</dt><dd class="mono" id="s-preview-email">@studentLogin.Email</dd></div>
+                        <div><dt>First password</dt><dd class="mono" id="s-preview-password">@studentLogin.Password</dd></div>
+                    </dl>
+                    <p class="hint">Made from the last name and the last 6 digits of the LRN. They are created when you press the button below.</p>
+                }
+                else
+                {
+                    <p class="muted">Type the last name and the 12 digits of the LRN and the email and the password appear here.</p>
+                }
+            </section>
 
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseAddStudent">Cancel</Button>
@@ -397,31 +458,27 @@
     {
         @if (tab.Role == UserManagementService.NonTeachingRole)
         {
-            @* Only the roles the school can still have: the roles of which it has one already are not in the list. The roles the administrator
-               made up (Add role) are in the list too. This part is not inside the form below, so Enter in the name of a new role does not send the form. *@
+            @* The role is typed: the name of a role that was used before is picked from the list that opens (the usual roles and the ones made before). A name that is new makes a new role, and then the pages of
+               the role are ticked one by one. The first letter of the role starts the employee number (Admission: A-). This part is not inside the form below, so Enter here does not send the form. *@
             <div class="role-row">
-                <Field For="a-role" Label="Role" Required="true" Class="grow">
-                    <select id="a-role" value="@RoleChoice" @onchange="ChooseRole">
-                        @foreach (var staffRole in AvailableStaffRoles)
+                <Field For="a-role" Label="Name of the new role" Required="true" Class="grow" Hint="Type it, or pick a role that was used before from the list.">
+                    <input id="a-role" list="a-roles" maxlength="40" autocomplete="off" placeholder="Like Admission or Librarian" @bind="RoleText" @bind:event="oninput" />
+                    <datalist id="a-roles">
+                        @foreach (var roleName in RoleNames)
                         {
-                            <option value="@staffRole">@AppRoles.DisplayName(staffRole)</option>
+                            <option value="@roleName"></option>
                         }
-                        @foreach (var custom in customRoles)
-                        {
-                            <option value="custom:@custom.Id">@custom.Name</option>
-                        }
-                    </select>
+                    </datalist>
                 </Field>
-                <Button Variant="ButtonVariant.Secondary" IconName="plus" Small="true" Title="Make a new role" OnClick="OpenAddRole">Add role</Button>
                 @* A role the administrator made can be taken out of the list (the usual roles can't). *@
                 <Button Variant="ButtonVariant.Ghost" IconName="trash-2" Small="true" Disabled="@(add.CustomRoleId is null)"
-                        Title="@(add.CustomRoleId is null ? "Choose a role you made to remove it. The usual roles can't be removed." : "Remove this role from the list")" OnClick="AskRemoveRole">Remove role</Button>
+                        Title="@(add.CustomRoleId is null ? "Pick a role you made to remove it. The usual roles can't be removed." : "Remove this role from the list")" OnClick="AskRemoveRole">Remove role</Button>
             </div>
 
             @if (removingRole && add.CustomRoleId is { } removeId && customRoles.FirstOrDefault(c => c.Id == removeId) is { } removeRole)
             {
                 <section class="role-box" aria-label="Remove the role" data-remove-role>
-                    <p class="note-line">Remove the role <strong>@removeRole.Name</strong> from the list? The people who have it keep their account and the same pages: they are shown as <strong>@AppRoles.DisplayName(removeRole.BaseRole)</strong> from now on.</p>
+                    <p class="note-line">Remove the role <strong>@removeRole.Name</strong> from the list? The people who have it keep their account and the same pages. <strong>They are shown as staff with the pages of an academic provider's account</strong> from now on.</p>
                     <div class="role-actions">
                         <Button Variant="ButtonVariant.Ghost" OnClick="CancelRemoveRole">Keep it</Button>
                         <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="RemoveRoleAsync">Remove this role</Button>
@@ -429,35 +486,37 @@
                 </section>
             }
 
-            @if (addingRole)
+            @if (add.Role == AppRoles.Admission && add.CustomRoleId is null)
             {
-                <section class="role-box" aria-label="Add a role">
-                    @if (roleError is not null)
+                <Field For="a-grade" Label="Grade level" Required="true" Hint="An admission officer works for one grade level: the class sections and the students of that grade level.">
+                    <select id="a-grade" @bind="add.GradeLevel">
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </Field>
+            }
+
+            @if (RoleIsNew)
+            {
+                <fieldset class="page-picks" aria-label="The pages of the new role">
+                    <legend>What pages can the people of the role <strong>@roleText.Trim()</strong> open?</legend>
+                    <p class="muted small">Tick every page, one by one. They get their own dashboard and only the pages you tick.</p>
+                    @foreach (var group in StaffPages.All.GroupBy(p => p.Group))
                     {
-                        <p class="error" role="alert">@roleError</p>
-                    }
-                    <Field For="r-name" Label="Name of the new role" Required="true" Hint="Like Librarian or Assistant Registrar. Many people can have it.">
-                        <input id="r-name" maxlength="40" autocomplete="off" @bind="newRoleName" @bind:event="oninput" @onkeydown="RoleNameKeyAsync" />
-                    </Field>
-                    <fieldset class="page-picks">
-                        <legend>What pages can the people of this role open?</legend>
-                        @foreach (var area in UserManagementService.NonTeachingRoles)
+                        <p class="page-group">@group.Key</p>
+                        @foreach (var entry in group)
                         {
-                            var chosen = area;
-                            <label class="page-pick @(newRoleBase == chosen ? "on" : "")">
-                                <input type="radio" name="r-pages" value="@chosen" checked="@(newRoleBase == chosen)" @onchange="() => newRoleBase = chosen" />
+                            var key = entry.Key;
+                            <label class="page-pick @(newRolePages.Contains(key) ? "on" : "")">
+                                <input type="checkbox" name="r-pages" value="@key" checked="@newRolePages.Contains(key)" @onchange="e => TogglePage(key, e.Value is true)" />
                                 <span>
-                                    <strong>The pages of the @AppRoles.DisplayName(chosen).ToLowerInvariant()</strong>
-                                    <small>@string.Join(" · ", UserManagementService.PagesOf(chosen))</small>
+                                    <strong>@entry.Title</strong>
+                                    <small>@entry.Hint</small>
                                 </span>
                             </label>
                         }
-                    </fieldset>
-                    <div class="role-actions">
-                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAddRole">Cancel</Button>
-                        <Button IconName="plus" Disabled="@(busy || string.IsNullOrWhiteSpace(newRoleName))" OnClick="SaveRoleAsync">Add this role</Button>
-                    </div>
-                </section>
+                    }
+                </fieldset>
             }
         }
 
@@ -468,25 +527,23 @@
 
             <div class="two">
                 <Field For="a-first" Label="First name" Required="true">
-                    <InputText id="a-first" @bind-Value="add.FirstName" autocomplete="off" />
+                    <InputText id="a-first" @bind-Value="add.FirstName" autocomplete="off" data-letters />
                     <ValidationMessage For="() => add.FirstName" />
                 </Field>
                 <Field For="a-middle" Label="Middle name">
-                    <InputText id="a-middle" @bind-Value="add.MiddleName" autocomplete="off" />
+                    <InputText id="a-middle" @bind-Value="add.MiddleName" autocomplete="off" data-letters />
                 </Field>
             </div>
             <div class="two">
                 <Field For="a-last" Label="Last name" Required="true">
-                    <InputText id="a-last" @bind-Value="add.LastName" autocomplete="off" />
+                    <input id="a-last" @bind="add.LastName" @bind:event="oninput" autocomplete="off" data-letters />
                     <ValidationMessage For="() => add.LastName" />
                 </Field>
-                <Field For="a-ext" Label="Name extension" Hint="Jr., III, ...">
-                    <InputText id="a-ext" @bind-Value="add.NameExtension" autocomplete="off" />
-                </Field>
+                <Field For="a-ext" Label="Suffix" Hint="Jr., Sr., I to V. Others lets you type another one."><SelectOther Id="a-ext" AriaLabel="Suffix" Choices="PhilippineAddresses.SuffixChoices()" Placeholder="None" MaxLength="10" @bind-Value="add.NameExtension" /></Field>
             </div>
             <div class="two">
-                <Field For="a-emp" Label="Employee number" Required="true" Hint="Like T-014. The email and the password are made from the last name and its digits.">
-                    <InputText id="a-emp" @bind-Value="add.EmployeeNumber" maxlength="30" autocomplete="off" />
+                <Field For="a-emp" Label="Employee number" Required="true" Hint="@($"{(EmployeePrefix.Length > 0 ? EmployeePrefix : "T-")} is put by itself. Type the digits. The email and the password are made from the last name and the digits.")">
+                    <input id="a-emp" type="text" maxlength="30" autocomplete="off" @bind="EmployeeValue" @bind:event="oninput" />
                 </Field>
                 <Field For="a-phone" Label="Phone number" Hint="Like 09171234567">
                     <InputText id="a-phone" @bind-Value="add.PhoneNumber" inputmode="tel" autocomplete="off" />
@@ -494,16 +551,17 @@
             </div>
             <Field For="a-status" Label="Status" Hint="An inactive account can't sign in until it is made active.">
                 <select id="a-status" value="@(add.IsActive ? "Active" : "Inactive")" @onchange="SetAddStatus">
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="Active">Activated</option>
+                    <option value="Inactive">Deactivated</option>
                 </select>
             </Field>
             @* The email and the password are made by the system, like a student's: the last name and the digits of the employee number. *@
             <section class="signin" aria-label="Sign-in details">
-                <h4><Icon Name="key-round" Size="16" /> Sign-in details</h4>
+                <h4><Icon Name="key-round" Size="16" /> Sign-in details · @SignInRoleName</h4>
                 @if (Management.PreviewLogin(add.LastName, add.EmployeeNumber) is { } login)
                 {
                     <dl class="preview">
+                        <div><dt>Role</dt><dd id="a-preview-role">@SignInRoleName</dd></div>
                         <div><dt>Email</dt><dd class="mono" id="a-preview-email">@login.Email</dd></div>
                         <div><dt>First password</dt><dd class="mono" id="a-preview-password">@login.Password</dd></div>
                     </dl>
@@ -720,14 +778,13 @@
         : counts.GetValueOrDefault(t.Role);
 
     private string AddTitle => tab.Role == UserManagementService.NonTeachingRole
-        ? (add?.Role is { Length: > 0 } role ? $"Add {ChosenRoleName(role).ToLowerInvariant()}" : "Add staff")
+        ? (roleText.Trim().Length > 0 ? $"Add {SignInRoleName.ToLowerInvariant()}" : "Add staff")
         : $"Add {tab.Singular}";
 
     private static string StatusText(UserListItem user) => user.StudentStatus switch
     {
-        StudentStatus.DroppedOut => "Dropped out",
-        StudentStatus.Graduated => "Graduated",
-        _ => user.IsActive ? "Active" : "Inactive",
+        StudentStatus.DroppedOut or StudentStatus.Graduated => "Archived",
+        _ => user.IsActive ? "Activated" : "Deactivated",
     };
 
     private static Tone StatusTone(UserListItem user) => user.StudentStatus switch
@@ -738,10 +795,10 @@
     };
 
     private string EditStatusHint => edit is null ? "" : edit.UserId == currentUserId
-        ? "You can't make your own account inactive."
+        ? "You can't deactivate your own account."
         : edit.Role == AppRoles.Student
-            ? "An inactive account can't sign in. Dropped out: the student left school; the sign-in is off and the student is not in the list of graduating students."
-            : "An inactive account can't sign in.";
+            ? "A deactivated account can't sign in. Archived: the student left school or graduated; the sign-in is off and the records stay in Archive Accounts."
+            : "A deactivated account can't sign in.";
 
     private sealed class NewStaff
     {
@@ -758,6 +815,9 @@
         public string? NameExtension { get; set; }
 
         // (not asked: the system makes the email and the password of a teacher or a member of the staff)
+
+        /// <summary>The grade level of an admission officer (11 or 12).</summary>
+        public byte GradeLevel { get; set; } = 11;
         public string Email { get; set; } = "";
 
         public string? PhoneNumber { get; set; }
@@ -806,52 +866,103 @@
     private UserEdit? edit;
     private NewStaff? add;
 
-    // The roles made up by the administrator (Add role), and the little box to make a new one.
+    // The roles made up by the administrator, and the role that is typed in Add staff.
     private IReadOnlyList<CustomRole> customRoles = [];
-    private bool addingRole;
-    private string newRoleName = "";
-    private string? roleError;
-    private string newRoleBase = CustomRole.DefaultBaseRole;
+    private string roleText = "";
+    private readonly HashSet<string> newRolePages = ["calendar", "users", "groups"];
     private bool removingRole;
 
-    private string RoleChoice => add is null ? "" : add.CustomRoleId is { } id ? $"custom:{id}" : add.Role;
+    /// <summary>The names the list of the role box offers: the usual roles of the staff, and the roles made before.</summary>
+    private IEnumerable<string> RoleNames => AvailableStaffRoles.Select(AppRoles.DisplayName).Concat(customRoles.Select(c => c.Name));
 
-    private string ChosenRoleName(string role) => add?.CustomRoleId is { } id && customRoles.FirstOrDefault(c => c.Id == id) is { } custom ? custom.Name : AppRoles.DisplayName(role);
+    private static string? BuiltInOf(string text) => UserManagementService.NonTeachingRoles.FirstOrDefault(r =>
+        string.Equals(AppRoles.DisplayName(r), text.Trim(), StringComparison.OrdinalIgnoreCase) || string.Equals(r, text.Replace(" ", "").Trim(), StringComparison.OrdinalIgnoreCase));
 
-    private void ChooseRole(ChangeEventArgs e)
+    private CustomRole? CustomOf(string text) => customRoles.FirstOrDefault(c => string.Equals(c.Name, text.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The name typed is not a role that is there: it makes a new one, and its pages are ticked.</summary>
+    private bool RoleIsNew => roleText.Trim().Length > 0 && BuiltInOf(roleText) is null && CustomOf(roleText) is null;
+
+    /// <summary>What the Sign-in details say the person is: the role that was typed, or Teacher.</summary>
+    private string SignInRoleName => tab.Role == AppRoles.Teacher ? "Teacher"
+        : BuiltInOf(roleText) is { } built ? AppRoles.DisplayName(built) : roleText.Trim().Length > 0 ? roleText.Trim() : "Staff";
+
+    private string RoleText
     {
-        var value = e.Value?.ToString() ?? "";
+        get => roleText;
+        set
+        {
+            roleText = value ?? "";
+            removingRole = false;
+            ApplyRole();
+        }
+    }
+
+    /// <summary>The role that matches what was typed (a usual role, or one made before); a new name has no role yet. The employee number starts with the first letter of the role.</summary>
+    private void ApplyRole()
+    {
         if (add is null)
         {
             return;
         }
 
-        if (value.StartsWith("custom:", StringComparison.Ordinal) && int.TryParse(value["custom:".Length..], out var id) && customRoles.FirstOrDefault(c => c.Id == id) is { } custom)
+        if (BuiltInOf(roleText) is { } built)
         {
-            add.CustomRoleId = custom.Id;
+            add.Role = built;
+            add.CustomRoleId = null;
+        }
+        else if (CustomOf(roleText) is { } custom)
+        {
             add.Role = custom.BaseRole;
+            add.CustomRoleId = custom.Id;
         }
         else
         {
+            add.Role = CustomRole.DefaultBaseRole;
             add.CustomRoleId = null;
-            add.Role = value;
+        }
+
+        add.EmployeeNumber = WithPrefix(add.EmployeeNumber);
+    }
+
+    /// <summary>T- for a teacher; for the staff the first letter of the role and a dash (Admission: A-). Nothing until a role is typed.</summary>
+    private string EmployeePrefix => tab.Role == AppRoles.Teacher ? "T-"
+        : roleText.Trim().Length > 0 && char.IsLetter(roleText.Trim()[0]) ? char.ToUpperInvariant(roleText.Trim()[0]) + "-" : "";
+
+    private string WithPrefix(string? value)
+    {
+        var digits = System.Text.RegularExpressions.Regex.Replace((value ?? "").Trim(), "^[A-Za-z]-", "").TrimStart('-');
+        return EmployeePrefix + digits;
+    }
+
+    private string EmployeeValue
+    {
+        get => add?.EmployeeNumber ?? "";
+        set
+        {
+            if (add is not null)
+            {
+                add.EmployeeNumber = WithPrefix(value);
+            }
         }
     }
 
-    private void OpenAddRole()
+    private void TogglePage(string key, bool on)
     {
-        roleError = null;
-        newRoleName = "";
-        newRoleBase = CustomRole.DefaultBaseRole;
-        removingRole = false;
-        addingRole = true;
+        if (on)
+        {
+            newRolePages.Add(key);
+        }
+        else
+        {
+            newRolePages.Remove(key);
+        }
     }
 
     private void AskRemoveRole()
     {
         if (add?.CustomRoleId is not null)
         {
-            addingRole = false;
             removingRole = true;
         }
     }
@@ -876,7 +987,8 @@
                 message = result.Message;
                 customRoles = await Management.ListCustomRolesAsync();
                 add.CustomRoleId = null;
-                add.Role = AvailableStaffRoles.FirstOrDefault() ?? AppRoles.AcademicProvider;
+                roleText = "";
+                add.Role = CustomRole.DefaultBaseRole;
                 await LoadAsync();
             }
         }
@@ -886,50 +998,30 @@
         }
     }
 
-    private void CloseAddRole()
+    // ---------- the sign-in details of a row
+    private UserListItem? signInFor;
+    private UserManagementService.SignInDetails? signIn;
+    private bool signInCopied;
+
+    private async Task OpenSignInAsync(UserListItem user)
     {
-        addingRole = false;
-        roleError = null;
+        signInFor = user;
+        signIn = null;
+        signInCopied = false;
+        signIn = await Management.GetSignInDetailsAsync(user.UserId, currentUserId);
     }
 
-    private async Task RoleNameKeyAsync(KeyboardEventArgs e)
+    private void CloseSignIn()
     {
-        if (e.Key == "Enter")
-        {
-            await SaveRoleAsync();
-        }
+        signInFor = null;
+        signIn = null;
     }
 
-    private async Task SaveRoleAsync()
+    private async Task CopySignInAsync()
     {
-        if (busy || add is null)
+        if (signIn is not null)
         {
-            return;
-        }
-
-        busy = true;
-        try
-        {
-            var result = await Management.AddRoleAsync(newRoleName, newRoleBase, currentUserId);
-            if (!result.Succeeded)
-            {
-                roleError = result.Errors.FirstOrDefault() ?? "The role could not be added.";
-                return;
-            }
-
-            customRoles = await Management.ListCustomRolesAsync();
-            if (result.Id is int id && customRoles.FirstOrDefault(c => c.Id == id) is { } created)
-            {
-                add.CustomRoleId = created.Id;
-                add.Role = created.BaseRole;
-            }
-
-            addingRole = false;
-            roleError = null;
-        }
-        finally
-        {
-            busy = false;
+            signInCopied = await JS.InvokeAsync<bool>("seaitt.copyText", $"Email: {signIn.Email}" + (signIn.Password is null ? "" : $"\nPassword: {signIn.Password}"));
         }
     }
     private UserListItem? deleteTarget;
@@ -1240,15 +1332,18 @@
         if (tab.Role == UserManagementService.NonTeachingRole)
         {
             customRoles = await Management.ListCustomRolesAsync();
-            addingRole = false;
-            roleError = null;
+            roleText = "";
+            removingRole = false;
+            newRolePages.Clear();
+            newRolePages.UnionWith(["calendar", "users", "groups"]);
         }
 
         add = new NewStaff
         {
-            // The staff list: the first role of the list, which has no role the school has one of already.
-            Role = tab.Role != UserManagementService.NonTeachingRole ? tab.Role : role ?? AvailableStaffRoles.FirstOrDefault() ?? AppRoles.AcademicProvider,
+            // The staff list: the role is typed (nothing at first). A teacher's employee number starts with T-.
+            Role = tab.Role != UserManagementService.NonTeachingRole ? tab.Role : CustomRole.DefaultBaseRole,
         };
+        add.EmployeeNumber = WithPrefix("");
     }
 
     private void AddTrackChanged()
@@ -1306,9 +1401,34 @@
         busy = true;
         try
         {
+            // A role name that is new makes the role first, with the pages that were ticked.
+            if (tab.Role == UserManagementService.NonTeachingRole)
+            {
+                if (roleText.Trim().Length == 0)
+                {
+                    formErrors = ["Write the name of the role (like Admission), or pick one from the list."];
+                    return;
+                }
+
+                if (RoleIsNew)
+                {
+                    var created = await Management.AddRoleAsync(roleText, newRolePages, currentUserId);
+                    if (!created.Succeeded)
+                    {
+                        formErrors = [.. created.Errors];
+                        return;
+                    }
+
+                    customRoles = await Management.ListCustomRolesAsync();
+                    add.CustomRoleId = created.Id;
+                    add.Role = CustomRole.DefaultBaseRole;
+                }
+            }
+
             var account = new NewAccount(
                 add.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
-                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive, CustomRoleId: add.CustomRoleId);
+                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive, CustomRoleId: add.CustomRoleId,
+                GradeLevel: add.Role == AppRoles.Admission ? add.GradeLevel : null);
 
             var result = add.Role == AppRoles.Teacher
                 ? await Management.AddTeacherAsync(account, new TeacherPlacement(add.TrackId, add.StrandId, add.SectionId, add.SubjectIds.ToList()), currentUserId)

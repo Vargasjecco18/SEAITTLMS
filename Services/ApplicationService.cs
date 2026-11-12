@@ -405,6 +405,13 @@ public sealed class ApplicationService(IDbContextFactory<AppDbContext> dbFactory
             return grade is null ? null : new Viewer(AppRoles.Admission, grade);
         }
 
+        // a role the administrator made up, with the page Analytics · applications ticked, reads the numbers of all the applications (and nothing else of them)
+        if (user.RoleId == AppRoles.AcademicProviderId && await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.CustomRole != null && (u.CustomRole.Pages == "analytics-admission" || u.CustomRole.Pages.StartsWith("analytics-admission,")
+            || u.CustomRole.Pages.Contains(",analytics-admission,") || u.CustomRole.Pages.EndsWith(",analytics-admission")), ct))
+        {
+            return new Viewer(AppRoles.Admin, null);
+        }
+
         return user.RoleId == AppRoles.RegistrarId ? new Viewer(AppRoles.Registrar, null) : user.RoleId == AppRoles.AdminId ? new Viewer(AppRoles.Admin, null) : null;
     }
 

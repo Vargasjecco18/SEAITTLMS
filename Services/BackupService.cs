@@ -260,7 +260,9 @@ public sealed class BackupService(
                 await writer.WriteLineAsync($"-- Server: {version}");
                 await writer.WriteLineAsync($"-- Migration: {migration}");
                 await writer.WriteLineAsync($"-- Tables: {tables.Count}");
-                await writer.WriteLineAsync("-- A backup of the SEAITT Legazpi LMS database. Restore it from System > Database Backup & Restore.");
+                await writer.WriteLineAsync("-- A backup of the SEAITT Legazpi LMS database. Restore it from Database Backup in the administrator's menu.");
+                await writer.WriteLineAsync("-- To import it into MySQL yourself: in MySQL Workbench open this file (File > Open SQL Script), double-click the schema you want so it is bold, and run it (lightning button).");
+                await writer.WriteLineAsync("-- From a terminal: mysql -u root -p <schema> < this-file.sql . It replaces the tables that have the same names. It has no CREATE DATABASE: create the schema first (CREATE DATABASE seaittlms CHARACTER SET utf8mb4;).");
                 await writer.WriteLineAsync();
                 await writer.WriteLineAsync("SET NAMES utf8mb4;");
                 await writer.WriteLineAsync("SET FOREIGN_KEY_CHECKS = 0;");

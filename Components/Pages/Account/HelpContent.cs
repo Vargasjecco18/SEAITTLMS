@@ -282,11 +282,11 @@ public static class HelpContent
         ], "admin/security-logs", "Open Security Logs"),
         new("How do I back up and restore the data?",
         [
-            "Open Database Backup & Restore and press “Back up now”. The file is saved in the Backups folder and can be downloaded. Keep a copy somewhere safe, outside this computer.",
+            "Open Database Backup and press “Back up now”. The file is saved in the Backups folder and can be downloaded. Keep a copy somewhere safe, outside this computer.",
             "To go back to a backup, press Restore beside it and type RESTORE. A backup of what is there now is made first, so it can be undone.",
             "To use a backup file from another computer, upload it, then restore it from the list.",
             "System Settings can make a backup by itself every day.",
-        ], "admin/backups", "Open Backup & Restore"),
+        ], "admin/backups", "Open Database Backup"),
         new("How do I close the system for maintenance?",
         [
             "Open System Settings, Maintenance, tick “Close the system for maintenance” and write the message people will see. Save.",

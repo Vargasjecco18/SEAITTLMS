@@ -3,6 +3,9 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject StudentLifecycleService Lifecycle
+@inject GradeService Grades
+@inject FileDownloads Downloads
+@inject TimeProvider Clock
 
 <PageTitle>Archive Accounts · SEAITT Legazpi LMS</PageTitle>
 
@@ -12,7 +15,8 @@
 
 <p class="auto-note">
     <Icon Name="info" Size="16" />
-    <span>Grade 12 students are <strong>archived automatically</strong> when the last term of the school year ends. Here you can archive them earlier, or restore a student.</span>
+    <span>Grade 12 students are <strong>archived automatically</strong> when the last term of the school year ends. Here you can archive them earlier, or restore a student.
+        An archived account is <strong>deleted by itself after @StudentLifecycleService.DeleteAfterDays days</strong>, so export the grades before that.</span>
 </p>
 
 <div class="tabs" role="tablist">
@@ -68,9 +72,12 @@
 else
 {
     <Card>
-        <form class="filter-bar" role="search" @onsubmit="SearchAsync">
-            <SearchField Id="ar-search" @bind-Value="searchText" Placeholder="Name or LRN" AriaLabel="Search the archive" OnClear="SearchAsync" />
-        </form>
+        <div class="archive-tools">
+            <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+                <SearchField Id="ar-search" @bind-Value="searchText" Placeholder="Name or LRN" AriaLabel="Search the archive" OnClear="SearchAsync" />
+            </form>
+            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" Disabled="@(archived.Count == 0 || busy)" OnClick="ExportAllAsync">Export all grades</Button>
+        </div>
 
         @if (archived.Count == 0)
         {
@@ -83,7 +90,7 @@ else
             <div class="table-wrap">
                 <table class="table">
                     <thead>
-                        <tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Status</th><th scope="col" class="col-more">Note</th><th scope="col" class="col-more">Date</th><th scope="col" class="col-actions"><span class="sr-only">Restore</span></th></tr>
+                        <tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Status</th><th scope="col" class="col-more">Note</th><th scope="col" class="col-more">Archived</th><th scope="col" class="col-more">Deleted in</th><th scope="col" class="col-actions"><span class="sr-only">Actions</span></th></tr>
                     </thead>
                     <tbody>
                         @foreach (var a in archived)
@@ -95,7 +102,12 @@ else
                                 <td><Badge Tone="@(student.Status == StudentStatus.Graduated ? Tone.Success : Tone.Warning)">@StudentStatus.Display(student.Status)</Badge></td>
                                 <td class="col-more">@student.Note</td>
                                 <td class="col-more">@(student.ChangedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
-                                <td class="col-actions"><Button Small="true" Variant="ButtonVariant.Secondary" IconName="undo-2" OnClick="() => restoreTarget = student">Restore</Button></td>
+                                <td class="col-more">@DaysLeftText(student)</td>
+                                <td class="col-actions">
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-text" Title="@($"All the grades of {student.Name}")" OnClick="() => OpenGradesAsync(student)">Grades</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" Title="@($"Export the grades of {student.Name} to Excel")" Disabled="busy" OnClick="() => ExportOneAsync(student)">Export</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="undo-2" OnClick="() => restoreTarget = student">Restore</Button>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -114,6 +126,63 @@ else
         <Button Variant="ButtonVariant.Ghost" OnClick="CloseArchive">Cancel</Button>
         <Button IconName="archive" Disabled="busy" OnClick="ArchiveAsync">@(busy ? "Archiving…" : "Archive")</Button>
     </div>
+</Modal>
+
+<Modal Open="gradesOf is not null" Title="@($"Grades · {gradesOf?.Name}")" Centered="true" OnClose="CloseGrades">
+    @if (gradesOf is not null)
+    {
+        <p class="dialog-text">@StudentStatus.Display(gradesOf.Status)@(gradesOf.ChangedAtUtc is { } on ? $" on {PhilippineTime.FormatDate(on)}" : "") · LRN <span class="mono">@gradesOf.Lrn</span></p>
+        @if (gradeTerms.Count == 0)
+        {
+            <p class="muted">This student was never enrolled, so there are no grades.</p>
+        }
+        else
+        {
+            <div class="grade-terms">
+                @for (var i = 0; i < gradeTerms.Count; i++)
+                {
+                    var term = gradeTerms[i];
+                    var milestone = StudentGradesExport.Milestone(gradeTerms, i, gradesOf.Status);
+                    <section class="grade-term" aria-label="@($"{term.SchoolYear} {term.Term}")">
+                        <h4>
+                            @term.SchoolYear · @term.Term
+                            <span class="sub">Grade @term.GradeLevel · @term.Strand · @term.Section</span>
+                            @if (milestone.Length > 0)
+                            {
+                                <Badge Tone="@(milestone.Contains("Graduated") ? Tone.Success : milestone.Contains("Shifted") ? Tone.Warning : Tone.Info)">@milestone</Badge>
+                            }
+                        </h4>
+                        <table class="table">
+                            <thead><tr><th scope="col">Course</th><th scope="col" class="col-more">Teacher</th><th scope="col" class="num">Grade</th></tr></thead>
+                            <tbody>
+                                @foreach (var course in term.Courses)
+                                {
+                                    <tr>
+                                        <td>@course.Subject</td>
+                                        <td class="col-more">@course.Teacher</td>
+                                        <td class="num">@(course.Grade is { } g ? g.ToString("0.#") : "—")</td>
+                                    </tr>
+                                }
+                                @if (term.Courses.Count == 0)
+                                {
+                                    <tr><td colspan="3" class="muted">No courses in this term.</td></tr>
+                                }
+                            </tbody>
+                            @if (term.Average is { } average)
+                            {
+                                <tfoot><tr><th scope="row" colspan="2">Average of the term</th><td class="num">@average.ToString("0.#")</td></tr></tfoot>
+                            }
+                        </table>
+                    </section>
+                }
+            </div>
+        }
+
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" Disabled="busy" OnClick="() => ExportOneAsync(gradesOf)">Export to Excel</Button>
+            <Button OnClick="CloseGrades">Close</Button>
+        </div>
+    }
 </Modal>
 
 <Modal Open="restoreTarget is not null" Title="Restore this student?" OnClose="() => restoreTarget = null">
@@ -137,6 +206,8 @@ else
     private string searchText = "";
     private bool confirmArchive;
     private ArchivedStudent? restoreTarget;
+    private ArchivedStudent? gradesOf;
+    private IReadOnlyList<HistoryTerm> gradeTerms = [];
     private string? message;
     private bool messageIsError;
     private bool busy;
@@ -171,6 +242,75 @@ else
     }
 
     private async Task SearchAsync() => archived = await Lifecycle.ListArchivedAsync(searchText);
+
+    /// <summary>"in 12 days", "today": when the account is deleted by itself.</summary>
+    private string DaysLeftText(ArchivedStudent student)
+    {
+        if (student.DeletesAtUtc is not { } at)
+        {
+            return "";
+        }
+
+        var days = (int)Math.Ceiling((at - Clock.GetUtcNow().UtcDateTime).TotalDays);
+        return days <= 0 ? "today" : days == 1 ? "1 day" : $"{days} days";
+    }
+
+    private async Task OpenGradesAsync(ArchivedStudent student)
+    {
+        gradesOf = student;
+        gradeTerms = [];
+        gradeTerms = await Grades.GetHistoryAsync(student.StudentId);
+    }
+
+    private void CloseGrades()
+    {
+        gradesOf = null;
+        gradeTerms = [];
+    }
+
+    private async Task ExportOneAsync(ArchivedStudent student)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var terms = await Grades.GetHistoryAsync(student.StudentId);
+            await Downloads.SaveAsync(StudentGradesExport.FileName(student), StudentGradesExport.Build(student, terms));
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    /// <summary>One file with the grades of all the archived students that the search shows.</summary>
+    private async Task ExportAllAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var all = new List<(ArchivedStudent, IReadOnlyList<HistoryTerm>)>();
+            foreach (var student in archived)
+            {
+                all.Add((student, await Grades.GetHistoryAsync(student.StudentId)));
+            }
+
+            await Downloads.SaveAsync(StudentGradesExport.FileNameAll(), StudentGradesExport.BuildAll(all));
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
 
     private void AskArchive() => confirmArchive = picked.Count > 0;
 

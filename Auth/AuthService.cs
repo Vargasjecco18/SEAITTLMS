@@ -272,6 +272,7 @@ public sealed class AuthService(
         if (user.CustomRole is { } custom)
         {
             claims.Add(new Claim(AppClaimTypes.RoleTitle, custom.Name));
+            claims.Add(new Claim(AppClaimTypes.Pages, custom.Pages ?? ""));
         }
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);

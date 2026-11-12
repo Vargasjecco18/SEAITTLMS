@@ -203,7 +203,7 @@
         var me = result.Principal!.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
         var sameAsLast = HttpContext.Request.Cookies.TryGetValue(LastUserCookie, out var last) && last == me;
         HttpContext.Response.Cookies.Append(LastUserCookie, me, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps, MaxAge = TimeSpan.FromDays(60) });
-        var home = RoleHome.For(result.Principal!.FindFirstValue(ClaimTypes.Role));
+        var home = RoleHome.For(result.Principal!);
         var wanted = LocalUrl.Sanitize(ReturnUrl);
         GoTo(sameAsLast && LocalUrl.IsPageOf(wanted, home) ? wanted : home);
     }

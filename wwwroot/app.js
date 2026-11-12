@@ -1025,7 +1025,11 @@ document.addEventListener('toggle', function (event) {
         var box = event.target;
         if (!box || box.tagName !== 'INPUT' || !box.hasAttribute('data-letters')) { return; }
         var capital = box.value.replace(/(^|[\s.'\u2019-])(\p{L})/gu, function (all, before, letter) { return before + letter.toUpperCase(); });
-        if (capital !== box.value) { box.value = capital; }
+        if (capital !== box.value) {
+            box.value = capital;
+            // A box the page reads while typing (oninput) is told about the capital letters too.
+            box.dispatchEvent(new Event('input', { bubbles: true }));
+        }
     }, true);
 
     document.addEventListener('input', function (event) {

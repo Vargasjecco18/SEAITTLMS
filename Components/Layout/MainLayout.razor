@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthProvider
 
 <div class="shell">
     @* On small screens the menu opens with this checkbox (the menu button is its label), so it also works before any
@@ -42,7 +44,15 @@
     </aside>
 
     <main class="content">
-        @Body
+        @* A person with a role the administrator made up opens only the pages that were ticked for the role (StaffAccess); every page goes through here. *@
+        @if (blocked)
+        {
+            <AccessDeniedPanel />
+        }
+        else
+        {
+            @Body
+        }
     </main>
 </div>
 
@@ -60,3 +70,13 @@
 <div id="blazor-error-ui" role="alert">
     Something went wrong on this page. <a href="">Reload it</a> to continue.
 </div>
+
+@code {
+    private bool blocked;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+        blocked = !StaffAccess.Allows(user, new Uri(Navigation.Uri).AbsolutePath);
+    }
+}

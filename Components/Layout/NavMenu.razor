@@ -1,4 +1,6 @@
 @inject CurrentUser Me
+@inject AuthenticationStateProvider AuthProvider
+@using SEAITT_LMS.Services
 @inject NavCourseService NavCourses
 <nav class="nav" aria-label="Main menu">
     @* Each role sees only its own pages. When the pointer rests on a page, a box shows what is inside it (see NavItem). *@
@@ -43,22 +45,35 @@
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.AcademicProvider">
-        <p class="heading">Central Team</p>
+        @if (customPages is null)
+        {
+            <p class="heading">Central Team</p>
 
-        <NavItem Href="provider" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
-                 Contents="ProviderDashboard" />
-        <NavItem Href="provider/library" Icon="folder-open" Label="Course library"
-                 Contents="ProviderLibrary" />
-        <NavItem Href="provider/tracking" Icon="eye" Label="Tracking"
-                 Items="ProviderTracking" />
-        <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
-                 Items="CalendarViews" />
-        <NavItem Href="provider/analytics" Icon="chart-column" Label="Analytics"
-                 Contents="ProviderAnalytics" />
-        <NavItem Href="users" Icon="users-round" Label="Users"
-                 Items="StaffUsers" />
-        <NavItem Href="groups" Icon="users" Label="Groups"
-                 Contents="StaffGroups" />
+            <NavItem Href="provider" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
+                     Contents="ProviderDashboard" />
+            <NavItem Href="provider/library" Icon="folder-open" Label="Course library"
+                     Contents="ProviderLibrary" />
+            <NavItem Href="provider/tracking" Icon="eye" Label="Tracking"
+                     Items="ProviderTracking" />
+            <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
+                     Items="CalendarViews" />
+            <NavItem Href="provider/analytics" Icon="chart-column" Label="Analytics"
+                     Contents="ProviderAnalytics" />
+            <NavItem Href="users" Icon="users-round" Label="Users"
+                     Items="StaffUsers" />
+            <NavItem Href="groups" Icon="users" Label="Groups"
+                     Contents="StaffGroups" />
+        }
+        else
+        {
+            @* A role the administrator made up: the dashboard of the role and only the pages that were ticked for it. *@
+            <p class="heading">@customTitle</p>
+            <NavItem Href="staff" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All" Contents="StaffDashboard" />
+            @foreach (var entry in customPages)
+            {
+                <NavItem Href="@HrefOf(entry)" Icon="@entry.Icon" Label="@LabelOf(entry)" Contents="@ContentsOf(entry)" />
+            }
+        }
     </AuthorizeView>
 
     <AuthorizeView Roles="@AppRoles.Registrar">
@@ -166,8 +181,28 @@
     private IReadOnlyList<NavItem.Sub>? teacherCourses;
     private IReadOnlyList<NavItem.Sub>? studentCourses;
 
+    // A role the administrator made up in Add staff: its name, and the pages that were ticked for it.
+    private IReadOnlyList<StaffPage>? customPages;
+    private string customTitle = "";
+
+    private static readonly IReadOnlyList<string> StaffDashboard = ["The pages of your role"];
+
+    private static string HrefOf(StaffPage entry) => entry.Path.TrimStart('/') + (entry.Key == "analytics-guidance" ? "?area=guidance" : "");
+
+    private static string LabelOf(StaffPage entry) => entry.Group == StaffPages.Analytics ? "Analytics" + entry.Title[("Analytics".Length)..].Replace(" · ", ": ") : entry.Title;
+
+    private static IReadOnlyList<string> ContentsOf(StaffPage entry) => [entry.Hint];
+
     protected override async Task OnInitializedAsync()
     {
+        var principal = (await AuthProvider.GetAuthenticationStateAsync()).User;
+        if (StaffAccess.IsCustom(principal))
+        {
+            customTitle = principal.FindFirst(SEAITT_LMS.Auth.AppClaimTypes.RoleTitle)?.Value ?? "Staff";
+            var keys = StaffAccess.PagesOf(principal);
+            customPages = [.. StaffPages.All.Where(p => keys.Contains(p.Key))];
+        }
+
         var user = await Me.GetAsync();
         if (user is null)
         {

@@ -1,5 +1,5 @@
 @page "/coordinator/analytics"
-@attribute [Authorize(Roles = AppRoles.AcademicCoordinator)]
+@attribute [Authorize(Roles = AppRoles.AcademicCoordinator + "," + AppRoles.AcademicProvider)]
 @inject EvaluationService Service
 
 <PageTitle>Analytics · SEAITT Legazpi LMS</PageTitle>

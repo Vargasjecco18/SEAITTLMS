@@ -7,7 +7,8 @@ namespace SEAITT_LMS.Services;
 
 public sealed record GraduateCandidate(int StudentId, string Name, string Lrn, string? Placement);
 
-public sealed record ArchivedStudent(int StudentId, string Name, string Lrn, string Status, string? Note, DateTime? ChangedAtUtc, string? Placement);
+/// <summary>A student in the archive. <paramref name="DeletesAtUtc"/> is when the account is deleted by itself (30 days after it was archived).</summary>
+public sealed record ArchivedStudent(int StudentId, string Name, string Lrn, string Status, string? Note, DateTime? ChangedAtUtc, string? Placement, DateTime? DeletesAtUtc = null);
 
 public sealed record StudentSummary(int StudentId, string Name, string Lrn, string Status, string? Placement);
 
@@ -18,6 +19,9 @@ public sealed record StudentSummary(int StudentId, string Name, string Lrn, stri
 /// </summary>
 public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, SecurityLogService? securityLog = null)
 {
+    /// <summary>An archived account stays this many days, then it is deleted by itself (the grades can be exported before that).</summary>
+    public const int DeleteAfterDays = 30;
+
     // ======================================================================= the administrator: graduation
 
     /// <summary>Students still at school who are in grade 12: the ones who will graduate.</summary>
@@ -194,7 +198,40 @@ public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFa
         var sections = await SectionLabelsAsync(db, ct);
         var rows = await query.OrderByDescending(s => s.StatusChangedAtUtc).ThenBy(s => s.LastName).Take(200)
             .Select(s => new { s.Id, s.FirstName, s.LastName, s.Lrn, s.Status, s.StatusNote, s.StatusChangedAtUtc, s.SectionId }).ToListAsync(ct);
-        return rows.Select(s => new ArchivedStudent(s.Id, $"{s.LastName}, {s.FirstName}", s.Lrn, s.Status, s.StatusNote, s.StatusChangedAtUtc, s.SectionId is { } sec ? sections.GetValueOrDefault(sec) : null)).ToList();
+        return rows.Select(s => new ArchivedStudent(s.Id, $"{s.LastName}, {s.FirstName}", s.Lrn, s.Status, s.StatusNote, s.StatusChangedAtUtc, s.SectionId is { } sec ? sections.GetValueOrDefault(sec) : null,
+            s.StatusChangedAtUtc?.AddDays(DeleteAfterDays))).ToList();
+    }
+
+    /// <summary>
+    /// Deletes the archived accounts that are <see cref="DeleteAfterDays"/> days old or older: the enrollments go first (the database does not let a student with
+    /// enrollments go), then the account with everything that hangs from it (grades, answers, messages). It is safe to run any number of times.
+    /// </summary>
+    /// <returns>How many accounts were deleted by this run.</returns>
+    public async Task<int> DeleteExpiredAsync(CancellationToken ct = default)
+    {
+        var cutoff = clock.GetUtcNow().UtcDateTime.AddDays(-DeleteAfterDays);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var due = await db.Students.AsNoTracking().Where(s => s.Status != StudentStatus.Active && s.StatusChangedAtUtc != null && s.StatusChangedAtUtc <= cutoff)
+            .Select(s => new { s.Id, s.UserId, s.FirstName, s.LastName, s.Lrn, s.Status, s.User.Email }).ToListAsync(ct);
+
+        var deleted = 0;
+        foreach (var student in due)
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            await db.Enrollments.Where(e => e.StudentId == student.Id).ExecuteDeleteAsync(ct);
+            await db.Users.Where(u => u.Id == student.UserId).ExecuteDeleteAsync(ct);
+            await transaction.CommitAsync(ct);
+            deleted++;
+
+            if (securityLog is not null)
+            {
+                await securityLog.AddAsync(SecurityEvents.AccountDeleted, null, student.Email,
+                    $"The student account of {student.FirstName} {student.LastName} (LRN {student.Lrn}) was deleted by itself: it was archived ({StudentStatus.Display(student.Status).ToLowerInvariant()}) {DeleteAfterDays} days ago.",
+                    actorName: "The system", ct: ct);
+            }
+        }
+
+        return deleted;
     }
 
     /// <summary>Finds a student by LRN (12 digits), whatever their status.</summary>

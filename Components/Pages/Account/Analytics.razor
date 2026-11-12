@@ -1,14 +1,15 @@
 @page "/analytics"
-@attribute [Authorize(Roles = AppRoles.Admin + "," + AppRoles.GuidanceCounselor + "," + AppRoles.Teacher)]
+@attribute [Authorize(Roles = AppRoles.Admin + "," + AppRoles.GuidanceCounselor + "," + AppRoles.Teacher + "," + AppRoles.AcademicProvider)]
 @using System.Globalization
 @inject CurrentUser Me
 @inject AnalyticsService Reports
+@inject AuthenticationStateProvider AuthProvider
 
 <PageTitle>Analytics · SEAITT Legazpi LMS</PageTitle>
 <AutoRefresh />
 
 <PageHeader Title="@Title" IconName="chart-column">
-    @if (report is { Students: > 0 })
+    @if (report is { Students: > 0 } && !custom)
     {
         <ButtonLink Href="analytics/export" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" data-enhance-nav="false" download>Export to Excel</ButtonLink>
     }
@@ -167,6 +168,9 @@ else
 
     private AnalyticsReport? report;
     private string Role { get; set; } = "";
+    private bool custom;
+
+    [SupplyParameterFromQuery(Name = "area")] private string? AreaText { get; set; }
 
     private string Title => Role switch
     {
@@ -178,6 +182,19 @@ else
     protected override async Task OnInitializedAsync()
     {
         var user = await Me.GetAsync();
+
+        // A person with a role the administrator made up sees the analytics that were ticked for the role: the school (as the administrator sees it) or the guidance (attendance and concerns).
+        var principal = (await AuthProvider.GetAuthenticationStateAsync()).User;
+        if (user is not null && StaffAccess.IsCustom(principal))
+        {
+            custom = true;
+            var pages = StaffAccess.PagesOf(principal);
+            var as_ = AreaText == "guidance" && pages.Contains("analytics-guidance") ? AppRoles.GuidanceCounselor
+                : pages.Contains("analytics-school") ? AppRoles.Admin
+                : pages.Contains("analytics-guidance") ? AppRoles.GuidanceCounselor : "";
+            user = as_.Length == 0 ? null : user with { Role = as_ };
+        }
+
         Role = user?.Role ?? "";
         report = user is null ? null : await Reports.GetAsync(user);
     }

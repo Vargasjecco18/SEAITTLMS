@@ -1,0 +1,52 @@
+@page "/staff"
+@attribute [Authorize]
+@using System.Security.Claims
+@using SEAITT_LMS.Services
+@inject AuthenticationStateProvider AuthProvider
+@inject TimeProvider Clock
+
+<PageTitle>Dashboard · SEAITT Legazpi LMS</PageTitle>
+
+@* The first page of a person with a role the administrator made up: the pages that were ticked for the role, and nothing else. *@
+@{
+    var now = PhilippineTime.Now(Clock);
+}
+
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {title}")" IconName="layout-dashboard" />
+
+@if (pages.Count == 0)
+{
+    <Card>
+        <EmptyState IconName="lock" Title="No page yet">
+            <p>The administrator has not ticked a page for the role <strong>@title</strong>. When they do, the pages show here and in the menu.</p>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    <div class="cards">
+        @foreach (var entry in pages)
+        {
+            <a class="page-card" href="@HrefOf(entry)" data-page="@entry.Key">
+                <span class="icon"><Icon Name="@entry.Icon" Size="22" /></span>
+                <span class="text"><strong>@entry.Title</strong><small>@entry.Hint</small></span>
+                <Icon Name="arrow-right" Size="18" />
+            </a>
+        }
+    </div>
+}
+
+@code {
+    private static string HrefOf(StaffPage entry) => entry.Path.TrimStart('/') + (entry.Key == "analytics-guidance" ? "?area=guidance" : "");
+
+    private string title = "staff";
+    private IReadOnlyList<StaffPage> pages = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+        title = user.FindFirstValue(SEAITT_LMS.Auth.AppClaimTypes.RoleTitle)?.ToLowerInvariant() ?? "staff";
+        var keys = StaffAccess.PagesOf(user);
+        pages = [.. StaffPages.All.Where(p => keys.Contains(p.Key))];
+    }
+}

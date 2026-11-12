@@ -193,7 +193,7 @@ After signing in (and whenever a signed-in person opens `/`), the app sends ever
 
 | Role | Lands on | Can open |
 |---|---|---|
-| Admin | `/admin` | Dashboard (with **Enrolled** and **Not enrolled** under *Accounts*), **Users Management**, **Archive Accounts**, **Analytics**, **Security Logs**, **Database Backup & Restore**, **System Settings** |
+| Admin | `/admin` | Dashboard (with **Enrolled** and **Not enrolled** under *Accounts*), **Users Management**, **Archive Accounts**, **Analytics**, **Security Logs**, **Database Backup**, **System Settings** |
 | Academic coordinator | `/coordinator` | **Dashboard**, **Academic setup**, **Class sections**, **Teacher evaluation**, **Announcements** (a calendar), **Analytics** (teacher evaluation), **Calendar**, **Users**, **Groups**. It no longer sends course materials. |
 | Academic provider (central team) | `/provider` | **Dashboard**, **Course library** (and sending), **Tracking** (Syllabus, Handouts and Summative exams), **Analytics** |
 | Registrar | `/registrar` | Dashboard, **Enrollment**, **Student's Accounts** |
@@ -405,13 +405,13 @@ The code: `Services/PeopleService.cs`, `FriendService.cs`, `GroupService.cs`, `F
 
 **Round 34.** The **Users** page shows the side bar for every role (it used to fold the menu to its icons), and in every menu **Calendar** is above **Analytics**. **Round 35.** The tab **Staff / Non-teaching** is a table with **Name, Role, Message and Friend status**, the last two at the right; its *Friend status* has the **Add friend** button, so students, teachers and the staff can all be friends (the administrator is not; every role but the administrator has a **Friends** tab to accept requests: `FriendService`, `PeopleService`).
 
-## Administrator: Security Logs, Database Backup & Restore, System Settings
+## Administrator: Security Logs, Database Backup, System Settings
 
 **Security Logs** (`/admin/security-logs`) has a **Last login** list (each person, their role and **the day and time they last logged in**, newest first, with a search and a role choice; there are no "signed in" and "signed out" lines any more) and lists who typed a wrong password (and from where), locked accounts, accounts that were added, changed, switched off or deleted, new passwords, backups and changes
 of the settings, newest first, with the time, the email, who did it, the address and the browser. Filter by group (last login, failed sign-ins, account changes, system), kind, dates and words; **Download CSV** gives the same list
 for Excel; **Clear old lines** deletes the older ones (the last 30 days are always kept, and the system clears by itself the lines older than the number of days in System Settings). Code: `Services/SecurityLogService.cs`.
 
-**Database Backup & Restore** (`/admin/backups`) saves a copy of **all the data** as an SQL text file in the `Backups/` folder next to the app (git ignores it), made from one consistent snapshot of the database.
+**Database Backup** (`/admin/backups`) saves a copy of **all the data** as an SQL text file in the `Backups/` folder next to the app (git ignores it), made from one consistent snapshot of the database.
 *Back up now* makes one; each backup can be **downloaded** or **deleted**; a backup file from another computer can be **uploaded**. **Restore** asks you to type `RESTORE`, first makes a safety backup of what is there now,
 checks that the file is one of ours (only our tables and plain statements are accepted), puts the data back while the system is closed to everybody except administrators, and **goes back by itself** if something fails.
 An automatic backup at an hour you choose (and how many to keep) is set in System Settings. Code: `Services/BackupService.cs`, `MaintenanceWorker.cs`.
@@ -708,7 +708,7 @@ Components/Pages/          The pages, in one folder per part of the system:
 wwwroot/                   favicon.png, app.js and images/ (logo.png, hero/: the photos of the home page and the sign-in page)
 appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores that one) and put your passwords in it
 database/                  The SQL files for MySQL Workbench: start over (reset and rebuild), sample accounts, sample data, and the script that generates the first one
-Backups/                   The backups made by Database Backup & Restore (created by the app; git ignores it)
+Backups/                   The backups made by Database Backup (created by the app; git ignores it)
 docs/database.md           Tables, relationships and the rules the database enforces
 THIRD-PARTY-NOTICES.md     Licence of the icons (the logo and the photos are the school's own)
 ```

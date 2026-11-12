@@ -20,6 +20,10 @@ public static class RoleHome
     /// <summary>Anybody else (a role without a page of its own) has nowhere to go.</summary>
     public const string NoPage = "/access-denied";
 
+    /// <summary>The first page of a signed-in person: the page of their role, or <c>/staff</c> when the administrator made up the role they have.</summary>
+    public static string For(System.Security.Claims.ClaimsPrincipal user) =>
+        user.HasClaim(c => c.Type == AppClaimTypes.RoleTitle) ? Staff : For(user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value);
+
     public static string For(string? role) => role switch
     {
         AppRoles.Admin => Admin,

@@ -228,7 +228,7 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             // A relative address (see Login.razor): the home page may be opened through a forwarded port, where the server only knows localhost.
-            throw new NavigationException(RoleHome.For(user.FindFirstValue(ClaimTypes.Role)));
+            throw new NavigationException(RoleHome.For(user));
         }
 
         await using var db = await DbFactory.CreateDbContextAsync();

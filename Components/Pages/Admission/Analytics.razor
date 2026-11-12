@@ -1,5 +1,5 @@
 @page "/admission/analytics"
-@attribute [Authorize(Roles = AppRoles.Admission)]
+@attribute [Authorize(Roles = AppRoles.Admission + "," + AppRoles.AcademicProvider)]
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject ApplicationService Service

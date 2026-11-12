@@ -261,16 +261,10 @@ public sealed class UserManagementService(
         return await db.CustomRoles.AsNoTracking().OrderBy(r => r.Name).ToListAsync(ct);
     }
 
-    /// <summary>
-    /// Makes a new role for the staff, like "Librarian". Many people can have it. The administrator only gives the name; underneath the people of the role sign in to the pages of
-    /// <see cref="CustomRole.DefaultBaseRole"/> (the account needs one of the real roles to have pages to land on). The name is 2 to 40 letters, numbers, spaces and dashes, and is not the name of a role that is there already.
-    /// </summary>
-    public Task<ServiceResult> AddRoleAsync(string? name, int actingUserId, CancellationToken ct = default) => AddRoleAsync(name, CustomRole.DefaultBaseRole, actingUserId, ct);
-
-    /// <summary>The pages of each area of the staff, in words, for the administrator who chooses what the people of a new role can open.</summary>
+    /// <summary>The pages of each area of the staff, in words (what the usual roles open). The pages of a role the administrator makes are ticked one by one (<see cref="StaffPages"/>).</summary>
     public static IReadOnlyList<string> PagesOf(string baseRole) => baseRole switch
     {
-        AppRoles.Registrar => ["Dashboard", "Enrollment", "Student's Accounts", "Calendar", "Users", "Groups"],
+        AppRoles.Registrar => ["Dashboard", "Enrollment", "Student's Accounts", "Class sections", "Calendar", "Users", "Groups"],
         AppRoles.GuidanceCounselor => ["Dashboard", "Referrals", "Calendar", "Analytics", "Users", "Groups"],
         AppRoles.AcademicCoordinator => ["Dashboard", "Academic setup", "Teacher evaluation", "Announcements", "Analytics", "Users", "Groups"],
         AppRoles.AcademicProvider => ["Dashboard", "Course library", "Tracking", "Calendar", "Analytics", "Users", "Groups"],
@@ -279,15 +273,15 @@ public sealed class UserManagementService(
     };
 
     /// <summary>
-    /// Makes a new role for the staff. <paramref name="baseRole"/> is what the administrator chose as the pages the people of the role can open: the pages of the registrar, the guidance counselor, the
-    /// academic coordinator or the academic provider (<see cref="PagesOf"/>).
+    /// Makes a new role for the staff, like "Librarian". Many people can have it. The administrator ticks the pages the people of the role can open (<paramref name="pages"/>, the keys of
+    /// <see cref="StaffPages"/>); they get their own dashboard and only those pages. The name is 2 to 40 letters, numbers, spaces and dashes, and is not the name of a role that is there already.
     /// </summary>
-    public async Task<ServiceResult> AddRoleAsync(string? name, string? baseRole, int actingUserId, CancellationToken ct = default)
+    public async Task<ServiceResult> AddRoleAsync(string? name, IEnumerable<string>? pages, int actingUserId, CancellationToken ct = default)
     {
-        baseRole = string.IsNullOrWhiteSpace(baseRole) ? CustomRole.DefaultBaseRole : baseRole;
-        if (!NonTeachingRoles.Contains(baseRole))
+        var chosen = StaffPages.Parse(string.Join(',', pages ?? []));
+        if (chosen.Count == 0)
         {
-            return ServiceResult.Fail("Choose the pages the new role can open.");
+            return ServiceResult.Fail("Tick at least one page the people of the role can open.");
         }
 
         name = string.Join(' ', (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
@@ -319,7 +313,7 @@ public sealed class UserManagementService(
             return ServiceResult.Fail("There are 30 roles already. That is the most.");
         }
 
-        var role = new CustomRole { Name = name, BaseRole = baseRole };
+        var role = new CustomRole { Name = name, BaseRole = CustomRole.DefaultBaseRole, Pages = StaffPages.Join(chosen) };
         db.CustomRoles.Add(role);
         try
         {
@@ -335,7 +329,7 @@ public sealed class UserManagementService(
             await securityLog.AddAsync(SecurityEvents.AccountCreated, null, details: $"The role {name} was added.", actorUserId: actingUserId, ct: ct);
         }
 
-        return ServiceResult.Ok($"The role {name} was added. Its people open the pages of the {AppRoles.DisplayName(baseRole).ToLowerInvariant()}.", role.Id);
+        return ServiceResult.Ok($"The role {name} was added. Its people open {(chosen.Count == 1 ? "1 page" : $"{chosen.Count} pages")}: {string.Join(", ", chosen.Select(k => StaffPages.Find(k)!.Title))}.", role.Id);
     }
 
     /// <summary>
@@ -372,6 +366,44 @@ public sealed class UserManagementService(
     /// <summary>The email and the password a new teacher or staff member gets (shown before the account is added): made from the last name and the digits of the employee number.</summary>
     public StudentLogin? PreviewLogin(string? lastName, string? employeeNumber) =>
         StaffCredentials.Create(NameCase.Title(lastName), employeeNumber, enrollmentOptions?.Value.EmailDomain ?? new EnrollmentOptions().EmailDomain);
+
+    /// <summary>The email and the first password a new student gets (shown before the account is added), made from the last name and the end of the LRN.</summary>
+    public StudentLogin? PreviewStudentLogin(string? lastName, string? lrn) =>
+        (lrn ?? "").Trim() is { Length: 12 } digits && digits.All(char.IsAsciiDigit) && !string.IsNullOrWhiteSpace(lastName)
+            ? StudentCredentials.Create(NameCase.Title(lastName), digits, enrollmentOptions?.Value.EmailDomain ?? new EnrollmentOptions().EmailDomain)
+            : null;
+
+    /// <summary>What the Sign-in details button of a row shows: the account, its email and, while the person has not changed it, the first password.</summary>
+    public sealed record SignInDetails(string FullName, string Role, string Email, string? Password, bool IsActive);
+
+    /// <summary>
+    /// The sign-in details of an account, for the administrator: the email, and the first password when it is still the one the system made (the last name and the digits of the LRN or the employee
+    /// number). A password the person or an administrator changed is not known to anybody, so it is not shown.
+    /// </summary>
+    public async Task<SignInDetails?> GetSignInDetailsAsync(int userId, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await IsActiveAdminAsync(db, actingUserId, ct))
+        {
+            return null;
+        }
+
+        var user = await db.Users.AsNoTracking().Include(u => u.Role).Include(u => u.CustomRole)
+            .Include(u => u.Student).Include(u => u.Teacher).Include(u => u.Registrar).Include(u => u.GuidanceCounselor).Include(u => u.AcademicCoordinator)
+            .Include(u => u.AcademicProvider).Include(u => u.AdmissionOfficer).Include(u => u.Administrator)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+        {
+            return null;
+        }
+
+        var domain = enrollmentOptions?.Value.EmailDomain ?? new EnrollmentOptions().EmailDomain;
+        StudentLogin? made = user.Student is { } student
+            ? StudentCredentials.Create(student.LastName, student.Lrn, domain)
+            : user.Profile is StaffProfile staff ? StaffCredentials.Create(staff.LastName, staff.EmployeeNumber, domain) : null;
+        var password = made is not null && hasher.Verify(made.Password, user.PasswordHash) ? made.Password : null;
+        return new SignInDetails(user.DisplayName, user.CustomRole?.Name ?? AppRoles.DisplayName(user.Role.Name), user.Email, password, user.IsActive);
+    }
 
     private async Task<ServiceResult> CreateStaffAsync(NewAccount account, int actingUserId, CancellationToken ct)
     {
@@ -549,12 +581,12 @@ public sealed class UserManagementService(
     public const string SortNewest = "newest";
     public const string SortOldest = "oldest";
 
-    /// <summary>The choices of the status filter of the students: active, inactive (switched off), dropped out, graduated.</summary>
-    public static readonly string[] StudentStatusFilters = ["active", "inactive", "dropped", "graduated"];
+    /// <summary>The choices of the status filter of the students: active (Activated), inactive (Deactivated: switched off), archived (dropped out or graduated). "dropped" and "graduated" still work for the old links.</summary>
+    public static readonly string[] StudentStatusFilters = ["active", "inactive", "archived", "dropped", "graduated"];
 
     /// <param name="active">Only the accounts that are active (true) or inactive (false); empty: all of them.</param>
     /// <param name="sort">One of <see cref="SortName"/>, <see cref="SortNewest"/>, <see cref="SortOldest"/>.</param>
-    /// <param name="status">Students only: "active", "inactive", "dropped" or "graduated" (empty: all). It replaces <paramref name="active"/> for students.</param>
+    /// <param name="status">Students only: "active", "inactive", "archived", "dropped" or "graduated" (empty: all). It replaces <paramref name="active"/> for students.</param>
     /// <param name="staffRole">The non-teaching list only: one role of <see cref="NonTeachingRoles"/>; empty: all of them.</param>
     public async Task<UserPage> ListAsync(string role, string? search, int page, int pageSize, CancellationToken ct = default, bool? active = null,
         string sort = SortName, string? status = null, string? staffRole = null)
@@ -579,6 +611,7 @@ public sealed class UserManagementService(
                 {
                     "active" => filtered.Where(s => s.Status == StudentStatus.Active && s.User.IsActive),
                     "inactive" => filtered.Where(s => s.Status == StudentStatus.Active && !s.User.IsActive),
+                    "archived" => filtered.Where(s => s.Status != StudentStatus.Active),
                     "dropped" => filtered.Where(s => s.Status == StudentStatus.DroppedOut),
                     "graduated" => filtered.Where(s => s.Status == StudentStatus.Graduated),
                     _ => ByStatus(filtered, active),

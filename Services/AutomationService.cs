@@ -142,7 +142,11 @@ public sealed class AutomationWorker(IServiceScopeFactory scopes, TimeProvider c
                     await scope.ServiceProvider.GetRequiredService<ReferralService>().EvaluateAsync(stoppingToken);
                 }
 
-                await scope.ServiceProvider.GetRequiredService<StudentLifecycleService>().ArchiveFinishedAsync(stoppingToken);
+                var lifecycle = scope.ServiceProvider.GetRequiredService<StudentLifecycleService>();
+                await lifecycle.ArchiveFinishedAsync(stoppingToken);
+
+                // An account that was archived 30 days ago is deleted.
+                await lifecycle.DeleteExpiredAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

@@ -145,7 +145,10 @@ else
                     <tr>
                         <th scope="col">When</th>
                         <th scope="col">What happened</th>
-                        <th scope="col">Who</th>
+                        @if (group != "system")
+                        {
+                            <th scope="col">Who</th>
+                        }
                         <th scope="col" class="col-more">Details</th>
                         <th scope="col" class="col-more">From</th>
                     </tr>
@@ -159,20 +162,24 @@ else
                                 <span class="muted-line">@PhilippineTime.FormatTime(row.AtUtc)</span>
                             </td>
                             <td><Badge Tone="@ToneOf(row.Severity)">@SecurityEvents.Display(row.Kind)</Badge></td>
-                            <td class="who">
-                                @if (!string.IsNullOrEmpty(row.Email))
-                                {
-                                    <span class="email">@row.Email</span>
-                                }
-                                else
-                                {
-                                    <span class="muted">—</span>
-                                }
-                                @if (!string.IsNullOrEmpty(row.ActorName))
-                                {
-                                    <span class="muted-line">by @row.ActorName</span>
-                                }
-                            </td>
+                            @* The System lines (backups, settings) are the system's own: nobody is shown as the one who did it. *@
+                            @if (group != "system")
+                            {
+                                <td class="who">
+                                    @if (!string.IsNullOrEmpty(row.Email))
+                                    {
+                                        <span class="email">@row.Email</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">—</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(row.ActorName))
+                                    {
+                                        <span class="muted-line">by @row.ActorName</span>
+                                    }
+                                </td>
+                            }
                             <td class="col-more details">@row.Details</td>
                             <td class="col-more from">
                                 @if (!string.IsNullOrEmpty(row.IpAddress))
