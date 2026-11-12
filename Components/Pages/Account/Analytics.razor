@@ -87,6 +87,7 @@ else if (Role == AppRoles.GuidanceCounselor)
     <div class="board">
         @AttendanceCard(report)
         @ConcernStudentsCard(report)
+        @AbsentHistoryCard(report)
     </div>
 }
 else
@@ -282,6 +283,43 @@ else
                 }
             </ul>
             <p class="note">Late counts as half. Below @AttendanceService.LowAttendancePercent.ToString("0") the line is marked.</p>
+        }
+    </Card>;
+
+    /// <summary>The history of the students who were absent: one line for each school day (the last 30 days), that opens to the students and the courses they missed.</summary>
+    private RenderFragment AbsentHistoryCard(AnalyticsReport r) => @<Card Title="Absent by day" IconName="calendar-x">
+        @{
+            var days = r.AbsentHistory ?? [];
+        }
+        @if (days.Count == 0)
+        {
+            <p class="muted">Nobody was marked absent in the last 30 days.</p>
+        }
+        else
+        {
+            <ul class="absent-days" aria-label="Students who were absent, day by day">
+                @foreach (var d in days)
+                {
+                    <li>
+                        <details>
+                            <summary>
+                                <span class="absent-day">@d.Day.ToString("ddd, MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)</span>
+                                <Badge Tone="Tone.Danger">@d.Students.Count @(d.Students.Count == 1 ? "student" : "students") absent</Badge>
+                            </summary>
+                            <ul class="absent-people">
+                                @foreach (var a in d.Students)
+                                {
+                                    <li>
+                                        <a href="@($"guidance/referrals?q={Uri.EscapeDataString(a.Lrn)}")"><strong>@a.Name</strong></a>
+                                        <span class="sub">@string.Join(", ", a.Courses)</span>
+                                    </li>
+                                }
+                            </ul>
+                        </details>
+                    </li>
+                }
+            </ul>
+            <p class="note">Only the days when a teacher marked someone absent are listed.</p>
         }
     </Card>;
 

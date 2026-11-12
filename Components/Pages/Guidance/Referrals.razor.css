@@ -252,7 +252,7 @@ th.col-level {
 }
 
 .referral-table .col-student {
-    width: 22%;
+    width: 20%;
 }
 
 .referral-table .col-section {
@@ -260,15 +260,19 @@ th.col-level {
 }
 
 .referral-table .col-concern {
-    width: 21%;
+    width: 19%;
 }
 
 .referral-table .col-happened {
-    width: 28%;
+    width: 25%;
 }
 
 .referral-table th.col-notes {
     width: 7rem;
+}
+
+.referral-table th.col-schedule {
+    width: 9rem;
 }
 
 .referral-table th.col-actions {
@@ -531,4 +535,96 @@ th.col-level {
     border-color: var(--success);
     background: var(--success-soft);
     color: var(--success);
+}
+
+
+/* What the student did with the counselor's message: "Seen" after OK, and Going / Not going. */
+.indicators {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.seen,
+.answer {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.seen {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.seen.is-seen {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.answer.going {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.answer.not-going {
+    background: var(--warning-soft, #fdf0d5);
+    color: var(--warning, #9a6700);
+}
+
+/* Schedule: at the right of Notes. A dashed pill to set it, a filled pill with the day and the time once it is set (press it to move it). */
+.col-schedule {
+    text-align: center;
+}
+
+.schedule-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px dashed var(--field-border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.schedule-button:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.schedule-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.schedule-button.is-set {
+    border-style: solid;
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    text-align: left;
+}
+
+.schedule-button .when {
+    white-space: nowrap;
+}
+
+.schedule-button small {
+    display: block;
+    font-weight: 500;
+    opacity: 0.85;
 }

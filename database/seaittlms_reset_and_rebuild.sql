@@ -2211,5 +2211,18 @@ CREATE INDEX `ix_student_applications_track_id` ON `student_applications` (`trac
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261112080737_AdmissionAndRolePages', '9.0.20');
 
+ALTER TABLE `referrals` ADD `scheduled_at_utc` datetime(6) NULL;
+
+ALTER TABLE `referrals` ADD `student_responded_at_utc` datetime(6) NULL;
+
+ALTER TABLE `referrals` ADD `student_response` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `referrals` ADD `student_seen_at_utc` datetime(6) NULL;
+
+ALTER TABLE `referrals` ADD CONSTRAINT `ck_referrals_student_response` CHECK (student_response IS NULL OR student_response IN ('Going', 'NotGoing'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261112091045_ReferralSchedule', '9.0.20');
+
 COMMIT;
 

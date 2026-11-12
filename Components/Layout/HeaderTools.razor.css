@@ -574,6 +574,18 @@ html[data-sound="off"] [data-sound-toggle] .thumb {
     margin-top: 0.8rem;
 }
 
+.guidance-ask {
+    margin: 0.4rem 0 0;
+    font-weight: 600;
+}
+
+.guidance-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
 @keyframes guidance-in {
     from { transform: scale(0.2) rotate(-30deg); opacity: 0; }
     to { transform: none; opacity: 1; }

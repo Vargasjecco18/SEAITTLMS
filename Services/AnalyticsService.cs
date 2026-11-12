@@ -35,7 +35,14 @@ public sealed record AnalyticsReport(
     string ConcernTitle, IReadOnlyList<ConcernCount> Concerns,
     int Resolved, int Improved, IReadOnlyList<InterventionStat> Interventions,
     string PerformanceTitle, IReadOnlyList<GroupPerformance> Performance,
-    int Solved = 0, int SolvedRecently = 0, IReadOnlyList<ConcernCount>? SolvedByReason = null, IReadOnlyList<ConcernStudent>? ConcernStudents = null);
+    int Solved = 0, int SolvedRecently = 0, IReadOnlyList<ConcernCount>? SolvedByReason = null, IReadOnlyList<ConcernStudent>? ConcernStudents = null,
+    IReadOnlyList<AbsentDay>? AbsentHistory = null);
+
+/// <summary>A student who was absent on a day, with the courses they were absent in (for the guidance counselor's history of absences).</summary>
+public sealed record AbsentStudent(int StudentId, string Name, string Lrn, IReadOnlyList<string> Courses);
+
+/// <summary>A school day and the students who were marked absent in at least one course that day.</summary>
+public sealed record AbsentDay(DateOnly Day, IReadOnlyList<AbsentStudent> Students);
 
 /// <summary>A student who has an attendance concern or a violation concern now (one line for each student and kind), for the guidance counselor's analytics.</summary>
 /// <param name="Detail">What was found: the course of an attendance concern, "Attendance as low as 75% in 3 courses" when there are several, or the violation.</param>
@@ -297,9 +304,16 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         var solvedByReason = new List<ConcernCount>();
         var concernStudents = new List<ConcernStudent>();
         int openReferrals;
+        IReadOnlyList<AbsentDay>? absentHistory = null;
         if (schoolWide)
         {
             concernTitle = "Primary concern categories";
+
+            // The history of the students who were absent: each school day of the last 30 days, with the students marked absent that day and the courses.
+            if (user.Role == AppRoles.GuidanceCounselor)
+            {
+                absentHistory = await GetAbsentHistoryAsync(db, PhilippineTime.DayOf(now), 30, ct);
+            }
             var reasons = await db.Referrals.AsNoTracking().GroupBy(r => r.Reason).Select(g => new { Reason = g.Key, Count = g.Count() }).ToListAsync(ct);
 
             // The concerns are attendance and violations (failing grades and students at risk are the teachers', in their own Analytics).
@@ -341,6 +355,21 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         return new AnalyticsReport(schoolWide, schoolWide ? "the whole school" : "your courses", byStudent.Count, Avg(overall.Values.Where(v => v is not null).Select(v => v!.Value)), Pooled(metrics),
-            failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, attendance, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance, solved, solvedRecently, solvedByReason, concernStudents);
+            failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, attendance, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance, solved, solvedRecently, solvedByReason, concernStudents, absentHistory);
+    }
+
+    /// <summary>The students marked absent on each of the last <paramref name="days"/> days (today included), the newest day first. A day with nobody absent is left out.</summary>
+    internal static async Task<IReadOnlyList<AbsentDay>> GetAbsentHistoryAsync(AppDbContext db, DateOnly today, int days, CancellationToken ct)
+    {
+        var from = today.AddDays(-(days - 1));
+        var rows = await db.AttendanceRecords.AsNoTracking()
+            .Where(a => a.Status == AttendanceStatus.Absent && a.AttendedOn >= from && a.AttendedOn <= today && a.Student.Status == StudentStatus.Active)
+            .Select(a => new { a.AttendedOn, a.StudentId, a.Student.FirstName, a.Student.LastName, a.Student.Lrn, Subject = a.Assignment.Subject.Name })
+            .ToListAsync(ct);
+        return [.. rows.GroupBy(r => r.AttendedOn).OrderByDescending(g => g.Key)
+            .Select(g => new AbsentDay(g.Key,
+                [.. g.GroupBy(r => r.StudentId)
+                    .Select(x => new AbsentStudent(x.Key, $"{x.First().LastName}, {x.First().FirstName}", x.First().Lrn, [.. x.Select(r => r.Subject).Distinct().OrderBy(n => n)]))
+                    .OrderBy(x => x.Name)]))];
     }
 }

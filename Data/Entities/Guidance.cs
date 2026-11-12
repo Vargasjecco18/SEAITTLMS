@@ -66,6 +66,22 @@ public static class ReferralOutcomes
     public static string Display(string outcome) => outcome == NoChange ? "No change" : outcome;
 }
 
+/// <summary>What the student answers when the guidance counselor wants to see them: going or not going.</summary>
+public static class ReferralResponses
+{
+    public const string Going = "Going";
+    public const string NotGoing = "NotGoing";
+
+    public static readonly string[] All = [Going, NotGoing];
+
+    public static string Display(string? response) => response switch
+    {
+        Going => "Going",
+        NotGoing => "Not going",
+        _ => "",
+    };
+}
+
 /// <summary>
 /// A student the system sent to the guidance counselor because their grade in a subject is below 70 (failing), close to it (at risk),
 /// or they miss class (low attendance). The system makes referrals by itself; the counselor works them: Open, In progress, Resolved.
@@ -103,4 +119,15 @@ public class Referral : AuditableEntity
 
     public int? HandledByUserId { get; set; }
     public User? HandledBy { get; set; }
+
+    /// <summary>When the student pressed OK (or answered) on the box that tells what the counselor wrote. Empty while the student has not seen it; the counselor sees this as "Seen".</summary>
+    public DateTime? StudentSeenAtUtc { get; set; }
+
+    /// <summary>One of <see cref="ReferralResponses"/>: what the student answered when the counselor wanted to see them. Empty until the student answers.</summary>
+    public string? StudentResponse { get; set; }
+
+    public DateTime? StudentRespondedAtUtc { get; set; }
+
+    /// <summary>The day and time the counselor will see the student (set after the student said Going; the counselor can move it).</summary>
+    public DateTime? ScheduledAtUtc { get; set; }
 }

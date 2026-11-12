@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @inject CurrentUser Me
 @inject ReferralService Desk
+@inject TimeProvider Clock
 
 <PageTitle>Referrals · SEAITT Legazpi LMS</PageTitle>
 
@@ -60,6 +61,7 @@
                         <th scope="col" class="col-concern">Concern</th>
                         <th scope="col" class="col-happened">What happened</th>
                         <th scope="col" class="col-notes">Notes</th>
+                        <th scope="col" class="col-schedule">Schedule</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Solved</span></th>
                     </tr>
                 </thead>
@@ -75,6 +77,19 @@
                                     <div class="who-text">
                                         <button type="button" class="name-link" title="Open the concerns of @student.StudentName, the earlier ones and where to add one" @onclick="() => ViewAll(student)">@student.StudentName</button>
                                         <span class="sub">@student.Lrn</span>
+                                        @* After the counselor wrote to the student: whether the student pressed OK on it (Seen), and what the student answered (going or not going). *@
+                                        @if (student.Notified)
+                                        {
+                                            <span class="indicators">
+                                                <span class="seen @(student.Seen ? "is-seen" : "")" data-seen="@(student.Seen ? "yes" : "no")" title="@(student.Seen ? $"The student pressed OK on {(student.SeenAtUtc is { } seenAt ? PhilippineTime.FormatDate(seenAt) + " at " + PhilippineTime.FormatTime(seenAt) : "your message")}" : "The student has not pressed OK on your message yet")">
+                                                    <Icon Name="@(student.Seen ? "check-check" : "clock")" Size="12" /> @(student.Seen ? "Seen" : "Not seen yet")
+                                                </span>
+                                                @if (student.Response is { } answer)
+                                                {
+                                                    <span class="answer @(answer == ReferralResponses.Going ? "going" : "not-going")" data-answer="@answer">@ReferralResponses.Display(answer)</span>
+                                                }
+                                            </span>
+                                        }
                                     </div>
                                 </div>
                             </td>
@@ -136,6 +151,32 @@
                                     <button type="button" class="notes-button @(noted ? "is-noted" : "")" title="@(noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)"><Icon Name="@(noted ? "notebook-pen" : "pencil")" Size="14" /> @(noted ? "Noted" : "None")</button>
                                 }
                             </td>
+                            <td class="col-schedule">
+                                @* To the right of Notes: the day and the time the counselor will see the student, once the student answered Going. *@
+                                @if (!student.HasOpen)
+                                {
+                                    <span class="muted">—</span>
+                                }
+                                else if (student.Response == ReferralResponses.NotGoing)
+                                {
+                                    <span class="muted" title="The student answered Not going, so there is no schedule">Not going</span>
+                                }
+                                else if (student.Response is null)
+                                {
+                                    <span class="muted" title="You can set the schedule after the student answers Going">@(student.Notified ? "Waiting for the student" : "—")</span>
+                                }
+                                else if (student.ScheduledAtUtc is { } scheduled)
+                                {
+                                    <button type="button" class="schedule-button is-set" title="Move the schedule" data-schedule="set" @onclick="() => OpenSchedule(student)">
+                                        <Icon Name="calendar-clock" Size="14" />
+                                        <span class="when">@PhilippineTime.ToLocal(scheduled).ToString("ddd, MMM d")<small>@PhilippineTime.FormatTime(scheduled)</small></span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="schedule-button" title="Choose the day and the time to see the student" data-schedule="none" @onclick="() => OpenSchedule(student)"><Icon Name="calendar-plus" Size="14" /> Set schedule</button>
+                                }
+                            </td>
                             <td class="col-actions">
                                 <Button Small="true" IconName="circle-check" Disabled="@(busy || !student.HasOpen)" Title="@(student.HasOpen ? "The concern is over" : "No concern to solve")" OnClick="() => SolveRowAsync(student)">Solved</Button>
                             </td>
@@ -158,7 +199,7 @@
 
 @* ===== One student: their concerns (Notes and Solved at the top right), the earlier ones, and a place to add one ===== *@
 @* Only one box is up at a time: while the notes or the attendance of the student are open, the box with all their concerns waits behind (it comes back when they close). *@
-<Modal Open="viewing is not null && !notesFromRow && !notesOpen && attendanceFor is null" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
+<Modal Open="viewing is not null && !notesFromRow && !notesOpen && attendanceFor is null && !othersOpen" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
     @if (viewing is not null)
     {
         <div class="modal-top">
@@ -254,11 +295,11 @@
                 </select>
             </Field>
             <Field For="a-happened" Label="What happened?" Required="true">
-                <select id="a-happened" value="@newHappened" disabled="@(newReason == "")" @onchange="e => newHappened = e.Value?.ToString() ?? string.Empty">
+                <select id="a-happened" value="@newHappened" disabled="@(newReason == "")" @onchange="HappenedPicked">
                     <option value="">@(newReason == "" ? "Choose what it is first" : "Choose what happened")</option>
                     @foreach (var choice in newReason == "" ? [] : ReferralService.HappenedChoices(newReason))
                     {
-                        <option value="@choice" selected="@(newHappened == choice)">@choice</option>
+                        <option value="@choice" selected="@(newHappened == choice)">@(choice == InterventionTypes.Others && newHappened == choice && newOtherText.Length > 0 ? $"Others: {newOtherText}" : choice)</option>
                     }
                 </select>
             </Field>
@@ -294,17 +335,18 @@
 </Modal>
 
 @* ===== The help given and the notes of the student ===== *@
-<Modal Open="notesOpen" Title="@($"Notes · {viewing?.StudentName}")" Centered="true" Top="true" OnClose="CloseNotes">
+<Modal Open="notesOpen && !othersOpen" Title="@($"Notes · {viewing?.StudentName}")" Centered="true" Top="true" OnClose="CloseNotes">
     @if (notesOpen && viewing is not null)
     {
         <FormErrors Errors="formErrors" />
 
         <Field For="w-help" Label="Help given">
-            <select id="w-help" value="@editIntervention" @onchange="e => editIntervention = e.Value?.ToString() ?? string.Empty">
+            @* "Others" opens a box in the middle of the screen to type the help; the words typed are what is kept. *@
+            <select id="w-help" value="@HelpSelectValue" @onchange="HelpPicked">
                 <option value="">Not decided yet</option>
                 @foreach (var i in InterventionTypes.All)
                 {
-                    <option value="@i" selected="@(editIntervention == i)">@i</option>
+                    <option value="@i" selected="@(HelpSelectValue == i)">@(i == InterventionTypes.Others && IsCustomHelp ? $"Others: {editIntervention}" : i)</option>
                 }
             </select>
         </Field>
@@ -316,6 +358,33 @@
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseNotes">Cancel</Button>
             <Button IconName="circle-check" Disabled="busy" OnClick="SaveAsync">@(busy ? "Saving…" : "Save")</Button>
+        </div>
+    }
+</Modal>
+
+@* ===== Others: the counselor types what happened, or the help given, in a box in the middle of the screen ===== *@
+<OtherTextDialog Open="othersOpen" Id="others-text"
+                 Title="@(othersKind == "help" ? "Help given · Others" : "What happened · Others")"
+                 Label="@(othersKind == "help" ? "What help did you give?" : "What happened?")"
+                 MaxLength="@(othersKind == "help" ? 100 : 280)" Initial="@othersInitial"
+                 OnSave="OthersSavedAsync" OnCancel="CloseOthers" />
+
+@* ===== The day and the time to see the student (set after the student answered Going; it can be moved) ===== *@
+<Modal Open="scheduleFor is not null" Title="@($"Schedule · {scheduleFor?.StudentName}")" Centered="true" Top="true" Narrow="true" OnClose="CloseSchedule">
+    @if (scheduleFor is not null)
+    {
+        <p class="sub all-sub">@(scheduleFor.ScheduledAtUtc is null ? "The student said Going. Choose the day and the time. The student is told." : "Choose the new day and time. The student is told that it was moved.")</p>
+        <FormErrors Errors="formErrors" />
+        <Field For="sch-when" Label="Day and time" Required="true" Hint="Philippine time.">
+            <input id="sch-when" type="datetime-local" min="@scheduleMin" value="@scheduleText" @onchange="e => scheduleText = e.Value?.ToString() ?? string.Empty" />
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSchedule">Cancel</Button>
+            @if (scheduleFor.ScheduledAtUtc is not null)
+            {
+                <Button Variant="ButtonVariant.Secondary" IconName="calendar-x" Disabled="busy" OnClick="RemoveScheduleAsync">Take it away</Button>
+            }
+            <Button IconName="calendar-check" Disabled="busy" OnClick="SaveScheduleAsync">@(busy ? "Saving…" : scheduleFor.ScheduledAtUtc is null ? "Save and tell the student" : "Move and tell the student")</Button>
         </div>
     }
 </Modal>
@@ -338,6 +407,14 @@
     private ReferralStudentRow? attendanceFor;
     private IReadOnlyList<ReferralRow> attendanceLines = [];
     private bool notesOpen;
+    private string newOtherText = "";
+    private bool othersOpen;
+    private string othersKind = "";
+    private string? othersInitial;
+    private ReferralStudentRow? othersStudent;
+    private string othersReason = "";
+    private ReferralStudentRow? scheduleFor;
+    private string scheduleText = "";
     private string grade = "";
     private string searchText = "";
     private string appliedSearch = "";
@@ -359,6 +436,153 @@
         reason = ReferralReasons.All.Contains(ReasonQuery ?? "") ? ReasonQuery! : "";
         searchText = appliedSearch = SearchQuery?.Trim() ?? "";
         await LoadAsync();
+    }
+
+    // ---------- Others: the words the counselor types in the box in the middle of the screen
+    private bool IsCustomHelp => !string.IsNullOrWhiteSpace(editIntervention) && !InterventionTypes.IsChoice(editIntervention);
+
+    /// <summary>What the Help given list shows: a choice, or Others when the counselor typed their own words.</summary>
+    private string HelpSelectValue => IsCustomHelp ? InterventionTypes.Others : editIntervention;
+
+    private void OpenOthers(string kind, ReferralStudentRow? student, string reasonKey, string? initial)
+    {
+        othersKind = kind;
+        othersStudent = student;
+        othersReason = reasonKey;
+        othersInitial = initial;
+        othersOpen = true;
+    }
+
+    private void CloseOthers()
+    {
+        othersOpen = false;
+        if (othersKind == "happened-form" && newOtherText.Length == 0)
+        {
+            newHappened = "";
+        }
+    }
+
+    private void HelpPicked(ChangeEventArgs e)
+    {
+        var choice = e.Value?.ToString() ?? "";
+        if (choice == InterventionTypes.Others)
+        {
+            OpenOthers("help", null, "", IsCustomHelp ? editIntervention : null);
+        }
+        else
+        {
+            editIntervention = choice;
+        }
+    }
+
+    private void HappenedPicked(ChangeEventArgs e)
+    {
+        newHappened = e.Value?.ToString() ?? string.Empty;
+        if (newHappened == InterventionTypes.Others)
+        {
+            OpenOthers("happened-form", null, newReason, newOtherText.Length > 0 ? newOtherText : null);
+        }
+        else
+        {
+            newOtherText = "";
+        }
+    }
+
+    private async Task OthersSavedAsync(string text)
+    {
+        var kind = othersKind;
+        othersOpen = false;
+        switch (kind)
+        {
+            case "help":
+                editIntervention = text;
+                break;
+            case "happened-form":
+                newOtherText = text;
+                break;
+            case "happened-row" when othersStudent is not null:
+                if (busy)
+                {
+                    break;
+                }
+
+                busy = true;
+                try
+                {
+                    var saved = await Desk.AddConcernAsync(othersStudent.StudentId, othersReason, InterventionTypes.Others, text, userId);
+                    messageIsError = !saved.Succeeded;
+                    message = saved.Succeeded ? saved.Message : string.Join(" ", saved.Errors);
+                    if (saved.Succeeded)
+                    {
+                        rowReasons.Remove(othersStudent.StudentId);
+                        await LoadAsync();
+                    }
+                }
+                finally
+                {
+                    busy = false;
+                }
+
+                break;
+        }
+    }
+
+    // ---------- the schedule: the day and the time to see the student
+    private string scheduleMin => PhilippineTime.Now(Clock).DateTime.ToString("yyyy-MM-dd'T'HH:mm");
+
+    private void OpenSchedule(ReferralStudentRow student)
+    {
+        formErrors = [];
+        scheduleFor = student;
+        scheduleText = student.ScheduledAtUtc is { } at ? PhilippineTime.ToInputValue(at) : "";
+    }
+
+    private void CloseSchedule() => scheduleFor = null;
+
+    private async Task SaveScheduleAsync()
+    {
+        if (scheduleFor is null || busy)
+        {
+            return;
+        }
+
+        if (!DateTime.TryParse(scheduleText, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var local))
+        {
+            formErrors = ["Choose the day and the time."];
+            return;
+        }
+
+        await ApplyScheduleAsync(local);
+    }
+
+    private async Task RemoveScheduleAsync() => await ApplyScheduleAsync(null);
+
+    private async Task ApplyScheduleAsync(DateTime? local)
+    {
+        if (scheduleFor is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var saved = await Desk.SetScheduleAsync(scheduleFor.StudentId, local, userId);
+            if (!saved.Succeeded)
+            {
+                formErrors = [.. saved.Errors];
+                return;
+            }
+
+            messageIsError = false;
+            message = $"{scheduleFor.StudentName}: {saved.Message}";
+            scheduleFor = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 
     private void ClearMessage() => message = null;
@@ -384,6 +608,13 @@
     {
         if (busy || string.IsNullOrWhiteSpace(happened))
         {
+            return;
+        }
+
+        // Others: a box in the middle of the screen asks for the words first.
+        if (happened == InterventionTypes.Others)
+        {
+            OpenOthers("happened-row", student, reasonKey, null);
             return;
         }
 
@@ -472,6 +703,7 @@
         newReason = "";
         newHappened = "";
         newMore = "";
+        newOtherText = "";
         showPrevious = false;
         viewing = student;
     }
@@ -486,6 +718,7 @@
     {
         newReason = e.Value?.ToString() ?? "";
         newHappened = "";
+        newOtherText = "";
     }
 
     /// <summary>One line of the list of concerns: attendance concerns found on the same day are one line (View attendance shows each course); a violation is a line of its own.</summary>
@@ -513,7 +746,7 @@
         busy = true;
         try
         {
-            var saved = await Desk.AddConcernAsync(viewing.StudentId, newReason, newHappened, newMore, userId);
+            var saved = await Desk.AddConcernAsync(viewing.StudentId, newReason, newHappened, newHappened == InterventionTypes.Others ? newOtherText : newMore, userId);
             if (!saved.Succeeded)
             {
                 formErrors = [.. saved.Errors];
@@ -524,6 +757,7 @@
             newReason = "";
             newHappened = "";
             newMore = "";
+            newOtherText = "";
             messageIsError = false;
             message = saved.Message;
             await LoadAsync();

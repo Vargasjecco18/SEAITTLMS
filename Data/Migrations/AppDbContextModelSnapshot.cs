@@ -2328,6 +2328,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("resolved_at_utc");
 
+                    b.Property<DateTime?>("ScheduledAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("scheduled_at_utc");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(12)
@@ -2337,6 +2341,19 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Property<int>("StudentId")
                         .HasColumnType("int")
                         .HasColumnName("student_id");
+
+                    b.Property<DateTime?>("StudentRespondedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("student_responded_at_utc");
+
+                    b.Property<string>("StudentResponse")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("student_response");
+
+                    b.Property<DateTime?>("StudentSeenAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("student_seen_at_utc");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -2364,6 +2381,8 @@ namespace SEAITT_LMS.Data.Migrations
                             t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation')");
 
                             t.HasCheckConstraint("ck_referrals_status", "status IN ('Open', 'InProgress', 'Resolved')");
+
+                            t.HasCheckConstraint("ck_referrals_student_response", "student_response IS NULL OR student_response IN ('Going', 'NotGoing')");
                         });
                 });
 

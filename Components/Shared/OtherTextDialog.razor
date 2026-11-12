@@ -1,0 +1,84 @@
+@* "Others" in a list: a small box in the middle of the screen where the person types the words that are not in the list. Save gives the text back; Cancel gives nothing. *@
+<Modal Open="Open" Title="@Title" Centered="true" Top="true" Narrow="true" OnClose="CancelAsync">
+    @if (Open)
+    {
+        <Field For="@Id" Label="@Label" Required="true" Hint="@($"At most {MaxLength} characters.")">
+            <textarea id="@Id" rows="3" maxlength="@MaxLength" autocomplete="off" @bind="text" @bind:event="oninput" @ref="box"></textarea>
+        </Field>
+        @if (problem is not null)
+        {
+            <p class="problem" role="alert">@problem</p>
+        }
+
+        <div class="actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CancelAsync">Cancel</Button>
+            <Button IconName="circle-check" OnClick="SaveAsync">@SaveText</Button>
+        </div>
+    }
+</Modal>
+
+@code {
+    private string text = "";
+    private string? problem;
+    private bool wasOpen;
+    private ElementReference box;
+
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public string Title { get; set; } = "Others";
+    [Parameter] public string Label { get; set; } = "Type it";
+    [Parameter] public string Id { get; set; } = "other-text";
+    [Parameter] public string SaveText { get; set; } = "Save";
+    [Parameter] public int MaxLength { get; set; } = 200;
+
+    /// <summary>What was typed before (when the box opens again to change it).</summary>
+    [Parameter] public string? Initial { get; set; }
+
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // A new opening starts with the text that was given (or empty).
+        if (Open && !wasOpen)
+        {
+            text = Initial ?? "";
+            problem = null;
+        }
+
+        wasOpen = Open;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Open && firstRender is false && problem is null && text.Length == 0)
+        {
+            try
+            {
+                await box.FocusAsync();
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or JSDisconnectedException)
+            {
+            }
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        var clean = text.Trim();
+        if (clean.Length == 0)
+        {
+            problem = "Type the words first.";
+            return;
+        }
+
+        if (clean.Length > MaxLength)
+        {
+            problem = $"At most {MaxLength} characters.";
+            return;
+        }
+
+        await OnSave.InvokeAsync(clean);
+    }
+
+    private async Task CancelAsync() => await OnCancel.InvokeAsync();
+}

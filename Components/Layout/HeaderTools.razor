@@ -16,6 +16,7 @@
 @inject IJSRuntime JS
 @inject AuthService Auth
 @inject NotificationSoundService Sounds
+@inject ReferralService Referrals
 
 @* The buttons at the right of the header: messages, notifications and settings. It is a live component, so the
    numbers on the buttons keep up with what happens while a page is open. *@
@@ -97,7 +98,19 @@
                     <p class="guidance-count">@guidanceQueue.Count messages waiting</p>
                 }
 
-                <Button IconName="@(guidanceQueue.Count > 1 ? "arrow-right" : "circle-check")" OnClick="CloseGuidanceAsync">@(guidanceQueue.Count > 1 ? "Next" : "OK")</Button>
+                @if (guidanceInvite)
+                {
+                    @* The counselor wants to see the student: going or not going. Either answer also tells the counselor that the message was read. *@
+                    <p class="guidance-ask">Will you go to the guidance office?</p>
+                    <div class="guidance-buttons">
+                        <Button IconName="circle-check" Disabled="guidanceBusy" OnClick="() => AnswerGuidanceAsync(true)">Going</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="circle-x" Disabled="guidanceBusy" OnClick="() => AnswerGuidanceAsync(false)">Not going</Button>
+                    </div>
+                }
+                else
+                {
+                    <Button IconName="@(guidanceQueue.Count > 1 ? "arrow-right" : "circle-check")" Disabled="guidanceBusy" OnClick="CloseGuidanceAsync">@(guidanceQueue.Count > 1 ? "Next" : "OK")</Button>
+                }
             </div>
         }
     </Modal>
@@ -266,6 +279,10 @@
     private List<NotificationItem> guidanceQueue = [];
     private NotificationItem? guidance => guidanceQueue.Count > 0 ? guidanceQueue[0] : null;
 
+    // The counselor asked "going or not going?" and the student has not answered: the box has the two buttons instead of OK.
+    private bool guidanceInvite;
+    private bool guidanceBusy;
+
     private bool photoBusy;
     private bool photoFailed;
     private string? photoMessage;
@@ -418,16 +435,50 @@
         {
             guidanceQueue.Add(item);
         }
+
+        guidanceInvite = guidanceQueue.Count > 0 && await Referrals.HasPendingInviteAsync(user.UserId);
     }
 
     /// <summary>The student pressed OK: this message is read (it stays in the bell) and the next one, if any, shows.</summary>
     private async Task CloseGuidanceAsync()
     {
-        if (guidance is { } shown && user is not null)
+        if (guidance is { } shown && user is not null && !guidanceBusy)
         {
-            guidanceQueue.RemoveAt(0);
-            await Notifications.MarkReadAsync(user.UserId, shown.Id);
-            await RefreshCountsAsync();
+            guidanceBusy = true;
+            try
+            {
+                guidanceQueue.RemoveAt(0);
+                await Notifications.MarkReadAsync(user.UserId, shown.Id);
+
+                // OK: the counselor is told that the message was read (it shows as "Seen" on the row of the student).
+                await Referrals.StudentSeenAsync(user.UserId);
+                await RefreshCountsAsync();
+            }
+            finally
+            {
+                guidanceBusy = false;
+            }
+        }
+    }
+
+    /// <summary>Going or Not going: the answer goes to the counselor (it also counts as read), and the message is closed.</summary>
+    private async Task AnswerGuidanceAsync(bool going)
+    {
+        if (guidance is { } shown && user is not null && !guidanceBusy)
+        {
+            guidanceBusy = true;
+            try
+            {
+                await Referrals.StudentRespondAsync(user.UserId, going);
+                guidanceQueue.RemoveAt(0);
+                await Notifications.MarkReadAsync(user.UserId, shown.Id);
+                guidanceInvite = guidanceQueue.Count > 0 && await Referrals.HasPendingInviteAsync(user.UserId);
+                await RefreshCountsAsync();
+            }
+            finally
+            {
+                guidanceBusy = false;
+            }
         }
     }
 

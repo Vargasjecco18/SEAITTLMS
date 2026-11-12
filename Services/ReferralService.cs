@@ -8,7 +8,8 @@ namespace SEAITT_LMS.Services;
 public sealed record ReferralRow(
     int Id, int StudentId, string StudentName, string Lrn, string? Placement, int? AssignmentId, string? SubjectName, string? TeacherName,
     string Reason, string Detail, decimal? Metric, string Status, string? Intervention, string? Notes, string? Outcome, DateTime CreatedAtUtc, DateTime? ResolvedAtUtc,
-    byte? GradeLevel = null, string? Strand = null);
+    byte? GradeLevel = null, string? Strand = null,
+    DateTime? StudentSeenAtUtc = null, string? StudentResponse = null, DateTime? ScheduledAtUtc = null);
 
 public sealed record ReferralPage(IReadOnlyList<ReferralRow> Items, int Total, int Page, int PageCount);
 
@@ -28,6 +29,21 @@ public sealed record ReferralStudentRow(
     /// <summary>True while there is a concern that is not solved: the At risk button of the student is colored then, and white again after Solved.</summary>
     public bool HasOpen => Referrals.Any(r => r.Status != ReferralStatus.Resolved);
 
+    /// <summary>The counselor wrote to the student (saved notes): the student has been told, and there is something to see or not.</summary>
+    public bool Notified => OpenReferrals.Any(r => r.Status == ReferralStatus.InProgress);
+
+    /// <summary>The student pressed OK (or answered) on the last thing the counselor wrote.</summary>
+    public bool Seen => Notified && OpenReferrals.Where(r => r.Status == ReferralStatus.InProgress).All(r => r.StudentSeenAtUtc is not null);
+
+    /// <summary>When the student saw it (the first time among the concerns), or nothing.</summary>
+    public DateTime? SeenAtUtc => Seen ? OpenReferrals.Where(r => r.Status == ReferralStatus.InProgress).Max(r => r.StudentSeenAtUtc) : null;
+
+    /// <summary><see cref="ReferralResponses"/>: what the student answered (going or not going), or nothing until they answer.</summary>
+    public string? Response => OpenReferrals.Select(r => r.StudentResponse).FirstOrDefault(x => x is not null);
+
+    /// <summary>When the counselor will see the student, or nothing.</summary>
+    public DateTime? ScheduledAtUtc => OpenReferrals.Select(r => r.ScheduledAtUtc).Where(x => x is not null).DefaultIfEmpty().Max();
+
     /// <summary>The different concerns: violations first, then attendance.</summary>
     public IReadOnlyList<string> Reasons => OpenReferrals.Select(r => r.Reason).Distinct()
         .OrderBy(x => x == ReferralReasons.Violation ? 0 : 1).ToList();
@@ -45,13 +61,19 @@ public sealed record GuidanceOverview(int Attendance, int Violations, int Studen
 
 public static class InterventionTypes
 {
+    /// <summary>The last choice of every list: the counselor types the words in a box in the middle of the screen.</summary>
+    public const string Others = "Others";
+
     public static readonly string[] All =
     [
         "Talked with the student",
         "Called the parents",
         "Talked with the teacher",
-        "Other",
+        Others,
     ];
+
+    /// <summary>True when the text is one of the choices (not "Others" itself), so it is not a text the counselor typed.</summary>
+    public static bool IsChoice(string? text) => text is not null && All.Contains(text) && text != Others;
 }
 
 /// <summary>
@@ -66,6 +88,9 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
 
     /// <summary>Missed works that put a student at risk.</summary>
     public const int MissingForRisk = 3;
+
+    /// <summary>A student who is absent this many times in a course goes to the referrals by themselves, whatever the attendance rate is.</summary>
+    public const int AbsencesForReferral = 3;
 
     /// <summary>After a referral is resolved the same problem is not sent again for this long.</summary>
     public const int CoolDownDays = 14;
@@ -101,9 +126,22 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
                 list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.AtRisk, m.Percent, $"{m.SubjectName}: {string.Join(", ", parts)}"));
             }
 
-            if (m.Days >= MinAttendanceDays && m.AttendanceRate is { } rate && rate < AttendanceService.LowAttendancePercent)
+            var lowRate = m.Days >= MinAttendanceDays && m.AttendanceRate is { } rate && rate < AttendanceService.LowAttendancePercent;
+            if (lowRate || m.Absent >= AbsencesForReferral)
             {
-                list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.LowAttendance, rate, $"{m.SubjectName}: attendance {rate:0.#}% ({m.Present + m.Late} of {m.Days} days)"));
+                // One attendance concern for the course: it says the absences and, when the rate is low, the rate.
+                var parts = new List<string>();
+                if (m.Absent >= AbsencesForReferral)
+                {
+                    parts.Add($"absent {m.Absent} times");
+                }
+
+                if (lowRate)
+                {
+                    parts.Add($"attendance {m.AttendanceRate:0.#}% ({m.Present + m.Late} of {m.Days} days)");
+                }
+
+                list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.LowAttendance, m.AttendanceRate, $"{m.SubjectName}: {string.Join(", ", parts)}"));
             }
         }
 
@@ -345,7 +383,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             "Skips classes",
             "Absent without a reason",
             "Stopped coming to school",
-            "Other",
+            InterventionTypes.Others,
         ]
         :
         [
@@ -356,7 +394,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             "Using a phone in class",
             "Not following the uniform or ID rule",
             "Damage to school property",
-            "Other",
+            InterventionTypes.Others,
         ];
 
     /// <summary>
@@ -377,10 +415,16 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             return ServiceResult.Fail("Choose what happened.");
         }
 
-        var detail = more is null ? happened : $"{happened}: {more}";
-        if (detail.Length > 500)
+        // Others: the counselor typed what happened in the box in the middle of the screen, and those words are what is kept.
+        if (happened == InterventionTypes.Others && more is null)
         {
-            return ServiceResult.Fail("What happened can have at most 500 characters.");
+            return ServiceResult.Fail("Type what happened.");
+        }
+
+        var detail = happened == InterventionTypes.Others ? more! : more is null ? happened : $"{happened}: {more}";
+        if (detail.Length > 300)
+        {
+            return ServiceResult.Fail("What happened can have at most 300 characters.");
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -438,6 +482,11 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             r.Intervention = intervention;
             r.Notes = notes;
             r.HandledByUserId = actingUserId;
+            if (changed)
+            {
+                // The student is told again, so the counselor sees "Seen" only after the student presses OK on this new message.
+                r.StudentSeenAtUtc = null;
+            }
         }
 
         await db.SaveChangesAsync(ct);
@@ -588,6 +637,162 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         return ServiceResult.Ok(status == ReferralStatus.Resolved ? "The referral is resolved." : "Saved.");
     }
 
+    // ======================================================================= the student answers
+
+    /// <summary>The student has a message from the counselor that asks "going or not going?" and has not answered it yet.</summary>
+    public async Task<bool> HasPendingInviteAsync(int studentUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Referrals.AsNoTracking().AnyAsync(r => r.Student.UserId == studentUserId && r.Status == ReferralStatus.InProgress && r.StudentResponse == null
+            && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation), ct);
+    }
+
+    private static string ShortName(Student s) => $"{s.FirstName} {s.LastName}";
+
+    /// <summary>
+    /// The student pressed OK on the box of the guidance counselor: the concerns that are being worked on are marked as seen and the counselor is told (once for each new message).
+    /// Nothing happens when the student has no concern open (the box was only a "your case is closed").
+    /// </summary>
+    public async Task<bool> StudentSeenAsync(int studentUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var open = await db.Referrals.Include(r => r.Student)
+            .Where(r => r.Student.UserId == studentUserId && r.Status == ReferralStatus.InProgress && r.StudentSeenAtUtc == null
+                        && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .ToListAsync(ct);
+        if (open.Count == 0)
+        {
+            return false;
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        foreach (var r in open)
+        {
+            r.StudentSeenAtUtc = now;
+        }
+
+        await db.SaveChangesAsync(ct);
+        await TellCounselorsAsync(db, $"{ShortName(open[0].Student)} read your message", "The student pressed OK on the message you sent.", ct);
+        return true;
+    }
+
+    /// <summary>The student answers the counselor: going or not going. It also counts as seen. The counselor is told, and a student who is going gets a schedule from the counselor.</summary>
+    public async Task<ServiceResult> StudentRespondAsync(int studentUserId, bool going, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var open = await db.Referrals.Include(r => r.Student)
+            .Where(r => r.Student.UserId == studentUserId && r.Status != ReferralStatus.Resolved
+                        && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .ToListAsync(ct);
+        if (open.Count == 0)
+        {
+            return ServiceResult.Fail("There is nothing to answer now.");
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        foreach (var r in open)
+        {
+            r.StudentResponse = going ? ReferralResponses.Going : ReferralResponses.NotGoing;
+            r.StudentRespondedAtUtc = now;
+            r.StudentSeenAtUtc ??= now;
+            if (!going)
+            {
+                // Not going: a schedule that was made no longer stands.
+                r.ScheduledAtUtc = null;
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        var name = ShortName(open[0].Student);
+        await TellCounselorsAsync(db,
+            going ? $"{name} is going to see you" : $"{name} is not going",
+            going ? "Choose the day and the time in Referrals, under Schedule. The student is told." : "The student answered Not going.", ct);
+        return ServiceResult.Ok(going ? "Your guidance counselor will tell you the day and the time." : "Your guidance counselor was told. You can always go to them later.");
+    }
+
+    private async Task TellCounselorsAsync(AppDbContext db, string title, string body, CancellationToken ct)
+    {
+        var counselors = await db.Users.AsNoTracking().Where(u => u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId).Select(u => u.Id).ToListAsync(ct);
+        await notifications.AddForManyAsync(counselors, "referral", title, body, "guidance/referrals", ct);
+    }
+
+    // ======================================================================= the counselor sets the day to see the student
+
+    /// <summary>"Monday, November 16, 2026 at 10:00 AM", the way the student reads it (Philippine time).</summary>
+    public static string ScheduleText(DateTime utc)
+    {
+        var local = PhilippineTime.ToLocal(utc);
+        return $"{local:dddd, MMMM d, yyyy} at {local:h:mm tt}";
+    }
+
+    /// <summary>
+    /// The counselor sets the day and the time to see a student who said Going, or moves it. <paramref name="local"/> is Philippine time. The student is told again with the schedule
+    /// (or that it was moved); an empty value takes the schedule away.
+    /// </summary>
+    public async Task<ServiceResult> SetScheduleAsync(int studentId, DateTime? local, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Users.AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId, ct))
+        {
+            return ServiceResult.Fail("Only the guidance counselor can set a schedule.");
+        }
+
+        var open = await db.Referrals.Include(r => r.Student)
+            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .ToListAsync(ct);
+        if (open.Count == 0)
+        {
+            return ServiceResult.Fail("This student has no concern to set a schedule for.");
+        }
+
+        if (!open.Any(r => r.StudentResponse == ReferralResponses.Going))
+        {
+            return ServiceResult.Fail(open.Any(r => r.StudentResponse == ReferralResponses.NotGoing)
+                ? "The student is not going, so there is no schedule."
+                : "Wait for the student to answer Going first.");
+        }
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        DateTime? when = null;
+        if (local is { } chosen)
+        {
+            when = PhilippineTime.ToUtc(DateTime.SpecifyKind(chosen, DateTimeKind.Unspecified));
+            if (when <= now)
+            {
+                return ServiceResult.Fail("Choose a day and a time that have not passed.");
+            }
+        }
+
+        var before = open.Select(r => r.ScheduledAtUtc).FirstOrDefault(x => x is not null);
+        if (before == when)
+        {
+            return ServiceResult.Ok("Saved.");
+        }
+
+        foreach (var r in open)
+        {
+            r.ScheduledAtUtc = when;
+            r.StudentSeenAtUtc = null;
+            r.HandledByUserId = actingUserId;
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        var userId = open[0].Student.UserId;
+        if (when is { } at)
+        {
+            await notifications.AddAsync(userId, "referral",
+                before is null ? "Your guidance counselor set a schedule" : "The schedule has been moved",
+                before is null ? $"Please come to the guidance office on {ScheduleText(at)}." : $"The new day and time: {ScheduleText(at)}. It was {ScheduleText(before.Value)} before.", null, ct);
+        }
+        else
+        {
+            await notifications.AddAsync(userId, "referral", "The schedule was taken away", "Your guidance counselor will tell you a new day and time.", null, ct);
+        }
+
+        return ServiceResult.Ok(when is null ? "The schedule was taken away and the student was told." : before is null ? "The schedule was saved and the student was told." : "The schedule was moved and the student was told.");
+    }
+
     // ======================================================================= helpers
 
     private static async Task<Dictionary<int, string>> SectionLabelsAsync(AppDbContext db, CancellationToken ct) =>
@@ -602,10 +807,12 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             Subject = r.Assignment != null ? r.Assignment.Subject.Name : null,
             Teacher = r.Assignment != null ? r.Assignment.Teacher.FirstName + " " + r.Assignment.Teacher.LastName : null,
             r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc,
+            r.StudentSeenAtUtc, r.StudentResponse, r.ScheduledAtUtc,
         }).ToListAsync(ct);
         var sections = await SectionLabelsAsync(db, ct);
         var strands = await db.Strands.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.Code, ct);
         return rows.Select(r => new ReferralRow(r.Id, r.StudentId, $"{r.LastName}, {r.FirstName}", r.Lrn, r.SectionId is { } s ? sections.GetValueOrDefault(s) : null, r.AssignmentId, r.Subject, r.Teacher,
-            r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc, r.GradeLevel, r.StrandId is { } strandId ? strands.GetValueOrDefault(strandId) : null)).ToList();
+            r.Reason, r.Detail, r.Metric, r.Status, r.Intervention, r.Notes, r.Outcome, r.CreatedAtUtc, r.ResolvedAtUtc, r.GradeLevel, r.StrandId is { } strandId ? strands.GetValueOrDefault(strandId) : null,
+            r.StudentSeenAtUtc, r.StudentResponse, r.ScheduledAtUtc)).ToList();
     }
 }

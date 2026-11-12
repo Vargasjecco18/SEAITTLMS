@@ -635,3 +635,44 @@ h2 {
     font-size: 0.85rem;
     font-weight: 650;
 }
+
+
+/* The history of the students who were absent, day by day. */
+.absent-days {
+    display: grid;
+    gap: 0.4rem;
+    max-height: 22rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.absent-days summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.absent-day {
+    font-weight: 650;
+}
+
+.absent-people {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.4rem 0 0.2rem;
+    padding: 0 0 0 0.9rem;
+    list-style: none;
+}
+
+.absent-people .sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
