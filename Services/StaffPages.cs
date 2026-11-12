@@ -31,9 +31,12 @@ public static class StaffPages
 
     public static StaffPage? Find(string key) => All.FirstOrDefault(p => p.Key == key);
 
-    /// <summary>The keys of a saved list ("calendar,users"), only the ones that exist, no repeats.</summary>
-    public static IReadOnlyList<string> Parse(string? saved) =>
-        [.. (saved ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(k => Find(k) is not null).Distinct()];
+    /// <summary>The keys of a saved list ("calendar,users"), only the ones that exist, no repeats, always in the order of <see cref="All"/> (so the same pages are always saved the same way).</summary>
+    public static IReadOnlyList<string> Parse(string? saved)
+    {
+        var wanted = (saved ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
+        return [.. All.Where(p => wanted.Contains(p.Key)).Select(p => p.Key)];
+    }
 
     public static string Join(IEnumerable<string> keys) => string.Join(',', Parse(string.Join(',', keys)));
 }

@@ -2,9 +2,12 @@
     overflow-x: auto;
 }
 
+/* Fixed columns: the Message and the Friend status columns have the same width and the same place in every list (Friends, Classmates, Teachers, Students, Staff), whatever is in the cells. */
 .people-table {
     width: 100%;
+    min-width: 52rem;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .people-table th,
@@ -41,9 +44,21 @@
     white-space: nowrap;
 }
 
-/* The name takes the room; the Message button and the Friend status are together at the right end of the row. */
+.people-table .c-grade {
+    width: 6.5rem;
+}
+
+.people-table .c-strand {
+    width: 7rem;
+}
+
+.people-table .c-section {
+    width: 8.5rem;
+}
+
+/* The name takes the room that is left; the Message button and the Friend status are together at the right end of the row. */
 .people-table .c-name {
-    width: 38%;
+    width: auto;
 }
 
 .c-message {
@@ -52,7 +67,7 @@
 }
 
 .c-status {
-    white-space: nowrap;
+    width: 17rem;
     text-align: right;
 }
 
@@ -67,11 +82,11 @@
 
 /* The staff table: the name and the role at the left, and the Message button and the Friend status together at the right. */
 .staff-only .c-name {
-    width: 40%;
+    width: auto;
 }
 
 .staff-only .c-role {
-    width: 22%;
+    width: 13rem;
     white-space: nowrap;
 }
 
@@ -81,7 +96,7 @@
 }
 
 .staff-only .c-status {
-    width: 16rem;
+    width: 17rem;
     text-align: right;
 }
 

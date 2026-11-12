@@ -36,6 +36,27 @@ else if (Role == AppRoles.Admin)
         <StatCard Label="Open referrals" Value="@report.OpenReferrals" IconName="heart-handshake" Accent="AccentColor.Slate" Hint="With the guidance counselor" />
     </div>
 
+    @if (activity is { Total: > 0 })
+    {
+        @* How the students use the LMS (the last 14 days): green active, yellow inactive, red never logged in. *@
+        <div class="stats three" aria-label="Student activity">
+            <StatCard Label="Active students" Value="@activity.Active" IconName="circle-check" Accent="AccentColor.Green" Hint="Visit the LMS, view handouts and answer activities" />
+            <StatCard Label="Inactive students" Value="@activity.Inactive" IconName="clock" Accent="AccentColor.Amber" Hint="Not much visiting, viewing or answering" />
+            <StatCard Label="Never logged in" Value="@activity.NeverLoggedIn" IconName="user-x" Accent="AccentColor.Rose" Hint="Never signed in to the LMS" />
+        </div>
+
+        <ChartRow>
+            <Card Title="Active and inactive students" IconName="chart-pie">
+                <PieChart Title="Students by how they use the LMS" Slices="ActivitySlices" CenterText="@activity.Total.ToString()" />
+                <p class="note">@LmsRuleText</p>
+            </Card>
+            <Card Title="Students by grade" IconName="chart-column">
+                <BarChart Title="Students by how they did" Items="BandBars" />
+                <p class="note">All the students of the school, by the band of their average grade.</p>
+            </Card>
+        </ChartRow>
+    }
+
     <section class="levels" aria-label="@report.BandsTitle">
         <h2><Icon Name="chart-bar" Size="20" /> @report.BandsTitle</h2>
         @Legend
@@ -53,6 +74,10 @@ else if (Role == AppRoles.Admin)
 
     @* Round 35: the attendance, the primary concern categories and the solved concerns are the guidance counselor's; the administrator sees the grades. *@
     <div class="board">
+        @if (activity is { Total: > 0 })
+        {
+            @NudgeCard(activity)
+        }
         @PerformanceCard(report)
     </div>
 }
@@ -84,6 +109,16 @@ else if (Role == AppRoles.GuidanceCounselor)
         </div>
     </section>
 
+    <ChartRow>
+        <Card Title="Concerns by kind" IconName="chart-pie">
+            <PieChart Title="Concerns by kind" Slices="ConcernSlices" CenterText="@report.Concerns.Sum(c => c.Count).ToString()" />
+        </Card>
+        <Card Title="Students absent, day by day" IconName="chart-column">
+            <BarChart Title="Students absent by day" Items="AbsentBars" />
+            <p class="note">The last days a teacher marked someone absent.</p>
+        </Card>
+    </ChartRow>
+
     <div class="board">
         @AttendanceCard(report)
         @ConcernStudentsCard(report)
@@ -99,6 +134,16 @@ else
         <StatCard Label="Failing" Value="@report.FailingStudents" IconName="triangle-alert" Accent="@(report.FailingStudents > 0 ? AccentColor.Rose : AccentColor.Green)" Hint="@($"Below {GradeRules.PassingPercent:0} in a course")" />
         <StatCard Label="At risk" Value="@report.AtRiskStudents" IconName="shield-alert" Accent="AccentColor.Amber" Hint="Near failing or missing work" />
     </div>
+
+    <ChartRow>
+        <Card Title="My students by grade" IconName="chart-pie">
+            <PieChart Title="My students by the band of their grade" Slices="TeacherBandSlices" CenterText="@report.Bands.Sum(g => g.Bands.Total).ToString()" />
+            <p class="note">Every student in every course counts once for each course.</p>
+        </Card>
+        <Card Title="Average grade by course" IconName="chart-column">
+            <BarChart Title="Average grade by course" Items="CourseBars" Suffix="%" Full="100" />
+        </Card>
+    </ChartRow>
 
     <section class="my-courses" aria-label="My courses">
         <h2><Icon Name="book-open" Size="20" /> My courses <span class="count">@report.Performance.Count</span></h2>
@@ -168,6 +213,7 @@ else
     ];
 
     private AnalyticsReport? report;
+    private LmsActivity? activity;
     private string Role { get; set; } = "";
     private bool custom;
 
@@ -198,7 +244,80 @@ else
 
         Role = user?.Role ?? "";
         report = user is null ? null : await Reports.GetAsync(user);
+        if (Role == AppRoles.Admin)
+        {
+            activity = await Reports.GetLmsActivityAsync();
+        }
     }
+
+    // ---------- the charts
+    private static string LmsRuleText => $"Active (green): a score of {LmsActivityRules.ActiveFrom} or more in the last {LmsActivityRules.WindowDays} days. The score is visiting the LMS (up to 40: {LmsActivityRules.FullVisitDays} days of visits), viewing handouts (up to 30: {LmsActivityRules.FullHandouts}) and handing in activities (up to 30: {LmsActivityRules.FullAnswers}). Inactive (yellow): less than that. Never logged in (red): the student never signed in.";
+
+    private IReadOnlyList<ChartSlice> ActivitySlices => activity is null ? [] :
+    [
+        new("Active", activity.Active, ChartColors.Green),
+        new("Inactive", activity.Inactive, ChartColors.Yellow),
+        new("Never logged in", activity.NeverLoggedIn, ChartColors.Red),
+    ];
+
+    private static readonly string[] BandColors = [ChartColors.Green, ChartColors.Teal, ChartColors.Blue, ChartColors.Yellow, ChartColors.Red];
+
+    private IReadOnlyList<ChartSlice> BandBars => report is null ? [] :
+        [.. Bands.Select((band, i) => new ChartSlice(band.Label, report.Bands.Sum(g => band.Count(g.Bands)), BandColors[i]))];
+
+    private IReadOnlyList<ChartSlice> TeacherBandSlices => BandBars;
+
+    private IReadOnlyList<ChartSlice> ConcernSlices => report is null ? [] :
+        [.. report.Concerns.Select(c => new ChartSlice(ReferralReasons.Display(c.Reason), c.Count, c.Reason == ReferralReasons.Violation ? ChartColors.Violet : ChartColors.Orange))];
+
+    private IReadOnlyList<ChartSlice> AbsentBars => report?.AbsentHistory is null ? [] :
+        [.. report.AbsentHistory.Take(10).Reverse().Select(d => new ChartSlice(d.Day.ToString("MMM d", CultureInfo.InvariantCulture), d.Students.Count, ChartColors.Red, $"{d.Day:ddd, MMM d}: {d.Students.Count} absent"))];
+
+    private IReadOnlyList<ChartSlice> CourseBars => report is null ? [] :
+        [.. report.Performance.Where(p => p.Average is not null).Select((p, i) => new ChartSlice(p.Label, (double)p.Average!.Value, ChartColors.At(i)))];
+
+    /// <summary>The students who need a nudge: never logged in first, then the inactive ones with the lowest score.</summary>
+    private RenderFragment NudgeCard(LmsActivity a) => @<Card Title="Students to follow up" IconName="user-x">
+        @{
+            var list = a.Students.Where(r => r.State != LmsActivityRules.Active).Take(10).ToList();
+        }
+        @if (list.Count == 0)
+        {
+            <p class="muted">Every student is active.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">How they use the LMS</th>
+                            <th scope="col" class="num">Visits</th>
+                            <th scope="col" class="num">Handouts</th>
+                            <th scope="col" class="num">Answers</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in list)
+                        {
+                            <tr>
+                                <td>@s.Name<span class="sub">@s.Lrn@(s.Section is null ? "" : " · " + s.Section)</span></td>
+                                <td><Badge Tone="@(s.State == LmsActivityRules.Inactive ? Tone.Warning : Tone.Danger)">@LmsActivityRules.Display(s.State)</Badge></td>
+                                <td class="num">@s.VisitDays</td>
+                                <td class="num">@s.Handouts</td>
+                                <td class="num">@s.Answers</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (a.Inactive + a.NeverLoggedIn > list.Count)
+            {
+                <p class="note">Showing @list.Count of @(a.Inactive + a.NeverLoggedIn). The Excel file has all of them.</p>
+            }
+        }
+    </Card>;
 
     private RenderFragment Legend => @<ul class="legend" aria-label="Legend">
         @foreach (var band in Bands)

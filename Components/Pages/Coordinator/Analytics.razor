@@ -118,6 +118,16 @@ else
         </section>
     }
 
+    <ChartRow>
+        <Card Title="Who answered" IconName="chart-pie">
+            <PieChart Title="Students who answered and who did not" Slices="AnswerSlices" CenterText="@($"{data.RatePercent}%")" />
+            <p class="note">@data.Responses of @data.Expected.ToString("N0") answers.</p>
+        </Card>
+        <Card Title="Average rating by teacher" IconName="chart-column">
+            <BarChart Title="Average rating by teacher (out of 5)" Items="TeacherBars" Full="5" />
+        </Card>
+    </ChartRow>
+
     <div class="grid">
         <div class="wide">
             <Card Title="By teacher" IconName="presentation">
@@ -270,6 +280,15 @@ else
 }
 
 @code {
+    private IReadOnlyList<ChartSlice> AnswerSlices => data is null ? [] :
+    [
+        new("Answered", data.Responses, ChartColors.Green),
+        new("Not answered yet", Math.Max(0, data.Expected - data.Responses), ChartColors.Red),
+    ];
+
+    private IReadOnlyList<ChartSlice> TeacherBars => data is null ? [] :
+        [.. data.Teachers.Where(t => t.Average is not null).OrderByDescending(t => t.Average).Take(8).Select((t, i) => new ChartSlice(t.TeacherName, (double)t.Average!.Value, ChartColors.At(i)))];
+
     /// <summary>The binary, ranking and select-all questions: each with its options as bars (the share who chose it, or the average place).</summary>
     private RenderFragment OtherResults(IReadOnlyList<QuestionResult> results) => @<div class="others">
         @foreach (var r in results)

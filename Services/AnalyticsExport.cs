@@ -11,7 +11,7 @@ namespace SEAITT_LMS.Services;
 public static class AnalyticsExport
 {
     /// <summary>The student analytics of the administrator, the guidance counselor and a teacher.</summary>
-    public static byte[] ForStudents(AnalyticsReport r, string madeFor, DateTime nowPhilippine, IReadOnlyList<StudentResultRow>? results = null)
+    public static byte[] ForStudents(AnalyticsReport r, string madeFor, DateTime nowPhilippine, IReadOnlyList<StudentResultRow>? results = null, LmsActivity? activity = null)
     {
         var book = new XlsxBook();
 
@@ -138,6 +138,26 @@ public static class AnalyticsExport
             detail.Width(1, 34).Width(2, 16).Width(3, 20).Width(4, 36).Width(5, 12).Width(6, 14).Width(7, 12).Width(8, 10).Width(9, 8).Width(10, 8).Width(11, 16);
             detail.FrozenRows = 4;
             detail.AutoFilter = (4, 11);
+        }
+
+        // The administrator also gets how the students use the LMS: active (green), inactive (yellow), never logged in (red).
+        if (activity is { Total: > 0 })
+        {
+            var use = book.AddSheet("LMS activity");
+            Title(use, "How the students use the LMS", $"The last {LmsActivityRules.WindowDays} days. Active: a score of {LmsActivityRules.ActiveFrom}+ (visits up to 40, handouts viewed up to 30, activities handed in up to 30).");
+            use.Row(4, ["Student", "LRN", "Section", "State", "Score", "Days visited", "Handouts viewed", "Activities handed in", "Last login"], XlsxStyle.Header);
+            line = 5;
+            foreach (var x in activity.Students)
+            {
+                use.Set(line, 1, x.Name).Set(line, 2, x.Lrn, XlsxStyle.Text).Set(line, 3, x.Section).Set(line, 4, LmsActivityRules.Display(x.State)).Set(line, 5, x.Score, XlsxStyle.Integer)
+                    .Set(line, 6, x.VisitDays, XlsxStyle.Integer).Set(line, 7, x.Handouts, XlsxStyle.Integer).Set(line, 8, x.Answers, XlsxStyle.Integer)
+                    .Set(line, 9, x.LastLoginAtUtc is { } at ? PhilippineTime.FormatDateTime(at) : "Never");
+                line++;
+            }
+
+            use.Width(1, 34).Width(2, 16).Width(3, 20).Width(4, 16).Width(5, 8).Width(6, 14).Width(7, 16).Width(8, 20).Width(9, 22);
+            use.FrozenRows = 4;
+            use.AutoFilter = (4, 9);
         }
 
         return book.ToBytes();

@@ -38,6 +38,45 @@ public sealed record AnalyticsReport(
     int Solved = 0, int SolvedRecently = 0, IReadOnlyList<ConcernCount>? SolvedByReason = null, IReadOnlyList<ConcernStudent>? ConcernStudents = null,
     IReadOnlyList<AbsentDay>? AbsentHistory = null);
 
+/// <summary>
+/// How much a student uses the LMS, from the last <see cref="LmsActivityRules.WindowDays"/> days: visiting the LMS (the days the student signed in), viewing handouts and handing in
+/// activities. The score is 0 to 100; a student who never signed in is apart (red).
+/// </summary>
+public static class LmsActivityRules
+{
+    public const int WindowDays = 14;
+
+    /// <summary>The days of visits that give the full 40 points, the handouts viewed that give the full 30, the activities handed in that give the full 30.</summary>
+    public const int FullVisitDays = 5;
+    public const int FullHandouts = 5;
+    public const int FullAnswers = 3;
+
+    /// <summary>A student with this score or more is active (green); less is inactive (yellow).</summary>
+    public const int ActiveFrom = 70;
+
+    public const string Active = "Active";
+    public const string Inactive = "Inactive";
+    public const string NeverLoggedIn = "NeverLoggedIn";
+
+    public static int Score(int visitDays, int handouts, int answers) =>
+        (int)Math.Round(40.0 * Math.Min(visitDays, FullVisitDays) / FullVisitDays + 30.0 * Math.Min(handouts, FullHandouts) / FullHandouts + 30.0 * Math.Min(answers, FullAnswers) / FullAnswers, MidpointRounding.AwayFromZero);
+
+    public static string StateOf(bool everSignedIn, int score) => !everSignedIn ? NeverLoggedIn : score >= ActiveFrom ? Active : Inactive;
+
+    public static string Display(string state) => state switch { Active => "Active", Inactive => "Inactive", _ => "Never logged in" };
+}
+
+/// <summary>One student and how much they use the LMS (<see cref="LmsActivityRules"/>).</summary>
+public sealed record LmsActivityRow(int StudentId, string Name, string Lrn, string? Section, byte? GradeLevel, string State, int Score, int VisitDays, int Handouts, int Answers, DateTime? LastLoginAtUtc);
+
+/// <summary>The students by how they use the LMS: active, inactive, never logged in, and by grade level.</summary>
+public sealed record LmsActivity(int Active, int Inactive, int NeverLoggedIn, IReadOnlyList<LmsActivityRow> Students, IReadOnlyList<GradeActivity> ByGrade)
+{
+    public int Total => Active + Inactive + NeverLoggedIn;
+}
+
+public sealed record GradeActivity(string Label, int Active, int Inactive, int NeverLoggedIn);
+
 /// <summary>A student who was absent on a day, with the courses they were absent in (for the guidance counselor's history of absences).</summary>
 public sealed record AbsentStudent(int StudentId, string Name, string Lrn, IReadOnlyList<string> Courses);
 
@@ -356,6 +395,46 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
 
         return new AnalyticsReport(schoolWide, schoolWide ? "the whole school" : "your courses", byStudent.Count, Avg(overall.Values.Where(v => v is not null).Select(v => v!.Value)), Pooled(metrics),
             failingStudents, atRiskStudents, openReferrals, bandsTitle, bands, attendance, concernTitle, concerns, resolved, improved, interventions, performanceTitle, performance, solved, solvedRecently, solvedByReason, concernStudents, absentHistory);
+    }
+
+    /// <summary>
+    /// The students of the school by how they use the LMS in the last 14 days. A student is <b>active</b> (green) when the score is 50 or more: visiting the LMS often
+    /// (up to 40 points), viewing handouts (up to 30) and handing in activities (up to 30). A student with less is <b>inactive</b> (yellow), and a student who never signed in
+    /// is <b>never logged in</b> (red).
+    /// </summary>
+    public async Task<LmsActivity> GetLmsActivityAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var since = now.AddDays(-LmsActivityRules.WindowDays);
+
+        var students = await db.Students.AsNoTracking().Where(s => s.Status == StudentStatus.Active && s.User.IsActive)
+            .Select(s => new { s.Id, s.UserId, s.FirstName, s.LastName, s.Lrn, s.GradeLevel, s.SectionId, s.User.LastLoginAtUtc }).ToListAsync(ct);
+
+        // The days (Philippine dates) the student signed in.
+        var logins = await db.SecurityLogs.AsNoTracking().Where(l => l.Kind == SecurityEvents.SignInSucceeded && l.UserId != null && l.CreatedAtUtc >= since)
+            .Select(l => new { UserId = l.UserId!.Value, l.CreatedAtUtc }).ToListAsync(ct);
+        var visitDays = logins.GroupBy(l => l.UserId).ToDictionary(g => g.Key, g => g.Select(l => PhilippineTime.DayOf(l.CreatedAtUtc)).Distinct().Count());
+
+        var views = (await db.ModuleViews.AsNoTracking().Where(v => v.FirstOpenedAtUtc >= since).GroupBy(v => v.StudentId).Select(g => new { g.Key, N = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Key, x => x.N);
+        var answers = (await db.Submissions.AsNoTracking().Where(x => x.SubmittedAtUtc != null && x.SubmittedAtUtc >= since && x.Status != SubmissionStatus.InProgress)
+            .GroupBy(x => x.StudentId).Select(g => new { g.Key, N = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Key, x => x.N);
+        var sections = await db.Sections.AsNoTracking().Select(x => new { x.Id, x.GradeLevel, Strand = x.Strand.Code, x.Name }).ToListAsync(ct);
+        var labels = sections.ToDictionary(x => x.Id, x => TeachingService.SectionLabel(x.GradeLevel, x.Strand, x.Name));
+
+        var rows = students.Select(s =>
+        {
+            var visits = visitDays.GetValueOrDefault(s.UserId);
+            var handouts = views.GetValueOrDefault(s.Id);
+            var done = answers.GetValueOrDefault(s.Id);
+            var score = LmsActivityRules.Score(visits, handouts, done);
+            return new LmsActivityRow(s.Id, $"{s.LastName}, {s.FirstName}", s.Lrn, s.SectionId is { } sec ? labels.GetValueOrDefault(sec) : null, s.GradeLevel,
+                LmsActivityRules.StateOf(s.LastLoginAtUtc is not null, score), score, visits, handouts, done, s.LastLoginAtUtc);
+        }).OrderBy(r => r.State == LmsActivityRules.NeverLoggedIn ? 0 : r.State == LmsActivityRules.Inactive ? 1 : 2).ThenBy(r => r.Score).ThenBy(r => r.Name).ToList();
+
+        var byGrade = rows.Where(r => r.GradeLevel is not null).GroupBy(r => r.GradeLevel!.Value).OrderBy(g => g.Key)
+            .Select(g => new GradeActivity($"Grade {g.Key}", g.Count(r => r.State == LmsActivityRules.Active), g.Count(r => r.State == LmsActivityRules.Inactive), g.Count(r => r.State == LmsActivityRules.NeverLoggedIn))).ToList();
+        return new LmsActivity(rows.Count(r => r.State == LmsActivityRules.Active), rows.Count(r => r.State == LmsActivityRules.Inactive), rows.Count(r => r.State == LmsActivityRules.NeverLoggedIn), rows, byGrade);
     }
 
     /// <summary>The students marked absent on each of the last <paramref name="days"/> days (today included), the newest day first. A day with nobody absent is left out.</summary>

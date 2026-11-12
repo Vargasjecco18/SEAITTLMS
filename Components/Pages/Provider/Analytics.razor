@@ -36,6 +36,17 @@ else
         <StatCard Label="Activities opened by students" Text="@($"{data.StudentItemPercent}%")" IconName="list-checks" Accent="@Level(data.StudentItemPercent)" Hint="Posted exams and activities" />
     </div>
 
+    <ChartRow>
+        <Card Title="What the teachers did" IconName="chart-pie">
+            <PieChart Title="What the teachers did with what was sent" Slices="TeacherSlices" CenterText="@data.Sent.ToString()" />
+            <p class="note">Of everything that was sent: posted to the students, only opened (still a draft), or not opened yet.</p>
+        </Card>
+        <Card Title="Handouts opened by the students" IconName="chart-column">
+            <BarChart Title="Handouts opened by the students, by course" Items="CourseBars" Suffix="%" Full="100" />
+            <p class="note">The courses with the least opened handouts come first.</p>
+        </Card>
+    </ChartRow>
+
     <div class="pcards">
         <Card Title="Week by week" IconName="calendar-range" Class="wide">
             <div class="data-wrap">
@@ -193,6 +204,30 @@ else
 
 @code {
     private ProviderAnalytics? data;
+
+    private IReadOnlyList<ChartSlice> TeacherSlices
+    {
+        get
+        {
+            if (data is null)
+            {
+                return [];
+            }
+
+            var sent = data.ByCourse.Sum(c => c.Sent);
+            var opened = data.ByCourse.Sum(c => c.TeacherOpened);
+            var posted = data.ByCourse.Sum(c => c.Posted);
+            return
+            [
+                new("Posted to the students", posted, ChartColors.Green),
+                new("Opened, not posted", Math.Max(0, opened - posted), ChartColors.Yellow),
+                new("Not opened yet", Math.Max(0, sent - opened), ChartColors.Red),
+            ];
+        }
+    }
+
+    private IReadOnlyList<ChartSlice> CourseBars => data is null ? [] :
+        [.. data.ByCourse.Where(c => c.ModulePercent is not null).Take(8).Select((c, i) => new ChartSlice(c.Name, c.ModulePercent!.Value, ChartColors.At(i)))];
 
     protected override async Task OnInitializedAsync() => data = await Provider.GetAnalyticsAsync();
 

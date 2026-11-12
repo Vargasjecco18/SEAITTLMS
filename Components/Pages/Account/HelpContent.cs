@@ -30,6 +30,7 @@ public static class HelpContent
             AppRoles.AcademicCoordinator => [Coordinator()],
             AppRoles.AcademicProvider => [Provider()],
             AppRoles.GuidanceCounselor => [Guidance()],
+            AppRoles.Admission => [Admission()],
             _ => Array.Empty<HelpSection>(),
         });
 
@@ -45,6 +46,7 @@ public static class HelpContent
         AppRoles.AcademicCoordinator => "For the academic coordinator",
         AppRoles.AcademicProvider => "For the academic provider",
         AppRoles.GuidanceCounselor => "For the guidance counselor",
+        AppRoles.Admission => "For the admission office",
         _ => "Your pages",
     };
 
@@ -135,6 +137,10 @@ public static class HelpContent
             "The dashboard shows your recent grades and your average.",
             "If your teacher hides the grades of a course, the card says “Hidden by your teacher” and shows no scores until your teacher shows them again.",
         ], "student/grades", "Open Grades"),
+        new("Where are the details and the feedback of an activity?",
+        [
+            "Open an assignment, a quiz or a task. In the header, before “Back to the handout”, there are two buttons: Details (the status, the due date, the highest score and your score) and Feedback (what your teacher wrote about your work; a red dot means there is feedback). Each one opens a small box right under its button.",
+        ]),
         new("How do I see my deadlines?",
         [
             "Open Calendar. Switch between month and week. A dot on a day is something due.",
@@ -209,7 +215,8 @@ public static class HelpContent
         ]),
         new("How do I check and grade the assignments of my students?",
         [
-            "Open the assignment, quiz or task performance to see who handed in. The Files column shows the files the student sent: press one to read it. Press the row of a student (or the Answer tag in the Answers column): a box opens with the students who handed in at the left, the answer in the middle, with a preview of the files the student sent, and the score and the comment at the right. Read it, save the score, and press another student at the left to go on.",
+            "Open the assignment, quiz or task performance to see who handed in. In the Answers column one button (“View answer”, or “View answer and 2 files”) opens the work of the student; pressing the row does the same. A box opens with the students who handed in at the left, the answer in the middle, with a preview of the files, and the score and the feedback at the right.",
+            "A seatwork, an assignment or a task performance that was handed in after the due date shows a warning with how late it was (“Late by 2 days”), and the course page shows “n late” on that activity. Accept the late work to grade it, or decline it.",
             "Quizzes are graded by the system; a short answer is right when it matches one of the answers you accepted.",
             "“Activities to check” and “Unchecked activities (including quiz)” on your dashboard list what waits for you.",
         ]),
@@ -249,18 +256,17 @@ public static class HelpContent
     [
         new("How do I add, change or switch off an account?",
         [
-            "Open Users Management and choose the tab: Students, Teachers or Staff. A green dot on a person's picture means the person is online now.",
-            "Press the Add button (Add staff, on the Staff tab), or Edit on a row. In Edit you can change the name and email, set a new password, and switch the account on or off.",
-            "A teacher who works in more than one section has a “sections” button: press it to see them all.",
-            "Students are added by the registrar when enrolling them. A switched-off account can't sign in.",
-            "The school has one administrator, one registrar, one guidance counselor and one academic coordinator; it can have several academic providers. In Add staff, a role that the school has already is not in the list.",
+            "Open Users Management and choose the tab: Students, Teachers or Staff. The sidebar folds to give the table room. A green dot on a person's picture means the person is online now. The status of an account is Activated, Deactivated or Archived (a student who dropped out or graduated).",
+            "Press the Add button (Add student, Add teacher or Add staff), or Edit on a row. In Edit you can change the name and email, set a new password, and activate or deactivate the account. “Sign-in details” on a row shows the email and, while the person has not changed it, the first password.",
+            "In the names only letters can be typed, and when you press Tab the first letter of each word becomes a capital. The suffix is a list (Jr., Sr., I, II, III, IV, V and Others, where you type another one). The email and the password are made by the system and shown before you press Add. The employee number of a teacher starts with T- by itself; the one of a member of the staff starts with the first letter of the role (Admission: A-).",
+            "A teacher who works in more than one section has a “sections” button: press it to see them all. A deactivated account can't sign in.",
         ], "admin/users", "Open Users Management"),
-        new("How do I make a new staff role, like Assistant Registrar?",
+        new("How do I add a staff member, or make a new staff role like Librarian?",
         [
-            "Open Users Management, the Staff tab, and press Add staff. Next to the Role list press “Add role”.",
-            "Type the name of the role (for example Librarian), choose what pages the people of the role can open (the pages of the registrar, the guidance counselor, the academic coordinator or the academic provider; the pages of each one are listed) and press “Add this role”: it is chosen in the Role list, so you can finish adding the person.",
-            "Many people can have a role you made. The staff list and the person's card show its name. To take a role you made out of the list, choose it in Add staff and press “Remove role”: the people who had it keep their account and the same pages.",
-            "Adding a teacher or a staff member needs the last name and the employee number (like T-014): the email and the password are made from them (villanueva.014@... and villanueva014) and shown before you press Add.",
+            "Open Users Management, the Staff tab, and press Add staff. In “Name of the new role” type the role (the usual ones are in the list: Registrar, Guidance counselor, Academic coordinator, Academic provider, Admission, and the roles you made before).",
+            "A name that is new makes a new role: the pages the people of the role can open appear as checkboxes, one by one: Calendar, Users, Groups and the different analytics (school, guidance, library, evaluation, admission). Tick the ones the role needs. The people of the role get their own dashboard with those pages and nothing else. Admission asks the grade level (11 or 12).",
+            "Many people can have a role you made. To take a role you made out of the list, choose it and press “Remove role”: the people who had it keep their account.",
+            "Only the shared pages can be ticked (the pages of the registrar, the coordinator and the others work with their own data, so they stay with the real roles).",
         ], "admin/users/staff", "Open the staff list"),
         new("A teacher needs courses.",
         [
@@ -270,22 +276,27 @@ public static class HelpContent
         [
             "On the Dashboard, the Accounts card has Teachers, Students, Enrolled and Not enrolled. Press one to open its list.",
         ], "admin", "Open the Dashboard"),
-        new("How do I archive students who graduate?",
+        new("How do I see who uses the LMS?",
+        [
+            "Open Analytics. The green, yellow and red cards count the students: Active (they visit the LMS, view handouts and hand in activities often: a score of 70 or more in the last 14 days), Inactive (less than that) and Never logged in (red). The pie shows them, and “Students to follow up” lists the inactive students and those who never logged in. The Excel file has a sheet “LMS activity” with every student.",
+        ], "analytics", "Open Analytics"),
+        new("How do I archive students who graduate, and see their grades?",
         [
             "Open Archive Accounts. Grade 12 students appear under Graduating students. Tick them, write a note (for example Class of 2027) and press Archive.",
-            "Their records stay and their sign-in is switched off. You can restore a student from the Archived tab.",
+            "Their sign-in is switched off. On the Archived tab, “Grades” shows every grade of the student from the first term (where they started, a shift to another strand, and graduation), “Export” saves them in Excel, and “Export all grades” saves everybody in one table.",
+            "An archived account is deleted by itself 30 days after it was archived: the column “Deleted in” counts the days. Export the grades before that. “Restore” takes a student out of the archive.",
         ], "admin/archive", "Open Archive Accounts"),
         new("How do I read the security log?",
         [
-            "Open Security Logs. The tabs filter the lines: Last login (the day each person last logged in), Failed, Accounts and System. You can search by email or address and choose dates.",
+            "Open Security Logs. The tabs filter the lines: Last login (the day each person last logged in), Failed, Accounts and System (the lines of the system: backups and settings, with no “Who” column). You can search by email or address and choose dates.",
             "Download CSV saves the lines you see as a file for a spreadsheet. Old lines are cleared by the system (see System Settings) or by you.",
         ], "admin/security-logs", "Open Security Logs"),
         new("How do I back up and restore the data?",
         [
             "Open Database Backup and press “Back up now”. The file is saved in the Backups folder and can be downloaded. Keep a copy somewhere safe, outside this computer.",
             "To go back to a backup, press Restore beside it and type RESTORE. A backup of what is there now is made first, so it can be undone.",
-            "To use a backup file from another computer, upload it, then restore it from the list.",
-            "System Settings can make a backup by itself every day.",
+            "A downloaded backup is a plain SQL file that MySQL can import: in MySQL Workbench open it (File > Open SQL Script), double-click the schema so it is bold and press the lightning button, or in a terminal: mysql -u root -p seaittlms < backup.sql. It replaces the tables that have the same names.",
+            "To use a backup file from another computer, upload it, then restore it from the list. System Settings can make a backup by itself every day.",
         ], "admin/backups", "Open Database Backup"),
         new("How do I close the system for maintenance?",
         [
@@ -299,12 +310,13 @@ public static class HelpContent
         new("How do I enroll a student?",
         [
             "Open Enrollment. Type the 12-digit LRN (digits only, like the phone number) and the names (letters only). If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” and the print preview of the browser opens at once, with the enrollment form of this student; then “Enroll student” to enroll.",
+            "A student who applied on the home page and was accepted by the admission office is in “Accepted students” (the button replaces Import from Excel): press Use beside the student and the LRN, the names, the suffix, the phone, the grade level, the track and the strand are filled in; you choose the section and the courses.",
+            "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” to print the form.",
             "If something is missing when you press “Enroll student”, each box with a problem turns red with a message under it, a red alert at the top lists them, and the cursor goes to the first one. Fix the box and its message goes away.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
-            "Open Student's Accounts. Filter by term, strand or next term, or search by name or LRN. The Account button of a row (at the left of Edit) shows the sign-in details of the student: the email and, while the student has not changed it, the first password. Press a student's courses to see them.",
+            "Open Student's Accounts (the sidebar folds). Filter by term, strand or next term, or search by name or LRN. Each row has Info (the application the student sent and the papers uploaded, in a box in the middle), Account (the email and, while the student has not changed it, the first password), Edit (the enrollment) and Drop out. The grade is a button, “Overall grade”: it opens every course of the student with its final grade, term by term. “Not enrolled” and its term are on one line.",
             "You can also see who is enrolled for the next term, and unenroll a student.",
             "“View Enrolled Student Today” (top right) lists the students enrolled today, the newest first, with their LRN, grade level, strand, section and term.",
         ], "registrar/student-accounts", "Open Student's Accounts"),
@@ -340,10 +352,10 @@ public static class HelpContent
         ]),
         new("How do I evaluate the teachers?",
         [
-            "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Add a question by choosing how the students answer: a 5-point Likert scale, a 5-point performance scale, a frequency scale, a binary (Yes/No) scale, a ranking, select-all-that-apply, or a comment. Choose who it is about and the due date, then send it.",
-            "Students answer once for each of their teachers; answers are anonymous. The page shows how many answered and who has not.",
+            "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Add a question by choosing how the students answer: a 5-point Likert scale, a 5-point performance scale, a frequency scale, a binary (Yes/No) scale, a ranking, select-all-that-apply, or a comment. Choose who it is about and when it is due, then send it.",
+            "Students answer once for each of their teachers; answers are anonymous. In an evaluation the Questions are first and the Details after them; “Answers by course” shows how many answered and who has not. “Message” writes to the students who have not answered in one course, and “Message all not answered” (at the right of the header of the card) writes once to every student who has not answered in any course.",
             "Close it early, or let it close on its due date.",
-            "New evaluation opens a sheet like the one of a quiz: write the title and the instructions, then a row for each question. Choose its type from the list (5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment), write its area and, for a ranking or a select-all, its options. The Ready column tells you what is missing. “Add [type] [number] rows” adds many rows. A draft has the same sheet: press “Write the questions in a sheet”. “Export to Excel” saves a questionnaire as a file.",
+            "New evaluation opens a sheet like the one of a quiz: write the title and the instructions, then a row for each question. Choose its type from the list (5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment), write its area and, for a ranking or a select-all, the options.",
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
@@ -397,11 +409,36 @@ public static class HelpContent
         [
             "Open Analytics to see how fast the teachers open and post, how many students open, week by week, the teachers who have not opened what you sent, what the students open least, and the numbers by section and by course. “Export to Excel” puts everything of the page in one workbook: the numbers of the page, every teacher, every student and the result of each student in each course.",
         ], "provider/analytics", "Open Analytics"),
+        new("Why does the library say “Something went wrong” when I choose All terms?",
+        [
+            "It does not any more: the Course library lists every course of every term when you choose All terms in the Term list (the page used to stop when it had more than a hundred buttons).",
+        ]),
         new("How do I find people and make a group?",
         [
             "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
             "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
+    ]);
+
+    private static HelpSection Admission() => new("For the admission office", "clipboard-check",
+    [
+        new("Where do I see the applications?",
+        [
+            "Open Applications. Students apply for Grade 11 on the home page (Student application, at the bottom of About SEAITT Legazpi LMS). You only see the applications of your grade level. The tabs are Pending, Accepted and Declined.",
+            "Press Info on a row: a box opens in the middle of the screen with the whole application (personal, contact, academic and parent or guardian information), the day the student will come to the school, and the four papers uploaded (press one to open it).",
+        ], "admission/applications", "Open Applications"),
+        new("How do I accept or decline an application?",
+        [
+            "The student comes to the school on the day chosen to confirm the application. Press Accept (the registrar is told and the student is in “Accepted students” of Enrollment) or Decline (write why).",
+        ]),
+        new("What are the class sections and the student's accounts for?",
+        [
+            "Class sections shows the sections of your grade level only (the registrar has them all). Student's accounts lists the students of your grade level, without the next term; Info shows the application of a student.",
+        ], "admission/sections", "Open Class sections"),
+        new("What else is there?",
+        [
+            "The Calendar shows the visits of the applicants. Analytics has pie and bar charts of the applications. Users and Groups work like the ones of the other staff.",
+        ], "admission/analytics", "Open Analytics"),
     ]);
 
     private static HelpSection Guidance() => new("For the guidance counselor", "heart-handshake",
@@ -418,8 +455,18 @@ public static class HelpContent
         ], "guidance/referrals?show=concerns", "Open the students with a concern"),
         new("How do I write a violation or follow up a concern?",
         [
-            "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded and the Concern list is locked (press Solved to change it). The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
-            "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave and write your notes. When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
+            "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded and the Concern list is locked (press Solved to change it). If it is not in the list choose “Others”: a box opens in the middle of the screen to type what happened. The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
+            "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave (“Others” opens a box to type it) and write your notes. Saving them tells the student. When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
+        ]),
+        new("What does the student answer, and how do I set a schedule?",
+        [
+            "Under the name of the student the row says “Seen” when the student pressed OK on your message (or “Not seen yet”), and “Going” or “Not going” when the student answered. The student's box has the buttons Going and Not going.",
+            "The Schedule column (at the right of Notes) waits for the answer. When the student is going, press “Set schedule”, choose the day and the time and save: the student is told. Press the day again to move it (the student is told that it has been moved) or to take it away.",
+        ]),
+        new("Who goes to the referrals by themselves?",
+        [
+            "A student who is absent three times in a course, and a student whose attendance is under 80% over at least five marked days. You get a notification.",
+            "In Analytics the card “Absent by day” lists each day (the last 30 days) with the students who were marked absent and the courses.",
         ]),
         new("How do I find people and make a group?",
         [

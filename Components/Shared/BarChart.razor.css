@@ -5,7 +5,7 @@
 
 .bar-row {
     display: grid;
-    grid-template-columns: minmax(5rem, 9rem) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(5rem, 13rem) minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.7rem;
     font-size: 0.9rem;

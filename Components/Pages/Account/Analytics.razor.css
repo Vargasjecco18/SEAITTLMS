@@ -676,3 +676,22 @@ h2 {
     color: var(--text-muted);
     font-size: 0.82rem;
 }
+
+
+/* A second line under a name (the LRN and the section) in the lists of the cards. */
+.table .sub {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.table td.num,
+.table th.num {
+    text-align: right;
+}
+
+.note {
+    margin: 0.75rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

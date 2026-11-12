@@ -1,0 +1,24 @@
+.chart-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 1000px) {
+    .chart-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* The two cards are as tall as the taller one, and what is inside starts at the top. */
+.chart-row ::deep > .card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
+}
+
+.chart-row ::deep > .card > .card-body {
+    flex: 1;
+}

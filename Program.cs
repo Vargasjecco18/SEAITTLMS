@@ -374,7 +374,8 @@ app.MapGet("/analytics/export", async (HttpContext http, AnalyticsService report
 
     var now = PhilippineTime.Now(clock).DateTime;
     var results = await reports.GetStudentResultsAsync(user, http.RequestAborted);
-    return Results.File(AnalyticsExport.ForStudents(report, user.Name, now, results), FileDownloads.XlsxType, AnalyticsExport.FileName("Student analytics", now));
+    var activity = role == AppRoles.Admin ? await reports.GetLmsActivityAsync(http.RequestAborted) : null;
+    return Results.File(AnalyticsExport.ForStudents(report, user.Name, now, results, activity), FileDownloads.XlsxType, AnalyticsExport.FileName("Student analytics", now));
 }).RequireAuthorization(new AuthorizeAttribute { Roles = AppRoles.Admin + "," + AppRoles.GuidanceCounselor + "," + AppRoles.Teacher });
 
 app.MapGet("/provider/analytics/export", async (HttpContext http, ProviderService provider, TimeProvider clock) =>
