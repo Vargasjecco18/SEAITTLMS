@@ -6,7 +6,10 @@ namespace SEAITT_LMS.Services;
 
 /// <param name="Key">What is saved with the role ("calendar").</param>
 /// <param name="Path">The address of the page, without the query ("analytics").</param>
-public sealed record StaffPage(string Key, string Title, string Path, string Icon, string Hint, string Group);
+/// <param name="Area">The staff role the page belongs to (<see cref="AppRoles.Registrar"/> ...), or null for the pages every account has and the analytics. A person who has a page of an area
+/// is given the work of that area for it (see <see cref="StaffAreas"/>).</param>
+/// <param name="Exact">True for the dashboard of an area: only this address, not the pages under it.</param>
+public sealed record StaffPage(string Key, string Title, string Path, string Icon, string Hint, string Group, string? Area = null, bool Exact = false);
 
 /// <summary>
 /// The pages the administrator can tick for a role of their own (Add staff, a new role). A person with such a role signs in to their own page (<c>/staff</c>) and opens only the ticked pages;
@@ -16,6 +19,10 @@ public static class StaffPages
 {
     public const string General = "Every account";
     public const string Analytics = "Analytics";
+    public const string RegistrarGroup = "Registrar";
+    public const string GuidanceGroup = "Guidance counselor";
+    public const string CoordinatorGroup = "Academic coordinator";
+    public const string ProviderGroup = "Academic provider";
 
     public static readonly IReadOnlyList<StaffPage> All =
     [
@@ -26,6 +33,21 @@ public static class StaffPages
         new("analytics-guidance", "Analytics · guidance", "/analytics", "heart-handshake", "Attendance and the students with a concern", Analytics),
         new("analytics-library", "Analytics · course library", "/provider/analytics", "folder-open", "What the teachers and students opened of the library", Analytics),
         new("analytics-evaluation", "Analytics · teacher evaluation", "/coordinator/analytics", "clipboard-check", "The ratings of the teachers", Analytics),
+
+        // Round 41: the pages of the other staff roles can be ticked too (not the pages of the administrator).
+        new("registrar-dashboard", "Registrar dashboard", "/registrar", "layout-dashboard", "The numbers of the enrollments", RegistrarGroup, AppRoles.Registrar, Exact: true),
+        new("registrar-enrollment", "Enrollment", "/registrar/enrollments", "clipboard-list", "Enroll a student, one by one or from Excel", RegistrarGroup, AppRoles.Registrar),
+        new("registrar-accounts", "Student's Accounts", "/registrar/student-accounts", "graduation-cap", "The enrolled students, their grades and their accounts", RegistrarGroup, AppRoles.Registrar),
+        new("guidance-dashboard", "Guidance dashboard", "/guidance", "layout-dashboard", "The students with a concern", GuidanceGroup, AppRoles.GuidanceCounselor, Exact: true),
+        new("guidance-referrals", "Referrals", "/guidance/referrals", "heart-handshake", "Write a concern, the notes and the schedule of a student", GuidanceGroup, AppRoles.GuidanceCounselor),
+        new("coordinator-dashboard", "Coordinator dashboard", "/coordinator", "layout-dashboard", "The school now", CoordinatorGroup, AppRoles.AcademicCoordinator, Exact: true),
+        new("coordinator-setup", "Academic setup", "/coordinator/academic-setup", "settings-2", "School years, tracks, strands, courses and class sections", CoordinatorGroup, AppRoles.AcademicCoordinator),
+        new("coordinator-sections", "Class sections", "/coordinator/sections", "layout-grid", "The sections, their advisers and their students", CoordinatorGroup, AppRoles.AcademicCoordinator),
+        new("coordinator-evaluations", "Teacher evaluation", "/coordinator/evaluations", "clipboard-check", "The evaluations the students answer about their teachers", CoordinatorGroup, AppRoles.AcademicCoordinator),
+        new("coordinator-announcements", "Announcements", "/coordinator/announcements", "megaphone", "The notices of the school and the holidays", CoordinatorGroup, AppRoles.AcademicCoordinator),
+        new("provider-dashboard", "Provider dashboard", "/provider", "layout-dashboard", "What the teachers did with the library", ProviderGroup, AppRoles.AcademicProvider, Exact: true),
+        new("provider-library", "Course library", "/provider/library", "folder-open", "The handouts and the summative exams of the courses", ProviderGroup, AppRoles.AcademicProvider),
+        new("provider-tracking", "Tracking", "/provider/tracking", "list-checks", "Which teachers got and used what was sent", ProviderGroup, AppRoles.AcademicProvider),
     ];
 
     public static StaffPage? Find(string key) => All.FirstOrDefault(p => p.Key == key);
@@ -83,6 +105,38 @@ public static class StaffAccess
         }
 
         var pages = PagesOf(user);
-        return StaffPages.All.Any(p => pages.Contains(p.Key) && Under(clean, p.Path));
+        return StaffPages.All.Any(p => pages.Contains(p.Key) && (p.Exact ? clean == p.Path : Under(clean, p.Path)));
+    }
+}
+
+/// <summary>
+/// The work of the other staff roles for the account of a role the administrator made up (round 41). A person with a page of an area (registrar, guidance counselor, academic coordinator,
+/// academic provider) gets the role of the area besides the base role at sign-in (so the page opens) and the services accept them as a person of the area: <see cref="InArea"/> is
+/// the check that reads the database at the moment of saving.
+/// </summary>
+public static class StaffAreas
+{
+    private static string Prefix(string area) => area switch
+    {
+        AppRoles.Registrar => ",registrar-",
+        AppRoles.GuidanceCounselor => ",guidance-",
+        AppRoles.AcademicCoordinator => ",coordinator-",
+        AppRoles.AcademicProvider => ",provider-",
+        _ => ",none-",
+    };
+
+    /// <summary>The areas the ticked pages belong to ("Registrar", "AcademicCoordinator" ...), once each, in the order of the catalog.</summary>
+    public static IReadOnlyList<string> Of(string? savedPages)
+    {
+        var keys = StaffPages.Parse(savedPages);
+        return [.. StaffPages.All.Where(p => p.Area is not null && keys.Contains(p.Key)).Select(p => p.Area!).Distinct()];
+    }
+
+    /// <summary>The accounts of the role itself and the accounts of a made-up role that has at least one page of the area.</summary>
+    public static IQueryable<User> InArea(this IQueryable<User> users, string area)
+    {
+        var roleId = AppRoles.Ids[area];
+        var prefix = Prefix(area);
+        return users.Where(u => u.RoleId == roleId || (u.CustomRole != null && ("," + u.CustomRole.Pages).Contains(prefix)));
     }
 }

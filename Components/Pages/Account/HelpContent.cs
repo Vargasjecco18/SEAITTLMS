@@ -55,7 +55,7 @@ public static class HelpContent
             "Open the address of the system and type your email and your password.",
             "When you close the browser you are signed out. Sign in again the next time. On a shared computer, press the arrow button to sign out before you leave.",
             "To sign out, press the arrow button at the bottom of the menu, next to your name.",
-            "If you do nothing for 30 minutes (no mouse, key, touch or scroll in any window of the system), a message at the top center says your account will be logged out automatically in 10 minutes. Press “Stay signed in” (or click or press a key) to keep working; otherwise you are signed out when the time is over.",
+            "Being away from the keyboard does not sign you out: with the page open you stay signed in until you press the arrow button, or close the browser.",
             $"After {settings.MaxFailedAttempts} wrong passwords in a row the account is locked for {settings.LockoutMinutes} minutes. Wait, or ask the administrator.",
             "An account can be signed in in one place at a time. If someone is signed in with your account, a notice at the top of the login page says so: sign out there first, or wait a few minutes after that page was closed.",
         ]),
@@ -220,7 +220,7 @@ public static class HelpContent
         ]),
         new("How do I take attendance?",
         [
-            "Open Attendance, choose the course and the day, and mark each student Present, Late or Absent. Press Save.",
+            "Open Attendance, choose the course and the day, and mark each student Present, Late or Absent. Press Save. Classes are held from Monday to Friday: Saturday and Sunday can't be marked (if you pick one, the Friday before is shown).",
             "Press “View attendance” to see each student's attendance. Students who miss a lot are sent to the guidance counselor by the system.",
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
@@ -262,7 +262,7 @@ public static class HelpContent
         new("How do I add a staff member, or make a new staff role like Librarian?",
         [
             "Open Users Management, the Staff tab, and press Add staff. In “Name of the new role” type the role (the usual ones are in the list: Registrar, Guidance counselor, Academic coordinator, Academic provider, and the roles you made before).",
-            "A name that is new makes a new role: the pages the people of the role can open appear as checkboxes, one by one: Calendar, Users, Groups and the different analytics (school, guidance, library, evaluation). Tick the ones the role needs. The people of the role get their own dashboard with those pages and nothing else.",
+            "A name that is new makes a new role: the pages the people of the role can open appear as checkboxes, one by one, in groups: the pages every account has (Calendar, Users, Groups), the different analytics (school, guidance, library, evaluation) and the pages of the registrar (Enrollment, Student's Accounts), the guidance counselor (Referrals), the academic coordinator (Academic setup, Class sections, Teacher evaluation, Announcements) and the academic provider (Course library, Tracking), each with its dashboard. The pages of the administrator can't be ticked. Tick the ones the role needs. The people of the role get their own dashboard with those pages and nothing else, and what they do in a ticked page is saved as the registrar, the guidance counselor and so on would.",
             "Many people can have a role you made: choose it in the list the next time.",
             "Only the shared pages can be ticked (the pages of the registrar, the coordinator and the others work with their own data, so they stay with the real roles).",
         ], "admin/users/staff", "Open the staff list"),
@@ -276,7 +276,7 @@ public static class HelpContent
         ], "admin", "Open the Dashboard"),
         new("How do I see who uses the LMS?",
         [
-            "Open Analytics. The green, yellow and red cards count the students: Active (they visit the LMS, view handouts and hand in activities often: a score of 70 or more in the last 14 days), Inactive (less than that) and Never logged in (red). The pie shows them, and “Students to follow up” lists the inactive students and those who never logged in. The Excel file has a sheet “LMS activity” with every student.",
+            "Open Analytics. The green, yellow and red cards count the students: Active (they visit the LMS, view handouts and hand in activities often: a score of 70 or more in the last 14 days), Inactive (less than that) and Never logged in (red). The pie shows them. “Performance by courses” has a Strand list: choose the strand and its courses show with their students, their average grade and how many are failing; press a course to see its students (grade, status and attendance) in a box. The Excel file has a sheet “LMS activity” with every student.",
         ], "analytics", "Open Analytics"),
         new("How do I archive students who graduate, and see their grades?",
         [

@@ -140,7 +140,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await Me.GetAsync();
+        var user = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
         name = user?.Name.Split(' ').FirstOrDefault();
         evaluations = await Evaluations.ListAsync();
         notices = user is null ? [] : await Announcements.ListManagedAsync(user);

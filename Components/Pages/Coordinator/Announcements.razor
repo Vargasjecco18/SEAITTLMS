@@ -442,7 +442,7 @@ else
     {
         today = PhilippineTime.Today(Clock);
         anchor = new DateOnly(today.Year, today.Month, 1);
-        me = await Me.GetAsync();
+        me = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
         if (me is null)
         {
             return;

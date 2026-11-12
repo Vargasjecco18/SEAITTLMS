@@ -31,13 +31,4 @@ public class AuthOptions
     /// pressing Log out, the account can be used somewhere else after this long.
     /// </summary>
     public int SessionIdleMinutes { get; set; } = 3;
-
-    /// <summary>
-    /// A person who does nothing for this many minutes (no mouse, key, touch or scroll in any page of the app) sees a message at the top center: the account will be logged out
-    /// automatically after <see cref="AfkLogoutMinutes"/> more minutes (wwwroot/app.js). Any click or key press, or the button in the message, keeps the account signed in.
-    /// </summary>
-    public int AfkWarnMinutes { get; set; } = 30;
-
-    /// <summary>How many minutes after the message the account is logged out by itself, if the person did nothing.</summary>
-    public int AfkLogoutMinutes { get; set; } = 10;
 }

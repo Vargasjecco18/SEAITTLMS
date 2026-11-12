@@ -29,6 +29,15 @@ public sealed record InterventionStat(string Intervention, int Total, int Improv
 
 public sealed record GroupPerformance(string Label, int Students, decimal? Average, decimal? Attendance, int Failing);
 
+/// <summary>One student in a course, as the administrator sees it when a course is opened in "Performance by courses" (round 41).</summary>
+public sealed record CourseStudentRow(string Student, string? Lrn, string Section, decimal? Percent, string Status, decimal? Attendance);
+
+/// <summary>A course of a strand: how many students take it, their average grade, how many are failing, and who they are.</summary>
+public sealed record CoursePerformanceRow(string Course, int Students, decimal? Average, int Failing, IReadOnlyList<CourseStudentRow> Roster);
+
+/// <summary>A strand with its courses (the administrator chooses the strand first, then a course).</summary>
+public sealed record StrandCourses(string Strand, IReadOnlyList<CoursePerformanceRow> Courses);
+
 public sealed record AnalyticsReport(
     bool SchoolWide, string ScopeText, int Students, decimal? AverageGrade, decimal? AttendanceRate, int FailingStudents, int AtRiskStudents, int OpenReferrals,
     string BandsTitle, IReadOnlyList<GroupBands> Bands, AnalyticsAttendance Attendance,
@@ -240,6 +249,54 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             })
             .OrderBy(r => r.Section, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Student, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Course, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// "Performance by courses" for the administrator (round 41): every strand with its courses (the same course of two sections counts once), each with the students who take it, the average grade
+    /// of those students in the course, how many are failing and the list of the students with their grade and attendance.
+    /// </summary>
+    public async Task<IReadOnlyList<StrandCourses>> GetCoursePerformanceAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var metrics = await StudentMetrics.LoadAsync(db, now, null, null, ct);
+        if (metrics.Count == 0)
+        {
+            return [];
+        }
+
+        var assignmentIds = metrics.Select(m => m.AssignmentId).Distinct().ToList();
+        var slots = await db.TeachingAssignments.AsNoTracking().Where(a => assignmentIds.Contains(a.Id))
+            .Select(a => new { a.Id, a.SubjectId, Subject = a.Subject.Name, StrandId = a.Section.StrandId, Strand = a.Section.Strand.Code, StrandName = a.Section.Strand.Name, a.Section.GradeLevel, Section = a.Section.Name })
+            .ToDictionaryAsync(a => a.Id, ct);
+        var studentIds = metrics.Select(m => m.StudentId).Distinct().ToList();
+        var people = await db.Students.AsNoTracking().Where(st => studentIds.Contains(st.Id))
+            .Select(st => new { st.Id, st.Lrn, st.FirstName, st.MiddleName, st.LastName, st.NameExtension }).ToDictionaryAsync(st => st.Id, ct);
+
+        return [.. metrics.GroupBy(m => slots[m.AssignmentId].StrandId)
+            .Select(strand =>
+            {
+                var first = slots[strand.First().AssignmentId];
+                var courses = strand.GroupBy(m => slots[m.AssignmentId].SubjectId)
+                    .Select(course =>
+                    {
+                        var roster = course.Select(m =>
+                        {
+                            var who = people[m.StudentId];
+                            var slot = slots[m.AssignmentId];
+                            var status = m.Percent is null ? "No grade yet"
+                                : m.Percent < GradeRules.PassingPercent ? "Failing"
+                                : m.Percent < GradeRules.AtRiskUntil || m.Missing >= ReferralService.MissingForRisk ? "At risk"
+                                : "Passing";
+                            return new CourseStudentRow($"{who.LastName}, {who.FirstName}", who.Lrn, TeachingService.SectionLabel(slot.GradeLevel, slot.Strand, slot.Section), m.Percent, status, m.AttendanceRate);
+                        }).OrderBy(r => r.Section, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Student, StringComparer.OrdinalIgnoreCase).ToList();
+                        var graded = roster.Where(r => r.Percent is not null).Select(r => r.Percent!.Value).ToList();
+                        return new CoursePerformanceRow(slots[course.First().AssignmentId].Subject, roster.Count, graded.Count == 0 ? null : Math.Round(graded.Average(), 1), roster.Count(r => r.Status == "Failing"), roster);
+                    })
+                    .OrderBy(c => c.Course, StringComparer.OrdinalIgnoreCase).ToList();
+                return new StrandCourses($"{first.Strand} · {first.StrandName}", courses);
+            })
+            .OrderBy(g => g.Strand, StringComparer.OrdinalIgnoreCase)];
     }
 
     public async Task<AnalyticsReport?> GetAsync(CurrentUserInfo user, CancellationToken ct = default)

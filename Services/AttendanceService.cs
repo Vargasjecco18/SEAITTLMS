@@ -21,13 +21,24 @@ public sealed record StudentAttendance(IReadOnlyList<SubjectAttendance> Subjects
 }
 
 /// <summary>
-/// Attendance: the teacher of a subject marks Present, Late or Absent for every student of the section, one day at a time. The
+/// Attendance: the teacher of a subject marks Present, Late or Absent for every student of the section, one weekday at a time (Monday to Friday). The
 /// attendance rate is the days present or late divided by the days marked (a student who is late still came to class).
 /// </summary>
 public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock)
 {
     /// <summary>The attendance rate under which a student is "not attending class".</summary>
     public const decimal LowAttendancePercent = 80;
+
+    /// <summary>Classes are held from Monday to Friday: attendance is marked only on these days (round 41).</summary>
+    public static bool IsSchoolDay(DateOnly day) => day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday);
+
+    /// <summary>The day itself when it is a weekday, otherwise the Friday before it.</summary>
+    public static DateOnly LastSchoolDay(DateOnly day) => day.DayOfWeek switch
+    {
+        DayOfWeek.Saturday => day.AddDays(-1),
+        DayOfWeek.Sunday => day.AddDays(-2),
+        _ => day,
+    };
 
     public static decimal? Rate(int present, int late, int absent) => present + late + absent == 0 ? null : Math.Round((present + late) * 100m / (present + late + absent), 1);
 
@@ -65,6 +76,11 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
         if (date.Year < 2000)
         {
             return ServiceResult.Fail("Pick a real date.");
+        }
+
+        if (!IsSchoolDay(date))
+        {
+            return ServiceResult.Fail("Attendance is marked from Monday to Friday only: Saturday and Sunday are not school days.");
         }
 
         if (statuses.Values.Any(v => !string.IsNullOrEmpty(v) && !AttendanceStatus.All.Contains(v)))

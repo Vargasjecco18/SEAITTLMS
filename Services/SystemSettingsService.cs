@@ -114,7 +114,9 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && allowedRoleIds.Contains(u.RoleId), ct))
+        var coordinatorAreaToo = allowedRoleIds.Contains(AppRoles.AcademicCoordinatorId);
+        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive
+                && (allowedRoleIds.Contains(u.RoleId) || (coordinatorAreaToo && u.CustomRole != null && ("," + u.CustomRole.Pages).Contains(",coordinator-"))), ct))
         {
             return ServiceResult.Fail(notAllowed);
         }

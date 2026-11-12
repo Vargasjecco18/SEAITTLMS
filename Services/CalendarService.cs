@@ -228,7 +228,7 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
     {
         name = name?.Trim();
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct))
+        if (!await db.Users.InArea(AppRoles.AcademicCoordinator).AnyAsync(u => u.Id == userId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the academic coordinator can delete a holiday.");
         }

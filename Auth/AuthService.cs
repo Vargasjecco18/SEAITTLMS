@@ -272,6 +272,12 @@ public sealed class AuthService(
         {
             claims.Add(new Claim(AppClaimTypes.RoleTitle, custom.Name));
             claims.Add(new Claim(AppClaimTypes.Pages, custom.Pages ?? ""));
+
+            // The pages of another staff role that were ticked (round 41) open with the role of that area, after the base role (which stays the first one).
+            foreach (var area in StaffAreas.Of(custom.Pages).Where(a => a != user.Role.Name))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, area));
+            }
         }
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);

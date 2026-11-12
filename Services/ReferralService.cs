@@ -428,7 +428,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId, ct))
+        if (!await db.Users.InArea(AppRoles.GuidanceCounselor).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the guidance counselor can record a concern.");
         }
@@ -461,7 +461,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId, ct))
+        if (!await db.Users.InArea(AppRoles.GuidanceCounselor).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the guidance counselor can write notes.");
         }
@@ -503,7 +503,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     public async Task<ServiceResult> SolveStudentAsync(int studentId, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId, ct))
+        if (!await db.Users.InArea(AppRoles.GuidanceCounselor).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the guidance counselor can solve a concern.");
         }
@@ -595,7 +595,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId, ct))
+        if (!await db.Users.InArea(AppRoles.GuidanceCounselor).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the guidance counselor can work on referrals.");
         }
@@ -732,7 +732,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     public async Task<ServiceResult> SetScheduleAsync(int studentId, DateTime? local, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId, ct))
+        if (!await db.Users.InArea(AppRoles.GuidanceCounselor).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the guidance counselor can set a schedule.");
         }

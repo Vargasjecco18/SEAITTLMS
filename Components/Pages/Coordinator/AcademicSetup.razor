@@ -260,7 +260,7 @@
     /// <summary>The rows without problems are saved by the same rules as the steps; then the steps and their numbers are read again.</summary>
     private async Task<ItemImportSummary> ImportSheetAsync(byte[] data)
     {
-        var user = await Me.GetAsync();
+        var user = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
         if (user is null)
         {
             return new ItemImportSummary(0, ["Sign in again to import."]);

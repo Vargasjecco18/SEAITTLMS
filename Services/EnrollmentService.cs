@@ -301,10 +301,7 @@ public sealed partial class EnrollmentService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
         // The page already limits who can get here. This checks it again, against the database, at the moment of saving.
-        var actor = await db.Users.AsNoTracking().Where(u => u.Id == actingUserId)
-            .Select(u => new { u.IsActive, u.RoleId })
-            .FirstOrDefaultAsync(ct);
-        if (actor is null || !actor.IsActive || actor.RoleId != AppRoles.RegistrarId)
+        if (!await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return EnrollmentResult.Fail("You don't have permission to enroll students: only a registrar can.");
         }
@@ -518,7 +515,7 @@ public sealed partial class EnrollmentService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
-        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.RegistrarId, ct))
+        if (!await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only a registrar can unenroll students.");
         }

@@ -266,8 +266,8 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     /// <summary>The coordinator and the teachers (still active) write, change and delete announcements.</summary>
     private static async Task<bool> IsActiveAsync(AppDbContext db, CurrentUserInfo user, CancellationToken ct)
     {
-        var roleId = user.Role == AppRoles.Teacher ? AppRoles.TeacherId : AppRoles.AcademicCoordinatorId;
-        return await db.Users.AsNoTracking().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.RoleId == roleId, ct);
+        var users = user.Role == AppRoles.Teacher ? db.Users.AsNoTracking().Where(u => u.RoleId == AppRoles.TeacherId) : db.Users.AsNoTracking().InArea(AppRoles.AcademicCoordinator);
+        return await users.AnyAsync(u => u.Id == user.UserId && u.IsActive, ct);
     }
 
     /// <summary>Tells the people it is for. (The author is not told about their own announcement.)</summary>

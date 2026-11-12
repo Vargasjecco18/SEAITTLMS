@@ -73,11 +73,9 @@ else if (Role == AppRoles.Admin)
     </section>
 
     @* Round 35: the attendance, the primary concern categories and the solved concerns are the guidance counselor's; the administrator sees the grades. *@
+    @* Round 41: "Performance by courses" (strand first, then a course, then its students) replaced "Students to follow up" (the Excel file still has the sheet LMS activity). *@
     <div class="board">
-        @if (activity is { Total: > 0 })
-        {
-            @NudgeCard(activity)
-        }
+        <CoursePerformance />
         @PerformanceCard(report)
     </div>
 }
@@ -275,49 +273,6 @@ else
 
     private IReadOnlyList<ChartSlice> CourseBars => report is null ? [] :
         [.. report.Performance.Where(p => p.Average is not null).Select((p, i) => new ChartSlice(p.Label, (double)p.Average!.Value, ChartColors.At(i)))];
-
-    /// <summary>The students who need a nudge: never logged in first, then the inactive ones with the lowest score.</summary>
-    private RenderFragment NudgeCard(LmsActivity a) => @<Card Title="Students to follow up" IconName="user-x">
-        @{
-            var list = a.Students.Where(r => r.State != LmsActivityRules.Active).Take(10).ToList();
-        }
-        @if (list.Count == 0)
-        {
-            <p class="muted">Every student is active.</p>
-        }
-        else
-        {
-            <div class="table-wrap">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Student</th>
-                            <th scope="col">How they use the LMS</th>
-                            <th scope="col" class="num">Visits</th>
-                            <th scope="col" class="num">Handouts</th>
-                            <th scope="col" class="num">Answers</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var s in list)
-                        {
-                            <tr>
-                                <td>@s.Name<span class="sub">@s.Lrn@(s.Section is null ? "" : " · " + s.Section)</span></td>
-                                <td><Badge Tone="@(s.State == LmsActivityRules.Inactive ? Tone.Warning : Tone.Danger)">@LmsActivityRules.Display(s.State)</Badge></td>
-                                <td class="num">@s.VisitDays</td>
-                                <td class="num">@s.Handouts</td>
-                                <td class="num">@s.Answers</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            @if (a.Inactive + a.NeverLoggedIn > list.Count)
-            {
-                <p class="note">Showing @list.Count of @(a.Inactive + a.NeverLoggedIn). The Excel file has all of them.</p>
-            }
-        }
-    </Card>;
 
     private RenderFragment Legend => @<ul class="legend" aria-label="Legend">
         @foreach (var band in Bands)

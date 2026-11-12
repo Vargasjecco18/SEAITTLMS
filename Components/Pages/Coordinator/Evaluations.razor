@@ -142,7 +142,7 @@
         try
         {
             sheetErrors = [];
-            var me = await Me.GetAsync();
+            var me = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
             var result = me is null
                 ? ServiceResult.Fail("Please sign in again.")
                 : await Service.CreateWithQuestionsAsync(me.UserId, newTitle, newInstructions, questions);
@@ -186,7 +186,7 @@
         busy = true;
         try
         {
-            var me = await Me.GetAsync();
+            var me = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
             var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Service.CopyAsync(me.UserId, id);
             if (!result.Succeeded || result.Id is not { } copyId)
             {

@@ -1034,7 +1034,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
     // ======================================================================= helpers
 
     private static Task<bool> IsCoordinatorAsync(AppDbContext db, int userId, CancellationToken ct) =>
-        db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
+        db.Users.AsNoTracking().InArea(AppRoles.AcademicCoordinator).AnyAsync(u => u.Id == userId && u.IsActive, ct);
 
     private const string SaveFailed = "It could not be saved: someone else saved the same thing, or something depends on it. Reload and try again.";
 

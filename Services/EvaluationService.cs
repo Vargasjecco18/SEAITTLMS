@@ -1118,7 +1118,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
     }
 
     private static async Task<bool> IsCoordinatorAsync(AppDbContext db, int userId, CancellationToken ct) =>
-        await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == AppRoles.AcademicCoordinatorId, ct);
+        await db.Users.AsNoTracking().InArea(AppRoles.AcademicCoordinator).AnyAsync(u => u.Id == userId && u.IsActive, ct);
 
     /// <summary>The students of every course the evaluation is about, added up (the answers it should get).</summary>
     private static async Task<int> ExpectedAsync(AppDbContext db, int evaluationId, CancellationToken ct)

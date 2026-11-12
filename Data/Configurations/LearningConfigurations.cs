@@ -190,7 +190,12 @@ internal sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<A
         b.HasIndex(a => new { a.AssignmentId, a.StudentId, a.AttendedOn }).IsUnique();
         b.HasIndex(a => new { a.StudentId, a.AttendedOn });
 
-        b.ToTable(t => t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')"));
+        b.ToTable(t =>
+        {
+            t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')");
+            // Classes are held from Monday to Friday only (WEEKDAY: 0 = Monday ... 6 = Sunday), round 41.
+            t.HasCheckConstraint("ck_attendance_records_weekday", "WEEKDAY(attended_on) < 5");
+        });
     }
 }
 

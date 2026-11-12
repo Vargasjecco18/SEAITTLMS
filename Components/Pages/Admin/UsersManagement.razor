@@ -476,7 +476,7 @@
             {
                 <fieldset class="page-picks" aria-label="The pages of the new role">
                     <legend>What pages can the people of the role <strong>@roleText.Trim()</strong> open?</legend>
-                    <p class="muted small">Tick every page, one by one. They get their own dashboard and only the pages you tick.</p>
+                    <p class="muted small">Tick every page, one by one: the pages every account has, the analytics and the pages of the registrar, the guidance counselor, the academic coordinator and the academic provider (the pages of the administrator can't be ticked). They get their own dashboard and only the pages you tick.</p>
                     @foreach (var group in StaffPages.All.GroupBy(p => p.Group))
                     {
                         <p class="page-group">@group.Key</p>

@@ -82,7 +82,8 @@ public sealed partial class EnrollmentService
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.AcademicCoordinatorId), ct))
+        if (!await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct)
+            && !await db.Users.AsNoTracking().InArea(AppRoles.AcademicCoordinator).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only the registrar can add a section here.");
         }
@@ -144,7 +145,7 @@ public sealed partial class EnrollmentService
     public async Task<StudentSignIn?> GetSignInAsync(int studentId, int actingUserId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.RegistrarId, ct))
+        if (!await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return null;
         }
@@ -250,8 +251,7 @@ public sealed partial class EnrollmentService
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var actor = await db.Users.AsNoTracking().Where(u => u.Id == actingUserId).Select(u => new { u.IsActive, u.RoleId }).FirstOrDefaultAsync(ct);
-        if (actor is null || !actor.IsActive || actor.RoleId != AppRoles.RegistrarId)
+        if (!await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only a registrar can change an enrollment.");
         }

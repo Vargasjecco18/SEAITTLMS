@@ -436,7 +436,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        userId = (await Me.GetAsync())?.UserId ?? 0;
+        userId = (await Me.GetInAreaAsync(AppRoles.AcademicCoordinator))?.UserId ?? 0;
         await LoadAsync();
         loaded = true;
     }

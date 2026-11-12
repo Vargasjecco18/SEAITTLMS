@@ -50,7 +50,7 @@ public sealed class SetupWorkbookService(IDbContextFactory<AppDbContext> dbFacto
         // Only the academic coordinator changes the setup (a row that is already as it says would not reach the check of the save).
         await using (var db = await dbFactory.CreateDbContextAsync(ct))
         {
-            if (!await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == Data.Entities.AppRoles.AcademicCoordinatorId, ct))
+            if (!await db.Users.AsNoTracking().InArea(Data.Entities.AppRoles.AcademicCoordinator).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
             {
                 return new SetupImportResult(0, ["Only the academic coordinator can change the academic setup."]);
             }

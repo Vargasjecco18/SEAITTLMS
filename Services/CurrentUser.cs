@@ -35,6 +35,21 @@ public sealed class CurrentUser(AuthenticationStateProvider authentication, IDbC
         return info;
     }
 
+    /// <summary>
+    /// The signed-in person as a person of a staff area (round 41): a person who has a made-up role with pages of the area has its role besides their own, and for the pages of the area
+    /// they are seen as that role. Everybody else is returned as they are.
+    /// </summary>
+    public async Task<CurrentUserInfo?> GetInAreaAsync(string area)
+    {
+        if (await GetAsync() is not { } me)
+        {
+            return null;
+        }
+
+        var user = (await authentication.GetAuthenticationStateAsync()).User;
+        return me.Role == area || !user.IsInRole(area) ? me : me with { Role = area };
+    }
+
     // Several live parts of one page (the widgets, the boxes) ask at the same time: they all wait for the same lookup, instead of the second one
     // being told "nobody" while the first is still asking the database.
     private Task<int?>? studentLookup;

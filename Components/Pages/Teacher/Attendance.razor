@@ -43,7 +43,8 @@ else
                 </select>
             </Field>
             <Field For="a-date" Label="Date">
-                <input id="a-date" type="date" value="@date.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" @onchange="DateChanged" />
+                <input id="a-date" type="date" @key="dateKey" value="@date.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" @onchange="DateChanged" />
+                <small class="muted">Classes are held from Monday to Friday.</small>
             </Field>
         </div>
 
@@ -156,6 +157,7 @@ else
     private int subjectId;
     private DateOnly today;
     private DateOnly date;
+    private int dateKey;
     private AttendanceSheet? sheet;
     private AttendanceSummary? summary;
     private readonly Dictionary<int, string?> marks = [];
@@ -174,7 +176,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         today = PhilippineTime.Today(Clock);
-        date = today;
+        date = AttendanceService.LastSchoolDay(today);
         teacherId = await Me.GetTeacherIdAsync() ?? 0;
         subjects = teacherId == 0 ? [] : await Teaching.GetTeacherCardsAsync(teacherId);
         subjectId = subjects.Any(s => s.AssignmentId == SubjectQuery) ? SubjectQuery!.Value : subjects.FirstOrDefault()?.AssignmentId ?? 0;
@@ -217,8 +219,17 @@ else
     {
         if (DateOnly.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var picked))
         {
-            date = picked > today ? today : picked;
+            // Saturday and Sunday are not school days: the Friday before is shown instead (round 41).
+            var wanted = picked > today ? today : picked;
+            date = AttendanceService.LastSchoolDay(wanted);
+            dateKey++;
             message = null;
+            if (date != wanted)
+            {
+                messageIsError = false;
+                message = "Saturday and Sunday are not school days: showing the Friday before.";
+            }
+
             await LoadAsync();
         }
     }

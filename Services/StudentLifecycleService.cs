@@ -123,8 +123,8 @@ public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFa
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var actor = await db.Users.AsNoTracking().Where(u => u.Id == actingUserId && u.IsActive).Select(u => (int?)u.RoleId).FirstOrDefaultAsync(ct);
-        if (actor != AppRoles.AdminId && actor != AppRoles.RegistrarId)
+        var isAdmin = await db.Users.AsNoTracking().AnyAsync(u => u.Id == actingUserId && u.IsActive && u.RoleId == AppRoles.AdminId, ct);
+        if (!isAdmin && !await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
         {
             return ServiceResult.Fail("Only an administrator or a registrar can mark a student as dropped out.");
         }

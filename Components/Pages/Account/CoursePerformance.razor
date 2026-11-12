@@ -1,0 +1,135 @@
+@rendermode InteractiveServer
+@inject AnalyticsService Reports
+
+@* Round 41: "Performance by courses" for the administrator. The strand is chosen first, then the courses of the strand show with their students, their average and the ones who are failing;
+   pressing a course opens a box with the students of the course. It is its own live island so the choice and the box work. *@
+<section class="courses-card" aria-label="Performance by courses">
+    <header class="courses-head">
+        <h2><Icon Name="layers" Size="20" /> Performance by courses</h2>
+        @if (strands.Count > 0)
+        {
+            <Field For="cp-strand" Label="Strand">
+                <select id="cp-strand" value="@strandName" @onchange="StrandChanged">
+                    @foreach (var s in strands)
+                    {
+                        <option value="@s.Strand" selected="@(s.Strand == strandName)">@s.Strand</option>
+                    }
+                </select>
+            </Field>
+        }
+    </header>
+
+    @if (!loaded)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (strands.Count == 0)
+    {
+        <p class="muted">The courses show here once students are enrolled and the teachers give scores.</p>
+    }
+    else if (Current is { } strand)
+    {
+        <p class="muted hint">Choose a strand, then press a course to see its students.</p>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Course</th>
+                        <th scope="col" class="num">Students</th>
+                        <th scope="col">Average grade</th>
+                        <th scope="col" class="num">Failing</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in strand.Courses)
+                    {
+                        var course = c;
+                        <tr>
+                            <td><button type="button" class="course-link" @onclick="() => Open(course)" title="See the students of @course.Course">@course.Course</button></td>
+                            <td class="num">@course.Students</td>
+                            <td>
+                                <div class="cell-bar">
+                                    <span class="track"><i class="@BandOf(course.Average)" style="width: @WidthOf(course.Average)%"></i></span>
+                                    <span>@(course.Average is { } a ? $"{a:0.#}%" : "—")</span>
+                                </div>
+                            </td>
+                            <td class="num">@if (course.Failing > 0) { <Badge Tone="Tone.Danger">@course.Failing</Badge> } else { <span class="muted">0</span> }</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<Modal Open="@(opened is not null)" Title="@(opened is null ? "" : opened.Course + " · " + strandName)" Wide="true" OnClose="Close">
+    @if (opened is not null)
+    {
+        <p class="muted hint">@opened.Students @(opened.Students == 1 ? "student" : "students")@(opened.Average is { } avg ? $" · average {avg:0.#}%" : "")</p>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Student</th>
+                        <th scope="col">Section</th>
+                        <th scope="col" class="num">Grade</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="num">Attendance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in opened.Roster)
+                    {
+                        <tr>
+                            <td><span class="name">@s.Student</span><span class="sub">@s.Lrn</span></td>
+                            <td>@s.Section</td>
+                            <td class="num">@(s.Percent is { } p ? $"{p:0.#}%" : "—")</td>
+                            <td><Badge Tone="@ToneOf(s.Status)">@s.Status</Badge></td>
+                            <td class="num">@(s.Attendance is { } at ? $"{at:0.#}%" : "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</Modal>
+
+@code {
+    private IReadOnlyList<StrandCourses> strands = [];
+    private string strandName = "";
+    private CoursePerformanceRow? opened;
+    private bool loaded;
+
+    private StrandCourses? Current => strands.FirstOrDefault(s => s.Strand == strandName);
+
+    protected override async Task OnInitializedAsync()
+    {
+        strands = await Reports.GetCoursePerformanceAsync();
+        strandName = strands.FirstOrDefault()?.Strand ?? "";
+        loaded = true;
+    }
+
+    private void StrandChanged(ChangeEventArgs e) => strandName = e.Value?.ToString() ?? "";
+
+    private void Open(CoursePerformanceRow course) => opened = course;
+
+    private void Close() => opened = null;
+
+    private static double WidthOf(decimal? percent) => percent is { } p ? Math.Clamp((double)p, 0, 100) : 0;
+
+    private static string BandOf(decimal? percent) => percent switch
+    {
+        null => "none",
+        < 70 => "bad",
+        < 80 => "warn",
+        _ => "good",
+    };
+
+    private static Tone ToneOf(string status) => status switch
+    {
+        "Failing" => Tone.Danger,
+        "At risk" => Tone.Warning,
+        "Passing" => Tone.Success,
+        _ => Tone.Neutral,
+    };
+}
