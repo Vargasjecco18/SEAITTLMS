@@ -25,8 +25,7 @@ public sealed record NewAccount(
     DateOnly? BirthDate = null,
     Sex? Sex = null,
     bool IsActive = true,
-    int? CustomRoleId = null,
-    byte? GradeLevel = null);
+    int? CustomRoleId = null);
 
 public sealed record AccountResult(bool Succeeded, int? UserId, IReadOnlyList<string> Errors)
 {
@@ -125,11 +124,6 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
             }
         }
 
-        if (request.Role == AppRoles.Admission && request.GradeLevel is not (11 or 12))
-        {
-            errors.Add("Choose the grade level of the admission officer: 11 or 12.");
-        }
-
         if (errors.Count > 0)
         {
             return AccountResult.Fail(errors);
@@ -202,9 +196,6 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
                 break;
             case AppRoles.AcademicProvider:
                 db.AcademicProviders.Add(Person(new AcademicProvider { EmployeeNumber = employeeNumber, PhoneNumber = phone }));
-                break;
-            case AppRoles.Admission:
-                db.AdmissionOfficers.Add(Person(new AdmissionOfficer { EmployeeNumber = employeeNumber, PhoneNumber = phone, GradeLevel = request.GradeLevel ?? 11 }));
                 break;
         }
 

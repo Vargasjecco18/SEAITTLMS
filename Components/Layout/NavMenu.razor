@@ -85,31 +85,8 @@
                  Contents="RegistrarEnrollments" />
         <NavItem Href="registrar/student-accounts" Icon="graduation-cap" Label="Student's Accounts"
                  Contents="RegistrarAccounts" />
-        <NavItem Href="registrar/sections" Icon="layers" Label="Class sections"
-                 Contents="RegistrarSections" />
         <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
                  Items="CalendarViews" />
-        <NavItem Href="users" Icon="users-round" Label="Users"
-                 Items="StaffUsers" />
-        <NavItem Href="groups" Icon="users" Label="Groups"
-                 Contents="StaffGroups" />
-    </AuthorizeView>
-
-    <AuthorizeView Roles="@AppRoles.Admission">
-        <p class="heading">Admission</p>
-
-        <NavItem Href="admission" Icon="layout-dashboard" Label="Dashboard" Match="NavLinkMatch.All"
-                 Contents="AdmissionDashboard" />
-        <NavItem Href="admission/applications" Icon="inbox" Label="Applications"
-                 Items="AdmissionApplications" />
-        <NavItem Href="admission/sections" Icon="layers" Label="Class sections"
-                 Contents="AdmissionSections" />
-        <NavItem Href="admission/student-accounts" Icon="graduation-cap" Label="Student's Accounts"
-                 Contents="AdmissionAccounts" />
-        <NavItem Href="calendar" Icon="calendar-days" Label="Calendar"
-                 Items="CalendarViews" />
-        <NavItem Href="admission/analytics" Icon="chart-column" Label="Analytics"
-                 Contents="AdmissionAnalytics" />
         <NavItem Href="users" Icon="users-round" Label="Users"
                  Items="StaffUsers" />
         <NavItem Href="groups" Icon="users" Label="Groups"
@@ -303,24 +280,6 @@
     private static readonly IReadOnlyList<string> RegistrarEnrollments = ["Type the LRN", "Choose the section, or add one", "Courses of the strand"];
 
     private static readonly IReadOnlyList<string> RegistrarAccounts = ["The enrolled students", "Their courses and final grades", "Next term"];
-
-    private static readonly IReadOnlyList<string> RegistrarSections = ["All the class sections", "Grade 11 and Grade 12", "Adviser and students"];
-
-    private static readonly IReadOnlyList<string> AdmissionDashboard = ["New applications", "Students coming to the school"];
-
-    private static readonly IReadOnlyList<NavItem.Sub> AdmissionApplications =
-    [
-        new("Pending", "admission/applications?state=Pending", "clock"),
-        new("Accepted", "admission/applications?state=Accepted", "circle-check"),
-        new("Declined", "admission/applications?state=Declined", "circle-x"),
-        new("All the applications", "admission/applications", "inbox"),
-    ];
-
-    private static readonly IReadOnlyList<string> AdmissionSections = ["The class sections of your grade level", "Adviser and students"];
-
-    private static readonly IReadOnlyList<string> AdmissionAccounts = ["The students of your grade level", "Their courses and final grades", "The application they sent"];
-
-    private static readonly IReadOnlyList<string> AdmissionAnalytics = ["Applications by state", "By strand and by day", "Where the students live"];
 
     private static readonly IReadOnlyList<string> TeacherDashboard = ["Activities to check", "Drafts waiting to be posted", "Your calendar", "Online students"];
 

@@ -24,9 +24,6 @@ public class AppDbContext : DbContext
     public DbSet<Administrator> Administrators => Set<Administrator>();
     public DbSet<AcademicCoordinator> AcademicCoordinators => Set<AcademicCoordinator>();
     public DbSet<AcademicProvider> AcademicProviders => Set<AcademicProvider>();
-    public DbSet<AdmissionOfficer> AdmissionOfficers => Set<AdmissionOfficer>();
-    public DbSet<StudentApplication> StudentApplications => Set<StudentApplication>();
-    public DbSet<ApplicationFile> ApplicationFiles => Set<ApplicationFile>();
 
     // Classes and enrollment
     public DbSet<SchoolYear> SchoolYears => Set<SchoolYear>();
@@ -102,7 +99,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<Administrator>(u => u.Administrator));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<AcademicCoordinator>(u => u.AcademicCoordinator));
         modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<AcademicProvider>(u => u.AcademicProvider));
-        modelBuilder.ApplyConfiguration(new StaffProfileConfiguration<AdmissionOfficer>(u => u.AdmissionOfficer));
 
         // ...and most of them also have a contact number and a status.
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Registrar>("registrars"));
@@ -110,7 +106,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Administrator>("administrators"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicCoordinator>("academic_coordinators"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicProvider>("academic_providers"));
-        modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AdmissionOfficer>("admission_officers"));
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

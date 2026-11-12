@@ -114,16 +114,16 @@ erDiagram
 
 | Table | What it holds |
 |---|---|
-| `roles` | The eight fixed roles: Admin (1), Teacher (2), Student (3), Registrar (4), GuidanceCounselor (5), AcademicCoordinator (6), AcademicProvider (7), **Admission (8)**. |
+| `roles` | The seven fixed roles: Admin (1), Teacher (2), Student (3), Registrar (4), GuidanceCounselor (5), AcademicCoordinator (6), AcademicProvider (7). (The role Admission (8) of round 40 was taken out again in round 41.) |
 | `users` | **Only the login account**: `email` (unique, lower-case), `password_hash`, `phone_number` (E.164, for the future two-factor feature), `role_id`, `is_active`, lockout columns, `security_stamp`, **`active_session_id`** and **`active_session_seen_utc`** (the one sign-in the account has open and when its page last said it was still there; empty when nobody is signed in; see `Auth:SingleSession`), and **`notification_sound_choice`** (the sound of the notifications the person chose in Settings: `tones`, `chime`, `bell`, `pop`, `knock`, `school` or `custom`; empty = the sound of the school if there is one, else the tones). |
 | `custom_roles` | A role the administrator made up in Users Management > Add staff, like *Librarian*: `name` (2 to 40 characters, unique), **`pages`** (round 40: the keys of the pages that were ticked, in the order of `StaffPages.All`, like `calendar,users,analytics-library`) and `base_role` (`Registrar`, `GuidanceCounselor`, `AcademicCoordinator` or `AcademicProvider`, checked by `ck_custom_roles_base`; a role made now always gets `AcademicProvider`: the administrator only gives the name). `users.custom_role_id` (empty for everybody else; restricted delete) points at it; the account keeps the real `role_id` of the base role, so the pages and the permissions are those of the base role, and the name is only the title shown in the staff list and the menu. The one-registrar / one-guidance-counselor / one-coordinator rule applies to the real roles only, not to a made-up one. At most 30 (the application checks). Added by the migration `CustomStaffRoles`. |
-| `students`, `teachers`, `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators`, `academic_providers`, `admission_officers` | Who the person is. One table per role, see below. `admission_officers` has the same columns as the other staff tables plus `grade_level` (11 or 12, `ck_admission_officers_grade`): the officer works for that grade level. |
+| `students`, `teachers`, `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators`, `academic_providers` | Who the person is. One table per role, see below. |
 
 Each person has **one** `users` row and **one** row in the table that matches their role (`user_id` is unique in every
 one of those tables). Accounts are created through `UserAccountService`, which inserts both rows in one transaction so
 they always match. The Users page (`UserManagementService`) and the enrollment form (`EnrollmentService`) both go through it.
 
-The six role tables have these columns, in this order:
+The role tables have these columns, in this order:
 
 | Table | Columns |
 |---|---|
@@ -216,8 +216,6 @@ registrar who did it.
 | `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
 | `referrals` | A student sent to the guidance counselor: `student_id`, `assignment_id` (the subject; dropped if the subject is removed), `reason` (`LowAttendance` or `Violation` are what the guidance counselor works with; `FailingGrades` and `AtRisk` stay allowed by `ck_referrals_reason` for the rows of older versions and are no longer made or shown: failing grades and students at risk are the teacher's concern; `Violation` is written by the counselor), `detail` (what was found, in words), `metric` (the grade or attendance in percent), `status` (`Open`, `InProgress`, `Resolved`; the pages no longer show it: a concern is open until the counselor gives a result), `intervention` (the help given), `notes`, `outcome` (`Improved` or `NoChange`, set when resolved), `resolved_at_utc`, `handled_by_user_id`. Made by the system, worked by the counselor. Deleted with the student. |
 | `referrals` (round 40) | Four more columns: `student_seen_at_utc` (when the student pressed OK on the message of the counselor), `student_response` (`Going` or `NotGoing`, `ck_referrals_student_response`), `student_responded_at_utc` and `scheduled_at_utc` (the day and the time the counselor will see the student). |
-| `student_applications` | The application a student sends on the home page (Grade 11 only, `ck_student_applications_grade`): `reference` (`APP-yyyy-nnnn`, unique), the personal, contact, academic (`academic_year`, `term_number`, `track_id`, `strand_id`) and parent or guardian information, `lrn` (optional), `visit_at_utc` (the day the student comes to the school), `status` (`Pending`, `Accepted`, `Declined`, `Enrolled`), `decision_note`, `decided_by_user_id`, `decided_at_utc` and `enrolled_student_id` (set when the registrar enrolls the accepted student). |
-| `application_files` | The four papers of an application: `application_id`, `kind` (`Psa`, `ReportCard`, `GoodMoral`, `Completion`; one of each kind for an application, unique), `name`, `content_type`, `size_bytes` (up to 5 MB) and `data` (the bytes). They go with the application (cascade) and are in the backup. |
 
 Deleting a teacher deletes their assignments, and with them the handouts, items and handed-in work. Deleting a student
 deletes their work and handout views (their enrollments are deleted first, see below). A section or a subject can't be
@@ -433,6 +431,7 @@ Things to remember:
 
 - The migration `AdmissionAndRolePages` (round 40) adds the role `Admission` (8) and the tables `admission_officers`, `student_applications` and `application_files`, and `custom_roles.pages` (the roles made before get `calendar,users,groups`).
 - The migration `ReferralSchedule` (round 40) adds `referrals.student_seen_at_utc`, `student_response`, `student_responded_at_utc` and `scheduled_at_utc`. With these there are **65 tables**.
+- The migration `RemoveAdmission` (round 41) takes the Admission role out again: it deletes the accounts of the role (role id 8, their rows in the other tables follow by the foreign keys), removes `analytics-admission` from the pages of the roles made by the administrator, drops the tables `admission_officers`, `student_applications` and `application_files` and deletes the role row. The database has **62 tables** again.
 - **A migration that moves data** (for example `MovePersonDetailsToRoleTables`, which moved the names from `users`
   into the role tables, or `AddSchedulesCurriculumAndEnrollmentDetails`, which filled the new `enrollments` columns from
   the students and sections) must copy the data before it drops or tightens the old columns. EF's scaffolded

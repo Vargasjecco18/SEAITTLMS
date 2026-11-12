@@ -270,7 +270,6 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
         AppRoles.GuidanceCounselor => "Guidance counselor",
         AppRoles.AcademicCoordinator => "Academic coordinator",
         AppRoles.AcademicProvider => "Academic provider",
-        AppRoles.Admission => "Admission",
         AppRoles.Admin => "Administrator",
         _ => role,
     };

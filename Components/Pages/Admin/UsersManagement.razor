@@ -459,10 +459,10 @@
         @if (tab.Role == UserManagementService.NonTeachingRole)
         {
             @* The role is typed: the name of a role that was used before is picked from the list that opens (the usual roles and the ones made before). A name that is new makes a new role, and then the pages of
-               the role are ticked one by one. The first letter of the role starts the employee number (Admission: A-). This part is not inside the form below, so Enter here does not send the form. *@
+               the role are ticked one by one. The first letter of the role starts the employee number (Librarian: L-). This part is not inside the form below, so Enter here does not send the form. *@
             <div class="role-row">
                 <Field For="a-role" Label="Name of the new role" Required="true" Class="grow" Hint="Type it, or pick a role that was used before from the list.">
-                    <input id="a-role" list="a-roles" maxlength="40" autocomplete="off" placeholder="Like Admission or Librarian" @bind="RoleText" @bind:event="oninput" />
+                    <input id="a-role" list="a-roles" maxlength="40" autocomplete="off" placeholder="Like Librarian or Cashier" @bind="RoleText" @bind:event="oninput" />
                     <datalist id="a-roles">
                         @foreach (var roleName in RoleNames)
                         {
@@ -470,31 +470,7 @@
                         }
                     </datalist>
                 </Field>
-                @* A role the administrator made can be taken out of the list (the usual roles can't). *@
-                <Button Variant="ButtonVariant.Ghost" IconName="trash-2" Small="true" Disabled="@(add.CustomRoleId is null)"
-                        Title="@(add.CustomRoleId is null ? "Pick a role you made to remove it. The usual roles can't be removed." : "Remove this role from the list")" OnClick="AskRemoveRole">Remove role</Button>
             </div>
-
-            @if (removingRole && add.CustomRoleId is { } removeId && customRoles.FirstOrDefault(c => c.Id == removeId) is { } removeRole)
-            {
-                <section class="role-box" aria-label="Remove the role" data-remove-role>
-                    <p class="note-line">Remove the role <strong>@removeRole.Name</strong> from the list? The people who have it keep their account and the same pages. <strong>They are shown as staff with the pages of an academic provider's account</strong> from now on.</p>
-                    <div class="role-actions">
-                        <Button Variant="ButtonVariant.Ghost" OnClick="CancelRemoveRole">Keep it</Button>
-                        <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="RemoveRoleAsync">Remove this role</Button>
-                    </div>
-                </section>
-            }
-
-            @if (add.Role == AppRoles.Admission && add.CustomRoleId is null)
-            {
-                <Field For="a-grade" Label="Grade level" Required="true" Hint="An admission officer works for one grade level: the class sections and the students of that grade level.">
-                    <select id="a-grade" @bind="add.GradeLevel">
-                        <option value="11">Grade 11</option>
-                        <option value="12">Grade 12</option>
-                    </select>
-                </Field>
-            }
 
             @if (RoleIsNew)
             {
@@ -816,8 +792,6 @@
 
         // (not asked: the system makes the email and the password of a teacher or a member of the staff)
 
-        /// <summary>The grade level of an admission officer (11 or 12).</summary>
-        public byte GradeLevel { get; set; } = 11;
         public string Email { get; set; } = "";
 
         public string? PhoneNumber { get; set; }
@@ -870,7 +844,6 @@
     private IReadOnlyList<CustomRole> customRoles = [];
     private string roleText = "";
     private readonly HashSet<string> newRolePages = ["calendar", "users", "groups"];
-    private bool removingRole;
 
     /// <summary>The names the list of the role box offers: the usual roles of the staff, and the roles made before.</summary>
     private IEnumerable<string> RoleNames => AvailableStaffRoles.Select(AppRoles.DisplayName).Concat(customRoles.Select(c => c.Name));
@@ -893,7 +866,6 @@
         set
         {
             roleText = value ?? "";
-            removingRole = false;
             ApplyRole();
         }
     }
@@ -925,7 +897,7 @@
         add.EmployeeNumber = WithPrefix(add.EmployeeNumber);
     }
 
-    /// <summary>T- for a teacher; for the staff the first letter of the role and a dash (Admission: A-). Nothing until a role is typed.</summary>
+    /// <summary>T- for a teacher; for the staff the first letter of the role and a dash (Librarian: L-). Nothing until a role is typed.</summary>
     private string EmployeePrefix => tab.Role == AppRoles.Teacher ? "T-"
         : roleText.Trim().Length > 0 && char.IsLetter(roleText.Trim()[0]) ? char.ToUpperInvariant(roleText.Trim()[0]) + "-" : "";
 
@@ -956,45 +928,6 @@
         else
         {
             newRolePages.Remove(key);
-        }
-    }
-
-    private void AskRemoveRole()
-    {
-        if (add?.CustomRoleId is not null)
-        {
-            removingRole = true;
-        }
-    }
-
-    private void CancelRemoveRole() => removingRole = false;
-
-    private async Task RemoveRoleAsync()
-    {
-        if (busy || add?.CustomRoleId is not { } id)
-        {
-            return;
-        }
-
-        busy = true;
-        try
-        {
-            var result = await Management.RemoveRoleAsync(id, currentUserId);
-            formErrors = result.Succeeded ? [] : [.. result.Errors];
-            removingRole = false;
-            if (result.Succeeded)
-            {
-                message = result.Message;
-                customRoles = await Management.ListCustomRolesAsync();
-                add.CustomRoleId = null;
-                roleText = "";
-                add.Role = CustomRole.DefaultBaseRole;
-                await LoadAsync();
-            }
-        }
-        finally
-        {
-            busy = false;
         }
     }
 
@@ -1333,7 +1266,6 @@
         {
             customRoles = await Management.ListCustomRolesAsync();
             roleText = "";
-            removingRole = false;
             newRolePages.Clear();
             newRolePages.UnionWith(["calendar", "users", "groups"]);
         }
@@ -1406,7 +1338,7 @@
             {
                 if (roleText.Trim().Length == 0)
                 {
-                    formErrors = ["Write the name of the role (like Admission), or pick one from the list."];
+                    formErrors = ["Write the name of the role (like Librarian), or pick one from the list."];
                     return;
                 }
 
@@ -1427,8 +1359,7 @@
 
             var account = new NewAccount(
                 add.Role, add.Email, add.Password, add.FirstName, add.LastName, add.MiddleName, add.NameExtension,
-                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive, CustomRoleId: add.CustomRoleId,
-                GradeLevel: add.Role == AppRoles.Admission ? add.GradeLevel : null);
+                add.PhoneNumber, EmployeeNumber: add.EmployeeNumber, IsActive: add.IsActive, CustomRoleId: add.CustomRoleId);
 
             var result = add.Role == AppRoles.Teacher
                 ? await Management.AddTeacherAsync(account, new TeacherPlacement(add.TrackId, add.StrandId, add.SectionId, add.SubjectIds.ToList()), currentUserId)

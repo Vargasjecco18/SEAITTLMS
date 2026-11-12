@@ -25,7 +25,7 @@ public sealed class MessageService(IDbContextFactory<AppDbContext> dbFactory, Ti
     {
         // A student writes to the people of the school who help them (and to the other students); everybody else may write to everybody, so every student can be written to by anyone,
         // friends or not (round 40).
-        AppRoles.Student => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar, AppRoles.Admission],
+        AppRoles.Student => [AppRoles.Student, AppRoles.Teacher, AppRoles.GuidanceCounselor, AppRoles.Registrar],
         _ => [.. AppRoles.Ids.Keys],
     };
 

@@ -22,8 +22,8 @@ public static class CalendarKinds
     /// <summary>A holiday of the Philippines (<see cref="PhilippineHolidays"/>): on the calendar of every role.</summary>
     public const string Holiday = "Holiday";
 
-    /// <summary>The day and hour a student who applied will come to the school to confirm the application: on the calendar of the admission office.</summary>
-    public const string Visit = "Visit";
+    /// <summary>The day and hour the guidance counselor will see a student (the schedule of a referral): on the calendar of the counselor and of the student.</summary>
+    public const string Counseling = "Counseling";
 
     // The kinds of work use the names of ItemKinds: Activity, Quiz, TaskPerformance, Seatwork, Recitation (and Exam).
 
@@ -38,7 +38,7 @@ public static class CalendarKinds
         Summative => "Summative exam",
         Announcement => "Announcement",
         Holiday => "Holiday",
-        Visit => "Visit",
+        Counseling => "Counseling",
         ItemKinds.Activity => "Assignment",
         Module => "Handout",
         Personal => "Event",
@@ -52,7 +52,7 @@ public static class CalendarKinds
         Summative => "clipboard-list",
         Announcement => "megaphone",
         Holiday => "flag",
-        Visit => "user-plus",
+        Counseling => "heart-handshake",
         _ => SubjectStyle.KindIcon(kind),
     };
 }
@@ -136,20 +136,6 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
                 }
 
                 // (round 40: the handouts and the recitations are not on the calendar any more)
-            }
-        }
-        else if (user.Role == AppRoles.Admission)
-        {
-            // the students who will come to the school to confirm their application (the grade level of the admission officer), one event with the hour for each
-            var grade = await db.AdmissionOfficers.AsNoTracking().Where(o => o.UserId == user.UserId).Select(o => (byte?)o.GradeLevel).FirstOrDefaultAsync(ct);
-            if (grade is { } level)
-            {
-                var visits = await db.StudentApplications.AsNoTracking()
-                    .Where(a => a.GradeLevel == level && a.VisitAtUtc != null && a.VisitAtUtc >= fromUtc && a.VisitAtUtc < toUtc && a.Status != ApplicationStates.Declined)
-                    .Select(a => new { a.Id, a.FirstName, a.LastName, a.Reference, Strand = a.Strand.Code, At = a.VisitAtUtc!.Value, a.Status })
-                    .ToListAsync(ct);
-                events.AddRange(visits.Select(v => new CalendarEvent($"visit-{v.Id}", PhilippineTime.DayOf(v.At), v.At, $"Visit: {v.FirstName} {v.LastName}",
-                    $"{v.Reference} · Grade {level} {v.Strand} · {ApplicationStates.Display(v.Status)} · {PhilippineTime.FormatTime(v.At)}", CalendarKinds.Visit, "admission/applications", v.Status != ApplicationStates.Pending, false)));
             }
         }
         else if (user.Role == AppRoles.Teacher)

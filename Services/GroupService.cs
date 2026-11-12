@@ -372,7 +372,7 @@ public sealed class GroupService(IDbContextFactory<AppDbContext> dbFactory, Peop
             var teacherUsers = await db.Teachers.AsNoTracking().Where(t => t.User.IsActive).Select(t => t.UserId).ToListAsync(ct);
             var staffUsers = await db.Users.AsNoTracking()
                 .Where(u => u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.GuidanceCounselorId
-                                           || u.RoleId == AppRoles.AcademicCoordinatorId || u.RoleId == AppRoles.AcademicProviderId || u.RoleId == AppRoles.AdmissionId))
+                                           || u.RoleId == AppRoles.AcademicCoordinatorId || u.RoleId == AppRoles.AcademicProviderId))
                 .Select(u => u.Id).ToListAsync(ct);
 
             // kind, key -> name, description, members

@@ -303,7 +303,7 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
 
         // the staff who do not teach: the registrar, the guidance counselor, the academic coordinator and the academic provider (the author is not told)
         var staff = !forStaff || announcement.SectionId is not null ? [] : (await db.Users.AsNoTracking()
-            .Where(u => u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.GuidanceCounselorId || u.RoleId == AppRoles.AcademicCoordinatorId || u.RoleId == AppRoles.AcademicProviderId || u.RoleId == AppRoles.AdmissionId))
+            .Where(u => u.IsActive && (u.RoleId == AppRoles.RegistrarId || u.RoleId == AppRoles.GuidanceCounselorId || u.RoleId == AppRoles.AcademicCoordinatorId || u.RoleId == AppRoles.AcademicProviderId))
             .Select(u => u.Id).ToListAsync(ct)).Where(id => id != announcement.AuthorUserId).ToArray();
 
         var snippet = announcement.Body.Length > 140 ? announcement.Body[..139] + "…" : announcement.Body;

@@ -388,20 +388,3 @@ dd {
     flex: 1 1 9rem;
     min-width: 0;
 }
-
-/* The box of the accepted students. */
-.accepted-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.accepted-table th,
-.accepted-table td {
-    padding: 0.5rem 0.7rem;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-}
-
-.accepted-table td:last-child {
-    text-align: right;
-}

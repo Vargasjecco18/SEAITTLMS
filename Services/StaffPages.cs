@@ -26,7 +26,6 @@ public static class StaffPages
         new("analytics-guidance", "Analytics · guidance", "/analytics", "heart-handshake", "Attendance and the students with a concern", Analytics),
         new("analytics-library", "Analytics · course library", "/provider/analytics", "folder-open", "What the teachers and students opened of the library", Analytics),
         new("analytics-evaluation", "Analytics · teacher evaluation", "/coordinator/analytics", "clipboard-check", "The ratings of the teachers", Analytics),
-        new("analytics-admission", "Analytics · applications", "/admission/analytics", "inbox", "The student applications by state, strand and day", Analytics),
     ];
 
     public static StaffPage? Find(string key) => All.FirstOrDefault(p => p.Key == key);
@@ -53,7 +52,7 @@ public static class StaffAccess
     /// <summary>The pages every account has, whatever its role.</summary>
     private static readonly string[] Always = ["/staff", "/account", "/help", "/files", "/photos", "/messages", "/notifications", "/access-denied", "/not-found", "/error"];
 
-    private static readonly string[] CrossRolePages = ["/analytics", "/coordinator/analytics", "/admission/analytics", "/provider/analytics"];
+    private static readonly string[] CrossRolePages = ["/analytics", "/coordinator/analytics", "/provider/analytics"];
 
     private static string Clean(string? path)
     {

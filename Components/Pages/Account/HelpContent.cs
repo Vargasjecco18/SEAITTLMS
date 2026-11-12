@@ -30,7 +30,6 @@ public static class HelpContent
             AppRoles.AcademicCoordinator => [Coordinator()],
             AppRoles.AcademicProvider => [Provider()],
             AppRoles.GuidanceCounselor => [Guidance()],
-            AppRoles.Admission => [Admission()],
             _ => Array.Empty<HelpSection>(),
         });
 
@@ -46,7 +45,6 @@ public static class HelpContent
         AppRoles.AcademicCoordinator => "For the academic coordinator",
         AppRoles.AcademicProvider => "For the academic provider",
         AppRoles.GuidanceCounselor => "For the guidance counselor",
-        AppRoles.Admission => "For the admission office",
         _ => "Your pages",
     };
 
@@ -258,14 +256,14 @@ public static class HelpContent
         [
             "Open Users Management and choose the tab: Students, Teachers or Staff. The sidebar folds to give the table room. A green dot on a person's picture means the person is online now. The status of an account is Activated, Deactivated or Archived (a student who dropped out or graduated).",
             "Press the Add button (Add student, Add teacher or Add staff), or Edit on a row. In Edit you can change the name and email, set a new password, and activate or deactivate the account. “Sign-in details” on a row shows the email and, while the person has not changed it, the first password.",
-            "In the names only letters can be typed, and when you press Tab the first letter of each word becomes a capital. The suffix is a list (Jr., Sr., I, II, III, IV, V and Others, where you type another one). The email and the password are made by the system and shown before you press Add. The employee number of a teacher starts with T- by itself; the one of a member of the staff starts with the first letter of the role (Admission: A-).",
+            "In the names only letters can be typed, and when you press Tab the first letter of each word becomes a capital. The suffix is a list (Jr., Sr., I, II, III, IV, V and Others, where you type another one). The email and the password are made by the system and shown before you press Add. The employee number of a teacher starts with T- by itself; the one of a member of the staff starts with the first letter of the role.",
             "A teacher who works in more than one section has a “sections” button: press it to see them all. A deactivated account can't sign in.",
         ], "admin/users", "Open Users Management"),
         new("How do I add a staff member, or make a new staff role like Librarian?",
         [
-            "Open Users Management, the Staff tab, and press Add staff. In “Name of the new role” type the role (the usual ones are in the list: Registrar, Guidance counselor, Academic coordinator, Academic provider, Admission, and the roles you made before).",
-            "A name that is new makes a new role: the pages the people of the role can open appear as checkboxes, one by one: Calendar, Users, Groups and the different analytics (school, guidance, library, evaluation, admission). Tick the ones the role needs. The people of the role get their own dashboard with those pages and nothing else. Admission asks the grade level (11 or 12).",
-            "Many people can have a role you made. To take a role you made out of the list, choose it and press “Remove role”: the people who had it keep their account.",
+            "Open Users Management, the Staff tab, and press Add staff. In “Name of the new role” type the role (the usual ones are in the list: Registrar, Guidance counselor, Academic coordinator, Academic provider, and the roles you made before).",
+            "A name that is new makes a new role: the pages the people of the role can open appear as checkboxes, one by one: Calendar, Users, Groups and the different analytics (school, guidance, library, evaluation). Tick the ones the role needs. The people of the role get their own dashboard with those pages and nothing else.",
+            "Many people can have a role you made: choose it in the list the next time.",
             "Only the shared pages can be ticked (the pages of the registrar, the coordinator and the others work with their own data, so they stay with the real roles).",
         ], "admin/users/staff", "Open the staff list"),
         new("A teacher needs courses.",
@@ -310,13 +308,13 @@ public static class HelpContent
         new("How do I enroll a student?",
         [
             "Open Enrollment. Type the 12-digit LRN (digits only, like the phone number) and the names (letters only). If the student has an account it is found and filled in; otherwise their account is made, with a sign-in you can copy and give to them.",
-            "A student who applied on the home page and was accepted by the admission office is in “Accepted students” (the button replaces Import from Excel): press Use beside the student and the LRN, the names, the suffix, the phone, the grade level, the track and the strand are filled in; you choose the section and the courses.",
+            "Many students at once: press “Import from Excel”, download the template, fill one row for each student (LRN, names, grade level, strand, section, courses) and upload it. A row that is wrong is left out and the file with the result tells why.",
             "Choose the grade level, the track and strand and the section (if the section is not in the list, choose “+ Add a section…” and type its name). The courses of the strand show under it. The sign-in details are under the student card, at the left, and stay where they are when the courses appear. Press “Print Enrollment” to print the form.",
             "If something is missing when you press “Enroll student”, each box with a problem turns red with a message under it, a red alert at the top lists them, and the cursor goes to the first one. Fix the box and its message goes away.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
-            "Open Student's Accounts (the sidebar folds). Filter by term, strand or next term, or search by name or LRN. Each row has Info (the application the student sent and the papers uploaded, in a box in the middle), Account (the email and, while the student has not changed it, the first password), Edit (the enrollment) and Drop out. The grade is a button, “Overall grade”: it opens every course of the student with its final grade, term by term. “Not enrolled” and its term are on one line.",
+            "Open Student's Accounts (the sidebar folds). Filter by term, strand or next term, or search by name or LRN. Each row has Account (the email and, while the student has not changed it, the first password), Edit (the enrollment) and Drop out. The grade is a button, “Overall grade”: it opens every course of the student with its final grade, term by term. “Not enrolled” and its term are on one line.",
             "You can also see who is enrolled for the next term, and unenroll a student.",
             "“View Enrolled Student Today” (top right) lists the students enrolled today, the newest first, with their LRN, grade level, strand, section and term.",
         ], "registrar/student-accounts", "Open Student's Accounts"),
@@ -418,27 +416,6 @@ public static class HelpContent
             "Open Users: Students and Teachers are everybody of the school, and Staff / Non-teaching are the registrar, the guidance counselor, the academic coordinator and the academic provider. A green dot means the person is online now. The button with the speech bubble writes to the person (it is only there when your role may write to them).",
             "Open Groups and press Add a group: give it a name and choose the people to add. Everybody in the group can write in it. Two groups are made for you: All staff (the registrar, guidance counselor, academic coordinator and academic provider) and Teachers and staff.",
         ], "users", "Open Users"),
-    ]);
-
-    private static HelpSection Admission() => new("For the admission office", "clipboard-check",
-    [
-        new("Where do I see the applications?",
-        [
-            "Open Applications. Students apply for Grade 11 on the home page (Student application, at the bottom of About SEAITT Legazpi LMS). You only see the applications of your grade level. The tabs are Pending, Accepted and Declined.",
-            "Press Info on a row: a box opens in the middle of the screen with the whole application (personal, contact, academic and parent or guardian information), the day the student will come to the school, and the four papers uploaded (press one to open it).",
-        ], "admission/applications", "Open Applications"),
-        new("How do I accept or decline an application?",
-        [
-            "The student comes to the school on the day chosen to confirm the application. Press Accept (the registrar is told and the student is in “Accepted students” of Enrollment) or Decline (write why).",
-        ]),
-        new("What are the class sections and the student's accounts for?",
-        [
-            "Class sections shows the sections of your grade level only (the registrar has them all). Student's accounts lists the students of your grade level, without the next term; Info shows the application of a student.",
-        ], "admission/sections", "Open Class sections"),
-        new("What else is there?",
-        [
-            "The Calendar shows the visits of the applicants. Analytics has pie and bar charts of the applications. Users and Groups work like the ones of the other staff.",
-        ], "admission/analytics", "Open Analytics"),
     ]);
 
     private static HelpSection Guidance() => new("For the guidance counselor", "heart-handshake",

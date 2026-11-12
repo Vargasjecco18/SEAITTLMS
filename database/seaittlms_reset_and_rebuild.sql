@@ -2224,5 +2224,23 @@ ALTER TABLE `referrals` ADD CONSTRAINT `ck_referrals_student_response` CHECK (st
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261112091045_ReferralSchedule', '9.0.20');
 
+DELETE FROM `users` WHERE `role_id` = 8;
+
+UPDATE `custom_roles` SET `pages` = TRIM(BOTH ',' FROM REPLACE(CONCAT(',', `pages`, ','), ',analytics-admission,', ',')) WHERE `id` > 0 AND FIND_IN_SET('analytics-admission', `pages`) > 0;
+
+DROP TABLE `admission_officers`;
+
+DROP TABLE `application_files`;
+
+DROP TABLE `student_applications`;
+
+DELETE FROM `roles`
+WHERE `id` = 8;
+SELECT ROW_COUNT();
+
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261112142032_RemoveAdmission', '9.0.20');
+
 COMMIT;
 

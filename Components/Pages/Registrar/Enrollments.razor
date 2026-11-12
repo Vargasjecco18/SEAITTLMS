@@ -6,15 +6,16 @@
 @inject EnrollmentService Enrollment
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JS
-@inject ApplicationService Applications
+@inject EnrollmentImportService Importer
+@inject FileDownloads Downloads
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Enrollment · SEAITT Legazpi LMS</PageTitle>
 
 <div class="screen-only">
     <PageHeader Title="Enrollment"
                 IconName="user-plus">
-        @* The students the admission office accepted: press one and the form is filled with what they wrote in the application. *@
-        <Button Variant="ButtonVariant.Secondary" IconName="user-check" OnClick="OpenAcceptedAsync">Accepted students</Button>
+        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="OpenImport">Import from Excel</Button>
     </PageHeader>
 </div>
 
@@ -257,44 +258,77 @@ else
     <EnrollmentPrintSheet Receipt="DraftReceipt" />
 }
 
-<Modal Open="acceptedOpen" Title="Accepted students" Large="true" OnClose="CloseAccepted">
-    @if (acceptedOpen)
+<Modal Open="importOpen" Title="Import students from Excel" Large="true" OnClose="CloseImport">
+    @if (importOpen && lookups is not null)
     {
-        <p class="dialog-text">The students the admission office accepted and who are not enrolled yet. Press <strong>Use</strong> and the form of the enrollment is filled with their LRN, names, phone number, grade level, track and strand. Choose the section and enroll them.</p>
-        <FormErrors Errors="acceptedErrors" />
-        @if (accepted is null)
+        @if (importResult is null)
         {
-            <p class="muted">Loading…</p>
-        }
-        else if (accepted.Count == 0)
-        {
-            <EmptyState IconName="user-check" Title="Nobody is waiting">
-                <p>When the admission office accepts an application, the student is listed here.</p>
-            </EmptyState>
+            <ol class="import-steps">
+                <li>
+                    <strong>Get the template.</strong> It has the columns (LRN, names, grade level, strand, section), drop-down lists and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
+                    <div><Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button></div>
+                </li>
+                <li>
+                    <strong>Fill the yellow cells</strong> with the students (type, choose from the list, or paste them from another file) and save with Ctrl+S as an Excel file (.xlsx).
+                </li>
+                <li>
+                    <strong>Choose the file.</strong> The term is set by the calendar.
+                    <div class="two">
+                        <Field For="imp-term" Label="Term" Hint="Set by itself from the calendar.">
+                            <input id="imp-term" readonly value="@TermText(importTermId)" />
+                        </Field>
+                        <Field For="imp-file" Label="Excel file (.xlsx)" Required="true">
+                            <InputFile id="imp-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                        </Field>
+                    </div>
+                    @if (importFileName is not null)
+                    {
+                        <p class="chosen-file"><Icon Name="file-spreadsheet" Size="16" /> @importFileName</p>
+                    }
+                </li>
+            </ol>
+            <FormErrors Errors="@(importError is null ? Array.Empty<string>() : new[] { importError })" />
+            <div class="import-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="CloseImport">Cancel</Button>
+                <Button IconName="upload" Disabled="@(importing || reading || importBytes is null || importTermId == 0)" OnClick="ImportAsync">@(importing ? "Enrolling the students…" : "Import")</Button>
+            </div>
         }
         else
         {
+            <p class="import-summary" role="status">
+                <strong>@importResult.Enrolled</strong> @(importResult.Enrolled == 1 ? "student was" : "students were") enrolled for the @importResult.TermLabel.
+                @if (importResult.Failed > 0)
+                {
+                    <span class="bad"><strong>@importResult.Failed</strong> @(importResult.Failed == 1 ? "was" : "were") not enrolled; the reason is on its line.</span>
+                }
+            </p>
             <div class="table-wrap">
-                <table class="accepted-table" aria-label="Accepted students">
-                    <thead><tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Track · Strand</th><th scope="col">Reference</th><th scope="col"><span class="sr-only">Use</span></th></tr></thead>
+                <table class="import-table">
+                    <thead><tr><th scope="col">Row</th><th scope="col">LRN</th><th scope="col">Student</th><th scope="col">Section</th><th scope="col">Result</th></tr></thead>
                     <tbody>
-                        @foreach (var row in accepted)
+                        @foreach (var row in importResult.Rows)
                         {
-                            var chosen = row;
-                            <tr data-app="@chosen.Reference">
-                                <td><strong>@chosen.Name</strong></td>
-                                <td class="mono">@(chosen.Lrn ?? "—")</td>
-                                <td>@chosen.Track · @chosen.Strand · Grade @chosen.GradeLevel</td>
-                                <td class="mono">@chosen.Reference</td>
-                                <td><Button Small="true" IconName="arrow-right" OnClick="() => UseAcceptedAsync(chosen)">Use</Button></td>
+                            <tr class="@(row.Succeeded ? "ok" : "failed")">
+                                <td>@row.Row</td>
+                                <td class="mono">@row.Lrn</td>
+                                <td>@row.Name</td>
+                                <td>@row.Section</td>
+                                <td>@(row.Succeeded ? (row.NewAccount ? "Enrolled · new account" : "Enrolled") : string.Join(" ", row.Errors))</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+            <div class="import-actions">
+                <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadResultAsync">Download the result (Excel)</Button>
+                <Button Variant="ButtonVariant.Ghost" OnClick="ImportAnother">Import another file</Button>
+                <Button IconName="circle-check" OnClick="CloseImport">Done</Button>
+            </div>
+            @if (importResult.Rows.Any(r => r.Password is not null))
+            {
+                <p class="hint">The result file has the email and the password of each new account. Hand them to the students and keep the file private.</p>
+            }
         }
-
-        <div class="import-actions"><Button Variant="ButtonVariant.Ghost" OnClick="CloseAccepted">Close</Button></div>
     }
 </Modal>
 
@@ -666,14 +700,6 @@ else
             {
                 receipt = result.Receipt;
                 copied = false;
-
-                // the application the form was filled from is Enrolled now
-                if (receipt is not null)
-                {
-                    await Applications.MarkEnrolledAsync(applicationId, receipt.StudentId);
-                }
-
-                applicationId = null;
             }
             else
             {
@@ -777,58 +803,106 @@ else
 
     private async Task PrintAsync() => await JS.InvokeVoidAsync("seaitt.print");
 
-    // ---------- the students the admission office accepted
-    private bool acceptedOpen;
-    private IReadOnlyList<ApplicationRow>? accepted;
-    private IReadOnlyList<string> acceptedErrors = [];
-    private int? applicationId;
+    // ---------- import from Excel
+    private bool importOpen;
+    private bool importing;
+    private bool reading;
+    private int importTermId;
+    private string? importFileName;
+    private byte[]? importBytes;
+    private string? importError;
+    private ImportResult? importResult;
 
-    private async Task OpenAcceptedAsync()
+    private void OpenImport()
     {
-        acceptedOpen = true;
-        acceptedErrors = [];
-        accepted = null;
-        var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
-        _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
-        accepted = await Applications.ListAcceptedAsync(userId);
+        importOpen = true;
+        importing = reading = false;
+        importFileName = null;
+        importBytes = null;
+        importError = null;
+        importResult = null;
+        importTermId = form.TermId != 0 ? form.TermId : (lookups?.Terms.FirstOrDefault(t => t.IsCurrent) ?? lookups?.Terms.FirstOrDefault())?.Id ?? 0;
     }
 
-    private void CloseAccepted() => acceptedOpen = false;
+    private void CloseImport() => importOpen = false;
 
-    /// <summary>Fills the form from an accepted application: LRN, names, name extension, phone number, grade level, track and strand. The section is chosen by the registrar.</summary>
-    private async Task UseAcceptedAsync(ApplicationRow row)
+    private async Task DownloadTemplateAsync()
     {
-        var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
-        _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
-        var fill = await Applications.GetFillAsync(userId, row.Id);
-        if (fill is null)
+        await Downloads.SaveAsync("Enrollment template.xlsx", await Importer.BuildTemplateAsync());
+    }
+
+    private async Task FileChosenAsync(InputFileChangeEventArgs e)
+    {
+        importError = null;
+        importBytes = null;
+        importFileName = null;
+        reading = true;
+        try
         {
-            acceptedErrors = ["This application is not accepted any more."];
+            if (e.File.Size > XlsxReader.MaxFileBytes)
+            {
+                importError = $"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.";
+                return;
+            }
+
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            importBytes = buffer.ToArray();
+            importFileName = e.File.Name;
+        }
+        catch (IOException)
+        {
+            importError = "The file could not be read. Choose it again.";
+        }
+        finally
+        {
+            reading = false;
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (importing || importBytes is null)
+        {
             return;
         }
 
-        applicationId = fill.Id;
-        form.Lrn = fill.Lrn ?? "";
-        form.FirstName = fill.FirstName;
-        form.MiddleName = fill.MiddleName ?? "";
-        form.LastName = fill.LastName;
-        form.NameExtension = fill.Suffix ?? "";
-        form.PhoneNumber = fill.Phone;
-        form.GradeLevel = fill.GradeLevel;
-        form.TrackId = fill.TrackId;
-        form.StrandId = fill.StrandId;
-        form.SectionName = "";
-        existing = null;
-        boxProblems.Clear();
-        errors = [];
-        acceptedOpen = false;
-
-        // a student who has an account already (the same LRN) is found, as when the LRN is typed
-        if (form.Lrn.Length == 12)
+        importing = true;
+        importError = null;
+        try
         {
-            existing = await Enrollment.FindStudentAsync(form.Lrn);
+            var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+            _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
+            var result = await Importer.ImportAsync(importBytes, importTermId, userId);
+            if (result.FileError is not null)
+            {
+                importError = result.FileError;
+            }
+            else
+            {
+                importResult = result;
+            }
         }
+        finally
+        {
+            importing = false;
+        }
+    }
 
-        await ReloadChoicesAsync();
+    private async Task DownloadResultAsync()
+    {
+        if (importResult is not null)
+        {
+            await Downloads.SaveAsync("Enrollment import result.xlsx", EnrollmentImportService.BuildResultFile(importResult));
+        }
+    }
+
+    private void ImportAnother()
+    {
+        importResult = null;
+        importBytes = null;
+        importFileName = null;
+        importError = null;
     }
 }

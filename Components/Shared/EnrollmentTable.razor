@@ -24,7 +24,7 @@
                     <th scope="col" class="col-next">Next term</th>
                 }
                 <th scope="col" class="col-date">Enrolled</th>
-                @if (ShowActions || InfoOnly)
+                @if (ShowActions)
                 {
                     <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
                 }
@@ -140,10 +140,6 @@
                             <EnrollmentActions EnrollmentId="row.Id" StudentId="row.StudentId" StudentName="@row.StudentName" Lrn="@row.Lrn" Status="@row.Status" StudentActive="row.StudentActive" />
                         </td>
                     }
-                    else if (InfoOnly)
-                    {
-                        <td class="col-actions"><ApplicationInfoButton StudentId="row.StudentId" StudentName="@row.StudentName" /></td>
-                    }
                 </tr>
             }
         </tbody>
@@ -170,9 +166,6 @@
 
     /// <summary>The registrar's buttons at the end of each line: Account, Edit and Drop out.</summary>
     [Parameter] public bool ShowActions { get; set; }
-
-    /// <summary>Only the Info button (the application the student sent): the admission office's Student's Accounts.</summary>
-    [Parameter] public bool InfoOnly { get; set; }
 
     /// <summary>The term after the current one (null when there is none).</summary>
     [Parameter] public TermRef? NextTerm { get; set; }

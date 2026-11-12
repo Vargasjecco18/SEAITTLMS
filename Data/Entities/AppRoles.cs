@@ -13,7 +13,6 @@ public static class AppRoles
     public const string GuidanceCounselor = "GuidanceCounselor";
     public const string AcademicCoordinator = "AcademicCoordinator";
     public const string AcademicProvider = "AcademicProvider";
-    public const string Admission = "Admission";
 
     public const int AdminId = 1;
     public const int TeacherId = 2;
@@ -22,7 +21,6 @@ public static class AppRoles
     public const int GuidanceCounselorId = 5;
     public const int AcademicCoordinatorId = 6;
     public const int AcademicProviderId = 7;
-    public const int AdmissionId = 8;
 
     public static readonly IReadOnlyDictionary<string, int> Ids = new Dictionary<string, int>
     {
@@ -33,7 +31,6 @@ public static class AppRoles
         [GuidanceCounselor] = GuidanceCounselorId,
         [AcademicCoordinator] = AcademicCoordinatorId,
         [AcademicProvider] = AcademicProviderId,
-        [Admission] = AdmissionId,
     };
 
     /// <summary>The name to show on screen ("Guidance Counselor" instead of "GuidanceCounselor").</summary>
