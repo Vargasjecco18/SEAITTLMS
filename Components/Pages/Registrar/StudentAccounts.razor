@@ -63,7 +63,7 @@
         <Card>
             @if (result.Items.Count == 0)
             {
-                <EmptyState IconName="search-x" Title="@(HasFilter ? "No enrollments match" : "No enrollments yet")">
+                <EmptyState IconName="search-x" Title="@(HasFilter ? "No students match" : "No students yet")">
                     @if (HasFilter)
                     {
                         <p>Try another name, LRN or filter.</p>
@@ -78,9 +78,9 @@
             }
             else
             {
-                <p class="result-count">@(result.Total == 1 ? "1 enrollment" : $"{result.Total:N0} enrollments")</p>
+                <p class="result-count">@(result.Total == 1 ? "1 student" : $"{result.Total:N0} students")</p>
                 <div class="table-in-card">
-                    <EnrollmentTable Rows="result.Items" ShowTerm="false" ShowSubjects="true" ShowFinalGrade="true" ShowNextTerm="true" ShowPhone="true" ShowActions="true" NextTerm="result.NextTerm" />
+                    <EnrollmentTable Rows="result.Items" ShowTerm="false" ShowSubjects="true" ShowFinalGrade="true" ShowNextTerm="true" ShowPhone="true" ShowActions="true" NextTerm="result.NextTerm" CurrentTermEnd="result.CurrentTermEnd" />
                 </div>
 
                 @if (result.PageCount > 1)
@@ -142,7 +142,7 @@
         lookups = await Enrollment.GetLookupsAsync();
 
         await using var db = await DbFactory.CreateDbContextAsync();
-        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, NextText), ParseNumber(PageText) ?? 1, PageSize, withFinalGrade: true);
+        result = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(Q, Term, Strand, NextText, ActiveOnly: true, OnePerStudent: true), ParseNumber(PageText) ?? 1, PageSize, withFinalGrade: true);
     }
 
     /// <summary>This page's address with another page number (the search and filters stay).</summary>

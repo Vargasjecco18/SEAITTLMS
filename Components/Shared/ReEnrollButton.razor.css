@@ -99,3 +99,37 @@
     border-color: var(--brand);
     background: var(--brand-soft);
 }
+
+/* "Re-enroll for 2nd Term" in the list of Student's Accounts (round 41): one button, off until the current term has ended. */
+.reenroll-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--brand);
+    border-radius: var(--radius-sm);
+    background: var(--brand);
+    color: var(--on-brand, #fff);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 650;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.reenroll-button:hover:not(:disabled) {
+    background: var(--brand-strong);
+    border-color: var(--brand-strong);
+}
+
+.reenroll-button:focus-visible {
+    outline: 2px solid var(--brand-strong);
+    outline-offset: 2px;
+}
+
+.reenroll-button:disabled {
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}

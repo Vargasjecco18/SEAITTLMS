@@ -48,9 +48,10 @@ public sealed record RegistrarOverview(
             .Select(t => new { t.Id, t.Name, t.SchoolYearId, SchoolYear = t.SchoolYear.Name })
             .FirstOrDefaultAsync(ct);
 
-        var studentsTotal = await db.Students.CountAsync(ct);
-        var enrolledToday = await db.Enrollments.CountAsync(e => e.CreatedAtUtc >= startOfTodayUtc, ct);
-        var latest = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(null, null, null), 1, recent, ct);
+        // Students who graduated or were archived (dropped out) are not counted in the registrar's numbers (round 41).
+        var studentsTotal = await db.Students.CountAsync(s => s.Status == StudentStatus.Active, ct);
+        var enrolledToday = await db.Enrollments.CountAsync(e => e.CreatedAtUtc >= startOfTodayUtc && e.Student.Status == StudentStatus.Active, ct);
+        var latest = await EnrollmentList.LoadAsync(db, new EnrollmentFilter(null, null, null, ActiveOnly: true), 1, recent, ct);
         var notEnrolled = await NotEnrolledList.LoadAsync(db, null, 1, 6, ct);
 
         if (term is null)
@@ -58,11 +59,11 @@ public sealed record RegistrarOverview(
             return new RegistrarOverview(null, 0, enrolledToday, studentsTotal, 0, [], latest.Items, notEnrolled);
         }
 
-        var enrolledThisTerm = await db.Enrollments.CountAsync(e => e.TermId == term.Id, ct);
+        var enrolledThisTerm = await db.Enrollments.CountAsync(e => e.TermId == term.Id && e.Student.Status == StudentStatus.Active, ct);
         var sections = await db.Sections.CountAsync(s => s.SchoolYearId == term.SchoolYearId, ct);
 
         var perStrand = await db.Enrollments.AsNoTracking()
-            .Where(e => e.TermId == term.Id)
+            .Where(e => e.TermId == term.Id && e.Student.Status == StudentStatus.Active)
             .GroupBy(e => e.StrandId)
             .Select(g => new { StrandId = g.Key, Count = g.Count() })
             .ToListAsync(ct);
@@ -76,7 +77,7 @@ public sealed record RegistrarOverview(
 
         // Every section of this school year with how many students of it are enrolled for the current term.
         var perSection = await db.Enrollments.AsNoTracking()
-            .Where(e => e.TermId == term.Id)
+            .Where(e => e.TermId == term.Id && e.Student.Status == StudentStatus.Active)
             .GroupBy(e => e.SectionId)
             .Select(g => new { SectionId = g.Key, Count = g.Count() })
             .ToListAsync(ct);
@@ -94,10 +95,14 @@ public sealed record RegistrarOverview(
 }
 
 /// <param name="NextTerm">"enrolled" or "none": only students who are (or are not) enrolled for the next term. Empty for all.</param>
-public sealed record EnrollmentFilter(string? Search, int? TermId, int? StrandId, string? NextTerm = null, int? GradeLevel = null);
+/// <param name="ActiveOnly">Leave out the students who graduated or were archived (round 41: the registrar's lists and numbers).</param>
+/// <param name="OnePerStudent">One line for each student: the enrollment of the current term, or the newest one before it (a term that has not started is only shown when the student has nothing else). The
+/// earlier enrollments stay in the records (Overall grade shows them). Only when no term is chosen.</param>
+public sealed record EnrollmentFilter(string? Search, int? TermId, int? StrandId, string? NextTerm = null, bool ActiveOnly = false, bool OnePerStudent = false);
 
 /// <param name="NextTerm">The term after the current one, or null when there is none.</param>
-public sealed record EnrollmentPage(IReadOnlyList<EnrollmentRow> Items, int Total, int Page, int PageSize, TermRef? NextTerm = null)
+/// <param name="CurrentTermEnd">The last day of the current term (null when no term is current): the next term can be enrolled for when that day has passed.</param>
+public sealed record EnrollmentPage(IReadOnlyList<EnrollmentRow> Items, int Total, int Page, int PageSize, TermRef? NextTerm = null, DateOnly? CurrentTermEnd = null)
 {
     public int PageCount => Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
 }
@@ -131,10 +136,38 @@ public static class EnrollmentList
             query = query.Where(e => e.StrandId == strandId);
         }
 
-        // the admission office of one grade level sees the students of that grade level only
-        if (filter.GradeLevel is { } gradeLevel)
+        if (filter.ActiveOnly)
         {
-            query = query.Where(e => e.GradeLevel == gradeLevel);
+            query = query.Where(e => e.Student.Status == StudentStatus.Active);
+        }
+
+        var current = await db.Terms.AsNoTracking().Where(t => t.IsCurrent)
+            .Select(t => new { Start = t.SchoolYear.StartDate, t.TermNumber, t.EndDate }).FirstOrDefaultAsync(ct);
+
+        // One line for each student (round 41): the newest enrollment that is not after the current term; a term that comes after it only counts when the student has nothing else.
+        if (filter.OnePerStudent && filter.TermId is null)
+        {
+            if (current is null)
+            {
+                query = query.Where(e => !db.Enrollments.Any(o => o.StudentId == e.StudentId
+                    && (o.Term.SchoolYear.StartDate > e.Term.SchoolYear.StartDate
+                        || (o.Term.SchoolYear.StartDate == e.Term.SchoolYear.StartDate && (o.Term.TermNumber > e.Term.TermNumber || (o.Term.TermNumber == e.Term.TermNumber && o.Id > e.Id))))));
+            }
+            else
+            {
+                var cs = current.Start;
+                var cn = current.TermNumber;
+                query = query.Where(e => !db.Enrollments.Any(o => o.StudentId == e.StudentId
+                    && (
+                        // o is not after the current term and e is: o wins
+                        ((o.Term.SchoolYear.StartDate < cs || (o.Term.SchoolYear.StartDate == cs && o.Term.TermNumber <= cn))
+                            && (e.Term.SchoolYear.StartDate > cs || (e.Term.SchoolYear.StartDate == cs && e.Term.TermNumber > cn)))
+                        // both on the same side of the current term: the later one wins
+                        || (((o.Term.SchoolYear.StartDate > cs || (o.Term.SchoolYear.StartDate == cs && o.Term.TermNumber > cn))
+                                == (e.Term.SchoolYear.StartDate > cs || (e.Term.SchoolYear.StartDate == cs && e.Term.TermNumber > cn)))
+                            && (o.Term.SchoolYear.StartDate > e.Term.SchoolYear.StartDate
+                                || (o.Term.SchoolYear.StartDate == e.Term.SchoolYear.StartDate && (o.Term.TermNumber > e.Term.TermNumber || (o.Term.TermNumber == e.Term.TermNumber && o.Id > e.Id))))))));
+            }
         }
 
         // Who is enrolled for the next term (the registrar can unenroll them) and who still has to be enrolled.
@@ -184,6 +217,6 @@ public static class EnrollmentList
             r.StudentId, nextEnrollments.TryGetValue(r.StudentId, out var nextId) ? nextId : null, r.Phone,
             finalGrades.TryGetValue(r.Id, out var finalGrade) ? finalGrade : null, r.StudentActive)).ToList();
 
-        return new EnrollmentPage(items, total, page, pageSize, next);
+        return new EnrollmentPage(items, total, page, pageSize, next, current?.EndDate);
     }
 }

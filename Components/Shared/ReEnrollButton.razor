@@ -6,7 +6,7 @@
 @* "Re-enroll" for the next term, in a box over the list (no other page). It is its own live island, so it works inside a list that is otherwise plain.
    The box starts from where the student was: the grade level, the track and the strand of the last enrollment (one grade up in a new school year).
    The section is left empty for the registrar to choose. A student who changes strand starts again in Grade 11. *@
-<button type="button" class="@CssClass" @onclick="OpenAsync">@Label</button>
+<button type="button" class="@CssClass" disabled="@Disabled" title="@Title" @onclick="OpenAsync">@Label</button>
 
 <Modal Open="open" Title="@($"Re-enroll {StudentName}")" OnClose="CloseAsync">
     @if (open)
@@ -117,6 +117,11 @@
     [Parameter] public string Label { get; set; } = "Re-enroll";
 
     [Parameter] public string CssClass { get; set; } = "enroll-link";
+
+    /// <summary>Switched off (the student's list: the current term has not ended).</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public string? Title { get; set; }
 
     private bool open;
     private bool busy;

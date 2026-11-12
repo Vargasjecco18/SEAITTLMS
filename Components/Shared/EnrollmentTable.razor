@@ -105,10 +105,6 @@
                         <td class="col-grade">
                             @* The overall grade is a button: it opens every course of the student with its final grade. *@
                             <OverallGradeButton StudentId="row.StudentId" StudentName="@row.StudentName" Grade="row.FinalGrade" />
-                            @if (row.FinalGrade is { } grade)
-                            {
-                                <span class="sub">@GradeRules.Descriptor(grade)</span>
-                            }
                         </td>
                     }
                     @if (ShowNextTerm)
@@ -125,8 +121,10 @@
                             }
                             else
                             {
-                                <span class="next-line"><Badge>Not enrolled</Badge><span class="sub">@NextTerm.Name</span></span>
-                                <ReEnrollButton Lrn="@row.Lrn" StudentName="@row.StudentName" TermId="NextTerm.Id" TermLabel="@NextTerm.Label" />
+                                @* One button (round 41): "Re-enroll for 2nd Term". It is off until the current term has ended. *@
+                                <ReEnrollButton Lrn="@row.Lrn" StudentName="@row.StudentName" TermId="NextTerm.Id" TermLabel="@NextTerm.Label"
+                                                Label="@($"Re-enroll for {NextTerm.Name}")" CssClass="reenroll-button" Disabled="@(!CurrentTermEnded)"
+                                                Title="@(CurrentTermEnded ? $"Enroll {row.StudentName} for the {NextTerm.Name}" : $"The current term has not ended yet{(CurrentTermEnd is { } end ? $": it ends on {PhilippineTime.FormatDate(end.ToDateTime(TimeOnly.MinValue))}" : "")}.")" />
                             }
                         </td>
                     }
@@ -169,6 +167,13 @@
 
     /// <summary>The term after the current one (null when there is none).</summary>
     [Parameter] public TermRef? NextTerm { get; set; }
+
+    /// <summary>The last day of the current term: the button to enroll for the next term works after it (round 41).</summary>
+    [Parameter] public DateOnly? CurrentTermEnd { get; set; }
+
+    [Inject] private TimeProvider Clock { get; set; } = default!;
+
+    private bool CurrentTermEnded => CurrentTermEnd is { } end && end < PhilippineTime.Today(Clock);
 
     private static string PopupId(EnrollmentRow row) => $"courses-{row.Id}";
 

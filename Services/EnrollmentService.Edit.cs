@@ -395,7 +395,7 @@ public sealed partial class EnrollmentService
         var to = from.AddDays(1);
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var rows = await db.Enrollments.AsNoTracking()
-            .Where(e => e.CreatedAtUtc >= from && e.CreatedAtUtc < to && e.Status == EnrollmentStatus.Enrolled)
+            .Where(e => e.CreatedAtUtc >= from && e.CreatedAtUtc < to && e.Status == EnrollmentStatus.Enrolled && e.Student.Status == StudentStatus.Active)
             .OrderByDescending(e => e.CreatedAtUtc).ThenByDescending(e => e.Id)
             .Select(e => new { e.Id, e.FirstName, e.MiddleName, e.LastName, e.NameExtension, e.Lrn, e.GradeLevel, Strand = e.Strand.Code, Section = e.Section.Name, Term = e.Term.Name, SchoolYear = e.Term.SchoolYear.Name, e.CreatedAtUtc })
             .ToListAsync(ct);

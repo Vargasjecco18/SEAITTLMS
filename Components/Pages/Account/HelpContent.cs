@@ -314,8 +314,8 @@ public static class HelpContent
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
         [
-            "Open Student's Accounts (the sidebar folds). Filter by term, strand or next term, or search by name or LRN. Each row has Account (the email and, while the student has not changed it, the first password), Edit (the enrollment) and Drop out. The grade is a button, “Overall grade”: it opens every course of the student with its final grade, term by term. “Not enrolled” and its term are on one line.",
-            "You can also see who is enrolled for the next term, and unenroll a student.",
+            "Open Student's Accounts (the sidebar folds). Filter by term, strand or next term, or search by name or LRN. Each row has Account (the email and, while the student has not changed it, the first password), Edit (the enrollment) and Drop out. The grade is a button, “Overall grade”: it opens every course of the student with its final grade, term by term (the earlier terms stay there). Each student has one line only, even after being enrolled again. Students who graduated or were archived are not in this list or in the numbers of the registrar.",
+            "The last column is about the next term: “Enrolled” with the term (and Unenroll) when the student is enrolled for it, otherwise one button, “Re-enroll for 2nd Term” (or 1st, or 3rd Term). The button is off until the current term has ended; when it works, it opens a box with the grade level, the track and the strand filled in, and you choose the section.",
             "“View Enrolled Student Today” (top right) lists the students enrolled today, the newest first, with their LRN, grade level, strand, section and term.",
         ], "registrar/student-accounts", "Open Student's Accounts"),
         new("The section I need is not in the list.",
