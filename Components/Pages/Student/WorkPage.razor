@@ -35,7 +35,7 @@ else
     <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
         @* In this order: Details, Feedback, Back to the handout. Details and Feedback open a box that slides in from the right (round 41). *@
         <Button Variant="ButtonVariant.Secondary" IconName="info" Title="The status, the due date and the score" OnClick="@(() => sideBox = "details")">Details</Button>
-        <Button Variant="ButtonVariant.Secondary" IconName="message-square" Title="What your teacher wrote about your work" OnClick="@(() => sideBox = "feedback")">Feedback@if (!string.IsNullOrWhiteSpace(item.Feedback)) { <i class="feedback-dot" aria-label="New feedback"></i> }</Button>
+        <Button Variant="ButtonVariant.Secondary" IconName="message-square" Title="What your teacher wrote about your work" OnClick="@(() => sideBox = "feedback")"><span>Feedback</span>@if (!string.IsNullOrWhiteSpace(item.Feedback)) { <i class="feedback-dot" aria-label="New feedback"></i> }</Button>
         <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the handout</ButtonLink>
     </PageHeader>
 
