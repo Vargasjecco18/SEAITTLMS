@@ -1,0 +1,389 @@
+{
+ "diagrams": [
+  {
+   "key": "level-0",
+   "title": "Level 0: context diagram",
+   "subtitle": "The whole system as one process, with the people and the service outside it.",
+   "processes": [
+    {
+     "id": "0",
+     "name": "SEAITT Legazpi LMS (Learning Management System)"
+    }
+   ],
+   "flows": 16
+  },
+  {
+   "key": "level-1",
+   "title": "Level 1: the main processes",
+   "subtitle": "The system in eight processes, with the data stores they use.",
+   "processes": [
+    {
+     "id": "1.0",
+     "name": "Manage accounts and access"
+    },
+    {
+     "id": "2.0",
+     "name": "Set up the school and enroll students"
+    },
+    {
+     "id": "3.0",
+     "name": "Manage the course library"
+    },
+    {
+     "id": "4.0",
+     "name": "Conduct classes and grading"
+    },
+    {
+     "id": "5.0",
+     "name": "Handle guidance referrals"
+    },
+    {
+     "id": "6.0",
+     "name": "Communicate and share"
+    },
+    {
+     "id": "7.0",
+     "name": "Evaluate teachers and analyze"
+    },
+    {
+     "id": "8.0",
+     "name": "Administer the system"
+    }
+   ],
+   "flows": 76
+  },
+  {
+   "key": "level-2-1",
+   "title": "Level 2: 1.0 Manage accounts and access",
+   "subtitle": "Sign in, the login code, the session, the accounts and the own settings.",
+   "processes": [
+    {
+     "id": "1.1",
+     "name": "Check the login"
+    },
+    {
+     "id": "1.2",
+     "name": "Send and check the login code"
+    },
+    {
+     "id": "1.3",
+     "name": "Start and end the session"
+    },
+    {
+     "id": "1.4",
+     "name": "Manage accounts and roles"
+    },
+    {
+     "id": "1.5",
+     "name": "Keep the own settings"
+    },
+    {
+     "id": "1.6",
+     "name": "Record the security events"
+    }
+   ],
+   "flows": 26
+  },
+  {
+   "key": "level-2-2",
+   "title": "Level 2: 2.0 Set up the school and enroll students",
+   "subtitle": "School years, curriculum, sections, enrollment, drop-out, archive and the teachers' courses.",
+   "processes": [
+    {
+     "id": "2.1",
+     "name": "Maintain school years and terms"
+    },
+    {
+     "id": "2.2",
+     "name": "Maintain tracks, strands, courses and curriculum"
+    },
+    {
+     "id": "2.3",
+     "name": "Manage class sections"
+    },
+    {
+     "id": "2.4",
+     "name": "Enroll a student"
+    },
+    {
+     "id": "2.5",
+     "name": "Change an enrollment or drop out"
+    },
+    {
+     "id": "2.6",
+     "name": "Assign teachers to courses"
+    },
+    {
+     "id": "2.7",
+     "name": "Archive and restore students"
+    },
+    {
+     "id": "2.8",
+     "name": "List and print enrollments"
+    }
+   ],
+   "flows": 26
+  },
+  {
+   "key": "level-2-3",
+   "title": "Level 2: 3.0 Manage the course library",
+   "subtitle": "The library of the academic provider and how it reaches the teachers and the students.",
+   "processes": [
+    {
+     "id": "3.1",
+     "name": "Maintain syllabus and handouts of the library"
+    },
+    {
+     "id": "3.2",
+     "name": "Maintain summative exams and questions"
+    },
+    {
+     "id": "3.3",
+     "name": "Send library items to the teachers"
+    },
+    {
+     "id": "3.4",
+     "name": "Post summative exams to the students"
+    },
+    {
+     "id": "3.5",
+     "name": "Track sending and posting"
+    }
+   ],
+   "flows": 24
+  },
+  {
+   "key": "level-2-4",
+   "title": "Level 2: 4.0 Conduct classes and grading",
+   "subtitle": "Handouts, activities and quizzes, the students' work, grading, the gradebook, attendance and progress.",
+   "processes": [
+    {
+     "id": "4.1",
+     "name": "Manage handouts"
+    },
+    {
+     "id": "4.2",
+     "name": "Manage activities and quizzes"
+    },
+    {
+     "id": "4.3",
+     "name": "Take the work (student)"
+    },
+    {
+     "id": "4.4",
+     "name": "Grade the work and give feedback"
+    },
+    {
+     "id": "4.5",
+     "name": "Keep the gradebook and final grades"
+    },
+    {
+     "id": "4.6",
+     "name": "Record attendance"
+    },
+    {
+     "id": "4.7",
+     "name": "Track reading and achievements"
+    }
+   ],
+   "flows": 32
+  },
+  {
+   "key": "level-2-5",
+   "title": "Level 2: 5.0 Handle guidance referrals",
+   "subtitle": "From a concern (found by the system or written by the counselor) to the schedule and the solution.",
+   "processes": [
+    {
+     "id": "5.1",
+     "name": "Find concerns automatically"
+    },
+    {
+     "id": "5.2",
+     "name": "Record a concern"
+    },
+    {
+     "id": "5.3",
+     "name": "Write notes and help given"
+    },
+    {
+     "id": "5.4",
+     "name": "Receive the student's answer"
+    },
+    {
+     "id": "5.5",
+     "name": "Set the schedule"
+    },
+    {
+     "id": "5.6",
+     "name": "Solve the concern"
+    }
+   ],
+   "flows": 26
+  },
+  {
+   "key": "level-2-6",
+   "title": "Level 2: 6.0 Communicate and share",
+   "subtitle": "Messages, friends and groups, files, announcements, the calendar and the notifications.",
+   "processes": [
+    {
+     "id": "6.1",
+     "name": "Send and read messages"
+    },
+    {
+     "id": "6.2",
+     "name": "Manage friends and groups"
+    },
+    {
+     "id": "6.3",
+     "name": "Store and share files"
+    },
+    {
+     "id": "6.4",
+     "name": "Publish announcements and holidays"
+    },
+    {
+     "id": "6.5",
+     "name": "Manage the calendar"
+    },
+    {
+     "id": "6.6",
+     "name": "Show the notifications"
+    }
+   ],
+   "flows": 23
+  },
+  {
+   "key": "level-2-7",
+   "title": "Level 2: 7.0 Evaluate teachers and analyze",
+   "subtitle": "The teacher evaluation, and the analytics and reports for each role.",
+   "processes": [
+    {
+     "id": "7.1",
+     "name": "Build the evaluation"
+    },
+    {
+     "id": "7.2",
+     "name": "Collect the students' answers"
+    },
+    {
+     "id": "7.3",
+     "name": "Work out the results"
+    },
+    {
+     "id": "7.4",
+     "name": "Compile the analytics"
+    },
+    {
+     "id": "7.5",
+     "name": "Export the reports"
+    }
+   ],
+   "flows": 22
+  },
+  {
+   "key": "level-2-8",
+   "title": "Level 2: 8.0 Administer the system",
+   "subtitle": "Settings, maintenance, the security log, backups and the tasks the system does by itself.",
+   "processes": [
+    {
+     "id": "8.1",
+     "name": "Maintain the system settings"
+    },
+    {
+     "id": "8.2",
+     "name": "Close and open the system for maintenance"
+    },
+    {
+     "id": "8.3",
+     "name": "Show and clear the security log"
+    },
+    {
+     "id": "8.4",
+     "name": "Back up the database"
+    },
+    {
+     "id": "8.5",
+     "name": "Restore a backup"
+    },
+    {
+     "id": "8.6",
+     "name": "Run the automatic tasks"
+    }
+   ],
+   "flows": 22
+  }
+ ],
+ "stores": {
+  "D0": [
+   "Whole database",
+   "all 63 tables (for the backup)"
+  ],
+  "D1": [
+   "Accounts and profiles",
+   "users, roles, custom_roles, administrators, registrars, guidance_counselors, academic_coordinators, academic_providers, teachers, students, profile_photos"
+  ],
+  "D2": [
+   "Security records",
+   "security_logs, login_otps"
+  ],
+  "D3": [
+   "System settings",
+   "system_settings"
+  ],
+  "D4": [
+   "School structure",
+   "school_years, terms, tracks, strands, courses, strand_courses, sections"
+  ],
+  "D5": [
+   "Enrollments and assignments",
+   "enrollments, enrollment_courses, teaching_assignments"
+  ],
+  "D6": [
+   "Course library",
+   "material_handouts, material_items, material_questions, material_question_images, material_deliveries"
+  ],
+  "D7": [
+   "Class work",
+   "handouts, handout_items, quiz_questions, quiz_question_images, submissions, handout_reads, handout_views, item_views"
+  ],
+  "D8": [
+   "Grades and attendance",
+   "final_grades, attendance_records, achievement_awards"
+  ],
+  "D9": [
+   "Referrals",
+   "referrals"
+  ],
+  "D10": [
+   "Messages and notifications",
+   "messages, notifications, friendships, notification_sounds"
+  ],
+  "D11": [
+   "Groups and files",
+   "study_groups, study_group_members, group_posts, stored_files, stored_file_contents, shared_files, attachments, attachment_contents"
+  ],
+  "D12": [
+   "Calendar and announcements",
+   "announcements, calendar_entries, calendar_entry_invites, holiday_exclusions"
+  ],
+  "D13": [
+   "Evaluations",
+   "teacher_evaluations, evaluation_questions, evaluation_targets, evaluation_responses, evaluation_answers"
+  ],
+  "D14": [
+   "Backup files",
+   "SQL files kept in the backup folder (not a table)"
+  ]
+ },
+ "entities": {
+  "ADM": "Administrator",
+  "REG": "Registrar",
+  "GC": "Guidance Counselor",
+  "AC": "Academic Coordinator",
+  "AP": "Academic Provider",
+  "TCH": "Teacher",
+  "STU": "Student",
+  "SMS": "UniSMS\n(SMS service)",
+  "ANY": "Any user\n(every role)"
+ }
+}

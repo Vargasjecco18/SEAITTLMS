@@ -744,6 +744,7 @@ appsettings.Local.example.json   Copy it to appsettings.Local.json (git ignores 
 database/                  The SQL files for MySQL Workbench: start over (reset and rebuild), sample accounts, sample data, and the script that generates the first one
 Backups/                   The backups made by Database Backup (created by the app; git ignores it)
 docs/database.md           Tables, relationships and the rules the database enforces
+docs/dfd.md                Data flow diagrams, level 0, 1 and 2 (the pictures are in docs/dfd/)
 THIRD-PARTY-NOTICES.md     Licence of the icons (the logo and the photos are the school's own)
 ```
 
@@ -786,6 +787,18 @@ THIRD-PARTY-NOTICES.md     Licence of the icons (the logo and the photos are the
 | a page that was **closed** (it stays in memory on the server for a few minutes), 90 s | before **14**, after **12** (no real change) |
 
 What was changed: (1) the two *online* boxes read the people lists (classmates, teachers, friends) every **3 minutes** instead of every minute; who of them is online still follows a 4-second look that asks the database nothing. (2) The cards at the right of the dashboards (announcements, activities, achievements, the calendar) look again every **2 minutes** instead of every minute; what is urgent (a message, a notification) is the header's, which still looks every 30 seconds and is told at once. (3) The live parts of a page (those cards, the online boxes, a group page, the Users page) **ask nothing while their page is closed**, as the header already did (the measurement shows this is a small thing: a closed page asks little anyway). (4) The sign-in of a closed page ends in 3 seconds instead of 10. **What was not done, on purpose:** one look at the cards sends about **250 commands**, because each card on a dashboard loads the same big things (the student's work, the achievements, the calendar) by itself. Sharing one load between the cards, or keeping the answers for a few seconds, would make that look cheap, but a student who hands in work would then see an old dashboard; it needs the answers to be thrown away when the work changes, so it was left for a round of its own. Pages already load in 40 to 490 ms with this data: the slowest of 28 pages measured were the administrator's Analytics (485 ms, 46 commands) and the coordinator's Analytics (338 ms, 133 commands); the busiest were the student dashboard (188 commands), the teacher dashboard (151) and the coordinator's Analytics (133).
+
+## Round 44
+
+**Settings.** *Save* now **closes the Settings box** once what was chosen is kept (the notification sound, a new password). When something is wrong (a wrong current password, a password that is too short) the box stays open with the message.
+
+**Dropped-out students go to the archive.** Marking a student as dropped out (Users Management, the registrar's Student's Accounts) already switched the sign-in off and wrote the status `DroppedOut`, but the student stayed in the *Students* list of Users Management and the answer said nothing about the archive. Now (1) the answer says *"... is dropped out and moved to Archive Accounts (the Archived tab)"*, and the box before it says the same; (2) the **Students tab of Users Management leaves out the archived students** (dropped out and graduated): they are in **Archive Accounts > Archived** with the note *Dropped out*, and in Users Management only with the Status filter **Archived**; (3) the number on the Students tab does not count them. An administrator can still restore a student from the Archived tab.
+
+**The box of the guidance counselor opens again.** A student who closed the box without answering (the X or Escape: the counselor sees *Ignored*) or who has not answered yet can **press the message of the counselor in the bell**: it opens the same box again in the middle of the screen. While the counselor waits for an answer (the referral is in progress and the student has not answered), the box has **Going** and **Not going** again and the bell says *You have not answered yet*; after the answer it opens with **OK** only. The messages of the counselor in the bell are buttons without an address (a link to `#` made the browser go to the home page and reload).
+
+**Referrals: better grammar.** In the *Notes* box, the list **Help given** is now **"What help did you give?"** (no choice yet: *No help chosen yet*; the boxes of *Others* are *Other help you gave* and *Something else that happened*), and the choices of **What happened** are written correctly: *Absent for many days, Often late to class, Skipping classes, Absent without a valid reason, Disrespect toward a teacher, Not following the uniform or ID rules, Damaging school property* (the migration `ReferralWording` changes the referrals that were saved with the old words; a text typed under *Others* is not touched, and the migration can be reverted). The Help for the guidance counselor was written again with the same care. *If another sentence is meant, tell me which one and I will change it.*
+
+**Data flow diagrams.** `docs/dfd.md` has the DFD of the system: **level 0** (context), **level 1** (the main processes) and **level 2** (each process in its steps), with the data stores and the data flows listed. It is also published as a page that can be viewed and printed.
 
 ## One-time code (OTP) with UniSMS
 

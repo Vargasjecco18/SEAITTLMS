@@ -57,8 +57,12 @@
                     <ul class="notification-list">
                         @foreach (var item in notificationList.Items)
                         {
-                            <li class="@(item.IsRead ? "" : "unread")">
-                                <a href="@(item.Link ?? "#")" @onclick="() => OpenNotificationAsync(item)">
+                            @* Round 44: a message of the guidance counselor opens its box again (the student may have closed it, or not answered yet). *@
+                            var again = IsGuidanceMessage(item);
+                            <li class="@(item.IsRead ? "" : "unread") @(again ? "guidance-item" : "")">
+                                @* A message of the counselor has no address (nothing to go to): it is a button that opens the box, so the page is not asked for again. *@
+                                <a href="@(again ? null : item.Link ?? "#")" role="@(again ? "button" : null)" tabindex="@(again ? 0 : null)" @onclick="() => OpenNotificationAsync(item)"
+                                   @onkeydown="e => OnNotificationKeyAsync(e, item)">
                                     <span class="kind"><Icon Name="@KindIcon(item.Kind)" Size="18" /></span>
                                     <span class="text">
                                         <span class="title">@item.Title</span>
@@ -67,6 +71,10 @@
                                             <span class="body">@item.Body</span>
                                         }
                                         <span class="when">@PhilippineTime.FormatDate(item.CreatedAtUtc) · @PhilippineTime.FormatTime(item.CreatedAtUtc)</span>
+                                        @if (again)
+                                        {
+                                            <span class="again @(guidancePending && item.Id == newestGuidanceId ? "waiting" : "")" data-guidance-again>@(guidancePending && item.Id == newestGuidanceId ? "You have not answered yet. Press to see the message again." : "Press to see the message again.")</span>
+                                        }
                                     </span>
                                 </a>
                             </li>
@@ -301,6 +309,10 @@
     private bool guidanceInvite;
     private bool guidanceBusy;
 
+    // Round 44: the student still has to answer Going or Not going (the bell tells it on the newest message of the counselor).
+    private bool guidancePending;
+    private int? newestGuidanceId;
+
     private bool photoBusy;
     private bool photoFailed;
     private string? photoMessage;
@@ -475,6 +487,7 @@
                 // OK: the counselor is told that the message was read (it shows as "Seen" on the row of the student).
                 await Referrals.StudentSeenAsync(user.UserId);
                 await RefreshCountsAsync();
+                await LoadNotificationsAsync();
             }
             finally
             {
@@ -503,6 +516,7 @@
             await Referrals.StudentIgnoredAsync(user.UserId);
             guidanceInvite = guidanceQueue.Count > 0 && await Referrals.HasPendingInviteAsync(user.UserId);
             await RefreshCountsAsync();
+            await LoadNotificationsAsync();
         }
         finally
         {
@@ -523,6 +537,7 @@
                 await Notifications.MarkReadAsync(user.UserId, shown.Id);
                 guidanceInvite = guidanceQueue.Count > 0 && await Referrals.HasPendingInviteAsync(user.UserId);
                 await RefreshCountsAsync();
+                await LoadNotificationsAsync();
             }
             finally
             {
@@ -548,13 +563,50 @@
         {
             notificationList = await Notifications.GetAsync(user.UserId);
             unreadNotifications = notificationList.Unread;
+            newestGuidanceId = user.Role == AppRoles.Student ? notificationList.Items.FirstOrDefault(i => i.Kind == "referral")?.Id : null;
+            guidancePending = newestGuidanceId is not null && await Referrals.HasPendingInviteAsync(user.UserId);
         }
+    }
+
+    /// <summary>Enter or Space on a message of the counselor opens its box (the link has no address, so the keys are not done by the browser).</summary>
+    private async Task OnNotificationKeyAsync(KeyboardEventArgs e, NotificationItem item)
+    {
+        if (IsGuidanceMessage(item) && e.Key is "Enter" or " ")
+        {
+            await ReopenGuidanceAsync(item);
+        }
+    }
+
+    /// <summary>A message of the guidance counselor, in the bell of a student: pressing it opens the box of the counselor again.</summary>
+    private bool IsGuidanceMessage(NotificationItem item) => user?.Role == AppRoles.Student && item.Kind == "referral";
+
+    /// <summary>
+    /// The student presses a message of the counselor in the bell (round 44): its box opens again in the middle of the screen, also when the student closed it before without doing anything. While the
+    /// counselor still waits for Going or Not going, the box has the two buttons again, so the student can answer now.
+    /// </summary>
+    private async Task ReopenGuidanceAsync(NotificationItem item)
+    {
+        if (user is null || guidanceBusy)
+        {
+            return;
+        }
+
+        await JS.InvokeVoidAsync("seaitt.closeNotifications");
+        guidanceQueue.RemoveAll(q => q.Id == item.Id);
+        guidanceQueue.Insert(0, item);
+        guidanceInvite = await Referrals.HasPendingInviteAsync(user.UserId);
     }
 
     private async Task OnNotificationsToggle() => await LoadNotificationsAsync();
 
     private async Task OpenNotificationAsync(NotificationItem item)
     {
+        if (IsGuidanceMessage(item))
+        {
+            await ReopenGuidanceAsync(item);
+            return;
+        }
+
         if (user is not null && !item.IsRead)
         {
             await Notifications.MarkReadAsync(user.UserId, item.Id);
@@ -868,7 +920,8 @@
                 return;
             }
 
-            saveMessage = "Saved.";
+            // Round 44: Save keeps what was chosen and closes the Settings box (a failed save, or a wrong password, keeps it open with the message).
+            CloseSettings();
         }
         finally
         {

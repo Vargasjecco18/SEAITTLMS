@@ -172,6 +172,23 @@
     font-size: 0.75rem;
 }
 
+/* A message of the guidance counselor: a line that says it opens again, and a warmer one while the student has not answered. */
+.notification-list li.guidance-item a {
+    cursor: pointer;
+}
+
+.again {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--brand-strong);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.again.waiting {
+    color: var(--danger);
+}
+
 /* ---------- settings (a box) ---------- */
 .settings-box {
     display: grid;

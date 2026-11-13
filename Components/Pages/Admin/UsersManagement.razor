@@ -438,8 +438,8 @@
     @if (dropTarget is not null)
     {
         <p class="delete-text">
-            <strong>@dropTarget.FullName</strong> (LRN @dropTarget.Lrn) left school. The sign-in is switched off, the enrollments are marked dropped and the student is
-            <strong>not in the list of graduating students</strong>. The records stay in the archive, and an administrator can restore the student later.
+            <strong>@dropTarget.FullName</strong> (LRN @dropTarget.Lrn) left school. The sign-in is switched off, the enrollments are marked dropped and the student
+            <strong>moves to Archive Accounts</strong> (the Archived tab), out of this list. The records stay there, and an administrator can restore the student later.
         </p>
         <Field For="drop-note" Label="Why (optional)">
             <InputText id="drop-note" @bind-Value="dropNote" maxlength="300" autocomplete="off" />

@@ -613,7 +613,8 @@ public sealed class UserManagementService(
                     "archived" => filtered.Where(s => s.Status != StudentStatus.Active),
                     "dropped" => filtered.Where(s => s.Status == StudentStatus.DroppedOut),
                     "graduated" => filtered.Where(s => s.Status == StudentStatus.Graduated),
-                    _ => ByStatus(filtered, active),
+                    // Round 44: an archived student (dropped out or graduated) is not in this list: the student is in Archive Accounts (or here, with the filter Archived).
+                    _ => ByStatus(filtered.Where(s => s.Status == StudentStatus.Active), active),
                 };
 
                 var total = await query.CountAsync(ct);
@@ -812,7 +813,8 @@ public sealed class UserManagementService(
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var counts = await db.Users.AsNoTracking().GroupBy(u => u.RoleId).Select(g => new { RoleId = g.Key, Count = g.Count() }).ToListAsync(ct);
-        return AppRoles.Ids.ToDictionary(kv => kv.Key, kv => counts.FirstOrDefault(c => c.RoleId == kv.Value)?.Count ?? 0);
+        var archived = await db.Students.AsNoTracking().CountAsync(s => s.Status != StudentStatus.Active, ct);   // round 44: they are in Archive Accounts, not in the Students tab
+        return AppRoles.Ids.ToDictionary(kv => kv.Key, kv => Math.Max(0, (counts.FirstOrDefault(c => c.RoleId == kv.Value)?.Count ?? 0) - (kv.Value == AppRoles.StudentId ? archived : 0)));
     }
 
     public async Task<UserEdit?> GetForEditAsync(int userId, CancellationToken ct = default)

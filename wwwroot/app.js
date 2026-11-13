@@ -1444,6 +1444,12 @@ document.addEventListener('toggle', function (event) {
     window.seaitt = window.seaitt || {};
     window.seaitt.playNotificationSound = play;
 
+    // Round 44: a message of the guidance counselor pressed in the bell opens its box, so the bell list closes (HeaderTools calls seaitt.closeNotifications).
+    window.seaitt.closeNotifications = function () {
+        var menu = document.getElementById('notifications-menu');
+        if (menu) { menu.removeAttribute('open'); }
+    };
+
     // The sound of an achievement: a short rising run of notes that ends on a long one. It plays once when the box of new achievements opens, however many were earned at the same time
     // (the box shows them one after the other without playing it again). It follows the same switch as the other sounds (Settings), and it is made by the browser, so it needs no file.
     var achievementPlayedAt = 0;

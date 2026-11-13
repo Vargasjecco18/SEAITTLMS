@@ -2711,5 +2711,22 @@ DROP PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`;
 
 DROP PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`;
 
+UPDATE referrals SET detail = 'Absent for many days' WHERE detail = 'Absent many days' AND id > 0;
+
+UPDATE referrals SET detail = 'Often late to class' WHERE detail = 'Often late' AND id > 0;
+
+UPDATE referrals SET detail = 'Skipping classes' WHERE detail = 'Skips classes' AND id > 0;
+
+UPDATE referrals SET detail = 'Absent without a valid reason' WHERE detail = 'Absent without a reason' AND id > 0;
+
+UPDATE referrals SET detail = 'Disrespect toward a teacher' WHERE detail = 'Disrespect to a teacher' AND id > 0;
+
+UPDATE referrals SET detail = 'Not following the uniform or ID rules' WHERE detail = 'Not following the uniform or ID rule' AND id > 0;
+
+UPDATE referrals SET detail = 'Damaging school property' WHERE detail = 'Damage to school property' AND id > 0;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261113150248_ReferralWording', '9.0.20');
+
 COMMIT;
 

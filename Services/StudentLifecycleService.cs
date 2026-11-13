@@ -158,7 +158,7 @@ public sealed class StudentLifecycleService(IDbContextFactory<AppDbContext> dbFa
             await securityLog.AddAsync(SecurityEvents.StudentDroppedOut, student.UserId, details: $"{student.FullName} was marked as dropped out.", actorUserId: actingUserId, ct: ct);
         }
 
-        return ServiceResult.Ok($"{student.FullName} is marked as dropped out. The account can't sign in and the student is not in the list of graduating students.");
+        return ServiceResult.Ok($"{student.FullName} is dropped out and moved to Archive Accounts (the Archived tab). The account can't sign in. An administrator can restore the student there.");
     }
 
     /// <summary>Takes a student out of the archive: the account works again. The student has to be enrolled again to be in a class.</summary>

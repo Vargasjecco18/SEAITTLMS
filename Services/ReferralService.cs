@@ -381,10 +381,10 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     public static IReadOnlyList<string> HappenedChoices(string reason) => reason == ReferralReasons.LowAttendance
         ?
         [
-            "Absent many days",
-            "Often late",
-            "Skips classes",
-            "Absent without a reason",
+            "Absent for many days",
+            "Often late to class",
+            "Skipping classes",
+            "Absent without a valid reason",
             "Stopped coming to school",
             InterventionTypes.Others,
         ]
@@ -393,10 +393,10 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             "Fighting",
             "Bullying",
             "Cheating",
-            "Disrespect to a teacher",
+            "Disrespect toward a teacher",
             "Using a phone in class",
-            "Not following the uniform or ID rule",
-            "Damage to school property",
+            "Not following the uniform or ID rules",
+            "Damaging school property",
             InterventionTypes.Others,
         ];
 
@@ -455,7 +455,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         if (intervention is { Length: > 100 })
         {
-            return ServiceResult.Fail("The help given can have at most 100 characters.");
+            return ServiceResult.Fail("The help you gave can have at most 100 characters.");
         }
 
         if (notes is { Length: > 1000 })
@@ -588,7 +588,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
 
         if (intervention is { Length: > 100 })
         {
-            return ServiceResult.Fail("The help given can have at most 100 characters.");
+            return ServiceResult.Fail("The help you gave can have at most 100 characters.");
         }
 
         if (notes is { Length: > 1000 })

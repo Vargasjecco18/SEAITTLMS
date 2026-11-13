@@ -90,7 +90,7 @@ public static class HelpContent
         new("What does the Save button of Settings keep?",
         [
             "The picture, and the look of the pages (Light, Dark, Auto or one of the five colors, the animations and the sound switch), are kept as soon as you choose them.",
-            "The notification sound and the password are kept with the Save button at the bottom of Settings. Choose a sound (it plays so you can hear it), or fill in the password boxes, then press Save. A new password signs you out, and you log in again with it.",
+            "The notification sound and the password are kept with the Save button at the bottom of Settings. Choose a sound (it plays so you can hear it), or fill in the password boxes, then press Save. The Settings box closes when it is saved. If something is wrong (for example the current password is not right), the box stays open and tells you why. A new password signs you out, and you log in again with it.",
         ]),
         new("How do messages work?",
         [
@@ -113,6 +113,11 @@ public static class HelpContent
             "Each course has a progress bar. It counts the handouts you opened, out of the handouts your teacher posted.",
             "Switch between cards and a list with the buttons at the top right of the page. The system remembers the one you chose.",
         ], "student/subjects", "Open Courses"),
+        new("My guidance counselor wrote to me. How do I see the message again?",
+        [
+            "When your guidance counselor writes about you, a box opens in the middle of the screen. Press OK, or Going or Not going when the counselor asks if you will come to the guidance office.",
+            "If you closed the box without answering, you can open it again: press the bell at the top, then press the message of your guidance counselor (it says “Press to see the message again”). While you have not answered, the box has the buttons Going and Not going again, and the bell says “You have not answered yet”.",
+        ]),
         new("How do I open a handout and do the assignments?",
         [
             "Open a course, then a handout. The syllabus of the course is the first thing in the list.",
@@ -285,9 +290,10 @@ public static class HelpContent
         [
             "Open Analytics. The green, yellow and red cards count the students: Active (they visit the LMS, view handouts and hand in activities often: a score of 70 or more in the last 14 days), Inactive (less than that) and Never logged in (red). The pie shows them. “Performance by courses” has a Strand list: choose the strand and its courses show with their students, their average grade and how many are failing; press a course to see its students (grade, status and attendance) in a box. The Excel file has a sheet “LMS activity” with every student.",
         ], "analytics", "Open Analytics"),
-        new("How do I archive students who graduate, and see their grades?",
+        new("How do I archive students who graduate or drop out, and see their grades?",
         [
             "Open Archive Accounts. Grade 12 students appear under Graduating students. Tick them, write a note (for example Class of 2027) and press Archive.",
+            "A student who left school is dropped out in Users Management (the Drop out button of the student, in the Students tab, or in the registrar's Student's Accounts). The student then moves to Archive Accounts, on the Archived tab, with the note “Dropped out”, and is no longer in the Students list of Users Management (choose Archived in the Status list there to see the archived students). The sign-in is switched off, and an administrator can restore the student from the Archived tab.",
             "Their sign-in is switched off. On the Archived tab, “Grades” shows every grade of the student from the first term (where they started, a shift to another strand, and graduation), “Export” saves them in Excel, and “Export all grades” saves everybody in one table.",
             "An archived account is deleted by itself 30 days after it was archived: the column “Deleted in” counts the days. Export the grades before that. “Restore” takes a student out of the archive.",
         ], "admin/archive", "Open Archive Accounts"),
@@ -438,27 +444,35 @@ public static class HelpContent
         new("What do I look after?",
         [
             "You look after two things only: attendance and violations. Failing grades and students at risk in a course are for the teacher.",
-            "Open Referrals. Every student of the school is in the list, one line each, so you can write a concern for anybody. Each line has the student, the section, the Concern, what happened (with View attendance for an attendance concern), the Notes and a Solved button. Use the search box and the choices Show and Concern to find students.",
+            "Open Referrals. Every student of the school is in the list, one line for each, so you can write a concern for anybody. Each line has the student, the section, the concern, what happened (with View attendance for an attendance concern), the notes, the status, the schedule and a Solved button. Use the search box and the choices Show and Concern to find students.",
         ], "guidance/referrals", "Open Referrals"),
         new("Where do the attendance concerns come from?",
         [
-            "The system finds them by itself: a student whose attendance is under 80% over at least 5 marked days. You get a notification, and the student shows with Attendance in the Concern box.",
-            "To see only the students who have a concern choose “Only students with a concern” in Show, or use “With concerns” or “Attendance” under Referrals in the menu.",
+            "The system finds them by itself: a student whose attendance is under 80% over at least 5 marked days. You get a notification, and the student shows Attendance in the Concern list.",
+            "To see only the students who have a concern, choose “Only students with a concern” in Show, or use “With concerns” or “Attendance” under Referrals in the menu.",
         ], "guidance/referrals?show=concerns", "Open the students with a concern"),
-        new("How do I write a violation or follow up a concern?",
+        new("How do I record a violation or follow up a concern?",
         [
-            "On the row of the student choose the Concern (Attendance or Violation) and then choose what happened from the list: the concern is recorded and the Concern list is locked (press Solved to change it). If it is not in the list choose “Others”: a box opens in the middle of the screen to type what happened. The name of the student opens a box with the earlier concerns and a place for more words only you can read.",
-            "Press the Notes button of the row (it says Noted when there are notes and None when there are not) to choose the help you gave (“Others” opens a box to type it) and write your notes. Saving them tells the student (no message pops up at the top for you: the row just changes). When the case is over press Solved. For an attendance concern press “View attendance” to see each course in a box in the middle of the screen.",
+            "On the line of the student, choose the concern (Attendance or Violation) from the Concern list. Then choose what happened from the list next to it. The concern is recorded, and the Concern list is locked until you press Solved.",
+            "If what happened is not in the list, choose “Others”. A box opens in the middle of the screen where you can type it. The name of the student opens a box with the earlier concerns and a place for more words that only you can read.",
+            "For an attendance concern, press “View attendance” to see each course in a box in the middle of the screen.",
+        ]),
+        new("How do I write the notes and the help I gave?",
+        [
+            "Press the Notes button of the line. It says “Noted” when there are notes and “None” when there are not.",
+            "In the box, choose the help you gave from the list “What help did you give?”: Talked with the student, Called the parents, Talked with the teacher, or Others. Others opens a box where you can type the help in your own words. Then write your notes. Only you can read the notes.",
+            "When you save, the student is told. Nothing pops up for you: the line just changes. When the case is over, press Solved.",
         ]),
         new("What does the student answer, and how do I set a schedule?",
         [
-            "The Status column (at the right of Notes) says “Not seen yet” until the student presses OK on your message, then “Seen”. If the student closes the box with the X (or Escape) without answering, it says “Ignored”. When you save notes again the student gets the message again, with the buttons Going and Not going, and the status starts over.",
-            "The Schedule column (at the right of Status) shows the answer of the student, “Going” or “Not going”. When the student is going, press “Set schedule”, choose the day and the time and save: the student is told and the day goes to the calendar of both of you (Calendar, as Counseling). Press the day again to move it (the student is told that it has been moved) or to take it away.",
+            "The Status column (at the right of Notes) says “Not seen yet” until the student presses OK on your message. Then it says “Seen”. If the student closes the box with the X (or Escape) without answering, it says “Ignored”.",
+            "A student who ignored your message can open it again: it stays in the bell at the top, and pressing it shows your message again, with the buttons Going and Not going while the student has not answered. When you save your notes again, the student gets the message again and the status starts over.",
+            "The Schedule column (at the right of Status) shows the answer of the student: “Going” or “Not going”. When the student is going, press “Set schedule”, choose the day and the time, and save. The student is told, and the day goes to the calendar of both of you (in Calendar, as Counseling). Press the day again to move it (the student is told that it has moved) or to take it away.",
         ]),
-        new("Who goes to the referrals by themselves?",
+        new("Which students go to the referrals by themselves?",
         [
             "A student who is absent three times in a course, and a student whose attendance is under 80% over at least five marked days. You get a notification.",
-            "In Analytics the card “Absent by day” lists each day (the last 30 days) with the students who were marked absent and the courses (weekdays only: classes are Monday to Friday).",
+            "In Analytics, the card “Absent by day” lists each day of the last 30 days with the students who were marked absent and their courses (weekdays only, because classes are Monday to Friday).",
         ]),
         new("How do I find people and make a group?",
         [

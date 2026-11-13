@@ -349,16 +349,16 @@
     }
 </Modal>
 
-@* ===== The help given and the notes of the student ===== *@
+@* ===== The help the counselor gave, and the notes about the student ===== *@
 <Modal Open="notesOpen && !othersOpen" Title="@($"Notes · {viewing?.StudentName}")" Centered="true" Top="true" OnClose="CloseNotes">
     @if (notesOpen && viewing is not null)
     {
         <FormErrors Errors="formErrors" />
 
-        <Field For="w-help" Label="Help given">
+        <Field For="w-help" Label="What help did you give?">
             @* "Others" opens a box in the middle of the screen to type the help; the words typed are what is kept. *@
             <select id="w-help" value="@HelpSelectValue" @onchange="HelpPicked">
-                <option value="">Not decided yet</option>
+                <option value="">No help chosen yet</option>
                 @foreach (var i in InterventionTypes.All)
                 {
                     <option value="@i" selected="@(HelpSelectValue == i)">@(i == InterventionTypes.Others && IsCustomHelp ? $"Others: {editIntervention}" : i)</option>
@@ -377,9 +377,9 @@
     }
 </Modal>
 
-@* ===== Others: the counselor types what happened, or the help given, in a box in the middle of the screen ===== *@
+@* ===== Others: the counselor types what happened, or the help they gave, in a box in the middle of the screen ===== *@
 <OtherTextDialog Open="othersOpen" Id="others-text"
-                 Title="@(othersKind == "help" ? "Help given · Others" : "What happened · Others")"
+                 Title="@(othersKind == "help" ? "Other help you gave" : "Something else that happened")"
                  Label="@(othersKind == "help" ? "What help did you give?" : "What happened?")"
                  MaxLength="@(othersKind == "help" ? 100 : 280)" Initial="@othersInitial"
                  OnSave="OthersSavedAsync" OnCancel="CloseOthers" />
