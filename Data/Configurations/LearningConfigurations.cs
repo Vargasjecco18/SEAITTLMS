@@ -11,9 +11,12 @@ internal sealed class TeachingAssignmentConfiguration : IEntityTypeConfiguration
         // Removing a teacher removes their subjects (and what is under them).
         b.HasOne(a => a.Teacher).WithMany().HasForeignKey(a => a.TeacherId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(a => a.Section).WithMany().HasForeignKey(a => a.SectionId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne(a => a.Subject).WithMany().HasForeignKey(a => a.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.Property(a => a.SubjectId).HasColumnName("course_id");
+        b.HasOne(a => a.Subject).WithMany().HasForeignKey(a => a.SubjectId).HasConstraintName("fk_teaching_assignments_courses_course_id").OnDelete(DeleteBehavior.Restrict);
 
-        // A subject of a section has one teacher.
+        b.HasIndex(a => a.SubjectId).HasDatabaseName("ix_teaching_assignments_course_id");
+
+        // A course of a section has one teacher.
         b.HasIndex(a => new { a.SectionId, a.SubjectId }).IsUnique();
         b.Property(a => a.GradesHidden).HasDefaultValue(false);
     }
@@ -23,7 +26,7 @@ internal sealed class LearningModuleConfiguration : IEntityTypeConfiguration<Lea
 {
     public void Configure(EntityTypeBuilder<LearningModule> b)
     {
-        b.ToTable("modules");
+        b.ToTable("handouts");
         b.Property(m => m.Title).HasMaxLength(200).IsRequired();
         b.Property(m => m.Description).HasMaxLength(1000);
         b.Property(m => m.Body).HasColumnType("text");
@@ -53,8 +56,8 @@ internal sealed class ModuleItemConfiguration : IEntityTypeConfiguration<ModuleI
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other')");
-            t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
+            t.HasCheckConstraint("ck_handout_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other')");
+            t.HasCheckConstraint("ck_handout_items_max_score", "max_score > 0");
         });
     }
 }
@@ -143,12 +146,12 @@ internal sealed class ModuleReadConfiguration : IEntityTypeConfiguration<ModuleR
 {
     public void Configure(EntityTypeBuilder<ModuleRead> b)
     {
-        b.ToTable("module_reads");
+        b.ToTable("handout_reads");
         b.HasKey(r => new { r.ModuleId, r.StudentId });
         b.HasOne(r => r.Module).WithMany().HasForeignKey(r => r.ModuleId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(r => r.Student).WithMany().HasForeignKey(r => r.StudentId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(r => r.StudentId);
-        b.ToTable(t => t.HasCheckConstraint("ck_module_reads_percent", "percent BETWEEN 0 AND 100"));
+        b.ToTable(t => t.HasCheckConstraint("ck_handout_reads_percent", "percent BETWEEN 0 AND 100"));
     }
 }
 
@@ -156,7 +159,7 @@ internal sealed class ModuleViewConfiguration : IEntityTypeConfiguration<ModuleV
 {
     public void Configure(EntityTypeBuilder<ModuleView> b)
     {
-        b.ToTable("module_views");
+        b.ToTable("handout_views");
         b.HasKey(v => new { v.ModuleId, v.StudentId });
         b.HasOne(v => v.Module).WithMany().HasForeignKey(v => v.ModuleId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(v => v.Student).WithMany().HasForeignKey(v => v.StudentId).OnDelete(DeleteBehavior.Cascade);

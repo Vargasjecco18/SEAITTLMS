@@ -91,7 +91,8 @@ internal sealed class SubjectConfiguration : IEntityTypeConfiguration<Subject>
         b.Property(s => s.Name).HasMaxLength(150).IsRequired();
         b.Property(s => s.Description).HasMaxLength(500);
         b.Property(s => s.Units).HasColumnType("decimal(3,1)");
-        b.ToTable(t => t.HasCheckConstraint("ck_subjects_units", "units >= 0.5 AND units <= 12"));
+        // Round 43: the table is called courses (the class is still Subject in the code).
+        b.ToTable("courses", t => t.HasCheckConstraint("ck_courses_units", "units >= 0.5 AND units <= 12"));
     }
 }
 
@@ -99,15 +100,16 @@ internal sealed class StrandSubjectConfiguration : IEntityTypeConfiguration<Stra
 {
     public void Configure(EntityTypeBuilder<StrandSubject> b)
     {
+        b.Property(x => x.SubjectId).HasColumnName("course_id");
         b.HasKey(x => new { x.StrandId, x.GradeLevel, x.TermNumber, x.SubjectId });
         b.HasOne(x => x.Strand).WithMany().HasForeignKey(x => x.StrandId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).HasConstraintName("fk_strand_courses_courses_course_id").OnDelete(DeleteBehavior.Restrict);
         b.Property(x => x.IsOffered).HasDefaultValue(true);
 
-        b.ToTable(t =>
+        b.ToTable("strand_courses", t =>
         {
-            t.HasCheckConstraint("ck_strand_subjects_grade_level", "grade_level IN (11, 12)");
-            t.HasCheckConstraint("ck_strand_subjects_term_number", "term_number >= 1");
+            t.HasCheckConstraint("ck_strand_courses_grade_level", "grade_level IN (11, 12)");
+            t.HasCheckConstraint("ck_strand_courses_term_number", "term_number >= 1");
         });
     }
 }
@@ -161,7 +163,7 @@ internal sealed class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollm
         b.Property(e => e.MiddleName).HasMaxLength(100);
         b.Property(e => e.LastName).HasMaxLength(100).IsRequired();
         b.Property(e => e.NameExtension).HasMaxLength(10);
-        b.Property(e => e.Subjects).HasMaxLength(1000);
+        b.Property(e => e.Subjects).HasColumnName("courses").HasMaxLength(1000);
 
         b.HasOne(e => e.Track).WithMany().HasForeignKey(e => e.TrackId).OnDelete(DeleteBehavior.Restrict);
 
@@ -189,10 +191,13 @@ internal sealed class EnrollmentSubjectConfiguration : IEntityTypeConfiguration<
 {
     public void Configure(EntityTypeBuilder<EnrollmentSubject> b)
     {
+        b.ToTable("enrollment_courses");
+        b.Property(x => x.SubjectId).HasColumnName("course_id");
         b.HasKey(x => new { x.EnrollmentId, x.SubjectId });
 
-        // Removing an enrollment removes its subject rows with it.
+        // Removing an enrollment removes its course rows with it.
         b.HasOne(x => x.Enrollment).WithMany(e => e.EnrolledSubjects).HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.Cascade);
-        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Subject).WithMany().HasForeignKey(x => x.SubjectId).HasConstraintName("fk_enrollment_courses_courses_course_id").OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => x.SubjectId).HasDatabaseName("ix_enrollment_courses_course_id");
     }
 }

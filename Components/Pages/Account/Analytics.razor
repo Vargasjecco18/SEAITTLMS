@@ -74,9 +74,10 @@ else if (Role == AppRoles.Admin)
 
     @* Round 35: the attendance, the primary concern categories and the solved concerns are the guidance counselor's; the administrator sees the grades. *@
     @* Round 41: "Performance by courses" (strand first, then a course, then its students) replaced "Students to follow up" (the Excel file still has the sheet LMS activity). *@
-    <div class="board">
-        <CoursePerformance />
+    @* Round 43: one column, the strands first and the courses under them. *@
+    <div class="board single" id="admin-board">
         @PerformanceCard(report)
+        <CoursePerformance />
     </div>
 }
 else if (Role == AppRoles.GuidanceCounselor)

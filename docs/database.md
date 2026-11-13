@@ -18,7 +18,7 @@ Start the app in Development (`dotnet watch`) and it creates every table, or upg
 |---|---|
 | [`database/seaittlms_reset_and_rebuild.sql`](../database/seaittlms_reset_and_rebuild.sql) | The database is broken and you want to **start over**. It **erases everything** in `seaittlms` and builds it again. In Workbench: *File > Open SQL Script...*, pick the file, click the lightning bolt. |
 | [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) | You want ready-made sign-ins to try the app: **1 administrator, 1 registrar, 1 guidance counselor, 1 academic coordinator, 1 academic provider, 12 teachers and 40 students**. The sign-in is made from the name and the number the person has at school, like the app does for a new person: the last name, a dot and the digits of the employee number for staff and teachers (`villanueva.001@legazpi.seaitt.edu.ph`), the last name, a dot and the last 6 digits of the LRN for students (`jacinto.111111@legazpi.seaitt.edu.ph`). It only adds rows (it never deletes), is safe to run again and keeps the rule of one administrator, registrar and guidance counselor; only the password hashes are in the file. They have no enrollment yet. |
-| [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql) | You want the tables filled with practice data: run it after the sample accounts (it is only `INSERT IGNORE` and `UPDATE` lines with no variables, so it can be run again and nothing is added twice). It enrolls the 40 students in 10 sections of 8 strands (grade 11 and grade 12, ACAD and TECH-PRO), gives the 12 teachers their courses, and adds the provider's library and what it sent (some opened, some waiting, some posted), handouts with **PDF files** (syllabus, lesson notes, worksheets and rubrics) and, for the first posted lessons, **slides** (a five-page PDF), activities, quizzes, and then **generated from all of that** (not typed row by row: each student has a way of studying that always comes out the same): the work handed in (on time, late, missing; a quiz marked from the answers to its questions; a few students who leave the page), who opened what and how much of each lesson they read (`module_reads`), the attendance of the last four weeks (each course is checked on three weekdays a week), the notifications that work causes and the referral of the student who struggles, **a quiz with every kind of question and pictures of questions** (round 38), **a row in every table** (the achievements earned, the personal calendar with its invites, custom roles, final grades, a removed holiday, notification sounds and profile pictures), announcements, messages, friends, groups, files, the security log, the settings and a teacher evaluation. It adds nothing if any of the students is enrolled already. |
+| [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql) | You want the tables filled with practice data: run it after the sample accounts (it is only `INSERT IGNORE` and `UPDATE` lines with no variables, so it can be run again and nothing is added twice). It enrolls the 40 students in 10 sections of 8 strands (grade 11 and grade 12, ACAD and TECH-PRO), gives the 12 teachers their courses, and adds the provider's library and what it sent (some opened, some waiting, some posted), handouts with **PDF files** (syllabus, lesson notes, worksheets and rubrics) and, for the first posted lessons, **slides** (a five-page PDF), activities, quizzes, and then **generated from all of that** (not typed row by row: each student has a way of studying that always comes out the same): the work handed in (on time, late, missing; a quiz marked from the answers to its questions; a few students who leave the page), who opened what and how much of each lesson they read (`handout_reads`), the attendance of the last four weeks (each course is checked on three weekdays a week), the notifications that work causes and the referral of the student who struggles, **a quiz with every kind of question and pictures of questions** (round 38), **a row in every table** (the achievements earned, the personal calendar with its invites, custom roles, final grades, a removed holiday, notification sounds and profile pictures), announcements, messages, friends, groups, files, the security log, the settings and a teacher evaluation. It adds nothing if any of the students is enrolled already. |
 
 The file is generated from the EF migrations (`bash database/export-schema.sh`), so it always matches what the app
 creates. It also records the migrations in `__EFMigrationsHistory`, which is why the app doesn't try to create the
@@ -43,8 +43,8 @@ erDiagram
     school_years ||--o{ sections : ""
     tracks ||--o{ strands : "track_id"
     strands ||--o{ sections : ""
-    strands ||--o{ strand_subjects : "curriculum"
-    subjects ||--o{ strand_subjects : ""
+    strands ||--o{ strand_courses : "curriculum"
+    courses ||--o{ strand_courses : ""
     teachers |o--o{ sections : "adviser"
 
     terms ||--o{ enrollments : ""
@@ -53,30 +53,30 @@ erDiagram
     users |o--o{ enrollments : "enrolled_by"
     tracks ||--o{ enrollments : ""
     strands ||--o{ enrollments : ""
-    enrollments ||--o{ enrollment_subjects : ""
-    subjects ||--o{ enrollment_subjects : ""
+    enrollments ||--o{ enrollment_courses : ""
+    courses ||--o{ enrollment_courses : ""
 
     teachers ||--o{ teaching_assignments : "teaches"
     sections ||--o{ teaching_assignments : ""
-    subjects ||--o{ teaching_assignments : ""
-    teaching_assignments ||--o{ modules : ""
-    modules ||--o{ module_items : "activity, quiz or task"
-    module_items ||--o{ quiz_questions : ""
-    module_items ||--o{ submissions : ""
+    courses ||--o{ teaching_assignments : ""
+    teaching_assignments ||--o{ handouts : ""
+    handouts ||--o{ handout_items : "activity, quiz or task"
+    handout_items ||--o{ quiz_questions : ""
+    handout_items ||--o{ submissions : ""
     students ||--o{ submissions : ""
     users ||--o{ calendar_entries : "writes"
     calendar_entries ||--o{ calendar_entry_invites : "shared with"
     users ||--o{ calendar_entry_invites : "sees"
     students ||--o{ achievement_awards : "earns"
-    modules ||--o{ module_views : "opened by"
-    students ||--o{ module_views : ""
-    module_items ||--o{ item_views : "opened by"
+    handouts ||--o{ handout_views : "opened by"
+    students ||--o{ handout_views : ""
+    handout_items ||--o{ item_views : "opened by"
     students ||--o{ item_views : ""
-    modules ||--o{ module_reads : "read by"
-    students ||--o{ module_reads : ""
-    material_modules ||--o{ material_deliveries : "sent as"
+    handouts ||--o{ handout_reads : "read by"
+    students ||--o{ handout_reads : ""
+    material_handouts ||--o{ material_deliveries : "sent as"
     teaching_assignments ||--o{ material_deliveries : "to the course"
-    modules ||--o| material_deliveries : "the teacher's copy"
+    handouts ||--o| material_deliveries : "the teacher's copy"
 
     users ||--o| profile_photos : "picture"
     users ||--o{ friendships : "asks / is asked"
@@ -128,8 +128,8 @@ The role tables have these columns, in this order:
 | Table | Columns |
 |---|---|
 | `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators`, `academic_providers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `phone_number`, `status`, timestamps |
-| `teachers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `grade_level`, `track_id`, `strand_id`, `subject_id`, `section_id`, timestamps |
-| `students` | `id`, `user_id`, `lrn`, `first_name`, `middle_name`, `last_name`, `name_extension`, `birth_date`, `sex`, `grade_level`, `track_id`, `strand_id`, `subject_id`, `section_id`, timestamps |
+| `teachers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `grade_level`, `track_id`, `strand_id`, `course_id`, `section_id`, timestamps |
+| `students` | `id`, `user_id`, `lrn`, `first_name`, `middle_name`, `last_name`, `name_extension`, `birth_date`, `sex`, `grade_level`, `track_id`, `strand_id`, `course_id`, `section_id`, timestamps |
 
 - `first_name` and `last_name` are required, `middle_name` and `name_extension` (Jr., III, ...) are optional.
 - `lrn` is the 12-digit Learner Reference Number. `employee_number` is optional and unique when present.
@@ -148,9 +148,9 @@ section and main subject, or what a teacher mainly handles. All are optional (em
 They are only a summary. The full records are:
 
 - for a **student**, `enrollments` (the section they are in, term by term, with the subjects they take in
-  `enrollment_subjects`),
+  `enrollment_courses`),
 - for a **teacher**, nothing else yet (there is no table for who teaches what). A teacher usually teaches several
-  subjects and sections, so the single `subject_id` and `section_id` on `teachers` can only be the main one.
+  subjects and sections, so the single `course_id` and `section_id` on `teachers` can only be the main one.
 
 The database makes sure the summary agrees with itself:
 
@@ -162,8 +162,8 @@ The database makes sure the summary agrees with itself:
 - Nothing is cascaded: a track, strand, subject or section can't be deleted while a person's summary points at it.
 
 **Enrolling a student** (the registrar page) sets the student's grade level, track, strand and section for you.
-`subject_id` stays empty for students on purpose: a student takes several subjects, and they are listed in
-`enrollment_subjects`. The summary is **not updated** when a student is moved or promoted by hand in the database.
+`course_id` stays empty for students on purpose: a student takes several subjects, and they are listed in
+`enrollment_courses`. The summary is **not updated** when a student is moved or promoted by hand in the database.
 To fill the summary in for students who were enrolled before this existed, run this once in MySQL Workbench (it leaves
 everybody else alone):
 
@@ -188,15 +188,15 @@ WHERE st.id > 0;
 | `terms` | Terms inside a school year: **three** for every school year (`term_number` 1, 2 and 3). SEAITT uses terms, not semesters. They keep themselves (`SchoolCalendar`): the school year that runs and the next two are always there with three terms each, and a school year that is over is hidden from the setup (nothing is deleted). `is_current` marks the running term, decided by the calendar (`TermClock`), not by a switch. |
 | `tracks` | The senior high school tracks SEAITT offers: **ACAD** (Academic) and **TECH-PRO** (Technical-Professional) (`code`, `name`, `is_active`). |
 | `strands` | BUSSENT, EDUC, ENG, MED, USP (ACAD) and CD1, HT1, HT2 (TECH-PRO) (`code`, `name`). Each strand belongs to one track (`track_id`). |
-| `subjects` | The subject catalog (`code`, `name`, **`units`**: `decimal(3,1)`, from 0.5 to 12 (`ck_subjects_units`), 3 for the courses that existed when the column was added; the units are printed on the enrollment form) (the column `library_completed_at_utc` of round 35 was dropped in round 36). |
-| `strand_subjects` | **The curriculum**: the subjects a strand takes in a grade level and term (`strand_id`, `grade_level`, `term_number`, `subject_id`, `is_offered`: the check *Offered*; unchecked, the registrar can't enroll students in it and it is not in the class schedule; `library_hidden_at_utc`: when the academic provider hid the course of that strand from the Course library list with the Hide button, empty when it is shown). The same every school year. |
+| `courses` | The subject catalog (`code`, `name`, **`units`**: `decimal(3,1)`, from 0.5 to 12 (`ck_courses_units`), 3 for the courses that existed when the column was added; the units are printed on the enrollment form) (the column `library_completed_at_utc` of round 35 was dropped in round 36). |
+| `strand_courses` | **The curriculum**: the subjects a strand takes in a grade level and term (`strand_id`, `grade_level`, `term_number`, `course_id`, `is_offered`: the check *Offered*; unchecked, the registrar can't enroll students in it and it is not in the class schedule; `library_hidden_at_utc`: when the academic provider hid the course of that strand from the Course library list with the Hide button, empty when it is shown). The same every school year. |
 | `sections` | A section such as 11-BUSSENT-A in one school year: grade level 11 or 12, optional adviser (teacher). **It has no schedule**: it depends only on the school year, the strand, the grade level and the name (`unique (school_year_id, strand_id, grade_level, name)`). |
 | `enrollments` | A student placed in a section for a term, with a copy of who they were then (see below). `status`: Enrolled, Dropped, Completed. |
-| `enrollment_subjects` | The subjects a student takes in an enrollment (`enrollment_id`, `subject_id`). |
+| `enrollment_courses` | The subjects a student takes in an enrollment (`enrollment_id`, `course_id`). |
 
 An **enrollment** row reads on its own. Besides the links to the student, the term and the section, it holds
-`lrn`, `first_name`, `middle_name`, `last_name`, `name_extension` (Jr., III, ... up to 10 characters, optional), `grade_level`, `track_id`, `strand_id` and `subjects` (the subject names
-separated by commas, for reading the table; the program uses `enrollment_subjects`). They are copied when the student is
+`lrn`, `first_name`, `middle_name`, `last_name`, `name_extension` (Jr., III, ... up to 10 characters, optional), `grade_level`, `track_id`, `strand_id` and `courses` (the subject names
+separated by commas, for reading the table; the program uses `enrollment_courses`). They are copied when the student is
 enrolled, so a later change (a new name, a promotion) does not rewrite what was true at the time. The Users page does keep
 a student's *name and LRN* in step in their enrollments when an administrator corrects them. `enrolled_by_user_id` is the
 registrar who did it.
@@ -205,13 +205,13 @@ registrar who did it.
 
 | Table | What it holds |
 |---|---|
-| `teaching_assignments` | A teacher teaches a subject to a section ("Ms. Reyes teaches BUSINESS ACCOUNTING to 11-BUSSENT-A"). Set by the administrator (Users Management, Teachers, **Subjects**). **A subject of a section has one teacher** (`unique (section_id, subject_id)`). The students who take it are the ones enrolled in that section with that subject (`enrollment_subjects`). |
-| `modules` | A lesson of an assignment: `title`, `description` and `body` (not asked any more: the title is the title of the file), `link_url`, `position`, **`is_exam_set`** (1 for the posted box *Summative exams* of the course: not a handout in the lists). `visible_from_utc` decides who can see it: **empty = draft** (hidden), **a past time = posted**, **a future time = scheduled** (it appears by itself). `notified_at_utc` is set when the students were told. |
-| `module_items` | What a student does in a handout: `kind` is `Activity`, `Quiz`, `TaskPerformance`, `Seatwork`, `Recitation`, `Exam` or `Other` (checked by `ck_module_items_kind`; the teacher adds an exam from the gradebook; a seatwork and a recitation are handled like an assignment), **`gradebook_order`** (the place of its column in the teacher's gradebook once the columns were moved; 0 = not placed, so after the ones that are), with `max_score`, `due_at_utc`, an optional `visible_from_utc` of its own (empty = with its handout), **`material_item_id`** (the exam of the provider's library this item was made from, so sending the same exam again does not add it twice; empty for everything the teacher makes; the library item is not deleted when this item is) and, for quizzes, `time_limit_minutes`, `shuffle_questions`, `shuffle_options`, **`anti_cheat`**, `max_violations` and `show_result`. |
+| `teaching_assignments` | A teacher teaches a subject to a section ("Ms. Reyes teaches BUSINESS ACCOUNTING to 11-BUSSENT-A"). Set by the administrator (Users Management, Teachers, **Subjects**). **A subject of a section has one teacher** (`unique (section_id, course_id)`). The students who take it are the ones enrolled in that section with that subject (`enrollment_courses`). |
+| `handouts` | A lesson of an assignment: `title`, `description` and `body` (not asked any more: the title is the title of the file), `link_url`, `position`, **`is_exam_set`** (1 for the posted box *Summative exams* of the course: not a handout in the lists). `visible_from_utc` decides who can see it: **empty = draft** (hidden), **a past time = posted**, **a future time = scheduled** (it appears by itself). `notified_at_utc` is set when the students were told. |
+| `handout_items` | What a student does in a handout: `kind` is `Activity`, `Quiz`, `TaskPerformance`, `Seatwork`, `Recitation`, `Exam` or `Other` (checked by `ck_handout_items_kind`; the teacher adds an exam from the gradebook; a seatwork and a recitation are handled like an assignment), **`gradebook_order`** (the place of its column in the teacher's gradebook once the columns were moved; 0 = not placed, so after the ones that are), with `max_score`, `due_at_utc`, an optional `visible_from_utc` of its own (empty = with its handout), **`material_item_id`** (the exam of the provider's library this item was made from, so sending the same exam again does not add it twice; empty for everything the teacher makes; the library item is not deleted when this item is) and, for quizzes, `time_limit_minutes`, `shuffle_questions`, `shuffle_options`, **`anti_cheat`**, `max_violations` and `show_result`. |
 | `quiz_questions` | The questions of a quiz: `kind` (`MultipleChoice`, `TrueFalse`, `ShortAnswer`, `Identification`, `FillInTheBlank`, `Matching`, `MultipleSelect`, `Essay`; `ck_quiz_questions_kind`), `text`, `options_text` (one choice per line), `correct_answer` (for a short answer several accepted answers separated by `\|`) and `points`. |
 | `submissions` | One piece of work per student and item (`unique (item_id, student_id)`): `status` (`InProgress`, `Submitted`, `Graded`), `answer_text` (the plain words), **`answer_html`** (what the student wrote in the editor, with its formatting, `mediumtext`, empty for plain answers; always cleaned by `RichText.Sanitize` before it is saved), `link_url`, `score`, `feedback`, `is_late`, **`late_decision`** (`Pending`, `Accepted` or `Declined`: what the teacher decided about work handed in after the due date; empty for work on time; late work is graded only when `Accepted`). For quizzes also the answers and the order of the questions (`answers_json`), and the anti-cheating watch: `violation_count`, `violation_log`, `is_flagged`, `auto_submit_reason` (`time` or `violations`). |
-| `module_views` | That a student has opened a handout or a syllabus (so the dashboard can list the ones not opened yet, and the academic provider can see who opened it): `(module_id, student_id)`, `first_opened_at_utc`. |
-| `module_reads` | How much of a handout a student has read (0 to 100): `(module_id, student_id)`, `percent` (checked 0 to 100), `updated_at_utc`. The student's page counts it in the browser (the slides seen and how far the files were read) and sends it (`POST /module-reads`); it never goes back. The bar of the handout in the course reads it: the student sees their own, the teacher the average of the class. Added by `ModuleReadingProgress` (round 34). |
+| `handout_views` | That a student has opened a handout or a syllabus (so the dashboard can list the ones not opened yet, and the academic provider can see who opened it): `(handout_id, student_id)`, `first_opened_at_utc`. |
+| `handout_reads` | How much of a handout a student has read (0 to 100): `(handout_id, student_id)`, `percent` (checked 0 to 100), `updated_at_utc`. The student's page counts it in the browser (the slides seen and how far the files were read) and sends it (`POST /module-reads`); it never goes back. The bar of the handout in the course reads it: the student sees their own, the teacher the average of the class. Added by `ModuleReadingProgress` (round 34). |
 | `item_views` | That a student has opened the page of an activity, a quiz or a task performance: `(item_id, student_id)`, `first_opened_at_utc`. The academic provider reads it. |
 | `attendance_records` | Whether a student came to a subject on a day: `assignment_id`, `student_id`, `attended_on` (the Philippine date), `status` (`Present`, `Late` or `Absent`), `note`. One mark per student, subject and day. Deleted with the subject or the student. |
 | `attendance_records` (round 41) | Only weekdays: the check `ck_attendance_records_weekday` (`WEEKDAY(attended_on) < 5`) refuses a Saturday or a Sunday, and `AttendanceService.SaveSheetAsync` says so before it gets there. The migration deleted the marks that were on a weekend. |
@@ -233,19 +233,19 @@ The to-do list and its table `todo_items` were removed by the migration `RemoveT
 
 | Table | What it holds |
 |---|---|
-| `material_modules` | The academic provider's library, per course (`subject_id`): a handout (or, with `is_syllabus = 1`, the syllabus, one per course in practice): `title`, `description`, `body`, `link_url`, `position`, `created_by_user_id`; **`is_exam_set`** (1 for the hidden handout that holds the summative exams of the course; it is not shown as a handout). |
-| `material_items` | An item of a library handout: the same columns as `module_items` (`kind`, `max_score`, a suggested `due_at_utc`, the quiz settings). The academic provider now makes only one kind, **`Exam`** (a summative exam: `due_at_utc` is when it **closes** and `visible_from_utc` when it **opens**, both in UTC; it lives in the handout of the course with `is_exam_set = 1`); the rows of the other kinds that older versions made stay. |
+| `material_handouts` | The academic provider's library, per course (`course_id`): a handout (or, with `is_syllabus = 1`, the syllabus, one per course in practice): `title`, `description`, `body`, `link_url`, `position`, `created_by_user_id`; **`is_exam_set`** (1 for the hidden handout that holds the summative exams of the course; it is not shown as a handout). |
+| `material_items` | An item of a library handout: the same columns as `handout_items` (`kind`, `max_score`, a suggested `due_at_utc`, the quiz settings). The academic provider now makes only one kind, **`Exam`** (a summative exam: `due_at_utc` is when it **closes** and `visible_from_utc` when it **opens**, both in UTC; it lives in the handout of the course with `is_exam_set = 1`); the rows of the other kinds that older versions made stay. |
 | `material_questions` | The questions of a summative exam of the library (same columns and kinds as `quiz_questions`). |
 | `quiz_question_images` | A picture of a question of a quiz (or of the copy of a summative exam a section got): `question_id` (cascade), `slot` (**0** the question, **1 and up** its choices, or the rows of Column B of a matching type), `name`, `content_type` (image/png, jpeg, gif or webp), `data` (longblob, up to 2 MB); unique `(question_id, slot)`. A student opens it through `files/q/{id}`. Added by `QuestionKindsAndPictures` (round 38). |
 | `material_question_images` | The same for the questions of the library (the provider's summative exams); the pictures are copied into `quiz_question_images` when the exam is posted. |
-| `material_deliveries` | That a library handout was sent to a teacher's course: `material_module_id`, `assignment_id` and `module_id` (the teacher's copy, a draft). Unique per library handout and course. `sent_by_user_id` is the provider; `created_at_utc` is when it was sent; `opened_at_utc` is when the teacher first opened their copy (its text, one of its activities, or posting it; empty until then). The state shown in Tracking comes from it and from the copy's `visible_from_utc`. It is deleted with the teacher's copy, with the course or with the library handout (the copy stays). |
+| `material_deliveries` | That a library handout was sent to a teacher's course: `material_handout_id`, `assignment_id` and `handout_id` (the teacher's copy, a draft). Unique per library handout and course. `sent_by_user_id` is the provider; `created_at_utc` is when it was sent; `opened_at_utc` is when the teacher first opened their copy (its text, one of its activities, or posting it; empty until then). The state shown in Tracking comes from it and from the copy's `visible_from_utc`. It is deleted with the teacher's copy, with the course or with the library handout (the copy stays). |
 | `teacher_evaluations` | A questionnaire about the teachers: `title`, `instructions`, `sent_at_utc` (empty = draft), `due_at_utc`, `term_id`, `created_by_user_id`. |
 | `evaluation_questions` | Its questions: `position`, `text`, `kind` (`Likert`, `Performance`, `Frequency`, `Binary`, `Ranking`, `SelectAll` or `Comment`, checked), `options_text` (the options of a ranking or select-all question, one in each line) and `category` (the area, optional). |
 | `evaluation_targets` | The teachers' courses (`assignment_id`) an evaluation was sent about. |
 | `evaluation_responses` | A student's answers for one teacher's course: unique per `(evaluation_id, assignment_id, student_id)`, with `submitted_at_utc`. |
 | `evaluation_answers` | One answer, per response and question: `rating` (1 to 5, checked; the Likert, Performance and Frequency scales), `selection` (a binary question: `Yes` or `No`; a ranking: the numbers of the options from the best, like `2,0,1`; a select-all: the numbers ticked, like `0,2`) or `comment`. |
 
-`modules.is_syllabus` marks the syllabus of a course (a handout without activities). The academic coordinator no longer sends materials: the migration `AddAcademicProviderRoleAndOpenTracking` moved that to the provider (the rows already in the library stay). The coordinator can read the averages and the comments of the evaluation but the screens never show which student wrote an answer: only whether a student has answered (`evaluation_responses`).
+`handouts.is_syllabus` marks the syllabus of a course (a handout without activities). The academic coordinator no longer sends materials: the migration `AddAcademicProviderRoleAndOpenTracking` moved that to the provider (the rows already in the library stay). The coordinator can read the averages and the comments of the evaluation but the screens never show which student wrote an answer: only whether a student has answered (`evaluation_responses`).
 Deleting a teaching assignment deletes its targets, answers and deliveries too.
 
 ### People, files and the system (round 8)
@@ -267,7 +267,7 @@ The migrations `AddProfilePhotos` and `AddSocialFeaturesSecurityLogsAndSettings`
 
 | Table | What it holds |
 |---|---|
-| `attachments` | A file attached to a syllabus or handout of the provider's library or a teacher's handout (`module_id`, `material_module_id`), or to an assignment (stored as the kind `Activity`), quiz or task performance (`item_id`, `material_item_id`), or **to the work of a student** (`submission_id`: the files the student sends instead of a link; deleted with the work): `name`, `content_type`, `size_bytes`, `position`, **`is_slides`** (a slide file of a handout: a PowerPoint or a PDF, listed apart from the other files), `uploaded_by_user_id` (emptied when that account is deleted; the file stays). **Exactly one** of the four links is set (`AttachmentService` keeps that; MySQL does not allow a check constraint on columns with a cascading foreign key). Deleted with the handout or item it is on. |
+| `attachments` | A file attached to a syllabus or handout of the provider's library or a teacher's handout (`handout_id`, `material_handout_id`), or to an assignment (stored as the kind `Activity`), quiz or task performance (`item_id`, `material_item_id`), or **to the work of a student** (`submission_id`: the files the student sends instead of a link; deleted with the work): `name`, `content_type`, `size_bytes`, `position`, **`is_slides`** (a slide file of a handout: a PowerPoint or a PDF, listed apart from the other files), `uploaded_by_user_id` (emptied when that account is deleted; the file stays). **Exactly one** of the four links is set (`AttachmentService` keeps that; MySQL does not allow a check constraint on columns with a cascading foreign key). Deleted with the handout or item it is on. |
 | `final_grades` | **The final grade the teacher gives a student in a course** (round 15): `assignment_id` (the teacher's course, deleted with it), `student_id` (deleted with the student), `grade` (`decimal(5,2)`, 0 to 100, checked). `unique (assignment_id, student_id)`: one for each student and course. The gradebook writes them (a blank takes it away) and the student sees them with the grades. |
 | `attachment_contents` | The bytes of a file, one row for each attachment (`attachment_id` is the key), apart from `attachments` so that a list of files never reads them. |
 
@@ -282,7 +282,7 @@ or item they can see (the handout is posted and they take the course). Files ope
 | `calendar_entry_invites` | **Who an event is shared with** (round 16): `entry_id` (deleted with the event), `user_id` (the person who sees it on their own calendar; deleted with the account), `created_at_utc`. The primary key is `(entry_id, user_id)`, so a person is invited once; an index on `user_id` finds the events shared with a person. Only the owner changes the list; the invited person can take the event off their own calendar (`CalendarService.LeaveEntryAsync` removes their row only). `CalendarService.CanShareWithAsync` allows only friends, the members of the person's groups and classmates (for a teacher the students of their classes), at most 100 per event. |
 | `achievement_awards` | **Which achievements a student earned and whether the congratulation box was shown**: `student_id` (deleted with the student), `achievement_key` (`first-step`, `perfect-score`, ... at most 40 characters, not named `key` because that is a MySQL reserved word), `earned_at_utc`, `seen_at_utc` (empty until the student closes the box in the middle of the screen). `unique (student_id, achievement_key)`: an award is written once and shown once. The achievements themselves (their text, progress and whether they are earned **now**) are not in the database: `AchievementService` works them out from the scores, the handed-in work and the opened handouts every time, and only writes a row here the first time one is earned. |
 
-The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**; round 15 removes `strand_schedules` and adds `final_grades` (still **56**); round 16 adds `calendar_entry_invites` (**57** tables). The later rounds add `notification_sounds` and, in round 27, `custom_roles` (**59** tables in all); round 34 adds `module_reads` (**60**). The same round-16 migration, `ClassTimesForSeededSectionsAndSharedEvents`, also **fills `course_schedules`** (see *The school data that comes with the database*).
+The migration `AddCalendarEntriesAndAwards` adds them (down removes them). That made 55 tables; `AddCourseSchedules` (the `course_schedules` table, described with the schools tables above) makes **56**; round 15 removes `strand_schedules` and adds `final_grades` (still **56**); round 16 adds `calendar_entry_invites` (**57** tables). The later rounds add `notification_sounds` and, in round 27, `custom_roles` (**59** tables in all); round 34 adds `handout_reads` (**60**). The same round-16 migration, `ClassTimesForSeededSectionsAndSharedEvents`, also **fills `course_schedules`** (see *The school data that comes with the database*).
 
 ### Messages and notifications
 
@@ -367,10 +367,10 @@ Things that were decided for you, change them in the tables if they are not righ
 - An enrollment can only combine a **term and a section of the same school year**. It carries a `school_year_id` that is
   part of two composite foreign keys, to `terms (id, school_year_id)` and to `sections (id, school_year_id)`. When you
   insert one, `school_year_id` must be the school year of both its term and its section.
-- A subject of a section has **one teacher** (`unique (section_id, subject_id)` on `teaching_assignments`), a student has one
-  piece of work per item (`unique (item_id, student_id)`), `module_items.kind`, `quiz_questions.kind` and
+- A subject of a section has **one teacher** (`unique (section_id, course_id)` on `teaching_assignments`), a student has one
+  piece of work per item (`unique (item_id, student_id)`), `handout_items.kind`, `quiz_questions.kind` and
   `submissions.status` are one of their fixed words, `max_score` is above 0 and `score` is 0 or more.
-- Deleting an enrollment deletes its `enrollment_subjects`. Otherwise nothing cascades except profile rows when their user
+- Deleting an enrollment deletes its `enrollment_courses`. Otherwise nothing cascades except profile rows when their user
   is deleted. Terms, sections, students, teachers and so on can't be deleted while other rows use them. The Users page
   deletes a student's enrollments first, on purpose, when an administrator confirms; to keep history, switch the account
   off (`is_active = 0`) instead of deleting it.
@@ -384,9 +384,9 @@ Things that were decided for you, change them in the tables if they are not righ
 - Graduates are archived by an administrator (`StudentLifecycleService.ArchiveAsync`) **and automatically**: once a day has passed since the end date of the last term of a school year, the background job archives the grade 12 students who have a non-dropped enrollment in that term (`ArchiveFinishedAsync`, note "Graduated: <term> ended (automatic)", one `StudentsArchived` line in `security_logs`; running again changes nothing). A student who is archived can't be enrolled again until an administrator restores the account.
 - The formatted answer of a student (`submissions.answer_html`) is the only HTML the application stores that a person typed. `RichText.Sanitize` keeps a fixed list of tags (`p div br hr span b strong i em u s strike del sub sup ul ol li h1..h4 blockquote pre code a table thead tbody tr td th`), only `href` (http/https) on links and `colspan`/`rowspan` on cells, and only these style rules with checked values: font family and size, weight, style, decoration, text and background color, alignment, line height, indents and vertical align. Scripts, frames, pictures, event handlers and everything else are removed; it is run when the answer is saved and again when it is shown.
 - A student's subjects are **not picked** at enrollment: `EnrollmentService` gives the student all the active subjects the strand has at that grade level
-  and term (`strand_subjects`, edited by the administrator in the school setup). The student's phone number is optional (`users.phone_number`) and an
+  and term (`strand_courses`, edited by the administrator in the school setup). The student's phone number is optional (`users.phone_number`) and an
   existing number is not overwritten. The registrar can **unenroll** a student for the **next term** (the term after the current one): the enrollment in
-  that term and its `enrollment_subjects` are deleted. "Not enrolled" means an active student with no `Enrolled` enrollment in the next term (the current term
+  that term and its `enrollment_courses` are deleted. "Not enrolled" means an active student with no `Enrolled` enrollment in the next term (the current term
   when there is no next one), see `Data/Queries/NotEnrolled.cs` and `TermLookup`.
 - The school setup (`SchoolSetupService`) is only for administrators and refuses what would leave the records inconsistent: a term, strand or
   section that students use can't move to another school year, track or strand; a school
@@ -458,3 +458,5 @@ Things to remember:
   has "Safe Updates" on by default and refuses anything else with Error 1175, which stops the script halfway and
   leaves a half-upgraded database. The command-line client does not do this, so test the generated scripts with
   `mysql --init-command="SET SQL_SAFE_UPDATES=1" < file.sql`.
+- The migration `RenameSubjectsToCourses` (round 43) renames the tables and columns that said *subject* to *course*, so the database says what the screens say: the table `subjects` is now **`courses`**, `strand_subjects` is **`strand_courses`**, `enrollment_subjects` is **`enrollment_courses`**, the column `subject_id` is **`course_id`** (in `strand_courses`, `enrollment_courses`, `teaching_assignments`, `material_modules`, `students` and `teachers`) and the column `enrollments.subjects` is **`courses`**. The indexes, the foreign keys, the primary keys and the checks are renamed with them (`ix_courses_code`, `pk_courses`, `ck_courses_units`, `fk_strand_courses_courses_course_id` ...). Nothing is added or taken away: the rows, the numbers (ids) and the relations stay as they were (still **63 tables**). The program itself still calls the class `Subject` in the code; only the names in the database changed (`ToTable("courses")` and `HasColumnName("course_id")` in `Data/Configurations`). The migration can be reverted.
+- The migration `RenameModulesToHandouts` (round 43) does the same for the word *module*, which the screens stopped using in round 36: the table `modules` is now **`handouts`**, `module_items` is **`handout_items`**, `module_reads` is **`handout_reads`**, `module_views` is **`handout_views`**, `material_modules` is **`material_handouts`**, the column `module_id` is **`handout_id`** (in `handout_items`, `handout_reads`, `handout_views`, `material_items`, `material_deliveries` and `attachments`) and `material_module_id` is **`material_handout_id`** (in `material_deliveries` and `attachments`). The keys, foreign keys, indexes and checks follow (`pk_handouts`, `fk_handout_items_handouts_handout_id`, `ix_handout_items_handout_id_kind_position`, `ck_handout_items_kind` ...). No row is touched and no table is added or taken away (still **63 tables**); the migration can be reverted. As with the courses, the classes in the code keep their names (`LearningModule`, `ModuleItem` ...) and `RenameModulesToHandouts` in `Data/AppDbContext.cs` gives the database the new names.

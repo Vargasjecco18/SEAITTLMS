@@ -461,15 +461,34 @@
             @* The role is typed: the name of a role that was used before is picked from the list that opens (the usual roles and the ones made before). A name that is new makes a new role, and then the pages of
                the role are ticked one by one. The first letter of the role starts the employee number (Librarian: L-). This part is not inside the form below, so Enter here does not send the form. *@
             <div class="role-row">
-                <Field For="a-role" Label="Name of the new role" Required="true" Class="grow" Hint="Type it, or pick a role that was used before from the list.">
-                    <input id="a-role" list="a-roles" maxlength="40" autocomplete="off" placeholder="Like Librarian or Cashier" @bind="RoleText" @bind:event="oninput" />
-                    <datalist id="a-roles">
-                        @foreach (var roleName in RoleNames)
-                        {
-                            <option value="@roleName"></option>
-                        }
-                    </datalist>
-                </Field>
+                @if (!roleTyping)
+                {
+                    @* Round 43: the role is chosen from a list (the usual roles and the ones made before), with New role at the end. Writing a new role takes the box below; when what was written is
+                       deleted, the list is back. *@
+                    <Field For="a-role-select" Label="Role" Required="true" Class="grow" Hint="Pick the role of the person, or New role to make one.">
+                        <select id="a-role-select" @onchange="RolePicked">
+                            <option value="" selected="@(roleText.Trim().Length == 0)">Choose a role</option>
+                            @foreach (var roleName in RoleNames)
+                            {
+                                <option value="@roleName" selected="@string.Equals(roleName, roleText.Trim(), StringComparison.OrdinalIgnoreCase)">@roleName</option>
+                            }
+                            <option value="@NewRoleValue">New role…</option>
+                        </select>
+                    </Field>
+                }
+                else
+                {
+                    <Field For="a-role" Label="Name of the new role" Required="true" Class="grow" Hint="Type it, or pick a role that was used before from the list. Delete it to go back to the list of roles.">
+                        <input id="a-role" list="a-roles" maxlength="40" autocomplete="off" placeholder="Like Librarian or Cashier" @bind="RoleText" @bind:event="oninput" />
+                        <datalist id="a-roles">
+                            @foreach (var roleName in RoleNames)
+                            {
+                                <option value="@roleName"></option>
+                            }
+                        </datalist>
+                    </Field>
+                    <Button Variant="ButtonVariant.Ghost" OnClick="BackToRoleList">Choose from the list</Button>
+                }
             </div>
 
             @if (RoleIsNew)
@@ -867,7 +886,37 @@
         {
             roleText = value ?? "";
             ApplyRole();
+
+            // The name that was being written is deleted: the list of roles is back.
+            if (roleTyping && roleText.Trim().Length == 0)
+            {
+                roleTyping = false;
+            }
         }
+    }
+
+    /// <summary>The list of roles is shown (false) or the box where a new role is written (true).</summary>
+    private bool roleTyping;
+
+    private const string NewRoleValue = "__new";
+
+    private void RolePicked(ChangeEventArgs e)
+    {
+        var picked = e.Value?.ToString() ?? "";
+        if (picked == NewRoleValue)
+        {
+            RoleText = "";
+            roleTyping = true;
+            return;
+        }
+
+        RoleText = picked;
+    }
+
+    private void BackToRoleList()
+    {
+        roleTyping = false;
+        RoleText = "";
     }
 
     /// <summary>The role that matches what was typed (a usual role, or one made before); a new name has no role yet. The employee number starts with the first letter of the role.</summary>
@@ -1266,6 +1315,7 @@
         {
             customRoles = await Management.ListCustomRolesAsync();
             roleText = "";
+            roleTyping = false;
             newRolePages.Clear();
             newRolePages.UnionWith(["calendar", "users", "groups"]);
         }

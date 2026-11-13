@@ -35,6 +35,19 @@
         @* The alert at the top center: the account is in use (this page's own answer), or the one the address asks for (?alert=other-device: the sign-in of this browser was ended). *@
         <TopAlert Name="@(accountInUse ? "in-use" : null)" />
 
+        @if (accountDeactivated)
+        {
+            @* Round 43: the account exists but was deactivated: a box over the page says so (it is closed with OK, Escape or a click outside). *@
+            <div class="account-modal" id="inactive-modal" role="alertdialog" aria-modal="true" aria-labelledby="inactive-title" aria-describedby="inactive-text" data-account-modal>
+                <div class="account-modal-box">
+                    <span class="account-modal-icon" aria-hidden="true"><Icon Name="user-x" Size="28" /></span>
+                    <h2 id="inactive-title">This account is deactivated</h2>
+                    <p id="inactive-text">@if (string.IsNullOrEmpty(deactivatedEmail)) { <span>This account</span> } else { <span>The account <strong>@deactivatedEmail</strong></span> }<span> can't log in right now. Please ask the school office to activate it again (the registrar for students, the administrator for staff).</span></p>
+                    <button type="button" class="submit" id="inactive-close" data-close-account-modal autofocus>OK</button>
+                </div>
+            </div>
+        }
+
         <FormErrors Errors="@(string.IsNullOrEmpty(errorMessage) ? Array.Empty<string>() : new[] { errorMessage })" />
 
         @if (otpChallenge is not null)
@@ -90,20 +103,35 @@
 
             <div class="field">
                 <label for="email">Email</label>
-                <InputText id="email" type="email" @bind-Value="Input.Email" placeholder="lastname.lrn@legazpi.seaitt.edu.ph" autocomplete="username" autofocus />
+                <InputText id="email" type="email" @bind-Value="Input.Email" placeholder="lastname.lrn@legazpi.seaitt.edu.ph" autocomplete="username" autofocus="@(!accountSaved)" />
                 <ValidationMessage For="() => Input.Email" class="field-error" />
             </div>
 
             <div class="field">
                 <label for="password">Password</label>
-                <InputText id="password" type="password" @bind-Value="Input.Password" placeholder="Enter your password" autocomplete="current-password" />
+                <InputText id="password" type="password" @bind-Value="Input.Password" placeholder="Enter your password" autocomplete="current-password" autofocus="@accountSaved" />
                 <ValidationMessage For="() => Input.Password" class="field-error" />
             </div>
 
-            <p class="session-note">You are signed out when you close the browser, or when the page has been closed for a few minutes.</p>
+            @* Round 43: "Save account" remembers the email on this browser (a cookie, 90 days) so it is already typed next time. The password is never saved by the system. *@
+            <label class="check" for="save-account">
+                <InputCheckbox id="save-account" @bind-Value="Input.SaveAccount" />
+                <span>Save account <small>(remember my email on this device)</small></span>
+            </label>
+
+            <p class="session-note">You are signed out as soon as you close the page or the browser.</p>
 
             <button type="submit" class="submit">Login</button>
         </EditForm>
+
+        @if (accountSaved)
+        {
+            <form method="post" @formname="forget-account" @onsubmit="ForgetAccount" class="saved-account">
+                <AntiforgeryToken />
+                <span>Saved on this device: <strong id="saved-account-email">@savedEmail</strong></span>
+                <button type="submit" class="otp-link" id="forget-account">Forget</button>
+            </form>
+        }
         }
 
         <a class="back" href="/">Back to the home page</a>
@@ -121,12 +149,22 @@
     /// <summary>The right password was typed, but the account is signed in on another browser or device: the alert at the top says so.</summary>
     private bool accountInUse;
 
+    /// <summary>The account exists but was deactivated: the box over the page says so.</summary>
+    private bool accountDeactivated;
+    private string? deactivatedEmail;
+
+    /// <summary>The email this browser was asked to remember ("Save account"), or null.</summary>
+    private string? savedEmail;
+
+    private bool accountSaved => !string.IsNullOrEmpty(savedEmail);
+
     /// <summary>The moment the account that was tried is unlocked (a lock this browser saw: the answer of the sign-in, or the cookie of an earlier try).</summary>
     private DateTime? lockedUntil;
     private string? lockedEmail;
 
     private const string LockCookie = "seaitt_login_lock";
     private const string LastUserCookie = "seaitt_last_user";
+    private const string SavedAccountCookie = "seaitt_saved_account";
 
     private int SecondsLeft => lockedUntil is { } until ? Math.Max(0, (int)Math.Ceiling((until - Clock.GetUtcNow().UtcDateTime).TotalSeconds)) : 0;
 
@@ -170,6 +208,13 @@
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            // The forms of this page were made for the person who was signed in: their antiforgery token would be refused when the next person (or the same one) sends the login form.
+            // So the page is asked for again (a new request has nobody signed in, the cookie is gone) and it is that page the person sees.
+            if (HttpMethods.IsGet(HttpContext.Request.Method))
+            {
+                GoTo("/login" + HttpContext.Request.QueryString);
+            }
         }
 
         // The password was right and a code is on its way: the page asks for the code (also after it is opened again, until the code is used or gone).
@@ -182,12 +227,48 @@
             }
         }
 
+        // "Save account": the email that was saved on this browser is typed already (when the page is opened, not when a form was sent) and the cursor waits in the password.
+        if (HttpContext.Request.Cookies.TryGetValue(SavedAccountCookie, out var saved) && !string.IsNullOrWhiteSpace(saved))
+        {
+            savedEmail = saved.Trim();
+            if (HttpMethods.IsGet(HttpContext.Request.Method) && string.IsNullOrEmpty(Input.Email))
+            {
+                Input.Email = savedEmail;
+                Input.SaveAccount = true;
+            }
+        }
+
         // The page is opened again while the timer of this browser still runs: it is still there.
         if (LockOfThisBrowser() is { } browserLock)
         {
             lockedUntil = browserLock.Until;
             lockedEmail = browserLock.Email;
         }
+    }
+
+    /// <summary>Saves or forgets the email, after the password was right: it is what the box "Save account" asked for. A wrong password never saves an email.</summary>
+    private void RememberAccount(string? email)
+    {
+        var options = new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps, Path = "/login", MaxAge = TimeSpan.FromDays(90) };
+        if (Input.SaveAccount && !string.IsNullOrWhiteSpace(email))
+        {
+            var clean = email.Trim().ToLowerInvariant();
+            HttpContext.Response.Cookies.Append(SavedAccountCookie, clean, options);   // the framework encodes the value
+            savedEmail = clean;
+        }
+        else
+        {
+            HttpContext.Response.Cookies.Delete(SavedAccountCookie, new CookieOptions { Path = "/login" });
+            savedEmail = null;
+        }
+    }
+
+    private void ForgetAccount()
+    {
+        HttpContext.Response.Cookies.Delete(SavedAccountCookie, new CookieOptions { Path = "/login" });
+        savedEmail = null;
+        Input.Email = "";
+        Input.SaveAccount = false;
     }
 
     /// <summary>
@@ -222,6 +303,7 @@
         // An administrator with OTP on: the code was sent, the page asks for it.
         if (result.Failure == LoginFailure.OtpRequired && result.Otp is { } sent)
         {
+            RememberAccount(Input.Email);
             SetOtpCookie(sent.Token);
             otpChallenge = sent;
             codeMessage = null;
@@ -256,6 +338,13 @@
             {
                 errorMessage = "User Not Found. No account uses this email.";
             }
+            else if (result.Failure == LoginFailure.Inactive)
+            {
+                // A box over the page says it, not "wrong password".
+                errorMessage = null;
+                accountDeactivated = true;
+                deactivatedEmail = Input.Email?.Trim();
+            }
             else if (result.Failure == LoginFailure.AlreadySignedIn)
             {
                 // The alert at the top of the page says it; the form stays as it is.
@@ -273,6 +362,7 @@
             return;
         }
 
+        RememberAccount(Input.Email);
         await FinishSignInAsync(result);
     }
 
@@ -289,6 +379,15 @@
         }
 
         CodeInput.Code = "";
+        if (result.Failure == LoginFailure.Inactive)
+        {
+            ClearOtpCookie();
+            otpChallenge = null;
+            accountDeactivated = true;
+            deactivatedEmail = null;
+            return;
+        }
+
         if (result.Failure == LoginFailure.AlreadySignedIn)
         {
             ClearOtpCookie();
@@ -384,5 +483,7 @@
         [Required(ErrorMessage = "Enter your password.")]
         public string Password { get; set; } = "";
 
+        /// <summary>"Save account": remember the email (never the password) on this browser.</summary>
+        public bool SaveAccount { get; set; }
     }
 }

@@ -121,7 +121,8 @@ internal static class PlacementConfiguration
 {
     public static void Configure<T>(EntityTypeBuilder<T> b, string table) where T : class, IHasPlacement
     {
-        b.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.Property(x => x.SubjectId).HasColumnName("course_id");
+        b.HasOne<Subject>().WithMany().HasForeignKey(x => x.SubjectId).HasConstraintName($"fk_{table}_courses_course_id").OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Track>().WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Restrict);
 
         b.HasOne<Strand>()

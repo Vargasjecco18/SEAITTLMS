@@ -146,6 +146,24 @@
                     }
                 </section>
 
+                @if (user.Role != AppRoles.Admin)
+                {
+                    @* Round 43: everybody but the administrator keeps a phone number here (the administrator's number belongs to the login code, in System Settings). *@
+                    <section class="settings-section" aria-labelledby="set-phone">
+                        <h3 class="group-title" id="set-phone">Phone number</h3>
+                        <Field For="set-phone-input" Label="Mobile number" Hint="Like 09171234567. Leave it empty to have no phone number.">
+                            <input id="set-phone-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="09171234567" @bind="phoneNumber" @bind:event="oninput" />
+                        </Field>
+                        <div class="phone-row">
+                            <button type="button" class="phone-save" id="set-phone-save" disabled="@phoneBusy" @onclick="SavePhoneAsync">@(phoneBusy ? "Saving…" : "Change phone number")</button>
+                            @if (phoneMessage is not null)
+                            {
+                                <span class="phone-message @(phoneFailed ? "failed" : "")" id="set-phone-message" role="status">@phoneMessage</span>
+                            }
+                        </div>
+                    </section>
+                }
+
                 <section class="settings-section" aria-labelledby="set-password">
                     <h3 class="group-title" id="set-password">Change password</h3>
                     <div>
@@ -298,6 +316,10 @@
     private bool saveFailed;
     private string? saveMessage;
     private DateTime lastSessionTouch;
+    private string phoneNumber = "";
+    private bool phoneBusy;
+    private bool phoneFailed;
+    private string? phoneMessage;
     private bool showPasswords;
     private string? passwordMessage;
     private string currentPassword = "";
@@ -643,8 +665,15 @@
         passwordMessage = null;
         saveMessage = null;
         saveFailed = false;
+        phoneMessage = null;
+        phoneFailed = false;
         if (user is not null)
         {
+            if (user.Role != AppRoles.Admin)
+            {
+                phoneNumber = await Auth.GetOwnPhoneAsync(user.UserId);
+            }
+
             sound = await Sounds.GetInfoAsync(user.UserId);
             soundMessage = null;
             pendingSound = EffectiveSoundChoice;
@@ -752,6 +781,32 @@
         finally
         {
             soundBusy = false;
+        }
+    }
+
+    /// <summary>The button "Change phone number" of the Settings box: it is kept at once (no need for the Save button at the bottom).</summary>
+    private async Task SavePhoneAsync()
+    {
+        if (user is null || phoneBusy)
+        {
+            return;
+        }
+
+        phoneBusy = true;
+        phoneMessage = null;
+        try
+        {
+            var saved = await Auth.ChangeOwnPhoneAsync(user.UserId, phoneNumber);
+            phoneFailed = !saved.Succeeded;
+            phoneMessage = saved.Succeeded ? saved.Message : string.Join(" ", saved.Errors);
+            if (saved.Succeeded)
+            {
+                phoneNumber = await Auth.GetOwnPhoneAsync(user.UserId);
+            }
+        }
+        finally
+        {
+            phoneBusy = false;
         }
     }
 

@@ -87,7 +87,7 @@ reset_header() {
 --
 -- Afterwards the database is empty, except the five roles and the school setup (school year
 -- 2026-2027 with its two terms, the ACAD and TECH-PRO tracks and their strands, the
--- subjects and the grade 11 curriculum).
+-- courses and the grade 11 curriculum).
 -- Start the app to create the first administrator (README.md, "First-time setup").
 --
 -- HOW TO RUN IT IN MYSQL WORKBENCH

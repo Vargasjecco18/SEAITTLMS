@@ -107,6 +107,58 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<Administrator>("administrators"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicCoordinator>("academic_coordinators"));
         modelBuilder.ApplyConfiguration(new StaffContactConfiguration<AcademicProvider>("academic_providers"));
+
+        RenameModulesToHandouts(modelBuilder);
+    }
+
+    /// <summary>
+    /// Round 43: what the screens call a handout is called a handout in the database too: the tables <c>handouts</c>, <c>handout_items</c>, <c>handout_reads</c>, <c>handout_views</c> and
+    /// <c>material_handouts</c>, and the columns <c>handout_id</c> and <c>material_handout_id</c>, with their keys, foreign keys and indexes. The classes in the code keep their old names
+    /// (<c>LearningModule</c>, <c>ModuleItem</c> ...); only the names the database sees change, so nothing else in the program has to.
+    /// </summary>
+    private static void RenameModulesToHandouts(ModelBuilder modelBuilder)
+    {
+        static string Handout(string name) => name.Replace("module", "handout", StringComparison.Ordinal);
+
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            if (entity.GetTableName() is { } table && table.Contains("module", StringComparison.Ordinal))
+            {
+                entity.SetTableName(Handout(table));
+            }
+
+            foreach (var property in entity.GetProperties())
+            {
+                if (property.GetColumnName() is { } column && column.Contains("module", StringComparison.Ordinal))
+                {
+                    property.SetColumnName(Handout(column));
+                }
+            }
+
+            foreach (var key in entity.GetKeys())
+            {
+                if (key.GetName() is { } name && name.Contains("module", StringComparison.Ordinal))
+                {
+                    key.SetName(Handout(name));
+                }
+            }
+
+            foreach (var foreignKey in entity.GetForeignKeys())
+            {
+                if (foreignKey.GetConstraintName() is { } name && name.Contains("module", StringComparison.Ordinal))
+                {
+                    foreignKey.SetConstraintName(Handout(name));
+                }
+            }
+
+            foreach (var index in entity.GetIndexes())
+            {
+                if (index.GetDatabaseName() is { } name && name.Contains("module", StringComparison.Ordinal))
+                {
+                    index.SetDatabaseName(Handout(name));
+                }
+            }
+        }
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

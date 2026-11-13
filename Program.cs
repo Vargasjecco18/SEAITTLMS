@@ -282,6 +282,33 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
     return Results.LocalRedirect("/login");
 }).AllowAnonymous();
 
+// Round 43: a page tells the server that it is being closed (wwwroot/app.js, on "pagehide": the tab, the window or the browser was closed, the page was refreshed, or the person went somewhere
+// else) and that a page was loaded after that in the same tab ("arrived": it was only a refresh or a move to another page). With nobody arriving the sign-in ends 3 seconds later
+// (SessionWatcher.LeavingGrace), so closing the browser logs the person out without waiting for the idle time. A page that is not signed in is ignored; the answer is always 204.
+app.MapPost("/account/leaving", async (HttpContext http, SessionWatcher watcher) =>
+{
+    var tab = await ReadTabAsync(http);
+    var session = http.User.FindFirstValue(AppClaimTypes.SessionId);
+    if (tab is not null && !string.IsNullOrEmpty(session) && int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
+    {
+        watcher.Leaving(id, session, tab);
+    }
+
+    return Results.NoContent();
+}).AllowAnonymous().DisableAntiforgery();
+
+app.MapPost("/account/arrived", async (HttpContext http, SessionWatcher watcher) =>
+{
+    var tab = await ReadTabAsync(http);
+    var session = http.User.FindFirstValue(AppClaimTypes.SessionId);
+    if (tab is not null && !string.IsNullOrEmpty(session))
+    {
+        watcher.Arrived(session, tab);
+    }
+
+    return Results.NoContent();
+}).AllowAnonymous().DisableAntiforgery();
+
 // A page that is open found that its sign-in is not the open one any more (the account was signed in somewhere else): the sign-in is ended here and the login page says why.
 app.MapGet("/account/session-ended", async (HttpContext http, AuthService auth, SessionWatcher watcher) =>
 {
@@ -556,6 +583,19 @@ static IResult ServeFile(HttpContext http, string name, byte[] data)
 }
 
 app.Run();
+
+// The tab id a page sends with "leaving" and "arrived" (wwwroot/app.js): a short random word of letters and digits, nothing else.
+static async Task<string?> ReadTabAsync(HttpContext http)
+{
+    if (!http.Request.HasFormContentType)
+    {
+        return null;
+    }
+
+    var form = await http.Request.ReadFormAsync(http.RequestAborted);
+    var tab = form["tab"].ToString();
+    return tab.Length is > 0 and <= 64 && tab.All(char.IsAsciiLetterOrDigit) ? tab : null;
+}
 
 // What still works for a person who is not an administrator while the system is closed.
 static bool IsOpenWhileClosed(PathString path) =>

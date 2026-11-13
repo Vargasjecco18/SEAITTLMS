@@ -12,7 +12,7 @@
 --
 -- Afterwards the database is empty, except the five roles and the school setup (school year
 -- 2026-2027 with its two terms, the ACAD and TECH-PRO tracks and their strands, the
--- subjects and the grade 11 curriculum).
+-- courses and the grade 11 curriculum).
 -- Start the app to create the first administrator (README.md, "First-time setup").
 --
 -- HOW TO RUN IT IN MYSQL WORKBENCH
@@ -2276,6 +2276,440 @@ CREATE INDEX `ix_login_otps_user_id` ON `login_otps` (`user_id`);
 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261113021255_LoginOtps', '9.0.20');
+
+DROP PROCEDURE IF EXISTS `POMELO_BEFORE_DROP_PRIMARY_KEY`;
+DELIMITER //
+CREATE PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`(IN `SCHEMA_NAME_ARGUMENT` VARCHAR(255), IN `TABLE_NAME_ARGUMENT` VARCHAR(255))
+BEGIN
+	DECLARE HAS_AUTO_INCREMENT_ID TINYINT(1);
+	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
+	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
+	DECLARE SQL_EXP VARCHAR(1000);
+	SELECT COUNT(*)
+		INTO HAS_AUTO_INCREMENT_ID
+		FROM `information_schema`.`COLUMNS`
+		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+			AND `Extra` = 'auto_increment'
+			AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+	IF HAS_AUTO_INCREMENT_ID THEN
+		SELECT `COLUMN_TYPE`
+			INTO PRIMARY_KEY_TYPE
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+		SELECT `COLUMN_NAME`
+			INTO PRIMARY_KEY_COLUMN_NAME
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL;');
+		SET @SQL_EXP = SQL_EXP;
+		PREPARE SQL_EXP_EXECUTE FROM @SQL_EXP;
+		EXECUTE SQL_EXP_EXECUTE;
+		DEALLOCATE PREPARE SQL_EXP_EXECUTE;
+	END IF;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `POMELO_AFTER_ADD_PRIMARY_KEY`;
+DELIMITER //
+CREATE PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`(IN `SCHEMA_NAME_ARGUMENT` VARCHAR(255), IN `TABLE_NAME_ARGUMENT` VARCHAR(255), IN `COLUMN_NAME_ARGUMENT` VARCHAR(255))
+BEGIN
+	DECLARE HAS_AUTO_INCREMENT_ID INT(11);
+	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
+	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
+	DECLARE SQL_EXP VARCHAR(1000);
+	SELECT COUNT(*)
+		INTO HAS_AUTO_INCREMENT_ID
+		FROM `information_schema`.`COLUMNS`
+		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+			AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+			AND `COLUMN_TYPE` LIKE '%int%'
+			AND `COLUMN_KEY` = 'PRI';
+	IF HAS_AUTO_INCREMENT_ID THEN
+		SELECT `COLUMN_TYPE`
+			INTO PRIMARY_KEY_TYPE
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_KEY` = 'PRI';
+		SELECT `COLUMN_NAME`
+			INTO PRIMARY_KEY_COLUMN_NAME
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_KEY` = 'PRI';
+		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL AUTO_INCREMENT;');
+		SET @SQL_EXP = SQL_EXP;
+		PREPARE SQL_EXP_EXECUTE FROM @SQL_EXP;
+		EXECUTE SQL_EXP_EXECUTE;
+		DEALLOCATE PREPARE SQL_EXP_EXECUTE;
+	END IF;
+END //
+DELIMITER ;
+
+ALTER TABLE `enrollment_subjects` DROP FOREIGN KEY `fk_enrollment_subjects_enrollments_enrollment_id`;
+
+ALTER TABLE `enrollment_subjects` DROP FOREIGN KEY `fk_enrollment_subjects_subjects_subject_id`;
+
+ALTER TABLE `material_modules` DROP FOREIGN KEY `fk_material_modules_subjects_subject_id`;
+
+ALTER TABLE `strand_subjects` DROP FOREIGN KEY `fk_strand_subjects_strands_strand_id`;
+
+ALTER TABLE `strand_subjects` DROP FOREIGN KEY `fk_strand_subjects_subjects_subject_id`;
+
+ALTER TABLE `students` DROP FOREIGN KEY `fk_students_subjects_subject_id`;
+
+ALTER TABLE `teachers` DROP FOREIGN KEY `fk_teachers_subjects_subject_id`;
+
+ALTER TABLE `teaching_assignments` DROP FOREIGN KEY `fk_teaching_assignments_subjects_subject_id`;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'subjects');
+ALTER TABLE `subjects` DROP PRIMARY KEY;
+
+ALTER TABLE `subjects` DROP CONSTRAINT `ck_subjects_units`;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'strand_subjects');
+ALTER TABLE `strand_subjects` DROP PRIMARY KEY;
+
+ALTER TABLE `strand_subjects` DROP CONSTRAINT `ck_strand_subjects_grade_level`;
+
+ALTER TABLE `strand_subjects` DROP CONSTRAINT `ck_strand_subjects_term_number`;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'enrollment_subjects');
+ALTER TABLE `enrollment_subjects` DROP PRIMARY KEY;
+
+ALTER TABLE `subjects` RENAME `courses`;
+
+ALTER TABLE `strand_subjects` RENAME `strand_courses`;
+
+ALTER TABLE `enrollment_subjects` RENAME `enrollment_courses`;
+
+ALTER TABLE `teaching_assignments` RENAME COLUMN `subject_id` TO `course_id`;
+
+ALTER TABLE `teaching_assignments` RENAME INDEX `ix_teaching_assignments_subject_id` TO `ix_teaching_assignments_course_id`;
+
+ALTER TABLE `teaching_assignments` RENAME INDEX `ix_teaching_assignments_section_id_subject_id` TO `ix_teaching_assignments_section_id_course_id`;
+
+ALTER TABLE `teachers` RENAME COLUMN `subject_id` TO `course_id`;
+
+ALTER TABLE `teachers` RENAME INDEX `ix_teachers_subject_id` TO `ix_teachers_course_id`;
+
+ALTER TABLE `students` RENAME COLUMN `subject_id` TO `course_id`;
+
+ALTER TABLE `students` RENAME INDEX `ix_students_subject_id` TO `ix_students_course_id`;
+
+ALTER TABLE `material_modules` RENAME COLUMN `subject_id` TO `course_id`;
+
+ALTER TABLE `material_modules` RENAME INDEX `ix_material_modules_subject_id_position` TO `ix_material_modules_course_id_position`;
+
+ALTER TABLE `enrollments` RENAME COLUMN `subjects` TO `courses`;
+
+ALTER TABLE `courses` RENAME INDEX `ix_subjects_code` TO `ix_courses_code`;
+
+ALTER TABLE `strand_courses` RENAME COLUMN `subject_id` TO `course_id`;
+
+ALTER TABLE `strand_courses` RENAME INDEX `ix_strand_subjects_subject_id` TO `ix_strand_courses_course_id`;
+
+ALTER TABLE `enrollment_courses` RENAME COLUMN `subject_id` TO `course_id`;
+
+ALTER TABLE `enrollment_courses` RENAME INDEX `ix_enrollment_subjects_subject_id` TO `ix_enrollment_courses_course_id`;
+
+ALTER TABLE `courses` ADD CONSTRAINT `pk_courses` PRIMARY KEY (`id`);
+CALL POMELO_AFTER_ADD_PRIMARY_KEY(NULL, 'courses', 'id');
+
+ALTER TABLE `strand_courses` ADD CONSTRAINT `pk_strand_courses` PRIMARY KEY (`strand_id`, `grade_level`, `term_number`, `course_id`);
+
+ALTER TABLE `enrollment_courses` ADD CONSTRAINT `pk_enrollment_courses` PRIMARY KEY (`enrollment_id`, `course_id`);
+
+ALTER TABLE `courses` ADD CONSTRAINT `ck_courses_units` CHECK (units >= 0.5 AND units <= 12);
+
+ALTER TABLE `strand_courses` ADD CONSTRAINT `ck_strand_courses_grade_level` CHECK (grade_level IN (11, 12));
+
+ALTER TABLE `strand_courses` ADD CONSTRAINT `ck_strand_courses_term_number` CHECK (term_number >= 1);
+
+ALTER TABLE `enrollment_courses` ADD CONSTRAINT `fk_enrollment_courses_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `enrollment_courses` ADD CONSTRAINT `fk_enrollment_courses_enrollments_enrollment_id` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `material_modules` ADD CONSTRAINT `fk_material_modules_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `strand_courses` ADD CONSTRAINT `fk_strand_courses_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `strand_courses` ADD CONSTRAINT `fk_strand_courses_strands_strand_id` FOREIGN KEY (`strand_id`) REFERENCES `strands` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `students` ADD CONSTRAINT `fk_students_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `teachers` ADD CONSTRAINT `fk_teachers_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE RESTRICT;
+
+ALTER TABLE `teaching_assignments` ADD CONSTRAINT `fk_teaching_assignments_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE RESTRICT;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261113110043_RenameSubjectsToCourses', '9.0.20');
+
+DROP PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`;
+
+DROP PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`;
+
+DROP PROCEDURE IF EXISTS `POMELO_BEFORE_DROP_PRIMARY_KEY`;
+DELIMITER //
+CREATE PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`(IN `SCHEMA_NAME_ARGUMENT` VARCHAR(255), IN `TABLE_NAME_ARGUMENT` VARCHAR(255))
+BEGIN
+	DECLARE HAS_AUTO_INCREMENT_ID TINYINT(1);
+	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
+	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
+	DECLARE SQL_EXP VARCHAR(1000);
+	SELECT COUNT(*)
+		INTO HAS_AUTO_INCREMENT_ID
+		FROM `information_schema`.`COLUMNS`
+		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+			AND `Extra` = 'auto_increment'
+			AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+	IF HAS_AUTO_INCREMENT_ID THEN
+		SELECT `COLUMN_TYPE`
+			INTO PRIMARY_KEY_TYPE
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+		SELECT `COLUMN_NAME`
+			INTO PRIMARY_KEY_COLUMN_NAME
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL;');
+		SET @SQL_EXP = SQL_EXP;
+		PREPARE SQL_EXP_EXECUTE FROM @SQL_EXP;
+		EXECUTE SQL_EXP_EXECUTE;
+		DEALLOCATE PREPARE SQL_EXP_EXECUTE;
+	END IF;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `POMELO_AFTER_ADD_PRIMARY_KEY`;
+DELIMITER //
+CREATE PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`(IN `SCHEMA_NAME_ARGUMENT` VARCHAR(255), IN `TABLE_NAME_ARGUMENT` VARCHAR(255), IN `COLUMN_NAME_ARGUMENT` VARCHAR(255))
+BEGIN
+	DECLARE HAS_AUTO_INCREMENT_ID INT(11);
+	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
+	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
+	DECLARE SQL_EXP VARCHAR(1000);
+	SELECT COUNT(*)
+		INTO HAS_AUTO_INCREMENT_ID
+		FROM `information_schema`.`COLUMNS`
+		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+			AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+			AND `COLUMN_TYPE` LIKE '%int%'
+			AND `COLUMN_KEY` = 'PRI';
+	IF HAS_AUTO_INCREMENT_ID THEN
+		SELECT `COLUMN_TYPE`
+			INTO PRIMARY_KEY_TYPE
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_KEY` = 'PRI';
+		SELECT `COLUMN_NAME`
+			INTO PRIMARY_KEY_COLUMN_NAME
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_KEY` = 'PRI';
+		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL AUTO_INCREMENT;');
+		SET @SQL_EXP = SQL_EXP;
+		PREPARE SQL_EXP_EXECUTE FROM @SQL_EXP;
+		EXECUTE SQL_EXP_EXECUTE;
+		DEALLOCATE PREPARE SQL_EXP_EXECUTE;
+	END IF;
+END //
+DELIMITER ;
+
+ALTER TABLE `attachments` DROP FOREIGN KEY `fk_attachments_material_modules_material_module_id`;
+
+ALTER TABLE `attachments` DROP FOREIGN KEY `fk_attachments_module_items_item_id`;
+
+ALTER TABLE `attachments` DROP FOREIGN KEY `fk_attachments_modules_module_id`;
+
+ALTER TABLE `item_views` DROP FOREIGN KEY `fk_item_views_module_items_item_id`;
+
+ALTER TABLE `material_deliveries` DROP FOREIGN KEY `fk_material_deliveries_material_modules_material_module_id`;
+
+ALTER TABLE `material_deliveries` DROP FOREIGN KEY `fk_material_deliveries_modules_module_id`;
+
+ALTER TABLE `material_items` DROP FOREIGN KEY `fk_material_items_material_modules_module_id`;
+
+ALTER TABLE `material_modules` DROP FOREIGN KEY `fk_material_modules_courses_course_id`;
+
+ALTER TABLE `material_modules` DROP FOREIGN KEY `fk_material_modules_users_created_by_user_id`;
+
+ALTER TABLE `module_items` DROP FOREIGN KEY `fk_module_items_modules_module_id`;
+
+ALTER TABLE `module_reads` DROP FOREIGN KEY `fk_module_reads_modules_module_id`;
+
+ALTER TABLE `module_reads` DROP FOREIGN KEY `fk_module_reads_students_student_id`;
+
+ALTER TABLE `module_views` DROP FOREIGN KEY `fk_module_views_modules_module_id`;
+
+ALTER TABLE `module_views` DROP FOREIGN KEY `fk_module_views_students_student_id`;
+
+ALTER TABLE `modules` DROP FOREIGN KEY `fk_modules_teaching_assignments_assignment_id`;
+
+ALTER TABLE `quiz_questions` DROP FOREIGN KEY `fk_quiz_questions_module_items_item_id`;
+
+ALTER TABLE `submissions` DROP FOREIGN KEY `fk_submissions_module_items_item_id`;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'modules');
+ALTER TABLE `modules` DROP PRIMARY KEY;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'module_views');
+ALTER TABLE `module_views` DROP PRIMARY KEY;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'module_reads');
+ALTER TABLE `module_reads` DROP PRIMARY KEY;
+
+ALTER TABLE `module_reads` DROP CONSTRAINT `ck_module_reads_percent`;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'module_items');
+ALTER TABLE `module_items` DROP PRIMARY KEY;
+
+ALTER TABLE `module_items` DROP CONSTRAINT `ck_module_items_kind`;
+
+ALTER TABLE `module_items` DROP CONSTRAINT `ck_module_items_max_score`;
+
+CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'material_modules');
+ALTER TABLE `material_modules` DROP PRIMARY KEY;
+
+ALTER TABLE `modules` RENAME `handouts`;
+
+ALTER TABLE `module_views` RENAME `handout_views`;
+
+ALTER TABLE `module_reads` RENAME `handout_reads`;
+
+ALTER TABLE `module_items` RENAME `handout_items`;
+
+ALTER TABLE `material_modules` RENAME `material_handouts`;
+
+ALTER TABLE `material_items` RENAME COLUMN `module_id` TO `handout_id`;
+
+ALTER TABLE `material_items` RENAME INDEX `ix_material_items_module_id_position` TO `ix_material_items_handout_id_position`;
+
+ALTER TABLE `material_deliveries` RENAME COLUMN `module_id` TO `handout_id`;
+
+ALTER TABLE `material_deliveries` RENAME COLUMN `material_module_id` TO `material_handout_id`;
+
+ALTER TABLE `material_deliveries` RENAME INDEX `ix_material_deliveries_module_id` TO `ix_material_deliveries_handout_id`;
+
+ALTER TABLE `material_deliveries` RENAME INDEX `ix_material_deliveries_material_module_id_assignment_id` TO `ix_material_deliveries_material_handout_id_assignment_id`;
+
+ALTER TABLE `attachments` RENAME COLUMN `module_id` TO `handout_id`;
+
+ALTER TABLE `attachments` RENAME COLUMN `material_module_id` TO `material_handout_id`;
+
+ALTER TABLE `attachments` RENAME INDEX `ix_attachments_module_id` TO `ix_attachments_handout_id`;
+
+ALTER TABLE `attachments` RENAME INDEX `ix_attachments_material_module_id` TO `ix_attachments_material_handout_id`;
+
+ALTER TABLE `handouts` RENAME INDEX `ix_modules_visible_from_utc` TO `ix_handouts_visible_from_utc`;
+
+ALTER TABLE `handouts` RENAME INDEX `ix_modules_assignment_id_position` TO `ix_handouts_assignment_id_position`;
+
+ALTER TABLE `handout_views` RENAME COLUMN `module_id` TO `handout_id`;
+
+ALTER TABLE `handout_views` RENAME INDEX `ix_module_views_student_id` TO `ix_handout_views_student_id`;
+
+ALTER TABLE `handout_reads` RENAME COLUMN `module_id` TO `handout_id`;
+
+ALTER TABLE `handout_reads` RENAME INDEX `ix_module_reads_student_id` TO `ix_handout_reads_student_id`;
+
+ALTER TABLE `handout_items` RENAME COLUMN `module_id` TO `handout_id`;
+
+ALTER TABLE `handout_items` RENAME INDEX `ix_module_items_module_id_kind_position` TO `ix_handout_items_handout_id_kind_position`;
+
+ALTER TABLE `handout_items` RENAME INDEX `ix_module_items_due_at_utc` TO `ix_handout_items_due_at_utc`;
+
+ALTER TABLE `material_handouts` RENAME INDEX `ix_material_modules_created_by_user_id` TO `ix_material_handouts_created_by_user_id`;
+
+ALTER TABLE `material_handouts` RENAME INDEX `ix_material_modules_course_id_position` TO `ix_material_handouts_course_id_position`;
+
+ALTER TABLE `handouts` ADD CONSTRAINT `pk_handouts` PRIMARY KEY (`id`);
+CALL POMELO_AFTER_ADD_PRIMARY_KEY(NULL, 'handouts', 'id');
+
+ALTER TABLE `handout_views` ADD CONSTRAINT `pk_handout_views` PRIMARY KEY (`handout_id`, `student_id`);
+
+ALTER TABLE `handout_reads` ADD CONSTRAINT `pk_handout_reads` PRIMARY KEY (`handout_id`, `student_id`);
+
+ALTER TABLE `handout_items` ADD CONSTRAINT `pk_handout_items` PRIMARY KEY (`id`);
+CALL POMELO_AFTER_ADD_PRIMARY_KEY(NULL, 'handout_items', 'id');
+
+ALTER TABLE `material_handouts` ADD CONSTRAINT `pk_material_handouts` PRIMARY KEY (`id`);
+CALL POMELO_AFTER_ADD_PRIMARY_KEY(NULL, 'material_handouts', 'id');
+
+ALTER TABLE `handout_reads` ADD CONSTRAINT `ck_handout_reads_percent` CHECK (percent BETWEEN 0 AND 100);
+
+ALTER TABLE `handout_items` ADD CONSTRAINT `ck_handout_items_kind` CHECK (kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other'));
+
+ALTER TABLE `handout_items` ADD CONSTRAINT `ck_handout_items_max_score` CHECK (max_score > 0);
+
+ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_handout_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `handout_items` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_handouts_handout_id` FOREIGN KEY (`handout_id`) REFERENCES `handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `attachments` ADD CONSTRAINT `fk_attachments_material_handouts_material_handout_id` FOREIGN KEY (`material_handout_id`) REFERENCES `material_handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `handout_items` ADD CONSTRAINT `fk_handout_items_handouts_handout_id` FOREIGN KEY (`handout_id`) REFERENCES `handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `handout_reads` ADD CONSTRAINT `fk_handout_reads_handouts_handout_id` FOREIGN KEY (`handout_id`) REFERENCES `handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `handout_reads` ADD CONSTRAINT `fk_handout_reads_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `handout_views` ADD CONSTRAINT `fk_handout_views_handouts_handout_id` FOREIGN KEY (`handout_id`) REFERENCES `handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `handout_views` ADD CONSTRAINT `fk_handout_views_students_student_id` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `handouts` ADD CONSTRAINT `fk_handouts_teaching_assignments_assignment_id` FOREIGN KEY (`assignment_id`) REFERENCES `teaching_assignments` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `item_views` ADD CONSTRAINT `fk_item_views_handout_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `handout_items` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `material_deliveries` ADD CONSTRAINT `fk_material_deliveries_handouts_handout_id` FOREIGN KEY (`handout_id`) REFERENCES `handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `material_deliveries` ADD CONSTRAINT `fk_material_deliveries_material_handouts_material_handout_id` FOREIGN KEY (`material_handout_id`) REFERENCES `material_handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `material_handouts` ADD CONSTRAINT `fk_material_handouts_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `material_handouts` ADD CONSTRAINT `fk_material_handouts_users_created_by_user_id` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `material_items` ADD CONSTRAINT `fk_material_items_material_handouts_handout_id` FOREIGN KEY (`handout_id`) REFERENCES `material_handouts` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `quiz_questions` ADD CONSTRAINT `fk_quiz_questions_handout_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `handout_items` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `submissions` ADD CONSTRAINT `fk_submissions_handout_items_item_id` FOREIGN KEY (`item_id`) REFERENCES `handout_items` (`id`) ON DELETE CASCADE;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261113111018_RenameModulesToHandouts', '9.0.20');
+
+DROP PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`;
+
+DROP PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`;
 
 COMMIT;
 

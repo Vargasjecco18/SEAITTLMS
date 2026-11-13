@@ -334,3 +334,91 @@ h1:focus {
 .otp-link:focus-visible {
     text-decoration: underline;
 }
+
+/* "Save account": the hint after the label, and the line that says which email is saved (with Forget). */
+.check small {
+    opacity: 0.8;
+    font-size: 0.78rem;
+}
+
+.check {
+    margin-bottom: 0.9rem;
+}
+
+.saved-account {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.saved-account strong {
+    color: var(--text);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* The box over the page for a deactivated account. */
+.account-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgb(0 0 0 / 55%);
+    animation: account-modal-in 0.18s ease-out;
+}
+
+.account-modal[hidden] {
+    display: none;
+}
+
+.account-modal-box {
+    box-sizing: border-box;
+    width: min(100%, 24rem);
+    padding: 1.75rem 1.5rem 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: 0 24px 70px rgb(0 0 0 / 45%);
+    text-align: center;
+}
+
+.account-modal-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 3.4rem;
+    height: 3.4rem;
+    margin-bottom: 0.8rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    color: var(--danger);
+}
+
+.account-modal-box h2 {
+    margin: 0 0 0.6rem;
+    font-size: 1.15rem;
+}
+
+.account-modal-box p {
+    margin: 0 0 1.2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.account-modal-box p strong {
+    color: var(--text);
+}
+
+@keyframes account-modal-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

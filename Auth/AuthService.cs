@@ -95,6 +95,16 @@ public sealed class AuthService(
             return LoginResult.Fail(LoginFailure.UserNotFound);
         }
 
+        // A deactivated account is told so (the login page shows a box that says it) whatever password was typed: "wrong password" would send the person on a hunt for a password that is not the problem.
+        // The tries do not count against the account (nothing is locked that cannot be used anyway).
+        if (!user.IsActive)
+        {
+            hasher.BurnTime(password);
+            logger.LogWarning("Sign-in refused for user {UserId}: account is inactive.", user.Id);
+            await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is deactivated.", client, ct);
+            return LoginResult.Fail(LoginFailure.Inactive);
+        }
+
         if (user.LockoutEndUtc is { } lockoutEnd && lockoutEnd > now)
         {
             hasher.BurnTime(password);
@@ -114,13 +124,6 @@ public sealed class AuthService(
             }
 
             return LoginResult.Fail(LoginFailure.InvalidCredentials);
-        }
-
-        if (!user.IsActive)
-        {
-            logger.LogWarning("Sign-in refused for user {UserId}: account is inactive.", user.Id);
-            await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is deactivated.", client, ct);
-            return LoginResult.Fail(LoginFailure.Inactive);
         }
 
         // While the system is closed for maintenance only an administrator gets in.
@@ -236,6 +239,54 @@ public sealed class AuthService(
     /// A signed-in person changes their own password (the Settings box). The current password must be right: a wrong one is counted like a wrong sign-in
     /// (the same limit and lock). A new security stamp ends every session of the account (this one is ended by /account/password-changed), so the person logs in again with the new password.
     /// </summary>
+    /// <summary>
+    /// Round 43: everybody except the administrator changes their own phone number in Settings (the number of an administrator is the one of the login code, in System Settings).
+    /// An empty box takes the number away. The change is in the security log (with the number hidden: 09171***4567).
+    /// </summary>
+    public async Task<ServiceResult> ChangeOwnPhoneAsync(int userId, string? typed, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive, ct);
+        if (user is null)
+        {
+            return ServiceResult.Fail("Your account was not found.");
+        }
+
+        if (user.RoleId == AppRoles.AdminId)
+        {
+            return ServiceResult.Fail("The phone number of an administrator is set in System Settings.");
+        }
+
+        string? phone = null;
+        typed = typed?.Trim();
+        if (!string.IsNullOrEmpty(typed))
+        {
+            phone = PhoneNumbers.Normalize(typed);
+            if (phone is null)
+            {
+                return ServiceResult.Fail("Type a mobile number like 09171234567.");
+            }
+        }
+
+        if (user.PhoneNumber == phone)
+        {
+            return new ServiceResult(true, [], phone is null ? "You have no phone number." : "Your phone number is saved.");
+        }
+
+        user.PhoneNumber = phone;
+        await db.SaveChangesAsync(ct);
+        await LogAsync(SecurityEvents.AccountChanged, user.Id, user.Email, phone is null ? "The person took their phone number away." : $"The person changed their phone number to {UniSmsClient.Mask(phone)}.", null, ct);
+        return new ServiceResult(true, [], phone is null ? "Your phone number was taken away." : "Your phone number was saved.");
+    }
+
+    /// <summary>The phone number of the person as they type it (09171234567), for the box of Settings. Empty when there is none.</summary>
+    public async Task<string> GetOwnPhoneAsync(int userId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var stored = await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => u.PhoneNumber).FirstOrDefaultAsync(ct);
+        return PhoneNumbers.ToLocal(stored);
+    }
+
     public async Task<ServiceResult> ChangePasswordAsync(int userId, string? currentPassword, string? newPassword, string? confirmPassword, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(currentPassword))

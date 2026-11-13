@@ -7,6 +7,7 @@
 @inject AchievementService Achievements
 @inject AnnouncementService Announcements
 @inject TimeProvider Clock
+@inject CircuitLink Link
 
 @if (role is not null)
 {
@@ -277,10 +278,11 @@
     {
         await LoadAsync();
 
-        // The widgets look again every 30 seconds, so a new announcement, deadline or piece of work shows up without a refresh.
+        // The widgets look again every 2 minutes (round 43: it was every minute, and each look reads a lot), so a new announcement, deadline or piece of work shows up without a refresh.
+        // What is urgent (a message, a notification) is the header's, which looks every 30 seconds and is also told at once (LiveUpdates).
         if (role is not null)
         {
-            timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+            timer = new Timer(_ => _ = InvokeAsync(RefreshAsync), null, RefreshEvery, RefreshEvery);
         }
     }
 
@@ -288,6 +290,12 @@
     {
         try
         {
+            // Round 43: a page that was closed stays in memory for a few minutes; it must not keep asking the database (the header does the same).
+            if (!Link.IsUp)
+            {
+                return;
+            }
+
             await LoadAsync();
             refreshStamp++;
             StateHasChanged();
@@ -296,6 +304,8 @@
         {
         }
     }
+
+    private static readonly TimeSpan RefreshEvery = TimeSpan.FromMinutes(2);
 
     public void Dispose() => timer?.Dispose();
 

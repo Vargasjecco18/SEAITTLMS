@@ -53,7 +53,9 @@ public static class HelpContent
         new("How do I sign in and sign out?",
         [
             "Open the address of the system and type your email and your password. An administrator may be asked for a code too: it is sent to the phone of the account, and typed on the next step of the same page.",
-            "When you close the browser you are signed out. Sign in again the next time. On a shared computer, press the arrow button to sign out before you leave.",
+            "When you close the page, the tab or the browser you are signed out, without waiting: it takes about three seconds. A refresh, or moving from one page to another, does not sign you out. On a shared computer, press the arrow button to sign out before you leave.",
+            "Under the password there is a box “Save account”. When you tick it, the system remembers your email on that computer (not your password), so the next time it is already typed and you only type the password. Under the form it says which email is saved, and “Forget” takes it away. Do not tick it on a computer that other people use.",
+            "If your account was deactivated, a box over the page says so when you try to log in. Ask the school office (the registrar for students, the administrator for staff) to activate it again.",
             "To sign out, press the arrow button at the bottom of the menu, next to your name.",
             "Being away from the keyboard does not sign you out: with the page open you stay signed in until you press the arrow button, or close the browser.",
             $"After {settings.MaxFailedAttempts} wrong passwords in a row the account is locked for {settings.LockoutMinutes} minutes. Wait, or ask the administrator.",
@@ -79,6 +81,11 @@ public static class HelpContent
             "Press the gear at the top right (Settings).",
             "Under Profile picture, press “Upload a picture” and choose a photo. It is made small for you. “Remove” brings back your initials.",
             "Under Appearance choose Light, Dark, Midnight, Ocean, Forest, Sunset, Paper, Auto (Auto follows your computer) or Customize: Customize shows four color boxes (the page, the cards, the text and the accent) and works out the other colors from them; Reset the colors brings the first ones back. You can also switch the animations off.",
+        ]),
+        new("How do I change my phone number?",
+        [
+            "Press the gear at the top right (Settings). Everybody except the administrator has a “Phone number” part: type your mobile number like 09171234567 and press “Change phone number”. It is kept at once (the Save button at the bottom is not needed). Leave the box empty and press the button to have no phone number.",
+            "The administrator's number is the one that receives the login code, and it is changed in System Settings, in the card “Login code (OTP)”.",
         ]),
         new("What does the Save button of Settings keep?",
         [

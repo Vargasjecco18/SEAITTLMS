@@ -7,6 +7,8 @@
 <Modal Open="open" Title="@($"{TeacherName} · details")" Large="true" OnClose="Close">
     @if (open)
     {
+        @* Round 43: the words are at the left. The button sits in a cell whose text is at the right, and the box (drawn inside that cell) took it over. *@
+        <div class="details-body" id="teacher-details-body">
         @if (detail is null)
         {
             <p class="muted">@(loading ? "Loading…" : "There are no results for this teacher yet.")</p>
@@ -80,6 +82,7 @@
                 <Button Variant="ButtonVariant.Ghost" OnClick="Close">Close</Button>
             </div>
         }
+        </div>
     }
 </Modal>
 

@@ -8,6 +8,7 @@
 @inject PresenceService Presence
 @inject MessageLauncher Launcher
 @inject NavigationManager Navigation
+@inject CircuitLink Link
 
 <PageTitle>Users · SEAITT Legazpi LMS</PageTitle>
 
@@ -256,6 +257,11 @@
         {
             try
             {
+                if (!Link.IsUp)
+                {
+                    return;   // the page was closed: nothing is asked while it waits in memory
+                }
+
                 if (++ticks % 6 == 0 && !busy)
                 {
                     await LoadAsync();

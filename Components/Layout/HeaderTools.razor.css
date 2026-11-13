@@ -605,3 +605,42 @@ html[data-sound="off"] [data-sound-toggle] .thumb {
     color: var(--text-muted);
     font-size: 0.88rem;
 }
+
+/* Phone number: the button that keeps the number at once, and what it answers. */
+.phone-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem 0.9rem;
+    margin-top: 0.15rem;
+}
+
+.phone-save {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2, var(--surface));
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.phone-save:hover:not(:disabled) {
+    border-color: var(--brand-strong);
+}
+
+.phone-save:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.phone-message {
+    color: var(--success);
+    font-size: 0.82rem;
+}
+
+.phone-message.failed {
+    color: var(--danger);
+}

@@ -9,6 +9,7 @@
 @inject PresenceService Presence
 @inject MessageLauncher Launcher
 @inject NavigationManager Navigation
+@inject CircuitLink Link
 
 @if (!loaded)
 {
@@ -335,6 +336,11 @@ else
     {
         try
         {
+            if (!Link.IsUp)
+            {
+                return;   // the page was closed: it stays in memory for a few minutes but must not ask the database
+            }
+
             if (!busy && !editing && !adding && !sharing)
             {
                 await LoadAsync();

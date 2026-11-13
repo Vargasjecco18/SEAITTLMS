@@ -4,6 +4,7 @@
 @inject PeopleService People
 @inject PresenceService Presence
 @inject MessageLauncher Launcher
+@inject CircuitLink Link
 
 @* The people who are online right now. Kind "students": for a student their classmates and friends, for a teacher their students. Kind "teachers": for a
    student their teachers (and friends who teach), for a teacher the other teachers. Who counts is read now and then (every minute); who of them is online is
@@ -93,8 +94,15 @@
     {
         try
         {
+            // Round 43: nothing is asked while the page is closed (it stays in memory for a few minutes).
+            if (!Link.IsUp)
+            {
+                return;
+            }
+
             var before = online.Select(p => p.UserId).ToHashSet();
-            var reloaded = DateTime.UtcNow - lastLoad > TimeSpan.FromMinutes(1);
+            // The people of the person (classmates, teachers, friends) hardly change; who of them is online is known from memory every 4 seconds. They are read again every 3 minutes.
+            var reloaded = DateTime.UtcNow - lastLoad > TimeSpan.FromMinutes(3);
             if (reloaded)
             {
                 await LoadAsync();

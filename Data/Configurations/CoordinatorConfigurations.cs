@@ -8,14 +8,15 @@ internal sealed class MaterialModuleConfiguration : IEntityTypeConfiguration<Mat
 {
     public void Configure(EntityTypeBuilder<MaterialModule> b)
     {
-        b.ToTable("material_modules");
+        b.ToTable("material_handouts");
         b.Property(m => m.Title).HasMaxLength(200).IsRequired();
         b.Property(m => m.Description).HasMaxLength(1000);
         b.Property(m => m.Body).HasColumnType("text");
         b.Property(m => m.LinkUrl).HasMaxLength(500);
         b.Property(m => m.IsExamSet).HasDefaultValue(false);
 
-        b.HasOne(m => m.Subject).WithMany().HasForeignKey(m => m.SubjectId).OnDelete(DeleteBehavior.Cascade);
+        b.Property(m => m.SubjectId).HasColumnName("course_id");
+        b.HasOne(m => m.Subject).WithMany().HasForeignKey(m => m.SubjectId).HasConstraintName("fk_material_modules_courses_course_id").OnDelete(DeleteBehavior.Cascade);
         b.HasOne<User>().WithMany().HasForeignKey(m => m.CreatedByUserId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(m => new { m.SubjectId, m.Position });
     }

@@ -417,7 +417,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int?>("MaterialModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("material_module_id");
+                        .HasColumnName("material_handout_id");
 
                     b.Property<int?>("MessageId")
                         .HasColumnType("int")
@@ -425,7 +425,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int?>("ModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("module_id");
+                        .HasColumnName("handout_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -459,13 +459,13 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasDatabaseName("ix_attachments_material_item_id");
 
                     b.HasIndex("MaterialModuleId")
-                        .HasDatabaseName("ix_attachments_material_module_id");
+                        .HasDatabaseName("ix_attachments_material_handout_id");
 
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_attachments_message_id");
 
                     b.HasIndex("ModuleId")
-                        .HasDatabaseName("ix_attachments_module_id");
+                        .HasDatabaseName("ix_attachments_handout_id");
 
                     b.HasIndex("SubmissionId")
                         .HasDatabaseName("ix_attachments_submission_id");
@@ -751,7 +751,7 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Property<string>("Subjects")
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)")
-                        .HasColumnName("subjects");
+                        .HasColumnName("courses");
 
                     b.Property<int>("TermId")
                         .HasColumnType("int")
@@ -804,15 +804,15 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("SubjectId")
                         .HasColumnType("int")
-                        .HasColumnName("subject_id");
+                        .HasColumnName("course_id");
 
                     b.HasKey("EnrollmentId", "SubjectId")
-                        .HasName("pk_enrollment_subjects");
+                        .HasName("pk_enrollment_courses");
 
                     b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_enrollment_subjects_subject_id");
+                        .HasDatabaseName("ix_enrollment_courses_course_id");
 
-                    b.ToTable("enrollment_subjects", (string)null);
+                    b.ToTable("enrollment_courses", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.EvaluationAnswer", b =>
@@ -1322,15 +1322,15 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("visible_from_utc");
 
                     b.HasKey("Id")
-                        .HasName("pk_modules");
+                        .HasName("pk_handouts");
 
                     b.HasIndex("VisibleFromUtc")
-                        .HasDatabaseName("ix_modules_visible_from_utc");
+                        .HasDatabaseName("ix_handouts_visible_from_utc");
 
                     b.HasIndex("AssignmentId", "Position")
-                        .HasDatabaseName("ix_modules_assignment_id_position");
+                        .HasDatabaseName("ix_handouts_assignment_id_position");
 
-                    b.ToTable("modules", (string)null);
+                    b.ToTable("handouts", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.LoginOtp", b =>
@@ -1427,11 +1427,11 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("MaterialModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("material_module_id");
+                        .HasColumnName("material_handout_id");
 
                     b.Property<int>("ModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("module_id");
+                        .HasColumnName("handout_id");
 
                     b.Property<DateTime?>("OpenedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -1453,14 +1453,14 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.HasIndex("ModuleId")
                         .IsUnique()
-                        .HasDatabaseName("ix_material_deliveries_module_id");
+                        .HasDatabaseName("ix_material_deliveries_handout_id");
 
                     b.HasIndex("SentByUserId")
                         .HasDatabaseName("ix_material_deliveries_sent_by_user_id");
 
                     b.HasIndex("MaterialModuleId", "AssignmentId")
                         .IsUnique()
-                        .HasDatabaseName("ix_material_deliveries_material_module_id_assignment_id");
+                        .HasDatabaseName("ix_material_deliveries_material_handout_id_assignment_id");
 
                     b.ToTable("material_deliveries", (string)null);
                 });
@@ -1507,7 +1507,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("ModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("module_id");
+                        .HasColumnName("handout_id");
 
                     b.Property<int>("Position")
                         .HasColumnType("int")
@@ -1547,7 +1547,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasName("pk_material_items");
 
                     b.HasIndex("ModuleId", "Position")
-                        .HasDatabaseName("ix_material_items_module_id_position");
+                        .HasDatabaseName("ix_material_items_handout_id_position");
 
                     b.ToTable("material_items", null, t =>
                         {
@@ -1604,7 +1604,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("SubjectId")
                         .HasColumnType("int")
-                        .HasColumnName("subject_id");
+                        .HasColumnName("course_id");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1617,15 +1617,15 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("updated_at_utc");
 
                     b.HasKey("Id")
-                        .HasName("pk_material_modules");
+                        .HasName("pk_material_handouts");
 
                     b.HasIndex("CreatedByUserId")
-                        .HasDatabaseName("ix_material_modules_created_by_user_id");
+                        .HasDatabaseName("ix_material_handouts_created_by_user_id");
 
                     b.HasIndex("SubjectId", "Position")
-                        .HasDatabaseName("ix_material_modules_subject_id_position");
+                        .HasDatabaseName("ix_material_handouts_course_id_position");
 
-                    b.ToTable("material_modules", (string)null);
+                    b.ToTable("material_handouts", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialQuestion", b =>
@@ -1847,7 +1847,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("ModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("module_id");
+                        .HasColumnName("handout_id");
 
                     b.Property<DateTime?>("NotifiedAtUtc")
                         .HasColumnType("datetime(6)")
@@ -1888,19 +1888,19 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("visible_from_utc");
 
                     b.HasKey("Id")
-                        .HasName("pk_module_items");
+                        .HasName("pk_handout_items");
 
                     b.HasIndex("DueAtUtc")
-                        .HasDatabaseName("ix_module_items_due_at_utc");
+                        .HasDatabaseName("ix_handout_items_due_at_utc");
 
                     b.HasIndex("ModuleId", "Kind", "Position")
-                        .HasDatabaseName("ix_module_items_module_id_kind_position");
+                        .HasDatabaseName("ix_handout_items_handout_id_kind_position");
 
-                    b.ToTable("module_items", null, t =>
+                    b.ToTable("handout_items", null, t =>
                         {
-                            t.HasCheckConstraint("ck_module_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other')");
+                            t.HasCheckConstraint("ck_handout_items_kind", "kind IN ('Activity', 'Quiz', 'TaskPerformance', 'Seatwork', 'Recitation', 'Exam', 'Other')");
 
-                            t.HasCheckConstraint("ck_module_items_max_score", "max_score > 0");
+                            t.HasCheckConstraint("ck_handout_items_max_score", "max_score > 0");
                         });
                 });
 
@@ -1908,7 +1908,7 @@ namespace SEAITT_LMS.Data.Migrations
                 {
                     b.Property<int>("ModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("module_id");
+                        .HasColumnName("handout_id");
 
                     b.Property<int>("StudentId")
                         .HasColumnType("int")
@@ -1923,14 +1923,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("updated_at_utc");
 
                     b.HasKey("ModuleId", "StudentId")
-                        .HasName("pk_module_reads");
+                        .HasName("pk_handout_reads");
 
                     b.HasIndex("StudentId")
-                        .HasDatabaseName("ix_module_reads_student_id");
+                        .HasDatabaseName("ix_handout_reads_student_id");
 
-                    b.ToTable("module_reads", null, t =>
+                    b.ToTable("handout_reads", null, t =>
                         {
-                            t.HasCheckConstraint("ck_module_reads_percent", "percent BETWEEN 0 AND 100");
+                            t.HasCheckConstraint("ck_handout_reads_percent", "percent BETWEEN 0 AND 100");
                         });
                 });
 
@@ -1938,7 +1938,7 @@ namespace SEAITT_LMS.Data.Migrations
                 {
                     b.Property<int>("ModuleId")
                         .HasColumnType("int")
-                        .HasColumnName("module_id");
+                        .HasColumnName("handout_id");
 
                     b.Property<int>("StudentId")
                         .HasColumnType("int")
@@ -1949,12 +1949,12 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("first_opened_at_utc");
 
                     b.HasKey("ModuleId", "StudentId")
-                        .HasName("pk_module_views");
+                        .HasName("pk_handout_views");
 
                     b.HasIndex("StudentId")
-                        .HasDatabaseName("ix_module_views_student_id");
+                        .HasDatabaseName("ix_handout_views_student_id");
 
-                    b.ToTable("module_views", (string)null);
+                    b.ToTable("handout_views", (string)null);
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Notification", b =>
@@ -2845,7 +2845,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("SubjectId")
                         .HasColumnType("int")
-                        .HasColumnName("subject_id");
+                        .HasColumnName("course_id");
 
                     b.Property<bool>("IsOffered")
                         .ValueGeneratedOnAdd()
@@ -2858,16 +2858,16 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("library_hidden_at_utc");
 
                     b.HasKey("StrandId", "GradeLevel", "TermNumber", "SubjectId")
-                        .HasName("pk_strand_subjects");
+                        .HasName("pk_strand_courses");
 
                     b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_strand_subjects_subject_id");
+                        .HasDatabaseName("ix_strand_courses_course_id");
 
-                    b.ToTable("strand_subjects", null, t =>
+                    b.ToTable("strand_courses", null, t =>
                         {
-                            t.HasCheckConstraint("ck_strand_subjects_grade_level", "grade_level IN (11, 12)");
+                            t.HasCheckConstraint("ck_strand_courses_grade_level", "grade_level IN (11, 12)");
 
-                            t.HasCheckConstraint("ck_strand_subjects_term_number", "term_number >= 1");
+                            t.HasCheckConstraint("ck_strand_courses_term_number", "term_number >= 1");
                         });
                 });
 
@@ -2953,7 +2953,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int?>("SubjectId")
                         .HasColumnType("int")
-                        .HasColumnName("subject_id");
+                        .HasColumnName("course_id");
 
                     b.Property<int?>("TrackId")
                         .HasColumnType("int")
@@ -2978,7 +2978,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasDatabaseName("ix_students_status");
 
                     b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_students_subject_id");
+                        .HasDatabaseName("ix_students_course_id");
 
                     b.HasIndex("TrackId")
                         .HasDatabaseName("ix_students_track_id");
@@ -3134,15 +3134,15 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnName("updated_at_utc");
 
                     b.HasKey("Id")
-                        .HasName("pk_subjects");
+                        .HasName("pk_courses");
 
                     b.HasIndex("Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_subjects_code");
+                        .HasDatabaseName("ix_courses_code");
 
-                    b.ToTable("subjects", null, t =>
+                    b.ToTable("courses", null, t =>
                         {
-                            t.HasCheckConstraint("ck_subjects_units", "units >= 0.5 AND units <= 12");
+                            t.HasCheckConstraint("ck_courses_units", "units >= 0.5 AND units <= 12");
                         });
                 });
 
@@ -3346,7 +3346,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int?>("SubjectId")
                         .HasColumnType("int")
-                        .HasColumnName("subject_id");
+                        .HasColumnName("course_id");
 
                     b.Property<int?>("TrackId")
                         .HasColumnType("int")
@@ -3368,7 +3368,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasDatabaseName("ix_teachers_employee_number");
 
                     b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_teachers_subject_id");
+                        .HasDatabaseName("ix_teachers_course_id");
 
                     b.HasIndex("TrackId")
                         .HasDatabaseName("ix_teachers_track_id");
@@ -3477,7 +3477,7 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.Property<int>("SubjectId")
                         .HasColumnType("int")
-                        .HasColumnName("subject_id");
+                        .HasColumnName("course_id");
 
                     b.Property<int>("TeacherId")
                         .HasColumnType("int")
@@ -3491,14 +3491,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasName("pk_teaching_assignments");
 
                     b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_teaching_assignments_subject_id");
+                        .HasDatabaseName("ix_teaching_assignments_course_id");
 
                     b.HasIndex("TeacherId")
                         .HasDatabaseName("ix_teaching_assignments_teacher_id");
 
                     b.HasIndex("SectionId", "SubjectId")
                         .IsUnique()
-                        .HasDatabaseName("ix_teaching_assignments_section_id_subject_id");
+                        .HasDatabaseName("ix_teaching_assignments_section_id_course_id");
 
                     b.ToTable("teaching_assignments", (string)null);
                 });
@@ -3810,7 +3810,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany("Attachments")
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_attachments_module_items_item_id");
+                        .HasConstraintName("fk_attachments_handout_items_item_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.MaterialItem", "MaterialItem")
                         .WithMany("Attachments")
@@ -3822,7 +3822,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany("Attachments")
                         .HasForeignKey("MaterialModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_attachments_material_modules_material_module_id");
+                        .HasConstraintName("fk_attachments_material_handouts_material_handout_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Message", "Message")
                         .WithMany("Attachments")
@@ -3834,7 +3834,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany("Attachments")
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_attachments_modules_module_id");
+                        .HasConstraintName("fk_attachments_handouts_handout_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Submission", "Submission")
                         .WithMany("Attachments")
@@ -4003,14 +4003,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("EnrollmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_enrollment_subjects_enrollments_enrollment_id");
+                        .HasConstraintName("fk_enrollment_courses_enrollments_enrollment_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_enrollment_subjects_subjects_subject_id");
+                        .HasConstraintName("fk_enrollment_courses_courses_course_id");
 
                     b.Navigation("Enrollment");
 
@@ -4191,7 +4191,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_item_views_module_items_item_id");
+                        .HasConstraintName("fk_item_views_handout_items_item_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
                         .WithMany()
@@ -4212,7 +4212,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("AssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_modules_teaching_assignments_assignment_id");
+                        .HasConstraintName("fk_handouts_teaching_assignments_assignment_id");
 
                     b.Navigation("Assignment");
                 });
@@ -4243,14 +4243,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("MaterialModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_material_deliveries_material_modules_material_module_id");
+                        .HasConstraintName("fk_material_deliveries_material_handouts_material_handout_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.LearningModule", "Module")
                         .WithMany()
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_material_deliveries_modules_module_id");
+                        .HasConstraintName("fk_material_deliveries_handouts_handout_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.User", null)
                         .WithMany()
@@ -4272,7 +4272,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_material_items_material_modules_module_id");
+                        .HasConstraintName("fk_material_items_material_handouts_handout_id");
 
                     b.Navigation("Module");
                 });
@@ -4283,14 +4283,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_material_modules_users_created_by_user_id");
+                        .HasConstraintName("fk_material_handouts_users_created_by_user_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_material_modules_subjects_subject_id");
+                        .HasConstraintName("fk_material_handouts_courses_course_id");
 
                     b.Navigation("Subject");
                 });
@@ -4347,7 +4347,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_module_items_modules_module_id");
+                        .HasConstraintName("fk_handout_items_handouts_handout_id");
 
                     b.Navigation("Module");
                 });
@@ -4359,14 +4359,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_module_reads_modules_module_id");
+                        .HasConstraintName("fk_handout_reads_handouts_handout_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_module_reads_students_student_id");
+                        .HasConstraintName("fk_handout_reads_students_student_id");
 
                     b.Navigation("Module");
 
@@ -4380,14 +4380,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ModuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_module_views_modules_module_id");
+                        .HasConstraintName("fk_handout_views_handouts_handout_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
                         .WithMany()
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_module_views_students_student_id");
+                        .HasConstraintName("fk_handout_views_students_student_id");
 
                     b.Navigation("Module");
 
@@ -4436,7 +4436,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_quiz_questions_module_items_item_id");
+                        .HasConstraintName("fk_quiz_questions_handout_items_item_id");
 
                     b.Navigation("Item");
                 });
@@ -4616,14 +4616,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("StrandId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_strand_subjects_strands_strand_id");
+                        .HasConstraintName("fk_strand_courses_strands_strand_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_strand_subjects_subjects_subject_id");
+                        .HasConstraintName("fk_strand_courses_courses_course_id");
 
                     b.Navigation("Strand");
 
@@ -4636,7 +4636,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_students_subjects_subject_id");
+                        .HasConstraintName("fk_students_courses_course_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Track", null)
                         .WithMany()
@@ -4707,7 +4707,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_submissions_module_items_item_id");
+                        .HasConstraintName("fk_submissions_handout_items_item_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Student", "Student")
                         .WithMany()
@@ -4736,7 +4736,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .WithMany()
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_teachers_subjects_subject_id");
+                        .HasConstraintName("fk_teachers_courses_course_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Track", null)
                         .WithMany()
@@ -4799,7 +4799,7 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasForeignKey("SubjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_teaching_assignments_subjects_subject_id");
+                        .HasConstraintName("fk_teaching_assignments_courses_course_id");
 
                     b.HasOne("SEAITT_LMS.Data.Entities.Teacher", "Teacher")
                         .WithMany()

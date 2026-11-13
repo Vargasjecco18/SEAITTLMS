@@ -1228,7 +1228,61 @@ document.addEventListener('toggle', function (event) {
 })();
 
 // The message at the top center (TopAlert): the X closes it, and ?alert= is taken off the address so a refresh does not show it again.
+// Round 43: closing the page, the tab or the browser ends the sign-in at once (no timer for the person to wait for).
+// When a page is unloaded it tells the server "leaving" (sendBeacon), and remembers it in sessionStorage (which belongs to this tab only and survives a refresh and a move to another page).
+// The next page of the same tab says "arrived": it was only a refresh or a move. If nobody arrives (and no page of the sign-in connects), the server ends the sign-in 3 seconds later
+// (SessionWatcher.LeavingGrace). Without sessionStorage nothing is sent (the older 10 second rule still applies: a sign-in with no page for 10 seconds is over).
 (function () {
+    var store = null;
+    try {
+        store = window.sessionStorage;
+        store.setItem('seaitt.probe', '1');
+        store.removeItem('seaitt.probe');
+    } catch (error) { store = null; }
+    if (!store) { return; }
+
+    var tab = store.getItem('seaitt.tab');
+    if (!tab) {
+        tab = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+        store.setItem('seaitt.tab', tab);
+    }
+
+    function tell(path) {
+        var url = new URL(path, document.baseURI).href;
+        var body = new Blob(['tab=' + encodeURIComponent(tab)], { type: 'application/x-www-form-urlencoded' });
+        try {
+            if (navigator.sendBeacon && navigator.sendBeacon(url, body)) { return; }
+            window.fetch(url, { method: 'POST', body: body, credentials: 'same-origin', keepalive: true }).catch(function () { });
+        } catch (error) { }
+    }
+
+    function arrived() {
+        if (store.getItem('seaitt.leaving') === tab) {
+            store.removeItem('seaitt.leaving');
+            tell('/account/arrived');
+        }
+    }
+
+    arrived();
+    window.addEventListener('pageshow', function (e) { if (e.persisted) { arrived(); } });
+    window.addEventListener('pagehide', function () {
+        try { store.setItem('seaitt.leaving', tab); } catch (error) { }
+        tell('/account/leaving');
+    });
+})();
+
+(function () {
+    // The box over the login page ("This account is deactivated"): OK, Escape or a click outside closes it.
+    function closeAccountModal() {
+        var box = document.querySelector('[data-account-modal]');
+        if (box) { box.hidden = true; var email = document.getElementById('email'); if (email) { email.focus(); } }
+    }
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('[data-close-account-modal]')) { closeAccountModal(); }
+        else if (e.target.hasAttribute && e.target.hasAttribute('data-account-modal')) { closeAccountModal(); }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeAccountModal(); } });
+
     document.addEventListener('click', function (e) {
         var close = e.target.closest && e.target.closest('[data-close-top-alert]');
         if (close) {
