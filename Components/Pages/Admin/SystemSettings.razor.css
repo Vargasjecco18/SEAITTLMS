@@ -236,3 +236,41 @@
 .link-button:hover {
     text-decoration: underline;
 }
+
+/* The Login code card (round 42): what OTP needs, one line each. */
+.otp-checks {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0 0 0.9rem;
+    padding: 0;
+    list-style: none;
+}
+
+.otp-checks li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.otp-checks li.ok {
+    color: var(--success);
+}
+
+.otp-checks li.no {
+    color: var(--danger);
+}
+
+/* The phone number of the administrator's own account, in the Login code card (round 42). */
+.otp-phone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 1rem;
+    margin: 0 0 0.9rem;
+}
+
+.otp-phone ::deep .field {
+    flex: 1 1 14rem;
+    margin: 0;
+}

@@ -2251,5 +2251,31 @@ ALTER TABLE `attendance_records` ADD CONSTRAINT `ck_attendance_records_weekday` 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261112144726_WeekdayAttendanceAndIgnoredReferrals', '9.0.20');
 
+CREATE TABLE `login_otps` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NOT NULL,
+    `challenge_hash` varchar(64) CHARACTER SET utf8mb4 NOT NULL,
+    `code_hash` varchar(64) CHARACTER SET utf8mb4 NOT NULL,
+    `expires_at_utc` datetime(6) NOT NULL,
+    `sent_at_utc` datetime(6) NOT NULL,
+    `sends` int NOT NULL,
+    `attempts` int NOT NULL,
+    `consumed_at_utc` datetime(6) NULL,
+    `sent_to` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_login_otps` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_login_otps_users_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE UNIQUE INDEX `ix_login_otps_challenge_hash` ON `login_otps` (`challenge_hash`);
+
+CREATE INDEX `ix_login_otps_expires_at_utc` ON `login_otps` (`expires_at_utc`);
+
+CREATE INDEX `ix_login_otps_user_id` ON `login_otps` (`user_id`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261113021255_LoginOtps', '9.0.20');
+
 COMMIT;
 

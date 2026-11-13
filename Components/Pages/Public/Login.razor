@@ -14,6 +14,7 @@
 @inject TimeProvider Clock
 @inject NavigationManager Navigation
 @inject SessionWatcher Watcher
+@inject OtpService Otp
 
 <PageTitle>Log-in · SEAITT Legazpi LMS</PageTitle>
 
@@ -36,6 +37,41 @@
 
         <FormErrors Errors="@(string.IsNullOrEmpty(errorMessage) ? Array.Empty<string>() : new[] { errorMessage })" />
 
+        @if (otpChallenge is not null)
+        {
+            @* Round 42: an administrator who typed the right password now types the code that was sent to the phone (OTP, UniSMS). *@
+            <div class="otp" id="otp-step">
+                <p class="otp-lead"><Icon Name="smartphone" Size="20" /> <span>We sent a code to <strong>@otpChallenge.SentTo</strong>. Type it here to finish. It expires in @Math.Max(1, (int)Math.Ceiling((otpChallenge.ExpiresAtUtc - Clock.GetUtcNow().UtcDateTime).TotalMinutes)) minutes.</span></p>
+
+                @if (!string.IsNullOrEmpty(codeMessage))
+                {
+                    <p class="otp-note @(codeMessageIsError ? "error" : "")" role="@(codeMessageIsError ? "alert" : "status")" id="otp-message">@codeMessage</p>
+                }
+
+                <EditForm Model="CodeInput" FormName="otp" method="post" OnValidSubmit="VerifyCodeAsync">
+                    <DataAnnotationsValidator />
+                    <div class="field">
+                        <label for="otp-code">Code</label>
+                        <InputText id="otp-code" class="otp-code" @bind-Value="CodeInput.Code" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="123456" autofocus />
+                        <ValidationMessage For="() => CodeInput.Code" class="field-error" />
+                    </div>
+                    <button type="submit" class="submit" id="otp-verify">Verify and log in</button>
+                </EditForm>
+
+                <div class="otp-actions">
+                    <form method="post" @formname="otp-resend" @onsubmit="ResendCodeAsync">
+                        <AntiforgeryToken />
+                        <button type="submit" class="otp-link" id="otp-resend">Send a new code</button>
+                    </form>
+                    <form method="post" @formname="otp-cancel" @onsubmit="CancelCodeAsync">
+                        <AntiforgeryToken />
+                        <button type="submit" class="otp-link" id="otp-cancel">Use another account</button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
         <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="SignInAsync">
             <DataAnnotationsValidator />
 
@@ -68,6 +104,7 @@
 
             <button type="submit" class="submit">Login</button>
         </EditForm>
+        }
 
         <a class="back" href="/">Back to the home page</a>
     </section>
@@ -101,7 +138,23 @@
 
     [SupplyParameterFromQuery] private string? Notice { get; set; }
 
-    [SupplyParameterFromForm] private LoginInput Input { get; set; } = new();
+    [SupplyParameterFromForm(FormName = "login")] private LoginInput Input { get; set; } = new();
+
+    [SupplyParameterFromForm(FormName = "otp")] private CodeFormInput CodeInput { get; set; } = new();
+
+    /// <summary>The code that waits to be typed (the right password was typed and a message was sent), or null.</summary>
+    private OtpChallenge? otpChallenge;
+    private string? codeMessage;
+    private bool codeMessageIsError;
+
+    private const string OtpCookie = "seaitt_otp";
+
+    private string? OtpToken => HttpContext.Request.Cookies.TryGetValue(OtpCookie, out var token) ? token : null;
+
+    private void SetOtpCookie(string token) => HttpContext.Response.Cookies.Append(OtpCookie, token,
+        new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps, Path = "/login", MaxAge = TimeSpan.FromMinutes(OtpService.ChallengeMinutes) });
+
+    private void ClearOtpCookie() => HttpContext.Response.Cookies.Delete(OtpCookie, new CookieOptions { Path = "/login" });
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,6 +170,16 @@
             }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+
+        // The password was right and a code is on its way: the page asks for the code (also after it is opened again, until the code is used or gone).
+        if (OtpToken is { } waiting)
+        {
+            otpChallenge = await Otp.GetAsync(waiting, HttpContext.RequestAborted);
+            if (otpChallenge is null)
+            {
+                ClearOtpCookie();
+            }
         }
 
         // The page is opened again while the timer of this browser still runs: it is still there.
@@ -156,6 +219,24 @@
 
         var result = await Auth.LoginAsync(Input.Email, Input.Password, ClientInfo.From(HttpContext), HttpContext.RequestAborted);
 
+        // An administrator with OTP on: the code was sent, the page asks for it.
+        if (result.Failure == LoginFailure.OtpRequired && result.Otp is { } sent)
+        {
+            SetOtpCookie(sent.Token);
+            otpChallenge = sent;
+            codeMessage = null;
+            errorMessage = null;
+            Input.Password = "";
+            return;
+        }
+
+        if (result.Failure == LoginFailure.OtpProblem)
+        {
+            errorMessage = result.Message;
+            Input.Password = "";
+            return;
+        }
+
         if (!result.Succeeded)
         {
             if (result.Failure == LoginFailure.LockedOut && result.LockedUntilUtc is { } until)
@@ -192,6 +273,78 @@
             return;
         }
 
+        await FinishSignInAsync(result);
+    }
+
+    /// <summary>The code that was typed: a good one finishes the sign-in like the password does; a wrong one is counted and the box says how many tries are left.</summary>
+    private async Task VerifyCodeAsync()
+    {
+        var token = OtpToken;
+        var result = await Auth.CompleteOtpAsync(token, CodeInput.Code, ClientInfo.From(HttpContext), HttpContext.RequestAborted);
+        if (result.Succeeded)
+        {
+            ClearOtpCookie();
+            await FinishSignInAsync(result);
+            return;
+        }
+
+        CodeInput.Code = "";
+        if (result.Failure == LoginFailure.AlreadySignedIn)
+        {
+            ClearOtpCookie();
+            otpChallenge = null;
+            accountInUse = true;
+            return;
+        }
+
+        if (result.Failure == LoginFailure.LockedOut && result.LockedUntilUtc is { } until)
+        {
+            ClearOtpCookie();
+            otpChallenge = null;
+            lockedUntil = until;
+            return;
+        }
+
+        // the code is still good (wrong, or expired and a new one can be asked for): the box stays; otherwise the person starts again with the password
+        otpChallenge = await Otp.GetAsync(token, HttpContext.RequestAborted);
+        if (otpChallenge is null)
+        {
+            ClearOtpCookie();
+            errorMessage = result.Message ?? "This sign-in is over. Type your email and password again.";
+            return;
+        }
+
+        codeMessage = result.Message;
+        codeMessageIsError = true;
+    }
+
+    private async Task ResendCodeAsync()
+    {
+        var token = OtpToken;
+        var result = await Otp.ResendAsync(token, ClientInfo.From(HttpContext), HttpContext.RequestAborted);
+        otpChallenge = await Otp.GetAsync(token, HttpContext.RequestAborted);
+        if (otpChallenge is null)
+        {
+            ClearOtpCookie();
+            errorMessage = result.Message ?? "This sign-in is over. Type your email and password again.";
+            return;
+        }
+
+        codeMessageIsError = !result.Succeeded;
+        codeMessage = result.Succeeded ? "A new code was sent." : result.Message;
+    }
+
+    private async Task CancelCodeAsync()
+    {
+        await Otp.CancelAsync(OtpToken, HttpContext.RequestAborted);
+        ClearOtpCookie();
+        otpChallenge = null;
+        codeMessage = null;
+    }
+
+    /// <summary>The end of every sign-in (the password, or the code after it): the cookie, the browser's memory of who signed in, and the page of the person.</summary>
+    private async Task FinishSignInAsync(LoginResult result)
+    {
         HttpContext.Response.Cookies.Delete(LockCookie, new CookieOptions { Path = "/login" });
         // The sign-in cookie lives only while the browser is open (no date of its own), and the server ends the sign-in when no page of it has been open for a few minutes.
         var properties = new AuthenticationProperties { IsPersistent = false };
@@ -214,6 +367,13 @@
     /// A relative address keeps the person on the address they used.
     /// </summary>
     private static void GoTo(string path) => throw new NavigationException(path);
+
+    private sealed class CodeFormInput
+    {
+        [Required(ErrorMessage = "Type the code.")]
+        [RegularExpression("^\\s*[0-9 ]{4,12}\\s*$", ErrorMessage = "The code is made of digits only.")]
+        public string Code { get; set; } = "";
+    }
 
     private sealed class LoginInput
     {

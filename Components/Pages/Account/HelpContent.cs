@@ -52,7 +52,7 @@ public static class HelpContent
     [
         new("How do I sign in and sign out?",
         [
-            "Open the address of the system and type your email and your password.",
+            "Open the address of the system and type your email and your password. An administrator may be asked for a code too: it is sent to the phone of the account, and typed on the next step of the same page.",
             "When you close the browser you are signed out. Sign in again the next time. On a shared computer, press the arrow button to sign out before you leave.",
             "To sign out, press the arrow button at the bottom of the menu, next to your name.",
             "Being away from the keyboard does not sign you out: with the page open you stay signed in until you press the arrow button, or close the browser.",
@@ -300,6 +300,14 @@ public static class HelpContent
         [
             "Open System Settings, Maintenance, tick “Close the system for maintenance” and write the message people will see. Save.",
             "Only administrators can sign in while it is on. Untick it and save to open the system again.",
+        ], "admin/settings", "Open System Settings"),
+        new("How do I turn on the login code (OTP)?",
+        [
+            "With the login code on, an administrator who types the right email and password also types a code of 6 digits that UniSMS sends to the phone number of the account (from the sender Unisoft). For now only administrators are asked; teachers, students and the staff sign in as before.",
+            "First put the phone number of your account in System Settings, the card “Login code (OTP)”, the box “Phone number of your account” (like 09171234567), and press “Save my number”. The API key of UniSMS is never typed in the system: whoever runs the system puts it in the user secrets or in appsettings.Local.json (the README says how) and starts the system again.",
+            "The card says whether UniSMS is set up and whether your account has a number. Press “Send a test message to my phone” to see that the message arrives, tick “Ask administrators for a code when they log in” and press Save settings. The switch can't be turned on until UniSMS is set up and your account has a number.",
+            "At the login the page asks for the code. It lives 5 minutes, takes 5 wrong tries, and “Send a new code” asks for another one after 1 minute (4 codes in all for one sign-in). “Use another account” goes back to the password. If the message can't be sent (no credit, no internet) the administrator can't sign in: untick the switch in the database, see the README (One-time code).",
+            "The security log has Code sent, Wrong or expired code and Code accepted (never the code itself). If the switch is on but UniSMS or the number is missing, the administrator signs in with the password only and the log says Signed in without a code.",
         ], "admin/settings", "Open System Settings"),
     ]);
 

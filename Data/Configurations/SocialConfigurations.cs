@@ -173,3 +173,21 @@ internal sealed class SystemSettingConfiguration : IEntityTypeConfiguration<Syst
         b.HasOne<User>().WithMany().HasForeignKey(s => s.UpdatedByUserId).OnDelete(DeleteBehavior.SetNull);
     }
 }
+
+internal sealed class LoginOtpConfiguration : IEntityTypeConfiguration<LoginOtp>
+{
+    public void Configure(EntityTypeBuilder<LoginOtp> b)
+    {
+        b.ToTable("login_otps");
+        b.Property(o => o.ChallengeHash).HasMaxLength(64).IsRequired();
+        b.Property(o => o.CodeHash).HasMaxLength(64).IsRequired();
+        b.Property(o => o.SentTo).HasMaxLength(20).IsRequired();
+
+        // The codes go with the account.
+        b.HasOne(o => o.User).WithMany().HasForeignKey(o => o.UserId).OnDelete(DeleteBehavior.Cascade);
+
+        b.HasIndex(o => o.ChallengeHash).IsUnique();
+        b.HasIndex(o => o.UserId);
+        b.HasIndex(o => o.ExpiresAtUtc);
+    }
+}

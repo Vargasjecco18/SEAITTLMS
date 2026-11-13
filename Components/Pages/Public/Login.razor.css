@@ -265,3 +265,72 @@ h1:focus {
     font-size: 0.85rem;
     line-height: 1.4;
 }
+
+/* The step of the code (round 42): the code that was sent to the phone of an administrator. */
+.otp-lead {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+    color: var(--text);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.otp-lead ::deep svg {
+    flex: none;
+    margin-top: 0.1rem;
+    color: var(--brand-strong);
+}
+
+.otp-note {
+    margin: 0 0 1rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: 0.9rem;
+}
+
+.otp-note.error {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.field ::deep input.otp-code {
+    letter-spacing: 0.35em;
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.otp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    margin-top: 1rem;
+}
+
+.otp-actions form {
+    margin: 0;
+}
+
+.otp-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.otp-link:hover,
+.otp-link:focus-visible {
+    text-decoration: underline;
+}

@@ -1333,6 +1333,81 @@ namespace SEAITT_LMS.Data.Migrations
                     b.ToTable("modules", (string)null);
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.LoginOtp", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("int")
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("ChallengeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("challenge_hash");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTime?>("ConsumedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("consumed_at_utc");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<int>("Sends")
+                        .HasColumnType("int")
+                        .HasColumnName("sends");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("sent_at_utc");
+
+                    b.Property<string>("SentTo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("sent_to");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_login_otps");
+
+                    b.HasIndex("ChallengeHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_login_otps_challenge_hash");
+
+                    b.HasIndex("ExpiresAtUtc")
+                        .HasDatabaseName("ix_login_otps_expires_at_utc");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_login_otps_user_id");
+
+                    b.ToTable("login_otps", (string)null);
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialDelivery", b =>
                 {
                     b.Property<int>("Id")
@@ -4140,6 +4215,18 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_modules_teaching_assignments_assignment_id");
 
                     b.Navigation("Assignment");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.LoginOtp", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_login_otps_users_user_id");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.MaterialDelivery", b =>

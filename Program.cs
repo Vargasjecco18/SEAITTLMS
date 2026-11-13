@@ -54,6 +54,10 @@ builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOpt
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<PasswordHasher>();
+builder.Services.Configure<UniSmsOptions>(builder.Configuration.GetSection(UniSmsOptions.SectionName));
+builder.Services.Configure<OtpOptions>(builder.Configuration.GetSection(OtpOptions.SectionName));
+builder.Services.AddHttpClient<UniSmsClient>();
+builder.Services.AddScoped<OtpService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(EnrollmentOptions.SectionName));

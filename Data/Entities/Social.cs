@@ -205,6 +205,10 @@ public static class SecurityEvents
     public const string BackupRestoreFailed = "BackupRestoreFailed";
     public const string SettingsChanged = "SettingsChanged";
     public const string LogsCleared = "LogsCleared";
+    public const string OtpSent = "OtpSent";
+    public const string OtpFailed = "OtpFailed";
+    public const string OtpVerified = "OtpVerified";
+    public const string OtpSkipped = "OtpSkipped";
 
     /// <summary>The words for the page: what each event is.</summary>
     public static string Display(string kind) => kind switch
@@ -229,13 +233,17 @@ public static class SecurityEvents
         BackupRestoreFailed => "Restore failed",
         SettingsChanged => "Settings changed",
         LogsCleared => "Old logs cleared",
+        OtpSent => "Code sent",
+        OtpFailed => "Wrong or expired code",
+        OtpVerified => "Code accepted",
+        OtpSkipped => "Signed in without a code",
         _ => kind,
     };
 
     /// <summary>How serious it is: "Info", "Warning" or "Critical".</summary>
     public static string SeverityOf(string kind) => kind switch
     {
-        SignInFailed or SignInRefused or AccountDeactivated or StudentDroppedOut or BackupDeleted or LogsCleared => "Warning",
+        SignInFailed or SignInRefused or AccountDeactivated or StudentDroppedOut or BackupDeleted or LogsCleared or OtpFailed or OtpSkipped => "Warning",
         AccountLocked or AccountDeleted or BackupRestored or BackupRestoreFailed => "Critical",
         _ => "Info",
     };

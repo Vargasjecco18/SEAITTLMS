@@ -4,6 +4,9 @@
 @inject CurrentUser Me
 @inject SystemSettingsService Settings
 @inject NotificationSoundService Sounds
+@using SEAITT_LMS.Auth
+@inject OtpService Otp
+@inject Microsoft.Extensions.Options.IOptions<UniSmsOptions> UniSms
 
 <PageTitle>System Settings · SEAITT Legazpi LMS</PageTitle>
 
@@ -41,6 +44,38 @@
             <Field For="s-message" Label="Message">
                 <textarea id="s-message" class="input" rows="3" maxlength="300" @bind="form.MaintenanceMessage"></textarea>
             </Field>
+        </Card>
+
+        <Card Title="Login code (OTP)" IconName="smartphone" Class="setting">
+            <p class="note">When it is on, an administrator who types the right password also types a code that UniSMS sends to the phone number of the account. For now it is asked from administrators only.</p>
+            <ul class="otp-checks" aria-label="What OTP needs">
+                <li class="@(Otp.IsSetUp ? "ok" : "no")" id="s-otp-key">
+                    <Icon Name="@(Otp.IsSetUp ? "circle-check" : "circle-alert")" Size="16" />
+                    <span>@(Otp.IsSetUp ? $"UniSMS is set up (sender: {UniSms.Value.SenderId})" : "UniSMS is not set up: the API key is missing (see the README)")</span>
+                </li>
+                <li class="@(otpMissing.Any(m => m.Contains("phone number")) ? "no" : "ok")" id="s-otp-phone">
+                    <Icon Name="@(otpMissing.Any(m => m.Contains("phone number")) ? "circle-alert" : "circle-check")" Size="16" />
+                    <span>@(otpMissing.Any(m => m.Contains("phone number")) ? "Your account has no phone number: type it below" : "Your account has a phone number")</span>
+                </li>
+            </ul>
+            <div class="otp-phone">
+                <Field For="s-otp-phone-input" Label="Phone number of your account" Hint="Where the codes go. Like 09171234567.">
+                    <input id="s-otp-phone-input" type="tel" class="input" inputmode="tel" autocomplete="off" maxlength="20" @bind="otpPhone" />
+                </Field>
+                <button type="button" class="link-button" id="s-otp-phone-save" disabled="@otpBusy" @onclick="SavePhoneAsync">Save my number</button>
+            </div>
+            <label class="check toggle">
+                <input id="s-otp" type="checkbox" role="switch" @bind="form.OtpEnabled" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="check-text"><strong>Ask administrators for a code when they log in</strong><small>It can be turned on only when UniSMS is set up and your account has a phone number. Send the test message first.</small></span>
+            </label>
+            <div class="sound-row">
+                <button type="button" class="link-button" id="s-otp-test" disabled="@otpBusy" @onclick="SendTestAsync">@(otpBusy ? "Sending…" : "Send a test message to my phone")</button>
+            </div>
+            @if (otpMessage is not null)
+            {
+                <p class="@(otpFailed ? "warn" : "note")" role="status" id="s-otp-message">@otpMessage</p>
+            }
         </Card>
 
         <Card Title="Files and lockers" IconName="folder-open" Class="setting">
@@ -137,13 +172,64 @@
     private string? message;
     private bool messageIsError;
     private bool busy;
+    private IReadOnlyList<string> otpMissing = [];
+    private bool otpBusy;
+    private bool otpFailed;
+    private string? otpMessage;
+    private string otpPhone = "";
 
     protected override async Task OnInitializedAsync()
     {
         userId = (await Me.GetAsync())?.UserId ?? 0;
         packetMegabytes = await Settings.GetDatabasePacketBytesAsync() / (1024 * 1024);
         await LoadSchoolSoundAsync();
+        otpMissing = await Otp.MissingForOtpAsync(userId);
+        otpPhone = await Otp.GetPhoneForBoxAsync(userId);
         Reload();
+    }
+
+    private async Task SavePhoneAsync()
+    {
+        if (otpBusy)
+        {
+            return;
+        }
+
+        otpBusy = true;
+        try
+        {
+            var result = await Otp.SetPhoneAsync(userId, otpPhone);
+            otpFailed = !result.Succeeded;
+            otpMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            otpMissing = await Otp.MissingForOtpAsync(userId);
+            otpPhone = await Otp.GetPhoneForBoxAsync(userId);
+        }
+        finally
+        {
+            otpBusy = false;
+        }
+    }
+
+    /// <summary>A message to the phone of the administrator, to see that UniSMS works before OTP is turned on.</summary>
+    private async Task SendTestAsync()
+    {
+        if (otpBusy)
+        {
+            return;
+        }
+
+        otpBusy = true;
+        try
+        {
+            var result = await Otp.SendTestAsync(userId);
+            otpFailed = !result.Succeeded;
+            otpMessage = result.Succeeded ? "The test message was sent. Look at your phone." : "The test message was not sent. " + result.Error;
+            otpMissing = await Otp.MissingForOtpAsync(userId);
+        }
+        finally
+        {
+            otpBusy = false;
+        }
     }
 
     private async Task LoadSchoolSoundAsync()
@@ -252,6 +338,7 @@
         public string ContactPhone { get; set; } = "";
         public int MaxFailedAttempts { get; set; }
         public int LockoutMinutes { get; set; }
+        public bool OtpEnabled { get; set; }
         public bool MaintenanceOn { get; set; }
         public string MaintenanceMessage { get; set; } = "";
         public bool AutoBackupOn { get; set; }
@@ -265,7 +352,7 @@
         public static SettingsForm From(SystemSettingsValues v) => new()
         {
             SchoolName = v.SchoolName, SchoolShortName = v.SchoolShortName, Tagline = v.Tagline, Address = v.Address,
-            ContactEmail = v.ContactEmail, ContactPhone = v.ContactPhone, MaxFailedAttempts = v.MaxFailedAttempts, LockoutMinutes = v.LockoutMinutes,
+            ContactEmail = v.ContactEmail, ContactPhone = v.ContactPhone, MaxFailedAttempts = v.MaxFailedAttempts, LockoutMinutes = v.LockoutMinutes, OtpEnabled = v.OtpEnabled,
             MaintenanceOn = v.MaintenanceOn, MaintenanceMessage = v.MaintenanceMessage, AutoBackupOn = v.AutoBackupOn,
             AutoBackupHour = v.AutoBackupHour, BackupsToKeep = v.BackupsToKeep, LogKeepDays = v.LogKeepDays,
             SectionCapacity = v.SectionCapacity, MaxFileMegabytes = v.MaxFileMegabytes, LockerMegabytes = v.LockerMegabytes,
@@ -274,7 +361,7 @@
         public SystemSettingsValues ToValues() => new()
         {
             SchoolName = SchoolName, SchoolShortName = SchoolShortName, Tagline = Tagline, Address = Address,
-            ContactEmail = ContactEmail, ContactPhone = ContactPhone, MaxFailedAttempts = MaxFailedAttempts, LockoutMinutes = LockoutMinutes,
+            ContactEmail = ContactEmail, ContactPhone = ContactPhone, MaxFailedAttempts = MaxFailedAttempts, LockoutMinutes = LockoutMinutes, OtpEnabled = OtpEnabled,
             MaintenanceOn = MaintenanceOn, MaintenanceMessage = MaintenanceMessage, AutoBackupOn = AutoBackupOn,
             AutoBackupHour = AutoBackupHour, BackupsToKeep = BackupsToKeep, LogKeepDays = LogKeepDays,
             SectionCapacity = SectionCapacity, MaxFileMegabytes = MaxFileMegabytes, LockerMegabytes = LockerMegabytes,

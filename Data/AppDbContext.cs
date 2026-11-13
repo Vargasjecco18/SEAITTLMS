@@ -80,6 +80,7 @@ public class AppDbContext : DbContext
     // The administrator: the security log and the system settings
     public DbSet<SecurityLog> SecurityLogs => Set<SecurityLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<LoginOtp> LoginOtps => Set<LoginOtp>();
 
     // Messages and notifications
     public DbSet<Message> Messages => Set<Message>();

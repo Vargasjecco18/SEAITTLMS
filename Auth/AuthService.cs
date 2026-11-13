@@ -26,15 +26,27 @@ public enum LoginFailure
 
     /// <summary>The right password, but somebody is signed in with the account on another browser or device (one sign-in at a time).</summary>
     AlreadySignedIn,
+
+    /// <summary>The right password of an administrator while OTP is on: a code was sent to the phone, and the sign-in is finished when it is typed (<see cref="LoginResult.Otp"/>).</summary>
+    OtpRequired,
+
+    /// <summary>The code was wrong, expired or could not be sent (<see cref="LoginResult.Message"/> says which).</summary>
+    OtpProblem,
 }
 
 /// <param name="Principal">The identity to put in the sign-in cookie, only set when the login succeeded.</param>
 /// <param name="LockedUntilUtc">When the account is locked (the sign-in was refused because of it, or the wrong try that just locked it): the moment the lock ends.</param>
-public sealed record LoginResult(bool Succeeded, ClaimsPrincipal? Principal, LoginFailure Failure, DateTime? LockedUntilUtc = null)
+/// <param name="Otp">The code that was sent, when the login waits for it (<see cref="LoginFailure.OtpRequired"/>).</param>
+/// <param name="Message">What to tell the person when the code was the problem (<see cref="LoginFailure.OtpProblem"/>).</param>
+public sealed record LoginResult(bool Succeeded, ClaimsPrincipal? Principal, LoginFailure Failure, DateTime? LockedUntilUtc = null, OtpChallenge? Otp = null, string? Message = null)
 {
     public static LoginResult Fail(LoginFailure failure) => new(false, null, failure);
 
     public static LoginResult Locked(DateTime until) => new(false, null, LoginFailure.LockedOut, until);
+
+    public static LoginResult WaitingForCode(OtpChallenge challenge) => new(false, null, LoginFailure.OtpRequired, Otp: challenge);
+
+    public static LoginResult CodeProblem(string message) => new(false, null, LoginFailure.OtpProblem, Message: message);
 }
 
 /// <summary>
@@ -49,7 +61,8 @@ public sealed class AuthService(
     TimeProvider clock,
     ILogger<AuthService> logger,
     SystemSettingsService? systemSettings = null,
-    SecurityLogService? securityLog = null)
+    SecurityLogService? securityLog = null,
+    OtpService? otp = null)
 {
     /// <param name="client">Where the sign-in came from (for the security log). Empty when it is not known.</param>
     public async Task<LoginResult> LoginAsync(string? email, string? password, ClientInfo? client = null, CancellationToken ct = default)
@@ -71,18 +84,7 @@ public sealed class AuthService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
         // The name lives in the profile table of the user's role, so load those too (only one of them has a row).
-        var user = await db.Users
-            .AsNoTracking()
-            .Include(u => u.Role)
-            .Include(u => u.CustomRole)
-            .Include(u => u.Administrator)
-            .Include(u => u.GuidanceCounselor)
-            .Include(u => u.AcademicCoordinator)
-            .Include(u => u.AcademicProvider)
-            .Include(u => u.Registrar)
-            .Include(u => u.Teacher)
-            .Include(u => u.Student)
-            .FirstOrDefaultAsync(u => u.Email == normalizedEmail, ct);
+        var user = await WithProfiles(db).FirstOrDefaultAsync(u => u.Email == normalizedEmail, ct);
 
         var now = clock.GetUtcNow().UtcDateTime;
 
@@ -128,7 +130,82 @@ public sealed class AuthService(
             return LoginResult.Fail(LoginFailure.Maintenance);
         }
 
+        // An administrator with OTP on does not get in yet: a code goes to the phone, and the sign-in is finished when it is typed (CompleteOtpAsync).
+        if (otp is not null)
+        {
+            var (need, phone) = otp.Decide(user);
+            if (need == OtpNeed.Yes)
+            {
+                // No message is paid for when the account is in use somewhere else anyway (the final check is made when the code is typed).
+                if (settings.SingleSession && user.ActiveSessionId is not null && user.ActiveSessionSeenUtc is { } seen && seen >= now.AddMinutes(-Math.Max(1, settings.SessionIdleMinutes)))
+                {
+                    await LogAsync(SecurityEvents.SignInRefused, user.Id, user.Email, "The account is signed in on another browser or device.", client, ct);
+                    return LoginResult.Fail(LoginFailure.AlreadySignedIn);
+                }
+
+                var started = await otp.StartAsync(user, phone!, client, ct);
+                return started.Succeeded ? LoginResult.WaitingForCode(started.Challenge!) : LoginResult.CodeProblem(started.Message ?? "The code could not be sent.");
+            }
+
+            if (need == OtpNeed.SkippedNotSetUp)
+            {
+                await LogAsync(SecurityEvents.OtpSkipped, user.Id, user.Email, "OTP is on but UniSMS or the phone number of the account is not set up: the sign-in did not ask for a code.", client, ct);
+            }
+        }
+
         var newHash = hasher.NeedsRehash(user.PasswordHash) ? hasher.Hash(password) : null;
+        return await FinishSignInAsync(db, user, newHash, now, client, ct);
+    }
+
+    /// <summary>
+    /// The second step of the sign-in of an administrator: the code that was sent to the phone. A good code finishes the sign-in like the password does (one sign-in at a time, the day of
+    /// the last login, the cookie is written by the page); a wrong one is counted.
+    /// </summary>
+    public async Task<LoginResult> CompleteOtpAsync(string? token, string? code, ClientInfo? client = null, CancellationToken ct = default)
+    {
+        if (otp is null)
+        {
+            return LoginResult.CodeProblem("Codes are not available.");
+        }
+
+        var checkedCode = await otp.VerifyAsync(token, code, client, ct);
+        if (!checkedCode.Succeeded)
+        {
+            return LoginResult.CodeProblem(checkedCode.Message ?? "The code is not right.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var user = await WithProfiles(db).FirstOrDefaultAsync(u => u.Id == checkedCode.UserId, ct);
+        var now = clock.GetUtcNow().UtcDateTime;
+        if (user is null || !user.IsActive)
+        {
+            return LoginResult.Fail(LoginFailure.Inactive);
+        }
+
+        if (user.LockoutEndUtc is { } lockoutEnd && lockoutEnd > now)
+        {
+            return LoginResult.Locked(lockoutEnd);
+        }
+
+        return await FinishSignInAsync(db, user, null, now, client, ct);
+    }
+
+    private static IQueryable<User> WithProfiles(AppDbContext db) => db.Users
+        .AsNoTracking()
+        .Include(u => u.Role)
+        .Include(u => u.CustomRole)
+        .Include(u => u.Administrator)
+        .Include(u => u.GuidanceCounselor)
+        .Include(u => u.AcademicCoordinator)
+        .Include(u => u.AcademicProvider)
+        .Include(u => u.Registrar)
+        .Include(u => u.Teacher)
+        .Include(u => u.Student);
+
+    /// <summary>The end of every sign-in: the account is taken (one at a time), the counters are reset and the identity for the cookie is made.</summary>
+    private async Task<LoginResult> FinishSignInAsync(AppDbContext db, User user, string? newHash, DateTime now, ClientInfo? client, CancellationToken ct)
+    {
+        var settings = options.Value;
 
         // One sign-in at a time: the update below only happens when nobody else is using the account (no sign-in is open, or it was not seen for a few minutes). It is one statement
         // in the database, so two people signing in at the same moment can't both get in.

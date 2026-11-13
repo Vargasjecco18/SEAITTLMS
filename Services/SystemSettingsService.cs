@@ -22,6 +22,12 @@ public sealed record SystemSettingsValues
     public int MaxFailedAttempts { get; init; } = 5;
     public int LockoutMinutes { get; init; } = 5;
 
+    /// <summary>
+    /// One-time code at the login (round 42): an administrator who types the right password also types a code that UniSMS sends to the phone of the account. Off until an administrator turns it on
+    /// (it needs the UniSMS key and the phone number of the account). Only administrators are asked, for now.
+    /// </summary>
+    public bool OtpEnabled { get; init; }
+
     // ---- maintenance: while it is on only an administrator can use the system
     public bool MaintenanceOn { get; init; }
     public string MaintenanceMessage { get; init; } = "The system is being maintained. Please try again later.";
@@ -48,7 +54,7 @@ public sealed record SystemSettingsValues
 /// the security log and the copy in memory. It lives as long as the app. Settings that were never changed use the value in the record above;
 /// the sign-in limits start from appsettings.json (the "Auth" section) when nothing was changed.
 /// </summary>
-public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, IOptions<AuthOptions> authOptions, IServiceProvider services)
+public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFactory, TimeProvider clock, IOptions<AuthOptions> authOptions, IServiceProvider services, IOptions<UniSmsOptions>? uniSms = null)
 {
     private SystemSettingsValues current = new();
     private volatile bool restoring;
@@ -119,6 +125,27 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
                 && (allowedRoleIds.Contains(u.RoleId) || (coordinatorAreaToo && u.CustomRole != null && ("," + u.CustomRole.Pages).Contains(",coordinator-"))), ct))
         {
             return ServiceResult.Fail(notAllowed);
+        }
+
+        // One-time codes can be turned on only when they can be sent: the UniSMS key is set and the administrator who turns them on has a phone number (or nobody could be sent a code).
+        if (values.OtpEnabled && !current.OtpEnabled)
+        {
+            var problems = new List<string>();
+            if (uniSms?.Value.IsConfigured != true)
+            {
+                problems.Add("UniSMS is not set up: put the API key in the user secrets or in appsettings.Local.json (see the README), then start the app again.");
+            }
+
+            var phone = await db.Users.AsNoTracking().Where(u => u.Id == actingUserId).Select(u => u.PhoneNumber).FirstOrDefaultAsync(ct);
+            if (PhoneNumbers.Normalize(phone) is null)
+            {
+                problems.Add("Your account has no phone number. Type it in System Settings, Login code (OTP) (like 09171234567).");
+            }
+
+            if (problems.Count > 0)
+            {
+                return ServiceResult.Fail(problems);
+            }
         }
 
         var before = ToRows(current);
@@ -257,6 +284,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
         "school.contact_phone" => "contact number",
         "signin.max_failed_attempts" => "wrong passwords before a lock",
         "signin.lockout_minutes" => "minutes locked",
+        "signin.otp_enabled" => "one-time code (OTP) at the login",
         "maintenance.on" => "maintenance mode",
         "maintenance.message" => "maintenance message",
         "messages.closing_hours" => "closing hours of messages",
@@ -297,6 +325,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             ["school.contact_phone"] = v.ContactPhone,
             ["signin.max_failed_attempts"] = N(v.MaxFailedAttempts),
             ["signin.lockout_minutes"] = N(v.LockoutMinutes),
+            ["signin.otp_enabled"] = B(v.OtpEnabled),
             ["maintenance.on"] = B(v.MaintenanceOn),
             ["maintenance.message"] = v.MaintenanceMessage,
             ["backup.auto_on"] = B(v.AutoBackupOn),
@@ -329,6 +358,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             ContactPhone = Text("school.contact_phone", v.ContactPhone),
             MaxFailedAttempts = Number("signin.max_failed_attempts", v.MaxFailedAttempts),
             LockoutMinutes = Number("signin.lockout_minutes", v.LockoutMinutes),
+            OtpEnabled = Flag("signin.otp_enabled", v.OtpEnabled),
             MaintenanceOn = Flag("maintenance.on", v.MaintenanceOn),
             MaintenanceMessage = Text("maintenance.message", v.MaintenanceMessage),
             AutoBackupOn = Flag("backup.auto_on", v.AutoBackupOn),
