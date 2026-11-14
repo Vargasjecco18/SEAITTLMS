@@ -800,6 +800,10 @@ What was changed: (1) the two *online* boxes read the people lists (classmates, 
 
 **Data flow diagrams.** `docs/dfd.md` has the DFD of the system: **level 0** (context), **level 1** (the main processes) and **level 2** (each process in its steps), with the data stores and the data flows listed. It is also published as a page that can be viewed and printed.
 
+## Round 45
+
+**Teacher: the Activity button.** On the page of an activity (the results of the students, `/teacher/items/{id}`) the header has a button **Activity** (**Quiz** on the page of a quiz) at the **left of Back to the course**. It opens the box in the middle of the screen with **what the teacher gave**: the instructions and the **file the teacher uploaded** (a PDF is shown inside the box, with *Open in a new tab* and *Download*). It is the same box that a double click on the title opens (that still works); the button just makes it easy to find. *Escape* or *Close* closes it. If the activity has no instructions and no file, the box says so.
+
 ## One-time code (OTP) with UniSMS
 
 An administrator who types the right email and password also types a **code of 6 digits** that [UniSMS](https://unismsapi.com) sends to the phone number of the account (sender id **Unisoft**; the message is *"SEAITT Legazpi LMS: your login code is 123456. It expires in 5 minutes. Never share this code with anyone."*). The sign-in is finished when the code is typed. **Only administrators are asked** (a trial; the teachers, the students and the staff sign in as before), and **only while the switch in System Settings is on** (it starts off).
