@@ -145,8 +145,7 @@ public sealed class AutomationWorker(IServiceScopeFactory scopes, TimeProvider c
                 var lifecycle = scope.ServiceProvider.GetRequiredService<StudentLifecycleService>();
                 await lifecycle.ArchiveFinishedAsync(stoppingToken);
 
-                // An account that was archived 30 days ago is deleted.
-                await lifecycle.DeleteExpiredAsync(stoppingToken);
+                // Round 46: an archived record is never deleted (the old 30-day deletion is gone).
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

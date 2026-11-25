@@ -6,6 +6,7 @@
 @inject GradeService Grades
 @inject FileDownloads Downloads
 @inject TimeProvider Clock
+@inject SystemSettingsService Settings
 
 <PageTitle>Archive Accounts · SEAITT Legazpi LMS</PageTitle>
 
@@ -15,62 +16,10 @@
 
 <p class="auto-note">
     <Icon Name="info" Size="16" />
-    <span>Grade 12 students are <strong>archived automatically</strong> when the last term of the school year ends. Here you can archive them earlier, or restore a student.
-        An archived account is <strong>deleted by itself after @StudentLifecycleService.DeleteAfterDays days</strong>, so export the grades before that.</span>
+    <span>Students are <strong>archived automatically</strong> when they graduate (the last term of the school year ends) or when the registrar marks them as dropped out: nobody picks them.
+        The records <strong>are never deleted</strong> and only an administrator can open them. Here you can read all the courses a student completed, restore a student, or download the academic record: <strong>Form 137</strong> (permanent record) and <strong>Form 138</strong> (report card).</span>
 </p>
 
-<div class="tabs" role="tablist">
-    <button type="button" role="tab" class="tab @(tab == "graduating" ? "on" : "")" aria-selected="@(tab == "graduating" ? "true" : "false")" @onclick='() => tab = "graduating"'>
-        <Icon Name="graduation-cap" Size="16" /> Graduating students <span class="count">@candidates.Count</span>
-    </button>
-    <button type="button" role="tab" class="tab @(tab == "archived" ? "on" : "")" aria-selected="@(tab == "archived" ? "true" : "false")" @onclick='() => tab = "archived"'>
-        <Icon Name="archive" Size="16" /> Archived <span class="count">@archived.Count</span>
-    </button>
-</div>
-
-@if (tab == "graduating")
-{
-    <Card>
-        @if (candidates.Count == 0)
-        {
-            <EmptyState IconName="graduation-cap" Title="Nobody to graduate">
-                <p>Grade 12 students who are still at school appear here. When the last term of the school year ends they are archived by themselves.</p>
-            </EmptyState>
-        }
-        else
-        {
-            <div class="bar">
-                <label class="all"><input type="checkbox" checked="@(picked.Count == candidates.Count)" @onchange="e => PickAll(e.Value is true)" /> Select all (@candidates.Count)</label>
-                <Field For="a-note" Label="Note" Class="note">
-                    <input id="a-note" type="text" class="input" maxlength="300" placeholder="Class of 2027" @bind="note" />
-                </Field>
-                <Button IconName="archive" Disabled="@(picked.Count == 0)" OnClick="AskArchive">Archive selected (@picked.Count)</Button>
-            </div>
-
-            <div class="table-wrap">
-                <table class="table">
-                    <thead>
-                        <tr><th scope="col" class="check"><span class="sr-only">Pick</span></th><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Section</th></tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var c in candidates)
-                        {
-                            var candidate = c;
-                            <tr class="@(picked.Contains(candidate.StudentId) ? "picked" : "")">
-                                <td class="check"><input type="checkbox" aria-label="@($"Pick {candidate.Name}")" checked="@picked.Contains(candidate.StudentId)" @onchange="e => Pick(candidate.StudentId, e.Value is true)" /></td>
-                                <td>@candidate.Name</td>
-                                <td class="mono">@candidate.Lrn</td>
-                                <td>@(candidate.Placement ?? "—")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
-    </Card>
-}
-else
-{
     <Card>
         <div class="archive-tools">
             <form class="filter-bar" role="search" @onsubmit="SearchAsync">
@@ -90,7 +39,7 @@ else
             <div class="table-wrap">
                 <table class="table">
                     <thead>
-                        <tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Status</th><th scope="col" class="col-more">Note</th><th scope="col" class="col-more">Archived</th><th scope="col" class="col-more">Deleted in</th><th scope="col" class="col-actions"><span class="sr-only">Actions</span></th></tr>
+                        <tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col">Status</th><th scope="col" class="col-more">Note</th><th scope="col" class="col-more">Archived</th><th scope="col" class="col-actions"><span class="sr-only">Actions</span></th></tr>
                     </thead>
                     <tbody>
                         @foreach (var a in archived)
@@ -102,10 +51,11 @@ else
                                 <td><Badge Tone="@(student.Status == StudentStatus.Graduated ? Tone.Success : Tone.Warning)">@StudentStatus.Display(student.Status)</Badge></td>
                                 <td class="col-more">@student.Note</td>
                                 <td class="col-more">@(student.ChangedAtUtc is { } at ? PhilippineTime.FormatDate(at) : "")</td>
-                                <td class="col-more">@DaysLeftText(student)</td>
                                 <td class="col-actions">
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-text" Title="@($"All the grades of {student.Name}")" OnClick="() => OpenGradesAsync(student)">Grades</Button>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" Title="@($"Export the grades of {student.Name} to Excel")" Disabled="busy" OnClick="() => ExportOneAsync(student)">Export</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-text" Title="@($"Form 137, the permanent record of {student.Name}")" Disabled="busy" OnClick="() => DownloadFormAsync(student, 137)">Form 137</Button>
+                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="file-text" Title="@($"Form 138, the report card of {student.Name}")" Disabled="busy" OnClick="() => DownloadFormAsync(student, 138)">Form 138</Button>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="undo-2" OnClick="() => restoreTarget = student">Restore</Button>
                                 </td>
                             </tr>
@@ -115,18 +65,6 @@ else
             </div>
         }
     </Card>
-}
-
-<Modal Open="confirmArchive" Title="Archive these students?" OnClose="CloseArchive">
-    <p class="dialog-text">
-        <strong>@picked.Count @(picked.Count == 1 ? "student" : "students")</strong> will be archived as graduated: their enrollments are marked completed and their
-        <strong>sign-in is switched off</strong>. Their grades and records stay. You can restore a student later.
-    </p>
-    <div class="modal-actions">
-        <Button Variant="ButtonVariant.Ghost" OnClick="CloseArchive">Cancel</Button>
-        <Button IconName="archive" Disabled="busy" OnClick="ArchiveAsync">@(busy ? "Archiving…" : "Archive")</Button>
-    </div>
-</Modal>
 
 <Modal Open="gradesOf is not null" Title="@($"Grades · {gradesOf?.Name}")" Centered="true" OnClose="CloseGrades">
     @if (gradesOf is not null)
@@ -138,6 +76,8 @@ else
         }
         else
         {
+            @* Round 46: all the courses the student completed, in all the terms. *@
+            <p class="completed-note" id="completed-courses"><Icon Name="circle-check" Size="16" /> <strong>@CompletedCount courses completed</strong> in @gradeTerms.Count @(gradeTerms.Count == 1 ? "term" : "terms") · @PassedCount passed (75 and over)@(FailedCount > 0 ? $" · {FailedCount} failed" : "")</p>
             <div class="grade-terms">
                 @for (var i = 0; i < gradeTerms.Count; i++)
                 {
@@ -153,24 +93,26 @@ else
                             }
                         </h4>
                         <table class="table">
-                            <thead><tr><th scope="col">Course</th><th scope="col" class="col-more">Teacher</th><th scope="col" class="num">Grade</th></tr></thead>
+                            <thead><tr><th scope="col">Course</th><th scope="col" class="col-more">Teacher</th><th scope="col" class="num">Grade</th><th scope="col" class="col-more">Descriptor</th><th scope="col">Remarks</th></tr></thead>
                             <tbody>
                                 @foreach (var course in term.Courses)
                                 {
                                     <tr>
                                         <td>@course.Subject</td>
                                         <td class="col-more">@course.Teacher</td>
-                                        <td class="num">@(course.Grade is { } g ? g.ToString("0.#") : "—")</td>
+                                        <td class="num">@(course.Grade is { } g ? Math.Round(g, MidpointRounding.AwayFromZero).ToString("0") : "—")</td>
+                                        <td class="col-more">@(course.Grade is { } gd ? GradingSystem.Descriptor(gd) : "")</td>
+                                        <td>@(course.Grade is { } gr ? GradingSystem.Remark(gr).ToUpperInvariant() : "")</td>
                                     </tr>
                                 }
                                 @if (term.Courses.Count == 0)
                                 {
-                                    <tr><td colspan="3" class="muted">No courses in this term.</td></tr>
+                                    <tr><td colspan="5" class="muted">No courses in this term.</td></tr>
                                 }
                             </tbody>
                             @if (term.Average is { } average)
                             {
-                                <tfoot><tr><th scope="row" colspan="2">Average of the term</th><td class="num">@average.ToString("0.#")</td></tr></tfoot>
+                                <tfoot><tr><th scope="row" colspan="2">Average of the term</th><td class="num">@average.ToString("0.#")</td><td colspan="2"></td></tr></tfoot>
                             }
                         </table>
                     </section>
@@ -198,13 +140,8 @@ else
 
 @code {
     private int userId;
-    private string tab = "graduating";
-    private IReadOnlyList<GraduateCandidate> candidates = [];
     private IReadOnlyList<ArchivedStudent> archived = [];
-    private readonly HashSet<int> picked = [];
-    private string note = "";
     private string searchText = "";
-    private bool confirmArchive;
     private ArchivedStudent? restoreTarget;
     private ArchivedStudent? gradesOf;
     private IReadOnlyList<HistoryTerm> gradeTerms = [];
@@ -222,38 +159,17 @@ else
 
     private async Task LoadAsync()
     {
-        candidates = await Lifecycle.GetGraduatingAsync();
         archived = await Lifecycle.ListArchivedAsync(searchText);
-        picked.IntersectWith(candidates.Select(c => c.StudentId));
     }
 
-    private void Pick(int id, bool on)
-    {
-        if (on) { picked.Add(id); } else { picked.Remove(id); }
-    }
+    /// <summary>The courses the student completed (the courses that have a grade, in the terms where the student did not drop out).</summary>
+    private IEnumerable<HistoryCourse> CompletedCourses => gradeTerms.Where(t => t.Status != EnrollmentStatus.Dropped.ToString()).SelectMany(t => t.Courses).Where(c => c.Grade is not null);
 
-    private void PickAll(bool on)
-    {
-        picked.Clear();
-        if (on)
-        {
-            picked.UnionWith(candidates.Select(c => c.StudentId));
-        }
-    }
+    private int CompletedCount => CompletedCourses.Count();
+    private int PassedCount => CompletedCourses.Count(c => GradingSystem.Remark(c.Grade!.Value) == "Passed");
+    private int FailedCount => CompletedCount - PassedCount;
 
     private async Task SearchAsync() => archived = await Lifecycle.ListArchivedAsync(searchText);
-
-    /// <summary>"in 12 days", "today": when the account is deleted by itself.</summary>
-    private string DaysLeftText(ArchivedStudent student)
-    {
-        if (student.DeletesAtUtc is not { } at)
-        {
-            return "";
-        }
-
-        var days = (int)Math.Ceiling((at - Clock.GetUtcNow().UtcDateTime).TotalDays);
-        return days <= 0 ? "today" : days == 1 ? "1 day" : $"{days} days";
-    }
 
     private async Task OpenGradesAsync(ArchivedStudent student)
     {
@@ -312,11 +228,8 @@ else
         }
     }
 
-    private void AskArchive() => confirmArchive = picked.Count > 0;
-
-    private void CloseArchive() => confirmArchive = false;
-
-    private async Task ArchiveAsync()
+    /// <summary>Form 137 (the permanent record) or Form 138 (the report card) of an archived student, as an Excel file to print.</summary>
+    private async Task DownloadFormAsync(ArchivedStudent student, int form)
     {
         if (busy)
         {
@@ -326,17 +239,19 @@ else
         busy = true;
         try
         {
-            var result = await Lifecycle.ArchiveAsync([.. picked], note, userId);
-            confirmArchive = false;
-            messageIsError = !result.Succeeded;
-            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
-            if (result.Succeeded)
+            var terms = await Grades.GetHistoryAsync(student.StudentId);
+            var school = Settings.Current;
+            if (form == 137)
             {
-                picked.Clear();
-                note = "";
+                await Downloads.SaveAsync(AcademicRecordForms.FileName137(student), AcademicRecordForms.Build137(student, terms, school.SchoolName, school.Address));
+            }
+            else
+            {
+                await Downloads.SaveAsync(AcademicRecordForms.FileName138(student), AcademicRecordForms.Build138(student, terms, school.SchoolName, school.Address));
             }
 
-            await LoadAsync();
+            messageIsError = false;
+            message = $"Form {form} of {student.Name} was downloaded.";
         }
         finally
         {

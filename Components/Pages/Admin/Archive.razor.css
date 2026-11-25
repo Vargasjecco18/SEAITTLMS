@@ -224,3 +224,14 @@
 .muted {
     color: var(--text-muted);
 }
+
+.completed-note {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.9rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--success);
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+}
