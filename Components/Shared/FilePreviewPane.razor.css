@@ -206,3 +206,24 @@
     color: var(--text-muted);
     text-align: center;
 }
+
+/* Round 46: the Slides button at the right of the bar of the slides. */
+.bar-links .open-slides {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    padding: 0.2rem 0.75rem;
+    border: 1px solid var(--brand);
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.bar-links .open-slides:hover {
+    background: var(--brand);
+    color: var(--on-brand, #fff);
+}

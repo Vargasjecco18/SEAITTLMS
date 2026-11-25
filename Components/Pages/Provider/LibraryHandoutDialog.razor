@@ -29,7 +29,7 @@
             </aside>
 
             <section class="center" aria-label="Preview of the files">
-                <LessonContent Title="@module.Title" LinkUrl="@form.LinkUrl" Files="files" ShowText="true" ModuleLabel="@FileLabel.OfModule(module.Title)" />
+                <LessonContent Title="@module.Title" Files="files" ShowText="true" ModuleLabel="@FileLabel.OfModule(module.Title)" />
             </section>
 
             <section class="form" aria-label="Upload the handout">
@@ -43,9 +43,6 @@
 
                     <Field For="@($"lh-title-{module.Id}")" Label="Title" Required="true">
                         <InputText id="@($"lh-title-{module.Id}")" @bind-Value="form.Title" maxlength="200" autocomplete="off" />
-                    </Field>
-                    <Field For="@($"lh-link-{module.Id}")" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
-                        <InputText id="@($"lh-link-{module.Id}")" @bind-Value="form.LinkUrl" maxlength="500" autocomplete="off" />
                     </Field>
                     <AttachmentPicker @ref="slidesPicker" @key="@($"slides-{module.Id}-{pickerKey}")" NoSizeLimit="true" Slides="true" Title="@(module.IsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the handout (PowerPoint or PDF)")"
                                       Existing="@files.Where(f => f.IsSlides).ToList()" />
@@ -121,7 +118,7 @@
             return;
         }
 
-        form = new ModuleInput { Title = current.Title, Description = current.Description, Body = current.Body, LinkUrl = current.LinkUrl };
+        form = new ModuleInput { Title = current.Title, Description = current.Description, Body = current.Body };
         files = await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.MaterialModule, id));
     }
 

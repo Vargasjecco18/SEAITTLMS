@@ -248,9 +248,6 @@ else
             <Field For="m-title" Label="Title" Required="true">
                 <InputText id="m-title" @bind-Value="moduleForm.Title" maxlength="200" autocomplete="off" />
             </Field>
-            <Field For="m-link" Label="Link to a file or a video" Hint="Optional, for example in Google Drive (starts with https://).">
-                <InputText id="m-link" @bind-Value="moduleForm.LinkUrl" maxlength="500" autocomplete="off" />
-            </Field>
             <AttachmentPicker @ref="slidesPicker" NoSizeLimit="true" @key="@($"slides-{moduleFormKey}")" Slides="true" Title="@(editingIsSyllabus ? "Slides of the syllabus (PowerPoint or PDF)" : "Slides of the handout (PowerPoint or PDF)")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => f.IsSlides).ToList())" />
             <AttachmentPicker @ref="modulePicker" NoSizeLimit="true" @key="moduleFormKey" Title="@(editingIsSyllabus ? "Files of the syllabus" : "Files of the handout")" Existing="@(FilesOf(moduleAttachments, editingModuleId).Where(f => !f.IsSlides).ToList())" />
             <div class="modal-actions">

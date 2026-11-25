@@ -6,6 +6,17 @@
     {
         <div class="sheet-layout">
             <div class="sheet-main">
+                <details class="sheet-steps" id="sheet-steps">
+                    <summary><Icon Name="list-checks" Size="16" /> Step by step</summary>
+                    <ol>
+                    <li><strong>Write the title</strong> and the <strong>message</strong> in a row. Press Tab to go to the next box.</li>
+                    <li><strong>Choose what it is about</strong> (About): an exam, a holiday, the semester break, a teachers' meeting or other.</li>
+                    <li><strong>Choose who reads it</strong> (For): everybody, the students, the teachers, the staff, or the staff and the teachers. A teachers' meeting is always for the teachers.</li>
+                    <li><strong>Choose the days</strong>: Start is the first day it is about, End is the last day it is shown. Leave End empty to show it until you delete it.</li>
+                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                    <li><strong>Press Post.</strong> The people each one is for are told, and see the days in their calendar.</li>
+                </ol>
+                </details>
                 @if (Errors.Count > 0)
                 {
                     <ul class="sheet-errors" role="alert">
@@ -123,18 +134,6 @@
                     <Button IconName="send" Disabled="@(Busy || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Posting…" : Filled.Count == 1 ? "Post 1 announcement" : $"Post {Filled.Count} announcements")</Button>
                 </div>
             </div>
-
-            <aside class="sheet-steps" aria-label="Step by step">
-                <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
-                <ol>
-                    <li><strong>Write the title</strong> and the <strong>message</strong> in a row. Press Tab to go to the next box.</li>
-                    <li><strong>Choose what it is about</strong> (About): an exam, a holiday, the semester break, a teachers' meeting or other.</li>
-                    <li><strong>Choose who reads it</strong> (For): everybody, the students, the teachers, the staff, or the staff and the teachers. A teachers' meeting is always for the teachers.</li>
-                    <li><strong>Choose the days</strong>: Start is the first day it is about, End is the last day it is shown. Leave End empty to show it until you delete it.</li>
-                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                    <li><strong>Press Post.</strong> The people each one is for are told, and see the days in their calendar.</li>
-                </ol>
-            </aside>
         </div>
     }
 </Modal>

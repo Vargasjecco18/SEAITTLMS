@@ -260,7 +260,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         var module = new LearningModule
         {
             AssignmentId = assignmentId, Title = input.Title.Trim(), Description = Clean(input.Description), Body = Clean(input.Body),
-            LinkUrl = Clean(input.LinkUrl), Position = position,
+            Position = position,
         };
         db.Modules.Add(module);
         await db.SaveChangesAsync(ct);
@@ -285,7 +285,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         module.Title = input.Title.Trim();
         module.Description = Clean(input.Description);
         module.Body = Clean(input.Body);
-        module.LinkUrl = Clean(input.LinkUrl);
+        module.LinkUrl = null;   // Round 46: a handout has no reference link any more
         await db.SaveChangesAsync(ct);
         await MarkDeliveryOpenedAsync(teacherId, moduleId, ct);
         return ServiceResult.Ok("The handout was saved.");

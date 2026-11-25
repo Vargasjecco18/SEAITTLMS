@@ -7,6 +7,19 @@
     {
         <div class="sheet-layout">
             <div class="sheet-main">
+                <details class="sheet-steps" id="sheet-steps">
+                    <summary><Icon Name="list-checks" Size="16" /> Step by step</summary>
+                    <ol>
+                    <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
+                    <li><strong>Choose the type</strong> from the list: multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select or essay.</li>
+                    <li>For <em>multiple choice</em> and <em>multiple select</em>, <strong>choose how many choices</strong> the question has (2 to 8) from the list and <strong>write the choices</strong>.</li>
+                    <li><strong>Mark the right answer:</strong> press the <em>circle</em> in front of the right choice (for a multiple select tick the <em>boxes</em> of the right choices; for true or false choose True or False). You do not type the right answer of a choice question. For a short answer or an identification, type the answer (several accepted answers are separated by <em>|</em>).</li>
+                    <li><strong>Double click a question</strong> (or press the box button at the end of the row) to open it in a box: there you can <strong>add a picture</strong> to the question and to each choice, write more choices, the blanks, the two columns of a matching type, and pick the right answers.</li>
+                    <li><strong>Set the points</strong> of the question (1 if you leave it).</li>
+                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                    <li><strong>Press Save.</strong> @SaveStep</li>
+                </ol>
+                </details>
                 @if (HeaderContent is not null)
                 {
                     @* Fields above the questions (the handout and the title of a new quiz). *@
@@ -207,20 +220,6 @@
                     <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
                 </div>
             </div>
-
-            <aside class="sheet-steps" aria-label="Step by step">
-                <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
-                <ol>
-                    <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
-                    <li><strong>Choose the type</strong> from the list: multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select or essay.</li>
-                    <li>For <em>multiple choice</em> and <em>multiple select</em>, <strong>choose how many choices</strong> the question has (2 to 8) from the list and <strong>write the choices</strong>.</li>
-                    <li><strong>Mark the right answer:</strong> press the <em>circle</em> in front of the right choice (for a multiple select tick the <em>boxes</em> of the right choices; for true or false choose True or False). You do not type the right answer of a choice question. For a short answer or an identification, type the answer (several accepted answers are separated by <em>|</em>).</li>
-                    <li><strong>Double click a question</strong> (or press the box button at the end of the row) to open it in a box: there you can <strong>add a picture</strong> to the question and to each choice, write more choices, the blanks, the two columns of a matching type, and pick the right answers.</li>
-                    <li><strong>Set the points</strong> of the question (1 if you leave it).</li>
-                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                    <li><strong>Press Save.</strong> @SaveStep</li>
-                </ol>
-            </aside>
         </div>
     }
 </Modal>

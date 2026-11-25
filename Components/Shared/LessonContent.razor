@@ -5,22 +5,22 @@
     var others = Files.Where(f => !f.IsSlides).ToList();
 }
 <div class="layout">
-    @* The reference link is in the bar of the first file shown (at the left of "Open in a new tab"). *@
-    @if (others.Count > 0)
-    {
-        <div id="module-files">
-            <Card>
-                <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this handout" ModuleLabel="@ModuleLabel" LinkUrl="@LinkUrl" />
-            </Card>
-        </div>
-    }
-
+    @* Round 46: the slides come first and the files of the handout second. The Slides button (the slide by slide viewer) is at the right of the bar of the slides. *@
     @if (slides.Count > 0)
     {
         @* The Slides button of the course page comes here (#slides). *@
         <div id="slides" class="slides-card">
             <Card>
-                <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this handout" ModuleLabel="@ModuleLabel" LinkUrl="@(others.Count == 0 ? LinkUrl : null)" IsSlides="true" />
+                <FilePreviewPane Items="slides" InitialId="InitialFileId" Label="Slides of this handout" ModuleLabel="@ModuleLabel" IsSlides="true" OnOpenSlides="OnOpenSlides" />
+            </Card>
+        </div>
+    }
+
+    @if (others.Count > 0)
+    {
+        <div id="module-files">
+            <Card>
+                <FilePreviewPane Items="others" InitialId="InitialFileId" Label="Files of this handout" ModuleLabel="@ModuleLabel" />
             </Card>
         </div>
     }
@@ -38,16 +38,16 @@
 @code {
     /// <summary>The link of the module (when it has one), inside the card of its file.</summary>
     private RenderFragment LinkLine => @<text>
-        @if (!string.IsNullOrWhiteSpace(LinkUrl))
-        {
-            <p class="link"><Icon Name="link" Size="16" /> <a href="@LinkUrl" target="_blank" rel="noopener noreferrer" title="@LinkUrl">Reference link <Icon Name="external-link" Size="14" /></a></p>
-        }
     </text>;
 
     /// <summary>The title of the module: it is the title shown over its file.</summary>
     [Parameter] public string? Title { get; set; }
 
+    /// <summary>Not shown any more (Round 46: a handout has no reference link); the pages still pass it.</summary>
     [Parameter] public string? LinkUrl { get; set; }
+
+    /// <summary>Pressed by the Slides button at the right of the bar of the slides: the page opens the slide by slide viewer.</summary>
+    [Parameter] public EventCallback OnOpenSlides { get; set; }
 
     [Parameter] public IReadOnlyList<AttachmentRow> Files { get; set; } = [];
 

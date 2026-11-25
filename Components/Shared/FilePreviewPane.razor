@@ -21,18 +21,17 @@
         <div class="bar">
             <span class="file-title" title="@current.Name"><Icon Name="@AttachmentList.IconOf(current.Name)" Size="16" /> <strong>@FileLabel.Short(current.Name, ModuleLabel, PlaceOf(current))</strong> <span class="size">@FileSize.Text(current.SizeBytes)</span></span>
             <span class="bar-links">
-                @if (!string.IsNullOrWhiteSpace(LinkUrl))
-                {
-                    @* The link the academic provider or the teacher gave for the module: it says "Reference link", not the address. It is at the left of "Open in a new tab". *@
-                    <a class="reference-link" href="@LinkUrl" target="_blank" rel="noopener noreferrer" title="@LinkUrl"><Icon Name="link" Size="14" /> Reference link</a>
-                }
-
                 @if (current.CanPreview)
                 {
                     <a href="files/a/@current.Id" target="_blank" rel="noopener noreferrer"><Icon Name="external-link" Size="14" /> Open in a new tab</a>
                 }
 
                 <a href="files/a/@current.Id?download=1" download="@current.Name" data-file-id="@current.Id"><Icon Name="download" Size="14" /> Download</a>
+                @if (IsSlides && OnOpenSlides.HasDelegate)
+                {
+                    @* Round 46: the Slides button is here, at the right of the bar of the slides, and opens them one slide at a time. *@
+                    <button type="button" class="open-slides" id="open-slides" title="Open the slides one at a time" @onclick="OnOpenSlides"><Icon Name="presentation" Size="14" /> Slides</button>
+                }
             </span>
         </div>
 
@@ -66,6 +65,9 @@
 @code {
     /// <summary>The reference link of the module (when it has one): shown in the bar of the file, at the left of Open in a new tab.</summary>
     [Parameter] public string? LinkUrl { get; set; }
+
+    /// <summary>The Slides button of the bar (only for the slides): the page opens the slide by slide viewer.</summary>
+    [Parameter] public EventCallback OnOpenSlides { get; set; }
 
     /// <summary>True for the slides of a module: the bar of reading counts them (and only them) when the module has slides.</summary>
     [Parameter] public bool IsSlides { get; set; }

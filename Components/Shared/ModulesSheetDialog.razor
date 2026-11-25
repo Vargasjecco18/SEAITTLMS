@@ -1,6 +1,6 @@
 @using Microsoft.AspNetCore.Components.Forms
 
-@* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Slides (optional), its Link and its Files, and the
+@* The sheet for adding many modules of a course at once, inside the system (no Excel and no file to download): a row for each module with its Title, its Slides (optional) and its Files, and the
    step by step at the right. It is a plain table of boxes: a box is read when it is left (not at every key), the files are only remembered (they are read when Save is pressed, a few handouts
    at a time), and nothing is built until the box is opened, so it costs the server almost nothing. The page saves the handouts (OnImport). *@
 <Modal Open="Open" Title="@($"Add handouts · {CourseName}")" Wider="true" Top="true" OnClose="CloseAsync">
@@ -10,6 +10,16 @@
         {
             <div class="sheet-layout">
                 <div class="sheet-main">
+                    <details class="sheet-steps" id="sheet-steps">
+                        <summary><Icon Name="list-checks" Size="16" /> Step by step</summary>
+                        <ol>
+                            <li><strong>Type the title</strong> of the handout in a row. Press Tab to go to the next box.</li>
+                            <li><strong>Add slides</strong> if the handout has them (a PowerPoint file or a PDF). It is optional: the teacher and the students get a <em>Slides</em> button when there are slides.</li>
+                            <li><strong>Press Add files</strong> in the row and choose the files of the handout (a PDF, a Word file, slides, a picture ...). <strong>A file is needed.</strong> There is no limit in MB.</li>
+                            <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                            <li><strong>Press Save.</strong> Each row becomes one handout of the course, with its files, after the ones that are already there.</li>
+                        </ol>
+                    </details>
                     <p class="sheet-summary" role="status">
                         <strong>@ReadyCount</strong> of @Filled.Count @(Filled.Count == 1 ? "row is" : "rows are") ready.
                         @if (Filled.Count > ReadyCount)
@@ -25,7 +35,6 @@
                                     <th scope="col" class="c-n">#</th>
                                     <th scope="col" class="c-title">Title</th>
                                     <th scope="col" class="c-slides">Slides <small>(optional)</small></th>
-                                    <th scope="col" class="c-link">Link <small>(optional)</small></th>
                                     <th scope="col" class="c-files">Files <small>(needed)</small></th>
                                     <th scope="col" class="c-state">Ready</th>
                                     <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
@@ -55,10 +64,6 @@
                                                 <Icon Name="plus" Size="14" /> <span>@(row.Slides.Count == 0 ? "Add slides" : "More")</span>
                                                 <InputFile class="file-input" OnChange="e => SlidesChosen(row, e)" multiple accept=".ppt,.pptx,.pps,.ppsx,.odp,.key,.pdf" aria-label="@($"Slides of row {n}")" />
                                             </label>
-                                        </td>
-                                        <td class="c-link">
-                                            <input class="cell" type="url" maxlength="500" autocomplete="off" aria-label="@($"Link of row {n}")" placeholder="https://…" value="@row.Link" @key="@($"l-{row.Id}")"
-                                                   @onchange="e => row.Link = e.Value?.ToString() ?? string.Empty" />
                                         </td>
                                         <td class="c-files">
                                             <span class="file-chips">
@@ -110,18 +115,6 @@
                         <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 handout" : $"Save {ReadyCount} handouts")</Button>
                     </div>
                 </div>
-
-                <aside class="sheet-steps" aria-label="Step by step">
-                    <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
-                    <ol>
-                        <li><strong>Type the title</strong> of the handout in a row. Press Tab to go to the next box.</li>
-                        <li><strong>Add slides</strong> if the handout has them (a PowerPoint file or a PDF). It is optional: the teacher and the students get a <em>Slides</em> button when there are slides.</li>
-                        <li><strong>Paste a link</strong> to a video or a file online if there is one. It is optional and starts with <em>https://</em>.</li>
-                        <li><strong>Press Add files</strong> in the row and choose the files of the handout (a PDF, a Word file, slides, a picture ...). <strong>A file is needed.</strong> There is no limit in MB.</li>
-                        <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                        <li><strong>Press Save.</strong> Each row becomes one handout of the course, with its files, after the ones that are already there.</li>
-                    </ol>
-                </aside>
             </div>
         }
         else
@@ -158,7 +151,6 @@
     {
         public int Id { get; init; }
         public string Title { get; set; } = "";
-        public string Link { get; set; } = "";
         public List<IBrowserFile> Files { get; } = [];
         public List<IBrowserFile> Slides { get; } = [];
     }
@@ -221,7 +213,7 @@
         }
     }
 
-    private static bool IsFilled(SheetRow row) => row.Title.Trim().Length > 0 || row.Link.Trim().Length > 0 || row.Files.Count > 0 || row.Slides.Count > 0;
+    private static bool IsFilled(SheetRow row) => row.Title.Trim().Length > 0 || row.Files.Count > 0 || row.Slides.Count > 0;
 
     private IReadOnlyList<SheetRow> Filled => [.. rows.Where(IsFilled)];
 
@@ -234,12 +226,6 @@
         if (title.Length == 0)
         {
             problems.Add("Type the title.");
-        }
-
-        var link = row.Link.Trim();
-        if (link.Length > 0 && !(link.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || link.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
-        {
-            problems.Add("The link starts with https://");
         }
 
         if (row.Files.Count == 0)
@@ -348,7 +334,7 @@
                             slides.Add(new NewAttachment(file.Name, file.ContentType, buffer.ToArray()));
                         }
 
-                        var input = new ModuleInput { Title = row.Title.Trim(), LinkUrl = row.Link.Trim().Length == 0 ? null : row.Link.Trim() };
+                        var input = new ModuleInput { Title = row.Title.Trim() };
                         list.Add(new ModuleToSave(input, files, number, slides));
                     }
                     catch (IOException)

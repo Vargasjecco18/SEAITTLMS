@@ -26,10 +26,6 @@ else
 {
     <PageHeader Title="@module.Title" IconName="layers">
         <ReadProgress Key="@($"module-{ModuleId}")" ModuleId="ModuleId" HasSlides="module.HasSlides" ClassPercent="module.Progress" />
-        @if (slideFiles.Count > 0)
-        {
-            <Button Variant="ButtonVariant.Secondary" IconName="presentation" OnClick="() => slidesOpen = true">Slides</Button>
-        }
         <ButtonLink Href="@($"teacher/subjects/{AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to @subject.SubjectName</ButtonLink>
     </PageHeader>
 
@@ -37,7 +33,7 @@ else
 
     <CourseLayout Teacher="subject" CurrentModuleId="ModuleId" CollapseMenu="true">
         <ChildContent>
-            <LessonContent Title="@module.Title" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" ModuleLabel="@FileLabel.OfModule(module.Title)" />
+            <LessonContent Title="@module.Title" LinkUrl="@module.LinkUrl" Files="files" InitialFileId="File" ShowText="false" ModuleLabel="@FileLabel.OfModule(module.Title)" OnOpenSlides="OpenSlides" />
         </ChildContent>
         <Aside>
             <Card Title="Edit handout" IconName="pencil">
@@ -75,6 +71,7 @@ else
     [SupplyParameterFromQuery(Name = "slides")] public string? SlidesQuery { get; set; }
 
     private bool slidesOpen;
+    private void OpenSlides() => slidesOpen = true;
     private int slidesAskedFor = -1;
     private IReadOnlyList<AttachmentRow> slideFiles => [.. files.Where(f => f.IsSlides)];
 

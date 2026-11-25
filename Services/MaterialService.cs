@@ -445,7 +445,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         module.Title = input.Title.Trim();
         module.Description = ModuleService.Clean(input.Description);
         module.Body = ModuleService.Clean(input.Body);
-        module.LinkUrl = ModuleService.Clean(input.LinkUrl);
+        module.LinkUrl = null;   // Round 46: a handout has no reference link any more
         await db.SaveChangesAsync(ct);
         return ServiceResult.Ok(moduleId is null ? (isSyllabus ? "The syllabus was added." : "The handout was added.") : "Saved.", module.Id);
     }
@@ -743,7 +743,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
 
                 var module = new LearningModule
                 {
-                    AssignmentId = target.Id, Title = source.Title, Description = source.Description, Body = source.Body, LinkUrl = source.LinkUrl,
+                    AssignmentId = target.Id, Title = source.Title, Description = source.Description, Body = source.Body,
                     IsSyllabus = source.IsSyllabus, Position = source.IsSyllabus ? 0 : nextPosition++, VisibleFromUtc = null,
                 };
                 module.Attachments.AddRange(source.Attachments.Select(a => CopyOf(a, userId)));
