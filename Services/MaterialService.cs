@@ -28,7 +28,7 @@ public sealed record LibraryTrack(int TrackId, string Code, string Name, int Cou
 /// <summary>A summative exam of the library: the schedule it runs in (from <paramref name="OpensAtUtc"/> to <paramref name="DueAtUtc"/>) and to how many teachers' courses it was sent.</summary>
 public sealed record MaterialExamView(
     int Id, string Title, string? Instructions, decimal MaxScore, DateTime? OpensAtUtc, DateTime? DueAtUtc, int SentTo,
-    int Questions = 0, int? TimeLimitMinutes = null, bool AntiCheat = true, int MaxViolations = 3, bool ShuffleQuestions = true, bool ShuffleOptions = true, bool ShowResult = true);
+    int Questions = 0, int? TimeLimitMinutes = null, bool AntiCheat = true, int MaxViolations = 3, bool ShuffleQuestions = true, bool ShuffleOptions = true, bool ShowResult = true, string GuardFlags = "");
 
 /// <param name="SentTo">To how many teachers' courses it was sent.</param>
 public sealed record MaterialModuleView(
@@ -54,6 +54,9 @@ public sealed class ExamInput
     public bool ShuffleOptions { get; set; } = true;
     public bool ShowResult { get; set; } = true;
 
+    /// <summary>The extra anti-cheating settings (<see cref="GuardOptions"/>).</summary>
+    public string GuardFlags { get; set; } = "";
+
     /// <summary>When the exam opens (UTC). Both ends of the schedule are needed.</summary>
     public DateTime? OpensAtUtc { get; set; }
 
@@ -69,7 +72,7 @@ public sealed class ExamInput
 /// They are written into the exam of the library and into the copy each section gets.
 /// </summary>
 public sealed record ExamPostSettings(
-    DateTime OpensAtUtc, DateTime DueAtUtc, int? TimeLimitMinutes = null, bool AntiCheat = true, int MaxViolations = 3, bool ShuffleQuestions = true, bool ShuffleOptions = true, bool ShowResult = true)
+    DateTime OpensAtUtc, DateTime DueAtUtc, int? TimeLimitMinutes = null, bool AntiCheat = true, int MaxViolations = 3, bool ShuffleQuestions = true, bool ShuffleOptions = true, bool ShowResult = true, string GuardFlags = "")
 {
     /// <summary>The problems of the settings, in words for the provider.</summary>
     public IReadOnlyList<string> Problems()
@@ -331,14 +334,14 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         // The summative exams, and in which teachers' courses each one is already.
         var examRows = await db.MaterialItems.AsNoTracking().Where(i => i.Kind == ItemKinds.Exam && i.Module.SubjectId == subjectId && i.Module.IsExamSet)
             .OrderBy(i => i.VisibleFromUtc).ThenBy(i => i.Position).ThenBy(i => i.Id)
-            .Select(i => new { i.Id, i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, Questions = i.Questions.Count, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShuffleQuestions, i.ShuffleOptions, i.ShowResult })
+            .Select(i => new { i.Id, i.Title, i.Instructions, i.MaxScore, i.VisibleFromUtc, i.DueAtUtc, Questions = i.Questions.Count, i.TimeLimitMinutes, i.AntiCheat, i.MaxViolations, i.ShuffleQuestions, i.ShuffleOptions, i.ShowResult, i.GuardFlags })
             .ToListAsync(ct);
         var examIds = examRows.Select(e => e.Id).ToList();
         var examCopies = await db.ModuleItems.AsNoTracking().Where(i => i.MaterialItemId != null && examIds.Contains(i.MaterialItemId.Value))
             .Select(i => new { ExamId = i.MaterialItemId!.Value, i.Module.AssignmentId })
             .ToListAsync(ct);
         var exams = examRows.Select(e => new MaterialExamView(e.Id, e.Title, e.Instructions, e.MaxScore, e.VisibleFromUtc, e.DueAtUtc, examCopies.Count(c => c.ExamId == e.Id),
-            e.Questions, e.TimeLimitMinutes, e.AntiCheat, e.MaxViolations, e.ShuffleQuestions, e.ShuffleOptions, e.ShowResult)).ToList();
+            e.Questions, e.TimeLimitMinutes, e.AntiCheat, e.MaxViolations, e.ShuffleQuestions, e.ShuffleOptions, e.ShowResult, e.GuardFlags)).ToList();
 
         var yearId = await CurrentYearIdAsync(db, ct);
         var assignments = await db.TeachingAssignments.AsNoTracking()
@@ -566,6 +569,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         item.ShuffleQuestions = input.ShuffleQuestions;
         item.ShuffleOptions = input.ShuffleOptions;
         item.ShowResult = input.ShowResult;
+        item.GuardFlags = input.AntiCheat ? GuardOptions.Clean(input.GuardFlags) : "";
         await db.SaveChangesAsync(ct);
 
         // New questions replace the old ones; the exam is then worth the total of their points.
@@ -836,7 +840,8 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             await db.MaterialItems.Where(i => ids.Contains(i.Id)).ExecuteUpdateAsync(set => set
                 .SetProperty(i => i.VisibleFromUtc, settings.OpensAtUtc).SetProperty(i => i.DueAtUtc, settings.DueAtUtc).SetProperty(i => i.TimeLimitMinutes, settings.TimeLimitMinutes)
                 .SetProperty(i => i.AntiCheat, settings.AntiCheat).SetProperty(i => i.MaxViolations, settings.MaxViolations)
-                .SetProperty(i => i.ShuffleQuestions, settings.ShuffleQuestions).SetProperty(i => i.ShuffleOptions, settings.ShuffleOptions).SetProperty(i => i.ShowResult, settings.ShowResult), ct);
+                .SetProperty(i => i.ShuffleQuestions, settings.ShuffleQuestions).SetProperty(i => i.ShuffleOptions, settings.ShuffleOptions).SetProperty(i => i.ShowResult, settings.ShowResult)
+                .SetProperty(i => i.GuardFlags, settings.AntiCheat ? GuardOptions.Clean(settings.GuardFlags) : ""), ct);
             foreach (var e in exams)
             {
                 e.VisibleFromUtc = settings.OpensAtUtc;
@@ -847,6 +852,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                 e.ShuffleQuestions = settings.ShuffleQuestions;
                 e.ShuffleOptions = settings.ShuffleOptions;
                 e.ShowResult = settings.ShowResult;
+                e.GuardFlags = settings.AntiCheat ? GuardOptions.Clean(settings.GuardFlags) : "";
             }
         }
 
@@ -903,7 +909,7 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
                     ModuleId = host.Id, Kind = ItemKinds.Exam, Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
                     VisibleFromUtc = exam.VisibleFromUtc, DueAtUtc = exam.DueAtUtc, Position = ++itemPosition, MaterialItemId = exam.Id,
                     TimeLimitMinutes = exam.TimeLimitMinutes, ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions,
-                    AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations, ShowResult = exam.ShowResult,
+                    AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations, ShowResult = exam.ShowResult, GuardFlags = exam.GuardFlags,
                 };
                 copy.Attachments.AddRange(exam.Attachments.Select(a => CopyOf(a, userId)));
                 var copiedQuestions = exam.Questions.OrderBy(q => q.Position).ThenBy(q => q.Id).Select((q, n) =>

@@ -45,6 +45,9 @@ public sealed class ItemInput
     public bool AntiCheat { get; set; } = true;
     public int MaxViolations { get; set; } = 3;
     public bool ShowResult { get; set; } = true;
+
+    /// <summary>The extra anti-cheating settings (<see cref="GuardOptions"/>).</summary>
+    public string GuardFlags { get; set; } = "";
 }
 
 public sealed class QuestionInput
@@ -70,13 +73,13 @@ public sealed class QuestionInput
 public sealed record TeacherItem(
     int Id, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc, DateTime? VisibleFromUtc, string State,
     int? TimeLimitMinutes, bool ShuffleQuestions, bool ShuffleOptions, bool AntiCheat, int MaxViolations, bool ShowResult,
-    int Questions, int Students, int Submitted, int Graded, int Flagged, int Late = 0);
+    int Questions, int Students, int Submitted, int Graded, int Flagged, int Late = 0, string GuardFlags = "");
 
 /// <summary>An activity, quiz or task performance with the settings the calendar's edit box shows, and where it belongs.</summary>
 public sealed record ItemForEdit(
     int ModuleId, int AssignmentId, int ItemId, string Kind, string Title, string? Instructions, decimal MaxScore, DateTime? DueAtUtc, DateTime? VisibleFromUtc,
     int? TimeLimitMinutes, bool ShuffleQuestions, bool ShuffleOptions, bool AntiCheat, int MaxViolations, bool ShowResult, int Questions,
-    string SubjectName, byte GradeLevel, string StrandCode, string SectionName, string ModuleTitle)
+    string SubjectName, byte GradeLevel, string StrandCode, string SectionName, string ModuleTitle, string GuardFlags = "")
 {
     public string SectionLabel => TeachingService.SectionLabel(GradeLevel, StrandCode, SectionName);
 }
@@ -228,14 +231,14 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
                 i.ModuleId, i.Module.AssignmentId, i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, i.VisibleFromUtc, i.TimeLimitMinutes,
                 i.ShuffleQuestions, i.ShuffleOptions, i.AntiCheat, i.MaxViolations, i.ShowResult, i.Questions.Count,
                 i.Module.Assignment.Subject.Name, i.Module.Assignment.Section.GradeLevel, i.Module.Assignment.Section.Strand.Code, i.Module.Assignment.Section.Name,
-                i.Module.Title))
+                i.Module.Title, i.GuardFlags))
             .Select(x => x)
             .FirstOrDefaultAsync(ct);
     }
 
     private static TeacherItem ToTeacherItem(ModuleItem i, DateTime now, int questions, int students, int submitted, int graded, int flagged, int late = 0) => new(
         i.Id, i.Kind, i.Title, i.Instructions, i.MaxScore, i.DueAtUtc, i.VisibleFromUtc, i.VisibleFromUtc is null ? "WithModule" : Visibility.State(i.VisibleFromUtc, now),
-        i.TimeLimitMinutes, i.ShuffleQuestions, i.ShuffleOptions, i.AntiCheat, i.MaxViolations, i.ShowResult, questions, students, submitted, graded, flagged, late);
+        i.TimeLimitMinutes, i.ShuffleQuestions, i.ShuffleOptions, i.AntiCheat, i.MaxViolations, i.ShowResult, questions, students, submitted, graded, flagged, late, i.GuardFlags);
 
     // ======================================================================= the teacher: modules
 
@@ -461,6 +464,7 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
         item.AntiCheat = input.AntiCheat;
         item.MaxViolations = input.MaxViolations;
         item.ShowResult = input.ShowResult;
+        item.GuardFlags = ItemKinds.IsQuizLike(input.Kind) && input.AntiCheat ? GuardOptions.Clean(input.GuardFlags) : "";   // the extra settings belong to the watch: with the watch off there are none
         if (scheduleChanged)
         {
             item.NotifiedAtUtc = null;

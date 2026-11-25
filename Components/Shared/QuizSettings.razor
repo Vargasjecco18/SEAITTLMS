@@ -39,6 +39,17 @@
                     <input id="@(IdPrefix)-warn" type="number" min="1" max="20" inputmode="numeric" value="@MaxViolations" @onchange="WarnTyped" />
                 </label>
             }
+            @* Round 46: more anti-cheating settings: full screen, one question at a time, no going back. *@
+            @foreach (var option in GuardOptions.All)
+            {
+                var key = option.Key;
+                var needsOne = key == GuardOptions.NoBack && !GuardOptions.Has(Guard, GuardOptions.OneAtATime);
+                <label class="switch small">
+                    <input id="@(IdPrefix)-g-@key" type="checkbox" role="switch" checked="@GuardOptions.Has(Guard, key)" disabled="@needsOne" @onchange="e => GuardToggled(key, e.Value is true)" />
+                    <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                    <span class="switch-text"><strong>@option.Title</strong><small>@option.Hint</small></span>
+                </label>
+            }
         </div>
 
         <div class="panel">
@@ -95,6 +106,12 @@
 
     [Parameter] public bool ShowResult { get; set; } = true;
     [Parameter] public EventCallback<bool> ShowResultChanged { get; set; }
+
+    /// <summary>The extra anti-cheating settings (the names of <see cref="GuardOptions"/>, separated by commas).</summary>
+    [Parameter] public string Guard { get; set; } = "";
+    [Parameter] public EventCallback<string> GuardChanged { get; set; }
+
+    private Task GuardToggled(string key, bool on) => GuardChanged.InvokeAsync(GuardOptions.With(Guard, key, on));
 
     private Task SetLimit(int? minutes) => TimeLimitChanged.InvokeAsync(minutes);
 

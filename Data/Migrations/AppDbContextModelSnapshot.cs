@@ -1486,6 +1486,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("due_at_utc");
 
+                    b.Property<string>("GuardFlags")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasDefaultValue("")
+                        .HasColumnName("guard_flags");
+
                     b.Property<string>("Instructions")
                         .HasColumnType("text")
                         .HasColumnName("instructions");
@@ -1821,6 +1829,14 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0)
                         .HasColumnName("gradebook_order");
+
+                    b.Property<string>("GuardFlags")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasDefaultValue("")
+                        .HasColumnName("guard_flags");
 
                     b.Property<string>("Instructions")
                         .HasColumnType("text")

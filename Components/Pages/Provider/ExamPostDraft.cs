@@ -12,6 +12,7 @@ public sealed class ExamPostDraft
     public bool ShuffleQuestions { get; set; } = true;
     public bool ShuffleOptions { get; set; } = true;
     public bool ShowResult { get; set; } = true;
+    public string GuardFlags { get; set; } = "";
 
     /// <summary>The two boxes of the date (they hold the text of a datetime-local input, in Philippine time).</summary>
     public string OpensText { get; set; } = "";
@@ -27,7 +28,7 @@ public sealed class ExamPostDraft
             return (null, "Set when the exam opens and when it closes.");
         }
 
-        var settings = new ExamPostSettings(opens.Value, closes.Value, TimeLimitMinutes, AntiCheat, MaxViolations, ShuffleQuestions, ShuffleOptions, ShowResult);
+        var settings = new ExamPostSettings(opens.Value, closes.Value, TimeLimitMinutes, AntiCheat, MaxViolations, ShuffleQuestions, ShuffleOptions, ShowResult, GuardFlags);
         return settings.Problems() is { Count: > 0 } problems ? (null, string.Join(" ", problems)) : (settings, null);
     }
 }

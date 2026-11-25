@@ -569,6 +569,44 @@ window.seaitt = Object.assign(window.seaitt || {}, {
         });
         window.seaitt.quizGuard = handlers;
     },
+    // Round 46: autosave. The text a student types in a short answer or an essay (a box with data-autosave) is sent to the page a moment after the typing stops, and the page saves it at once.
+    startQuizAutosave: function (reference) {
+        window.seaitt.stopQuizAutosave();
+        var timers = {};
+        function onInput(event) {
+            var box = event.target;
+            var id = box && box.getAttribute && box.getAttribute('data-autosave');
+            if (!id) { return; }
+            clearTimeout(timers[id]);
+            timers[id] = setTimeout(function () { reference.invokeMethodAsync('OnTyped', Number(id), box.value); }, 700);
+        }
+        document.addEventListener('input', onInput, true);
+        window.seaitt.quizAutosave = onInput;
+    },
+    stopQuizAutosave: function () {
+        if (window.seaitt.quizAutosave) { document.removeEventListener('input', window.seaitt.quizAutosave, true); }
+        window.seaitt.quizAutosave = null;
+    },
+
+    // Round 46: a quiz that is taken in full screen. The student presses the button (the browser asks for a click); leaving full screen is a warning.
+    quizFullscreen: function (reference) {
+        var element = document.documentElement;
+        var request = element.requestFullscreen || element.webkitRequestFullscreen;
+        if (request) { try { request.call(element); } catch (e) { /* the browser said no */ } }
+        window.seaitt.stopQuizFullscreen();
+        var armed = false;
+        var onChange = function () {
+            if (document.fullscreenElement || document.webkitFullscreenElement) { armed = true; return; }
+            if (armed) { armed = false; reference.invokeMethodAsync('OnSuspicious', 'Left full screen'); }
+        };
+        document.addEventListener('fullscreenchange', onChange);
+        window.seaitt.quizFullscreenHandler = onChange;
+    },
+    stopQuizFullscreen: function () {
+        if (window.seaitt.quizFullscreenHandler) { document.removeEventListener('fullscreenchange', window.seaitt.quizFullscreenHandler); }
+        window.seaitt.quizFullscreenHandler = null;
+        if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) { /* already out */ } }
+    },
     stopQuizGuard: function () {
         var handlers = window.seaitt.quizGuard;
         if (!handlers) { return; }

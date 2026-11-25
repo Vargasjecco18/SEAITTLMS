@@ -40,5 +40,8 @@ public static class SubjectStyle
         _ => isOverdue ? ("Missing", Tone.Danger) : ("To do", Tone.Neutral),
     };
 
+    /// <summary>Round 46: a quiz or an exam that the student already took (handed in or graded) is marked with a flag.</summary>
+    public static bool IsTaken(string kind, string status) => Data.Entities.ItemKinds.IsQuizLike(kind) && status is SubmissionStatus.Graded or SubmissionStatus.Submitted;
+
     public static string Percent(decimal score, decimal max) => max <= 0 ? "" : $"{score / max * 100:0.#}%";
 }

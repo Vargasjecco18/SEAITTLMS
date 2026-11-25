@@ -40,10 +40,11 @@
                                 <th scope="col" class="c-n">#</th>
                                 <th scope="col" class="c-q">Question</th>
                                 <th scope="col" class="c-type">Type</th>
-                                <th scope="col" class="c-choice">Choice A</th>
-                                <th scope="col" class="c-choice">Choice B</th>
-                                <th scope="col" class="c-choice">Choice C</th>
-                                <th scope="col" class="c-choice">Choice D</th>
+                                <th scope="col" class="c-count">How many choices</th>
+                                @for (var c = 0; c < Columns; c++)
+                                {
+                                    <th scope="col" class="c-choice">Choice @((char)('A' + c))</th>
+                                }
                                 <th scope="col" class="c-right">Right answer</th>
                                 <th scope="col" class="c-points">Points</th>
                                 <th scope="col" class="c-state">Ready</th>
@@ -84,13 +85,43 @@
                                             }
                                         </select>
                                     </td>
+                                    <td class="c-count">
+                                        @if (isChoice)
+                                        {
+                                            @* Round 46: how many choices the question has (2 to 8). *@
+                                            <select class="cell pick count-pick" aria-label="@($"How many choices has question {n}")" @onchange="e => ChangeCount(row, e.Value?.ToString())">
+                                                @for (var k = 2; k <= QuestionSheetRow.MaxOptions; k++)
+                                                {
+                                                    <option value="@k" selected="@(row.ChoiceCount == k)">@k choices</option>
+                                                }
+                                            </select>
+                                        }
+                                        else
+                                        {
+                                            <span class="muted">—</span>
+                                        }
+                                    </td>
                                     @for (var c = 0; c < Columns; c++)
                                     {
                                         var at = c;
+                                        var used = isChoice && at < row.Options.Count;
                                         <td class="c-choice" @ondblclick="() => OpenRow(row)">
-                                            <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Choice {(char)('A' + at)} of question {n}")" disabled="@(!isChoice)"
-                                                   placeholder="@(isChoice ? "" : "—")" value="@(isChoice ? row.Options[at] : "")" @key="@($"c{at}-{row.Id}-{kind}")"
-                                                   @onchange="e => row.Options[at] = e.Value?.ToString() ?? string.Empty" />
+                                            <span class="choice-cell">
+                                                @if (used && kind == QuestionKinds.MultipleChoice)
+                                                {
+                                                    @* The circle marks the right answer: nothing to type for it. *@
+                                                    <input type="radio" class="right-mark" name="@($"right-{row.Id}")" aria-label="@($"Choice {(char)('A' + at)} is the right answer of question {n}")" title="This is the right answer"
+                                                           checked="@(row.Right == QuestionSheetRow.Letter(at))" @onchange="() => row.Right = QuestionSheetRow.Letter(at)" />
+                                                }
+                                                else if (used && kind == QuestionKinds.MultipleSelect)
+                                                {
+                                                    <input type="checkbox" class="right-mark" aria-label="@($"Choice {(char)('A' + at)} is a right answer of question {n}")" title="This is a right answer"
+                                                           checked="@row.RightSet.Contains(at)" @onchange="e => ToggleRight(row, at, e.Value is true)" />
+                                                }
+                                                <input class="cell" type="text" maxlength="200" autocomplete="off" aria-label="@($"Choice {(char)('A' + at)} of question {n}")" disabled="@(!used)"
+                                                       placeholder="@(used ? "" : "—")" value="@(used ? row.Options[at] : "")" @key="@($"c{at}-{row.Id}-{kind}-{row.Options.Count}")"
+                                                       @onchange="e => row.Options[at] = e.Value?.ToString() ?? string.Empty" />
+                                            </span>
                                         </td>
                                     }
                                     <td class="c-right" @ondblclick="() => OpenRow(row)">
@@ -102,27 +133,16 @@
                                                        @onchange="e => row.Short = e.Value?.ToString() ?? string.Empty" />
                                                 break;
                                             case QuestionKinds.TrueFalse:
-                                                <select class="cell pick" aria-label="@($"Right answer of question {n}")" @onchange="e => row.Right = e.Value?.ToString() ?? string.Empty">
-                                                    <option value="" selected="@(row.Right.Length == 0)">Choose</option>
-                                                    <option value="True" selected="@(row.Right == "True")">True</option>
-                                                    <option value="False" selected="@(row.Right == "False")">False</option>
-                                                </select>
+                                                <span class="tf-radios" role="radiogroup" aria-label="@($"Right answer of question {n}")">
+                                                    <label><input type="radio" name="@($"tf-{row.Id}")" checked="@(row.Right == "True")" @onchange='() => row.Right = "True"' /> True</label>
+                                                    <label><input type="radio" name="@($"tf-{row.Id}")" checked="@(row.Right == "False")" @onchange='() => row.Right = "False"' /> False</label>
+                                                </span>
                                                 break;
                                             case QuestionKinds.MultipleChoice:
-                                                <select class="cell pick" aria-label="@($"Right answer of question {n}")" @onchange="e => row.Right = e.Value?.ToString() ?? string.Empty">
-                                                    <option value="" selected="@(row.Right.Length == 0)">Choose</option>
-                                                    @for (var c = 0; c < row.Options.Count; c++)
-                                                    {
-                                                        var letter = QuestionSheetRow.Letter(c);
-                                                        if (row.Options[c].Trim().Length > 0)
-                                                        {
-                                                            <option value="@letter" selected="@(row.Right == letter)">@letter · @Shorten(row.Options[c])</option>
-                                                        }
-                                                    }
-                                                </select>
+                                                <span class="cell muted-cell" title="Mark the right choice with its circle">@(row.Right.Length == 1 ? $"Right: {row.Right}" : "Mark it with a circle")</span>
                                                 break;
                                             case QuestionKinds.MultipleSelect:
-                                                <button type="button" class="cell summary" aria-label="@($"Right answers of question {n}")" @onclick="() => OpenRow(row)">@(row.RightSet.Count == 0 ? "Choose the right ones" : string.Join(", ", row.RightSet.OrderBy(x => x).Select(QuestionSheetRow.Letter)))</button>
+                                                <span class="cell muted-cell" title="Tick the right choices">@(row.RightSet.Count == 0 ? "Tick the right ones" : "Right: " + string.Join(", ", row.RightSet.OrderBy(i => i).Select(QuestionSheetRow.Letter)))</span>
                                                 break;
                                             case QuestionKinds.FillInTheBlank:
                                                 <button type="button" class="cell summary" aria-label="@($"Answers of the blanks of question {n}")" @onclick="() => OpenRow(row)">@(row.BlankCount == 0 ? "Add a blank ___ first" : $"{row.Blanks.Count(b => b.Trim().Length > 0)} of {row.BlankCount} answers")</button>
@@ -193,8 +213,8 @@
                 <ol>
                     <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
                     <li><strong>Choose the type</strong> from the list: multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select or essay.</li>
-                    <li>For <em>multiple choice</em> and <em>multiple select</em>, <strong>write the choices</strong> in A to D (at least two).</li>
-                    <li><strong>Choose the right answer</strong> from the list: the choice that is right, or True or False. For a short answer or an identification, type the answer (several accepted answers are separated by <em>|</em>).</li>
+                    <li>For <em>multiple choice</em> and <em>multiple select</em>, <strong>choose how many choices</strong> the question has (2 to 8) from the list and <strong>write the choices</strong>.</li>
+                    <li><strong>Mark the right answer:</strong> press the <em>circle</em> in front of the right choice (for a multiple select tick the <em>boxes</em> of the right choices; for true or false choose True or False). You do not type the right answer of a choice question. For a short answer or an identification, type the answer (several accepted answers are separated by <em>|</em>).</li>
                     <li><strong>Double click a question</strong> (or press the box button at the end of the row) to open it in a box: there you can <strong>add a picture</strong> to the question and to each choice, write more choices, the blanks, the two columns of a matching type, and pick the right answers.</li>
                     <li><strong>Set the points</strong> of the question (1 if you leave it).</li>
                     <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
@@ -208,8 +228,8 @@
 <QuestionRowDialog Row="opened" Number="@(opened is null ? 0 : rows.IndexOf(opened) + 1)" OnClose="CloseRow" />
 
 @code {
-    /// <summary>Choice A to D: four boxes in the sheet. The box of a row has all the choices (up to eight).</summary>
-    private const int Columns = 4;
+    /// <summary>The choice columns of the sheet: four, or as many as the question with the most choices has (up to eight).</summary>
+    private int Columns => Math.Clamp(rows.Where(r => r.Kind is QuestionKinds.MultipleChoice or QuestionKinds.MultipleSelect).Select(r => r.Options.Count).DefaultIfEmpty(4).Max(), 4, QuestionSheetRow.MaxOptions);
 
     private readonly List<QuestionSheetRow> rows = [];
     private int nextId;
@@ -304,6 +324,26 @@
         if (kind is not null)
         {
             row.ChangeKind(kind);
+        }
+    }
+
+    private static void ChangeCount(QuestionSheetRow row, string? count)
+    {
+        if (int.TryParse(count, out var n))
+        {
+            row.SetChoiceCount(n);
+        }
+    }
+
+    private static void ToggleRight(QuestionSheetRow row, int at, bool on)
+    {
+        if (on)
+        {
+            row.RightSet.Add(at);
+        }
+        else
+        {
+            row.RightSet.Remove(at);
         }
     }
 

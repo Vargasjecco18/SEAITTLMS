@@ -278,7 +278,7 @@ else
 
                 <QuizSettings IdPrefix="i" Note="@(QuizIsAFile ? "The time limit and the anti-cheating watch only work for a quiz with questions." : "You write the questions after saving. The quiz is worth the total of the points of its questions.")"
                               @bind-TimeLimit="itemForm.TimeLimit" @bind-MaxViolations="itemForm.MaxViolations" @bind-AntiCheat="itemForm.AntiCheat"
-                              @bind-ShuffleQuestions="itemForm.ShuffleQuestions" @bind-ShuffleOptions="itemForm.ShuffleOptions" @bind-ShowResult="itemForm.ShowResult" />
+                              @bind-ShuffleQuestions="itemForm.ShuffleQuestions" @bind-ShuffleOptions="itemForm.ShuffleOptions" @bind-ShowResult="itemForm.ShowResult" @bind-Guard="itemForm.GuardFlags" />
             }
 
             <div class="modal-actions">
@@ -340,6 +340,7 @@ else
         public bool AntiCheat { get; set; } = true;
         public int MaxViolations { get; set; } = 3;
         public bool ShowResult { get; set; } = true;
+        public string GuardFlags { get; set; } = "";
     }
 
     private sealed record DeleteTarget(string Title, string Text, int Id);
@@ -779,7 +780,7 @@ else
             Kind = item.Kind, Title = item.Title, Instructions = item.Instructions, MaxScore = item.MaxScore,
             DueText = PhilippineTime.ToInputValue(item.DueAtUtc), VisibleText = PhilippineTime.ToInputValue(item.VisibleFromUtc),
             TimeLimit = item.TimeLimitMinutes, ShuffleQuestions = item.ShuffleQuestions, ShuffleOptions = item.ShuffleOptions,
-            AntiCheat = item.AntiCheat, MaxViolations = item.MaxViolations, ShowResult = item.ShowResult,
+            AntiCheat = item.AntiCheat, MaxViolations = item.MaxViolations, ShowResult = item.ShowResult, GuardFlags = item.GuardFlags,
         };
     }
 
@@ -807,7 +808,7 @@ else
                 Kind = itemForm.Kind, Title = itemForm.Title, Instructions = itemForm.Instructions, MaxScore = itemForm.MaxScore,
                 DueAtUtc = PhilippineTime.FromInputValue(itemForm.DueText), VisibleFromUtc = PhilippineTime.FromInputValue(itemForm.VisibleText),
                 TimeLimitMinutes = itemForm.TimeLimit, ShuffleQuestions = itemForm.ShuffleQuestions, ShuffleOptions = itemForm.ShuffleOptions,
-                AntiCheat = itemForm.AntiCheat, MaxViolations = itemForm.MaxViolations, ShowResult = itemForm.ShowResult,
+                AntiCheat = itemForm.AntiCheat, MaxViolations = itemForm.MaxViolations, ShowResult = itemForm.ShowResult, GuardFlags = itemForm.GuardFlags,
             };
             var wasNew = editingItemId is null;
             var quizIsAFile = QuizIsAFile;

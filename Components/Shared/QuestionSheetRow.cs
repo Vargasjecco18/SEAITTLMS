@@ -20,7 +20,7 @@ public sealed class QuestionSheetRow
     public string Text { get; set; } = "";
     public string Kind { get; set; } = QuestionKinds.MultipleChoice;
 
-    /// <summary>The choices (multiple choice, multiple select) or the rows of Column B (matching). At least four places: the sheet has four columns for them.</summary>
+    /// <summary>The choices (multiple choice, multiple select) or the rows of Column B (matching). A new row has four places; the list "How many choices" of the sheet makes it from 2 to 8.</summary>
     public List<string> Options { get; set; } = ["", "", "", ""];
 
     /// <summary>The Column A rows of a matching type (the text of the question is not used for it).</summary>
@@ -55,7 +55,7 @@ public sealed class QuestionSheetRow
     /// <summary>The list has the place (the lists of the row always have the same length as the one they go with).</summary>
     public void Fit()
     {
-        while (Options.Count < 4)
+        while (Options.Count < 2)
         {
             Options.Add("");
         }
@@ -84,6 +84,39 @@ public sealed class QuestionSheetRow
         {
             Pairs.RemoveRange(ColumnA.Count, Pairs.Count - ColumnA.Count);
         }
+    }
+
+    /// <summary>How many choices a multiple choice or a multiple select has (the list "How many choices" of the sheet).</summary>
+    public int ChoiceCount => Options.Count;
+
+    /// <summary>
+    /// Round 46: the list "How many choices": the question gets from 2 to 8 places for choices. Fewer places take out the last ones (and the right answer that pointed to one of them), more places add empty ones.
+    /// </summary>
+    public void SetChoiceCount(int count)
+    {
+        count = Math.Clamp(count, 2, MaxOptions);
+        while (Options.Count < count)
+        {
+            Options.Add("");
+            OptionImages.Add(null);
+        }
+
+        if (Options.Count > count)
+        {
+            Options.RemoveRange(count, Options.Count - count);
+            if (OptionImages.Count > count)
+            {
+                OptionImages.RemoveRange(count, OptionImages.Count - count);
+            }
+
+            RightSet = [.. RightSet.Where(i => i < count)];
+            if (Right.Length == 1 && Right[0] - 'A' >= count)
+            {
+                Right = "";
+            }
+        }
+
+        Fit();
     }
 
     public bool IsFilled =>
@@ -257,7 +290,13 @@ public sealed class QuestionSheetRow
 
         if (Kind == QuestionKinds.MultipleChoice && Right.Length == 0 && Options.Count(o => o.Trim().Length > 0) >= 2)
         {
-            problems.Add("Choose the right answer.");
+            problems.Add("Choose the right answer (the circle of the right choice).");
+            return problems;
+        }
+
+        if (Kind == QuestionKinds.MultipleChoice && Right.Length == 1 && Right[0] - 'A' is >= 0 and < MaxOptions && Right[0] - 'A' < Options.Count && Options[Right[0] - 'A'].Trim().Length == 0)
+        {
+            problems.Add("The right choice is empty: write it, or choose another circle.");
             return problems;
         }
 

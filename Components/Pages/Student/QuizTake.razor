@@ -37,6 +37,8 @@ else
         </div>
         <div class="bar-stats">
             <span class="stat" title="Answered"><Icon Name="circle-check" Size="16" /> @AnsweredCount / @attempt.Questions.Count</span>
+            @* Round 46: the answers are saved by themselves (a brownout or a lost connection does not lose them). *@
+            <span class="stat saved" id="quiz-saved" title="Your answers are saved by themselves while you work. If the power or the connection is lost, open the quiz again and they are here."><Icon Name="save" Size="16" /> @SavedText</span>
             @if (attempt.AntiCheat)
             {
                 <span class="stat @(violations > 0 ? "bad" : "")" title="Warnings"><Icon Name="shield-alert" Size="16" /> @violations / @attempt.MaxViolations</span>
@@ -68,8 +70,23 @@ else
         <div class="warning" role="alert"><Icon Name="triangle-alert" Size="18" /> <span>@warning</span></div>
     }
 
-    <ol class="questions @(attempt.AntiCheat ? "guarded" : "")">
-        @foreach (var q in attempt.Questions)
+    @if (NeedsFullscreen)
+    {
+        <div class="fullscreen-gate" id="quiz-fullscreen-gate" role="alertdialog" aria-label="Full screen needed">
+            <Icon Name="shield-alert" Size="28" />
+            <h2>This quiz is taken in full screen</h2>
+            <p>Press the button to start. Leaving full screen is a warning. The time keeps running.</p>
+            <Button IconName="send" OnClick="StartFullscreenAsync">Start in full screen</Button>
+        </div>
+    }
+
+    @if (resumed)
+    {
+        <p class="resumed-note" id="quiz-resumed" role="status"><Icon Name="circle-check" Size="16" /> <span>Welcome back. Your saved answers are here, and the time kept running.</span></p>
+    }
+
+    <ol class="questions @(attempt.AntiCheat ? "guarded" : "") @(NeedsFullscreen ? "hidden-until-fullscreen" : "")">
+        @foreach (var q in attempt.Questions.Where(q => !OneAtATime || q.Number == current))
         {
             var question = q;
             <li class="question" id="question-@question.Id">
@@ -115,11 +132,11 @@ else
                     case QuestionKinds.ShortAnswer:
                     case QuestionKinds.Identification:
                         <input type="text" class="short" maxlength="500" autocomplete="off" spellcheck="false" aria-label="Your answer to question @question.Number"
-                               value="@AnswerOf(question)" @onchange="e => AnswerAsync(question, e.Value?.ToString())" />
+                               value="@InitialOf(question)" data-autosave="@question.Id" @onchange="e => AnswerAsync(question, e.Value?.ToString())" />
                         break;
                     case QuestionKinds.Essay:
-                        <textarea class="essay" rows="8" maxlength="@QuestionRules.MaxAnswerLength" aria-label="Your essay for question @question.Number" placeholder="Write your answer here"
-                                  @onchange="e => AnswerAsync(question, e.Value?.ToString())">@AnswerOf(question)</textarea>
+                        <textarea class="essay" rows="8" maxlength="@QuestionRules.MaxAnswerLength" aria-label="Your essay for question @question.Number" placeholder="Write your answer here" data-autosave="@question.Id"
+                                  @onchange="e => AnswerAsync(question, e.Value?.ToString())">@InitialOf(question)</textarea>
                         break;
                     case QuestionKinds.FillInTheBlank:
                         break;
@@ -185,6 +202,19 @@ else
         }
     </ol>
 
+    @if (OneAtATime)
+    {
+        @* Round 46: one question at a time, with Previous and Next (Previous is not there when going back is not allowed). *@
+        <div class="steps" role="group" aria-label="Questions">
+            @if (!NoBack)
+            {
+                <Button Variant="ButtonVariant.Secondary" IconName="arrow-left" Disabled="@(current <= 1)" OnClick="PreviousQuestion">Previous</Button>
+            }
+            <span class="step-count" id="quiz-step">Question @current of @attempt.Questions.Count</span>
+            <Button Variant="ButtonVariant.Secondary" IconName="arrow-right" Disabled="@(current >= attempt.Questions.Count)" OnClick="NextQuestion">Next</Button>
+        </div>
+    }
+
     <div class="finish">
         <Button IconName="send" Disabled="busy" OnClick="AskSubmit">Hand in the quiz</Button>
     </div>
@@ -228,6 +258,64 @@ else
     private Timer? timer;
     private DotNetObjectReference<QuizTake>? self;
     private int remainingSeconds;
+
+    // Round 46: autosave, one question at a time, full screen
+    private readonly Dictionary<int, string> initial = [];   // what the boxes had when the page opened: the text boxes are never written again by the page (so typing is not disturbed)
+    private DateTime? lastSavedUtc;
+    private int sinceSave;
+    private bool resumed;
+    private int current = 1;
+    private bool fullscreenOn;
+    private bool autosaveStarted;
+
+    private bool OneAtATime => attempt is not null && GuardOptions.Has(attempt.GuardFlags, GuardOptions.OneAtATime);
+    private bool NoBack => OneAtATime && GuardOptions.Has(attempt!.GuardFlags, GuardOptions.NoBack);
+    private bool NeedsFullscreen => attempt is not null && GuardOptions.Has(attempt.GuardFlags, GuardOptions.Fullscreen) && !fullscreenOn && !finished;
+    private string SavedText => lastSavedUtc is { } at ? $"Saved {PhilippineTime.FromUtc(at):h:mm:ss tt}" : "Saves by itself";
+    private string InitialOf(AttemptQuestion q) => initial.GetValueOrDefault(q.Id) ?? "";
+
+    private void PreviousQuestion()
+    {
+        if (!NoBack && current > 1)
+        {
+            current--;
+        }
+    }
+
+    private void NextQuestion()
+    {
+        if (attempt is not null && current < attempt.Questions.Count)
+        {
+            current++;
+        }
+    }
+
+    private async Task StartFullscreenAsync()
+    {
+        await JS.InvokeVoidAsync("seaitt.quizFullscreen", self ??= DotNetObjectReference.Create(this));
+        fullscreenOn = true;
+    }
+
+    /// <summary>Called by the page script a moment after the student stops typing: the text is saved at once.</summary>
+    [JSInvokable]
+    public async Task OnTyped(int questionId, string text)
+    {
+        if (finished || attempt is null || attempt.Questions.All(q => q.Id != questionId))
+        {
+            return;
+        }
+
+        answers[questionId] = text ?? "";
+        var saved = await Quiz.SaveAnswerAsync(studentId, ItemId, questionId, text);
+        if (saved.Ended)
+        {
+            await InvokeAsync(LeaveAsync);
+            return;
+        }
+
+        lastSavedUtc = Clock.GetUtcNow().UtcDateTime;
+        await InvokeAsync(StateHasChanged);
+    }
 
     private int RemainingSeconds => remainingSeconds;
 
@@ -297,6 +385,20 @@ else
                 answers[q.Id] = q.Answer!;
             }
 
+            foreach (var q in attempt.Questions.Where(q => q.Answer is not null))
+            {
+                initial[q.Id] = q.Answer!;
+            }
+
+            // The student comes back to a quiz that was started before (a brownout, a closed tab): the saved answers are here.
+            resumed = answers.Count > 0 || (Clock.GetUtcNow().UtcDateTime - attempt.StartedAtUtc).TotalSeconds > 20;
+            lastSavedUtc = answers.Count > 0 ? Clock.GetUtcNow().UtcDateTime : null;
+            // One question at a time: a student who comes back starts at the first question that has no answer (or at the last one when all are answered).
+            if (GuardOptions.Has(attempt.GuardFlags, GuardOptions.OneAtATime))
+            {
+                current = attempt.Questions.FirstOrDefault(q => string.IsNullOrWhiteSpace(answers.GetValueOrDefault(q.Id)))?.Number ?? attempt.Questions.Count;
+            }
+
             violations = attempt.ViolationCount;
             UpdateClock();
             timer = new Timer(_ => _ = InvokeAsync(TickAsync), null, 1000, 1000);
@@ -307,10 +409,17 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (attempt is not null && !autosaveStarted && !finished)
+        {
+            autosaveStarted = true;
+            self ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("seaitt.startQuizAutosave", self);
+        }
+
         if (attempt is { AntiCheat: true } && !guardStarted && !finished)
         {
             guardStarted = true;
-            self = DotNetObjectReference.Create(this);
+            self ??= DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("seaitt.startQuizGuard", self);
         }
     }
@@ -325,8 +434,28 @@ else
 
     private async Task TickAsync()
     {
-        if (finished || attempt?.EndsAtUtc is null)
+        if (finished)
         {
+            return;
+        }
+
+        // Round 46: every 20 seconds everything on the screen is saved again, so nothing that was typed is left only in the browser.
+        if (++sinceSave >= 20 && answers.Count > 0)
+        {
+            sinceSave = 0;
+            var saved = await Quiz.SaveAnswersAsync(studentId, ItemId, answers.ToDictionary(a => a.Key, a => (string?)a.Value));
+            if (saved.Ended)
+            {
+                await LeaveAsync();
+                return;
+            }
+
+            lastSavedUtc = Clock.GetUtcNow().UtcDateTime;
+        }
+
+        if (attempt?.EndsAtUtc is null)
+        {
+            StateHasChanged();
             return;
         }
 
@@ -352,7 +481,10 @@ else
         if (saved.Ended)
         {
             await LeaveAsync();
+            return;
         }
+
+        lastSavedUtc = Clock.GetUtcNow().UtcDateTime;
     }
 
     /// <summary>Called by the page script when the student leaves the tab, copies, pastes, prints or takes a screenshot.</summary>
@@ -418,14 +550,12 @@ else
 
     private async Task StopGuardAsync()
     {
-        if (!guardStarted)
-        {
-            return;
-        }
-
         guardStarted = false;
+        autosaveStarted = false;
         try
         {
+            await JS.InvokeVoidAsync("seaitt.stopQuizAutosave");
+            await JS.InvokeVoidAsync("seaitt.stopQuizFullscreen");
             await JS.InvokeVoidAsync("seaitt.stopQuizGuard");
         }
         catch (Exception ex) when (ex is JSDisconnectedException or InvalidOperationException or TaskCanceledException)

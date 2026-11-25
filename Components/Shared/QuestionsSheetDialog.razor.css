@@ -336,3 +336,39 @@ tr.bad .c-state {
     border-color: var(--brand);
     color: var(--brand-strong);
 }
+
+/* Round 46: the circle of the right choice in front of each choice, the list "How many choices", and True / False as two circles. */
+.choice-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.right-mark {
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    accent-color: var(--success, #16a34a);
+    cursor: pointer;
+}
+
+.c-count {
+    min-width: 6.5rem;
+}
+
+.count-pick {
+    min-width: 6rem;
+}
+
+.tf-radios {
+    display: inline-flex;
+    gap: 0.9rem;
+}
+
+.tf-radios label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+}

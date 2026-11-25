@@ -68,7 +68,7 @@ else
                                     {
                                         <span class="kind-score">@listScore.ToString("0.##") / @item.MaxScore.ToString("0.##")</span>
                                     }
-                                    <Badge Tone="@tone">@text</Badge>
+                                    <Badge Tone="@tone">@if (SubjectStyle.IsTaken(item.Kind, item.Status)) { <span class="taken-flag" title="Taken: you already took this quiz"><Icon Name="flag" Size="12" /></span> }@text</Badge>
                                 </span>
                             </a>
                         </li>

@@ -3,7 +3,7 @@
    (all the courses of the list) and by Post to students inside a course. *@
 <QuizSettings IdPrefix="@IdPrefix" Title="Summative Exam Settings" Note="The students take the exam on the screen. Choose the time they have and how it is watched."
               @bind-TimeLimit="Draft.TimeLimitMinutes" @bind-MaxViolations="Draft.MaxViolations" @bind-AntiCheat="Draft.AntiCheat"
-              @bind-ShuffleQuestions="Draft.ShuffleQuestions" @bind-ShuffleOptions="Draft.ShuffleOptions" @bind-ShowResult="Draft.ShowResult" />
+              @bind-ShuffleQuestions="Draft.ShuffleQuestions" @bind-ShuffleOptions="Draft.ShuffleOptions" @bind-ShowResult="Draft.ShowResult" @bind-Guard="Draft.GuardFlags" />
 
 <div class="two">
     <Field For="@($"{IdPrefix}-opens")" Label="Opens on" Required="true" Hint="Philippine time.">

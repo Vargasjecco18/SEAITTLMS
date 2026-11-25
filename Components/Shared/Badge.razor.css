@@ -16,3 +16,10 @@
 .info    { --chip-bg: var(--info-soft);    --chip-text: var(--info); }
 .warning { --chip-bg: var(--warning-soft); --chip-text: var(--warning); }
 .danger  { --chip-bg: var(--danger-soft);  --chip-text: var(--danger); }
+
+/* Round 46: the flag in front of the state of a quiz that was taken. */
+.badge ::deep .taken-flag {
+    display: inline-flex;
+    margin-right: 0.3rem;
+    vertical-align: -1px;
+}

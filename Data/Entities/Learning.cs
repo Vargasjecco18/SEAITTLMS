@@ -177,6 +177,9 @@ public class ModuleItem : AuditableEntity
     /// <summary>Show the student their score as soon as they hand the quiz in.</summary>
     public bool ShowResult { get; set; } = true;
 
+    /// <summary>Round 46: the extra anti-cheating settings (see <see cref="Services.GuardOptions"/>): full screen, one question at a time, no going back. Empty: none.</summary>
+    public string GuardFlags { get; set; } = "";
+
     public List<QuizQuestion> Questions { get; set; } = [];
     public List<Submission> Submissions { get; set; } = [];
 

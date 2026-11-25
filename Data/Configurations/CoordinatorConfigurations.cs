@@ -31,6 +31,7 @@ internal sealed class MaterialItemConfiguration : IEntityTypeConfiguration<Mater
         b.Property(i => i.Title).HasMaxLength(200).IsRequired();
         b.Property(i => i.Instructions).HasColumnType("text");
         b.Property(i => i.MaxScore).HasPrecision(6, 2);
+        b.Property(i => i.GuardFlags).HasMaxLength(100).IsRequired().HasDefaultValue("");
 
         b.HasOne(i => i.Module).WithMany(m => m.Items).HasForeignKey(i => i.ModuleId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(i => new { i.ModuleId, i.Position });

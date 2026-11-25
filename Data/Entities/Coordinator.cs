@@ -72,6 +72,9 @@ public class MaterialItem : AuditableEntity
     public int MaxViolations { get; set; } = 3;
     public bool ShowResult { get; set; } = true;
 
+    /// <summary>Round 46: the extra anti-cheating settings of the exam (see <see cref="Services.GuardOptions"/>).</summary>
+    public string GuardFlags { get; set; } = "";
+
     public List<MaterialQuestion> Questions { get; set; } = [];
 
     /// <summary>Files attached to the activity, quiz or task performance (a quiz can be questions, a file, or both).</summary>

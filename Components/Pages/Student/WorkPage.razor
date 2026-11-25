@@ -41,7 +41,7 @@ else
 
     <Modal Open="@(sideBox == "details")" Title="Details" Side="true" OnClose="CloseSideBox">
         <dl class="facts">
-            <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@StatusText</Badge></dd></div>
+            <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@if (item.IsQuiz && item.Status is SubmissionStatus.Graded or SubmissionStatus.Submitted) { <span class="taken-flag" title="Taken: you already took this quiz"><Icon Name="flag" Size="12" /></span> }@StatusText</Badge></dd></div>
             <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
             <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
             @if (item.ScoreVisible && item.Score is { } s)
@@ -109,7 +109,7 @@ else
                     @if (item.Status == SubmissionStatus.Graded || item.Status == SubmissionStatus.Submitted)
                     {
                         <p>
-                            <Badge Tone="Tone.Success">Handed in</Badge>
+                            <Badge Tone="Tone.Success"><span class="taken-flag" id="taken-flag" title="Taken: you already took this quiz"><Icon Name="flag" Size="12" /></span>Handed in</Badge>
                             @if (item.SubmittedAtUtc is { } at) { <span class="muted">@PhilippineTime.FormatDateTime(at)</span> }
                         </p>
                         @if (item.AutoSubmitReason == "violations")

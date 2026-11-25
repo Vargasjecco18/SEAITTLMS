@@ -13,7 +13,7 @@ public sealed record AttemptQuestion(int Id, int Number, string Text, string Kin
 /// <summary>A quiz a student is taking. It never carries the right answers.</summary>
 public sealed record QuizAttempt(
     int ItemId, string Title, string SubjectName, int AssignmentId, DateTime StartedAtUtc, DateTime? EndsAtUtc,
-    bool AntiCheat, int MaxViolations, int ViolationCount, IReadOnlyList<AttemptQuestion> Questions);
+    bool AntiCheat, int MaxViolations, int ViolationCount, IReadOnlyList<AttemptQuestion> Questions, string GuardFlags = "");
 
 /// <summary>Either the attempt, or the reason the student can't take the quiz now.</summary>
 public sealed record StartResult(QuizAttempt? Attempt, string? Error);
@@ -176,7 +176,7 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
 
         var started = submission.StartedAtUtc ?? submission.CreatedAtUtc;
         return new QuizAttempt(context.Item.Id, context.Item.Title, context.SubjectName, context.AssignmentId, started, EndsAt(context.Item, started),
-            context.Item.AntiCheat, context.Item.MaxViolations, submission.ViolationCount, shown);
+            context.Item.AntiCheat, context.Item.MaxViolations, submission.ViolationCount, shown, context.Item.AntiCheat ? context.Item.GuardFlags : "");
     }
 
     // ======================================================================= answering
@@ -208,6 +208,40 @@ public sealed class QuizService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             await db.SaveChangesAsync(ct);
         }
 
+        return new AnswerSaved(false, null);
+    }
+
+    /// <summary>
+    /// Round 46: autosave. Remembers many answers at once (the page sends everything that was typed since the last save every few seconds), so a brownout or a lost connection costs the student
+    /// at most a few seconds of typing. If the time is over, the quiz is handed in instead and the caller is told.
+    /// </summary>
+    public async Task<AnswerSaved> SaveAnswersAsync(int studentId, int itemId, IReadOnlyDictionary<int, string?> answers, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var now = Now;
+        var open = await LoadOpenAsync(db, studentId, itemId, ct);
+        if (open is null)
+        {
+            return new AnswerSaved(true, "This quiz was already handed in.");
+        }
+
+        var (submission, item, questions) = open.Value;
+        if (TimeIsOver(item, submission, now))
+        {
+            Finalize(submission, item, questions, now, "time");
+            await db.SaveChangesAsync(ct);
+            return new AnswerSaved(true, "The time is over. Your answers were handed in.");
+        }
+
+        var state = ReadState(submission.AnswersJson);
+        foreach (var q in questions.Where(q => answers.ContainsKey(q.Id)))
+        {
+            var text = answers[q.Id] ?? "";
+            state.Answers[q.Id] = text.Length > QuestionRules.MaxAnswerLength ? text[..QuestionRules.MaxAnswerLength] : text;
+        }
+
+        submission.AnswersJson = JsonSerializer.Serialize(state, Json);
+        await db.SaveChangesAsync(ct);
         return new AnswerSaved(false, null);
     }
 

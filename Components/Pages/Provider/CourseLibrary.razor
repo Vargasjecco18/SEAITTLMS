@@ -679,7 +679,7 @@ else
             Title = exam.Title, Instructions = exam.Instructions, MaxScore = exam.MaxScore,
             OpensAtUtc = exam.OpensAtUtc, DueAtUtc = exam.DueAtUtc,
             TimeLimitMinutes = exam.TimeLimitMinutes, AntiCheat = exam.AntiCheat, MaxViolations = exam.MaxViolations,
-            ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions, ShowResult = exam.ShowResult,
+            ShuffleQuestions = exam.ShuffleQuestions, ShuffleOptions = exam.ShuffleOptions, ShowResult = exam.ShowResult, GuardFlags = exam.GuardFlags,
         };
         examQuestions = [.. questionsByExam.GetValueOrDefault(exam.Id) ?? []];
         examQuestionsChanged = false;

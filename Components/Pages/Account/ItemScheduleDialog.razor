@@ -52,7 +52,7 @@
             {
                 <QuizSettings IdPrefix="d" Note="@(item.Questions == 0 ? "This quiz has no questions yet. Write them under its course; the due date is saved either way." : null)"
                               @bind-TimeLimit="form.TimeLimit" @bind-MaxViolations="form.MaxViolations" @bind-AntiCheat="form.AntiCheat"
-                              @bind-ShuffleQuestions="form.ShuffleQuestions" @bind-ShuffleOptions="form.ShuffleOptions" @bind-ShowResult="form.ShowResult" />
+                              @bind-ShuffleQuestions="form.ShuffleQuestions" @bind-ShuffleOptions="form.ShuffleOptions" @bind-ShowResult="form.ShowResult" @bind-Guard="form.GuardFlags" />
             }
 
             <div class="modal-actions">
@@ -78,6 +78,7 @@
         public bool AntiCheat { get; set; } = true;
         public int MaxViolations { get; set; } = 3;
         public bool ShowResult { get; set; } = true;
+        public string GuardFlags { get; set; } = "";
     }
 
     [Parameter, EditorRequired] public int ItemId { get; set; }
@@ -110,7 +111,7 @@
                 DueText = $"{day:yyyy-MM-dd}T{time:HH:mm}",
                 VisibleText = PhilippineTime.ToInputValue(item.VisibleFromUtc),
                 TimeLimit = item.TimeLimitMinutes, ShuffleQuestions = item.ShuffleQuestions, ShuffleOptions = item.ShuffleOptions,
-                AntiCheat = item.AntiCheat, MaxViolations = item.MaxViolations, ShowResult = item.ShowResult,
+                AntiCheat = item.AntiCheat, MaxViolations = item.MaxViolations, ShowResult = item.ShowResult, GuardFlags = item.GuardFlags,
             };
         }
 
@@ -135,7 +136,7 @@
                 Kind = item.Kind, Title = form.Title, Instructions = form.Instructions, MaxScore = form.MaxScore,
                 DueAtUtc = PhilippineTime.FromInputValue(form.DueText), VisibleFromUtc = PhilippineTime.FromInputValue(form.VisibleText),
                 TimeLimitMinutes = form.TimeLimit, ShuffleQuestions = form.ShuffleQuestions, ShuffleOptions = form.ShuffleOptions,
-                AntiCheat = form.AntiCheat, MaxViolations = form.MaxViolations, ShowResult = form.ShowResult,
+                AntiCheat = form.AntiCheat, MaxViolations = form.MaxViolations, ShowResult = form.ShowResult, GuardFlags = form.GuardFlags,
             };
             if (input.DueAtUtc is null)
             {
