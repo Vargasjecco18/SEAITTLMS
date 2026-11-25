@@ -4,6 +4,7 @@
 @inject CurrentUser Me
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject AdmissionService Admission
 
 @* The registrar's buttons for one line of the list of enrollments: Account (the sign-in details of the student), Edit (the name, the term, the course of study
    and the section) and Drop out. Each opens a box over the list. It is its own live island, so it works inside a list that is otherwise plain. *@
@@ -11,11 +12,45 @@
     <button type="button" class="act" @onclick="OpenAccountAsync"><Icon Name="key-round" Size="14" /> Account</button>
     @* Edit is at the right of Account (it is off for a line that is not an enrolled one). *@
     <button type="button" class="act" disabled="@(Status != "Enrolled")" title="@(Status == "Enrolled" ? "Edit the enrollment" : "Only an enrolled student can be edited")" @onclick="OpenEditAsync"><Icon Name="pencil" Size="14" /> Edit</button>
+    @* Round 46: the printable enrollment form and the enrollment information of the student are in the row too (the grades are the Final grade button). *@
+    <a class="act" id="form-@EnrollmentId" href="registrar/enrollments/@EnrollmentId/form" target="_blank" rel="noopener" title="@($"The printable enrollment form of {StudentName}")"><Icon Name="printer" Size="14" /> Form</a>
+    <button type="button" class="act" id="info-@EnrollmentId" title="@($"The enrollment information of {StudentName}")" @onclick="OpenInfoAsync"><Icon Name="info" Size="14" /> Info</button>
     @if (StudentActive)
     {
         <button type="button" class="act danger" @onclick="OpenDrop"><Icon Name="user-x" Size="14" /> Drop out</button>
     }
 </div>
+
+<Modal Open="showingInfo" Title="@($"Enrollment information · {StudentName}")" OnClose="CloseInfo">
+    @if (showingInfo)
+    {
+        @if (info is null)
+        {
+            <p class="muted">Loading…</p>
+        }
+        else
+        {
+            <dl class="account" id="enrollment-info">
+                <div><dt>LRN</dt><dd class="mono">@info.Lrn</dd></div>
+                <div><dt>Sex</dt><dd>@(infoRecord?.Sex?.ToString() ?? "—")</dd></div>
+                <div><dt>Phone</dt><dd>@(string.IsNullOrWhiteSpace(info.PhoneNumber) ? "—" : SEAITT_LMS.Auth.PhoneNumbers.ToLocal(info.PhoneNumber))</dd></div>
+                <div><dt>School year · term</dt><dd>@info.SchoolYear · @info.Term</dd></div>
+                <div><dt>Grade · strand · section</dt><dd>Grade @info.GradeLevel · @info.Strand · @info.Section</dd></div>
+                <div><dt>Track</dt><dd>@info.Track</dd></div>
+                <div><dt>Courses</dt><dd>@(info.Subjects.Count == 0 ? "None" : string.Join(", ", info.Subjects))</dd></div>
+                <div><dt>Email</dt><dd class="mono">@info.Email</dd></div>
+                <div><dt>Father</dt><dd>@(infoRecord?.FatherName ?? "—")</dd></div>
+                <div><dt>Mother</dt><dd>@(infoRecord?.MotherName ?? "—")</dd></div>
+                <div><dt>Guardian</dt><dd>@(infoRecord?.GuardianName is { } g ? g + (string.IsNullOrWhiteSpace(infoRecord.GuardianRelationship) ? "" : $" ({infoRecord.GuardianRelationship})") : "—")</dd></div>
+                <div><dt>Address</dt><dd>@(infoRecord?.GuardianAddress ?? infoRecord?.Address ?? "—")</dd></div>
+            </dl>
+            <div class="actions">
+                <a class="act" href="registrar/enrollments/@EnrollmentId/form" target="_blank" rel="noopener"><Icon Name="printer" Size="14" /> Printable form</a>
+                <Button OnClick="CloseInfo">Close</Button>
+            </div>
+        }
+    }
+</Modal>
 
 <Modal Open="showingAccount" Title="@($"Sign-in details of {StudentName}")" OnClose="CloseAccount">
     @if (showingAccount)
@@ -125,7 +160,7 @@
                     <option value="">@(strandId == 0 ? "Choose a strand first" : "Choose the section")</option>
                     @foreach (var load in loads)
                     {
-                        <option value="@load.Name" disabled="@(load.IsFull && load.Name != sectionName)">@load.Name · @load.Text@(load.IsFull ? " (full)" : "")</option>
+                        <option value="@load.Name" disabled="@((load.IsFull || load.Blocked) && load.Name != sectionName)">@load.Name · @load.Text@(load.IsFull ? " (full)" : load.Blocked ? $" (fill {load.WaitsFor} first)" : "")</option>
                     }
                 </select>
             </Field>
@@ -170,6 +205,22 @@
 
     /// <summary>False for a student who is in the archive (nothing to drop out).</summary>
     [Parameter] public bool StudentActive { get; set; } = true;
+
+    private bool showingInfo;
+    private EnrollmentReceipt? info;
+    private AdmissionDetails? infoRecord;
+
+    private async Task OpenInfoAsync()
+    {
+        info = null;
+        infoRecord = null;
+        showingInfo = true;
+        var me = await Me.GetAsync();
+        info = me is null ? null : await Enrollment.GetReceiptAsync(EnrollmentId, me.UserId);
+        infoRecord = info is null ? null : await Admission.FindByLrnAsync(info.Lrn);
+    }
+
+    private void CloseInfo() => showingInfo = false;
 
     private bool showingAccount;
     private bool copied;

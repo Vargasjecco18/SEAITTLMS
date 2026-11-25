@@ -4,6 +4,7 @@
 @using System.Security.Claims
 @using SEAITT_LMS.Services
 @inject EnrollmentService Enrollment
+@inject AdmissionService Admission
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JS
 @inject EnrollmentImportService Importer
@@ -178,7 +179,7 @@ else
                             <option value="">Choose</option>
                             @foreach (var load in SectionLoads)
                             {
-                                <option value="@load.Name" disabled="@load.IsFull">@load.Name@(form.StrandId == 0 ? "" : $" · {load.Text}")@(load.IsFull ? " (full)" : "")</option>
+                                <option value="@load.Name" disabled="@(load.IsFull || load.Blocked)">@load.Name@(form.StrandId == 0 ? "" : $" · {load.Text}")@(load.IsFull ? " (full)" : load.Blocked ? $" (fill {load.WaitsFor} first)" : "")</option>
                             }
                             @if (form.StrandId != 0)
                             {
@@ -350,9 +351,22 @@ else
 
     /// <summary>The boxes about the student. They are on the page and again in the box of the enrolling student: the same values, a prefix for the ids.</summary>
     private RenderFragment StudentFields(string p) => @<text>
-        <Field For="@(p + "lrn")" Label="LRN" Required="true" Hint="The 12 digits of the Learner Reference Number." Error="@FieldError("lrn")">
-            <input id="@(p + "lrn")" type="text" inputmode="numeric" data-digits maxlength="12" pattern="[0-9]{12}" autocomplete="off" required
-                   title="12 digits" @bind="LrnValue" @bind:event="oninput" @bind:after="OnLrnChangedAsync" />
+        @* Round 46: the LRN is not typed. The registrar chooses the student the Admission staff recorded; the LRN, the names and the phone are shown and filled in. *@
+        <Field For="@(p + "pick")" Label="Student" Required="true" Hint="@(recorded.Count == 0 && string.IsNullOrEmpty(form.Lrn) ? "Nobody is recorded yet: the Admission staff record the students first." : "Choose the student that the Admission staff recorded.")">
+            <select id="@(p + "pick")" @onchange="PickRecordedAsync">
+                <option value="">@(string.IsNullOrEmpty(form.Lrn) ? "Choose the student" : "Choose another student")</option>
+                @if (!string.IsNullOrEmpty(form.Lrn) && recorded.All(r => r.Lrn != form.Lrn))
+                {
+                    <option value="@form.Lrn" selected="selected">@(existing?.FullName ?? form.Lrn)</option>
+                }
+                @foreach (var r in recorded)
+                {
+                    <option value="@r.Lrn" selected="@(r.Lrn == form.Lrn)">@r.FullName · Grade @r.GradeLevel</option>
+                }
+            </select>
+        </Field>
+        <Field For="@(p + "lrn")" Label="LRN" Required="true" Hint="Shown when the student is chosen." Error="@FieldError("lrn")">
+            <input id="@(p + "lrn")" type="text" readonly maxlength="12" autocomplete="off" required placeholder="Choose the student above" title="The LRN is shown, not typed" value="@form.Lrn" />
         </Field>
 
         @if (existing is not null)
@@ -520,8 +534,11 @@ else
 
     private string TermText(int termId) => lookups?.Terms.FirstOrDefault(t => t.Id == termId) is { } term ? $"{term.SchoolYear} · {term.Name}{(term.IsCurrent ? " (current)" : "")}" : "No term is running";
 
+    private IReadOnlyList<AdmissionRow> recorded = [];
+
     protected override async Task OnInitializedAsync()
     {
+        recorded = await Admission.ListToEnrollAsync();
         lookups = await Enrollment.GetLookupsAsync();
         form.TermId = (lookups.Terms.FirstOrDefault(t => t.IsCurrent) ?? lookups.Terms.FirstOrDefault())?.Id ?? 0;
 
@@ -565,6 +582,35 @@ else
         form.StrandId = strand.Id;
         form.SectionName = ""; // the section is chosen again every term
         await ReloadChoicesAsync();
+    }
+
+    /// <summary>The registrar chose a student of the Admission list: the LRN, the names, the sex and the phone are filled in (nothing is typed).</summary>
+    private async Task PickRecordedAsync(ChangeEventArgs e)
+    {
+        var lrn = e.Value?.ToString() ?? "";
+        if (lrn.Length != 12)
+        {
+            form.Lrn = ""; form.FirstName = ""; form.MiddleName = ""; form.LastName = ""; form.NameExtension = ""; form.PhoneNumber = ""; phonePrefill = null;
+            existing = null;
+            return;
+        }
+
+        boxProblems.Remove("lrn");
+        form.Lrn = lrn;
+        if (await Admission.FindByLrnAsync(lrn) is { } record)
+        {
+            form.FirstName = record.FirstName;
+            form.MiddleName = record.MiddleName ?? "";
+            form.LastName = record.LastName;
+            form.NameExtension = record.NameExtension ?? "";
+            form.PhoneNumber = SEAITT_LMS.Auth.PhoneNumbers.ToLocal(record.PhoneNumber);
+            if (record.GradeLevel is 11 or 12 && existing is null)
+            {
+                form.GradeLevel = record.GradeLevel;
+            }
+        }
+
+        await OnLrnChangedAsync();
     }
 
     private async Task OnLrnChangedAsync()
@@ -676,7 +722,7 @@ else
         subjects = curriculum;
         plan = coursePlan;
         sectionLoads = sections;
-        if (sections.FirstOrDefault(l => l.Name == form.SectionName)?.IsFull == true)
+        if (sections.FirstOrDefault(l => l.Name == form.SectionName) is { } picked && (picked.IsFull || picked.Blocked))
         {
             form.SectionName = "";
         }

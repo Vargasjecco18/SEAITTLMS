@@ -4,6 +4,7 @@
 @inject CurrentUser Me
 @inject ModuleService Modules
 @inject PeopleService People
+@inject ReferralService Referrals
 
 <PageTitle>Students · SEAITT Legazpi LMS</PageTitle>
 
@@ -29,14 +30,105 @@ else
 
     <CourseLayout Teacher="subject" CurrentExtra="students">
         <Card Title="@($"Students of {subject.SectionLabel}")" IconName="users-round">
-            <p class="hint">Press <strong>Message</strong> to write to a student.</p>
-            <CoursePeopleList People="students" Singular="student" Plural="students" EmptyText="No student is enrolled in this course yet." />
+            <p class="hint">Press <strong>Message</strong> to write to a student, or <strong>Refer</strong> to send the student to the guidance counselor.</p>
+            @if (message is not null)
+            {
+                <p class="@(messageIsError ? "warn" : "note")" role="status" id="refer-message">@message</p>
+            }
+            <CoursePeopleList People="students" Singular="student" Plural="students" EmptyText="No student is enrolled in this course yet." OnRefer="OpenRefer" />
         </Card>
     </CourseLayout>
 }
 
+<Modal Open="referring is not null" Title="@($"Refer {referring?.Name} to guidance")" OnClose="CloseRefer">
+    @if (referring is not null)
+    {
+        <FormErrors Errors="referErrors" />
+        <p class="dialog-text">The guidance counselor is told and sees the referral. Choose what it is and what happened.</p>
+        <fieldset class="audience" id="refer-factor" role="radiogroup" aria-label="What it is">
+            <legend>What it is</legend>
+            @foreach (var factor in ReferralReasons.All)
+            {
+                var f = factor;
+                <label class="radio-line"><input type="radio" name="refer-factor" value="@f" checked="@(referReason == f)" @onchange="() => ChooseFactor(f)" /> <span>@ReferralReasons.Display(f)</span></label>
+            }
+        </fieldset>
+        <Field For="refer-happened" Label="What happened" Required="true">
+            <select id="refer-happened" @bind="referHappened">
+                <option value="">Choose</option>
+                @foreach (var choice in ReferralService.HappenedChoices(referReason))
+                {
+                    <option value="@choice">@choice</option>
+                }
+            </select>
+        </Field>
+        <Field For="refer-more" Label="More words" Hint="Optional (required for Others).">
+            <textarea id="refer-more" rows="3" maxlength="250" @bind="referMore"></textarea>
+        </Field>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseRefer">Cancel</Button>
+            <Button IconName="flag" Disabled="referBusy" OnClick="SendReferralAsync">@(referBusy ? "Sending…" : "Refer the student")</Button>
+        </div>
+    }
+</Modal>
+
 @code {
     [Parameter] public int AssignmentId { get; set; }
+
+    private PersonCard? referring;
+    private string referReason = ReferralReasons.LowAttendance;
+    private string referHappened = "";
+    private string referMore = "";
+    private List<string> referErrors = [];
+    private bool referBusy;
+    private string? message;
+    private bool messageIsError;
+
+    private void OpenRefer(PersonCard person)
+    {
+        referring = person;
+        referReason = ReferralReasons.LowAttendance;
+        referHappened = "";
+        referMore = "";
+        referErrors = [];
+    }
+
+    private void CloseRefer() => referring = null;
+
+    private void ChooseFactor(string factor)
+    {
+        referReason = factor;
+        referHappened = "";
+    }
+
+    private async Task SendReferralAsync()
+    {
+        if (referBusy || referring is null)
+        {
+            return;
+        }
+
+        referBusy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Referrals.ReferByTeacherAsync(me.UserId, referring.UserId, referReason, referHappened, referMore);
+            if (!result.Succeeded)
+            {
+                referErrors = [.. result.Errors];
+                return;
+            }
+
+            referring = null;
+            messageIsError = false;
+            message = result.Message;
+        }
+        finally
+        {
+            referBusy = false;
+        }
+    }
+
 
     private bool loaded;
     private TeacherSubject? subject;

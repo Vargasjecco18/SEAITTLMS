@@ -1,0 +1,54 @@
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject TimeProvider Clock
+
+@* Round 46: the staff are told when a term has ended (for three weeks after its last day): what ended, and which term comes next. The registrar is pointed to the re-enrollment, the academic coordinator to the setup. *@
+@if (ended is not null)
+{
+    <div class="term-ended" id="term-ended-notice" role="status">
+        <Icon Name="calendar-check" Size="20" />
+        <span>
+            <strong>The @ended.Name of @ended.SchoolYear ended on @PhilippineTime.FormatDate(ended.EndDate).</strong>
+            @if (next is not null)
+            {
+                <text> The next term is the <strong>@next.Name</strong>, from @PhilippineTime.FormatDate(next.StartDate) to @PhilippineTime.FormatDate(next.EndDate).</text>
+            }
+            else
+            {
+                <text> There is no next term yet.</text>
+            }
+            @if (For == "registrar" && next is not null)
+            {
+                <text> The students can be re-enrolled for it in <a href="registrar/student-accounts">Student's Accounts</a>.</text>
+            }
+            else if (For == "coordinator" && next is null)
+            {
+                <text> Add the next term in the <a href="coordinator/academic-setup">Academic setup</a>.</text>
+            }
+        </span>
+    </div>
+}
+
+@code {
+    /// <summary>"registrar", "coordinator" or nothing: what the notice points to.</summary>
+    [Parameter] public string? For { get; set; }
+
+    private sealed record TermLine(string Name, string SchoolYear, DateOnly StartDate, DateOnly EndDate);
+
+    private TermLine? ended;
+    private TermLine? next;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var today = PhilippineTime.Today(Clock);
+        var terms = await db.Terms.AsNoTracking().Select(t => new TermLine(t.Name, t.SchoolYear.Name, t.StartDate, t.EndDate)).ToListAsync();
+        var last = terms.Where(t => t.EndDate < today).OrderByDescending(t => t.EndDate).FirstOrDefault();
+        if (last is not null && today.DayNumber - last.EndDate.DayNumber <= 21)
+        {
+            ended = last;
+            next = terms.Where(t => t.StartDate > last.EndDate).OrderBy(t => t.StartDate).FirstOrDefault();
+        }
+    }
+}

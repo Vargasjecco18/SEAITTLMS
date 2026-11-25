@@ -16,6 +16,8 @@
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "coordinator"}")"
             IconName="layout-dashboard" />
 
+<TermEndedNotice For="coordinator" />
+
 @if (evaluations is not null && counts is not null)
 {
     var open = evaluations.Where(e => e.State == EvaluationStates.Open).ToList();

@@ -299,3 +299,29 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
 }
+
+/* Round 46: the audience of an announcement as round buttons. */
+.audience {
+    margin: 0 0 1rem;
+    padding: 0;
+    border: 0;
+}
+
+.audience legend {
+    margin-bottom: 0.4rem;
+    font-weight: 650;
+}
+
+.radio-line {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.3rem 0;
+    cursor: pointer;
+}
+
+.radio-line input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--brand);
+}

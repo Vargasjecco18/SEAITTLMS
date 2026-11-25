@@ -62,6 +62,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.Configure<EnrollmentOptions>(builder.Configuration.GetSection(EnrollmentOptions.SectionName));
 builder.Services.AddScoped<EnrollmentService>();
+builder.Services.AddScoped<AdmissionService>();
 builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<EnrollmentImportService>();
 builder.Services.AddScoped<FileDownloads>();
@@ -498,6 +499,21 @@ app.MapGet("/files/a/{id:int}", async (int id, HttpContext http, AttachmentServi
     var file = await attachments.OpenAsync(userId, id, http.RequestAborted);
     return file is null ? Results.NotFound() : ServeFile(http, file.Name, file.Data);
 });
+
+// Round 46: a scanned document of a student that the Admission staff recorded (only the Admission staff of that grade level open it).
+app.MapGet("/files/admission/{id:int}", async (int id, HttpContext http, AdmissionService admission) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var doc = await admission.OpenDocumentAsync(userId, id, http.RequestAborted);
+    if (doc is null)
+    {
+        return Results.NotFound();
+    }
+
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers.CacheControl = "private, no-store";
+    return Results.File(doc.Value.Data, doc.Value.ContentType, doc.Value.Name);
+}).RequireAuthorization();
 
 // A picture of a question of a quiz or of a summative exam: the teacher of the course and the students who have it (once it is posted) open it.
 app.MapGet("/files/q/{id:int}", async (int id, HttpContext http, QuizService quizzes) =>

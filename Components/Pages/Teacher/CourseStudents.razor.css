@@ -7,3 +7,29 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+.audience {
+    margin: 0 0 1rem;
+    padding: 0;
+    border: 0;
+}
+
+.audience legend {
+    margin-bottom: 0.4rem;
+    font-weight: 650;
+}
+
+.radio-line {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.3rem 0;
+    cursor: pointer;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+}

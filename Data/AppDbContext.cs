@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
+    public DbSet<AdmissionRecord> AdmissionRecords => Set<AdmissionRecord>();
+    public DbSet<AdmissionDocument> AdmissionDocuments => Set<AdmissionDocument>();
     public DbSet<Registrar> Registrars => Set<Registrar>();
     public DbSet<GuidanceCounselor> GuidanceCounselors => Set<GuidanceCounselor>();
     public DbSet<Administrator> Administrators => Set<Administrator>();

@@ -22,7 +22,6 @@ public sealed record NewAccount(
     string? PhoneNumber = null,
     string? Lrn = null,
     string? EmployeeNumber = null,
-    DateOnly? BirthDate = null,
     Sex? Sex = null,
     bool IsActive = true,
     int? CustomRoleId = null);
@@ -177,7 +176,7 @@ public sealed class UserAccountService(IDbContextFactory<AppDbContext> dbFactory
         switch (request.Role)
         {
             case AppRoles.Student:
-                db.Students.Add(Person(new Student { Lrn = lrn!, BirthDate = request.BirthDate, Sex = request.Sex }));
+                db.Students.Add(Person(new Student { Lrn = lrn!, Sex = request.Sex }));
                 break;
             case AppRoles.Teacher:
                 db.Teachers.Add(Person(new Teacher { EmployeeNumber = employeeNumber }));

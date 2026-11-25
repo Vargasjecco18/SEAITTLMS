@@ -14,6 +14,9 @@ public static class AppRoles
     public const string AcademicCoordinator = "AcademicCoordinator";
     public const string AcademicProvider = "AcademicProvider";
 
+    /// <summary>Round 46: the work of the Admission staff (Grade 11 and Grade 12). It is not a role of its own in the database: an account of a role the administrator made up gets it from the Admission pages that were ticked.</summary>
+    public const string Admission = "Admission";
+
     public const int AdminId = 1;
     public const int TeacherId = 2;
     public const int StudentId = 3;

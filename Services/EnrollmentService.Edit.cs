@@ -13,6 +13,11 @@ public sealed record EnrolledTodayRow(int EnrollmentId, string StudentName, stri
 /// <summary>How full a section is: the students enrolled in it for a term, and the limit.</summary>
 public sealed record SectionLoad(string Name, int Students, int Capacity)
 {
+    /// <summary>Round 46: the section before this one (A before B, B before C) is not full yet, so students go there first and this one can't be chosen. The name of that section.</summary>
+    public string? WaitsFor { get; init; }
+
+    public bool Blocked => WaitsFor is not null;
+
     public bool IsFull => Students >= Capacity;
 
     public int SeatsLeft => Math.Max(0, Capacity - Students);
@@ -54,9 +59,56 @@ public sealed partial class EnrollmentService
 
         var existing = await GetSectionNamesAsync(termId, strandId, gradeLevel, ct);
         var capacity = SectionCapacity;
-        return SectionNames.Choices.Concat(existing).Distinct().Order()
+        var loads = SectionNames.Choices.Concat(existing).Distinct().Order()
             .Select(name => new SectionLoad(name, counts.FirstOrDefault(c => c.Name == name)?.Count ?? 0, capacity))
             .ToList();
+        // Round 46: section A fills (to 40) before section B, B before C: a section waits while the one before it is not full.
+        for (var i = 1; i < loads.Count; i++)
+        {
+            var earlier = loads.Take(i).FirstOrDefault(l => !l.IsFull);
+            if (earlier is not null)
+            {
+                loads[i] = loads[i] with { WaitsFor = earlier.Name };
+            }
+        }
+
+        return loads;
+    }
+
+    /// <summary>Round 46: the section before <paramref name="sectionName"/> that is not full yet (A before B, B before C), or nothing when the section can be used.</summary>
+    private async Task<(string Name, int Students)?> SectionWaitsForAsync(int termId, int strandId, byte gradeLevel, string sectionName, int? exceptEnrollmentId, CancellationToken ct)
+    {
+        var loads = await GetSectionLoadsAsync(termId, strandId, gradeLevel, exceptEnrollmentId, ct);
+        var wanted = loads.FirstOrDefault(l => l.Name == sectionName);
+        return wanted?.WaitsFor is { } earlier ? (earlier, loads.First(l => l.Name == earlier).Students) : null;
+    }
+
+    /// <summary>
+    /// Round 46: the paper of an enrollment that was already made (the button Form in the row of a student): the same receipt the enrollment gave, without the password (an account that was made then
+    /// shows "(unchanged)"). Only a registrar reads it.
+    /// </summary>
+    public async Task<EnrollmentReceipt?> GetReceiptAsync(int enrollmentId, int actingUserId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        if (!await db.Users.AsNoTracking().InArea(AppRoles.Registrar).AnyAsync(u => u.Id == actingUserId && u.IsActive, ct))
+        {
+            return null;
+        }
+
+        var e = await db.Enrollments.AsNoTracking().Where(x => x.Id == enrollmentId).Select(x => new
+        {
+            x.Id, x.StudentId, x.FirstName, x.MiddleName, x.LastName, x.NameExtension, x.Lrn, SchoolYear = x.Term.SchoolYear.Name, Term = x.Term.Name, x.GradeLevel,
+            Track = x.Track.Name, Strand = x.Strand.Code, Section = x.Section.Name, Email = x.Student.User.Email, Phone = x.Student.User.PhoneNumber,
+            Courses = x.EnrolledSubjects.Select(c => new { c.Subject.Name, c.Subject.Units }).OrderBy(c => c.Name).ToList(),
+        }).FirstOrDefaultAsync(ct);
+        if (e is null)
+        {
+            return null;
+        }
+
+        var fullName = string.Join(' ', new[] { e.FirstName, e.MiddleName, e.LastName, e.NameExtension }.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return new EnrollmentReceipt(e.Id, e.StudentId, fullName, e.Lrn, e.SchoolYear, e.Term, e.GradeLevel, e.Track, e.Strand, $"{e.GradeLevel}-{e.Strand}-{e.Section}",
+            e.Courses.Select(c => c.Name).ToList(), false, e.Email, null, e.Phone, e.Courses.Select(c => c.Units).ToList());
     }
 
     /// <summary>
@@ -317,6 +369,16 @@ public sealed partial class EnrollmentService
 
             var section = await db.Sections.FirstOrDefaultAsync(s =>
                 s.SchoolYearId == term.SchoolYearId && s.StrandId == strand!.Id && s.GradeLevel == change.GradeLevel && s.Name == sectionName, ct);
+            if (section is null || section.Id != enrollment.SectionId)
+            {
+                // Round 46: moving into a later section is only possible when the sections before it are full (A fills before B).
+                var waits = await SectionWaitsForAsync(term.Id, strand!.Id, change.GradeLevel, sectionName, enrollment.Id, ct);
+                if (waits is not null)
+                {
+                    return ServiceResult.Fail($"Section {waits.Value.Name} is not full yet ({waits.Value.Students} of {SectionCapacity} students). Fill section {waits.Value.Name} first, then {sectionName}.");
+                }
+            }
+
             if (section is not null && section.Id != enrollment.SectionId)
             {
                 var inSection = await db.Enrollments.CountAsync(e => e.TermId == term.Id && e.SectionId == section.Id && e.Status == EnrollmentStatus.Enrolled && e.Id != enrollment.Id, ct);

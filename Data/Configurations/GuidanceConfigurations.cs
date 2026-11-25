@@ -27,7 +27,7 @@ internal sealed class ReferralConfiguration : IEntityTypeConfiguration<Referral>
 
         b.ToTable(t =>
         {
-            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation')");
+            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation', 'NonCompliance', 'Behavioral')");
             t.HasCheckConstraint("ck_referrals_status", "status IN ('Open', 'InProgress', 'Resolved')");
             t.HasCheckConstraint("ck_referrals_outcome", "outcome IS NULL OR outcome IN ('Improved', 'NoChange')");
             t.HasCheckConstraint("ck_referrals_student_response", "student_response IS NULL OR student_response IN ('Going', 'NotGoing')");

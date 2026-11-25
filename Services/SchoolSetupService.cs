@@ -852,7 +852,7 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             Curriculum = db.StrandSubjects.Count(x => x.SubjectId == id),
             Students = db.EnrollmentSubjects.Count(x => x.SubjectId == id),
             Teaching = db.TeachingAssignments.Count(x => x.SubjectId == id),
-            People = db.Students.Count(x => x.SubjectId == id) + db.Teachers.Count(x => x.SubjectId == id),
+            People = 0,   // Round 46: students and teachers do not keep a course (course_id): their courses come from the enrollment and the teaching assignments
         }).FirstOrDefaultAsync(ct);
         if (subject is null)
         {

@@ -1,0 +1,44 @@
+.lead-note {
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+}
+
+.part {
+    margin: 1rem 0 0.5rem;
+    font-size: 1rem;
+    color: var(--brand-strong);
+}
+
+.part small {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.doc-list {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.doc-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.doc-kind {
+    font-weight: 650;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+}

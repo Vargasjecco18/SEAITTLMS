@@ -293,7 +293,11 @@ else
     {
         <p class="dialog-text">The students of the courses you choose are told and find one questionnaire for each of their teachers in their dashboard. They answer once, anonymously, before the due date.</p>
         <FormErrors Errors="formErrors" />
-        <Field For="s-due" Label="Due date" Required="true" Hint="Philippine time. The last moment the students can answer.">
+        @* Round 46: the evaluation is posted at its start and closes at its end (Philippine time). Empty start: it is posted now. *@
+        <Field For="s-start" Label="Post on" Hint="Philippine time. The day and time the students can start. Empty: now.">
+            <input id="s-start" type="datetime-local" value="@sendStartText" @onchange="e => sendStartText = e.Value?.ToString() ?? string.Empty" />
+        </Field>
+        <Field For="s-due" Label="Close on" Required="true" Hint="Philippine time. The last moment the students can answer.">
             <input id="s-due" type="datetime-local" value="@sendDueText" @onchange="e => sendDueText = e.Value?.ToString() ?? string.Empty" />
         </Field>
 
@@ -414,6 +418,7 @@ else
     private IReadOnlyList<EvaluationChoice>? choices;
     private readonly HashSet<int> sendTargets = [];
     private string sendDueText = "";
+    private string sendStartText = "";
 
     private EvaluationCourseRow? notAnsweredFor;
     private EvaluationCourseRow? messageFor;
@@ -587,6 +592,7 @@ else
 
         sendTargets.Clear();
         sending = true;
+        sendStartText = "";
         sendDueText = string.IsNullOrWhiteSpace(dueText)
             ? PhilippineTime.ToInputValue(Clock.GetUtcNow().UtcDateTime.AddDays(7))
             : dueText;
@@ -646,7 +652,7 @@ else
             }
 
             var meta = await Service.SaveAsync(userId, EvaluationId, new EvaluationInput { Title = form.Title, Instructions = form.Instructions, DueAtUtc = due });
-            var result = meta.Succeeded ? await Service.SendAsync(userId, EvaluationId, [.. sendTargets], due.Value) : meta;
+            var result = meta.Succeeded ? await Service.SendAsync(userId, EvaluationId, [.. sendTargets], due.Value, default, PhilippineTime.FromInputValue(sendStartText)) : meta;
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];

@@ -115,11 +115,6 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     public Task<ServiceResult> SaveAsync(int actingUserId, SystemSettingsValues values, CancellationToken ct = default) =>
         SaveAsync(actingUserId, values, [AppRoles.AdminId], "Only an administrator can change the system settings.", ct);
 
-    /// <summary>The number of students a section can have. It is a setting of the academic part of the school, so the academic coordinator changes it (the administrator can too).</summary>
-    public Task<ServiceResult> SaveSectionCapacityAsync(int actingUserId, int capacity, CancellationToken ct = default) =>
-        SaveAsync(actingUserId, current with { SectionCapacity = capacity }, [AppRoles.AcademicCoordinatorId, AppRoles.AdminId],
-            "Only the academic coordinator can change how many students a section can have.", ct);
-
     private async Task<ServiceResult> SaveAsync(int actingUserId, SystemSettingsValues values, int[] allowedRoleIds, string notAllowed, CancellationToken ct)
     {
         var errors = Validate(values);
@@ -385,7 +380,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             AutoBackupHour = Number("backup.auto_hour", v.AutoBackupHour),
             BackupsToKeep = Number("backup.keep", v.BackupsToKeep),
             LogKeepDays = Number("logs.keep_days", v.LogKeepDays),
-            SectionCapacity = Number("classes.section_capacity", v.SectionCapacity),
+            SectionCapacity = 40,   // Round 46: a section has 40 students at most (fixed)
             WeightWrittenOral = Decimal("grading.weight_written", v.WeightWrittenOral),
             WeightPerformance = Decimal("grading.weight_performance", v.WeightPerformance),
             WeightSummative = Decimal("grading.weight_summative", v.WeightSummative),

@@ -88,15 +88,15 @@ else
                 <textarea id="a-body" rows="5" maxlength="@AnnouncementService.MaxBodyLength" @bind="form.Body"></textarea>
             </Field>
             <div class="two">
-                <Field For="a-start" Label="Start" Hint="Optional. The first day it is about.">
+                <Field For="a-start" Label="Start date" Hint="The day the announcement starts to show. Empty: now.">
                     <input id="a-start" type="date" @bind="form.StartsOn" />
                 </Field>
 
-                <Field For="a-until" Label="End" Hint="Optional. Empty: until you delete it.">
+                <Field For="a-until" Label="End date" Hint="The last day it shows. Empty: until you delete it.">
                     <input id="a-until" type="date" @bind="form.ExpiresOn" />
                 </Field>
             </div>
-            <p class="hint-line">The students of the class get a notification, and see the days from Start to End in their calendar.</p>
+            <p class="hint-line">The announcement is scheduled: it shows from the start date to the end date, and the students of the class see those days in their calendar.</p>
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
                 <Button Type="submit" IconName="send" Disabled="busy">@(busy ? "Saving…" : form.Id is null ? "Post" : "Save")</Button>

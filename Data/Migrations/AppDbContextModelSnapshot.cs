@@ -295,6 +295,203 @@ namespace SEAITT_LMS.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionDocument", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<byte[]>("Data")
+                        .HasColumnType("longblob")
+                        .HasColumnName("data");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("received_at_utc");
+
+                    b.Property<int?>("ReceivedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("received_by_user_id");
+
+                    b.Property<int>("RecordId")
+                        .HasColumnType("int")
+                        .HasColumnName("record_id");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_admission_documents");
+
+                    b.HasIndex("RecordId", "Kind")
+                        .HasDatabaseName("ix_admission_documents_record_id_kind");
+
+                    b.ToTable("admission_documents", (string)null);
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("address");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("EnrolledAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("enrolled_at_utc");
+
+                    b.Property<string>("FatherName")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("father_name");
+
+                    b.Property<string>("FatherPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("father_phone");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<byte>("GradeLevel")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("grade_level");
+
+                    b.Property<string>("GuardianAddress")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("guardian_address");
+
+                    b.Property<string>("GuardianName")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("guardian_name");
+
+                    b.Property<string>("GuardianPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("guardian_phone");
+
+                    b.Property<string>("GuardianRelationship")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("guardian_relationship");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("Lrn")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)")
+                        .HasColumnName("lrn");
+
+                    b.Property<string>("MiddleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("middle_name");
+
+                    b.Property<string>("MotherName")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("mother_name");
+
+                    b.Property<string>("MotherPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("mother_phone");
+
+                    b.Property<string>("NameExtension")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("name_extension");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<string>("PreviousSchool")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("previous_school");
+
+                    b.Property<int?>("RecordedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("Sex")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("sex");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_admission_records");
+
+                    b.HasIndex("Lrn")
+                        .IsUnique()
+                        .HasDatabaseName("ix_admission_records_lrn");
+
+                    b.HasIndex("GradeLevel", "LastName")
+                        .HasDatabaseName("ix_admission_records_grade_level_last_name");
+
+                    b.ToTable("admission_records", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_admission_records_grade_level", "grade_level IN (11, 12)");
+
+                            t.HasCheckConstraint("ck_admission_records_lrn", "CHAR_LENGTH(lrn) = 12");
+                        });
+                });
+
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
                 {
                     b.Property<int>("Id")
@@ -2335,7 +2532,7 @@ namespace SEAITT_LMS.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_referrals_outcome", "outcome IS NULL OR outcome IN ('Improved', 'NoChange')");
 
-                            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation')");
+                            t.HasCheckConstraint("ck_referrals_reason", "reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation', 'NonCompliance', 'Behavioral')");
 
                             t.HasCheckConstraint("ck_referrals_status", "status IN ('Open', 'InProgress', 'Resolved')");
 
@@ -2896,10 +3093,6 @@ namespace SEAITT_LMS.Data.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateOnly?>("BirthDate")
-                        .HasColumnType("date")
-                        .HasColumnName("birth_date");
-
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at_utc");
@@ -2967,10 +3160,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("strand_id");
 
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("int")
-                        .HasColumnName("course_id");
-
                     b.Property<int?>("TrackId")
                         .HasColumnType("int")
                         .HasColumnName("track_id");
@@ -2992,9 +3181,6 @@ namespace SEAITT_LMS.Data.Migrations
 
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_students_status");
-
-                    b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_students_course_id");
 
                     b.HasIndex("TrackId")
                         .HasDatabaseName("ix_students_track_id");
@@ -3360,10 +3546,6 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("int")
                         .HasColumnName("strand_id");
 
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("int")
-                        .HasColumnName("course_id");
-
                     b.Property<int?>("TrackId")
                         .HasColumnType("int")
                         .HasColumnName("track_id");
@@ -3382,9 +3564,6 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("EmployeeNumber")
                         .IsUnique()
                         .HasDatabaseName("ix_teachers_employee_number");
-
-                    b.HasIndex("SubjectId")
-                        .HasDatabaseName("ix_teachers_course_id");
 
                     b.HasIndex("TrackId")
                         .HasDatabaseName("ix_teachers_track_id");
@@ -3790,6 +3969,18 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_administrators_users_user_id");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionDocument", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.AdmissionRecord", "Record")
+                        .WithMany("Documents")
+                        .HasForeignKey("RecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_admission_documents_admission_records_record_id");
+
+                    b.Navigation("Record");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>
@@ -4648,12 +4839,6 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Student", b =>
                 {
-                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_students_courses_course_id");
-
                     b.HasOne("SEAITT_LMS.Data.Entities.Track", null)
                         .WithMany()
                         .HasForeignKey("TrackId")
@@ -4748,12 +4933,6 @@ namespace SEAITT_LMS.Data.Migrations
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Teacher", b =>
                 {
-                    b.HasOne("SEAITT_LMS.Data.Entities.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_teachers_courses_course_id");
-
                     b.HasOne("SEAITT_LMS.Data.Entities.Track", null)
                         .WithMany()
                         .HasForeignKey("TrackId")
@@ -4861,6 +5040,11 @@ namespace SEAITT_LMS.Data.Migrations
                     b.Navigation("CustomRole");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionRecord", b =>
+                {
+                    b.Navigation("Documents");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Attachment", b =>

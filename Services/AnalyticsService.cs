@@ -416,11 +416,11 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             var shown = ReferralReasons.All;
             concerns = shown.Select(r => new ConcernCount(r, reasons.FirstOrDefault(x => x.Reason == r)?.Count ?? 0)).ToList();
             openReferrals = user.Role == AppRoles.GuidanceCounselor
-                ? await db.Referrals.Where(r => r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation).Select(r => r.StudentId).Distinct().CountAsync(ct)
+                ? await db.Referrals.Where(r => ReferralReasons.All.Contains(r.Reason)).Select(r => r.StudentId).Distinct().CountAsync(ct)
                 : await db.Referrals.CountAsync(r => r.Status != ReferralStatus.Resolved, ct);
 
             // Solved: the concerns of attendance and violations the guidance counselor marked as solved (how many, by kind, and how many in the last 30 days).
-            var solvedRows = await db.Referrals.AsNoTracking().Where(r => r.Status == ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            var solvedRows = await db.Referrals.AsNoTracking().Where(r => r.Status == ReferralStatus.Resolved && (ReferralReasons.All.Contains(r.Reason)))
                 .Select(r => new { r.Reason, r.ResolvedAtUtc }).ToListAsync(ct);
             solved = solvedRows.Count;
             solvedRecently = solvedRows.Count(r => r.ResolvedAtUtc != null && r.ResolvedAtUtc >= now.AddDays(-30));
@@ -428,7 +428,7 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
 
             // The students who have an attendance concern or a violation concern now (the ones the counselor has not solved).
             var open = await db.Referrals.AsNoTracking()
-                .Where(r => r.Status != ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+                .Where(r => r.Status != ReferralStatus.Resolved && (ReferralReasons.All.Contains(r.Reason)))
                 .Select(r => new { r.StudentId, r.Reason, r.Detail, r.Metric, r.CreatedAtUtc, r.Student.FirstName, r.Student.LastName, r.Student.Lrn })
                 .ToListAsync(ct);
             concernStudents = open.GroupBy(r => (r.StudentId, r.Reason))

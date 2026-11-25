@@ -23,6 +23,7 @@ public static class StaffPages
     public const string GuidanceGroup = "Guidance counselor";
     public const string CoordinatorGroup = "Academic coordinator";
     public const string ProviderGroup = "Academic provider";
+    public const string AdmissionGroup = "Admission";
 
     public static readonly IReadOnlyList<StaffPage> All =
     [
@@ -47,6 +48,9 @@ public static class StaffPages
         new("coordinator-announcements", "Announcements", "/coordinator/announcements", "megaphone", "The notices of the school and the holidays", CoordinatorGroup, AppRoles.AcademicCoordinator),
         new("provider-dashboard", "Provider dashboard", "/provider", "layout-dashboard", "What the teachers did with the library", ProviderGroup, AppRoles.AcademicProvider, Exact: true),
         new("provider-library", "Course library", "/provider/library", "folder-open", "The handouts and the summative exams of the courses", ProviderGroup, AppRoles.AcademicProvider),
+        // Round 46: the Admission staff of Grade 11 and of Grade 12 record the information and the documents of the students for the registrar (there is no application form on the home page).
+        new("admission-grade11", "Admission · Grade 11", "/admission/grade-11", "user-plus", "Record the information and the documents of the Grade 11 students for the registrar", AdmissionGroup, AppRoles.Admission),
+        new("admission-grade12", "Admission · Grade 12", "/admission/grade-12", "user-plus", "Record the information and the documents of the Grade 12 students for the registrar", AdmissionGroup, AppRoles.Admission),
         new("provider-tracking", "Tracking", "/provider/tracking", "list-checks", "Which teachers got and used what was sent", ProviderGroup, AppRoles.AcademicProvider),
     ];
 
@@ -122,6 +126,7 @@ public static class StaffAreas
         AppRoles.GuidanceCounselor => ",guidance-",
         AppRoles.AcademicCoordinator => ",coordinator-",
         AppRoles.AcademicProvider => ",provider-",
+        AppRoles.Admission => ",admission-",
         _ => ",none-",
     };
 
@@ -135,8 +140,13 @@ public static class StaffAreas
     /// <summary>The accounts of the role itself and the accounts of a made-up role that has at least one page of the area.</summary>
     public static IQueryable<User> InArea(this IQueryable<User> users, string area)
     {
-        var roleId = AppRoles.Ids[area];
         var prefix = Prefix(area);
+        if (!AppRoles.Ids.TryGetValue(area, out var roleId))
+        {
+            // an area without a role of its own (Admission): only the accounts of a made-up role with one of its pages
+            return users.Where(u => u.CustomRole != null && ("," + u.CustomRole.Pages).Contains(prefix));
+        }
+
         return users.Where(u => u.RoleId == roleId || (u.CustomRole != null && ("," + u.CustomRole.Pages).Contains(prefix)));
     }
 }

@@ -12,6 +12,8 @@
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, counselor")" IconName="layout-dashboard" />
 
+<TermEndedNotice />
+
 @if (overview is null)
 {
     <p class="muted">Loading…</p>

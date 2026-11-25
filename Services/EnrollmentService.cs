@@ -100,7 +100,10 @@ public sealed partial class EnrollmentService(
     TimeProvider? clock = null)
 {
     /// <summary>How many students one section can have (System Settings; 40 until the administrator changes it).</summary>
-    public int SectionCapacity => settings?.Current.SectionCapacity ?? new SystemSettingsValues().SectionCapacity;
+    /// <summary>Round 46: a section has 40 students at most (it is fixed: nobody edits it).</summary>
+    public const int FixedSectionCapacity = 40;
+
+    public int SectionCapacity => FixedSectionCapacity;
 
     [GeneratedRegex(@"^[\p{L}\p{N}][\p{L}\p{N} \-]*$")]
     private static partial Regex SectionNamePattern();
@@ -392,6 +395,14 @@ public sealed partial class EnrollmentService(
                 db.Students.Add(student);
             }
 
+            // Round 46: the Admission staff recorded the student: the sex comes from the record, and the record is marked as enrolled.
+            var record = await db.AdmissionRecords.FirstOrDefaultAsync(r => r.Lrn == lrn, ct);
+            if (record is not null)
+            {
+                student.Sex ??= record.Sex;
+                record.EnrolledAtUtc ??= DateTime.UtcNow;
+            }
+
             // A student who changes strand starts again in Grade 11.
             var lastStrandId = await db.Enrollments.AsNoTracking()
                 .Where(e => e.StudentId == student.Id && e.TermId != term!.Id)
@@ -404,6 +415,13 @@ public sealed partial class EnrollmentService(
             }
 
             // ---- the section: it is created the first time somebody is enrolled in it
+            // Round 46: section A fills (40 students) before section B, B before C.
+            var waits = await SectionWaitsForAsync(termId: term!.Id, strand!.Id, request.GradeLevel, sectionName, null, ct);
+            if (waits is not null)
+            {
+                return EnrollmentResult.Fail($"Section {waits.Value.Name} is not full yet ({waits.Value.Students} of {SectionCapacity} students). Fill section {waits.Value.Name} first, then {sectionName}.");
+            }
+
             var section = await db.Sections.FirstOrDefaultAsync(s =>
                 s.SchoolYearId == term!.SchoolYearId && s.StrandId == strand!.Id && s.GradeLevel == request.GradeLevel
                 && s.Name == sectionName, ct);

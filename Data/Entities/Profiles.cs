@@ -54,9 +54,6 @@ public interface IHasPlacement
     int? TrackId { get; set; }
     int? StrandId { get; set; }
 
-    /// <summary>A student's main subject, or the subject a teacher mainly teaches.</summary>
-    int? SubjectId { get; set; }
-
     /// <summary>A student's section, or the section a teacher mainly handles.</summary>
     int? SectionId { get; set; }
 }
@@ -66,13 +63,11 @@ public class Student : PersonProfile, IHasPlacement
     /// <summary>Learner Reference Number, exactly 12 digits. Unique.</summary>
     public string Lrn { get; set; } = "";
 
-    public DateOnly? BirthDate { get; set; }
     public Sex? Sex { get; set; }
 
     public byte? GradeLevel { get; set; }
     public int? TrackId { get; set; }
     public int? StrandId { get; set; }
-    public int? SubjectId { get; set; }
     public int? SectionId { get; set; }
 
     /// <summary>One of <see cref="StudentStatus"/>. A graduated student is archived.</summary>
@@ -106,7 +101,6 @@ public class Teacher : StaffProfile, IHasPlacement
     public byte? GradeLevel { get; set; }
     public int? TrackId { get; set; }
     public int? StrandId { get; set; }
-    public int? SubjectId { get; set; }
     public int? SectionId { get; set; }
 }
 

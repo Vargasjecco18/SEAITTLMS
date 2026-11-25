@@ -14,6 +14,8 @@
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "provider"}")"
             IconName="layout-dashboard" />
 
+<TermEndedNotice />
+
 @if (data is null)
 {
     <p class="muted">Loading…</p>

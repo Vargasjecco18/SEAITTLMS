@@ -2728,5 +2728,87 @@ UPDATE referrals SET detail = 'Damaging school property' WHERE detail = 'Damage 
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261113150248_ReferralWording', '9.0.20');
 
+ALTER TABLE `material_items` ADD `guard_flags` varchar(100) CHARACTER SET utf8mb4 NOT NULL DEFAULT '';
+
+ALTER TABLE `handout_items` ADD `guard_flags` varchar(100) CHARACTER SET utf8mb4 NOT NULL DEFAULT '';
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261125163104_QuizGuardOptions', '9.0.20');
+
+ALTER TABLE `students` DROP FOREIGN KEY `fk_students_courses_course_id`;
+
+ALTER TABLE `teachers` DROP FOREIGN KEY `fk_teachers_courses_course_id`;
+
+ALTER TABLE `teachers` DROP INDEX `ix_teachers_course_id`;
+
+ALTER TABLE `students` DROP INDEX `ix_students_course_id`;
+
+ALTER TABLE `teachers` DROP COLUMN `course_id`;
+
+ALTER TABLE `students` DROP COLUMN `birth_date`;
+
+ALTER TABLE `students` DROP COLUMN `course_id`;
+
+CREATE TABLE `admission_records` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `grade_level` tinyint unsigned NOT NULL,
+    `lrn` varchar(12) CHARACTER SET utf8mb4 NOT NULL,
+    `first_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `middle_name` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `last_name` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+    `name_extension` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `sex` varchar(10) CHARACTER SET utf8mb4 NULL,
+    `phone_number` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `address` varchar(300) CHARACTER SET utf8mb4 NULL,
+    `previous_school` varchar(200) CHARACTER SET utf8mb4 NULL,
+    `father_name` varchar(150) CHARACTER SET utf8mb4 NULL,
+    `father_phone` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `mother_name` varchar(150) CHARACTER SET utf8mb4 NULL,
+    `mother_phone` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `guardian_name` varchar(150) CHARACTER SET utf8mb4 NULL,
+    `guardian_relationship` varchar(50) CHARACTER SET utf8mb4 NULL,
+    `guardian_phone` varchar(20) CHARACTER SET utf8mb4 NULL,
+    `guardian_address` varchar(300) CHARACTER SET utf8mb4 NULL,
+    `recorded_by_user_id` int NULL,
+    `enrolled_at_utc` datetime(6) NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_admission_records` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_admission_records_grade_level` CHECK (grade_level IN (11, 12)),
+    CONSTRAINT `ck_admission_records_lrn` CHECK (CHAR_LENGTH(lrn) = 12)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `admission_documents` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `record_id` int NOT NULL,
+    `kind` varchar(60) CHARACTER SET utf8mb4 NOT NULL,
+    `file_name` varchar(255) CHARACTER SET utf8mb4 NULL,
+    `content_type` varchar(100) CHARACTER SET utf8mb4 NULL,
+    `size_bytes` bigint NOT NULL,
+    `data` longblob NULL,
+    `received_at_utc` datetime(6) NOT NULL,
+    `received_by_user_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_admission_documents` PRIMARY KEY (`id`),
+    CONSTRAINT `fk_admission_documents_admission_records_record_id` FOREIGN KEY (`record_id`) REFERENCES `admission_records` (`id`) ON DELETE CASCADE
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_admission_documents_record_id_kind` ON `admission_documents` (`record_id`, `kind`);
+
+CREATE INDEX `ix_admission_records_grade_level_last_name` ON `admission_records` (`grade_level`, `last_name`);
+
+CREATE UNIQUE INDEX `ix_admission_records_lrn` ON `admission_records` (`lrn`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261125165508_AdmissionRecordsAndStrandPlacement', '9.0.20');
+
+ALTER TABLE `referrals` DROP CONSTRAINT `ck_referrals_reason`;
+
+ALTER TABLE `referrals` ADD CONSTRAINT `ck_referrals_reason` CHECK (reason IN ('FailingGrades', 'AtRisk', 'LowAttendance', 'Violation', 'NonCompliance', 'Behavioral'));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261125171650_ReferralFactors', '9.0.20');
+
 COMMIT;
 

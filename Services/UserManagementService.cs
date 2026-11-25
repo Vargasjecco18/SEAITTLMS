@@ -475,7 +475,6 @@ public sealed class UserManagementService(
         teacher.StrandId = resolved.StrandId;
         teacher.SectionId = resolved.SectionId;
         teacher.GradeLevel = resolved.GradeLevel;
-        teacher.SubjectId = resolved.SubjectIds.Count > 0 ? resolved.SubjectIds[0] : null;
         if (resolved.SectionId is { } sectionId)
         {
             foreach (var subjectId in resolved.SubjectIds)

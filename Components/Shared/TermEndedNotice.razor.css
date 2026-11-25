@@ -1,0 +1,17 @@
+.term-ended {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.95rem;
+    border: 1px solid var(--accent-yellow, #f2b705);
+    border-left-width: 5px;
+    border-radius: var(--radius-sm);
+    background: var(--warning-soft, #fff8e1);
+    color: var(--text);
+}
+
+.term-ended a {
+    color: var(--brand-strong);
+    font-weight: 650;
+}

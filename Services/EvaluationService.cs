@@ -29,6 +29,8 @@ public sealed class EvaluationQuestionInput
 public static class EvaluationStates
 {
     public const string Draft = "Draft";
+    /// <summary>Round 46: it was sent for a later day and time: the students see it only when it opens.</summary>
+    public const string Scheduled = "Scheduled";
     public const string Open = "Open";
     public const string Closed = "Closed";
 }
@@ -162,7 +164,9 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
     ];
 
     public static string StateOf(DateTime? sentAtUtc, DateTime? dueAtUtc, DateTime now) =>
-        sentAtUtc is null ? EvaluationStates.Draft : dueAtUtc is { } due && due <= now ? EvaluationStates.Closed : EvaluationStates.Open;
+        sentAtUtc is null ? EvaluationStates.Draft
+        : sentAtUtc > now ? EvaluationStates.Scheduled
+        : dueAtUtc is { } due && due <= now ? EvaluationStates.Closed : EvaluationStates.Open;
 
     // ======================================================================= the coordinator: reading
 
@@ -625,7 +629,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
     /// Sends the evaluation to the students of the chosen courses: each of them is told, and finds one questionnaire for each teacher
     /// in their dashboard and at "Teacher evaluation". The due date is the last time they can answer.
     /// </summary>
-    public async Task<ServiceResult> SendAsync(int userId, int id, IReadOnlyCollection<int> assignmentIds, DateTime dueAtUtc, CancellationToken ct = default)
+    public async Task<ServiceResult> SendAsync(int userId, int id, IReadOnlyCollection<int> assignmentIds, DateTime dueAtUtc, CancellationToken ct = default, DateTime? opensAtUtc = null)
     {
         if (assignmentIds.Count == 0)
         {
@@ -687,7 +691,14 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             return ServiceResult.Fail("None of the courses you chose has students. Choose courses that have students.");
         }
 
-        evaluation.SentAtUtc = now;
+        // Round 46: the evaluation is posted when it opens (now, or the day and time the coordinator chose) and closes at its end.
+        var opens = opensAtUtc is { } chosen && chosen > now ? chosen : now;
+        if (dueAtUtc <= opens)
+        {
+            return ServiceResult.Fail("The end must be after the start.");
+        }
+
+        evaluation.SentAtUtc = opens;
         evaluation.DueAtUtc = dueAtUtc;
         evaluation.TermId = await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => (int?)t.Id).FirstOrDefaultAsync(ct);
         foreach (var assignmentId in courses)
@@ -696,6 +707,11 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         }
 
         await db.SaveChangesAsync(ct);
+
+        if (opens > now)
+        {
+            return ServiceResult.Ok($"Scheduled: the evaluation opens on {PhilippineTime.FormatDateTime(opens)} and closes on {PhilippineTime.FormatDateTime(dueAtUtc)}.", id);
+        }
 
         await notifications.AddForManyAsync(
             students, "evaluation", $"Teacher evaluation: {evaluation.Title}",
@@ -744,7 +760,7 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .Select(r => new { r.EvaluationId, r.AssignmentId }).ToListAsync(ct)).Select(r => (r.EvaluationId, r.AssignmentId)).ToHashSet();
 
         var rows = await db.EvaluationTargets.AsNoTracking()
-            .Where(t => t.Evaluation.SentAtUtc != null && t.Evaluation.DueAtUtc != null
+            .Where(t => t.Evaluation.SentAtUtc != null && t.Evaluation.SentAtUtc <= now && t.Evaluation.DueAtUtc != null
                         && (mine.Contains(t.AssignmentId) || db.EvaluationResponses.Any(r => r.StudentId == studentId && r.EvaluationId == t.EvaluationId && r.AssignmentId == t.AssignmentId)))
             .Select(t => new
             {

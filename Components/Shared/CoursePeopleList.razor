@@ -20,6 +20,13 @@ else
                     <button type="button" class="write" title="@($"Write to {p.Name}")" aria-label="@($"Write to {p.Name}")" @onclick="() => Launcher.Open(p.UserId)">
                         <Icon Name="message-square" Size="16" /> <span>Message</span>
                     </button>
+                    @if (OnRefer.HasDelegate)
+                    {
+                        @* Round 46: the teacher refers the student to the guidance counselor from here. *@
+                        <button type="button" class="write refer" id="refer-@p.UserId" title="@($"Refer {p.Name} to the guidance counselor")" aria-label="@($"Refer {p.Name} to the guidance counselor")" @onclick="() => OnRefer.InvokeAsync(p)">
+                            <Icon Name="flag" Size="16" /> <span>Refer</span>
+                        </button>
+                    }
                 </PersonLine>
             </li>
         }
@@ -35,6 +42,9 @@ else
     [Parameter] public string Singular { get; set; } = "person";
 
     [Parameter] public string Plural { get; set; } = "people";
+
+    /// <summary>When set, each person has a Refer button (the teacher's view of the students): the page opens its box.</summary>
+    [Parameter] public EventCallback<PersonCard> OnRefer { get; set; }
 
     private Timer? timer;
 

@@ -195,26 +195,33 @@ else
                 <textarea id="a-body" rows="5" maxlength="@AnnouncementService.MaxBodyLength" @bind="form.Body"></textarea>
             </Field>
 
-            <Field For="a-audience" Label="For" Required="true" Hint="@(form.Category == AnnouncementCategories.TeachersMeeting ? "A teachers' meeting is for the teachers." : null)">
-                <select id="a-audience" @bind="form.Audience" disabled="@(form.Category == AnnouncementCategories.TeachersMeeting)">
-                    <option value="@AnnouncementAudiences.Everyone">Everybody (staff, teachers and students)</option>
-                    <option value="@AnnouncementAudiences.Students">The students</option>
-                    <option value="@AnnouncementAudiences.Teachers">The teachers</option>
-                    <option value="@AnnouncementAudiences.Staff">The staff</option>
-                    <option value="@AnnouncementAudiences.StaffTeachers">The staff and the teachers</option>
-                </select>
-            </Field>
+            @* Round 46: who the announcement is for is chosen with round buttons (radio), not a list. *@
+            <fieldset class="audience" id="a-audience" role="radiogroup" aria-label="Who the announcement is for">
+                <legend>For <span class="required" aria-hidden="true">*</span></legend>
+                @foreach (var audience in AnnouncementAudiences.All)
+                {
+                    var a = audience;
+                    <label class="radio-line">
+                        <input type="radio" name="a-audience" value="@a" checked="@(form.Audience == a)" disabled="@(form.Category == AnnouncementCategories.TeachersMeeting)" @onchange="() => form.Audience = a" />
+                        <span>@AudienceLabel(a)</span>
+                    </label>
+                }
+                @if (form.Category == AnnouncementCategories.TeachersMeeting)
+                {
+                    <small class="hint">A teachers' meeting is for the teachers.</small>
+                }
+            </fieldset>
 
             <div class="two">
-                <Field For="a-start" Label="Start" Hint="Optional. The first day it is about.">
+                <Field For="a-start" Label="Start date" Hint="The day the announcement starts to show. Empty: now.">
                     <input id="a-start" type="date" @bind="form.StartsOn" />
                 </Field>
 
-                <Field For="a-until" Label="End" Hint="Optional. Empty: until you delete it.">
+                <Field For="a-until" Label="End date" Hint="The last day it shows. Empty: until you delete it.">
                     <input id="a-until" type="date" @bind="form.ExpiresOn" />
                 </Field>
             </div>
-            <p class="hint-line">The people it is for get a notification, and see the days from Start to End in their calendar.</p>
+            <p class="hint-line">The announcement is scheduled: it shows from the start date to the end date, and the people it is for see those days in their calendar.</p>
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
                 <Button Type="submit" IconName="send" Disabled="busy">@(busy ? "Saving…" : form.Id is null ? "Post" : "Save")</Button>
@@ -239,6 +246,15 @@ else
 <AnnouncementsSheetDialog Open="sheetOpen" Today="today" Busy="busy" Errors="sheetErrors" OnPost="PostSheetAsync" OnClose="CloseSheet" />
 
 @code {
+    private static string AudienceLabel(string audience) => audience switch
+    {
+        AnnouncementAudiences.Everyone => "Everybody (staff, teachers and students)",
+        AnnouncementAudiences.Students => "The students",
+        AnnouncementAudiences.Teachers => "The teachers",
+        AnnouncementAudiences.Staff => "The staff",
+        _ => "The staff and the teachers",
+    };
+
     [Inject] private FileDownloads Downloads { get; set; } = null!;
 
     private async Task ExportAsync() => await Downloads.SaveAsync(AnnouncementSheets.FileName("Announcements"), AnnouncementSheets.Export(rows ?? []));

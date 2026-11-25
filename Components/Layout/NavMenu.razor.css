@@ -44,3 +44,9 @@
     background: var(--brand-soft);
     color: var(--brand-strong);
 }
+
+/* Round 46: the page you are on has a yellow mark at its left (the yellow of SEAITT). */
+.nav ::deep .link.active {
+    box-shadow: inset 4px 0 0 var(--accent-yellow);
+}
+

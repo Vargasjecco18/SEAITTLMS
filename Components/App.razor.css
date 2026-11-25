@@ -24,14 +24,17 @@ html {
     --text: #162033;
     --text-muted: #5b6b82;
 
-    /* Brand blue */
-    --brand: #2563eb;
-    --brand-strong: #1d4ed8;
-    --brand-soft: #e8f0fe;
-    --brand-ring: rgba(37, 99, 235, 0.28);
-    --brand-gradient: linear-gradient(135deg, #2563eb, #4f46e5);
-    --btn-bg: #2563eb;
-    --btn-bg-hover: #1d4ed8;
+    /* Round 46: the colors of SEAITT: a deep blue and a yellow (the yellow is the accent: the line under the top bar, the mark of the page you are on, a little warmth). */
+    --brand: #0b4aa2;
+    --brand-strong: #083a82;
+    --brand-soft: #e6eefb;
+    --brand-ring: rgba(11, 74, 162, 0.3);
+    --brand-gradient: linear-gradient(135deg, #0b4aa2, #1769d1);
+    --accent-yellow: #f6b800;
+    --accent-yellow-strong: #d39a00;
+    --accent-yellow-soft: #fff4cc;
+    --btn-bg: #0b4aa2;
+    --btn-bg-hover: #083a82;
     --on-brand: #ffffff;
 
     /* Meaning: success, info, warning, danger (text color and soft background) */
@@ -89,11 +92,14 @@ html[data-theme="dark"] {
     --text: #ededed;
     --text-muted: #a3a3a3;
 
-    --brand: #6b9bff;
-    --brand-strong: #9bbaff;
-    --brand-soft: rgba(107, 155, 255, 0.16);
-    --brand-ring: rgba(107, 155, 255, 0.35);
-    --brand-gradient: linear-gradient(135deg, #3b6fe0, #5b54e8);
+    --brand: #5b9bff;
+    --brand-strong: #9cc2ff;
+    --brand-soft: rgba(91, 155, 255, 0.16);
+    --brand-ring: rgba(91, 155, 255, 0.35);
+    --brand-gradient: linear-gradient(135deg, #1e5fc4, #2f7be0);
+    --accent-yellow: #ffc933;
+    --accent-yellow-strong: #ffd666;
+    --accent-yellow-soft: rgba(255, 201, 51, 0.16);
     --btn-bg: #3b6fe0;
     --btn-bg-hover: #2f60cf;
 

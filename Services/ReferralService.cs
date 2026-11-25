@@ -210,7 +210,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     public async Task<GuidanceOverview> GetOverviewAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var all = db.Referrals.AsNoTracking().Where(r => r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation);
+        var all = db.Referrals.AsNoTracking().Where(r => ReferralReasons.All.Contains(r.Reason));
         var mine = all.Where(r => r.Status != ReferralStatus.Resolved);
         var newest = await RowsAsync(db, mine.OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id).Take(6), ct);
         var since = clock.GetUtcNow().UtcDateTime.AddDays(-30);
@@ -225,7 +225,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     private static async Task<IQueryable<Referral>> FilteredAsync(AppDbContext db, string? status, string? reason, string? search, int? gradeLevel, CancellationToken ct)
     {
         // Only attendance and violations are the counselor's (older referrals about grades are not listed).
-        var query = db.Referrals.AsNoTracking().Where(r => r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation);
+        var query = db.Referrals.AsNoTracking().Where(r => ReferralReasons.All.Contains(r.Reason));
         if (gradeLevel is 11 or 12)
         {
             query = query.Where(r => r.Student.GradeLevel == gradeLevel);
@@ -310,7 +310,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             .Skip((page - 1) * StudentPageSize).Take(StudentPageSize)
             .Select(g => g.StudentId).ToListAsync(ct);
 
-        var rows = await RowsAsync(db, db.Referrals.AsNoTracking().Where(r => studentIds.Contains(r.StudentId) && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+        var rows = await RowsAsync(db, db.Referrals.AsNoTracking().Where(r => studentIds.Contains(r.StudentId) && (ReferralReasons.All.Contains(r.Reason)))
             .OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id), ct);
         var items = studentIds
             .Select(id => rows.Where(r => r.StudentId == id).ToList())
@@ -367,7 +367,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
 
         var ids = students.Select(s => s.Id).ToList();
         var rows = await RowsAsync(db, db.Referrals.AsNoTracking()
-            .Where(r => ids.Contains(r.StudentId) && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .Where(r => ids.Contains(r.StudentId) && (ReferralReasons.All.Contains(r.Reason)))
             .OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id), ct);
         var sectionLabels = await SectionLabelsAsync(db, ct);
         var strandCodes = await db.Strands.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.Code, ct);
@@ -378,8 +378,9 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     }
 
     /// <summary>What can happen, to choose from when a concern is recorded (the counselor can add more words of their own).</summary>
-    public static IReadOnlyList<string> HappenedChoices(string reason) => reason == ReferralReasons.LowAttendance
-        ?
+    public static IReadOnlyList<string> HappenedChoices(string reason) => reason switch
+    {
+        ReferralReasons.LowAttendance =>
         [
             "Absent for many days",
             "Often late to class",
@@ -387,8 +388,26 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             "Absent without a valid reason",
             "Stopped coming to school",
             InterventionTypes.Others,
-        ]
-        :
+        ],
+        ReferralReasons.NonCompliance =>
+        [
+            "Not handing in the work",
+            "Not wearing the uniform or the ID",
+            "Not following the rules of the school",
+            "Not bringing what is required",
+            "Not joining the activities that are required",
+            InterventionTypes.Others,
+        ],
+        ReferralReasons.Behavioral =>
+        [
+            "Disturbing the class",
+            "Lack of respect",
+            "Quiet and keeps away from others",
+            "A sudden change in behavior",
+            "Quarreling with classmates",
+            InterventionTypes.Others,
+        ],
+        _ =>
         [
             "Fighting",
             "Bullying",
@@ -398,7 +417,8 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             "Not following the uniform or ID rules",
             "Damaging school property",
             InterventionTypes.Others,
-        ];
+        ],
+    };
 
     /// <summary>
     /// The counselor records a concern about a student: attendance, or a violation of the school rules. <paramref name="happened"/> is what the counselor chose from the list
@@ -410,7 +430,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         more = string.IsNullOrWhiteSpace(more) ? null : more.Trim();
         if (reason is null || !ReferralReasons.All.Contains(reason))
         {
-            return ServiceResult.Fail("Choose what it is: attendance or violation.");
+            return ServiceResult.Fail("Choose what it is: absenteeism, non-compliance, behavioral or a violation.");
         }
 
         if (happened is null || !HappenedChoices(reason).Contains(happened))
@@ -448,6 +468,79 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         return ServiceResult.Ok($"{student.LastName}, {student.FirstName}: the {ReferralReasons.Display(reason).ToLowerInvariant()} concern was recorded.", referral.Id);
     }
 
+    /// <summary>
+    /// Round 46: a teacher refers one of their students to the guidance counselor: what it is (absenteeism, non-compliance, behavioral, violation), what happened and, if the teacher likes, more words.
+    /// The referral is open for the guidance counselor, who is told. Only the teacher of the student can refer.
+    /// </summary>
+    public async Task<ServiceResult> ReferByTeacherAsync(int teacherUserId, int studentUserId, string? reason, string? happened, string? more, CancellationToken ct = default)
+    {
+        happened = string.IsNullOrWhiteSpace(happened) ? null : happened.Trim();
+        more = string.IsNullOrWhiteSpace(more) ? null : more.Trim();
+        if (reason is null || !ReferralReasons.All.Contains(reason))
+        {
+            return ServiceResult.Fail("Choose what it is: absenteeism, non-compliance, behavioral or a violation.");
+        }
+
+        if (happened is null || !HappenedChoices(reason).Contains(happened))
+        {
+            return ServiceResult.Fail("Choose what happened.");
+        }
+
+        if (happened == InterventionTypes.Others && more is null)
+        {
+            return ServiceResult.Fail("Type what happened.");
+        }
+
+        var detail = happened == InterventionTypes.Others ? more! : more is null ? happened : $"{happened}: {more}";
+        if (detail.Length > 300)
+        {
+            return ServiceResult.Fail("What happened can have at most 300 characters.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var teacher = await db.Teachers.AsNoTracking().Where(t => t.UserId == teacherUserId && t.User.IsActive).Select(t => new { t.Id, t.FirstName, t.LastName }).FirstOrDefaultAsync(ct);
+        if (teacher is null)
+        {
+            return ServiceResult.Fail("Only a teacher can refer a student here.");
+        }
+
+        var student = await db.Students.AsNoTracking().Where(s => s.UserId == studentUserId && s.Status == StudentStatus.Active).Select(s => new { s.Id, s.LastName, s.FirstName }).FirstOrDefaultAsync(ct);
+        if (student is null)
+        {
+            return ServiceResult.Fail("This student was not found.");
+        }
+
+        // the teacher refers a student of their own courses
+        var courses = await db.TeachingAssignments.AsNoTracking().Where(a => a.TeacherId == teacher.Id).Select(a => new { a.Id, a.SectionId, a.SubjectId }).ToListAsync(ct);
+        int? assignmentId = null;
+        foreach (var course in courses)
+        {
+            if (await Roster.StudentIds(db, course.SectionId, course.SubjectId).AnyAsync(id => id == student.Id, ct))
+            {
+                assignmentId = course.Id;
+                break;
+            }
+        }
+
+        if (assignmentId is null)
+        {
+            return ServiceResult.Fail("This student is not in one of your courses.");
+        }
+
+        var referral = new Referral { StudentId = student.Id, AssignmentId = assignmentId, Reason = reason, Detail = detail, Status = ReferralStatus.Open };
+        db.Referrals.Add(referral);
+        await db.SaveChangesAsync(ct);
+
+        var counselors = await db.Users.AsNoTracking().InArea(AppRoles.GuidanceCounselor).Where(u => u.IsActive).Select(u => u.Id).ToListAsync(ct);
+        if (counselors.Count > 0)
+        {
+            await notifications.AddForManyAsync(counselors, "referral", $"{teacher.FirstName} {teacher.LastName} referred {student.FirstName} {student.LastName}",
+                $"{ReferralReasons.Display(reason)}: {detail}", "guidance/referrals", ct);
+        }
+
+        return ServiceResult.Ok($"{student.LastName}, {student.FirstName} was referred to the guidance counselor ({ReferralReasons.Display(reason).ToLowerInvariant()}).", referral.Id);
+    }
+
     /// <summary>The help given and the notes of a student: written once for all the concerns of the student that are not solved.</summary>
     public async Task<ServiceResult> SaveStudentNotesAsync(int studentId, string? intervention, string? notes, int actingUserId, CancellationToken ct = default)
     {
@@ -470,7 +563,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         var open = await db.Referrals.Include(r => r.Student)
-            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (ReferralReasons.All.Contains(r.Reason)))
             .ToListAsync(ct);
         if (open.Count == 0)
         {
@@ -516,7 +609,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         var open = await db.Referrals.Include(r => r.Student)
-            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (ReferralReasons.All.Contains(r.Reason)))
             .ToListAsync(ct);
         if (open.Count == 0)
         {
@@ -651,7 +744,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Referrals.AsNoTracking().AnyAsync(r => r.Student.UserId == studentUserId && r.Status == ReferralStatus.InProgress && r.StudentResponse == null
-            && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation), ct);
+            && (ReferralReasons.All.Contains(r.Reason)), ct);
     }
 
     private static string ShortName(Student s) => $"{s.FirstName} {s.LastName}";
@@ -665,7 +758,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var open = await db.Referrals.Include(r => r.Student)
             .Where(r => r.Student.UserId == studentUserId && r.Status == ReferralStatus.InProgress && r.StudentSeenAtUtc == null
-                        && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+                        && (ReferralReasons.All.Contains(r.Reason)))
             .ToListAsync(ct);
         if (open.Count == 0)
         {
@@ -693,7 +786,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var open = await db.Referrals
             .Where(r => r.Student.UserId == studentUserId && r.Status == ReferralStatus.InProgress && r.StudentSeenAtUtc == null && r.StudentResponse == null && r.StudentIgnoredAtUtc == null
-                        && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+                        && (ReferralReasons.All.Contains(r.Reason)))
             .ToListAsync(ct);
         if (open.Count == 0)
         {
@@ -716,7 +809,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var open = await db.Referrals.Include(r => r.Student)
             .Where(r => r.Student.UserId == studentUserId && r.Status != ReferralStatus.Resolved
-                        && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+                        && (ReferralReasons.All.Contains(r.Reason)))
             .ToListAsync(ct);
         if (open.Count == 0)
         {
@@ -773,7 +866,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         var open = await db.Referrals.Include(r => r.Student)
-            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (r.Reason == ReferralReasons.LowAttendance || r.Reason == ReferralReasons.Violation))
+            .Where(r => r.StudentId == studentId && r.Status != ReferralStatus.Resolved && (ReferralReasons.All.Contains(r.Reason)))
             .ToListAsync(ct);
         if (open.Count == 0)
         {

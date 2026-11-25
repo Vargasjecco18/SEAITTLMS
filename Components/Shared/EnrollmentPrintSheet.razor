@@ -1,5 +1,6 @@
 @inject SystemSettingsService Settings
 @inject TimeProvider Clock
+@inject AdmissionService Admission
 
 @* The paper that is printed after a student is enrolled. It is hidden on screen and is the only thing on the paper (the registrar's page hides the rest when printing).
    It has no frame and no box for a picture: a clean document.
@@ -50,6 +51,18 @@
                     </span>
                 </dd>
             </div>
+        </dl>
+
+        @* Round 46: the parents and the guardian come from the record of the Admission staff, so nobody writes them again. *@
+        <h3 class="part">Parents and guardian</h3>
+        <dl class="details" id="print-parents">
+            <div class="d"><dt>Father</dt><dd>@Or(admission?.FatherName)</dd></div>
+            <div class="d"><dt>Father's phone</dt><dd>@Or(Phone(admission?.FatherPhone))</dd></div>
+            <div class="d"><dt>Mother</dt><dd>@Or(admission?.MotherName)</dd></div>
+            <div class="d"><dt>Mother's phone</dt><dd>@Or(Phone(admission?.MotherPhone))</dd></div>
+            <div class="d"><dt>Guardian@(string.IsNullOrWhiteSpace(admission?.GuardianRelationship) ? "" : $" ({admission!.GuardianRelationship})")</dt><dd>@Or(admission?.GuardianName)</dd></div>
+            <div class="d"><dt>Guardian's phone</dt><dd>@Or(Phone(admission?.GuardianPhone))</dd></div>
+            <div class="d full"><dt>Address</dt><dd>@Or(admission?.GuardianAddress ?? admission?.Address)</dd></div>
         </dl>
 
         <h3 class="part">Enrollment details</h3>
@@ -217,6 +230,22 @@
     private string EnrollmentNo => Receipt.EnrollmentId > 0 ? Receipt.EnrollmentId.ToString("D6") : "—";
 
     private SystemSettingsValues school => Settings.Current;
+
+    private AdmissionDetails? admission;
+    private string? admissionFor;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (admissionFor != Receipt.Lrn)
+        {
+            admissionFor = Receipt.Lrn;
+            admission = await Admission.FindByLrnAsync(Receipt.Lrn);
+        }
+    }
+
+    private static string Or(string? text) => string.IsNullOrWhiteSpace(text) ? "________________" : text;
+
+    private static string? Phone(string? stored) => string.IsNullOrWhiteSpace(stored) ? null : SEAITT_LMS.Auth.PhoneNumbers.ToLocal(stored);
 
     private string UnitsOf(int n) => Receipt.SubjectUnits is { } units && n < units.Count ? FormatUnits(units[n]) : "—";
 

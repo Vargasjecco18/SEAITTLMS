@@ -1,0 +1,47 @@
+@page "/registrar/enrollments/{EnrollmentId:int}/form"
+@attribute [Authorize(Roles = AppRoles.Registrar)]
+@rendermode InteractiveServer
+@inject CurrentUser Me
+@inject EnrollmentService Enrollment
+@inject IJSRuntime JS
+
+<PageTitle>Enrollment form · SEAITT Legazpi LMS</PageTitle>
+
+@if (!loaded)
+{
+    <p class="muted">Loading…</p>
+}
+else if (receipt is null)
+{
+    <Card>
+        <EmptyState IconName="clipboard-list" Title="This enrollment was not found" IsPage="true">
+            <ButtonLink Href="registrar/student-accounts" Variant="ButtonVariant.Secondary">Back to Student's Accounts</ButtonLink>
+        </EmptyState>
+    </Card>
+}
+else
+{
+    @* Round 46: the printable form of an enrollment that was already made (the button Form in the row of the student). On paper only the form is printed. *@
+    <div class="no-print form-bar">
+        <ButtonLink Href="registrar/student-accounts" Variant="ButtonVariant.Ghost" IconName="chevron-left">Student's Accounts</ButtonLink>
+        <Button IconName="printer" OnClick="PrintAsync">Print the form</Button>
+    </div>
+    <div class="no-print" id="enrollment-form-preview"><EnrollmentPrintSheet Receipt="receipt" Preview="true" /></div>
+    <EnrollmentPrintSheet Receipt="receipt" />
+}
+
+@code {
+    [Parameter] public int EnrollmentId { get; set; }
+
+    private bool loaded;
+    private EnrollmentReceipt? receipt;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var me = await Me.GetAsync();
+        receipt = me is null ? null : await Enrollment.GetReceiptAsync(EnrollmentId, me.UserId);
+        loaded = true;
+    }
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("seaitt.print");
+}

@@ -24,14 +24,7 @@
                     }
                 </select>
             </label>
-            @if (!ReadOnly)
-            {
-            <form class="capacity" @onsubmit="SaveCapacityAsync">
-                <label for="sec-capacity">Students in one section (the limit)</label>
-                <input id="sec-capacity" type="number" class="ghost narrow limit-box" min="1" max="100" @bind="capacity" />
-                <Button Type="submit" Small="true" Variant="ButtonVariant.Secondary" IconName="save" Disabled="Busy">Save limit</Button>
-            </form>
-            }
+            <p class="capacity-note" id="section-limit">A section has <strong>@EnrollmentService.FixedSectionCapacity students</strong> at most. Section A fills first, then B, then C. The limit and the sections are not edited here.</p>
         </div>
 
         @if (StrandsShown.Count == 0)
@@ -131,7 +124,6 @@
     private SetupLookups? lookups;
     private SectionRow? deleting;
     private SectionRow? dialogSection;
-    private int capacity;
     private int yearId;
     private string gradeTab = "11";
 
@@ -245,7 +237,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        capacity = SystemSettings.Current.SectionCapacity;
         await LoadAsync();
     }
 
@@ -275,15 +266,6 @@
         if (result.Succeeded)
         {
             Faded();
-        }
-    }
-
-    private async Task SaveCapacityAsync()
-    {
-        var result = await RunAsync(userId => SystemSettings.SaveSectionCapacityAsync(userId, capacity));
-        if (!result.Succeeded)
-        {
-            capacity = SystemSettings.Current.SectionCapacity;
         }
     }
 

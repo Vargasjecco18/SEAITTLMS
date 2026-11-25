@@ -109,8 +109,8 @@
                                 {
                                     @if (picked == ReferralReasons.LowAttendance)
                                     {
-                                        @* Attendance concerns found on the same day are one line: View attendance shows each course in a box in the middle of the screen. *@
-                                        <button type="button" class="attendance-button" @onclick="() => OpenAttendance(student, open)"><Icon Name="eye" Size="15" /> View attendance</button>
+                                        @* Round 46: no view of the attendance of every course: the concern is only marked as absenteeism. *@
+                                        <span class="detail"><Icon Name="user-x" Size="15" /><span>Absenteeism</span></span>
                                     }
                                     else
                                     {
@@ -214,7 +214,7 @@
 
 @* ===== One student: their concerns (Notes and Solved at the top right), the earlier ones, and a place to add one ===== *@
 @* Only one box is up at a time: while the notes or the attendance of the student are open, the box with all their concerns waits behind (it comes back when they close). *@
-<Modal Open="viewing is not null && !notesFromRow && !notesOpen && attendanceFor is null && !othersOpen" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
+<Modal Open="viewing is not null && !notesFromRow && !notesOpen && !othersOpen" Title="@(viewing?.StudentName ?? "")" OnClose="CloseViewAll" Large="true">
     @if (viewing is not null)
     {
         <div class="modal-top">
@@ -251,15 +251,7 @@
                                     <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(group.Reason)">@ReferralReasons.Display(group.Reason)</Badge>
                                 </td>
                                 <td>
-                                    @if (group.Rows.Count > 1)
-                                    {
-                                        @* Several attendance concerns found on the same day: one line with a button that shows each course. *@
-                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye" OnClick="() => OpenAttendance(viewing!, group.Rows)">View attendance (@group.Rows.Count)</Button>
-                                    }
-                                    else
-                                    {
-                                        <span class="detail">@first.Detail</span>
-                                    }
+                                    <span class="detail">@(group.Reason == ReferralReasons.LowAttendance ? "Absenteeism" : first.Detail)</span>
 
                                     @if (!string.IsNullOrWhiteSpace(first.Intervention))
                                     {
@@ -325,26 +317,6 @@
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseViewAll">Close</Button>
             <Button IconName="plus" Disabled="busy" OnClick="AddConcernAsync">@(busy ? "Adding…" : "Add the concern")</Button>
-        </div>
-    }
-</Modal>
-
-@* ===== View attendance: the courses of one attendance concern, in a box in the middle of the screen ===== *@
-<Modal Open="attendanceFor is not null" Title="@($"Attendance · {attendanceFor?.StudentName}")" Centered="true" Top="true" Narrow="true" OnClose="CloseAttendance">
-    @if (attendanceFor is not null)
-    {
-        <p class="sub all-sub">@attendanceFor.Lrn@(attendanceFor.Placement is null ? "" : " · " + attendanceFor.Placement)</p>
-        <ul class="attendance-list">
-            @foreach (var line in attendanceLines)
-            {
-                <li>
-                    <span class="detail">@line.Detail</span>
-                    <span class="sub">Since @PhilippineTime.FormatDate(line.CreatedAtUtc)@(string.IsNullOrEmpty(line.TeacherName) ? "" : " · " + line.TeacherName)</span>
-                </li>
-            }
-        </ul>
-        <div class="modal-actions">
-            <Button Variant="ButtonVariant.Ghost" OnClick="CloseAttendance">Close</Button>
         </div>
     }
 </Modal>
@@ -419,8 +391,6 @@
     private string newMore = "";
     private bool showPrevious;
     private readonly Dictionary<int, string> rowReasons = [];
-    private ReferralStudentRow? attendanceFor;
-    private IReadOnlyList<ReferralRow> attendanceLines = [];
     private bool notesOpen;
     private string newOtherText = "";
     private bool othersOpen;
@@ -685,13 +655,6 @@
         OpenNotes();
     }
 
-    private void OpenAttendance(ReferralStudentRow student, IReadOnlyList<ReferralRow> lines)
-    {
-        attendanceFor = student;
-        attendanceLines = lines;
-    }
-
-    private void CloseAttendance() => attendanceFor = null;
 
     private async Task LoadAsync()
     {

@@ -117,9 +117,12 @@ public sealed class AnnouncementService(IDbContextFactory<AppDbContext> dbFactor
     private static IQueryable<Announcement> ForTeachers(AppDbContext db) =>
         db.Announcements.AsNoTracking().Where(a => (a.Audience == AnnouncementAudiences.Everyone || a.Audience == AnnouncementAudiences.Teachers || a.Audience == AnnouncementAudiences.StaffTeachers) && a.SectionId == null);
 
-    /// <summary>What is still shown today: it has no End or its End is today or later. (An announcement is shown from the day it is posted, so people can plan for the days it is about.)</summary>
+    /// <summary>
+    /// What is shown today (Round 46: an announcement has a schedule): it starts on its Start date (or at once when it has none) and it is shown until its End date (or until it is deleted when it has none).
+    /// The calendar still shows the days from Start to End, so people can plan for them.
+    /// </summary>
     private static IQueryable<Announcement> Live(IQueryable<Announcement> query, DateOnly today) =>
-        query.Where(a => a.ExpiresOn == null || a.ExpiresOn >= today);
+        query.Where(a => (a.StartsOn == null || a.StartsOn <= today) && (a.ExpiresOn == null || a.ExpiresOn >= today));
 
     /// <summary>The announcements the person manages, newest first: the coordinator the notices of the school (all but what teachers wrote to their classes), a teacher the ones to their classes.</summary>
     public async Task<IReadOnlyList<AnnouncementView>> ListManagedAsync(CurrentUserInfo user, CancellationToken ct = default)

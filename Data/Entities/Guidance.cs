@@ -28,18 +28,26 @@ public static class ReferralReasons
     public const string LowAttendance = "LowAttendance";
     public const string Violation = "Violation";
 
+    /// <summary>Round 46: students who do not follow what the school asks (the work, the uniform and ID, the rules).</summary>
+    public const string NonCompliance = "NonCompliance";
+
+    /// <summary>Round 46: a concern about the way a student behaves.</summary>
+    public const string Behavioral = "Behavioral";
+
     /// <summary>
-    /// What the guidance counselor looks after: attendance and violations. Failing grades and students at risk of failing belong to the teacher (the Analytics page of the teacher
+    /// What the guidance counselor looks after: absenteeism, violations, non-compliance and behavioral concerns. Failing grades and students at risk of failing belong to the teacher (the Analytics page of the teacher
     /// lists them); <see cref="FailingGrades"/> and <see cref="AtRisk"/> stay here only so the referrals made before are still read correctly.
     /// </summary>
-    public static readonly string[] All = [LowAttendance, Violation];
+    public static readonly string[] All = [LowAttendance, Violation, NonCompliance, Behavioral];
 
     public static string Display(string reason) => reason switch
     {
         FailingGrades => "Failing grades",
         AtRisk => "At risk",
-        LowAttendance => "Attendance",
+        LowAttendance => "Absenteeism",
         Violation => "Violation",
+        NonCompliance => "Non-compliance",
+        Behavioral => "Behavioral",
         _ => reason,
     };
 }
