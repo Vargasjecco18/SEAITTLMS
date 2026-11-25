@@ -329,6 +329,7 @@
     private string? saveMessage;
     private DateTime lastSessionTouch;
     private string phoneNumber = "";
+    private string phoneStored = ""; // the number the person had when the box opened (or when it was last saved): the Save button keeps a changed number too
     private bool phoneBusy;
     private bool phoneFailed;
     private string? phoneMessage;
@@ -723,7 +724,7 @@
         {
             if (user.Role != AppRoles.Admin)
             {
-                phoneNumber = await Auth.GetOwnPhoneAsync(user.UserId);
+                phoneNumber = phoneStored = await Auth.GetOwnPhoneAsync(user.UserId);
             }
 
             sound = await Sounds.GetInfoAsync(user.UserId);
@@ -853,7 +854,7 @@
             phoneMessage = saved.Succeeded ? saved.Message : string.Join(" ", saved.Errors);
             if (saved.Succeeded)
             {
-                phoneNumber = await Auth.GetOwnPhoneAsync(user.UserId);
+                phoneNumber = phoneStored = await Auth.GetOwnPhoneAsync(user.UserId);
             }
         }
         finally
@@ -888,6 +889,22 @@
         passwordMessage = null;
         try
         {
+            // Round 46: a number typed in the Phone number box is kept by the Save button too (before, only "Change phone number" kept it, so Save closed the box and the number was lost).
+            if (user.Role != AppRoles.Admin && NameCase.KeepDigits(phoneNumber) != NameCase.KeepDigits(phoneStored))
+            {
+                var savedPhone = await Auth.ChangeOwnPhoneAsync(user.UserId, phoneNumber);
+                phoneFailed = !savedPhone.Succeeded;
+                phoneMessage = savedPhone.Succeeded ? savedPhone.Message : string.Join(" ", savedPhone.Errors);
+                if (!savedPhone.Succeeded)
+                {
+                    saveFailed = true;
+                    saveMessage = "The phone number was not saved.";
+                    return;
+                }
+
+                phoneNumber = phoneStored = await Auth.GetOwnPhoneAsync(user.UserId);
+            }
+
             if (pendingSound != EffectiveSoundChoice)
             {
                 var chosen = await Sounds.SetChoiceAsync(user.UserId, pendingSound);

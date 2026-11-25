@@ -391,8 +391,7 @@ else
                    readonly="@(existing is not null)" @bind="NameExtensionValue" @onblur="WriteNamesWithCapitals" />
         </Field>
         <Field For="@(p + "phone")" Label="Phone number" Hint="Optional. Digits only, like 09171234567.">
-            <input id="@(p + "phone")" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" placeholder="09XXXXXXXXX"
-                   readonly="@(existing?.PhoneNumber is not null)" @bind="PhoneValue" />
+            <input id="@(p + "phone")" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" placeholder="09XXXXXXXXX" @bind="PhoneValue" />
         </Field>
     </text>;
 
@@ -471,11 +470,30 @@ else
         set { form.Lrn = NameCase.KeepDigits(value); boxProblems.Remove("lrn"); }
     }
 
-    // A student who already has a number shows it (read-only); otherwise what is typed is kept and saved with the enrollment.
+    // Round 46: a student who already has a number shows it in the box and the registrar can change it; what is in the box is saved with the enrollment (an empty box keeps the number the student has).
     private string PhoneValue
     {
-        get => existing?.PhoneNumber is { } stored ? SEAITT_LMS.Auth.PhoneNumbers.ToLocal(stored) : form.PhoneNumber;
+        get => form.PhoneNumber;
         set => form.PhoneNumber = NameCase.KeepDigits(value);
+    }
+
+    private string? phonePrefill; // the number that was put in the box from the student that was found (so another student does not get it)
+
+    /// <summary>The student found for the LRN (or none): a number the student has is put in the phone box.</summary>
+    private void UseExisting(ExistingStudent? found)
+    {
+        existing = found;
+        var stored = found?.PhoneNumber is { } number ? SEAITT_LMS.Auth.PhoneNumbers.ToLocal(number) : null;
+        if (stored is not null)
+        {
+            form.PhoneNumber = stored;
+        }
+        else if (phonePrefill is not null && form.PhoneNumber == phonePrefill)
+        {
+            form.PhoneNumber = "";
+        }
+
+        phonePrefill = stored;
     }
 
     /// <summary>When a name box is left, the names are written with capital letters (juan dela cruz -> Juan Dela Cruz). The service does it again when it saves.</summary>
@@ -515,7 +533,7 @@ else
         if (LrnQuery is { Length: 12 } lrn && lrn.All(char.IsAsciiDigit))
         {
             form.Lrn = lrn;
-            existing = await Enrollment.FindStudentAsync(lrn);
+            UseExisting(await Enrollment.FindStudentAsync(lrn));
             await ApplyPlacementAsync();
         }
     }
@@ -557,7 +575,7 @@ else
         // An answer for an LRN that was changed again while it was being looked up is not the answer any more.
         if (lrn == form.Lrn)
         {
-            existing = found;
+            UseExisting(found);
             await ApplyPlacementAsync();
         }
     }
@@ -784,6 +802,7 @@ else
     {
         receipt = null;
         existing = null;
+        phonePrefill = null;
         errors = [];
         form.Lrn = "";
         form.FirstName = "";

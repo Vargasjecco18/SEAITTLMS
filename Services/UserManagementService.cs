@@ -734,7 +734,7 @@ public sealed class UserManagementService(
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(p => new
             {
-                p.UserId, p.FirstName, p.MiddleName, p.LastName, p.NameExtension, p.User.Email, p.PhoneNumber, p.EmployeeNumber,
+                p.UserId, p.FirstName, p.MiddleName, p.LastName, p.NameExtension, p.User.Email, PhoneNumber = p.User.PhoneNumber ?? p.PhoneNumber, p.EmployeeNumber,
                 p.User.IsActive, p.User.LastLoginAtUtc, p.User.CreatedAtUtc,
             })
             .ToListAsync(ct);
@@ -762,7 +762,7 @@ public sealed class UserManagementService(
                 || (p.EmployeeNumber != null && p.EmployeeNumber.Contains(t)) || p.User.Email.Contains(t)), active);
             var rows = await query.Select(p => new
             {
-                p.UserId, p.FirstName, p.MiddleName, p.LastName, p.NameExtension, p.User.Email, p.PhoneNumber, p.EmployeeNumber,
+                p.UserId, p.FirstName, p.MiddleName, p.LastName, p.NameExtension, p.User.Email, PhoneNumber = p.User.PhoneNumber ?? p.PhoneNumber, p.EmployeeNumber,
                 p.User.IsActive, p.User.LastLoginAtUtc, p.User.CreatedAtUtc, RoleTitle = p.User.CustomRole != null ? p.User.CustomRole.Name : null,
             }).Take(500).ToListAsync(ct);
             return rows.Select(r => new UserListItem(
@@ -836,7 +836,7 @@ public sealed class UserManagementService(
             LastName = profile.LastName,
             NameExtension = profile.NameExtension,
             Email = user.Email,
-            PhoneNumber = profile is StaffContactProfile staff ? staff.PhoneNumber : user.PhoneNumber,
+            PhoneNumber = user.PhoneNumber ?? (profile as StaffContactProfile)?.PhoneNumber, // the sign-in number first (Settings keeps it), the staff table's copy when there is none
             EmployeeNumber = (profile as StaffProfile)?.EmployeeNumber,
             Lrn = (profile as Student)?.Lrn,
             StudentId = (profile as Student)?.Id,

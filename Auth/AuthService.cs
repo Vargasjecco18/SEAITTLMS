@@ -270,13 +270,28 @@ public sealed class AuthService(
 
         if (user.PhoneNumber == phone)
         {
+            // Round 46: the copy in the staff table follows even when the sign-in number was already this one (an older save may have left them apart).
+            await CopyPhoneToStaffTableAsync(db, userId, phone, ct);
             return new ServiceResult(true, [], phone is null ? "You have no phone number." : "Your phone number is saved.");
         }
 
         user.PhoneNumber = phone;
         await db.SaveChangesAsync(ct);
+        await CopyPhoneToStaffTableAsync(db, userId, phone, ct);
         await LogAsync(SecurityEvents.AccountChanged, user.Id, user.Email, phone is null ? "The person took their phone number away." : $"The person changed their phone number to {UniSmsClient.Mask(phone)}.", null, ct);
         return new ServiceResult(true, [], phone is null ? "Your phone number was taken away." : "Your phone number was saved.");
+    }
+
+    /// <summary>
+    /// Round 46: the staff tables (registrars, guidance counselors, academic coordinators and providers) keep a copy of the number, and Users Management shows that copy:
+    /// a number saved in Settings is written there too, so the two places never differ.
+    /// </summary>
+    private static async Task CopyPhoneToStaffTableAsync(AppDbContext db, int userId, string? phone, CancellationToken ct)
+    {
+        await db.Registrars.Where(p => p.UserId == userId).ExecuteUpdateAsync(set => set.SetProperty(p => p.PhoneNumber, phone), ct);
+        await db.GuidanceCounselors.Where(p => p.UserId == userId).ExecuteUpdateAsync(set => set.SetProperty(p => p.PhoneNumber, phone), ct);
+        await db.AcademicCoordinators.Where(p => p.UserId == userId).ExecuteUpdateAsync(set => set.SetProperty(p => p.PhoneNumber, phone), ct);
+        await db.AcademicProviders.Where(p => p.UserId == userId).ExecuteUpdateAsync(set => set.SetProperty(p => p.PhoneNumber, phone), ct);
     }
 
     /// <summary>The phone number of the person as they type it (09171234567), for the box of Settings. Empty when there is none.</summary>

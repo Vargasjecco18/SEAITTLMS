@@ -45,7 +45,7 @@ public sealed record ExistingStudent(
 /// by the administrator).
 /// </summary>
 /// <param name="SectionName">One of A and B (or a section that exists already). It is created when the strand and grade level don't have it yet in the school year.</param>
-/// <param name="PhoneNumber">The student's mobile number. Optional. A student who already has a number keeps it.</param>
+/// <param name="PhoneNumber">The student's mobile number. Optional. A student who already has a number keeps it when the box is empty; a number typed here replaces it (Round 46).</param>
 /// <param name="NameExtension">Jr., Sr., III ... Optional (up to 10 characters). A student who already has one keeps it.</param>
 public sealed record EnrollmentRequest(
     string Lrn,
@@ -358,8 +358,8 @@ public sealed partial class EnrollmentService(
                 lastName = student.LastName;
                 nameExtension = student.NameExtension ?? "";
 
-                // A number is only filled in when the student has none; a number they have is not overwritten here.
-                if (student.User.PhoneNumber is null && phone is not null)
+                // Round 46: a number typed in the form is the student's number (the form shows the number the student has, and the registrar can change it); an empty box keeps the number the student has.
+                if (phone is not null && student.User.PhoneNumber != phone)
                 {
                     student.User.PhoneNumber = phone;
                 }

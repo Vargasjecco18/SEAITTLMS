@@ -565,7 +565,7 @@ Menu: **Registrar > Enrollment** (`/registrar/enrollments`). Fill in:
 | Grade level | 11 or 12. |
 | Track, strand | ACAD (BUSSENT, EDUC, ENG, MED, USP) or TECH-PRO (CD1, HT1, HT2). Pick the track first, it filters the strands. |
 | Section | Pick one of the sections of that strand and grade level (A and B are always in the list). **A section that is not there can be added in the list itself**: choose **+ Add a section…**, type its name (letters, numbers, spaces and dashes) and press *Add section*; it is a choice at once (`EnrollmentService.AddSectionAsync`). There is no schedule to choose: each course has its own. |
-| Phone number | **Optional.** A mobile number like `0917 123 4567`, saved as `+639171234567` on the student's account. A student who already has a number keeps it. It is kept for the school but **not printed** on the enrollment form. |
+| Phone number | **Optional.** A mobile number like `0917 123 4567`, saved as `+639171234567` on the student's account. A student who already has a number sees it in the box and the registrar can change it; an empty box keeps it. It is kept for the school but **not printed** on the enrollment form. |
 
 There is nothing to pick for the subjects: the student gets **all the subjects of the strand** for that grade level and term (the form tells which). Press
 **Enroll student**. The page then shows what was saved and, for a new student, the **sign-in details to hand over**
