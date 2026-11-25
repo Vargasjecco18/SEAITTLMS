@@ -78,6 +78,27 @@
             }
         </Card>
 
+        <Card Title="Grading system" IconName="award" Class="setting">
+            <p class="note">How much each part of a grade is worth. A grade is the weighted average of the four parts, scaled to 100% (each part ÷ the total of the four). The school's own are 20 · 50 · 15 · 30.</p>
+            <div class="two">
+                <Field For="s-w-ww" Label="Written/Oral Works (activities and quizzes)" Hint="From 0 to 100.">
+                    <input id="s-w-ww" type="number" class="input" min="0" max="100" step="any" @bind="form.WeightWrittenOral" />
+                </Field>
+                <Field For="s-w-pt" Label="Performance Task" Hint="From 0 to 100.">
+                    <input id="s-w-pt" type="number" class="input" min="0" max="100" step="any" @bind="form.WeightPerformance" />
+                </Field>
+            </div>
+            <div class="two">
+                <Field For="s-w-st" Label="Summative Test" Hint="From 0 to 100.">
+                    <input id="s-w-st" type="number" class="input" min="0" max="100" step="any" @bind="form.WeightSummative" />
+                </Field>
+                <Field For="s-w-te" Label="Term Examination (TE)" Hint="From 0 to 100.">
+                    <input id="s-w-te" type="number" class="input" min="0" max="100" step="any" @bind="form.WeightTermExam" />
+                </Field>
+            </div>
+            <p class="note" id="s-w-total">Total of the four: <strong>@((form.WeightWrittenOral + form.WeightPerformance + form.WeightSummative + form.WeightTermExam).ToString("0.##"))</strong>. A final grade is 75 or more to pass: Advancing 90-100, Benchmarking 80-89, Connecting 75-79, Developing 65-74, Emerging 0-64.</p>
+        </Card>
+
         <Card Title="Files and lockers" IconName="folder-open" Class="setting">
             <p class="note">What people can upload: a file in a locker, an attachment of a handout or a file sent in a message.</p>
             <div class="two">
@@ -348,6 +369,10 @@
         public int SectionCapacity { get; set; }
         public int MaxFileMegabytes { get; set; }
         public int LockerMegabytes { get; set; }
+        public decimal WeightWrittenOral { get; set; }
+        public decimal WeightPerformance { get; set; }
+        public decimal WeightSummative { get; set; }
+        public decimal WeightTermExam { get; set; }
 
         public static SettingsForm From(SystemSettingsValues v) => new()
         {
@@ -356,6 +381,7 @@
             MaintenanceOn = v.MaintenanceOn, MaintenanceMessage = v.MaintenanceMessage, AutoBackupOn = v.AutoBackupOn,
             AutoBackupHour = v.AutoBackupHour, BackupsToKeep = v.BackupsToKeep, LogKeepDays = v.LogKeepDays,
             SectionCapacity = v.SectionCapacity, MaxFileMegabytes = v.MaxFileMegabytes, LockerMegabytes = v.LockerMegabytes,
+            WeightWrittenOral = v.WeightWrittenOral, WeightPerformance = v.WeightPerformance, WeightSummative = v.WeightSummative, WeightTermExam = v.WeightTermExam,
         };
 
         public SystemSettingsValues ToValues() => new()
@@ -365,6 +391,7 @@
             MaintenanceOn = MaintenanceOn, MaintenanceMessage = MaintenanceMessage, AutoBackupOn = AutoBackupOn,
             AutoBackupHour = AutoBackupHour, BackupsToKeep = BackupsToKeep, LogKeepDays = LogKeepDays,
             SectionCapacity = SectionCapacity, MaxFileMegabytes = MaxFileMegabytes, LockerMegabytes = LockerMegabytes,
+            WeightWrittenOral = WeightWrittenOral, WeightPerformance = WeightPerformance, WeightSummative = WeightSummative, WeightTermExam = WeightTermExam,
         };
     }
 }

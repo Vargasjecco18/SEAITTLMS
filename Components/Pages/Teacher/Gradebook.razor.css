@@ -324,3 +324,101 @@
     color: var(--text-muted);
     font-style: italic;
 }
+
+/* ---------- Round 46: the SEAITT grading system ---------- */
+.summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 900px) {
+    .summary {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+.tile.warn {
+    border-color: var(--warning);
+    background: var(--warning-soft);
+}
+
+.system {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.system .part {
+    padding: 0.2rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.system .part b {
+    color: var(--brand-strong);
+}
+
+.chip {
+    display: inline-block;
+    margin-top: 0.2rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.score.auto {
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: default;
+}
+
+.part-col {
+    min-width: 4.2rem;
+    background: var(--surface-2);
+}
+
+.grid tbody td.part-col {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.final-grade.incomplete {
+    opacity: 0.8;
+}
+
+.descriptor {
+    min-width: 8rem;
+    font-weight: 600;
+}
+
+.summary-tables {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+    overflow-x: auto;
+}
+
+.import-steps {
+    display: grid;
+    gap: 0.9rem;
+    margin: 0 0 1rem;
+    padding-left: 1.2rem;
+}
+
+.chosen-file {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.3rem 0 0;
+    color: var(--text-muted);
+}

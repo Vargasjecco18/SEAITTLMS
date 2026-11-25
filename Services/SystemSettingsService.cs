@@ -41,6 +41,15 @@ public sealed record SystemSettingsValues
     // ---- classes: how many students one section can have (the registrar sees "32 of 40" and can't enroll more)
     public int SectionCapacity { get; init; } = 40;
 
+    // ---- the grading system (Round 46): how much the four parts of a grade are worth. The school's: Written/Oral Works 20, Performance Task 50, Summative Test 15, Term Examination 30.
+    // The grade is the weighted average scaled to 100% (each weight divided by the total of the four).
+    public decimal WeightWrittenOral { get; init; } = 20;
+    public decimal WeightPerformance { get; init; } = 50;
+    public decimal WeightSummative { get; init; } = 15;
+    public decimal WeightTermExam { get; init; } = 30;
+
+    public GradingWeights Weights => new(WeightWrittenOral, WeightPerformance, WeightSummative, WeightTermExam);
+
     // ---- files: the biggest file a person can upload, and the size of the locker of each person
     public int MaxFileMegabytes { get; init; } = 200;
     public int LockerMegabytes { get; init; } = 500;
@@ -254,6 +263,11 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             errors.Add("A section can have from 1 to 100 students.");
         }
 
+        if (new[] { v.WeightWrittenOral, v.WeightPerformance, v.WeightSummative, v.WeightTermExam }.Any(w => w is < 0 or > 100) || v.Weights.Total <= 0)
+        {
+            errors.Add("Each part of the grade is worth from 0 to 100, and they can't all be 0.");
+        }
+
         if (v.MaxFileMegabytes is < 1 or > 1000)
         {
             errors.Add("The biggest file a person can upload is from 1 to 1000 MB.");
@@ -315,6 +329,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     {
         string B(bool b) => b ? "1" : "0";
         string N(int n) => n.ToString(CultureInfo.InvariantCulture);
+        string D(decimal d) => d.ToString("0.##", CultureInfo.InvariantCulture);
         return new Dictionary<string, string>
         {
             ["school.name"] = v.SchoolName,
@@ -333,6 +348,10 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             ["backup.keep"] = N(v.BackupsToKeep),
             ["logs.keep_days"] = N(v.LogKeepDays),
             ["classes.section_capacity"] = N(v.SectionCapacity),
+            ["grading.weight_written"] = D(v.WeightWrittenOral),
+            ["grading.weight_performance"] = D(v.WeightPerformance),
+            ["grading.weight_summative"] = D(v.WeightSummative),
+            ["grading.weight_term_exam"] = D(v.WeightTermExam),
             ["files.max_mb"] = N(v.MaxFileMegabytes),
             ["files.locker_mb"] = N(v.LockerMegabytes),
         };
@@ -346,6 +365,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
 
         string Text(string key, string fallback) => rows.TryGetValue(key, out var x) ? x : fallback;
         bool Flag(string key, bool fallback) => rows.TryGetValue(key, out var x) ? x == "1" : fallback;
+        decimal Decimal(string key, decimal fallback) => rows.TryGetValue(key, out var x) && decimal.TryParse(x, NumberStyles.Number, CultureInfo.InvariantCulture, out var n) ? n : fallback;
         int Number(string key, int fallback) => rows.TryGetValue(key, out var x) && int.TryParse(x, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : fallback;
 
         return v with
@@ -366,6 +386,10 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
             BackupsToKeep = Number("backup.keep", v.BackupsToKeep),
             LogKeepDays = Number("logs.keep_days", v.LogKeepDays),
             SectionCapacity = Number("classes.section_capacity", v.SectionCapacity),
+            WeightWrittenOral = Decimal("grading.weight_written", v.WeightWrittenOral),
+            WeightPerformance = Decimal("grading.weight_performance", v.WeightPerformance),
+            WeightSummative = Decimal("grading.weight_summative", v.WeightSummative),
+            WeightTermExam = Decimal("grading.weight_term_exam", v.WeightTermExam),
             MaxFileMegabytes = Number("files.max_mb", v.MaxFileMegabytes),
             LockerMegabytes = Number("files.locker_mb", v.LockerMegabytes),
         };
@@ -374,6 +398,7 @@ public sealed class SystemSettingsService(IDbContextFactory<AppDbContext> dbFact
     private void Apply(SystemSettingsValues values)
     {
         current = values;
+        GradingSystem.Use(values.Weights);
         Changed?.Invoke();
     }
 }

@@ -1,0 +1,55 @@
+@* One of the two tables under the gradebook: the lines of the grades (a descriptor, or Passed / Failed) with the number of male and female students and their percents. *@
+<table class="summary-table" id="@Id">
+    <thead>
+        <tr>
+            <th scope="col">@Title</th>
+            <th scope="col">NUMERICAL GRADE</th>
+            <th scope="col">@ColumnTitle</th>
+            <th scope="col">MALE</th>
+            <th scope="col">FEMALE</th>
+            <th scope="col">TOTAL</th>
+            <th scope="col">% MALE</th>
+            <th scope="col">% FEMALE</th>
+            <th scope="col">% TOTAL</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var line in Lines)
+        {
+            <tr data-band="@line.Name">
+                <td></td>
+                <td>@line.Range</td>
+                <th scope="row">@line.Name</th>
+                <td class="num">@line.Male</td>
+                <td class="num">@line.Female</td>
+                <td class="num">@line.Total</td>
+                <td class="num">@Percent(line.Male, Male)</td>
+                <td class="num">@Percent(line.Female, Female)</td>
+                <td class="num">@Percent(line.Total, Total)</td>
+            </tr>
+        }
+        <tr class="total" data-band="TOTAL">
+            <td></td>
+            <td></td>
+            <th scope="row">TOTAL</th>
+            <td class="num">@Male</td>
+            <td class="num">@Female</td>
+            <td class="num">@Total</td>
+            <td class="num">@Percent(Male, Male)</td>
+            <td class="num">@Percent(Female, Female)</td>
+            <td class="num">@Percent(Total, Total)</td>
+        </tr>
+    </tbody>
+</table>
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string ColumnTitle { get; set; } = "";
+    [Parameter] public IReadOnlyList<GradingSystem.SummaryLine> Lines { get; set; } = [];
+    [Parameter] public int Male { get; set; }
+    [Parameter] public int Female { get; set; }
+    [Parameter] public int Total { get; set; }
+
+    private static string Percent(int part, int whole) => (whole == 0 ? 0m : (decimal)part / whole).ToString("0.00%", System.Globalization.CultureInfo.InvariantCulture);
+}

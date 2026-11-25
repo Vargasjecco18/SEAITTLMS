@@ -135,8 +135,12 @@ else
                                                     <span class="max">out of @c.Max.ToString("0.##")</span>
                                                 </th>
                                             }
-                                            <th scope="col" class="avg">Average</th>
-                                            <th scope="col" class="final">Final grade</th>
+                                            @foreach (var part in GradingSystem.Parts)
+                                            {
+                                                <th scope="col" class="avg" data-part="@GradingSystem.Short(part)" title="@GradingSystem.Name(part)">@GradingSystem.Short(part)<span class="max">@GradingSystem.Weights.Of(part).ToString("0.##")%</span></th>
+                                            }
+                                            <th scope="col" class="final" data-final-head>Final grade</th>
+                                            <th scope="col" class="avg">Descriptor</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -146,27 +150,22 @@ else
                                             {
                                                 <td class="cell @CellClass(cell)">@CellText(cell)@if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }</td>
                                             }
-                                            <td class="avg">
-                                                @if (book.Row.Percent is { } avgPercent)
-                                                {
-                                                    <Badge Tone="@GradeRules.ToneOf(avgPercent)">@avgPercent.ToString("0.#")%</Badge>
-                                                }
-                                                else
-                                                {
-                                                    <span class="dash">—</span>
-                                                }
-                                            </td>
-                                            <td class="final">@(book.Row.FinalGrade is { } fg ? fg.ToString("0.##") : "—")</td>
+                                            @foreach (var part in GradingSystem.Parts)
+                                            {
+                                                <td class="avg" data-part="@GradingSystem.Short(part)">@(book.Row.Grade?.PartPercent(part) is { } partPercent ? partPercent.ToString("0.#") : "—")</td>
+                                            }
+                                            <td class="final" data-final title="@(book.Row.Grade is { Complete: false } ? "Some scores are not in yet, so the final grade is 0 for now." : "")">@(book.Row.Final is { } fg ? fg.ToString() : "—")</td>
+                                            <td class="avg">@(book.Row.Final is { } dg ? GradingSystem.Descriptor(dg) : "")</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>E</strong> exam &nbsp; <strong>O</strong> others &nbsp; <strong>SE</strong> summative exam. Press a code to open the activity. You can only read this table: your teacher gives the scores.</p>
+                            <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>O</strong> others &nbsp; <strong>SE</strong> summative test &nbsp; <strong>TE</strong> term examination. The grade is Written/Oral Works (WW), Performance Task (PT), Summative Test (ST) and Term Examination (TE), worked out like @GradingSystem.Describe(). The final grade is 0 until every score is in. Press a code to open the activity. You can only read this table: your teacher gives the scores.</p>
                         }
 
                         @if (s.HasExam)
                         {
-                            <p class="final-grade">Summative exam:
+                            <p class="final-grade">Summative test:
                                 @if (s.ExamPercent is { } examGrade)
                                 {
                                     <strong>@examGrade.ToString("0.#")%</strong> <Badge Tone="@GradeRules.ToneOf(examGrade)">@GradeRules.Descriptor(examGrade)</Badge>

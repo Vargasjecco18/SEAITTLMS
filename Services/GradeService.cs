@@ -7,25 +7,19 @@ namespace SEAITT_LMS.Services;
 /// <summary>The school's rules for grades.</summary>
 public static class GradeRules
 {
-    /// <summary>A grade under this percent is failing. The guidance counselor is told.</summary>
-    public const decimal PassingPercent = 70;
+    /// <summary>A grade under this is failing (Round 46: the passing grade of SEAITT is 75; 0 to 74 is Failed). The guidance counselor is told.</summary>
+    public const decimal PassingPercent = 75;
 
     /// <summary>A grade between the passing mark and this one is "at risk" (close to failing).</summary>
-    public const decimal AtRiskUntil = 75;
+    public const decimal AtRiskUntil = 80;
 
-    public static string Descriptor(decimal percent) => percent switch
-    {
-        >= 90 => "Outstanding",
-        >= 85 => "Very satisfactory",
-        >= 80 => "Satisfactory",
-        >= PassingPercent => "Fairly satisfactory",
-        _ => "Did not meet expectations",
-    };
+    /// <summary>The descriptor of SEAITT: Advancing 90-100, Benchmarking 80-89, Connecting 75-79, Developing 65-74, Emerging 0-64.</summary>
+    public static string Descriptor(decimal percent) => GradingSystem.Descriptor(percent);
 
     public static Components.Shared.Tone ToneOf(decimal? percent) => percent switch
     {
         null => Components.Shared.Tone.Neutral,
-        >= 85 => Components.Shared.Tone.Success,
+        >= 90 => Components.Shared.Tone.Success,
         >= AtRiskUntil => Components.Shared.Tone.Info,
         >= PassingPercent => Components.Shared.Tone.Warning,
         _ => Components.Shared.Tone.Danger,
@@ -56,6 +50,9 @@ public sealed record SubjectGrade(
 
     /// <summary>True while the teacher hides the grades of this course from the students (the button Hide from students in the gradebook): there is no percent, no final grade and no graded work to show.</summary>
     public bool GradesHidden { get; init; }
+
+    /// <summary>Round 46: the grade worked out by the grading system (the four parts and the final grade, 0 until every score is in). Empty while the grades are hidden.</summary>
+    public GradeResult? Result { get; init; }
 }
 
 public sealed record StudentGradeSummary(IReadOnlyList<SubjectGrade> Subjects, decimal? Overall, int FailingSubjects, int GradedCount)
@@ -125,8 +122,10 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
                 graded = [];
             }
 
-            var possible = graded.Sum(g => g.Max);
-            decimal? percent = possible <= 0 ? null : Math.Round(graded.Sum(g => g.Score) / possible * 100, 1);
+            // Round 46: the grade of the SEAITT grading system (Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 30%, scaled to 100%).
+            var gradedIds = graded.Select(g => g.ItemId).ToHashSet();
+            var result = GradingSystem.Compute(mine.Select(i => new GradeWork(i.Kind, i.Summative, i.MaxScore, gradedIds.Contains(i.Id) ? i.Mine!.Score : null)));
+            decimal? percent = result.Running is { } running ? Math.Round(running, 1) : null;
             var open = mine.Count(i => i.Mine is null or { Status: SubmissionStatus.InProgress });
             var missing = mine.Count(i => (i.Mine is null or { Status: SubmissionStatus.InProgress }) && i.DueAtUtc is { } due && due < now);
 
@@ -134,6 +133,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
             {
                 HasExam = mine.Any(i => i.Kind == ItemKinds.Exam && i.Summative),
                 GradesHidden = a.GradesHidden,
+                Result = a.GradesHidden ? null : result,
             });
         }
 
@@ -167,8 +167,8 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
         var assignmentIds = assignments.Select(a => a.Id).ToList();
         var scores = await db.Submissions.AsNoTracking()
             .Where(s => s.StudentId == studentId && s.Status == SubmissionStatus.Graded && s.Score != null && assignmentIds.Contains(s.Item.Module.AssignmentId))
-            .Select(s => new { AssignmentId = s.Item.Module.AssignmentId, Score = s.Score!.Value, Max = s.Item.MaxScore }).ToListAsync(ct);
-        var byAssignment = scores.GroupBy(s => s.AssignmentId).ToDictionary(g => g.Key, g => (Earned: g.Sum(x => x.Score), Possible: g.Sum(x => x.Max)));
+            .Select(s => new { AssignmentId = s.Item.Module.AssignmentId, Score = s.Score!.Value, Max = s.Item.MaxScore, s.Item.Kind, Summative = s.Item.MaterialItemId != null }).ToListAsync(ct);
+        var byAssignment = scores.GroupBy(s => s.AssignmentId).ToDictionary(g => g.Key, g => GradingSystem.Compute(g.Select(x => new GradeWork(x.Kind, x.Summative, x.Max, x.Score))).Running);
         var finals = await db.FinalGrades.AsNoTracking().Where(g => g.StudentId == studentId && assignmentIds.Contains(g.AssignmentId)).ToDictionaryAsync(g => g.AssignmentId, g => g.Grade, ct);
 
         return [.. enrollments.Select(e => new HistoryTerm(e.Id, e.SchoolYear, e.Term, e.GradeLevel, e.Track, e.Strand, e.Section, e.Status,
@@ -179,9 +179,9 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
                 decimal? final = null;
                 if (assignment is not null)
                 {
-                    if (byAssignment.TryGetValue(assignment.Id, out var total) && total.Possible > 0)
+                    if (byAssignment.TryGetValue(assignment.Id, out var running) && running is { } value)
                     {
-                        percent = Math.Round(total.Earned / total.Possible * 100, 1);
+                        percent = Math.Round(value, 1);
                     }
 
                     final = finals.TryGetValue(assignment.Id, out var grade) ? grade : null;

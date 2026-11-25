@@ -8,12 +8,34 @@ public sealed record GradebookColumn(int ItemId, string Title, string Kind, deci
 {
     /// <summary>The short name of the column: the kind and its number among the work of that kind (A1, A2, Q1, TP1 ...). Moving the column does not change it.</summary>
     public string Code { get; init; } = "";
+
+    /// <summary>True for the summative exam of the academic provider (the Summative Test); an exam the teacher added in the gradebook is a Term Examination.</summary>
+    public bool Summative { get; init; }
+
+    /// <summary>Round 46: a quiz or an exam that has questions: the system checks it by itself, so its score is not typed in the gradebook (only an essay is scored by the teacher).</summary>
+    public bool AutoChecked { get; init; }
+
+    /// <summary>True when the questions have an essay: the teacher gives that score, so the cell can be changed.</summary>
+    public bool HasEssay { get; init; }
+
+    /// <summary>The part of the grade this column counts in (Written/Oral Works, Performance Task, Summative Test or Term Examination).</summary>
+    public GradePart Part => GradingSystem.PartOf(Kind, Summative);
+
+    /// <summary>True when the teacher types the scores of this column in the gradebook.</summary>
+    public bool Typed => !AutoChecked || HasEssay;
 }
 
 /// <param name="Status">NotStarted, InProgress, Submitted (waiting for a score) or Graded.</param>
 public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bool IsLate, bool IsFlagged, string? LateDecision = null);
 
-public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null);
+/// <param name="Percent">The grade as it stands now (the weighted average of the parts that have graded work), or nothing when no work is graded yet.</param>
+/// <param name="FinalGrade">The final grade that was sent to the registrar, when there is one.</param>
+/// <param name="Grade">The grade worked out by the grading system: the percent of each part and the final grade (0 until every score is in).</param>
+public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null, Sex? Sex = null, GradeResult? Grade = null)
+{
+    /// <summary>The final grade the gradebook shows: 0 until every activity, quiz and exam has a score.</summary>
+    public int? Final => Grade?.Final;
+}
 
 /// <summary>The gradebook of one course as the student sees it: the columns and the one row of the student (nothing to change).</summary>
 public sealed record StudentBook(int AssignmentId, IReadOnlyList<GradebookColumn> Columns, GradebookRow Row)
@@ -23,7 +45,15 @@ public sealed record StudentBook(int AssignmentId, IReadOnlyList<GradebookColumn
 }
 
 public sealed record SubjectGradebook(
-    int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing, bool GradesHidden = false);
+    int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing, bool GradesHidden = false)
+{
+    /// <summary>Students whose gradebook is not complete yet (a score is missing), so their final grade is 0.</summary>
+    public int Incomplete => Rows.Count(r => r.Grade is { Complete: false, Total: > 0 });
+
+    /// <summary>The two summary tables of the class (descriptors, passed/failed) with male, female and total, for the final grades of all the students.</summary>
+    public (IReadOnlyList<GradingSystem.SummaryLine> Descriptor, IReadOnlyList<GradingSystem.SummaryLine> Remark, int Male, int Female, int Total) Summary =>
+        GradingSystem.Summarize(Rows.Where(r => r.Final is not null).Select(r => ((decimal)r.Final!.Value, r.Sex)));
+}
 
 /// <summary>
 /// The teacher's gradebook of one subject: a row per student, a column per activity, quiz and task performance of the modules that
@@ -49,47 +79,61 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var itemIds = columns.Select(c => c.ItemId).ToList();
 
         var students = await Roster.Enrollments(db, a.SectionId, a.SubjectId)
-            .Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName, e.Student.Lrn }).Distinct()
+            .Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName, e.Student.Lrn, e.Student.Sex }).Distinct()
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct);
-        var subs = await db.Submissions.AsNoTracking().Where(s => itemIds.Contains(s.ItemId)).Select(s => new { s.ItemId, s.StudentId, s.Status, s.Score, s.IsLate, s.IsFlagged, s.LateDecision }).ToListAsync(ct);
+        var subs = await db.Submissions.AsNoTracking().Where(s => itemIds.Contains(s.ItemId)).Select(s => new SubmissionLine(s.ItemId, s.StudentId, s.Status, s.Score, s.IsLate, s.IsFlagged, s.LateDecision)).ToListAsync(ct);
         var bySlot = subs.ToDictionary(s => (s.StudentId, s.ItemId));
         var finals = await db.FinalGrades.AsNoTracking().Where(g => g.AssignmentId == assignmentId).ToDictionaryAsync(g => g.StudentId, g => g.Grade, ct);
 
         var rows = new List<GradebookRow>();
         foreach (var st in students)
         {
-            var cells = new List<GradebookCell>();
-            decimal earned = 0, possible = 0;
-            var toCheck = 0;
-            foreach (var c in columns)
-            {
-                if (bySlot.TryGetValue((st.StudentId, c.ItemId), out var s))
-                {
-                    cells.Add(new GradebookCell(c.ItemId, s.Status, s.Score, s.IsLate, s.IsFlagged, s.LateDecision));
-                    if (s.Score is { } score && s.Status == SubmissionStatus.Graded)
-                    {
-                        earned += score;
-                        possible += c.Max;
-                    }
-
-                    if (s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined)
-                    {
-                        toCheck++;
-                    }
-                }
-                else
-                {
-                    cells.Add(new GradebookCell(c.ItemId, "NotStarted", null, false, false));
-                }
-            }
-
-            rows.Add(new GradebookRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, cells, possible <= 0 ? null : Math.Round(earned / possible * 100, 1), toCheck, finals.TryGetValue(st.StudentId, out var final) ? final : null));
+            var (cells, toCheck, grade) = BuildCells(columns, id => bySlot.TryGetValue((st.StudentId, id), out var s) ? s : null, forTeacher: true);
+            rows.Add(new GradebookRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, cells, grade.Running, toCheck, finals.TryGetValue(st.StudentId, out var final) ? final : null, st.Sex, grade));
         }
 
-        var graded = rows.Where(r => r.Percent is not null).ToList();
+        // The tiles count the students whose gradebook is complete: a student with a score missing has the final grade 0 (it is not a result yet).
+        var finished = rows.Where(r => r.Grade is { Complete: true }).ToList();
         return new SubjectGradebook(a.Id, a.Subject, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), columns, rows,
-            graded.Count == 0 ? null : Math.Round(graded.Average(r => r.Percent!.Value), 1), graded.Count(r => r.Percent < GradeRules.PassingPercent), a.GradesHidden);
+            finished.Count == 0 ? null : Math.Round(finished.Average(r => (decimal)r.Final!.Value), 1), finished.Count(r => r.Final < GradeRules.PassingPercent), a.GradesHidden);
     }
+
+    /// <summary>The cells of one student for the columns, the number of works that wait to be checked, and the grade the grading system works out.</summary>
+    private static (List<GradebookCell> Cells, int ToCheck, GradeResult Grade) BuildCells(IReadOnlyList<GradebookColumn> columns, Func<int, SubmissionLine?> find, bool forTeacher)
+    {
+        var cells = new List<GradebookCell>();
+        var works = new List<GradeWork>();
+        var toCheck = 0;
+        foreach (var c in columns)
+        {
+            var s = find(c.ItemId);
+            decimal? score = null;
+            if (s is not null)
+            {
+                cells.Add(new GradebookCell(c.ItemId, s.Status, s.Score, s.IsLate, forTeacher && s.IsFlagged, s.LateDecision));
+                if (s.Score is { } value && s.Status == SubmissionStatus.Graded)
+                {
+                    score = value;
+                }
+
+                if (forTeacher && s.Status == SubmissionStatus.Submitted && s.LateDecision != LateDecisions.Declined)
+                {
+                    toCheck++;
+                }
+            }
+            else
+            {
+                cells.Add(new GradebookCell(c.ItemId, "NotStarted", null, false, false));
+            }
+
+            works.Add(new GradeWork(c.Kind, c.Summative, c.Max, score));
+        }
+
+        return (cells, toCheck, GradingSystem.Compute(works));
+    }
+
+    /// <summary>What the gradebook needs of one submission (the slot of a student and a column).</summary>
+    private sealed record SubmissionLine(int ItemId, int StudentId, string Status, decimal? Score, bool IsLate, bool IsFlagged, string? LateDecision);
 
     /// <summary>
     /// The button Hide from students of the gradebook: the grades of the course are hidden from the students (or shown again). The students keep seeing their work and their feedback, but not the
@@ -116,7 +160,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var now = clock.GetUtcNow().UtcDateTime;
-        var student = await db.Students.AsNoTracking().Where(s => s.Id == studentId).Select(s => new { s.FirstName, s.LastName, s.Lrn }).FirstOrDefaultAsync(ct);
+        var student = await db.Students.AsNoTracking().Where(s => s.Id == studentId).Select(s => new { s.FirstName, s.LastName, s.Lrn, s.Sex }).FirstOrDefaultAsync(ct);
         if (student is null)
         {
             return new Dictionary<int, StudentBook>();
@@ -133,35 +177,17 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             {
                 // the teacher hides the grades: the columns are there, the scores, the average and the final grade are not
                 books[assignmentId] = new StudentBook(assignmentId, columns, new GradebookRow(studentId, $"{student.LastName}, {student.FirstName}", student.Lrn,
-                    [.. columns.Select(c => new GradebookCell(c.ItemId, "NotStarted", null, false, false))], null, 0, null)) { Hidden = true };
+                    [.. columns.Select(c => new GradebookCell(c.ItemId, "NotStarted", null, false, false))], null, 0, null, student.Sex)) { Hidden = true };
                 continue;
             }
 
             var itemIds = columns.Select(c => c.ItemId).ToList();
             var mine = await db.Submissions.AsNoTracking().Where(s => s.StudentId == studentId && itemIds.Contains(s.ItemId))
-                .Select(s => new { s.ItemId, s.Status, s.Score, s.IsLate, s.LateDecision }).ToDictionaryAsync(s => s.ItemId, ct);
+                .Select(s => new SubmissionLine(s.ItemId, s.StudentId, s.Status, s.Score, s.IsLate, false, s.LateDecision)).ToDictionaryAsync(s => s.ItemId, ct);
 
-            var cells = new List<GradebookCell>();
-            decimal earned = 0, possible = 0;
-            foreach (var c in columns)
-            {
-                if (mine.TryGetValue(c.ItemId, out var s))
-                {
-                    cells.Add(new GradebookCell(c.ItemId, s.Status, s.Score, s.IsLate, false, s.LateDecision));
-                    if (s.Score is { } score && s.Status == SubmissionStatus.Graded)
-                    {
-                        earned += score;
-                        possible += c.Max;
-                    }
-                }
-                else
-                {
-                    cells.Add(new GradebookCell(c.ItemId, "NotStarted", null, false, false));
-                }
-            }
-
+            var (cells, _, grade) = BuildCells(columns, id => mine.GetValueOrDefault(id), forTeacher: false);
             books[assignmentId] = new StudentBook(assignmentId, columns, new GradebookRow(studentId, $"{student.LastName}, {student.FirstName}", student.Lrn, cells,
-                possible <= 0 ? null : Math.Round(earned / possible * 100, 1), 0, finals.TryGetValue(assignmentId, out var final) ? final : null));
+                grade.Running, 0, finals.TryGetValue(assignmentId, out var final) ? final : null, student.Sex, grade));
         }
 
         return books;
@@ -177,10 +203,14 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             .Where(i => i.Module.AssignmentId == assignmentId && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= now
                         && (!studentView || i.VisibleFromUtc == null || i.VisibleFromUtc <= now))   // a student does not see the work that is not open yet
             .OrderBy(i => i.Module.Position).ThenBy(i => i.Module.Id).ThenBy(i => i.Position).ThenBy(i => i.Id)
-            .Select(i => new { i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder, Summative = i.MaterialItemId != null })
+            .Select(i => new
+            {
+                i.Id, i.Title, i.Kind, i.MaxScore, ModuleTitle = i.Module.Title, i.GradebookOrder, Summative = i.MaterialItemId != null,
+                HasQuestions = i.Questions.Any(), HasEssay = i.Questions.Any(q => q.Kind == QuestionKinds.Essay),
+            })
             .ToListAsync(ct);
 
-        // E is an exam the teacher added in the gradebook; SE is the summative exam of the academic provider. A course has ONE summative exam, so its column is just "SE" (no number), and an
+        // E is a Term Examination the teacher added in the gradebook; SE (the Summative Test) is the summative exam of the academic provider. A course has ONE summative exam, so its column is just "SE" (no number), and an
         // older second copy of it (what used to be SE2) is not a column of the gradebook.
         var firstSummative = rows.FirstOrDefault(r => r.Kind == ItemKinds.Exam && r.Summative)?.Id;
         rows = [.. rows.Where(r => !(r.Kind == ItemKinds.Exam && r.Summative) || r.Id == firstSummative)];
@@ -190,9 +220,16 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         {
             var r = rows[n];
             var summative = r.Kind == ItemKinds.Exam && r.Summative;
-            var letters = summative ? "SE" : ItemKinds.Code(r.Kind);
+            var letters = summative ? "SE" : r.Kind == ItemKinds.Exam ? "TE" : ItemKinds.Code(r.Kind);
             counters[letters] = counters.GetValueOrDefault(letters) + 1;
-            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle) { Code = summative ? "SE" : $"{letters}{counters[letters]}" }, r.GradebookOrder, n));
+            columns.Add((new GradebookColumn(r.Id, r.Title, r.Kind, r.MaxScore, r.ModuleTitle)
+            {
+                Code = summative ? "SE" : $"{letters}{counters[letters]}",
+                Summative = summative,
+                // a quiz or an exam with questions is checked by the system (an exam with no questions is only a column to type scores in)
+                AutoChecked = ItemKinds.IsQuizLike(r.Kind) && r.HasQuestions,
+                HasEssay = r.HasEssay,
+            }, r.GradebookOrder, n));
         }
 
         return columns.OrderBy(c => c.Order == 0 ? 1 : 0).ThenBy(c => c.Order).ThenBy(c => c.Index).Select(c => c.Column).ToList();
@@ -233,6 +270,35 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
 
         await db.SaveChangesAsync(ct);
         return ServiceResult.Ok("Moved.");
+    }
+
+    /// <summary>
+    /// Round 46: the button Send final grades. The final grades are the ones the gradebook worked out (the Final grade column): they are not typed. They go to the registrar (and are kept for the students):
+    /// a student whose gradebook is not complete has the final grade 0, as in the gradebook.
+    /// </summary>
+    public async Task<ServiceResult> SendFinalGradesAsync(int teacherId, int assignmentId, CancellationToken ct = default)
+    {
+        var book = await GetAsync(teacherId, assignmentId, ct);
+        if (book is null)
+        {
+            return ServiceResult.Fail("This is not your course.");
+        }
+
+        var grades = book.Rows.Where(r => r.Final is not null).ToDictionary(r => r.StudentId, r => (decimal?)r.Final!.Value);
+        if (grades.Count == 0)
+        {
+            return ServiceResult.Fail("There is no final grade to send yet: the gradebook has no work.");
+        }
+
+        var sent = await SetFinalGradesAsync(teacherId, assignmentId, grades, ct);
+        if (!sent.Succeeded)
+        {
+            return sent;
+        }
+
+        var incomplete = book.Rows.Count(r => r.Grade is { Complete: false, Total: > 0 });
+        var tail = incomplete == 0 ? "" : $" {incomplete} student{(incomplete == 1 ? " has" : "s have")} a score missing, so the final grade sent is 0.";
+        return ServiceResult.Ok(sent.Message + tail);
     }
 
     /// <summary>
@@ -300,6 +366,162 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
     }
 
     /// <summary>
+    /// Round 46: Import class grades. The file is the Excel the gradebook exports (the sheet with the columns Student and LRN and then the code of each column: A1, Q1, TP1, TE1 ...); the teacher
+    /// types the scores in it and imports it back. A student is found by the LRN (or by the name "Last, First"), a column by its code. The columns that the system checks by itself (a quiz, an
+    /// exam with questions) are left as they are. An empty cell leaves the score as it is. A wrong score (over the highest score, not a number) is told and nothing of that student is saved.
+    /// </summary>
+    public async Task<ServiceResult> ImportScoresAsync(int teacherId, int assignmentId, byte[] file, CancellationToken ct = default)
+    {
+        var book = await GetAsync(teacherId, assignmentId, ct);
+        if (book is null)
+        {
+            return ServiceResult.Fail("This is not your course.");
+        }
+
+        IReadOnlyList<XlsxSheetData> sheets;
+        try
+        {
+            sheets = XlsxReader.Read(file);
+        }
+        catch (InvalidDataException e)
+        {
+            return ServiceResult.Fail(e.Message);
+        }
+
+        // the sheet with the header row (the cells Student and LRN)
+        XlsxSheetData? sheet = null;
+        var headerRow = 0;
+        foreach (var candidate in sheets)
+        {
+            for (var r = 1; r <= Math.Min(candidate.Rows.Count, 12); r++)
+            {
+                if (candidate.Cell(r, 1).Trim().Equals("Student", StringComparison.OrdinalIgnoreCase) && candidate.Cell(r, 2).Trim().Equals("LRN", StringComparison.OrdinalIgnoreCase))
+                {
+                    sheet = candidate;
+                    headerRow = r;
+                    break;
+                }
+            }
+
+            if (sheet is not null)
+            {
+                break;
+            }
+        }
+
+        if (sheet is null)
+        {
+            return ServiceResult.Fail("This is not the Excel of the gradebook: the first columns must be Student and LRN. Use Export to Excel and type the scores in that file.");
+        }
+
+        var columnOfCode = new Dictionary<int, GradebookColumn>();
+        var skipped = new List<string>();
+        for (var c = 3; c <= sheet.Rows[headerRow - 1].Count; c++)
+        {
+            var code = sheet.Cell(headerRow, c).Trim();
+            var column = book.Columns.FirstOrDefault(x => x.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+            if (column is null)
+            {
+                continue;
+            }
+
+            if (column.Typed)
+            {
+                columnOfCode[c] = column;
+            }
+            else
+            {
+                skipped.Add(column.Code);
+            }
+        }
+
+        if (columnOfCode.Count == 0)
+        {
+            return ServiceResult.Fail(skipped.Count > 0
+                ? "The columns of this file are quizzes and exams that the system checks by itself, so there is nothing to import."
+                : "No column of this file has the code of a column of the gradebook (A1, Q1, TP1, TE1 ...). Use Export to Excel and type the scores in that file.");
+        }
+
+        var errors = new List<string>();
+        var students = 0;
+        var scoresSaved = 0;
+        for (var r = headerRow + 1; r <= sheet.Rows.Count; r++)
+        {
+            var lrn = new string(sheet.Cell(r, 2).Where(char.IsAsciiDigit).ToArray());
+            var name = sheet.Cell(r, 1).Trim();
+            var student = (lrn.Length > 0 ? book.Rows.FirstOrDefault(x => x.Lrn == lrn) : null)
+                          ?? (name.Length > 0 ? book.Rows.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) : null);
+            if (student is null)
+            {
+                if (lrn.Length > 0 || name.Length > 0)
+                {
+                    // the rows under the table (the labels of the Highest score row ...) are not students: only a row with an LRN is reported
+                    if (lrn.Length > 0)
+                    {
+                        errors.Add($"Row {r}: the student with the LRN {lrn} is not in this course.");
+                    }
+                }
+
+                continue;
+            }
+
+            var scores = new Dictionary<int, decimal?>();
+            var bad = false;
+            foreach (var (c, column) in columnOfCode)
+            {
+                var text = sheet.Cell(r, c).Trim();
+                if (text.Length == 0)
+                {
+                    continue;
+                }
+
+                if (!decimal.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value))
+                {
+                    errors.Add($"{student.Name}, {column.Code}: \"{text}\" is not a number.");
+                    bad = true;
+                    continue;
+                }
+
+                scores[column.ItemId] = value;
+            }
+
+            if (bad || scores.Count == 0)
+            {
+                continue;
+            }
+
+            var saved = await SetScoresAsync(teacherId, assignmentId, student.StudentId, scores, ct);
+            if (saved.Succeeded)
+            {
+                students++;
+                scoresSaved += scores.Count;
+            }
+            else
+            {
+                errors.AddRange(saved.Errors.Select(e => $"{student.Name}: {e}"));
+            }
+        }
+
+        if (students == 0 && errors.Count > 0)
+        {
+            return ServiceResult.Fail(errors.Distinct().Take(8).ToList());
+        }
+
+        var message = students == 0 ? "No score was found to import." : $"Imported the scores of {students} student{(students == 1 ? "" : "s")}.";
+        if (errors.Count > 0)
+        {
+            message += $" {errors.Count} problem{(errors.Count == 1 ? "" : "s")}: {string.Join(" ", errors.Distinct().Take(3))}";
+        }
+
+        if (skipped.Count > 0)
+        {
+            message += $" ({string.Join(", ", skipped)} {(skipped.Count == 1 ? "is" : "are")} checked by the system and was not imported.)";
+        }
+
+        return ServiceResult.Ok(message);
+    }
+
+    /// <summary>
     /// Changes the scores of one student. A blank (null) leaves the cell as it is; a score that did not change is skipped. The student is
     /// told about each score that changed, and the feedback the teacher wrote is kept.
     /// </summary>
@@ -331,6 +553,12 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
 
             if (score is null)
             {
+                continue;
+            }
+
+            if (!column.Typed)
+            {
+                errors.Add($"{column.Title}: a quiz or an exam is checked by the system, so its score can't be typed here. (Only an essay is scored by the teacher.)");
                 continue;
             }
 

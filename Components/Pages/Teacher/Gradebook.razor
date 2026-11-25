@@ -7,6 +7,7 @@
 @inject GradebookService Books
 @inject ModuleService Modules
 @inject FileDownloads Downloads
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Gradebook · SEAITT Legazpi LMS</PageTitle>
 
@@ -26,16 +27,25 @@ else if (subjects.Count == 0)
 }
 else
 {
-    <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
+    @* Round 46: what is saved (or what went wrong) is a note at the top right of the screen, not a pop-up in the middle, so the scores can be typed one after the other. *@
+    <Toast Message="@message" IsError="@messageIsError" Stamp="@messageStamp" OnDismiss="ClearMessage" />
 
     @if (book is not null)
     {
         <div class="summary">
             <div class="tile"><span class="tile-value">@book.Rows.Count</span><span class="tile-label">students</span></div>
-            <div class="tile"><span class="tile-value">@(book.ClassAverage is { } avg ? $"{avg:0.#}%" : "—")</span><span class="tile-label">class average</span></div>
+            <div class="tile"><span class="tile-value">@(book.ClassAverage is { } avg ? avg.ToString("0.#") : "—")</span><span class="tile-label">class final grade (complete gradebooks)</span></div>
             <div class="tile @(book.Failing > 0 ? "alert" : "")"><span class="tile-value">@book.Failing</span><span class="tile-label">below @GradeRules.PassingPercent.ToString("0")</span></div>
+            <div class="tile @(book.Incomplete > 0 ? "warn" : "")" id="tile-incomplete"><span class="tile-value">@book.Incomplete</span><span class="tile-label">with a score missing (grade 0)</span></div>
             <div class="tile"><span class="tile-value">@book.Rows.Sum(r => r.ToCheck)</span><span class="tile-label">to check</span></div>
         </div>
+
+        <p class="system" id="grading-system"><strong>Grading system:</strong>
+            @foreach (var part in GradingSystem.Parts)
+            {
+                <span class="part part-@GradingSystem.Short(part).ToLowerInvariant()">@GradingSystem.Name(part) <b>@GradingSystem.Weights.Of(part).ToString("0.##")%</b></span>
+            }
+        </p>
 
         <Card>
             @* The course is chosen at the top left of the card; the buttons are at the top right. *@
@@ -53,12 +63,13 @@ else
                 @if (book is { Columns.Count: > 0, Rows.Count: > 0 })
                 {
                     <div class="tools">
-                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add Others</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add section</Button>
                         @* Hide from students: the students do not see the scores, the average and the grade of this course until it is shown again. *@
                         <Button Variant="ButtonVariant.Secondary" IconName="@(book.GradesHidden ? "eye" : "eye-off")" Disabled="busy" OnClick="ToggleHiddenAsync"
                                 Title="@(book.GradesHidden ? "The students can't see their grades of this course. Press to show them." : "The students see their scores, average and grade of this course. Press to hide them.")">@(book.GradesHidden ? "Show to students" : "Hide from students")</Button>
+                        <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenImport" Title="Give the scores of the class from an Excel file">Import class grades</Button>
                         <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Title="One Excel file with all your courses, a sheet for each">Export to Excel</Button>
-                        <Button IconName="send" Disabled="busy" OnClick="SaveFinalGradesAsync" Title="Send the final grades to the students (the last column; it starts with the average)">Send final grades</Button>
+                        <Button IconName="send" Disabled="busy" OnClick="SaveFinalGradesAsync" Title="Send the final grades to the registrar (they are the Final grade column)">Send final grades</Button>
                     </div>
                 }
             </div>
@@ -67,7 +78,7 @@ else
                 <EmptyState IconName="clipboard-list" Title="Nothing to grade yet">
                     <p>Assignments, quizzes and task performances of posted handouts appear as columns here.</p>
                     <ButtonLink Href="@($"teacher/subjects/{book.AssignmentId}")" Variant="ButtonVariant.Secondary">Open the course</ButtonLink>
-                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add Others</Button>
+                    <Button Variant="ButtonVariant.Secondary" IconName="plus" OnClick="OpenExtra">Add section</Button>
                 </EmptyState>
             }
             else if (book.Rows.Count == 0)
@@ -87,8 +98,9 @@ else
                                     var c = book.Columns[place];
                                     var first = place == 0;
                                     var last = place == book.Columns.Count - 1;
-                                    <th scope="col" class="col">
-                                        <a href="teacher/items/@c.ItemId" title="@c.Title · @c.ModuleTitle · @ItemKinds.Display(c.Kind)" aria-label="@($"{c.Title}, {ItemKinds.Display(c.Kind)}")"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @c.Code</a>
+                                    <th scope="col" class="col" data-col="@c.Code">
+                                        <a href="teacher/items/@c.ItemId" title="@($"{c.Title} · {c.ModuleTitle} · {KindLabel(c)}{(c.AutoChecked ? " · checked by the system" : "")}")" aria-label="@($"{c.Title}, {KindLabel(c)}")"><Icon Name="@SubjectStyle.KindIcon(c.Kind)" Size="14" /> @c.Code</a>
+                                        <span class="chip chip-@GradingSystem.Short(c.Part).ToLowerInvariant()" title="@GradingSystem.Name(c.Part)">@GradingSystem.Short(c.Part)@(c.AutoChecked ? " · auto" : "")</span>
                                         <span class="max">out of @c.Max.ToString("0.##")</span>
                                         <span class="move" role="group" aria-label="@($"Move {c.Code}")">
                                             <button type="button" class="mv" data-move="left" disabled="@(first || busy)" title="Move to the left" aria-label="@($"Move {c.Code} to the left")" @onclick="() => MoveAsync(c, -1)"><Icon Name="chevron-left" Size="14" /></button>
@@ -96,8 +108,12 @@ else
                                         </span>
                                     </th>
                                 }
-                                <th scope="col" class="avg">Average</th>
-                                <th scope="col" class="final">Final grade</th>
+                                @foreach (var part in GradingSystem.Parts)
+                                {
+                                    <th scope="col" class="part-col part-col-@GradingSystem.Short(part).ToLowerInvariant()" data-part="@GradingSystem.Short(part)" title="@GradingSystem.Name(part)">@GradingSystem.Short(part)<span class="max">@GradingSystem.Weights.Of(part).ToString("0.##")%</span></th>
+                                }
+                                <th scope="col" class="final" data-final-head>Final grade</th>
+                                <th scope="col" class="descriptor">Descriptor</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,6 +134,14 @@ else
                                                 @* Late work is graded after the teacher accepted it. *@
                                                 <a class="check" href="teacher/items/@column.ItemId" title="Handed in late: accept or decline it first">@(cell.LateDecision == LateDecisions.Pending ? "Late · decide" : "Declined")</a>
                                             }
+                                            else if (!column.Typed)
+                                            {
+                                                @* A quiz or an exam with questions: the system checked it, nobody types its score (only an essay is scored by the teacher). *@
+                                                <span class="cell-box">
+                                                    <span class="score auto" data-auto title="Checked by the system">@(cell.Status == SubmissionStatus.Graded && cell.Score is { } autoScore ? autoScore.ToString("0.##", CultureInfo.InvariantCulture) : "—")</span>
+                                                    @if (cell.IsFlagged) { <i class="flag-dot" title="Flagged by the anti-cheating watch"></i> }
+                                                </span>
+                                            }
                                             else
                                             {
                                                 <div class="cell-box">
@@ -130,45 +154,64 @@ else
                                                     </span>
                                                     @if (cell.Status == SubmissionStatus.Submitted)
                                                     {
-                                                        <a class="check small" href="teacher/items/@column.ItemId" title="Handed in, waiting for a score">To check</a>
+                                                        <a class="check small" href="teacher/items/@column.ItemId" title="@(column.HasEssay ? "Handed in: score the essay" : "Handed in, waiting for a score")">To check</a>
                                                     }
                                                 </div>
                                             }
                                         </td>
                                     }
-                                    <td class="avg">
-                                        @if (row.Percent is { } p)
+                                    @foreach (var part in GradingSystem.Parts)
+                                    {
+                                        <td class="part-col" data-part="@GradingSystem.Short(part)">
+                                            @if (row.Grade?.PartPercent(part) is { } partPercent)
+                                            {
+                                                <span class="score">@partPercent.ToString("0.#")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="dash">—</span>
+                                            }
+                                        </td>
+                                    }
+                                    <td class="final" data-final>
+                                        @* The final grade is worked out by the gradebook (nobody types it): 0 until every activity, quiz and exam has a score. *@
+                                        @if (row.Final is { } finalGrade)
                                         {
-                                            <Badge Tone="@GradeRules.ToneOf(p)">@p.ToString("0.#")%</Badge>
+                                            <span class="final-grade @(row.Grade is { Complete: false } ? "incomplete" : "")" title="@FinalTitle(row)"><Badge Tone="@(row.Grade is { Complete: false } ? Tone.Neutral : GradeRules.ToneOf(finalGrade))">@finalGrade</Badge></span>
                                         }
                                         else
                                         {
                                             <span class="dash">—</span>
                                         }
                                     </td>
-                                    <td class="final">
-                                        @* It starts with the average once there is one; the teacher can change it, and Send final grades gives it to the students. *@
-                                        <input type="number" inputmode="decimal" step="0.01" min="0" max="100" class="input final-input @(IsAutoFinal(row) ? "auto" : "")" placeholder="—"
-                                               aria-label="@($"Final grade of {row.Name}")" value="@finalInputs.GetValueOrDefault(row.StudentId)"
-                                               title="@(IsAutoFinal(row) ? "Filled in from the average. Change it if you like, then press Send final grades." : "")"
-                                               @onchange="e => TypedFinal(row, e.Value?.ToString())" />
+                                    <td class="descriptor" data-descriptor>
+                                        @if (row.Final is { } descriptorGrade)
+                                        {
+                                            <span class="descriptor-name">@GradingSystem.Descriptor(descriptorGrade)</span>
+                                        }
                                     </td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                 </div>
-                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>E</strong> exam &nbsp; <strong>O</strong> others &nbsp; <strong>SE</strong> summative exam &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red.</p>
+                <p class="legend"><strong>A</strong> assignment &nbsp; <strong>Q</strong> quiz &nbsp; <strong>TP</strong> task performance &nbsp; <strong>S</strong> seatwork &nbsp; <strong>R</strong> recitation &nbsp; <strong>O</strong> others &nbsp; <strong>SE</strong> summative test &nbsp; <strong>TE</strong> term examination &nbsp; <span class="late-dot"></span> handed in late &nbsp; <span class="flag-dot"></span> flagged by the anti-cheating watch &nbsp; Scores under @GradeRules.PassingPercent.ToString("0")% of the highest score are shown in red. A quiz or an exam with questions is checked by the system (<strong>auto</strong>): only an essay is scored by you. The final grade is 0 until every activity, quiz and exam has a score.</p>
+
+                @* The two tables of the class: the descriptors and Passed / Failed, with male, female and total (the same as in the Excel). *@
+                <div class="summary-tables" id="grade-summary">
+                    <SummaryTable Title="SUMMARY" ColumnTitle="DESCRIPTOR" Lines="summary.Descriptor" Male="summary.Male" Female="summary.Female" Total="summary.Total" Id="summary-descriptor" />
+                    <SummaryTable Title="" ColumnTitle="REMARKS" Lines="summary.Remark" Male="summary.Male" Female="summary.Female" Total="summary.Total" Id="summary-remarks" />
+                </div>
             }
         </Card>
     }
 }
 
-@* ===== Add Others: a recitation, an exam or anything else that is only there to give scores (a new column of the gradebook) ===== *@
-<Modal Open="extraOpen" Title="Add Others" OnClose="CloseExtra">
+@* ===== Add section: a recitation, others, a performance task or a term examination: a new column of the gradebook ===== *@
+<Modal Open="extraOpen" Title="Add section" OnClose="CloseExtra">
     @if (extraOpen)
     {
-        <p class="dialog-text">Add a <strong>recitation</strong>, an <strong>exam</strong> or <strong>others</strong> to give extra scores. It becomes a new column of the gradebook, and it is added to the handout you choose, so the students see it too.</p>
+        <p class="dialog-text">Add a <strong>recitation</strong>, <strong>others</strong>, a <strong>performance task</strong> or a <strong>Term Examination (TE)</strong>. It becomes a new column of the gradebook, and it is added to the handout you choose, so the students see it too.</p>
         <FormErrors Errors="formErrors" />
         @if (extraModules.Count == 0)
         {
@@ -180,9 +223,10 @@ else
                 @foreach (var kind in ExtraKinds)
                 {
                     var k = kind;
-                    <button type="button" class="kind @(extraKind == k ? "on" : "")" data-kind="@k" aria-pressed="@(extraKind == k ? "true" : "false")" @onclick="() => extraKind = k"><Icon Name="@SubjectStyle.KindIcon(k)" Size="16" /> @ItemKinds.Display(k)</button>
+                    <button type="button" class="kind @(extraKind == k ? "on" : "")" data-kind="@k" aria-pressed="@(extraKind == k ? "true" : "false")" @onclick="() => extraKind = k"><Icon Name="@SubjectStyle.KindIcon(k)" Size="16" /> @ExtraLabel(k)</button>
                 }
             </div>
+            <p class="hint" id="x-part">It counts in <strong>@GradingSystem.Name(GradingSystem.PartOf(extraKind, false))</strong> (@GradingSystem.Weights.Of(GradingSystem.PartOf(extraKind, false)).ToString("0.##")%).</p>
             <Field For="x-module" Label="Handout" Required="true">
                 <select id="x-module" @bind="extraModuleId">
                     @foreach (var m in extraModules)
@@ -205,6 +249,36 @@ else
     }
 </Modal>
 
+@* ===== Import class grades: the Excel of the gradebook, with the scores typed in it ===== *@
+<Modal Open="importOpen" Title="Import class grades" Large="true" OnClose="CloseImport">
+    @if (importOpen)
+    {
+        <p class="dialog-text">Give the scores of the whole class from an Excel file. The file is the one the gradebook exports.</p>
+        <ol class="import-steps">
+            <li>
+                <strong>Download the Excel</strong> of this course. It has a row for every student and a column for every activity, quiz and exam (the code of the column is its title: A1, Q1, TP1, TE1 ...).
+                <div><Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadForImportAsync">Download the Excel of this course</Button></div>
+            </li>
+            <li><strong>Type the scores</strong> in the sheet <em>Grades</em>. Keep the columns Student and LRN and the code of each column. A quiz or an exam that the system checks is not imported. An empty cell leaves the score as it is.</li>
+            <li>
+                <strong>Choose the file</strong> and press Import.
+                <Field For="imp-grades-file" Label="Excel file (.xlsx)" Required="true">
+                    <InputFile id="imp-grades-file" OnChange="ImportFileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                </Field>
+                @if (importFileName is not null)
+                {
+                    <p class="chosen-file"><Icon Name="file-spreadsheet" Size="16" /> @importFileName</p>
+                }
+            </li>
+        </ol>
+        <FormErrors Errors="importErrors" />
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseImport">Cancel</Button>
+            <Button IconName="upload" Disabled="@(busy || importBytes is null)" OnClick="ImportAsync">@(busy ? "Importing…" : "Import")</Button>
+        </div>
+    }
+</Modal>
+
 @code {
     [SupplyParameterFromQuery(Name = "subject")] private int? SubjectQuery { get; set; }
 
@@ -213,16 +287,33 @@ else
     private IReadOnlyList<TeacherSubjectCard> subjects = [];
     private int subjectId;
     private SubjectGradebook? book;
-    private readonly Dictionary<int, string> finalInputs = [];
-
-    // The students whose final grade the teacher typed by hand: the average no longer fills it in.
-    private readonly HashSet<int> typedFinals = [];
     private int renderStamp;
     private readonly SemaphoreSlim saveLock = new(1, 1);
     private string? message;
     private bool messageIsError;
+    private int messageStamp;
     private bool busy;
     private List<string> formErrors = [];
+
+    /// <summary>The two tables of the class (descriptors, passed/failed) for the book on the screen.</summary>
+    private (IReadOnlyList<GradingSystem.SummaryLine> Descriptor, IReadOnlyList<GradingSystem.SummaryLine> Remark, int Male, int Female, int Total) summary =>
+        book?.Summary ?? ([], [], 0, 0, 0);
+
+    /// <summary>What a column is, in words: the Summative Test is the summative exam of the academic provider; an exam of the teacher is a Term Examination (TE).</summary>
+    private static string KindLabel(GradebookColumn c) => c.Kind == ItemKinds.Exam ? (c.Summative ? "Summative Test (SE)" : "Term Examination (TE)") : ItemKinds.Display(c.Kind);
+
+    private static string FinalTitle(GradebookRow row) =>
+        row.Grade is { Complete: false, Missing: > 0 } g
+            ? $"{g.Missing} score{(g.Missing == 1 ? " is" : "s are")} missing, so the final grade is 0 until every activity, quiz and exam has a score."
+            : $"Final grade {row.Final} · {GradingSystem.Descriptor(row.Final ?? 0)} · {GradingSystem.Remark(row.Final ?? 0)}";
+
+    /// <summary>A note at the top right of the screen (a new one every time, even with the same words).</summary>
+    private void Say(string? text, bool isError = false)
+    {
+        message = text;
+        messageIsError = isError;
+        messageStamp++;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -239,46 +330,6 @@ else
     {
         formErrors = [];
         book = subjectId == 0 ? null : await Books.GetAsync(teacherId, subjectId);
-        ReadBook();
-    }
-
-    /// <summary>
-    /// The final grades: the one that was sent, else the one the teacher typed, else the average as soon as there is one (it follows the average while the scores change).
-    /// </summary>
-    private void ReadBook()
-    {
-        var kept = finalInputs.ToDictionary(x => x.Key, x => x.Value);
-        finalInputs.Clear();
-        if (book is null)
-        {
-            typedFinals.Clear();
-            return;
-        }
-
-        foreach (var row in book.Rows)
-        {
-            if (row.FinalGrade is { } g)
-            {
-                finalInputs[row.StudentId] = g.ToString("0.##", CultureInfo.InvariantCulture);
-            }
-            else if (typedFinals.Contains(row.StudentId) && kept.TryGetValue(row.StudentId, out var typed))
-            {
-                finalInputs[row.StudentId] = typed;
-            }
-            else
-            {
-                finalInputs[row.StudentId] = row.Percent is { } avg ? Math.Round(avg, 2).ToString("0.##", CultureInfo.InvariantCulture) : "";
-            }
-        }
-    }
-
-    /// <summary>The box still has the average the system put in (nothing was sent or typed yet).</summary>
-    private bool IsAutoFinal(GradebookRow row) => row.FinalGrade is null && !typedFinals.Contains(row.StudentId) && row.Percent is not null;
-
-    private void TypedFinal(GradebookRow row, string? text)
-    {
-        finalInputs[row.StudentId] = text ?? string.Empty;
-        typedFinals.Add(row.StudentId);
     }
 
     private async Task SubjectChanged(ChangeEventArgs e)
@@ -286,7 +337,7 @@ else
         if (int.TryParse(e.Value?.ToString(), out var id))
         {
             subjectId = id;
-            message = null;
+            Say(null);
             await LoadAsync();
         }
     }
@@ -295,6 +346,7 @@ else
     private static string CellClass(GradebookCell cell, GradebookColumn column) =>
         cell.Status == SubmissionStatus.Graded && cell.Score is { } s && column.Max > 0 && s / column.Max * 100 < GradeRules.PassingPercent ? "failing" : "";
 
+    /// <summary>Send final grades: the final grades the gradebook worked out go to the registrar.</summary>
     private async Task SaveFinalGradesAsync()
     {
         if (busy || book is null)
@@ -302,41 +354,20 @@ else
             return;
         }
 
-        var grades = new Dictionary<int, decimal?>();
-        foreach (var row in book.Rows)
-        {
-            var text = finalInputs.GetValueOrDefault(row.StudentId);
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                grades[row.StudentId] = null;
-            }
-            else if (decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
-            {
-                grades[row.StudentId] = value;
-            }
-            else
-            {
-                formErrors = [$"{row.Name}: the final grade must be a number."];
-                return;
-            }
-        }
-
         busy = true;
         try
         {
-            var result = await Books.SetFinalGradesAsync(teacherId, subjectId, grades);
+            var result = await Books.SendFinalGradesAsync(teacherId, subjectId);
             if (!result.Succeeded)
             {
                 formErrors = [.. result.Errors];
+                Say(string.Join(" ", result.Errors), true);
                 return;
             }
 
             formErrors = [];
-            messageIsError = false;
-            message = result.Message;
-            typedFinals.Clear();
+            Say(result.Message);
             book = await Books.GetAsync(teacherId, subjectId);
-            ReadBook();
         }
         finally
         {
@@ -372,9 +403,12 @@ else
                 return;
             }
 
-            messageIsError = false;
-            message = result.Message == "Nothing changed." ? null : $"{row.Name}, {column.Title}: saved.";
-            // Only the numbers are read again: the final grades that are typed and not saved yet stay as they are.
+            // Round 46: the note is at the top right of the screen; the scores that are typed next are not interrupted.
+            if (result.Message != "Nothing changed.")
+            {
+                Say($"{row.Name} · {column.Code}: saved.");
+            }
+
             book = await Books.GetAsync(teacherId, subjectId);
         }
         finally
@@ -385,8 +419,7 @@ else
 
     private void Fail(string text)
     {
-        messageIsError = true;
-        message = text;
+        Say(text, true);
         renderStamp++;   // the boxes are drawn again, so the wrong number is not left in the box
     }
 
@@ -408,8 +441,7 @@ else
                 return;
             }
 
-            messageIsError = false;
-            message = null;
+            Say(null);
             book = await Books.GetAsync(teacherId, subjectId);
             renderStamp++;
         }
@@ -452,8 +484,7 @@ else
         try
         {
             var result = await Books.SetGradesHiddenAsync(teacherId, subjectId, !book.GradesHidden);
-            messageIsError = !result.Succeeded;
-            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            Say(result.Succeeded ? result.Message : string.Join(" ", result.Errors), !result.Succeeded);
             book = await Books.GetAsync(teacherId, subjectId);
         }
         finally
@@ -467,8 +498,10 @@ else
     private bool extraOpen;
     private string extraKind = ItemKinds.Recitation;
 
-    /// <summary>What "Add Others" gives: a recitation, an exam, or others. (The assignments, quizzes and task performances are made in the course.)</summary>
-    private static readonly string[] ExtraKinds = [ItemKinds.Recitation, ItemKinds.Exam, ItemKinds.Other];
+    /// <summary>What "Add section" gives: a recitation, others, a performance task or a Term Examination. (The assignments and quizzes are made in the course.)</summary>
+    private static readonly string[] ExtraKinds = [ItemKinds.Recitation, ItemKinds.Other, ItemKinds.TaskPerformance, ItemKinds.Exam];
+
+    private static string ExtraLabel(string kind) => kind == ItemKinds.Exam ? "Term Examination (TE)" : ItemKinds.Display(kind);
     private int extraModuleId;
     private string extraTitle = "";
     private decimal extraMax = 50;
@@ -507,9 +540,82 @@ else
             }
 
             extraOpen = false;
-            messageIsError = false;
-            message = $"{ItemKinds.Display(extraKind)} added: it is a new column. Type the scores in it.";
+            Say($"{ExtraLabel(extraKind)} added: it is a new column. Type the scores in it.");
             await LoadAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    // ---------------------------------------------------------------- import class grades
+
+    private bool importOpen;
+    private byte[]? importBytes;
+    private string? importFileName;
+    private List<string> importErrors = [];
+
+    private void OpenImport()
+    {
+        importBytes = null;
+        importFileName = null;
+        importErrors = [];
+        importOpen = true;
+    }
+
+    private void CloseImport() => importOpen = false;
+
+    private async Task DownloadForImportAsync()
+    {
+        if (book is null)
+        {
+            return;
+        }
+
+        await Downloads.SaveAsync(GradebookExport.FileName(book), GradebookExport.Build(book));
+    }
+
+    private async Task ImportFileChosenAsync(InputFileChangeEventArgs e)
+    {
+        importErrors = [];
+        importBytes = null;
+        importFileName = null;
+        try
+        {
+            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            importBytes = buffer.ToArray();
+            importFileName = e.File.Name;
+        }
+        catch (IOException)
+        {
+            importErrors = ["The file could not be read. Choose it again."];
+        }
+    }
+
+    private async Task ImportAsync()
+    {
+        if (busy || importBytes is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var result = await Books.ImportScoresAsync(teacherId, subjectId, importBytes);
+            if (!result.Succeeded)
+            {
+                importErrors = [.. result.Errors];
+                return;
+            }
+
+            importOpen = false;
+            Say(result.Message);
+            book = await Books.GetAsync(teacherId, subjectId);
+            renderStamp++;
         }
         finally
         {

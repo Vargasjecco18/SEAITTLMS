@@ -1,0 +1,35 @@
+.summary-table {
+    width: 100%;
+    min-width: 40rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.summary-table th,
+.summary-table td {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.summary-table thead th {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.summary-table tbody th {
+    text-align: left;
+    font-weight: 600;
+}
+
+.summary-table .num {
+    font-variant-numeric: tabular-nums;
+}
+
+.summary-table .total th,
+.summary-table .total td {
+    background: var(--surface-2);
+    font-weight: 700;
+}

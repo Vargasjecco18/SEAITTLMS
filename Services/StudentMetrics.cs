@@ -43,7 +43,7 @@ internal static class StudentMetrics
         var items = await db.ModuleItems.AsNoTracking()
             .Where(i => assignmentIdList.Contains(i.Module.AssignmentId) && i.Module.VisibleFromUtc != null && i.Module.VisibleFromUtc <= nowUtc
                         && (i.VisibleFromUtc == null || i.VisibleFromUtc <= nowUtc))
-            .Select(i => new { i.Id, AssignmentId = i.Module.AssignmentId, i.MaxScore, i.DueAtUtc })
+            .Select(i => new { i.Id, AssignmentId = i.Module.AssignmentId, i.MaxScore, i.DueAtUtc, i.Kind, Summative = i.MaterialItemId != null })
             .ToListAsync(ct);
         var itemIds = items.Select(i => i.Id).ToList();
         var students = roster.Select(r => r.StudentId).Distinct().ToList();
@@ -63,7 +63,7 @@ internal static class StudentMetrics
         var result = new List<PairMetric>();
         foreach (var (student, assignment) in roster)
         {
-            decimal earned = 0, possible = 0;
+            var works = new List<GradeWork>();
             var graded = 0;
             var missing = 0;
             foreach (var item in items.Where(i => i.AssignmentId == assignment.Id))
@@ -71,19 +71,25 @@ internal static class StudentMetrics
                 subBySlot.TryGetValue((student, item.Id), out var sub);
                 if (sub is { Status: SubmissionStatus.Graded, Score: { } score })
                 {
-                    earned += score;
-                    possible += item.MaxScore;
+                    works.Add(new GradeWork(item.Kind, item.Summative, item.MaxScore, score));
                     graded++;
                 }
-                else if ((sub is null || sub.Status == SubmissionStatus.InProgress) && item.DueAtUtc is { } due && due < nowUtc)
+                else
                 {
-                    missing++;
+                    works.Add(new GradeWork(item.Kind, item.Summative, item.MaxScore, null));
+                    if ((sub is null || sub.Status == SubmissionStatus.InProgress) && item.DueAtUtc is { } due && due < nowUtc)
+                    {
+                        missing++;
+                    }
                 }
             }
 
+            // Round 46: the grade of the SEAITT grading system (the weighted average of the four parts, scaled to 100%) of the work that is graded so far.
+            var running = GradingSystem.Compute(works).Running;
+
             attBySlot.TryGetValue((student, assignment.Id), out var marks);
             marks ??= [];
-            result.Add(new PairMetric(student, assignment.Id, assignment.Subject, possible <= 0 ? null : Math.Round(earned / possible * 100, 1), graded, missing,
+            result.Add(new PairMetric(student, assignment.Id, assignment.Subject, running is { } r ? Math.Round(r, 1) : null, graded, missing,
                 marks.Count(m => m == AttendanceStatus.Present), marks.Count(m => m == AttendanceStatus.Late), marks.Count(m => m == AttendanceStatus.Absent)));
         }
 
