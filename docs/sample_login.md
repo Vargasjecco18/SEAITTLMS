@@ -20,6 +20,8 @@ How they are made, like the app does for a new person:
 | Academic coordinator | Lourdes Garcia Villareal | villareal.023@legazpi.seaitt.edu.ph | villareal023 |
 | Academic coordinator | Marissa Santos Ramos | ramos.026@legazpi.seaitt.edu.ph | ramos026 |
 | Academic provider | Elena Cruz Pangilinan | pangilinan.024@legazpi.seaitt.edu.ph | pangilinan024 |
+| Admission · Grade 11 (round 46) | Teresa Ocampo | ocampo.031@legazpi.seaitt.edu.ph | ocampo031 |
+| Admission · Grade 12 (round 46) | Ramon Flores | flores.032@legazpi.seaitt.edu.ph | flores032 |
 | Teacher | Rafael Mendoza Vargas | vargas.013@legazpi.seaitt.edu.ph | vargas013 |
 | Teacher | Ricardo Dizon Villanueva | villanueva.001@legazpi.seaitt.edu.ph | villanueva001 |
 | Teacher | Angelica Lopez Bautista | bautista.002@legazpi.seaitt.edu.ph | bautista002 |
@@ -72,3 +74,5 @@ How they are made, like the app does for a new person:
 | Student | Nadine Tuazon Pacheco | pacheco.600043@legazpi.seaitt.edu.ph | pacheco600043 |
 | Student | Oscar Ubaldo Ramirez | ramirez.600044@legazpi.seaitt.edu.ph | ramirez600044 |
 | Student | Princess Villanueva Sarmiento | sarmiento.600045@legazpi.seaitt.edu.ph | sarmiento600045 |
+
+The two **Admission** accounts are in [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql), not in the accounts file, because they have a role the administrator makes (*Admission Grade 11* and *Admission Grade 12*, with the pages `admission-grade11` / `admission-grade12`). They record the information and the documents of the students (43 students and 80 documents are recorded in the sample data) and have no other pages besides Calendar and Users.

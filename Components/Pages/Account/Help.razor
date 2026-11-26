@@ -110,6 +110,12 @@
     {
         var me = await Me.GetAsync();
         sections = HelpContent.For(me?.Role ?? "", Settings.Current);
+
+        // Round 46: the Admission staff are an account of a made-up role: they have their own help besides the first section
+        if ((await Me.GetInAreaAsync(AppRoles.Admission))?.Role == AppRoles.Admission)
+        {
+            sections = [.. HelpContent.For("", Settings.Current), HelpContent.Admission()];
+        }
     }
 
     private bool Matches(HelpTopic topic)

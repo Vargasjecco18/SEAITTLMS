@@ -19,7 +19,7 @@ The diagrams below show how the data moves in the system: **level 0** (the whole
 
 | Id | Data store | Tables |
 |---|---|---|
-| D0 | Whole database | all 63 tables (for the backup) |
+| D0 | Whole database | all 65 tables (for the backup) |
 | D1 | Accounts and profiles | users, roles, custom_roles, administrators, registrars, guidance_counselors, academic_coordinators, academic_providers, teachers, students, profile_photos |
 | D2 | Security records | security_logs, login_otps |
 | D3 | System settings | system_settings |
@@ -33,6 +33,7 @@ The diagrams below show how the data moves in the system: **level 0** (the whole
 | D11 | Groups and files | study_groups, study_group_members, group_posts, stored_files, stored_file_contents, shared_files, attachments, attachment_contents |
 | D12 | Calendar and announcements | announcements, calendar_entries, calendar_entry_invites, holiday_exclusions |
 | D13 | Evaluations | teacher_evaluations, evaluation_questions, evaluation_targets, evaluation_responses, evaluation_answers |
+| D15 | Admission records (round 46) | admission_records, admission_documents |
 | D14 | Backup files | SQL files kept in the backup folder (not a table) |
 
 ## Level 0: context diagram
@@ -169,3 +170,12 @@ One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it
 - **No data store is touched by an external entity directly:** a person always reaches the data through a process.
 - **One system boundary:** the only service outside the system is UniSMS (the login code). Everything else (the database, the files, the background tasks) is inside.
 - The picture of the database is in [database.md](database.md) (the ER diagram), and the pages that do each process are in the [README](../README.md).
+
+## Round 46: what the diagrams do not show yet
+
+The pictures above were drawn in round 44. Round 46 added to the system, in words:
+
+- **Admission staff** (Grade 11 and Grade 12, an external entity): they send the *information, the parents and the documents of a new student* into the store **D15 Admission records**, in process **2.0 Set up the school and enroll students**. The registrar reads D15 when enrolling (the LRN is chosen, not typed, and the parents fill the printable form), and the enrollment marks the record as enrolled.
+- **Grading** (process of the teacher's gradebook): the grade is worked out from four parts with the weights kept in **D3 System settings** (20 / 50 / 15 / 30) and the scores in **D7 Class work**; the final grade sent to the students goes to **D8 Grades and attendance**.
+- **Archive** (administrator): the graduation is automatic, nothing is deleted, and the administrator reads the archived grades and downloads **Form 137** and **Form 138**.
+- **Referrals** (guidance): a teacher can refer a student (a data flow from the teacher to **D9 Referrals**).

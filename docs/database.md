@@ -128,8 +128,8 @@ The role tables have these columns, in this order:
 | Table | Columns |
 |---|---|
 | `administrators`, `guidance_counselors`, `registrars`, `academic_coordinators`, `academic_providers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `phone_number`, `status`, timestamps |
-| `teachers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `grade_level`, `track_id`, `strand_id`, `course_id`, `section_id`, timestamps |
-| `students` | `id`, `user_id`, `lrn`, `first_name`, `middle_name`, `last_name`, `name_extension`, `birth_date`, `sex`, `grade_level`, `track_id`, `strand_id`, `course_id`, `section_id`, timestamps |
+| `teachers` | `id`, `user_id`, `employee_number`, `first_name`, `middle_name`, `last_name`, `name_extension`, `grade_level`, `track_id`, `strand_id`, `section_id`, timestamps |
+| `students` | `id`, `user_id`, `lrn`, `first_name`, `middle_name`, `last_name`, `name_extension`, `sex`, `grade_level`, `track_id`, `strand_id`, `section_id`, timestamps, `status`, `status_changed_at_utc`, `status_note` |
 
 - `first_name` and `last_name` are required, `middle_name` and `name_extension` (Jr., III, ...) are optional.
 - `lrn` is the 12-digit Learner Reference Number. `employee_number` is optional and unique when present.
@@ -140,17 +140,19 @@ The role tables have these columns, in this order:
   an account off or on there changes both.
 - Registrars got the same columns as administrators and guidance counselors so the three staff roles look alike.
 
-### Grade level, track, strand, subject and section on students and teachers
+### Grade level, track, strand and section on students and teachers
 
-These five columns are a **quick summary** kept on the person's own row: a student's grade level, track, strand,
-section and main subject, or what a teacher mainly handles. All are optional (empty until somebody fills them in).
+**Round 46:** the person's own row has **`strand_id`** (the strand of the table `strand_courses`, the curriculum), and **no `course_id`** any more: a student or a teacher is placed in a strand, and the courses they take or teach are in `enrollment_courses` and `teaching_assignments`. `students.birth_date` is gone too (`sex` stays). The migration `AdmissionRecordsAndStrandPlacement` drops the columns, with their foreign keys and indexes.
+
+These four columns are a **quick summary** kept on the person's own row: a student's grade level, track, strand
+and section, or what a teacher mainly handles. All are optional (empty until somebody fills them in).
 
 They are only a summary. The full records are:
 
 - for a **student**, `enrollments` (the section they are in, term by term, with the subjects they take in
   `enrollment_courses`),
-- for a **teacher**, nothing else yet (there is no table for who teaches what). A teacher usually teaches several
-  subjects and sections, so the single `course_id` and `section_id` on `teachers` can only be the main one.
+- for a **teacher**, `teaching_assignments` (who teaches which course to which section). A teacher usually teaches several
+  courses and sections, so the single `strand_id` and `section_id` on `teachers` can only be the main ones.
 
 The database makes sure the summary agrees with itself:
 
@@ -162,7 +164,7 @@ The database makes sure the summary agrees with itself:
 - Nothing is cascaded: a track, strand, subject or section can't be deleted while a person's summary points at it.
 
 **Enrolling a student** (the registrar page) sets the student's grade level, track, strand and section for you.
-`course_id` stays empty for students on purpose: a student takes several subjects, and they are listed in
+A student takes several courses, and they are listed in
 `enrollment_courses`. The summary is **not updated** when a student is moved or promoted by hand in the database.
 To fill the summary in for students who were enrolled before this existed, run this once in MySQL Workbench (it leaves
 everybody else alone):
@@ -217,7 +219,10 @@ registrar who did it.
 | `attendance_records` (round 41) | Only weekdays: the check `ck_attendance_records_weekday` (`WEEKDAY(attended_on) < 5`) refuses a Saturday or a Sunday, and `AttendanceService.SaveSheetAsync` says so before it gets there. The migration deleted the marks that were on a weekend. |
 | `referrals` | A student sent to the guidance counselor: `student_id`, `assignment_id` (the subject; dropped if the subject is removed), `reason` (`LowAttendance` or `Violation` are what the guidance counselor works with; `FailingGrades` and `AtRisk` stay allowed by `ck_referrals_reason` for the rows of older versions and are no longer made or shown: failing grades and students at risk are the teacher's concern; `Violation` is written by the counselor), `detail` (what was found, in words), `metric` (the grade or attendance in percent), `status` (`Open`, `InProgress`, `Resolved`; the pages no longer show it: a concern is open until the counselor gives a result), `intervention` (the help given), `notes`, `outcome` (`Improved` or `NoChange`, set when resolved), `resolved_at_utc`, `handled_by_user_id`. Made by the system, worked by the counselor. Deleted with the student. |
 | `referrals` (round 40) | Four more columns: `student_seen_at_utc` (when the student pressed OK on the message of the counselor), `student_response` (`Going` or `NotGoing`, `ck_referrals_student_response`), `student_responded_at_utc` and `scheduled_at_utc` (the day and the time the counselor will see the student). |
+| `referrals` (round 46) | `ck_referrals_reason` also allows `NonCompliance` and `Behavioral` (migration `ReferralFactors`). The counselor works with four factors: `LowAttendance` (shown as **Absenteeism**), `Violation`, `NonCompliance` and `Behavioral`; a teacher can refer a student with any of them (`ReferralService.ReferByTeacherAsync`). |
 | `referrals` (round 41) | One more column: `student_ignored_at_utc` (`datetime(6)`, empty): when the student closed the box of the counselor (the X or Escape) without pressing OK, Going or Not going. The counselor sees **Ignored** in the *Status* column of Referrals. Saving notes again (changed, or after the student ignored them) tells the student again and empties `student_seen_at_utc`, `student_response`, `student_responded_at_utc` and this column, so the student sees Going and Not going again; OK or an answer of the student empties it too. |
+| `admission_records` (round 46) | **What the Admission staff record for the registrar**: one row for each student of Grade 11 or 12 (`grade_level`, unique `lrn`, the names, `sex`, `phone_number`, `address`, `previous_school`, `father_name`/`father_phone`, `mother_name`/`mother_phone`, `guardian_name`/`guardian_relationship`/`guardian_phone`/`guardian_address`, `recorded_by_user_id`, `enrolled_at_utc` which the enrollment fills). The checks `ck_admission_records_grade_level` (11 or 12) and `ck_admission_records_lrn` (12 characters). The registrar picks the student from this list in Enrollment, so the LRN is shown, not typed, and the parents fill the printable form. |
+| `admission_documents` (round 46) | The documents received for a record (`record_id`, deleted with it): `kind` (PSA birth certificate, Form 138 report card, Certificate of completion (Grade 10), Good moral certificate, 2x2 photo, Other document), the optional scanned copy (`file_name`, `content_type`, `size_bytes`, `data`) and `received_at_utc`. |
 
 Deleting a teacher deletes their assignments, and with them the handouts, items and handed-in work. Deleting a student
 deletes their work and handout views (their enrollments are deleted first, see below). A section or a subject can't be
@@ -225,7 +230,7 @@ deleted while an assignment uses it.
 
 A student's own row (`students`) also has `status` (`Active` or `Graduated`; a check constraint allows nothing else), `status_changed_at_utc` and
 `status_note`. A graduated student is **archived**: the records stay, the account is switched off (`users.is_active = 0`), the enrollments are
-completed and open referrals are resolved. (The withdrawal feature and its table `withdrawal_requests` were removed by the migration
+completed and open referrals are resolved. **Round 46:** an archived record is **never deleted** (the 30-day deletion was removed): only an administrator sees it, with the grades of every course the student completed and the downloads **Form 137** and **Form 138**. (The withdrawal feature and its table `withdrawal_requests` were removed by the migration
 `RemoveWithdrawals`; a student who was `Withdrawn` becomes `Active` again, with the sign-in still switched off.)
 The to-do list and its table `todo_items` were removed by the migration `RemoveTodoItems` (the entries people had written are deleted with the table).
 
@@ -377,11 +382,13 @@ Things that were decided for you, change them in the tables if they are not righ
 
 ## Rules the application enforces
 
+- **Grading (round 46).** The grade of a student in a course is worked out by `GradingSystem` from four parts: Written/Oral Works (activities, recitation, others and quizzes), Performance Task, Summative Test (the exam of the academic provider) and Term Examination (the exam of the teacher), weighted 20 / 50 / 15 / 30 and scaled to 100%. The weights are the rows `grading.weight_written`, `grading.weight_performance`, `grading.weight_summative` and `grading.weight_term_exam` of `system_settings` (System Settings, *Grading system*). The final grade is 0 until every column has a score, then a whole number; the descriptors are Advancing 90 to 100, Benchmarking 80 to 89, Connecting 75 to 79, Developing 65 to 74 and Emerging 0 to 64, and 75 and above is Passed. The quizzes, the Summative Test and the Term Examination are checked by the system (their scores are not typed, an essay excepted). Nothing about the grades is stored besides the scores themselves: the final grade is worked out each time, and `final_grades` keeps the one the teacher sent.
+- **Sections (round 46).** A class section holds **40** students (`EnrollmentService.FixedSectionCapacity`; `system_settings` no longer decides it) and a later section opens only when the earlier one is full (A before B before C).
 - Referrals are made by the system (`ReferralService`, once a minute and when the counselor opens a page): a grade below 70 in a subject
   is *failing*, a grade from 70 up to 75 or three or more missed works is *at risk*, and an attendance rate under 80% over at least 5 marked
   days is *not attending class*. One referral per student, subject and problem; the same problem is not sent again for 14 days after it was
   resolved. Only the guidance counselor works on referrals. Resolving one needs an outcome.
-- Graduates are archived by an administrator (`StudentLifecycleService.ArchiveAsync`) **and automatically**: once a day has passed since the end date of the last term of a school year, the background job archives the grade 12 students who have a non-dropped enrollment in that term (`ArchiveFinishedAsync`, note "Graduated: <term> ended (automatic)", one `StudentsArchived` line in `security_logs`; running again changes nothing). A student who is archived can't be enrolled again until an administrator restores the account.
+- Graduates are archived **automatically** (round 46: nobody picks them; the page of the administrator only shows them, restores them and makes the Forms 137 and 138; `StudentLifecycleService.ArchiveAsync` is still there for a student who is dropped out): once a day has passed since the end date of the last term of a school year, the background job archives the grade 12 students who have a non-dropped enrollment in that term (`ArchiveFinishedAsync`, note "Graduated: <term> ended (automatic)", one `StudentsArchived` line in `security_logs`; running again changes nothing). A student who is archived can't be enrolled again until an administrator restores the account.
 - The formatted answer of a student (`submissions.answer_html`) is the only HTML the application stores that a person typed. `RichText.Sanitize` keeps a fixed list of tags (`p div br hr span b strong i em u s strike del sub sup ul ol li h1..h4 blockquote pre code a table thead tbody tr td th`), only `href` (http/https) on links and `colspan`/`rowspan` on cells, and only these style rules with checked values: font family and size, weight, style, decoration, text and background color, alignment, line height, indents and vertical align. Scripts, frames, pictures, event handlers and everything else are removed; it is run when the answer is saved and again when it is shown.
 - A student's subjects are **not picked** at enrollment: `EnrollmentService` gives the student all the active subjects the strand has at that grade level
   and term (`strand_courses`, edited by the administrator in the school setup). The student's phone number is optional (`users.phone_number`) and an
@@ -460,3 +467,6 @@ Things to remember:
   `mysql --init-command="SET SQL_SAFE_UPDATES=1" < file.sql`.
 - The migration `RenameSubjectsToCourses` (round 43) renames the tables and columns that said *subject* to *course*, so the database says what the screens say: the table `subjects` is now **`courses`**, `strand_subjects` is **`strand_courses`**, `enrollment_subjects` is **`enrollment_courses`**, the column `subject_id` is **`course_id`** (in `strand_courses`, `enrollment_courses`, `teaching_assignments`, `material_modules`, `students` and `teachers`) and the column `enrollments.subjects` is **`courses`**. The indexes, the foreign keys, the primary keys and the checks are renamed with them (`ix_courses_code`, `pk_courses`, `ck_courses_units`, `fk_strand_courses_courses_course_id` ...). Nothing is added or taken away: the rows, the numbers (ids) and the relations stay as they were (still **63 tables**). The program itself still calls the class `Subject` in the code; only the names in the database changed (`ToTable("courses")` and `HasColumnName("course_id")` in `Data/Configurations`). The migration can be reverted.
 - The migration `RenameModulesToHandouts` (round 43) does the same for the word *module*, which the screens stopped using in round 36: the table `modules` is now **`handouts`**, `module_items` is **`handout_items`**, `module_reads` is **`handout_reads`**, `module_views` is **`handout_views`**, `material_modules` is **`material_handouts`**, the column `module_id` is **`handout_id`** (in `handout_items`, `handout_reads`, `handout_views`, `material_items`, `material_deliveries` and `attachments`) and `material_module_id` is **`material_handout_id`** (in `material_deliveries` and `attachments`). The keys, foreign keys, indexes and checks follow (`pk_handouts`, `fk_handout_items_handouts_handout_id`, `ix_handout_items_handout_id_kind_position`, `ck_handout_items_kind` ...). No row is touched and no table is added or taken away (still **63 tables**); the migration can be reverted. As with the courses, the classes in the code keep their names (`LearningModule`, `ModuleItem` ...) and `RenameModulesToHandouts` in `Data/AppDbContext.cs` gives the database the new names.
+- The migration `QuizGuardOptions` (round 46) adds `guard_flags` (`varchar(100)`, empty) to `handout_items` and `material_items`: the extra anti-cheating settings of a quiz or a summative exam as a short list of names (`fullscreen`, `one`, `noback`; see `GuardOptions`). The old watch (`anti_cheat`, which counts leaving the page, copy, print and screenshots) is unchanged.
+- The migration `AdmissionRecordsAndStrandPlacement` (round 46) creates `admission_records` and `admission_documents` (what the Admission staff record for the registrar), drops `students.birth_date`, and drops `course_id` (with its foreign key `fk_students_courses_course_id` / `fk_teachers_courses_course_id` and its index) from `students` and `teachers`: a person is placed by `strand_id`, `track_id` and `section_id`. It deletes no row of any other table. The two tables make **65 tables** in all.
+- The migration `ReferralFactors` (round 46) replaces the check `ck_referrals_reason` so it also allows `NonCompliance` and `Behavioral`. Nothing else changes.
