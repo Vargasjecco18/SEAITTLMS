@@ -115,7 +115,7 @@ public class Referral : AuditableEntity
     /// <summary>One of <see cref="ReferralStatus"/>.</summary>
     public string Status { get; set; } = ReferralStatus.Open;
 
-    /// <summary>What the counselor did: "Talked with the student", "Parents called", "Tutoring" ...</summary>
+    /// <summary>What the counselor did: "Talk with the student", "Call the parents/guardian", "Talk with the teacher" ...</summary>
     public string? Intervention { get; set; }
 
     public string? Notes { get; set; }

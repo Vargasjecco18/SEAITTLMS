@@ -26,6 +26,7 @@ internal sealed class AdmissionRecordConfiguration : IEntityTypeConfiguration<Ad
         b.Property(r => r.GuardianRelationship).HasMaxLength(50);
         b.Property(r => r.GuardianPhone).HasMaxLength(20);
         b.Property(r => r.GuardianAddress).HasMaxLength(300);
+        b.HasOne(r => r.Strand).WithMany().HasForeignKey(r => r.StrandId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(r => r.Lrn).IsUnique();
         b.HasIndex(r => new { r.GradeLevel, r.LastName });
         b.ToTable(t =>

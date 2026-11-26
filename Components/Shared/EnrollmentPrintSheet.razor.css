@@ -46,8 +46,10 @@
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
-        min-height: 296mm;
-        padding: 10mm 14mm;
+        /* Round 47: the form is one sheet printed on both sides: the front is exactly one page and the back is exactly one page (a height, not a minimum, so nothing runs over to a third page). */
+        height: 296mm;
+        overflow: hidden;
+        padding: 8mm 14mm 7mm;
     }
 
     .page.back {
@@ -134,7 +136,7 @@
         align-items: baseline;
         justify-content: space-between;
         gap: 6mm;
-        margin: 6mm 0 1mm;
+        margin: 4mm 0 0;
     }
 
     .title {
@@ -157,8 +159,8 @@
         display: flex;
         align-items: baseline;
         justify-content: space-between;
-        margin: 6mm 0 3mm;
-        padding-bottom: 1.4mm;
+        margin: 3.6mm 0 1.8mm;
+        padding-bottom: 1mm;
         border-bottom: 0.5pt solid #bbb;
         font-size: 9pt;
         font-weight: 700;
@@ -193,7 +195,7 @@
 
     .details .d {
         min-width: 0;
-        padding: 1.6mm 0 1.4mm;
+        padding: 0.9mm 0 0.8mm;
         border-bottom: 0.4pt solid #ddd;
     }
 
@@ -243,6 +245,13 @@
         border-collapse: collapse;
     }
 
+    /* Many courses: two tables side by side, so the front always fits one page. */
+    .course-halves {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 8mm;
+    }
+
     table.courses th {
         padding: 1mm 2mm;
         border-bottom: 0.9pt solid #111;
@@ -250,7 +259,7 @@
     }
 
     table.courses td {
-        padding: 1.1mm 2mm;
+        padding: 0.8mm 2mm;
         border-bottom: 0.4pt solid #ddd;
         font-size: 10pt;
     }

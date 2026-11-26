@@ -80,9 +80,10 @@ public static partial class QuestionRules
             errors.Add($"{label}: write the {(kind == QuestionKinds.Matching ? "Column A items" : "question")} (up to 1000 characters).");
         }
 
-        if (q.Points is <= 0 or > 100)
+        // Round 47: the points of a question are a whole number.
+        if (q.Points is < 1 or > 100 || q.Points != decimal.Truncate(q.Points))
         {
-            errors.Add($"{label}: the points must be between 0.01 and 100.");
+            errors.Add($"{label}: the points must be a whole number from 1 to 100.");
         }
 
         switch (kind)

@@ -325,3 +325,90 @@
     height: 1.05rem;
     accent-color: var(--brand);
 }
+
+/* Round 47: View announcements: the announcements at the left, the holidays at the right, a summary on top. */
+.summary-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+}
+
+.sum-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-size: 0.9rem;
+}
+
+.sum-pill strong {
+    color: var(--brand-strong);
+}
+
+.summary-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .summary-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.summary-col h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+}
+
+.summary-col .notices {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.holiday-rows {
+    display: grid;
+    gap: 0.4rem;
+    max-height: 60vh;
+    margin: 0;
+    padding: 0 0.25rem 0 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.holiday-rows li {
+    display: grid;
+    grid-template-columns: 3.6rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.hday {
+    color: var(--brand-strong);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.hname {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.hname small {
+    color: var(--text-muted);
+}

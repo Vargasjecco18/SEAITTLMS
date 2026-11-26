@@ -3,9 +3,9 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--chrome-border);
     border-radius: var(--radius);
-    background: var(--surface-2);
+    background: var(--chrome-card-bg);
 }
 
 .who {
@@ -40,7 +40,7 @@
 }
 
 .role {
-    color: var(--text-muted);
+    color: var(--chrome-muted);
     font-size: 0.78rem;
 }
 
@@ -54,7 +54,7 @@
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--text-muted);
+    color: var(--chrome-muted);
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s, transform 0.15s;
 }

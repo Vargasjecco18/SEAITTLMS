@@ -68,7 +68,6 @@ else
                         <Button Variant="ButtonVariant.Secondary" IconName="@(book.GradesHidden ? "eye" : "eye-off")" Disabled="busy" OnClick="ToggleHiddenAsync"
                                 Title="@(book.GradesHidden ? "The students can't see their grades of this course. Press to show them." : "The students see their scores, average and grade of this course. Press to hide them.")">@(book.GradesHidden ? "Show to students" : "Hide from students")</Button>
                         <Button Variant="ButtonVariant.Secondary" IconName="upload" OnClick="OpenImport" Title="Give the scores of the class from an Excel file">Import class grades</Button>
-                        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Title="One Excel file with all your courses, a sheet for each">Export to Excel</Button>
                         <Button IconName="send" Disabled="busy" OnClick="SaveFinalGradesAsync" Title="Send the final grades to the registrar (they are the Final grade column)">Send final grades</Button>
                     </div>
                 }
@@ -146,7 +145,7 @@ else
                                             {
                                                 <div class="cell-box">
                                                     <span class="cell-line">
-                                                        <input type="number" step="any" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" @key="@($"{row.StudentId}-{column.ItemId}-{renderStamp}")"
+                                                        <input type="number" step="1" inputmode="numeric" min="0" max="@column.Max.ToString(CultureInfo.InvariantCulture)" class="input score-input" @key="@($"{row.StudentId}-{column.ItemId}-{renderStamp}")"
                                                                aria-label="@($"{row.Name}, {column.Title}")" placeholder="—" value="@CellText(cell)"
                                                                @onchange="e => SaveCellAsync(row, column, e.Value?.ToString())" />
                                                         @if (cell.IsLate) { <i class="late-dot" title="Handed in late"></i> }
@@ -199,8 +198,8 @@ else
 
                 @* The two tables of the class: the descriptors and Passed / Failed, with male, female and total (the same as in the Excel). *@
                 <div class="summary-tables" id="grade-summary">
-                    <SummaryTable Title="SUMMARY" ColumnTitle="DESCRIPTOR" Lines="summary.Descriptor" Male="summary.Male" Female="summary.Female" Total="summary.Total" Id="summary-descriptor" />
-                    <SummaryTable Title="" ColumnTitle="REMARKS" Lines="summary.Remark" Male="summary.Male" Female="summary.Female" Total="summary.Total" Id="summary-remarks" />
+                    <SummaryTable ColumnTitle="DESCRIPTOR" Lines="summary.Descriptor" Male="summary.Male" Female="summary.Female" Total="summary.Total" Id="summary-descriptor" />
+                    <SummaryTable ColumnTitle="REMARKS" Lines="summary.Remark" Male="summary.Male" Female="summary.Female" Total="summary.Total" Id="summary-remarks" />
                 </div>
             }
         </Card>
@@ -239,7 +238,7 @@ else
                 <input id="x-title" type="text" maxlength="200" autocomplete="off" @bind="extraTitle" @bind:event="oninput" />
             </Field>
             <Field For="x-score" Label="Highest score" Required="true">
-                <input id="x-score" type="number" step="any" min="1" max="1000" @bind="extraMax" />
+                <input id="x-score" type="number" step="1" inputmode="numeric" min="1" max="1000" @bind="extraMax" />
             </Field>
             <div class="modal-actions">
                 <Button Variant="ButtonVariant.Ghost" OnClick="CloseExtra">Cancel</Button>
@@ -392,6 +391,13 @@ else
             return;
         }
 
+        // Round 47: a score is a whole number.
+        if (value != decimal.Truncate(value))
+        {
+            Fail("A score is a whole number (no decimals).");
+            return;
+        }
+
         // Two scores typed one after the other are saved one after the other.
         await saveLock.WaitAsync();
         try
@@ -449,27 +455,6 @@ else
         {
             busy = false;
         }
-    }
-
-    /// <summary>Export to Excel: every course of the teacher in one file, a sheet for each.</summary>
-    private async Task ExportAsync()
-    {
-        var books = new List<SubjectGradebook>();
-        foreach (var s in subjects)
-        {
-            var one = s.AssignmentId == subjectId && book is not null ? book : await Books.GetAsync(teacherId, s.AssignmentId);
-            if (one is not null)
-            {
-                books.Add(one);
-            }
-        }
-
-        if (books.Count == 0)
-        {
-            return;
-        }
-
-        await Downloads.SaveAsync(GradebookExport.FileNameAll(), GradebookExport.BuildAll(books));
     }
 
     /// <summary>Hide from students / Show to students: the students see the grades of this course or not.</summary>

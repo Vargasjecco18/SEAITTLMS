@@ -130,7 +130,7 @@ public static class ExamSheets
         questions.Tip($"A2:A{lastQuestion}", "Type the title of the exam this question belongs to, the same as in the sheet Summative exams.").Tip($"B2:B{lastQuestion}", "Type the question (needed).")
             .Tip($"D2:D{lastQuestion}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.")
             .Tip($"E2:E{lastQuestion}", "Type the right answer: the right choice (or its letter), True or False, or the answer. Other accepted answers go after a | sign.");
-        questions.Number($"F2:F{lastQuestion}", 0.01m, 100, "Type the points, from 0.01 to 100. Leave it empty for 1.");
+        questions.Number($"F2:F{lastQuestion}", 1m, 100, "Type the points, a whole number from 1 to 100. Leave it empty for 1.");
 
         TemplateGuide.Add(book, "How to fill the Summative exams and Questions sheets",
         [
@@ -146,7 +146,7 @@ public static class ExamSheets
             new(QuestionsSheetName, "Type", "Needed", "Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay.", "Choose it from the list."),
             new(QuestionsSheetName, "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
             new(QuestionsSheetName, "Right answer", "Needed", "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
-            new(QuestionsSheetName, "Points", "Optional", "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),
+            new(QuestionsSheetName, "Points", "Optional", "A whole number from 1 to 100. Empty: 1.", TemplateGuide.TypeNumber),
         ],
             $"At most {MaxRows} exams and {ItemSheets.MaxQuestions} questions for each.",
             "The students answer the questions on the screen and the system gives the score. Files (the paper) are added after importing, with Edit on the exam.");

@@ -107,15 +107,8 @@
                                 }
                                 else if (open.Count > 0)
                                 {
-                                    @if (picked == ReferralReasons.LowAttendance)
-                                    {
-                                        @* Round 46: no view of the attendance of every course: the concern is only marked as absenteeism. *@
-                                        <span class="detail"><Icon Name="user-x" Size="15" /><span>Absenteeism</span></span>
-                                    }
-                                    else
-                                    {
-                                        <span class="detail"><Icon Name="info" Size="15" /><span>@string.Join(" · ", open.Select(o => o.Detail).Distinct())</span></span>
-                                    }
+                                    @* Round 47: it shows what the counselor chose (or the words typed under Others), also for absenteeism, not the name of the concern. *@
+                                    <span class="detail"><Icon Name="@(picked == ReferralReasons.LowAttendance ? "user-x" : "info")" Size="15" /><span>@string.Join(" · ", open.Select(o => o.Detail).Distinct())</span></span>
                                 }
                                 else
                                 {
@@ -251,7 +244,7 @@
                                     <Badge Tone="@Pages.Guidance.Dashboard.ReasonTone(group.Reason)">@ReferralReasons.Display(group.Reason)</Badge>
                                 </td>
                                 <td>
-                                    <span class="detail">@(group.Reason == ReferralReasons.LowAttendance ? "Absenteeism" : first.Detail)</span>
+                                    <span class="detail">@first.Detail</span>
 
                                     @if (!string.IsNullOrWhiteSpace(first.Intervention))
                                     {

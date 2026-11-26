@@ -79,7 +79,7 @@
         </Card>
 
         <Card Title="Grading system" IconName="award" Class="setting">
-            <p class="note">How much each part of a grade is worth. A grade is the weighted average of the four parts, scaled to 100% (each part ÷ the total of the four). The school's own are 20 · 50 · 15 · 30.</p>
+            <p class="note">How much each part of a grade is worth. A grade is the weighted average of the four parts (scaled to 100% when the four do not add up to 100). The school's own are 20 · 50 · 15 · 15, which add up to 100.</p>
             <div class="two">
                 <Field For="s-w-ww" Label="Written/Oral Works (activities and quizzes)" Hint="From 0 to 100.">
                     <input id="s-w-ww" type="number" class="input" min="0" max="100" step="any" @bind="form.WeightWrittenOral" />

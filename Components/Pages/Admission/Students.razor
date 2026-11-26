@@ -5,7 +5,7 @@
 @inject CurrentUser Me
 @inject AdmissionService Admission
 
-<PageTitle>Admission · Grade @Grade · SEAITT Legazpi LMS</PageTitle>
+<PageTitle>Grade @Grade Students · SEAITT Legazpi LMS</PageTitle>
 
 @if (!allowed)
 {
@@ -17,42 +17,83 @@
 }
 else
 {
-    <PageHeader Title="@($"Admission · Grade {Grade}")" IconName="user-plus">
+    @* Round 47: Grade N Students: a summary, the filters, and the students in a table with the strand, the section and the phone of each one. *@
+    <PageHeader Title="@($"Grade {Grade} Students")" IconName="users">
         <Button IconName="plus" OnClick="OpenNew">Record a student</Button>
     </PageHeader>
 
     <Toast Message="@message" IsError="@messageIsError" Stamp="@messageStamp" OnDismiss="() => message = null" />
 
-    <p class="lead-note" id="admission-note">Record the information and the documents of the Grade @Grade students here. The registrar chooses the student from this list to enroll: the LRN is shown, not typed, and the printable form fills in the parents and the guardian by itself.</p>
+    <div class="tiles" id="admission-tiles">
+        <div class="tile"><span class="tile-icon"><Icon Name="users" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Count</span><span class="tile-label">students recorded</span></span></div>
+        <div class="tile"><span class="tile-icon ok"><Icon Name="circle-check" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Count(r => r.Enrolled)</span><span class="tile-label">enrolled by the registrar</span></span></div>
+        <div class="tile"><span class="tile-icon wait"><Icon Name="clock" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Count(r => !r.Enrolled)</span><span class="tile-label">waiting to be enrolled</span></span></div>
+        <div class="tile"><span class="tile-icon doc"><Icon Name="folder-open" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Sum(r => r.DocumentsReceived)</span><span class="tile-label">documents kept</span></span></div>
+    </div>
 
     <Card>
-        <form class="filter-bar" role="search" @onsubmit="SearchAsync">
+        <form class="filter-bar" role="search" @onsubmit="SearchAsync" @onsubmit:preventDefault="true">
             <SearchField Id="adm-search" @bind-Value="searchText" Placeholder="Name or LRN" AriaLabel="Search the recorded students" OnClear="SearchAsync" />
+            <select id="adm-state" class="input" aria-label="State" @bind="stateFilter" @bind:after="ApplyFilter">
+                <option value="">All students</option>
+                <option value="recorded">Waiting to be enrolled</option>
+                <option value="enrolled">Enrolled</option>
+            </select>
+            <select id="adm-strand" class="input" aria-label="Strand" @bind="strandFilter" @bind:after="ApplyFilter">
+                <option value="">All strands</option>
+                @foreach (var strandCode in StrandCodes)
+                {
+                    <option value="@strandCode">@strandCode</option>
+                }
+            </select>
+            <span class="count-note" id="adm-count">@rows.Count of @all.Count</span>
         </form>
         @if (rows.Count == 0)
         {
-            <EmptyState IconName="user-plus" Title="No student recorded yet">
-                <p>Press Record a student to write the first one.</p>
+            <EmptyState IconName="user-plus" Title="@(all.Count == 0 ? "No student recorded yet" : "No student matches")">
+                <p>@(all.Count == 0 ? "Press Record a student to write the first one." : "Try another name, strand or state.")</p>
             </EmptyState>
         }
         else
         {
-            <div class="table-wrap">
-                <table class="table" id="admission-table">
-                    <thead><tr><th scope="col">Student</th><th scope="col">LRN</th><th scope="col" class="col-more">Parents / guardian</th><th scope="col">Documents</th><th scope="col">State</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <div class="data-wrap">
+                <table class="data-table" id="admission-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Student</th>
+                            <th scope="col">Strand</th>
+                            <th scope="col">Section</th>
+                            <th scope="col">Phone number</th>
+                            <th scope="col">Documents</th>
+                            <th scope="col">State</th>
+                            <th scope="col"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @foreach (var row in rows)
                         {
                             var r = row;
                             <tr data-lrn="@r.Lrn">
-                                <td><strong>@r.FullName</strong></td>
-                                <td class="mono">@r.Lrn</td>
-                                <td class="col-more">@(r.ParentsText ?? "—")</td>
-                                <td>@(r.DocumentsReceived == 0 ? "none" : r.DocumentsReceived == 1 ? "1 document" : $"{r.DocumentsReceived} documents")</td>
+                                <td class="who">
+                                    <strong>@r.FullName</strong>
+                                    <span class="sub mono">@r.Lrn</span>
+                                </td>
+                                <td data-col="strand">@(r.Strand is { Length: > 0 } strand ? strand : "—")</td>
+                                <td data-col="section">@(r.Section is { Length: > 0 } section ? section : "—")</td>
+                                <td data-col="phone" class="mono">@(string.IsNullOrWhiteSpace(r.Phone) ? "—" : r.Phone)</td>
+                                <td data-col="documents">
+                                    <span class="doc-meter" title="@($"{r.DocumentsReceived} of {AdmissionDocumentKinds.All.Count} kinds of documents")">
+                                        <span class="bar"><i style="width: @(r.DocumentsReceived * 100 / AdmissionDocumentKinds.All.Count)%"></i></span>
+                                        <span class="meter-text">@r.DocumentsReceived / @AdmissionDocumentKinds.All.Count</span>
+                                    </span>
+                                </td>
                                 <td><Badge Tone="@(r.Enrolled ? Tone.Success : Tone.Info)">@(r.Enrolled ? "Enrolled" : "Recorded")</Badge></td>
-                                <td class="col-actions">
-                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditAsync(r.Id)">Edit</Button>
-                                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="folder-open" OnClick="() => OpenDocumentsAsync(r)">Documents</Button>
+                                <td>
+                                    <div class="col-actions">
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="eye" Title="@($"View the information of {r.FullName}")" OnClick="() => OpenViewAsync(r)">View student info</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="() => OpenEditAsync(r.Id)">Edit</Button>
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="folder-open" OnClick="() => OpenDocumentsAsync(r)">Documents</Button>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -63,51 +104,68 @@ else
     </Card>
 }
 
-<Modal Open="form is not null" Title="@(form?.Id is null ? $"Record a Grade {Grade} student" : "Edit the record")" Large="true" OnClose="CloseForm">
+@* Record and Edit: two columns, the student at the left and the parents and the guardian at the right. *@
+<Modal Open="form is not null" Title="@(form?.Id is null ? $"Record a Grade {Grade} student" : "Edit the record")" Large="true" Wide="true" OnClose="CloseForm">
     @if (form is not null)
     {
         <FormErrors Errors="errors" />
-        <h3 class="part">The student</h3>
-        <div class="two">
-            <Field For="a-lrn" Label="LRN" Required="true" Hint="12 digits."><input id="a-lrn" type="text" inputmode="numeric" maxlength="12" data-digits autocomplete="off" @bind="form.Lrn" /></Field>
-            <Field For="a-sex" Label="Sex">
-                <select id="a-sex" @bind="sexText">
-                    <option value="">—</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-            </Field>
-        </div>
-        <div class="two">
-            <Field For="a-first" Label="First name" Required="true"><input id="a-first" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.FirstName" /></Field>
-            <Field For="a-middle" Label="Middle name"><input id="a-middle" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.MiddleName" /></Field>
-        </div>
-        <div class="two">
-            <Field For="a-last" Label="Last name" Required="true"><input id="a-last" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.LastName" /></Field>
-            <Field For="a-ext" Label="Name extension"><input id="a-ext" type="text" maxlength="10" data-letters autocomplete="off" placeholder="Jr." @bind="form.NameExtension" /></Field>
-        </div>
-        <div class="two">
-            <Field For="a-phone" Label="Phone number" Hint="Optional. Digits only."><input id="a-phone" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" @bind="form.PhoneNumber" /></Field>
-            <Field For="a-school" Label="Previous school"><input id="a-school" type="text" maxlength="200" autocomplete="off" @bind="form.PreviousSchool" /></Field>
-        </div>
-        <Field For="a-address" Label="Address"><input id="a-address" type="text" maxlength="300" autocomplete="off" @bind="form.Address" /></Field>
+        <div class="two-cols">
+            <section class="col" aria-label="The student">
+                <h3 class="part"><Icon Name="user" Size="16" /> The student</h3>
+                <Field For="a-lrn" Label="LRN" Required="true" Hint="12 digits."><input id="a-lrn" type="text" inputmode="numeric" maxlength="12" data-digits autocomplete="off" @bind="form.Lrn" /></Field>
+                <div class="pair">
+                    <Field For="a-first" Label="First name" Required="true"><input id="a-first" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.FirstName" /></Field>
+                    <Field For="a-middle" Label="Middle name"><input id="a-middle" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.MiddleName" /></Field>
+                </div>
+                <div class="pair">
+                    <Field For="a-last" Label="Last name" Required="true"><input id="a-last" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.LastName" /></Field>
+                    <Field For="a-ext" Label="Name extension"><input id="a-ext" type="text" maxlength="10" data-letters autocomplete="off" placeholder="Jr." @bind="form.NameExtension" /></Field>
+                </div>
+                <div class="pair">
+                    <Field For="a-sex" Label="Sex">
+                        <select id="a-sex" @bind="sexText">
+                            <option value="">—</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </Field>
+                    <Field For="a-strand" Label="Strand" Hint="The strand the student wants.">
+                        <select id="a-strand" @bind="strandText">
+                            <option value="">Not chosen yet</option>
+                            @foreach (var group in strands.GroupBy(s => s.TrackCode))
+                            {
+                                <optgroup label="@group.Key">
+                                    @foreach (var s in group)
+                                    {
+                                        <option value="@s.Id">@s.Code</option>
+                                    }
+                                </optgroup>
+                            }
+                        </select>
+                    </Field>
+                </div>
+                <Field For="a-phone" Label="Phone number" Hint="Optional. Digits only."><input id="a-phone" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" @bind="form.PhoneNumber" /></Field>
+                <Field For="a-school" Label="Previous school"><input id="a-school" type="text" maxlength="200" autocomplete="off" @bind="form.PreviousSchool" /></Field>
+                <Field For="a-address" Label="Address"><input id="a-address" type="text" maxlength="300" autocomplete="off" @bind="form.Address" /></Field>
+            </section>
 
-        <h3 class="part">Parents and guardian <small>(at least one)</small></h3>
-        <div class="two">
-            <Field For="a-father" Label="Father's name"><input id="a-father" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.FatherName" /></Field>
-            <Field For="a-father-phone" Label="Father's phone"><input id="a-father-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.FatherPhone" /></Field>
-        </div>
-        <div class="two">
-            <Field For="a-mother" Label="Mother's name"><input id="a-mother" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.MotherName" /></Field>
-            <Field For="a-mother-phone" Label="Mother's phone"><input id="a-mother-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.MotherPhone" /></Field>
-        </div>
-        <div class="two">
-            <Field For="a-guardian" Label="Guardian's name"><input id="a-guardian" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.GuardianName" /></Field>
-            <Field For="a-relationship" Label="Relationship"><input id="a-relationship" type="text" maxlength="50" autocomplete="off" placeholder="Aunt, grandmother ..." @bind="form.GuardianRelationship" /></Field>
-        </div>
-        <div class="two">
-            <Field For="a-guardian-phone" Label="Guardian's phone"><input id="a-guardian-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.GuardianPhone" /></Field>
-            <Field For="a-guardian-address" Label="Guardian's address"><input id="a-guardian-address" type="text" maxlength="300" autocomplete="off" @bind="form.GuardianAddress" /></Field>
+            <section class="col" aria-label="Parents and guardian">
+                <h3 class="part"><Icon Name="users" Size="16" /> Parents and guardian <small>(at least one)</small></h3>
+                <div class="pair">
+                    <Field For="a-father" Label="Father's name"><input id="a-father" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.FatherName" /></Field>
+                    <Field For="a-father-phone" Label="Father's phone"><input id="a-father-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.FatherPhone" /></Field>
+                </div>
+                <div class="pair">
+                    <Field For="a-mother" Label="Mother's name"><input id="a-mother" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.MotherName" /></Field>
+                    <Field For="a-mother-phone" Label="Mother's phone"><input id="a-mother-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.MotherPhone" /></Field>
+                </div>
+                <div class="pair">
+                    <Field For="a-guardian" Label="Guardian's name"><input id="a-guardian" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.GuardianName" /></Field>
+                    <Field For="a-relationship" Label="Relationship"><input id="a-relationship" type="text" maxlength="50" autocomplete="off" placeholder="Aunt, grandmother ..." @bind="form.GuardianRelationship" /></Field>
+                </div>
+                <Field For="a-guardian-phone" Label="Guardian's phone"><input id="a-guardian-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.GuardianPhone" /></Field>
+                <Field For="a-guardian-address" Label="Guardian's address"><input id="a-guardian-address" type="text" maxlength="300" autocomplete="off" @bind="form.GuardianAddress" /></Field>
+            </section>
         </div>
         <div class="modal-actions">
             <Button Variant="ButtonVariant.Ghost" OnClick="CloseForm">Cancel</Button>
@@ -116,52 +174,52 @@ else
     }
 </Modal>
 
-<Modal Open="docsOf is not null" Title="@($"Documents · {docsOf?.FullName}")" OnClose="CloseDocuments">
-    @if (docsOf is not null)
+@* View student info: the same two columns, only to read. *@
+<Modal Open="viewing is not null" Title="@($"Student info · {viewingRow?.FullName}")" Large="true" Wide="true" OnClose="CloseView">
+    @if (viewing is not null && viewingRow is not null)
     {
-        <FormErrors Errors="errors" />
-        <p class="dialog-text">The documents the student gave: choose the kind and, if you scanned it, attach the file (up to @(AdmissionService.MaxDocumentBytes / (1024 * 1024)) MB). A paper kept in hand is only written down.</p>
-        <div class="two">
-            <Field For="d-kind" Label="Kind of document">
-                <select id="d-kind" @bind="docKind">
-                    @foreach (var kind in AdmissionDocumentKinds.All)
-                    {
-                        <option value="@kind">@kind</option>
-                    }
-                </select>
-            </Field>
-            <Field For="d-file" Label="Scanned copy (optional)"><InputFile id="d-file" OnChange="FileChosenAsync" /></Field>
+        <div class="two-cols" id="student-info">
+            <section class="col" aria-label="The student">
+                <h3 class="part"><Icon Name="user" Size="16" /> The student</h3>
+                <dl class="info">
+                    <div><dt>LRN</dt><dd class="mono">@viewing.Lrn</dd></div>
+                    <div><dt>Name</dt><dd>@viewingRow.FullName</dd></div>
+                    <div><dt>Sex</dt><dd>@(viewing.Sex?.ToString() ?? "—")</dd></div>
+                    <div><dt>Strand</dt><dd>@(viewingRow.Strand ?? "—")</dd></div>
+                    <div><dt>Section</dt><dd>@(viewingRow.Section ?? "—")</dd></div>
+                    <div><dt>Phone number</dt><dd class="mono">@Or(viewing.PhoneNumber)</dd></div>
+                    <div><dt>Previous school</dt><dd>@Or(viewing.PreviousSchool)</dd></div>
+                    <div><dt>Address</dt><dd>@Or(viewing.Address)</dd></div>
+                    <div><dt>State</dt><dd>@(viewingRow.Enrolled ? "Enrolled by the registrar" : "Recorded, waiting to be enrolled")</dd></div>
+                </dl>
+            </section>
+            <section class="col" aria-label="Parents and guardian">
+                <h3 class="part"><Icon Name="users" Size="16" /> Parents and guardian</h3>
+                <dl class="info">
+                    <div><dt>Father</dt><dd>@Or(viewing.FatherName)</dd></div>
+                    <div><dt>Father's phone</dt><dd class="mono">@Or(viewing.FatherPhone)</dd></div>
+                    <div><dt>Mother</dt><dd>@Or(viewing.MotherName)</dd></div>
+                    <div><dt>Mother's phone</dt><dd class="mono">@Or(viewing.MotherPhone)</dd></div>
+                    <div><dt>Guardian</dt><dd>@Or(viewing.GuardianName)@(string.IsNullOrWhiteSpace(viewing.GuardianRelationship) ? "" : $" ({viewing.GuardianRelationship})")</dd></div>
+                    <div><dt>Guardian's phone</dt><dd class="mono">@Or(viewing.GuardianPhone)</dd></div>
+                    <div><dt>Guardian's address</dt><dd>@Or(viewing.GuardianAddress)</dd></div>
+                </dl>
+            </section>
         </div>
         <div class="modal-actions">
-            <Button IconName="plus" Disabled="busy" OnClick="AddDocumentAsync">Add the document</Button>
+            <Button Variant="ButtonVariant.Secondary" IconName="pencil" OnClick="EditFromView">Edit</Button>
+            <Button OnClick="CloseView">Close</Button>
         </div>
-        @if (documents.Count == 0)
-        {
-            <p class="muted" id="no-documents">No document yet.</p>
-        }
-        else
-        {
-            <ul class="doc-list" id="documents-list">
-                @foreach (var d in documents)
-                {
-                    var doc = d;
-                    <li>
-                        <Icon Name="@(doc.FileName is null ? "file-check" : "file-text")" Size="16" />
-                        <span class="doc-kind">@doc.Kind</span>
-                        @if (doc.FileName is not null)
-                        {
-                            <a href="files/admission/@doc.Id" target="_blank" rel="noopener noreferrer">@doc.FileName</a>
-                        }
-                        else
-                        {
-                            <span class="muted">paper in hand</span>
-                        }
-                        <span class="muted">@PhilippineTime.FormatDate(doc.ReceivedAtUtc)</span>
-                        <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" Title="Take it out" OnClick="() => RemoveDocumentAsync(doc.Id)" />
-                    </li>
-                }
-            </ul>
-        }
+    }
+</Modal>
+
+@* Documents: one line for each kind, no list to choose from. *@
+<Modal Open="docsOf is not null" Title="@($"Documents · {docsOf?.FullName}")" Large="true" OnClose="CloseDocuments">
+    @if (docsOf is not null)
+    {
+        <p class="dialog-text">Each kind of document has its line. <strong>Add photo</strong> keeps a picture or a PDF of it (a photo counts as a document), and <strong>Edit</strong> says that the paper is in hand, changes the photo or takes it away. <strong>View document</strong> shows the photo in a box.</p>
+        <AdmissionDocuments RecordId="docsOf.Id" CanEdit="true" OnChanged="RefreshAsync" />
+        <div class="modal-actions"><Button OnClick="CloseDocuments">Close</Button></div>
     }
 </Modal>
 
@@ -170,21 +228,23 @@ else
 
     private int userId;
     private bool allowed;
+    private IReadOnlyList<AdmissionRow> all = [];
     private IReadOnlyList<AdmissionRow> rows = [];
+    private IReadOnlyList<AdmissionStrand> strands = [];
     private string searchText = "";
+    private string stateFilter = "";
+    private string strandFilter = "";
     private AdmissionInput? form;
+    private AdmissionInput? viewing;
+    private AdmissionRow? viewingRow;
     private string sexText { get => form?.Sex?.ToString() ?? ""; set { if (form is not null) { form.Sex = Enum.TryParse<Sex>(value, out var s) ? s : null; } } }
+    private string strandText { get => form?.StrandId?.ToString() ?? ""; set { if (form is not null) { form.StrandId = int.TryParse(value, out var s) ? s : null; } } }
     private List<string> errors = [];
     private string? message;
     private bool messageIsError;
     private int messageStamp;
     private bool busy;
     private AdmissionRow? docsOf;
-    private IReadOnlyList<AdmissionDocumentRow> documents = [];
-    private string docKind = AdmissionDocumentKinds.BirthCertificate;
-    private string? docFileName;
-    private string? docContentType;
-    private byte[]? docData;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -192,19 +252,59 @@ else
         allowed = Grade is 11 or 12 && (await Admission.GradesOfAsync(userId)).Contains((byte)Grade);
         if (allowed)
         {
-            rows = await Admission.ListAsync(userId, (byte)Grade, searchText);
+            strands = await Admission.ListStrandsAsync();
+            await ReloadAsync();
         }
     }
 
+    private IEnumerable<string> StrandCodes => all.Select(r => r.Strand).Where(c => !string.IsNullOrEmpty(c)).Select(c => c!).Distinct().Order();
+
+    private static string Or(string? text) => string.IsNullOrWhiteSpace(text) ? "—" : text;
+
     private void Say(string? text, bool error = false) { message = text; messageIsError = error; messageStamp++; }
 
-    private async Task SearchAsync() => rows = await Admission.ListAsync(userId, (byte)Grade, searchText);
+    /// <summary>Every recorded student of the grade level (the tiles count them), then the ones that match the search and the filters.</summary>
+    private async Task ReloadAsync()
+    {
+        all = await Admission.ListAsync(userId, (byte)Grade, null);
+        await SearchAsync();
+    }
+
+    private Task SearchAsync()
+    {
+        var words = (searchText ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        rows = [.. all.Where(r =>
+            words.All(w => r.FullName.Contains(w, StringComparison.OrdinalIgnoreCase) || r.Lrn.Contains(w))
+            && (stateFilter == "" || (stateFilter == "enrolled") == r.Enrolled)
+            && (strandFilter == "" || r.Strand == strandFilter))];
+        return Task.CompletedTask;
+    }
+
+    private async Task ApplyFilter() => await SearchAsync();
+
+    private async Task RefreshAsync() => await ReloadAsync();
 
     private void OpenNew() { errors = []; form = new AdmissionInput(); }
 
     private async Task OpenEditAsync(int id) { errors = []; form = await Admission.GetForEditAsync(userId, id); }
 
     private void CloseForm() => form = null;
+
+    private async Task OpenViewAsync(AdmissionRow row)
+    {
+        viewingRow = row;
+        viewing = await Admission.GetForEditAsync(userId, row.Id);
+    }
+
+    private void CloseView() { viewing = null; viewingRow = null; }
+
+    private async Task EditFromView()
+    {
+        if (viewingRow is null) { return; }
+        var id = viewingRow.Id;
+        CloseView();
+        await OpenEditAsync(id);
+    }
 
     private async Task SaveAsync()
     {
@@ -216,60 +316,16 @@ else
             if (!result.Succeeded) { errors = [.. result.Errors]; return; }
             form = null;
             Say(result.Message);
-            await SearchAsync();
+            await ReloadAsync();
         }
         finally { busy = false; }
     }
 
-    private async Task OpenDocumentsAsync(AdmissionRow row)
+    private void OpenDocumentsAsync(AdmissionRow row)
     {
         errors = [];
         docsOf = row;
-        docFileName = null; docData = null; docContentType = null;
-        documents = await Admission.ListDocumentsAsync(userId, row.Id);
     }
 
-    private void CloseDocuments() { docsOf = null; _ = SearchAsync(); }
-
-    private async Task FileChosenAsync(InputFileChangeEventArgs e)
-    {
-        docData = null;
-        try
-        {
-            await using var stream = e.File.OpenReadStream(AdmissionService.MaxDocumentBytes);
-            using var buffer = new MemoryStream();
-            await stream.CopyToAsync(buffer);
-            docData = buffer.ToArray();
-            docFileName = e.File.Name;
-            docContentType = e.File.ContentType;
-        }
-        catch (IOException)
-        {
-            errors = ["The file is too big or could not be read."];
-        }
-    }
-
-    private async Task AddDocumentAsync()
-    {
-        if (busy || docsOf is null) { return; }
-        busy = true;
-        try
-        {
-            var result = await Admission.AddDocumentAsync(userId, docsOf.Id, docKind, docFileName, docContentType, docData);
-            if (!result.Succeeded) { errors = [.. result.Errors]; return; }
-            errors = [];
-            docFileName = null; docData = null; docContentType = null;
-            documents = await Admission.ListDocumentsAsync(userId, docsOf.Id);
-            Say(result.Message);
-        }
-        finally { busy = false; }
-    }
-
-    private async Task RemoveDocumentAsync(int id)
-    {
-        if (docsOf is null) { return; }
-        var result = await Admission.RemoveDocumentAsync(userId, id);
-        Say(result.Succeeded ? result.Message : string.Join(" ", result.Errors), !result.Succeeded);
-        documents = await Admission.ListDocumentsAsync(userId, docsOf.Id);
-    }
+    private void CloseDocuments() { docsOf = null; _ = ReloadAsync(); }
 }

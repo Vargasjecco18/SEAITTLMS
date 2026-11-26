@@ -21,9 +21,10 @@
     background: #22c55e;
 }
 
+/* Round 47: the students (and the classmates, the teachers) of a course are in two columns; one column on a phone. */
 .list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.7rem 1.25rem;
     margin: 0;
     padding: 0;
@@ -58,4 +59,10 @@
     background: var(--brand-soft);
     border-color: transparent;
     color: var(--brand-strong);
+}
+
+@media (max-width: 720px) {
+    .list {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }

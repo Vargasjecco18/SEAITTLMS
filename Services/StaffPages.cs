@@ -27,6 +27,10 @@ public static class StaffPages
 
     public static readonly IReadOnlyList<StaffPage> All =
     [
+        // Round 46: the Admission staff of Grade 11 and of Grade 12 record the information and the documents of the students for the registrar (there is no application form on the home page).
+        // Round 47: their pages come first, so the menu of the Admission staff is Dashboard, Grade 11 Students, Calendar, Users.
+        new("admission-grade11", "Grade 11 Students", "/admission/grade-11", "users", "Record the information and the documents of the Grade 11 students for the registrar", AdmissionGroup, AppRoles.Admission),
+        new("admission-grade12", "Grade 12 Students", "/admission/grade-12", "users", "Record the information and the documents of the Grade 12 students for the registrar", AdmissionGroup, AppRoles.Admission),
         new("calendar", "Calendar", "/calendar", "calendar-days", "Month and week, with the announcements and the holidays", General),
         new("users", "Users", "/users", "users-round", "The students, the teachers and the staff of the school", General),
         new("groups", "Groups", "/groups", "users", "The groups of the person", General),
@@ -37,7 +41,7 @@ public static class StaffPages
 
         // Round 41: the pages of the other staff roles can be ticked too (not the pages of the administrator).
         new("registrar-dashboard", "Registrar dashboard", "/registrar", "layout-dashboard", "The numbers of the enrollments", RegistrarGroup, AppRoles.Registrar, Exact: true),
-        new("registrar-enrollment", "Enrollment", "/registrar/enrollments", "clipboard-list", "Enroll a student, one by one or from Excel", RegistrarGroup, AppRoles.Registrar),
+        new("registrar-enrollment", "Enrollment", "/registrar/enrollments", "clipboard-list", "Enroll a student, one by one", RegistrarGroup, AppRoles.Registrar),
         new("registrar-accounts", "Student's Accounts", "/registrar/student-accounts", "graduation-cap", "The enrolled students, their grades and their accounts", RegistrarGroup, AppRoles.Registrar),
         new("guidance-dashboard", "Guidance dashboard", "/guidance", "layout-dashboard", "The students with a concern", GuidanceGroup, AppRoles.GuidanceCounselor, Exact: true),
         new("guidance-referrals", "Referrals", "/guidance/referrals", "heart-handshake", "Write a concern, the notes and the schedule of a student", GuidanceGroup, AppRoles.GuidanceCounselor),
@@ -48,9 +52,6 @@ public static class StaffPages
         new("coordinator-announcements", "Announcements", "/coordinator/announcements", "megaphone", "The notices of the school and the holidays", CoordinatorGroup, AppRoles.AcademicCoordinator),
         new("provider-dashboard", "Provider dashboard", "/provider", "layout-dashboard", "What the teachers did with the library", ProviderGroup, AppRoles.AcademicProvider, Exact: true),
         new("provider-library", "Course library", "/provider/library", "folder-open", "The handouts and the summative exams of the courses", ProviderGroup, AppRoles.AcademicProvider),
-        // Round 46: the Admission staff of Grade 11 and of Grade 12 record the information and the documents of the students for the registrar (there is no application form on the home page).
-        new("admission-grade11", "Admission · Grade 11", "/admission/grade-11", "user-plus", "Record the information and the documents of the Grade 11 students for the registrar", AdmissionGroup, AppRoles.Admission),
-        new("admission-grade12", "Admission · Grade 12", "/admission/grade-12", "user-plus", "Record the information and the documents of the Grade 12 students for the registrar", AdmissionGroup, AppRoles.Admission),
         new("provider-tracking", "Tracking", "/provider/tracking", "list-checks", "Which teachers got and used what was sent", ProviderGroup, AppRoles.AcademicProvider),
     ];
 

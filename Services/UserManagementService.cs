@@ -258,6 +258,29 @@ public sealed class UserManagementService(
     public async Task<IReadOnlyList<CustomRole>> ListCustomRolesAsync(CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
+
+        // Round 47: Admission is a staff role of its own: Admission Grade 11 and Admission Grade 12 are always in the list of Add staff (they are made the first time the list is read).
+        var wanted = new[] { ("Admission Grade 11", "calendar,users,admission-grade11"), ("Admission Grade 12", "calendar,users,admission-grade12") };
+        var names = await db.CustomRoles.Select(r => r.Name).ToListAsync(ct);
+        var missing = wanted.Where(w => !names.Contains(w.Item1)).ToList();
+        if (missing.Count > 0)
+        {
+            foreach (var (name, pages) in missing)
+            {
+                db.CustomRoles.Add(new CustomRole { Name = name, BaseRole = CustomRole.DefaultBaseRole, Pages = pages });
+            }
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                // somebody made them at the same moment: nothing to do
+                db.ChangeTracker.Clear();
+            }
+        }
+
         return await db.CustomRoles.AsNoTracking().OrderBy(r => r.Name).ToListAsync(ct);
     }
 

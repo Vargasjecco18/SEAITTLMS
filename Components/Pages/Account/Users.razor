@@ -347,7 +347,7 @@
             .ToList();
     }
 
-    private static string RoleText(PersonCard p) => PeopleService.RoleLabel(p.Role);
+    private static string RoleText(PersonCard p) => p.RoleText;
 
     /// <summary>The button to write is only there when the person's role may write to that person (a student can write to a teacher, the guidance counselor and the registrar).</summary>
     private bool CanWrite(PersonCard p) => p.State == FriendState.Friends || MessageService.CanWrite(myRole, p.Role);   // a person who is not a friend can be written to too

@@ -123,3 +123,28 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Round 47: the Documents box: the information of the student at the left and the documents at the right. One column on a phone. */
+.docs-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 1.25rem 2rem;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .docs-cols {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.docs-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 2px solid var(--accent-yellow);
+    font-size: 1rem;
+    color: var(--brand-strong);
+}

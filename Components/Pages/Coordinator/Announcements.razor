@@ -9,7 +9,7 @@
 <PageTitle>Announcements · SEAITT Legazpi LMS</PageTitle>
 
 <PageHeader Title="Announcements" IconName="megaphone">
-    <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Disabled="@(rows is null || rows.Count == 0)">Export to Excel</Button>
+    <Button Variant="ButtonVariant.Secondary" IconName="eye" OnClick="OpenSummaryAsync">View announcements</Button>
     <Button Variant="ButtonVariant.Secondary" IconName="table" OnClick="OpenSheet">Announcements sheet</Button>
     <Button IconName="plus" OnClick="() => OpenAdd(null)">New announcement</Button>
 </PageHeader>
@@ -103,6 +103,62 @@ else
         }
     </div>
 }
+
+@* Round 47: View announcements: the announcements at the left and the holidays at the right, with a summary on top. They can be edited from here, and the whole is exported to Excel from here. *@
+<Modal Open="summaryOpen" Title="Announcements and holidays" Large="true" OnClose="CloseSummary">
+    @if (summaryOpen)
+    {
+        var all = rows ?? [];
+        <div class="summary-line" id="ann-summary">
+            <span class="sum-pill"><Icon Name="megaphone" Size="16" /> <strong>@all.Count</strong> announcement@(all.Count == 1 ? "" : "s")</span>
+            <span class="sum-pill"><Icon Name="calendar-check" Size="16" /> <strong>@all.Count(a => AnnouncementState(a) == "live")</strong> showing now</span>
+            <span class="sum-pill"><Icon Name="clock" Size="16" /> <strong>@all.Count(a => AnnouncementState(a) == "soon")</strong> scheduled</span>
+            <span class="sum-pill"><Icon Name="flag" Size="16" /> <strong>@summaryHolidays.Count</strong> holiday@(summaryHolidays.Count == 1 ? "" : "s") in @today.Year</span>
+        </div>
+        <div class="summary-columns">
+            <section class="summary-col" aria-label="Announcements" id="ann-summary-list">
+                <h3><Icon Name="megaphone" Size="16" /> Announcements</h3>
+                @if (all.Count == 0)
+                {
+                    <p class="muted">No announcement yet.</p>
+                }
+                else
+                {
+                    <div class="notices">
+                        @foreach (var row in all)
+                        {
+                            <AnnouncementCard Item="row" Today="today" OnEdit="EditFromSummary" OnDelete="DeleteFromSummary" />
+                        }
+                    </div>
+                }
+            </section>
+            <section class="summary-col" aria-label="Holidays" id="ann-summary-holidays">
+                <h3><Icon Name="flag" Size="16" /> Holidays in @today.Year</h3>
+                @if (summaryHolidays.Count == 0)
+                {
+                    <p class="muted">No holiday is shown (they were deleted).</p>
+                }
+                else
+                {
+                    <ul class="holiday-rows">
+                        @foreach (var holiday in summaryHolidays)
+                        {
+                            <li>
+                                <span class="hday">@holiday.Day.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture)</span>
+                                <span class="hname"><strong>@holiday.Name</strong><small>@holiday.Kind@(holiday.Estimated ? " · the day can change" : "")</small></span>
+                                <Button Small="true" Variant="ButtonVariant.Ghost" IconName="trash-2" Title="@($"Delete {holiday.Name}")" OnClick="() => viewingHoliday = holiday">Delete</Button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        </div>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="ExportAsync" Disabled="@(all.Count == 0 && summaryHolidays.Count == 0)">Export to Excel</Button>
+            <Button Variant="ButtonVariant.Ghost" OnClick="CloseSummary">Close</Button>
+        </div>
+    }
+</Modal>
 
 @* One announcement, from the calendar: the card with its Edit and Delete buttons. *@
 <Modal Open="viewing is not null" Title="@(viewing?.Title ?? "Announcement")" OnClose="CloseViewing">
@@ -257,7 +313,35 @@ else
 
     [Inject] private FileDownloads Downloads { get; set; } = null!;
 
-    private async Task ExportAsync() => await Downloads.SaveAsync(AnnouncementSheets.FileName("Announcements"), AnnouncementSheets.Export(rows ?? []));
+    private async Task ExportAsync() => await Downloads.SaveAsync(AnnouncementSheets.FileName("Announcements"), AnnouncementSheets.Export(rows ?? [], summaryHolidays));
+
+    private bool summaryOpen;
+    private IReadOnlyList<Holiday> summaryHolidays = [];
+
+    /// <summary>View announcements: the announcements and the holidays of the year, side by side.</summary>
+    private async Task OpenSummaryAsync()
+    {
+        summaryHolidays = await Calendars.GetHolidaysAsync(new DateOnly(today.Year, 1, 1), new DateOnly(today.Year, 12, 31));
+        summaryOpen = true;
+    }
+
+    private void CloseSummary() => summaryOpen = false;
+
+    private void EditFromSummary(AnnouncementView row)
+    {
+        summaryOpen = false;
+        OpenEdit(row);
+    }
+
+    private void DeleteFromSummary(AnnouncementView row)
+    {
+        summaryOpen = false;
+        OpenDelete(row);
+    }
+
+    /// <summary>"live" while it shows, "soon" before its start, "over" after its end.</summary>
+    private string AnnouncementState(AnnouncementView a) =>
+        a.ExpiresOn is { } end && end < today ? "over" : a.StartsOn is { } start && start > today ? "soon" : "live";
 
     private bool sheetOpen;
     private IReadOnlyList<string> sheetErrors = [];
@@ -372,6 +456,10 @@ else
             message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
             viewingHoliday = null;
             await LoadHolidaysAsync();
+            if (summaryOpen)
+            {
+                summaryHolidays = await Calendars.GetHolidaysAsync(new DateOnly(today.Year, 1, 1), new DateOnly(today.Year, 12, 31));
+            }
             if (deletedHolidays.Count == 0)
             {
                 deletedOpen = false;

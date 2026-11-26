@@ -9,7 +9,7 @@ public sealed record AttendanceRow(int StudentId, string Name, string? Lrn, stri
 
 public sealed record AttendanceSheet(int AssignmentId, string SubjectName, string SectionLabel, DateOnly Date, bool Saved, IReadOnlyList<AttendanceRow> Rows);
 
-public sealed record AttendanceSummaryRow(int StudentId, string Name, int Present, int Late, int Absent, int Days, decimal? Percent);
+public sealed record AttendanceSummaryRow(int StudentId, string Name, int Present, int Late, int Absent, int Days, decimal? Percent, int UserId = 0);
 
 public sealed record AttendanceSummary(int AssignmentId, int DaysRecorded, IReadOnlyList<AttendanceSummaryRow> Rows, decimal? ClassPercent);
 
@@ -149,7 +149,7 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
         }
 
         var students = await Roster.Enrollments(db, a.SectionId, a.SubjectId)
-            .Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName }).Distinct()
+            .Select(e => new { e.StudentId, e.Student.FirstName, e.Student.LastName, e.Student.UserId }).Distinct()
             .OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync(ct);
         var records = await db.AttendanceRecords.AsNoTracking().Where(r => r.AssignmentId == assignmentId).Select(r => new { r.StudentId, r.Status, r.AttendedOn }).ToListAsync(ct);
 
@@ -157,7 +157,7 @@ public sealed class AttendanceService(IDbContextFactory<AppDbContext> dbFactory,
         {
             var mine = records.Where(r => r.StudentId == s.StudentId).ToList();
             int present = mine.Count(r => r.Status == AttendanceStatus.Present), late = mine.Count(r => r.Status == AttendanceStatus.Late), absent = mine.Count(r => r.Status == AttendanceStatus.Absent);
-            return new AttendanceSummaryRow(s.StudentId, $"{s.LastName}, {s.FirstName}", present, late, absent, present + late + absent, Rate(present, late, absent));
+            return new AttendanceSummaryRow(s.StudentId, $"{s.LastName}, {s.FirstName}", present, late, absent, present + late + absent, Rate(present, late, absent), s.UserId);
         }).ToList();
 
         var rated = rows.Where(r => r.Percent is not null).ToList();

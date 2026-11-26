@@ -169,3 +169,29 @@
     gap: 0.6rem;
     margin-top: 1rem;
 }
+
+/* Round 47: the Refer button in the box of View attendance. */
+.col-refer {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.refer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.28rem 0.65rem;
+    border: 1px solid var(--field-border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--brand-strong);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.refer-btn:hover {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+}

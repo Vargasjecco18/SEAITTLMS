@@ -176,6 +176,13 @@ One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it
 The pictures above were drawn in round 44. Round 46 added to the system, in words:
 
 - **Admission staff** (Grade 11 and Grade 12, an external entity): they send the *information, the parents and the documents of a new student* into the store **D15 Admission records**, in process **2.0 Set up the school and enroll students**. The registrar reads D15 when enrolling (the LRN is chosen, not typed, and the parents fill the printable form), and the enrollment marks the record as enrolled.
-- **Grading** (process of the teacher's gradebook): the grade is worked out from four parts with the weights kept in **D3 System settings** (20 / 50 / 15 / 30) and the scores in **D7 Class work**; the final grade sent to the students goes to **D8 Grades and attendance**.
+- **Grading** (process of the teacher's gradebook): the grade is worked out from four parts with the weights kept in **D3 System settings** (20 / 50 / 15 / 15) and the scores in **D7 Class work**; the final grade sent to the students goes to **D8 Grades and attendance**.
 - **Archive** (administrator): the graduation is automatic, nothing is deleted, and the administrator reads the archived grades and downloads **Form 137** and **Form 138**.
 - **Referrals** (guidance): a teacher can refer a student (a data flow from the teacher to **D9 Referrals**).
+
+## Round 47: what changed in the flows
+
+- **Admission staff** also keep the *strand the student wants* and one line for each kind of document (now seven, with **Form 137**) in **D15 Admission records**; a photo or a PDF of a document is kept in the same store and is read back, in a box, by the Admission staff and by the registrar (the registrar's **Documents** box shows the student's information and these documents). The Admission staff's dashboard reads the students of their grade from D15 and from the enrollments.
+- **Grading**: the Term Examination weight kept in **D3 System settings** is **15** (20 / 50 / 15 / 15); scores are whole numbers.
+- **Referrals**: nothing makes a referral by itself any more. The flow into **D9 Referrals** comes only from the teacher (the *Refer* button of the students of a course and of *View attendance*) or from the guidance counselor; the student's box opens only after the counselor notes the student (a flow from D9 to the student).
+- **Appearance** is kept in the person's browser (and a cookie); signing out clears it, so it is not a store of the system.

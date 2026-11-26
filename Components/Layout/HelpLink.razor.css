@@ -5,15 +5,15 @@
     margin-bottom: 0.5rem;
     padding: 0.55rem 0.75rem;
     border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    color: var(--chrome-muted);
     font-weight: 600;
     text-decoration: none;
     transition: background-color 0.15s, color 0.15s;
 }
 
 .wrap ::deep .help:hover {
-    background: var(--surface-2);
-    color: var(--text);
+    background: var(--chrome-hover);
+    color: var(--chrome-text);
 }
 
 .wrap ::deep .help:focus-visible {
@@ -22,6 +22,6 @@
 }
 
 .wrap ::deep .help.active {
-    background: var(--brand-soft);
-    color: var(--brand-strong);
+    background: var(--chrome-active-bg);
+    color: var(--chrome-active-text);
 }

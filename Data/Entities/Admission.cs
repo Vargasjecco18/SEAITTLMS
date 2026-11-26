@@ -34,6 +34,10 @@ public class AdmissionRecord : AuditableEntity
     public string? GuardianPhone { get; set; }
     public string? GuardianAddress { get; set; }
 
+    /// <summary>Round 47: the strand the student wants (the Admission staff choose it, the registrar can change it when enrolling). Empty until somebody chooses it.</summary>
+    public int? StrandId { get; set; }
+    public Strand? Strand { get; set; }
+
     public int? RecordedByUserId { get; set; }
 
     /// <summary>When the registrar enrolled the student from this record (empty until then).</summary>
@@ -64,10 +68,13 @@ public static class AdmissionDocumentKinds
 {
     public const string BirthCertificate = "PSA birth certificate";
     public const string ReportCard = "Form 138 (report card)";
+
+    /// <summary>Round 47: the permanent record of the school the student comes from.</summary>
+    public const string Form137 = "Form 137";
     public const string CertificateOfCompletion = "Certificate of completion (Grade 10)";
     public const string GoodMoral = "Good moral certificate";
     public const string Photo = "2x2 photo";
     public const string Other = "Other document";
 
-    public static readonly IReadOnlyList<string> All = [BirthCertificate, ReportCard, CertificateOfCompletion, GoodMoral, Photo, Other];
+    public static readonly IReadOnlyList<string> All = [BirthCertificate, ReportCard, Form137, CertificateOfCompletion, GoodMoral, Photo, Other];
 }

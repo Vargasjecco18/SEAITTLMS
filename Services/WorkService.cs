@@ -413,6 +413,11 @@ public sealed class WorkService(IDbContextFactory<AppDbContext> dbFactory, TimeP
             return ServiceResult.Fail("Type the score.");
         }
 
+        if (score != decimal.Truncate(score.Value))
+        {
+            return ServiceResult.Fail("The score is a whole number (no decimals).");
+        }
+
         if (score < 0 || score > context.Item.MaxScore)
         {
             return ServiceResult.Fail($"The score must be between 0 and {context.Item.MaxScore:0.##}.");

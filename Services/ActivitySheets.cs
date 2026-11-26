@@ -197,7 +197,7 @@ public static class ActivitySheets
         questions.Tip($"B2:B{lastQuestionRow}", "Type the question.");
         questions.Tip($"D2:D{lastQuestionRow}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.");
         questions.Tip($"E2:E{lastQuestionRow}", "Type the right answer: the right choice (or its letter), True or False, or the answer. Other accepted answers go after a | sign.");
-        questions.Number($"F2:F{lastQuestionRow}", 0.01m, 100, "Type the points, from 0.01 to 100. Leave it empty for 1.");
+        questions.Number($"F2:F{lastQuestionRow}", 1m, 100, "Type the points, a whole number from 1 to 100. Leave it empty for 1.");
 
         const string Needed = "Needed", Optional = "Optional";
         TemplateGuide.Add(book, "How to fill the workbook",
@@ -216,7 +216,7 @@ public static class ActivitySheets
             new(QuestionsSheet, "Type", Needed, "Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay.", "Choose it from the list."),
             new(QuestionsSheet, "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
             new(QuestionsSheet, "Right answer", Needed, "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
-            new(QuestionsSheet, "Points", Optional, "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),
+            new(QuestionsSheet, "Points", Optional, "A whole number from 1 to 100. Empty: 1.", TemplateGuide.TypeNumber),
         ],
             "The first rows of the template are examples: change them or clear them.",
             "The recitation is not here: it is only a column of the gradebook.",

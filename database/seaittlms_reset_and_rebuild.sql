@@ -2810,5 +2810,23 @@ ALTER TABLE `referrals` ADD CONSTRAINT `ck_referrals_reason` CHECK (reason IN ('
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261125171650_ReferralFactors', '9.0.20');
 
+ALTER TABLE `admission_records` ADD `strand_id` int NULL;
+
+CREATE INDEX `ix_admission_records_strand_id` ON `admission_records` (`strand_id`);
+
+ALTER TABLE `admission_records` ADD CONSTRAINT `fk_admission_records_strands_strand_id` FOREIGN KEY (`strand_id`) REFERENCES `strands` (`id`) ON DELETE SET NULL;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261126053222_AdmissionStrandChoice', '9.0.20');
+
+UPDATE referrals SET intervention = 'Talk with the student' WHERE intervention = 'Talked with the student' AND id > 0;
+
+UPDATE referrals SET intervention = 'Call the parents/guardian' WHERE intervention = 'Called the parents' AND id > 0;
+
+UPDATE referrals SET intervention = 'Talk with the teacher' WHERE intervention = 'Talked with the teacher' AND id > 0;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261126054005_ReferralHelpWords', '9.0.20');
+
 COMMIT;
 

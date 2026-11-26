@@ -276,9 +276,9 @@ public sealed class QuestionSheetRow
     public List<string> Problems()
     {
         var problems = new List<string>();
-        if (Points.Trim().Length > 0 && PointsValue <= 0)
+        if (Points.Trim().Length > 0 && (PointsValue < 1 || PointsValue != decimal.Truncate(PointsValue) || PointsValue > 100))
         {
-            problems.Add("The points must be a number from 0.01 to 100.");
+            problems.Add("The points must be a whole number from 1 to 100.");
             return problems;
         }
 

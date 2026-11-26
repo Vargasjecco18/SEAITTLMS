@@ -303,7 +303,7 @@ else
         <FormErrors Errors="formErrors" />
         <div class="grade-box">
             <Field For="g-score" Label="@($"Score (highest {data.MaxScore:0.##})")" Required="true">
-                <InputNumber id="g-score" @bind-Value="scoreInput" />
+                <InputNumber id="g-score" @bind-Value="scoreInput" step="1" min="0" inputmode="numeric" />
             </Field>
             <Field For="g-fb" Label="Feedback" Class="grow">
                 <InputTextArea id="g-fb" @bind-Value="feedbackInput" rows="3" />

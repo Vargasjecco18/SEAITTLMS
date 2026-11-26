@@ -6,7 +6,7 @@
 
 .heading {
     margin: 1rem 0.75rem 0.35rem;
-    color: var(--text-muted);
+    color: var(--chrome-muted);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -24,15 +24,15 @@
     gap: 0.75rem;
     padding: 0.6rem 0.75rem;
     border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    color: var(--chrome-muted);
     font-weight: 600;
     text-decoration: none;
     transition: background-color 0.15s, color 0.15s;
 }
 
 .nav ::deep .link:hover {
-    background: var(--surface-2);
-    color: var(--text);
+    background: var(--chrome-hover);
+    color: var(--chrome-text);
 }
 
 .nav ::deep .link:focus-visible {
@@ -41,8 +41,8 @@
 }
 
 .nav ::deep .link.active {
-    background: var(--brand-soft);
-    color: var(--brand-strong);
+    background: var(--chrome-active-bg);
+    color: var(--chrome-active-text);
 }
 
 /* Round 46: the page you are on has a yellow mark at its left (the yellow of SEAITT). */

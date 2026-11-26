@@ -7,7 +7,6 @@
 @inject AdmissionService Admission
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JS
-@inject EnrollmentImportService Importer
 @inject FileDownloads Downloads
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -16,7 +15,6 @@
 <div class="screen-only">
     <PageHeader Title="Enrollment"
                 IconName="user-plus">
-        <Button Variant="ButtonVariant.Secondary" IconName="file-spreadsheet" OnClick="OpenImport">Import from Excel</Button>
     </PageHeader>
 </div>
 
@@ -258,80 +256,6 @@ else
     @* The paper that is printed for this student: Print Enrollment opens the print preview of the browser at once (no box before it). What is on the paper is the form of EnrollmentPrintSheet. *@
     <EnrollmentPrintSheet Receipt="DraftReceipt" />
 }
-
-<Modal Open="importOpen" Title="Import students from Excel" Large="true" OnClose="CloseImport">
-    @if (importOpen && lookups is not null)
-    {
-        @if (importResult is null)
-        {
-            <ol class="import-steps">
-                <li>
-                    <strong>Get the template.</strong> It has the columns (LRN, names, grade level, strand, section), drop-down lists and the sheet <strong>How to fill</strong>, which says for each column what to write and what to use in Excel.
-                    <div><Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadTemplateAsync">Download the template (Excel)</Button></div>
-                </li>
-                <li>
-                    <strong>Fill the yellow cells</strong> with the students (type, choose from the list, or paste them from another file) and save with Ctrl+S as an Excel file (.xlsx).
-                </li>
-                <li>
-                    <strong>Choose the file.</strong> The term is set by the calendar.
-                    <div class="two">
-                        <Field For="imp-term" Label="Term" Hint="Set by itself from the calendar.">
-                            <input id="imp-term" readonly value="@TermText(importTermId)" />
-                        </Field>
-                        <Field For="imp-file" Label="Excel file (.xlsx)" Required="true">
-                            <InputFile id="imp-file" OnChange="FileChosenAsync" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-                        </Field>
-                    </div>
-                    @if (importFileName is not null)
-                    {
-                        <p class="chosen-file"><Icon Name="file-spreadsheet" Size="16" /> @importFileName</p>
-                    }
-                </li>
-            </ol>
-            <FormErrors Errors="@(importError is null ? Array.Empty<string>() : new[] { importError })" />
-            <div class="import-actions">
-                <Button Variant="ButtonVariant.Ghost" OnClick="CloseImport">Cancel</Button>
-                <Button IconName="upload" Disabled="@(importing || reading || importBytes is null || importTermId == 0)" OnClick="ImportAsync">@(importing ? "Enrolling the students…" : "Import")</Button>
-            </div>
-        }
-        else
-        {
-            <p class="import-summary" role="status">
-                <strong>@importResult.Enrolled</strong> @(importResult.Enrolled == 1 ? "student was" : "students were") enrolled for the @importResult.TermLabel.
-                @if (importResult.Failed > 0)
-                {
-                    <span class="bad"><strong>@importResult.Failed</strong> @(importResult.Failed == 1 ? "was" : "were") not enrolled; the reason is on its line.</span>
-                }
-            </p>
-            <div class="table-wrap">
-                <table class="import-table">
-                    <thead><tr><th scope="col">Row</th><th scope="col">LRN</th><th scope="col">Student</th><th scope="col">Section</th><th scope="col">Result</th></tr></thead>
-                    <tbody>
-                        @foreach (var row in importResult.Rows)
-                        {
-                            <tr class="@(row.Succeeded ? "ok" : "failed")">
-                                <td>@row.Row</td>
-                                <td class="mono">@row.Lrn</td>
-                                <td>@row.Name</td>
-                                <td>@row.Section</td>
-                                <td>@(row.Succeeded ? (row.NewAccount ? "Enrolled · new account" : "Enrolled") : string.Join(" ", row.Errors))</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <div class="import-actions">
-                <Button Variant="ButtonVariant.Secondary" IconName="download" OnClick="DownloadResultAsync">Download the result (Excel)</Button>
-                <Button Variant="ButtonVariant.Ghost" OnClick="ImportAnother">Import another file</Button>
-                <Button IconName="circle-check" OnClick="CloseImport">Done</Button>
-            </div>
-            @if (importResult.Rows.Any(r => r.Password is not null))
-            {
-                <p class="hint">The result file has the email and the password of each new account. Hand them to the students and keep the file private.</p>
-            }
-        }
-    }
-</Modal>
 
 @code {
     private sealed class Form
@@ -868,106 +792,4 @@ else
 
     private async Task PrintAsync() => await JS.InvokeVoidAsync("seaitt.print");
 
-    // ---------- import from Excel
-    private bool importOpen;
-    private bool importing;
-    private bool reading;
-    private int importTermId;
-    private string? importFileName;
-    private byte[]? importBytes;
-    private string? importError;
-    private ImportResult? importResult;
-
-    private void OpenImport()
-    {
-        importOpen = true;
-        importing = reading = false;
-        importFileName = null;
-        importBytes = null;
-        importError = null;
-        importResult = null;
-        importTermId = form.TermId != 0 ? form.TermId : (lookups?.Terms.FirstOrDefault(t => t.IsCurrent) ?? lookups?.Terms.FirstOrDefault())?.Id ?? 0;
-    }
-
-    private void CloseImport() => importOpen = false;
-
-    private async Task DownloadTemplateAsync()
-    {
-        await Downloads.SaveAsync("Enrollment template.xlsx", await Importer.BuildTemplateAsync());
-    }
-
-    private async Task FileChosenAsync(InputFileChangeEventArgs e)
-    {
-        importError = null;
-        importBytes = null;
-        importFileName = null;
-        reading = true;
-        try
-        {
-            if (e.File.Size > XlsxReader.MaxFileBytes)
-            {
-                importError = $"The file is bigger than {XlsxReader.MaxFileBytes / (1024 * 1024)} MB.";
-                return;
-            }
-
-            await using var stream = e.File.OpenReadStream(XlsxReader.MaxFileBytes);
-            using var buffer = new MemoryStream();
-            await stream.CopyToAsync(buffer);
-            importBytes = buffer.ToArray();
-            importFileName = e.File.Name;
-        }
-        catch (IOException)
-        {
-            importError = "The file could not be read. Choose it again.";
-        }
-        finally
-        {
-            reading = false;
-        }
-    }
-
-    private async Task ImportAsync()
-    {
-        if (importing || importBytes is null)
-        {
-            return;
-        }
-
-        importing = true;
-        importError = null;
-        try
-        {
-            var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
-            _ = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
-            var result = await Importer.ImportAsync(importBytes, importTermId, userId);
-            if (result.FileError is not null)
-            {
-                importError = result.FileError;
-            }
-            else
-            {
-                importResult = result;
-            }
-        }
-        finally
-        {
-            importing = false;
-        }
-    }
-
-    private async Task DownloadResultAsync()
-    {
-        if (importResult is not null)
-        {
-            await Downloads.SaveAsync("Enrollment import result.xlsx", EnrollmentImportService.BuildResultFile(importResult));
-        }
-    }
-
-    private void ImportAnother()
-    {
-        importResult = null;
-        importBytes = null;
-        importFileName = null;
-        importError = null;
-    }
 }

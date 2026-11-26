@@ -1,10 +1,157 @@
-.lead-note {
+/* Round 47: Grade N Students. A summary on top, the filters and the table in one card, and two columns in the boxes of the record. */
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
     margin: 0 0 1rem;
+}
+
+@media (max-width: 900px) {
+    .tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.tile {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.tile-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 12px;
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
+.tile-icon.ok {
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.tile-icon.wait {
+    background: var(--accent-yellow-soft);
+    color: var(--warning);
+}
+
+.tile-icon.doc {
+    background: var(--info-soft);
+    color: var(--info);
+}
+
+.tile-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.tile-value {
+    font-size: 1.55rem;
+    font-weight: 750;
+}
+
+.tile-label {
     color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+}
+
+.filter-bar select {
+    width: auto;
+    min-width: 11rem;
+}
+
+.count-note {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.who {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 12rem;
+}
+
+.sub {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.col-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.doc-meter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.doc-meter .bar {
+    display: block;
+    width: 4.5rem;
+    height: 0.45rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+}
+
+.doc-meter .bar i {
+    display: block;
+    height: 100%;
+    background: var(--accent-yellow);
+}
+
+.meter-text {
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+/* Two columns in the boxes of the record: the student at the left, the parents and the guardian at the right. One column on a phone. */
+.two-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 2rem;
+    align-items: start;
+}
+
+@media (max-width: 760px) {
+    .two-cols {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .part {
-    margin: 1rem 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 2px solid var(--accent-yellow);
     font-size: 1rem;
     color: var(--brand-strong);
 }
@@ -14,31 +161,54 @@
     font-weight: 400;
 }
 
-.doc-list {
+.pair {
     display: grid;
-    gap: 0.4rem;
-    margin: 0.75rem 0 0;
-    padding: 0;
-    list-style: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 0.75rem;
 }
 
-.doc-list li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+@media (max-width: 520px) {
+    .pair {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
-.doc-kind {
-    font-weight: 650;
+.info {
+    display: grid;
+    gap: 0.1rem;
+    margin: 0;
+}
+
+.info div {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.info dt {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.info dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 0.6rem;
-    margin-top: 0.8rem;
+    margin-top: 1rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
 }

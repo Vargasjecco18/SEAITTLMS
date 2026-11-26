@@ -13,9 +13,12 @@ public static class AnnouncementSheets
 
     public static string FileName(string what) => FileDownloads.CleanName($"{what} - Announcements.xlsx");
 
-    public static byte[] Export(IEnumerable<AnnouncementView> announcements) => Build(announcements.ToList());
+    public static byte[] Export(IEnumerable<AnnouncementView> announcements) => Build(announcements.ToList(), []);
 
-    private static byte[] Build(IReadOnlyList<AnnouncementView> items)
+    /// <summary>Round 47: the file of View announcements: the sheet Announcements and the sheet Holidays (the holidays of the year that are shown).</summary>
+    public static byte[] Export(IEnumerable<AnnouncementView> announcements, IEnumerable<Holiday> holidays) => Build(announcements.ToList(), holidays.ToList());
+
+    private static byte[] Build(IReadOnlyList<AnnouncementView> items, IReadOnlyList<Holiday> holidays)
     {
         var book = new XlsxBook();
         var sheet = book.AddSheet("Announcements");
@@ -32,6 +35,22 @@ public static class AnnouncementSheets
         }
 
         sheet.FrozenRows = 1;
+
+        if (holidays.Count > 0)
+        {
+            var days = book.AddSheet("Holidays");
+            days.Row(1, ["Date", "Holiday", "Kind"], XlsxStyle.Header);
+            days.Width(1, 16).Width(2, 40).Width(3, 30);
+            var line = 2;
+            foreach (var h in holidays.OrderBy(h => h.Day))
+            {
+                days.Set(line, 1, h.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), XlsxStyle.InputText).Set(line, 2, h.Name, XlsxStyle.InputText).Set(line, 3, h.Kind + (h.Estimated ? " (the day can change)" : ""), XlsxStyle.InputText);
+                line++;
+            }
+
+            days.FrozenRows = 1;
+        }
+
         return book.ToBytes();
     }
 }

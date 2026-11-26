@@ -92,22 +92,51 @@
         }
         else
         {
-            <table class="courses">
-                <thead><tr><th>Course</th><th class="units">Units</th></tr></thead>
-                <tbody>
-                    @for (var n = 0; n < Receipt.Subjects.Count; n++)
+            @if (Receipt.Subjects.Count > 8)
+            {
+                @* Round 47: more than eight courses are written in two tables side by side so the front stays on one page. *@
+                var half = (Receipt.Subjects.Count + 1) / 2;
+                <div class="course-halves">
+                    @foreach (var (from, to) in new[] { (0, half), (half, Receipt.Subjects.Count) })
                     {
-                        <tr>
-                            <td>@Receipt.Subjects[n]</td>
-                            <td class="units">@UnitsOf(n)</td>
-                        </tr>
+                        <table class="courses">
+                            <thead><tr><th>Course</th><th class="units">Units</th></tr></thead>
+                            <tbody>
+                                @for (var n = from; n < to; n++)
+                                {
+                                    <tr>
+                                        <td>@Receipt.Subjects[n]</td>
+                                        <td class="units">@UnitsOf(n)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            @if (to == Receipt.Subjects.Count && TotalUnits is { } totalMany)
+                            {
+                                <tfoot><tr><td>Total units</td><td class="units">@FormatUnits(totalMany)</td></tr></tfoot>
+                            }
+                        </table>
                     }
-                </tbody>
-                @if (TotalUnits is { } total)
-                {
-                    <tfoot><tr><td>Total units</td><td class="units">@FormatUnits(total)</td></tr></tfoot>
-                }
-            </table>
+                </div>
+            }
+            else
+            {
+                <table class="courses">
+                    <thead><tr><th>Course</th><th class="units">Units</th></tr></thead>
+                    <tbody>
+                        @for (var n = 0; n < Receipt.Subjects.Count; n++)
+                        {
+                            <tr>
+                                <td>@Receipt.Subjects[n]</td>
+                                <td class="units">@UnitsOf(n)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (TotalUnits is { } total)
+                    {
+                        <tfoot><tr><td>Total units</td><td class="units">@FormatUnits(total)</td></tr></tfoot>
+                    }
+                </table>
+            }
         }
 
         <h3 class="part">e-LMS account of the learner</h3>
@@ -134,7 +163,7 @@
 
         <footer class="sheet-foot">
             <span>@school.SchoolName · Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
-            <span>Page 1 of 2 · Please read the terms and conditions at the back.</span>
+            <span>Front · Please read the terms and conditions at the back.</span>
         </footer>
     </section>
 
@@ -161,10 +190,10 @@
             </li>
             <li>
                 <strong>Attendance and punctuality.</strong> The student comes to every class and on time. The teachers record who is present, late or absent, and it is part of the student's record.
-                A student whose attendance falls below 80% is referred to the Guidance Counselor, who will talk with the student and the family.
+                A student who is often absent can be referred by the teacher to the Guidance Counselor, who will talk with the student and the family.
             </li>
             <li>
-                <strong>Grades and academic standing.</strong> The passing grade is 70. A subject is graded from the scores of the assignments, quizzes and task performances. A student whose grade falls below 70, or comes close to it, or who has several missing assignments, is referred to the Guidance Counselor for help such as tutoring.
+                <strong>Grades and academic standing.</strong> The passing grade is @GradeRules.PassingPercent.ToString("0"). A subject is graded from the scores of the activities, quizzes, task performances and examinations (@GradingSystem.Describe()). A student whose grade falls below @GradeRules.PassingPercent.ToString("0"), or comes close to it, or who has several missing assignments, can be referred by the teacher to the Guidance Counselor for help such as tutoring.
                 Works are handed in on time; a late work is marked as late.
             </li>
             <li>
@@ -215,7 +244,7 @@
 
         <footer class="sheet-foot">
             <span>@school.SchoolName · Enrollment Form · @Receipt.Term, @Receipt.SchoolYear</span>
-            <span>Page 2 of 2</span>
+            <span>Back · one sheet, printed on both sides</span>
         </footer>
     </section>
 </div>

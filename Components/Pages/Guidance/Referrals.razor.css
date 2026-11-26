@@ -260,11 +260,11 @@ th.col-level {
 }
 
 .referral-table .col-concern {
-    width: 19%;
+    width: 15%;
 }
 
 .referral-table .col-happened {
-    width: 25%;
+    width: 22%;
 }
 
 .referral-table th.col-notes {
@@ -399,6 +399,16 @@ th.col-level {
     border-bottom: 2px solid currentColor;
     transform: translateY(-70%) rotate(45deg);
     pointer-events: none;
+}
+
+/* Round 47: the two selects (the concern and what happened) are narrower. */
+.pick {
+    max-width: 11.5rem;
+}
+
+.col-happened .pick,
+td:nth-child(4) .pick {
+    max-width: 14rem;
 }
 
 .concern-select {

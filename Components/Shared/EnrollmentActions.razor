@@ -12,16 +12,15 @@
     <button type="button" class="act" @onclick="OpenAccountAsync"><Icon Name="key-round" Size="14" /> Account</button>
     @* Edit is at the right of Account (it is off for a line that is not an enrolled one). *@
     <button type="button" class="act" disabled="@(Status != "Enrolled")" title="@(Status == "Enrolled" ? "Edit the enrollment" : "Only an enrolled student can be edited")" @onclick="OpenEditAsync"><Icon Name="pencil" Size="14" /> Edit</button>
-    @* Round 46: the printable enrollment form and the enrollment information of the student are in the row too (the grades are the Final grade button). *@
-    <a class="act" id="form-@EnrollmentId" href="registrar/enrollments/@EnrollmentId/form" target="_blank" rel="noopener" title="@($"The printable enrollment form of {StudentName}")"><Icon Name="printer" Size="14" /> Form</a>
-    <button type="button" class="act" id="info-@EnrollmentId" title="@($"The enrollment information of {StudentName}")" @onclick="OpenInfoAsync"><Icon Name="info" Size="14" /> Info</button>
+    @* Round 47: Documents is one button instead of Form and Info: a box (not a page) with the information of the student at the left and the documents at the right. *@
+    <button type="button" class="act" id="docs-@EnrollmentId" title="@($"The information and the documents of {StudentName}")" @onclick="OpenInfoAsync"><Icon Name="folder-open" Size="14" /> Documents</button>
     @if (StudentActive)
     {
         <button type="button" class="act danger" @onclick="OpenDrop"><Icon Name="user-x" Size="14" /> Drop out</button>
     }
 </div>
 
-<Modal Open="showingInfo" Title="@($"Enrollment information · {StudentName}")" OnClose="CloseInfo">
+<Modal Open="showingInfo" Title="@($"Documents · {StudentName}")" Large="true" Wide="true" OnClose="CloseInfo">
     @if (showingInfo)
     {
         @if (info is null)
@@ -30,29 +29,45 @@
         }
         else
         {
-            <dl class="account" id="enrollment-info">
-                <div><dt>LRN</dt><dd class="mono">@info.Lrn</dd></div>
-                <div><dt>Sex</dt><dd>@(infoRecord?.Sex?.ToString() ?? "—")</dd></div>
-                <div><dt>Phone</dt><dd>@(string.IsNullOrWhiteSpace(info.PhoneNumber) ? "—" : SEAITT_LMS.Auth.PhoneNumbers.ToLocal(info.PhoneNumber))</dd></div>
-                <div><dt>School year · term</dt><dd>@info.SchoolYear · @info.Term</dd></div>
-                <div><dt>Grade · strand · section</dt><dd>Grade @info.GradeLevel · @info.Strand · @info.Section</dd></div>
-                <div><dt>Track</dt><dd>@info.Track</dd></div>
-                <div><dt>Courses</dt><dd>@(info.Subjects.Count == 0 ? "None" : string.Join(", ", info.Subjects))</dd></div>
-                <div><dt>Email</dt><dd class="mono">@info.Email</dd></div>
-                <div><dt>Father</dt><dd>@(infoRecord?.FatherName ?? "—")</dd></div>
-                <div><dt>Mother</dt><dd>@(infoRecord?.MotherName ?? "—")</dd></div>
-                <div><dt>Guardian</dt><dd>@(infoRecord?.GuardianName is { } g ? g + (string.IsNullOrWhiteSpace(infoRecord.GuardianRelationship) ? "" : $" ({infoRecord.GuardianRelationship})") : "—")</dd></div>
-                <div><dt>Address</dt><dd>@(infoRecord?.GuardianAddress ?? infoRecord?.Address ?? "—")</dd></div>
-            </dl>
+            <div class="docs-cols" id="enrollment-documents">
+                <section class="docs-col" aria-label="Information">
+                    <h3 class="docs-title"><Icon Name="info" Size="16" /> Information</h3>
+                    <dl class="account" id="enrollment-info">
+                        <div><dt>LRN</dt><dd class="mono">@info.Lrn</dd></div>
+                        <div><dt>Sex</dt><dd>@(infoRecord?.Sex?.ToString() ?? "—")</dd></div>
+                        <div><dt>Phone</dt><dd>@(string.IsNullOrWhiteSpace(info.PhoneNumber) ? "—" : SEAITT_LMS.Auth.PhoneNumbers.ToLocal(info.PhoneNumber))</dd></div>
+                        <div><dt>School year · term</dt><dd>@info.SchoolYear · @info.Term</dd></div>
+                        <div><dt>Grade · strand · section</dt><dd>Grade @info.GradeLevel · @info.Strand · @info.Section</dd></div>
+                        <div><dt>Track</dt><dd>@info.Track</dd></div>
+                        <div><dt>Courses</dt><dd>@(info.Subjects.Count == 0 ? "None" : string.Join(", ", info.Subjects))</dd></div>
+                        <div><dt>Email</dt><dd class="mono">@info.Email</dd></div>
+                        <div><dt>Father</dt><dd>@(infoRecord?.FatherName ?? "—")</dd></div>
+                        <div><dt>Mother</dt><dd>@(infoRecord?.MotherName ?? "—")</dd></div>
+                        <div><dt>Guardian</dt><dd>@(infoRecord?.GuardianName is { } g ? g + (string.IsNullOrWhiteSpace(infoRecord.GuardianRelationship) ? "" : $" ({infoRecord.GuardianRelationship})") : "—")</dd></div>
+                        <div><dt>Address</dt><dd>@(infoRecord?.GuardianAddress ?? infoRecord?.Address ?? "—")</dd></div>
+                    </dl>
+                </section>
+                <section class="docs-col" aria-label="Documents">
+                    <h3 class="docs-title"><Icon Name="folder-open" Size="16" /> Documents</h3>
+                    @if (infoRecord is null)
+                    {
+                        <p class="muted" id="no-record">This student was not recorded by the Admission staff, so there are no documents here.</p>
+                    }
+                    else
+                    {
+                        <AdmissionDocuments RecordId="infoRecord.Id" CanEdit="false" />
+                    }
+                </section>
+            </div>
             <div class="actions">
-                <a class="act" href="registrar/enrollments/@EnrollmentId/form" target="_blank" rel="noopener"><Icon Name="printer" Size="14" /> Printable form</a>
+                <button type="button" class="act" id="print-form-@EnrollmentId" @onclick="PrintFormAsync"><Icon Name="printer" Size="14" /> Print enrollment form</button>
                 <Button OnClick="CloseInfo">Close</Button>
             </div>
         }
     }
 </Modal>
 
-<Modal Open="showingAccount" Title="@($"Sign-in details of {StudentName}")" OnClose="CloseAccount">
+<Modal Open="showingAccount" Title="@($"Sign-in details of {StudentName}")" Centered="true" OnClose="CloseAccount">
     @if (showingAccount)
     {
         @if (account is null)
@@ -221,6 +236,9 @@
     }
 
     private void CloseInfo() => showingInfo = false;
+
+    /// <summary>Prints the enrollment form of this student without leaving the list: the form page is loaded in a hidden frame and printed (one sheet, both sides).</summary>
+    private async Task PrintFormAsync() => await JS.InvokeVoidAsync("seaitt.printUrl", $"registrar/enrollments/{EnrollmentId}/form");
 
     private bool showingAccount;
     private bool copied;

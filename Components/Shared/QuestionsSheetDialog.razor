@@ -169,7 +169,7 @@
                                         }
                                     </td>
                                     <td class="c-points">
-                                        <input class="cell cell-num" type="number" min="0.01" max="100" step="any" autocomplete="off" aria-label="@($"Points of question {n}")" value="@row.Points" @key="@($"p-{row.Id}")"
+                                        <input class="cell cell-num" type="number" min="1" max="100" step="1" inputmode="numeric" autocomplete="off" aria-label="@($"Points of question {n}")" value="@row.Points" @key="@($"p-{row.Id}")"
                                                @onchange="e => row.Points = e.Value?.ToString() ?? string.Empty" />
                                     </td>
                                     <td class="c-state">

@@ -280,6 +280,10 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
 
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
+    // Round 47: the look (appearance) is not kept after signing out: the next person starts with Auto.
+    http.Response.Cookies.Delete("seaitt-theme");
+    http.Response.Cookies.Delete("seaitt-custom");
+
     return Results.LocalRedirect("/login");
 }).AllowAnonymous();
 
@@ -512,6 +516,13 @@ app.MapGet("/files/admission/{id:int}", async (int id, HttpContext http, Admissi
 
     http.Response.Headers.XContentTypeOptions = "nosniff";
     http.Response.Headers.CacheControl = "private, no-store";
+
+    // Round 47: ?inline=1 shows the picture or the PDF inside a box of the page (nothing is downloaded first); without it the file is saved.
+    if (http.Request.Query.ContainsKey("inline") && (doc.Value.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || doc.Value.ContentType == "application/pdf"))
+    {
+        return Results.File(doc.Value.Data, doc.Value.ContentType);
+    }
+
     return Results.File(doc.Value.Data, doc.Value.ContentType, doc.Value.Name);
 }).RequireAuthorization();
 

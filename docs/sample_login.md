@@ -1,6 +1,6 @@
 # Sample logins
 
-The accounts made by [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) (1 administrator, 5 staff — two of them academic coordinators —, 12 teachers and 40 students), with their passwords.
+The accounts made by [`database/seaittlms_sample_accounts.sql`](../database/seaittlms_sample_accounts.sql) (1 administrator, 5 staff — two of them academic coordinators —, 12 teachers and 40 students), with their passwords. **Round 47:** `database/seaittlms_sample_data.sql` adds 460 more students (500 in all); their accounts are not listed one by one, see *The other 460 students* below.
 They are **sample accounts for trying the system**: the passwords are easy on purpose and they are written here. **Do not use these accounts or passwords with real people:**
 give every real person a new password (Users Management > Edit), or delete the sample accounts.
 
@@ -75,4 +75,14 @@ How they are made, like the app does for a new person:
 | Student | Oscar Ubaldo Ramirez | ramirez.600044@legazpi.seaitt.edu.ph | ramirez600044 |
 | Student | Princess Villanueva Sarmiento | sarmiento.600045@legazpi.seaitt.edu.ph | sarmiento600045 |
 
-The two **Admission** accounts are in [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql), not in the accounts file, because they have a role the administrator makes (*Admission Grade 11* and *Admission Grade 12*, with the pages `admission-grade11` / `admission-grade12`). They record the information and the documents of the students (43 students and 80 documents are recorded in the sample data) and have no other pages besides Calendar and Users.
+The two **Admission** accounts are in [`database/seaittlms_sample_data.sql`](../database/seaittlms_sample_data.sql), not in the accounts file, because they have a role the administrator makes (*Admission Grade 11* and *Admission Grade 12*, with the pages `admission-grade11` / `admission-grade12`). They record the information and the documents of the students (503 students and 2 151 documents are recorded in the sample data: 382 of Grade 11 and 121 of Grade 12, a student who is waiting to be enrolled is among them) and have no other pages besides Calendar and Users.
+
+## The other 460 students (round 47)
+
+`database/seaittlms_sample_data.sql` enrolls 460 more students (500 with the 40 above) in the 2nd term of 2026-2027, **section A of a strand filled to 40 students before section B is used**. Every one has an account made the same way as the first 40:
+
+- email: the last name in lower case, a dot and the **last six digits of the LRN**, then `@legazpi.seaitt.edu.ph` (for example `valdez.600560@legazpi.seaitt.edu.ph`);
+- password: the last name in lower case followed by the same six digits (for example `valdez600560`).
+
+To find one, open **Admin > Users Management > Students** (or the registrar's **Student's Accounts**) and read the email; the LRN of the new students runs from `105202600001` to `105202600500` (the first 40 keep the numbers listed above).
+

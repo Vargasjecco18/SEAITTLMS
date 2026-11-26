@@ -18,10 +18,10 @@ public enum GradePart
     TermExam,
 }
 
-/// <summary>How much each part is worth. The school's are 20 / 50 / 15 / 30 (they add up to 115, so the grade is the weighted average scaled to 100%); the administrator can change them in System Settings.</summary>
+/// <summary>How much each part is worth. The school's are 20 / 50 / 15 / 15 (they add up to 100, so the grade is the weighted average; if the administrator changes them so they no longer add up to 100 the grade is scaled to 100%); the administrator can change them in System Settings.</summary>
 public sealed record GradingWeights(decimal WrittenOral, decimal Performance, decimal Summative, decimal TermExam)
 {
-    public static GradingWeights Default { get; } = new(20, 50, 15, 30);
+    public static GradingWeights Default { get; } = new(20, 50, 15, 15);
 
     public decimal Of(GradePart part) => part switch
     {
@@ -50,7 +50,7 @@ public sealed record GradeResult(IReadOnlyDictionary<GradePart, decimal> Parts, 
 }
 
 /// <summary>
-/// The grading system of SEAITT (Round 46): Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 30%. The grade of a student in a course is the weighted average of the
+/// The grading system of SEAITT (Round 46): Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 15% (Round 47: it was 30%). The grade of a student in a course is the weighted average of the
 /// percent of the four parts, scaled to 100% (each weight ÷ the total of the weights). A part that has no work yet is left out and the others are scaled to 100%.
 /// The final grade of the gradebook is 0 until every activity, quiz and exam has a score; only then is it worked out.
 /// </summary>
@@ -89,7 +89,7 @@ public static class GradingSystem
         _ => GradePart.WrittenOral,
     };
 
-    /// <summary>"Written/Oral Works 20% · Performance Task 50% · Summative Test 15% · Term Examination 30%".</summary>
+    /// <summary>"Written/Oral Works 20% · Performance Task 50% · Summative Test 15% · Term Examination 15%".</summary>
     public static string Describe() => string.Join(" · ", Parts.Select(p => $"{Name(p)} {weights.Of(p):0.##}%"));
 
     public static GradeResult Compute(IEnumerable<GradeWork> works) => Compute(works, weights);

@@ -1,0 +1,64 @@
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthProvider
+@inject AdmissionService Admission
+
+@* Round 47: the dashboard of the Admission staff: the students of the grade level of the account (Grade 11 for Admission Grade 11, Grade 12 for Admission Grade 12), instead of buttons to the pages. *@
+@foreach (var block in blocks)
+{
+    <Card Title="@($"Grade {block.Grade} students")" IconName="users" Class="admission-block">
+        <div class="mini-tiles" data-grade="@block.Grade">
+            <span class="mini"><strong>@block.All.Count</strong> recorded</span>
+            <span class="mini ok"><strong>@block.All.Count(r => r.Enrolled)</strong> enrolled</span>
+            <span class="mini wait"><strong>@block.All.Count(r => !r.Enrolled)</strong> waiting to be enrolled</span>
+            <a class="see-all" href="admission/grade-@block.Grade">See all the Grade @block.Grade students <Icon Name="arrow-right" Size="16" /></a>
+        </div>
+        @if (block.All.Count == 0)
+        {
+            <p class="muted">No Grade @block.Grade student is recorded yet. Open <a href="admission/grade-@block.Grade">Grade @block.Grade Students</a> and press Record a student.</p>
+        }
+        else
+        {
+            <div class="data-wrap">
+                <table class="data-table dash-table" id="admission-dash-@block.Grade">
+                    <thead><tr><th scope="col">Student</th><th scope="col">Strand</th><th scope="col">Section</th><th scope="col">Phone number</th><th scope="col">State</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in block.All.Take(12))
+                        {
+                            <tr data-lrn="@r.Lrn">
+                                <td class="who"><strong>@r.FullName</strong><span class="sub mono">@r.Lrn</span></td>
+                                <td>@(string.IsNullOrEmpty(r.Strand) ? "—" : r.Strand)</td>
+                                <td>@(string.IsNullOrEmpty(r.Section) ? "—" : r.Section)</td>
+                                <td class="mono">@(string.IsNullOrWhiteSpace(r.Phone) ? "—" : r.Phone)</td>
+                                <td><Badge Tone="@(r.Enrolled ? Tone.Success : Tone.Info)">@(r.Enrolled ? "Enrolled" : "Recorded")</Badge></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (block.All.Count > 12)
+            {
+                <p class="more-note">Showing 12 of @block.All.Count. <a href="admission/grade-@block.Grade">Open Grade @block.Grade Students</a> for all of them.</p>
+            }
+        }
+    </Card>
+}
+
+@code {
+    private sealed record Block(byte Grade, IReadOnlyList<AdmissionRow> All);
+
+    private List<Block> blocks = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthProvider.GetAuthenticationStateAsync()).User;
+        if (!int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return;
+        }
+
+        foreach (var grade in (await Admission.GradesOfAsync(userId)).Order())
+        {
+            blocks.Add(new Block(grade, await Admission.ListAsync(userId, grade, null)));
+        }
+    }
+}

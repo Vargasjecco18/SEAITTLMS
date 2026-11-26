@@ -14,7 +14,9 @@
 }
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "coordinator"}")"
-            IconName="layout-dashboard" />
+            IconName="layout-dashboard">
+    <CurrentTermBadge />
+</PageHeader>
 
 <TermEndedNotice For="coordinator" />
 

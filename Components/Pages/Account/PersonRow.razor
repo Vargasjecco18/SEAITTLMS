@@ -23,7 +23,7 @@
     else
     {
         @* A member of the staff: not a friend to add, only a role. *@
-        <Badge Tone="Tone.Info">@PeopleService.RoleLabel(Person.Role)</Badge>
+        <Badge Tone="Tone.Info">@Person.RoleText</Badge>
     }
     @if (CanWrite)
     {

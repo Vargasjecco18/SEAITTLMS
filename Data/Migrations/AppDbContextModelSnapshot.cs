@@ -470,6 +470,10 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("varchar(10)")
                         .HasColumnName("sex");
 
+                    b.Property<int?>("StrandId")
+                        .HasColumnType("int")
+                        .HasColumnName("strand_id");
+
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at_utc");
@@ -480,6 +484,9 @@ namespace SEAITT_LMS.Data.Migrations
                     b.HasIndex("Lrn")
                         .IsUnique()
                         .HasDatabaseName("ix_admission_records_lrn");
+
+                    b.HasIndex("StrandId")
+                        .HasDatabaseName("ix_admission_records_strand_id");
 
                     b.HasIndex("GradeLevel", "LastName")
                         .HasDatabaseName("ix_admission_records_grade_level_last_name");
@@ -3981,6 +3988,17 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasConstraintName("fk_admission_documents_admission_records_record_id");
 
                     b.Navigation("Record");
+                });
+
+            modelBuilder.Entity("SEAITT_LMS.Data.Entities.AdmissionRecord", b =>
+                {
+                    b.HasOne("SEAITT_LMS.Data.Entities.Strand", "Strand")
+                        .WithMany()
+                        .HasForeignKey("StrandId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_admission_records_strands_strand_id");
+
+                    b.Navigation("Strand");
                 });
 
             modelBuilder.Entity("SEAITT_LMS.Data.Entities.Announcement", b =>

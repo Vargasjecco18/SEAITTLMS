@@ -17,8 +17,11 @@ public enum FriendState
 }
 
 /// <summary>A person in a list of the Users page: who, what they are to the viewer ("11-BUSSENT-A", the courses they teach), and the friendship.</summary>
-public sealed record PersonCard(int UserId, string Name, string Role, string? Detail, FriendState State = FriendState.None)
+public sealed record PersonCard(int UserId, string Name, string Role, string? Detail, FriendState State = FriendState.None, string? RoleTitle = null)
 {
+    /// <summary>What the Role column says: the name of the role the administrator made (for example Admission Grade 11), otherwise the name of the usual role.</summary>
+    public string RoleText => RoleTitle ?? PeopleService.RoleLabel(Role);
+
     public bool IsStudent => Role == AppRoles.Student;
 }
 
@@ -282,9 +285,11 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
         var ids = await db.Users.AsNoTracking().Where(u => u.IsActive && u.Id != userId && roleIds.Contains(u.RoleId)).Select(u => u.Id).ToListAsync(ct);
         var named = await UserDirectory.LoadAsync(db, ids, ct);
         var order = UserManagementService.NonTeachingRoles.ToList();
+        // Round 47: a person with a role the administrator made (the Admission staff, a Librarian ...) shows that role in the list, not the usual role it is made on.
+        var titles = await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id) && u.CustomRoleId != null).Select(u => new { u.Id, Title = u.CustomRole!.Name }).ToDictionaryAsync(x => x.Id, x => x.Title, ct);
         var cards = named.Values
-            .OrderBy(p => order.IndexOf(p.Role)).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, RoleLabel(p.Role))).ToList();
+            .OrderBy(p => titles.ContainsKey(p.UserId) ? 1 : 0).ThenBy(p => order.IndexOf(p.Role)).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(p => new PersonCard(p.UserId, p.Name, p.Role, titles.GetValueOrDefault(p.UserId) ?? RoleLabel(p.Role), RoleTitle: titles.GetValueOrDefault(p.UserId))).ToList();
         // a member of the staff can be a friend too: each card says if the person is one, was asked, or asked
         return await WithStatesAsync(db, userId, cards, ct);
     }

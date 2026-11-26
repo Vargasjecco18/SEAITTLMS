@@ -16,31 +16,19 @@
     font-size: 0.88rem;
 }
 
-/* Four panels in a row, level with each other: the same height, the title of each at the top and its choices under it. Two in a row on a narrow box, one on a phone. */
+/* Round 47: four rows, one under the other. In each row the title is at the left and its choices are at the right, side by side, so the box has no blank space. On a phone the title is over its choices. */
 .panels {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-    align-items: stretch;
-}
-
-@media (max-width: 900px) {
-    .panels {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 520px) {
-    .panels {
-        grid-template-columns: minmax(0, 1fr);
-    }
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
 }
 
 .panel {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    padding: 0.85rem 0.95rem;
+    display: grid;
+    grid-template-columns: 11.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    padding: 0.7rem 0.95rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface-2);
@@ -51,6 +39,38 @@
     align-items: center;
     gap: 0.5rem;
     min-height: 1.75rem;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1.25rem;
+    min-width: 0;
+}
+
+/* Two switches side by side. */
+.controls.two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.7rem 1.5rem;
+}
+
+.with-count {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+@media (max-width: 760px) {
+    .panel {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .controls.two {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .panel-icon {
@@ -103,12 +123,23 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.4rem 0.6rem;
-    margin-top: auto;
     font-size: 0.88rem;
 }
 
 .inline input {
-    width: 5rem;
+    width: 5.2rem;
+    height: 2rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+.inline input:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
 }
 
 /* A switch is a real checkbox that is drawn as a track with a thumb. */

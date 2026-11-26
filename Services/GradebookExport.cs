@@ -3,7 +3,7 @@ using SEAITT_LMS.Data.Entities;
 namespace SEAITT_LMS.Services;
 
 /// <summary>
-/// The Excel file of a gradebook, worked out with the grading system of SEAITT (Round 46): Written/Oral Works (activities and quizzes) 20%, Performance Task 50%, Summative Test 15%, Term Examination 30%.
+/// The Excel file of a gradebook, worked out with the grading system of SEAITT (Round 46): Written/Oral Works (activities and quizzes) 20%, Performance Task 50%, Summative Test 15%, Term Examination 15% (Round 47).
 /// The sheet "Grades" has a column for every activity, quiz, task performance and exam, then the percent of each of the four parts, the final grade, its descriptor and its remarks, all as live
 /// formulas (change a score and the numbers change). The sheet "Summary" has the two tables of the class: the descriptors (Advancing ... Emerging) and Passed/Failed, with male, female and total.
 /// The sheet "How it is worked out" says the rule in words. A student whose gradebook is not complete (a score is missing) has the final grade 0, as in the gradebook.
@@ -157,15 +157,16 @@ public static class GradebookExport
         summary.Set(2, 1, "Worked out with formulas from the sheet Grades. A student whose gradebook is not complete has the final grade 0.", XlsxStyle.Note);
 
         var r1 = 4;
-        summary.Row(r1, ["SUMMARY", "NUMERICAL GRADE", "DESCRIPTOR", "MALE", "FEMALE", "TOTAL", "% MALE", "% FEMALE", "% TOTAL"], XlsxStyle.Header);
+        summary.Row(r1, ["DESCRIPTOR", "MALE", "FEMALE", "TOTAL", "% MALE", "% FEMALE", "% TOTAL"], XlsxStyle.Header);
         WriteTable(summary, r1 + 1, GradingSystem.Descriptors.Select(d => (d.From, d.To, d.Name)).ToList(), descriptorLines, finalRange, sexRange, male, female, total);
 
         var r2 = r1 + GradingSystem.Descriptors.Length + 4;
-        summary.Row(r2, ["", "NUMERICAL GRADE", "REMARKS", "MALE", "FEMALE", "TOTAL", "% MALE", "% FEMALE", "% TOTAL"], XlsxStyle.Header);
+        summary.Row(r2, ["REMARKS", "MALE", "FEMALE", "TOTAL", "% MALE", "% FEMALE", "% TOTAL"], XlsxStyle.Header);
         WriteTable(summary, r2 + 1, GradingSystem.Remarks.Select(d => (d.From, d.To, d.Name.ToUpperInvariant())).ToList(), remarkLines, finalRange, sexRange, male, female, total);
 
-        summary.Width(1, 12).Width(2, 18).Width(3, 16);
-        for (var c = 4; c <= 9; c++)
+        // Round 47: no blank first column and no numerical grade column: the name of the line, then male, female, total and the percents.
+        summary.Width(1, 18);
+        for (var c = 2; c <= 7; c++)
         {
             summary.Width(c, 11);
         }
@@ -181,24 +182,24 @@ public static class GradebookExport
             var row = firstRow + i;
             var line = lines[i];
             var range = $"{finalRange},\">={from}\",{finalRange},\"<={to}\"";
-            sheet.Set(row, 2, $"{from} - {to}", XlsxStyle.Normal).Set(row, 3, name);
-            sheet.Formula(row, 4, $"COUNTIFS({sexRange},\"Male\",{range})", XlsxStyle.Integer, line.Male);
-            sheet.Formula(row, 5, $"COUNTIFS({sexRange},\"Female\",{range})", XlsxStyle.Integer, line.Female);
-            sheet.Formula(row, 6, $"COUNTIFS({range})", XlsxStyle.Integer, line.Total);
-            sheet.Formula(row, 7, $"IF(D${totalRow}=0,0,D{row}/D${totalRow})", XlsxStyle.Percent, male == 0 ? 0 : (double)line.Male / male);
-            sheet.Formula(row, 8, $"IF(E${totalRow}=0,0,E{row}/E${totalRow})", XlsxStyle.Percent, female == 0 ? 0 : (double)line.Female / female);
-            sheet.Formula(row, 9, $"IF(F${totalRow}=0,0,F{row}/F${totalRow})", XlsxStyle.Percent, total == 0 ? 0 : (double)line.Total / total);
+            sheet.Set(row, 1, name);
+            sheet.Formula(row, 2, $"COUNTIFS({sexRange},\"Male\",{range})", XlsxStyle.Integer, line.Male);
+            sheet.Formula(row, 3, $"COUNTIFS({sexRange},\"Female\",{range})", XlsxStyle.Integer, line.Female);
+            sheet.Formula(row, 4, $"COUNTIFS({range})", XlsxStyle.Integer, line.Total);
+            sheet.Formula(row, 5, $"IF(B${totalRow}=0,0,B{row}/B${totalRow})", XlsxStyle.Percent, male == 0 ? 0 : (double)line.Male / male);
+            sheet.Formula(row, 6, $"IF(C${totalRow}=0,0,C{row}/C${totalRow})", XlsxStyle.Percent, female == 0 ? 0 : (double)line.Female / female);
+            sheet.Formula(row, 7, $"IF(D${totalRow}=0,0,D{row}/D${totalRow})", XlsxStyle.Percent, total == 0 ? 0 : (double)line.Total / total);
         }
 
         var first = firstRow;
         var lastRow = totalRow - 1;
-        sheet.Set(totalRow, 3, "TOTAL", XlsxStyle.Bold);
-        sheet.Formula(totalRow, 4, $"SUM(D{first}:D{lastRow})", XlsxStyle.Integer, male);
-        sheet.Formula(totalRow, 5, $"SUM(E{first}:E{lastRow})", XlsxStyle.Integer, female);
-        sheet.Formula(totalRow, 6, $"SUM(F{first}:F{lastRow})", XlsxStyle.Integer, total);
-        sheet.Formula(totalRow, 7, $"SUM(G{first}:G{lastRow})", XlsxStyle.Percent, male == 0 ? 0 : 1);
-        sheet.Formula(totalRow, 8, $"SUM(H{first}:H{lastRow})", XlsxStyle.Percent, female == 0 ? 0 : 1);
-        sheet.Formula(totalRow, 9, $"SUM(I{first}:I{lastRow})", XlsxStyle.Percent, total == 0 ? 0 : 1);
+        sheet.Set(totalRow, 1, "TOTAL", XlsxStyle.Bold);
+        sheet.Formula(totalRow, 2, $"SUM(B{first}:B{lastRow})", XlsxStyle.Integer, male);
+        sheet.Formula(totalRow, 3, $"SUM(C{first}:C{lastRow})", XlsxStyle.Integer, female);
+        sheet.Formula(totalRow, 4, $"SUM(D{first}:D{lastRow})", XlsxStyle.Integer, total);
+        sheet.Formula(totalRow, 5, $"SUM(E{first}:E{lastRow})", XlsxStyle.Percent, male == 0 ? 0 : 1);
+        sheet.Formula(totalRow, 6, $"SUM(F{first}:F{lastRow})", XlsxStyle.Percent, female == 0 ? 0 : 1);
+        sheet.Formula(totalRow, 7, $"SUM(G{first}:G{lastRow})", XlsxStyle.Percent, total == 0 ? 0 : 1);
     }
 
     /// <summary>The rule in words: one sheet at the end of the workbook, for the course (or the courses) in it.</summary>

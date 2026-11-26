@@ -25,12 +25,31 @@ public sealed class AdmissionInput
     public string? GuardianRelationship { get; set; }
     public string? GuardianPhone { get; set; }
     public string? GuardianAddress { get; set; }
+
+    /// <summary>Round 47: the strand the student wants.</summary>
+    public int? StrandId { get; set; }
 }
 
 /// <summary>A line of the list of the Admission staff and of the list the registrar chooses from.</summary>
-public sealed record AdmissionRow(int Id, byte GradeLevel, string Lrn, string FullName, string? ParentsText, int DocumentsReceived, bool Enrolled, DateTime CreatedAtUtc);
+public sealed record AdmissionRow(int Id, byte GradeLevel, string Lrn, string FullName, string? ParentsText, int DocumentsReceived, bool Enrolled, DateTime CreatedAtUtc,
+    string? Strand = null, string? Section = null, string? Phone = null, int? StrandId = null);
+
+/// <summary>A strand to choose when a student is recorded.</summary>
+public sealed record AdmissionStrand(int Id, string Code, string Name, string TrackCode);
 
 public sealed record AdmissionDocumentRow(int Id, string Kind, string? FileName, long SizeBytes, DateTime ReceivedAtUtc);
+
+/// <summary>
+/// Round 47: one line of the documents of a student: the kind (always there, nothing to choose), and what the school has of it: nothing, the paper in hand (the date), or a document (a photo or a scan,
+/// which can be seen in a box).
+/// </summary>
+public sealed record AdmissionDocumentSlot(string Kind, int? DocumentId, bool InHand, bool HasFile, string? FileName, string? ContentType, DateTime? ReceivedAtUtc)
+{
+    public bool IsImage => ContentType is { } type && type.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>"No document", "Paper in hand" or "Document" (a photo counts as a document).</summary>
+    public string State => HasFile ? "Document" : InHand ? "Paper in hand" : "No document";
+}
 
 /// <summary>What the registrar needs of a recorded student: the names, the phone, the parents and the guardian (the printable form fills them in by itself).</summary>
 public sealed record AdmissionDetails(
@@ -92,8 +111,24 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
             query = query.Where(r => r.FirstName.Contains(t) || r.LastName.Contains(t) || r.Lrn.Contains(t));
         }
 
-        var rows = await query.OrderByDescending(r => r.CreatedAtUtc).ThenBy(r => r.LastName).Take(300).Include(r => r.Documents).ToListAsync(ct);
-        return [.. rows.Select(r => new AdmissionRow(r.Id, r.GradeLevel, r.Lrn, FullName(r), Parents(r), r.Documents.Count, r.EnrolledAtUtc is not null, r.CreatedAtUtc))];
+        var rows = await query.OrderBy(r => r.LastName).ThenBy(r => r.FirstName).Take(600).Include(r => r.Documents).Include(r => r.Strand).ToListAsync(ct);
+
+        // Round 47: the strand and the section of a student who is enrolled come from the enrollment; before that the strand is the one the Admission staff chose and there is no section yet.
+        var lrns = rows.Select(r => r.Lrn).ToList();
+        var placed = await db.Students.AsNoTracking().Where(s => lrns.Contains(s.Lrn) && s.StrandId != null)
+            .Select(s => new { s.Lrn, StrandCode = db.Strands.Where(x => x.Id == s.StrandId).Select(x => x.Code).FirstOrDefault(), SectionName = db.Sections.Where(x => x.Id == s.SectionId).Select(x => x.Name).FirstOrDefault() })
+            .ToListAsync(ct);
+        var byLrn = placed.ToDictionary(p => p.Lrn);
+        return [.. rows.Select(r => new AdmissionRow(r.Id, r.GradeLevel, r.Lrn, FullName(r), Parents(r), r.Documents.Select(d => d.Kind).Distinct().Count(), r.EnrolledAtUtc is not null, r.CreatedAtUtc,
+            byLrn.TryGetValue(r.Lrn, out var p) ? p.StrandCode : r.Strand?.Code, byLrn.TryGetValue(r.Lrn, out var q) ? q.SectionName : null, PhoneNumbers.ToLocal(r.PhoneNumber), r.StrandId))];
+    }
+
+    /// <summary>The strands the Admission staff choose from (the active ones, with their track).</summary>
+    public async Task<IReadOnlyList<AdmissionStrand>> ListStrandsAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.Strands.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.Track.Code).ThenBy(s => s.Code)
+            .Select(s => new AdmissionStrand(s.Id, s.Code, s.Name, s.Track.Code)).ToListAsync(ct);
     }
 
     public async Task<AdmissionInput?> GetForEditAsync(int userId, int id, CancellationToken ct = default)
@@ -109,7 +144,7 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         {
             Id = r.Id, Lrn = r.Lrn, FirstName = r.FirstName, MiddleName = r.MiddleName, LastName = r.LastName, NameExtension = r.NameExtension, Sex = r.Sex, PhoneNumber = PhoneNumbers.ToLocal(r.PhoneNumber),
             Address = r.Address, PreviousSchool = r.PreviousSchool, FatherName = r.FatherName, FatherPhone = PhoneNumbers.ToLocal(r.FatherPhone), MotherName = r.MotherName, MotherPhone = PhoneNumbers.ToLocal(r.MotherPhone),
-            GuardianName = r.GuardianName, GuardianRelationship = r.GuardianRelationship, GuardianPhone = PhoneNumbers.ToLocal(r.GuardianPhone), GuardianAddress = r.GuardianAddress,
+            GuardianName = r.GuardianName, GuardianRelationship = r.GuardianRelationship, GuardianPhone = PhoneNumbers.ToLocal(r.GuardianPhone), GuardianAddress = r.GuardianAddress, StrandId = r.StrandId,
         };
     }
 
@@ -204,31 +239,55 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         record.GuardianRelationship = Blank(input.GuardianRelationship);
         record.GuardianPhone = guardianPhone;
         record.GuardianAddress = Blank(input.GuardianAddress);
+        record.StrandId = input.StrandId is { } strandId && await db.Strands.AnyAsync(s => s.Id == strandId && s.IsActive, ct) ? input.StrandId : null;
         await db.SaveChangesAsync(ct);
         return ServiceResult.Ok(input.Id is null ? "The student was recorded." : "The record was saved.", record.Id);
     }
 
     // ---------------------------------------------------------------- the documents
 
-    public async Task<IReadOnlyList<AdmissionDocumentRow>> ListDocumentsAsync(int userId, int recordId, CancellationToken ct = default)
+    /// <summary>What a person may do with the documents of a record: the registrar reads them, the Admission staff of the grade level read and change them.</summary>
+    private async Task<(bool Read, bool Write)> AccessAsync(AppDbContext db, int userId, byte grade, CancellationToken ct)
+    {
+        if ((await GradesOfAsync(userId, ct)).Contains(grade))
+        {
+            return (true, true);
+        }
+
+        var role = await db.Users.AsNoTracking().Where(u => u.Id == userId && u.IsActive).Select(u => u.Role.Name).FirstOrDefaultAsync(ct);
+        return (role == AppRoles.Registrar && await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId && u.CustomRoleId == null, ct), false);
+    }
+
+    /// <summary>The documents of a student: a line for each kind (also the ones with nothing), in the same order for everybody.</summary>
+    public async Task<IReadOnlyList<AdmissionDocumentSlot>> GetDocumentSlotsAsync(int userId, int recordId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var grade = await db.AdmissionRecords.AsNoTracking().Where(r => r.Id == recordId).Select(r => (byte?)r.GradeLevel).FirstOrDefaultAsync(ct);
-        if (grade is null || !(await GradesOfAsync(userId, ct)).Contains(grade.Value))
+        if (grade is null || !(await AccessAsync(db, userId, grade.Value, ct)).Read)
         {
             return [];
         }
 
-        return await db.AdmissionDocuments.AsNoTracking().Where(d => d.RecordId == recordId).OrderBy(d => d.Kind).ThenBy(d => d.Id)
-            .Select(d => new AdmissionDocumentRow(d.Id, d.Kind, d.FileName, d.SizeBytes, d.ReceivedAtUtc)).ToListAsync(ct);
+        var docs = await db.AdmissionDocuments.AsNoTracking().Where(d => d.RecordId == recordId)
+            .Select(d => new { d.Id, d.Kind, d.FileName, d.ContentType, HasFile = d.Data != null, d.ReceivedAtUtc }).ToListAsync(ct);
+        return [.. AdmissionDocumentKinds.All.Select(kind =>
+        {
+            var mine = docs.Where(d => d.Kind == kind).OrderByDescending(d => d.HasFile).ThenByDescending(d => d.Id).FirstOrDefault();
+            return mine is null
+                ? new AdmissionDocumentSlot(kind, null, false, false, null, null, null)
+                : new AdmissionDocumentSlot(kind, mine.Id, true, mine.HasFile, mine.FileName, mine.ContentType, mine.ReceivedAtUtc);
+        })];
     }
 
-    /// <summary>A document the Admission staff received: only the kind (a paper in hand), or the kind with a scanned copy.</summary>
-    public async Task<ServiceResult> AddDocumentAsync(int userId, int recordId, string kind, string? fileName, string? contentType, byte[]? data, CancellationToken ct = default)
+    /// <summary>
+    /// Sets one document of a student. <paramref name="inHand"/> is the paper in hand; a photo or a scan (<paramref name="data"/>) is kept with it and counts as a document. With no paper in hand and no
+    /// photo the line is empty again. <paramref name="removeFile"/> takes the photo away and keeps the paper in hand.
+    /// </summary>
+    public async Task<ServiceResult> SetDocumentAsync(int userId, int recordId, string kind, bool inHand, string? fileName, string? contentType, byte[]? data, bool removeFile = false, CancellationToken ct = default)
     {
         if (!AdmissionDocumentKinds.All.Contains(kind))
         {
-            return ServiceResult.Fail("Choose the kind of the document.");
+            return ServiceResult.Fail("This kind of document does not exist.");
         }
 
         if (data is not null && data.LongLength > MaxDocumentBytes)
@@ -236,41 +295,68 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
             return ServiceResult.Fail($"The file is bigger than {MaxDocumentBytes / (1024 * 1024)} MB.");
         }
 
+        if (data is not null && (contentType is null || !(contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || contentType == "application/pdf")))
+        {
+            return ServiceResult.Fail("Add a photo (a picture) or a PDF.");
+        }
+
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var grade = await db.AdmissionRecords.AsNoTracking().Where(r => r.Id == recordId).Select(r => (byte?)r.GradeLevel).FirstOrDefaultAsync(ct);
-        if (grade is null || !(await GradesOfAsync(userId, ct)).Contains(grade.Value))
+        if (grade is null || !(await AccessAsync(db, userId, grade.Value, ct)).Write)
         {
             return ServiceResult.Fail("This record was not found.");
         }
 
-        db.AdmissionDocuments.Add(new AdmissionDocument
+        var rows = await db.AdmissionDocuments.Where(d => d.RecordId == recordId && d.Kind == kind).OrderByDescending(d => d.Id).ToListAsync(ct);
+        var doc = rows.FirstOrDefault();
+        foreach (var extra in rows.Skip(1))
         {
-            RecordId = recordId, Kind = kind, FileName = fileName is { Length: > 0 } ? Path.GetFileName(fileName) : null, ContentType = contentType, SizeBytes = (long)(data?.Length ?? 0), Data = data,
-            ReceivedAtUtc = clock.GetUtcNow().UtcDateTime, ReceivedByUserId = userId,
-        });
-        await db.SaveChangesAsync(ct);
-        return ServiceResult.Ok("The document was added.");
-    }
-
-    public async Task<ServiceResult> RemoveDocumentAsync(int userId, int documentId, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var doc = await db.AdmissionDocuments.Include(d => d.Record).FirstOrDefaultAsync(d => d.Id == documentId, ct);
-        if (doc is null || !(await GradesOfAsync(userId, ct)).Contains(doc.Record.GradeLevel))
-        {
-            return ServiceResult.Fail("This document was not found.");
+            db.AdmissionDocuments.Remove(extra);   // one line for each kind
         }
 
-        db.AdmissionDocuments.Remove(doc);
+        var keepsFile = data is not null || (doc?.Data is not null && !removeFile);
+        if (!inHand && !keepsFile)
+        {
+            if (doc is not null)
+            {
+                db.AdmissionDocuments.Remove(doc);
+            }
+
+            await db.SaveChangesAsync(ct);
+            return ServiceResult.Ok("The document was taken out.");
+        }
+
+        if (doc is null)
+        {
+            doc = new AdmissionDocument { RecordId = recordId, Kind = kind, ReceivedAtUtc = clock.GetUtcNow().UtcDateTime, ReceivedByUserId = userId };
+            db.AdmissionDocuments.Add(doc);
+        }
+
+        if (data is not null)
+        {
+            doc.Data = data;
+            doc.FileName = fileName is { Length: > 0 } ? Path.GetFileName(fileName) : null;
+            doc.ContentType = contentType;
+            doc.SizeBytes = data.LongLength;
+        }
+        else if (removeFile)
+        {
+            doc.Data = null;
+            doc.FileName = null;
+            doc.ContentType = null;
+            doc.SizeBytes = 0;
+        }
+
         await db.SaveChangesAsync(ct);
-        return ServiceResult.Ok("The document was taken out.");
+        return ServiceResult.Ok(data is not null ? "The photo was kept." : "The document was saved.");
     }
 
+    /// <summary>The scanned copy or photo of a document, to show in a box: the Admission staff of the grade level and the registrar.</summary>
     public async Task<(string Name, string ContentType, byte[] Data)?> OpenDocumentAsync(int userId, int documentId, CancellationToken ct = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         var doc = await db.AdmissionDocuments.AsNoTracking().Include(d => d.Record).FirstOrDefaultAsync(d => d.Id == documentId && d.Data != null, ct);
-        if (doc is null || !(await GradesOfAsync(userId, ct)).Contains(doc.Record.GradeLevel))
+        if (doc is null || !(await AccessAsync(db, userId, doc.Record.GradeLevel, ct)).Read)
         {
             return null;
         }
@@ -292,7 +378,7 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         var rows = await query.OrderBy(r => r.LastName).ThenBy(r => r.FirstName).Take(300).Include(r => r.Documents).ToListAsync(ct);
-        return [.. rows.Select(r => new AdmissionRow(r.Id, r.GradeLevel, r.Lrn, FullName(r), Parents(r), r.Documents.Count, false, r.CreatedAtUtc))];
+        return [.. rows.Select(r => new AdmissionRow(r.Id, r.GradeLevel, r.Lrn, FullName(r), Parents(r), r.Documents.Select(d => d.Kind).Distinct().Count(), false, r.CreatedAtUtc))];
     }
 
     /// <summary>The record of a student by the LRN (for the enrollment form and the printable form), or nothing.</summary>

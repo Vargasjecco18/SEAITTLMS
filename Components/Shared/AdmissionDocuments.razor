@@ -1,0 +1,237 @@
+@inject AdmissionService Admission
+@inject CurrentUser Me
+
+@* Round 47: the documents of a student, one line for each kind (nothing to choose from a list): the kind at the left, at the center what the school has of it (no document, the paper in hand
+   with its date, or a document: a photo counts as a document) and at the right the buttons: View document (a box that shows the photo or the PDF, nothing is downloaded first), and, for the
+   Admission staff, Add photo and Edit. The registrar sees the same lines to read. *@
+<div class="docs" id="admission-docs" data-record="@RecordId">
+    @if (slots is null)
+    {
+        <p class="muted">Loading…</p>
+    }
+    else if (slots.Count == 0)
+    {
+        <p class="muted">The documents of this student cannot be shown.</p>
+    }
+    else
+    {
+        <p class="doc-count" id="doc-count"><strong>@slots.Count(s => s.HasFile)</strong> of @slots.Count with a document · <strong>@slots.Count(s => s.InHand && !s.HasFile)</strong> paper in hand</p>
+        @if (!string.IsNullOrEmpty(problem))
+        {
+            <p class="warn" role="alert" id="doc-problem">@problem</p>
+        }
+
+        @foreach (var slot in slots)
+        {
+            var s = slot;
+            <div class="doc-row @(s.HasFile ? "has-file" : s.InHand ? "in-hand" : "none")" data-kind="@s.Kind">
+                <span class="doc-kind">@s.Kind</span>
+                <span class="doc-state">
+                    @if (s.HasFile)
+                    {
+                        <Badge Tone="Tone.Success"><Icon Name="@(s.IsImage ? "image" : "file-text")" Size="13" /> Document</Badge>
+                    }
+                    else if (s.InHand)
+                    {
+                        <Badge Tone="Tone.Warning"><Icon Name="clipboard-check" Size="13" /> Paper in hand · @PhilippineTime.FormatDate(s.ReceivedAtUtc ?? DateTime.UtcNow)</Badge>
+                    }
+                    else
+                    {
+                        <Badge Tone="Tone.Neutral">No document</Badge>
+                    }
+                </span>
+                <span class="doc-actions">
+                    @if (s.HasFile && s.DocumentId is { } id)
+                    {
+                        <button type="button" class="act" data-view="@s.Kind" title="@($"View the {s.Kind}")" @onclick="() => viewing = s"><Icon Name="eye" Size="14" /> View document</button>
+                    }
+
+                    @if (CanEdit)
+                    {
+                        @if (!s.HasFile)
+                        {
+                            <label class="act file-act" title="@($"Add a photo of the {s.Kind}")"><Icon Name="camera" Size="14" /> Add photo
+                                <InputFile class="file-hidden" accept="image/*,application/pdf" aria-label="@($"Add a photo of {s.Kind}")" OnChange="e => PhotoChosenAsync(s.Kind, e)" />
+                            </label>
+                        }
+
+                        <button type="button" class="act" data-edit="@s.Kind" title="@($"Edit the {s.Kind}")" @onclick="() => OpenEdit(s)"><Icon Name="pencil" Size="14" /> Edit</button>
+                    }
+                </span>
+            </div>
+        }
+    }
+</div>
+
+@* The document in a box: a picture is shown as it is, a PDF is shown by the browser inside the box. *@
+<Modal Open="viewing is not null" Title="@(viewing?.Kind ?? "Document")" Large="true" Top="true" OnClose="() => viewing = null">
+    @if (viewing is { DocumentId: { } docId } doc)
+    {
+        <div class="doc-viewer" id="doc-viewer">
+            @if (doc.IsImage)
+            {
+                <img src="@($"files/admission/{docId}?inline=1")" alt="@doc.Kind" />
+            }
+            else
+            {
+                <iframe title="@doc.Kind" src="@($"files/admission/{docId}?inline=1")"></iframe>
+            }
+        </div>
+        <div class="viewer-actions">
+            <a class="act" href="@($"files/admission/{docId}?inline=1")" target="_blank" rel="noopener"><Icon Name="external-link" Size="14" /> Open in a new tab</a>
+            <Button OnClick="() => viewing = null">Close</Button>
+        </div>
+    }
+</Modal>
+
+@if (CanEdit)
+{
+    <Modal Open="editing is not null" Title="@($"Edit · {editing?.Kind}")" Centered="true" Top="true" OnClose="() => editing = null">
+        @if (editing is { } e2)
+        {
+            <label class="check-line" for="doc-inhand"><input id="doc-inhand" type="checkbox" @bind="editInHand" /> <span>The paper is in hand@(e2.ReceivedAtUtc is { } at ? $" (since {PhilippineTime.FormatDate(at)})" : "")</span></label>
+            <Field For="doc-file" Label="Photo or scan" Hint="@(e2.HasFile ? "A photo is kept. Choose a file to change it." : "A picture or a PDF, up to 10 MB. A photo counts as a document.")">
+                <InputFile id="doc-file" accept="image/*,application/pdf" OnChange="FileForEditAsync" />
+            </Field>
+            @if (editFileName is not null)
+            {
+                <p class="chosen">@editFileName</p>
+            }
+
+            @if (e2.HasFile)
+            {
+                <label class="check-line" for="doc-removefile"><input id="doc-removefile" type="checkbox" @bind="editRemoveFile" /> <span>Take the photo away</span></label>
+            }
+
+            <div class="viewer-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="() => editing = null">Cancel</Button>
+                <Button IconName="circle-check" Disabled="busy" OnClick="SaveEditAsync">@(busy ? "Saving…" : "Save")</Button>
+            </div>
+        }
+    </Modal>
+}
+
+@code {
+    /// <summary>The record of the student (the line of admission_records).</summary>
+    [Parameter, EditorRequired] public int RecordId { get; set; }
+
+    /// <summary>True for the Admission staff (they add photos and edit); false for the registrar (the lines are only read).</summary>
+    [Parameter] public bool CanEdit { get; set; }
+
+    /// <summary>Called after a change, so the page that has the list can show the new count.</summary>
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private IReadOnlyList<AdmissionDocumentSlot>? slots;
+    private AdmissionDocumentSlot? viewing;
+    private AdmissionDocumentSlot? editing;
+    private bool editInHand;
+    private bool editRemoveFile;
+    private string? editFileName;
+    private byte[]? editData;
+    private string? editContentType;
+    private bool busy;
+    private string? problem;
+    private int loadedFor = -1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loadedFor != RecordId)
+        {
+            loadedFor = RecordId;
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        var me = await Me.GetAsync();
+        slots = me is null ? [] : await Admission.GetDocumentSlotsAsync(me.UserId, RecordId);
+    }
+
+    private async Task<(byte[]? Data, string? Type, string? Error)> ReadAsync(IBrowserFile file)
+    {
+        if (file.Size > AdmissionService.MaxDocumentBytes)
+        {
+            return (null, null, $"The file is bigger than {AdmissionService.MaxDocumentBytes / (1024 * 1024)} MB.");
+        }
+
+        await using var stream = file.OpenReadStream(AdmissionService.MaxDocumentBytes);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        return (memory.ToArray(), file.ContentType, null);
+    }
+
+    /// <summary>The "Add photo" button of a line: the photo is kept at once (and the paper is in hand too).</summary>
+    private async Task PhotoChosenAsync(string kind, InputFileChangeEventArgs e)
+    {
+        problem = null;
+        var me = await Me.GetAsync();
+        if (me is null) { return; }
+        try
+        {
+            var (data, type, error) = await ReadAsync(e.File);
+            if (error is not null) { problem = error; return; }
+            var result = await Admission.SetDocumentAsync(me.UserId, RecordId, kind, inHand: true, e.File.Name, type, data);
+            problem = result.Succeeded ? null : string.Join(" ", result.Errors);
+        }
+        catch (IOException)
+        {
+            problem = "The file could not be read.";
+        }
+
+        await LoadAsync();
+        await OnChanged.InvokeAsync();
+    }
+
+    private void OpenEdit(AdmissionDocumentSlot slot)
+    {
+        problem = null;
+        editing = slot;
+        editInHand = slot.InHand;
+        editRemoveFile = false;
+        editFileName = null;
+        editData = null;
+        editContentType = null;
+    }
+
+    private async Task FileForEditAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var (data, type, error) = await ReadAsync(e.File);
+            if (error is not null) { problem = error; return; }
+            editData = data;
+            editContentType = type;
+            editFileName = e.File.Name;
+            editInHand = true;
+        }
+        catch (IOException)
+        {
+            problem = "The file could not be read.";
+        }
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (busy || editing is not { } slot) { return; }
+        busy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            if (me is null) { return; }
+            var result = await Admission.SetDocumentAsync(me.UserId, RecordId, slot.Kind, editInHand, editFileName, editContentType, editData, editRemoveFile);
+            problem = result.Succeeded ? null : string.Join(" ", result.Errors);
+            if (result.Succeeded)
+            {
+                editing = null;
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+
+        await LoadAsync();
+        await OnChanged.InvokeAsync();
+    }
+}

@@ -12,9 +12,16 @@
     var now = PhilippineTime.Now(Clock);
 }
 
-<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {title}")" IconName="layout-dashboard" />
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {title}")" IconName="layout-dashboard">
+    <CurrentTermBadge />
+</PageHeader>
 
-@if (pages.Count == 0)
+@if (isAdmission)
+{
+    @* Round 47: the Admission staff see the students of their grade level here, not buttons to their pages. *@
+    <AdmissionStudents />
+}
+else if (pages.Count == 0)
 {
     <Card>
         <EmptyState IconName="lock" Title="No page yet">
@@ -41,6 +48,7 @@ else
 
     private string title = "staff";
     private IReadOnlyList<StaffPage> pages = [];
+    private bool isAdmission;
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,5 +56,6 @@ else
         title = user.FindFirstValue(SEAITT_LMS.Auth.AppClaimTypes.RoleTitle)?.ToLowerInvariant() ?? "staff";
         var keys = StaffAccess.PagesOf(user);
         pages = [.. StaffPages.All.Where(p => keys.Contains(p.Key))];
+        isAdmission = pages.Any(p => p.Area == AppRoles.Admission);
     }
 }

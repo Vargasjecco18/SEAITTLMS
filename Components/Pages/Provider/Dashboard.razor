@@ -12,7 +12,9 @@
 }
 
 <PageHeader Title="@($"{PhilippineTime.Greeting(now)}, {name ?? "provider"}")"
-            IconName="layout-dashboard" />
+            IconName="layout-dashboard">
+    <CurrentTermBadge />
+</PageHeader>
 
 <TermEndedNotice />
 

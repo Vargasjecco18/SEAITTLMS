@@ -276,14 +276,14 @@ public static class ItemSheets
         var lastQuestion = Math.Max(TemplateRows + 1, questions.Count + 2);
         sheet.Tip($"A2:A{lastQuestion}", "Type the question (needed).").Tip($"C2:C{lastQuestion}", "Multiple choice only: type the choices with a semicolon between them, like Asset; Liability; Income.")
             .Tip($"D2:D{lastQuestion}", "Type the right answer: the right choice (or its letter), True or False, or the answer. Other accepted answers go after a | sign.");
-        sheet.Number($"E2:E{lastQuestion}", 0.01m, 100, "Type the points, from 0.01 to 100. Leave it empty for 1.");
+        sheet.Number($"E2:E{lastQuestion}", 1m, 100, "Type the points, a whole number from 1 to 100. Leave it empty for 1.");
         TemplateGuide.Add(book, "How to fill the Questions sheet",
         [
             new("Questions", "Question", "Needed", "The question the students read.", TemplateGuide.TypeIt),
             new("Questions", "Type", "Needed", "Multiple choice, True or false, Short answer, Identification, Fill in the blank, Matching type, Multiple select or Essay.", "Choose it from the list."),
             new("Questions", "Choices", "Multiple choice only", "The choices, at least two, like Asset; Liability; Income.", TemplateGuide.Semicolons),
             new("Questions", "Right answer", "Needed", "Multiple choice: the right choice (or its letter, A for the first). True or false: True or False. Short answer: the answer; other accepted answers go after a | sign.", TemplateGuide.TypeIt),
-            new("Questions", "Points", "Optional", "From 0.01 to 100. Empty: 1.", TemplateGuide.TypeNumber),
+            new("Questions", "Points", "Optional", "A whole number from 1 to 100. Empty: 1.", TemplateGuide.TypeNumber),
         ],
             $"At most {MaxQuestions} questions.",
             "The questions are added to the list; then press Save questions.");

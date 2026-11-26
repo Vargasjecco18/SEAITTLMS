@@ -229,29 +229,6 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
         return await db.Terms.AsNoTracking().Where(t => t.IsCurrent).Select(t => (int?)t.TermNumber).FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>
-    /// The Hide button of the Course library: hides a course of a strand (in a grade level and term) from the library list, or shows it again. Nothing else changes: the course stays in the curriculum,
-    /// its material stays, and the classes keep going.
-    /// </summary>
-    public async Task<ServiceResult> SetLibraryCourseHiddenAsync(int userId, int subjectId, int strandId, byte gradeLevel, byte termNumber, bool hidden, CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        if (!await IsProviderAsync(db, userId, ct))
-        {
-            return ServiceResult.Fail(ProviderOnly);
-        }
-
-        var line = await db.StrandSubjects.Include(x => x.Subject).FirstOrDefaultAsync(x => x.SubjectId == subjectId && x.StrandId == strandId && x.GradeLevel == gradeLevel && x.TermNumber == termNumber, ct);
-        if (line is null)
-        {
-            return ServiceResult.Fail("This course is not in the library any more.");
-        }
-
-        line.LibraryHiddenAtUtc = hidden ? clock.GetUtcNow().UtcDateTime : null;
-        await db.SaveChangesAsync(ct);
-        return ServiceResult.Ok(hidden ? $"{line.Subject.Name} is hidden from the library list. Choose Hidden in the list at the right of the courses to show it again." : $"{line.Subject.Name} is shown in the library list again.");
-    }
-
     /// <summary>The terms a strand studies in (1st Term, 2nd Term ...), for the provider to choose from after choosing a strand.</summary>
     public async Task<IReadOnlyList<LibraryTerm>> ListStrandTermsAsync(int strandId, CancellationToken ct = default)
     {

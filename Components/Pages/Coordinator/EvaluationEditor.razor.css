@@ -454,3 +454,136 @@
 .sheet-open {
     margin: 0 0 0.6rem;
 }
+
+/* Round 47: a more modern editor of the questions: a card with a colored edge (the color of the kind of answer), the question written like a title with a line under it, round selects, and options with a soft box. */
+.date-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 0.9rem;
+}
+
+@media (max-width: 640px) {
+    .date-pair {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.question {
+    position: relative;
+    gap: 0.85rem;
+    padding: 1rem 1.1rem 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--tone-text, var(--brand));
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.question:focus-within {
+    border-color: var(--brand);
+    border-left-color: var(--tone-text, var(--brand));
+    box-shadow: 0 0 0 3px var(--brand-ring), var(--shadow);
+}
+
+.number {
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    background: var(--tone-bg, var(--brand-soft));
+    color: var(--tone-text, var(--brand-strong));
+    font-size: 0.95rem;
+}
+
+.question .q-title {
+    width: 100%;
+    padding: 0.4rem 0.1rem 0.45rem;
+    border: 0;
+    border-bottom: 2px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    resize: vertical;
+    transition: border-color 0.15s;
+}
+
+.question .q-title::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.question .q-title:focus {
+    outline: none;
+    border-bottom-color: var(--accent-yellow);
+}
+
+.question-row select,
+.question-row input[type="text"] {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--field-border);
+    border-radius: 999px;
+    background: var(--surface);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.question-row select:focus,
+.question-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.options {
+    padding: 0.75rem 0.9rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.option input {
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--field-border);
+    border-radius: 999px;
+    background: var(--surface);
+    font: inherit;
+}
+
+.option input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.option-number {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.palette {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+
+.type {
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.type:hover {
+    border-color: var(--accent-yellow);
+    background: var(--accent-yellow-soft);
+}
+
+.preview {
+    padding-top: 0.7rem;
+}

@@ -1,0 +1,35 @@
+@using Microsoft.EntityFrameworkCore
+@using SEAITT_LMS.Data
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject TimeProvider Clock
+
+@* Round 47: the school year and the term that is going on, at the right of the greeting of every dashboard. *@
+@if (text is not null)
+{
+    <span class="term-badge" id="current-term" title="The school year and the term that is going on now">
+        <Icon Name="calendar-days" Size="16" />
+        <span class="term-badge-text"><strong>@schoolYear</strong> <span class="dot" aria-hidden="true">·</span> @term</span>
+    </span>
+}
+
+@code {
+    private string? text;
+    private string schoolYear = "";
+    private string term = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        var today = PhilippineTime.Today(Clock);
+        var current = await db.Terms.AsNoTracking().Where(t => t.IsCurrent)
+            .Select(t => new { t.Name, SchoolYear = t.SchoolYear.Name }).FirstOrDefaultAsync()
+            ?? await db.Terms.AsNoTracking().Where(t => t.StartDate <= today && t.EndDate >= today)
+                .Select(t => new { t.Name, SchoolYear = t.SchoolYear.Name }).FirstOrDefaultAsync();
+        if (current is not null)
+        {
+            schoolYear = "SY " + current.SchoolYear;
+            term = current.Name;
+            text = schoolYear + " " + term;
+        }
+    }
+}

@@ -1,0 +1,29 @@
+.term-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent-yellow) 55%, var(--border));
+    background: color-mix(in srgb, var(--accent-yellow) 14%, var(--surface));
+    color: var(--text);
+    font-size: 0.92rem;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.term-badge strong {
+    color: var(--brand-strong);
+    font-weight: 700;
+}
+
+.dot {
+    color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+    .term-badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.7rem;
+    }
+}

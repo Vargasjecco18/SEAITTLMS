@@ -10,7 +10,9 @@
     var now = PhilippineTime.Now(Clock);
 }
 
-<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, counselor")" IconName="layout-dashboard" />
+<PageHeader Title="@($"{PhilippineTime.Greeting(now)}, counselor")" IconName="layout-dashboard">
+    <CurrentTermBadge />
+</PageHeader>
 
 <TermEndedNotice />
 

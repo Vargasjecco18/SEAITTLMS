@@ -1,0 +1,63 @@
+.mini-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin: 0 0 0.9rem;
+}
+
+.mini {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    font-size: 0.9rem;
+}
+
+.mini strong {
+    font-size: 1.1rem;
+    color: var(--brand-strong);
+}
+
+.mini.ok strong {
+    color: var(--success);
+}
+
+.mini.wait strong {
+    color: var(--warning);
+}
+
+.see-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    color: var(--brand-strong);
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.see-all:hover {
+    text-decoration: underline;
+}
+
+.who {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 12rem;
+}
+
+.sub {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.more-note {
+    margin: 0.75rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}

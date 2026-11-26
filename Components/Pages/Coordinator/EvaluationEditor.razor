@@ -126,7 +126,7 @@ else
                                 </span>
                             </div>
 
-                            <textarea id="@($"q{index}-text")" rows="2" placeholder="Write the question" aria-label="@($"Question {index + 1}")" @bind="q.Text" @bind:event="oninput"></textarea>
+                            <textarea id="@($"q{index}-text")" class="q-title" rows="2" placeholder="Write the question here" aria-label="@($"Question {index + 1}")" @bind="q.Text" @bind:event="oninput"></textarea>
 
                             <div class="question-row">
                                 <select aria-label="@($"How the students answer question {index + 1}")" value="@q.Kind" @onchange="e => ChangeKind(q, e.Value?.ToString())">
@@ -207,9 +207,22 @@ else
                 <Field For="e-text" Label="Instructions for the students">
                     <InputTextArea id="e-text" @bind-Value="form.Instructions" rows="3" maxlength="2000" />
                 </Field>
-                <Field For="e-due" Label="Due date" Hint="@(draft ? "Philippine time. You can also choose it when you send." : "Philippine time. The last moment the students can answer.")">
-                    <input id="e-due" type="datetime-local" value="@dueText" @onchange="e => dueText = e.Value?.ToString() ?? string.Empty" />
-                </Field>
+                @* Round 47: the Details have the start date (when the students can start) and the end date (the last moment they can answer). *@
+                <div class="date-pair">
+                    <Field For="e-start" Label="Start date" Hint="@(draft ? "Philippine time. The day and time it is posted. Empty: when you send it." : detail.State == EvaluationStates.Scheduled ? "Philippine time. The students see it from this moment." : "Philippine time. When the students could start.")">
+                        @if (draft)
+                        {
+                            <input id="e-start" type="datetime-local" value="@startText" @onchange="e => startText = e.Value?.ToString() ?? string.Empty" />
+                        }
+                        else
+                        {
+                            <input id="e-start" type="text" readonly value="@(detail.SentAtUtc is { } sent ? PhilippineTime.FormatDateTime(sent) : "—")" />
+                        }
+                    </Field>
+                    <Field For="e-due" Label="End date" Hint="@(draft ? "Philippine time. You can also choose it when you send." : "Philippine time. The last moment the students can answer.")">
+                        <input id="e-due" type="datetime-local" value="@dueText" @onchange="e => dueText = e.Value?.ToString() ?? string.Empty" />
+                    </Field>
+                </div>
                 @if (!draft)
                 {
                     <div class="modal-actions">
@@ -408,6 +421,7 @@ else
     private EvaluationDetail? detail;
     private readonly EvaluationInput form = new();
     private string dueText = "";
+    private string startText = "";
     private List<EvaluationQuestionInput> questions = [];
     private string? message;
     private bool messageIsError;
@@ -592,7 +606,7 @@ else
 
         sendTargets.Clear();
         sending = true;
-        sendStartText = "";
+        sendStartText = startText;
         sendDueText = string.IsNullOrWhiteSpace(dueText)
             ? PhilippineTime.ToInputValue(Clock.GetUtcNow().UtcDateTime.AddDays(7))
             : dueText;

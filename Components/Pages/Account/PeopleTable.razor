@@ -31,11 +31,11 @@
                 var isStaff = person.Role is not (AppRoles.Student or AppRoles.Teacher);
                 <tr data-user="@person.UserId">
                     <td class="c-name">
-                        <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@(isStaff && ShowPlacement ? PeopleService.RoleLabel(person.Role) : person.Role == AppRoles.Teacher && !ShowPlacement ? person.Detail : null)" Online="Presence.IsOnline(person.UserId)" />
+                        <PersonLine UserId="person.UserId" Name="@person.Name" Detail="@(isStaff && ShowPlacement ? person.RoleText : person.Role == AppRoles.Teacher && !ShowPlacement ? person.Detail : null)" Online="Presence.IsOnline(person.UserId)" />
                     </td>
                     @if (!ShowPlacement)
                     {
-                        <td class="c-role">@PeopleService.RoleLabel(person.Role)</td>
+                        <td class="c-role">@person.RoleText</td>
                     }
                     @if (ShowPlacement)
                     {

@@ -791,9 +791,9 @@ public sealed class ModuleService(IDbContextFactory<AppDbContext> dbFactory, Tim
             errors.Add("The instructions can have at most 10,000 characters.");
         }
 
-        if (!ItemKinds.IsQuizLike(input.Kind) && (input.MaxScore <= 0 || input.MaxScore > 1000))
+        if (!ItemKinds.IsQuizLike(input.Kind) && (input.MaxScore < 1 || input.MaxScore > 1000 || input.MaxScore != decimal.Truncate(input.MaxScore)))
         {
-            errors.Add("The highest score must be between 1 and 1000.");
+            errors.Add("The highest score must be a whole number from 1 to 1000.");
         }
 
         if (ItemKinds.IsQuizLike(input.Kind))

@@ -122,7 +122,7 @@ public sealed class GradeService(IDbContextFactory<AppDbContext> dbFactory, Time
                 graded = [];
             }
 
-            // Round 46: the grade of the SEAITT grading system (Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 30%, scaled to 100%).
+            // Round 46: the grade of the SEAITT grading system (Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 15%, scaled to 100%).
             var gradedIds = graded.Select(g => g.ItemId).ToHashSet();
             var result = GradingSystem.Compute(mine.Select(i => new GradeWork(i.Kind, i.Summative, i.MaxScore, gradedIds.Contains(i.Id) ? i.Mine!.Score : null)));
             decimal? percent = result.Running is { } running ? Math.Round(running, 1) : null;

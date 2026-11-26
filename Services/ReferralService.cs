@@ -69,9 +69,9 @@ public static class InterventionTypes
 
     public static readonly string[] All =
     [
-        "Talked with the student",
-        "Called the parents",
-        "Talked with the teacher",
+        "Talk with the student",
+        "Call the parents/guardian",
+        "Talk with the teacher",
         Others,
     ];
 
@@ -80,9 +80,8 @@ public static class InterventionTypes
 }
 
 /// <summary>
-/// The guidance counselor's concerns are attendance and violations only (failing grades and students at risk are the teacher's). The system looks at every student by itself
-/// (every few minutes): an attendance rate under 80% over at least 5 marked days becomes one attendance referral, once. The counselor
-/// can also record a concern (attendance or a violation) for any student of the school.
+/// The guidance counselor's concerns are absenteeism, violations, non-compliance and behavior (failing grades and students at risk are the teacher's). Round 47: the system does not make
+/// referrals by itself any more (absenteeism depends on the teacher): a concern comes from a teacher who refers a student, or from the counselor who records it for any student of the school.
 /// </summary>
 public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, NotificationService notifications, TimeProvider clock)
 {
@@ -149,60 +148,6 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         return list;
-    }
-
-    // ======================================================================= the system makes referrals
-
-    /// <summary>Makes a referral for every problem that has none yet. Returns how many were made. Open referrals get their numbers brought up to date.</summary>
-    public async Task<int> EvaluateAsync(CancellationToken ct = default)
-    {
-        await using var db = await dbFactory.CreateDbContextAsync(ct);
-        var now = clock.GetUtcNow().UtcDateTime;
-        // Failing grades and students at risk are for the teachers; the guidance counselor gets the attendance problems.
-        var findings = FindingsOf(await StudentMetrics.LoadAsync(db, now, null, null, ct)).Where(f => f.Reason == ReferralReasons.LowAttendance).ToList();
-
-        var students = findings.Select(f => f.StudentId).Distinct().ToList();
-        var coolDownStart = now.AddDays(-CoolDownDays);
-        var open = await db.Referrals.Where(r => students.Contains(r.StudentId) && (r.Status != ReferralStatus.Resolved || r.ResolvedAtUtc >= coolDownStart)).ToListAsync(ct);
-        var byKey = open.Where(r => r.AssignmentId is not null).GroupBy(r => (r.StudentId, r.AssignmentId!.Value, r.Reason)).ToDictionary(g => g.Key, g => g.First());
-
-        var created = new List<(int StudentId, string Detail)>();
-        foreach (var f in findings)
-        {
-            if (byKey.TryGetValue((f.StudentId, f.AssignmentId, f.Reason), out var existing))
-            {
-                if (existing.Status != ReferralStatus.Resolved)
-                {
-                    existing.Detail = f.Detail;
-                    existing.Metric = f.Metric;
-                }
-
-                continue;
-            }
-
-            db.Referrals.Add(new Referral { StudentId = f.StudentId, AssignmentId = f.AssignmentId, Reason = f.Reason, Detail = f.Detail, Metric = f.Metric });
-            created.Add((f.StudentId, f.Detail));
-        }
-
-        await db.SaveChangesAsync(ct);
-
-        if (created.Count > 0)
-        {
-            var counselors = await db.Users.AsNoTracking().Where(u => u.IsActive && u.RoleId == AppRoles.GuidanceCounselorId).Select(u => u.Id).ToListAsync(ct);
-            var names = await db.Students.AsNoTracking().Where(s => created.Select(c => c.StudentId).Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.LastName + ", " + s.FirstName, ct);
-            if (created.Count == 1)
-            {
-                var (studentId, detail) = created[0];
-                await notifications.AddForManyAsync(counselors, "referral", $"New referral: {names[studentId]}", detail, "guidance/referrals", ct);
-            }
-            else
-            {
-                var sample = string.Join("; ", created.Select(c => names[c.StudentId]).Distinct().Take(3));
-                await notifications.AddForManyAsync(counselors, "referral", $"{created.Count} new referrals", sample + (created.Select(c => c.StudentId).Distinct().Count() > 3 ? " and more" : ""), "guidance/referrals", ct);
-            }
-        }
-
-        return created.Count;
     }
 
     // ======================================================================= what the counselor sees
@@ -626,7 +571,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
         }
 
         await db.SaveChangesAsync(ct);
-        await notifications.AddAsync(open[0].Student.UserId, "referral", "Your guidance counselor closed your case", "They think things are better now. You can always go to them again.", null, ct);
+        await notifications.AddAsync(open[0].Student.UserId, "guidance", "Your guidance counselor closed your case", "They think things are better now. You can always go to them again.", null, ct);
         return ServiceResult.Ok($"{open[0].Student.LastName}, {open[0].Student.FirstName}: solved.");
     }
 
@@ -723,7 +668,7 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
             var about = referral.Assignment is null ? "" : $"About {referral.Assignment.Subject.Name}. ";
             if (status == ReferralStatus.Resolved)
             {
-                await notifications.AddAsync(referral.Student.UserId, "referral", "Your guidance counselor closed your case",
+                await notifications.AddAsync(referral.Student.UserId, "guidance", "Your guidance counselor closed your case",
                     about + "They think things are better now. You can always go to them again.", null, ct);
             }
             else if (status == ReferralStatus.InProgress)

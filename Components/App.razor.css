@@ -37,6 +37,19 @@ html {
     --btn-bg-hover: #083a82;
     --on-brand: #ffffff;
 
+    /* Round 47: the top bar and the menu at the left have their own colors, so a look can dress them differently from the page (the Default look has a deep blue bar and menu with the yellow of SEAITT).
+       Every other look leaves them the color of the cards. */
+    --chrome-header-bg: var(--surface);
+    --chrome-side-bg: var(--surface);
+    --chrome-text: var(--text);
+    --chrome-muted: var(--text-muted);
+    --chrome-border: var(--border);
+    --chrome-hover: var(--surface-2);
+    --chrome-card-bg: var(--surface-2);
+    --chrome-active-bg: var(--brand-soft);
+    --chrome-active-text: var(--brand-strong);
+    --chrome-accent: var(--brand);
+
     /* Meaning: success, info, warning, danger (text color and soft background) */
     --success: #166534;
     --success-soft: #dcfce7;
@@ -138,74 +151,8 @@ html[data-theme="light"] {
     color-scheme: light;
 }
 
-/* More appearances to choose from in the settings (data-theme="ocean", "forest", "sunset", "paper" and "midnight"). Each one changes the page and card colors and the brand color, nothing else:
+/* More appearances to choose from in the settings (data-theme="default", "paper" and "midnight"). Each one changes the page and card colors and the brand color, nothing else:
    the meaning colors (success, warning, danger) stay, so a badge says the same thing in every look. */
-html[data-theme="ocean"] {
-    --bg: #e9f5f8;
-    --surface: #ffffff;
-    --surface-2: #dff0f4;
-    --border: #aacdd8;
-    --field-border: #5f8fa0;
-    --text: #0c2a35;
-    --text-muted: #44697a;
-    --brand: #0e7490;
-    --brand-strong: #155e75;
-    --brand-soft: #d3eef5;
-    --brand-ring: rgba(14, 116, 144, 0.3);
-    --brand-gradient: linear-gradient(135deg, #0e7490, #0891b2);
-    --btn-bg: #0e7490;
-    --btn-bg-hover: #155e75;
-    --info: #0e7490;
-    --info-soft: #cffafe;
-    --blue: #0e7490;
-    --blue-soft: #cffafe;
-    color-scheme: light;
-}
-
-html[data-theme="forest"] {
-    --bg: #eef5ee;
-    --surface: #fcfffc;
-    --surface-2: #e3efe3;
-    --border: #b4cdb6;
-    --field-border: #6c8f70;
-    --text: #14281a;
-    --text-muted: #4a6a50;
-    --brand: #2f7d32;
-    --brand-strong: #1f5c24;
-    --brand-soft: #dcefdc;
-    --brand-ring: rgba(47, 125, 50, 0.3);
-    --brand-gradient: linear-gradient(135deg, #2f7d32, #4c9a2a);
-    --btn-bg: #2f7d32;
-    --btn-bg-hover: #1f5c24;
-    --info: #2f7d32;
-    --info-soft: #dcefdc;
-    --blue: #2f7d32;
-    --blue-soft: #dcefdc;
-    color-scheme: light;
-}
-
-html[data-theme="sunset"] {
-    --bg: #fdf1ea;
-    --surface: #fffdfb;
-    --surface-2: #fbe6db;
-    --border: #e4bfae;
-    --field-border: #a97a68;
-    --text: #321a12;
-    --text-muted: #7a5445;
-    --brand: #c2410c;
-    --brand-strong: #9a3412;
-    --brand-soft: #fde4d6;
-    --brand-ring: rgba(194, 65, 12, 0.3);
-    --brand-gradient: linear-gradient(135deg, #c2410c, #db2777);
-    --btn-bg: #c2410c;
-    --btn-bg-hover: #9a3412;
-    --info: #c2410c;
-    --info-soft: #fde4d6;
-    --blue: #c2410c;
-    --blue-soft: #fde4d6;
-    color-scheme: light;
-}
-
 html[data-theme="paper"] {
     --bg: #f4efe4;
     --surface: #fffdf6;
@@ -228,54 +175,40 @@ html[data-theme="paper"] {
     color-scheme: light;
 }
 
-/* Customize appearance (data-theme="custom"): the person chose four colors (--c-bg, --c-surface, --c-text and --c-brand are written on <html> by the server from the cookie, and by wwwroot/app.js
-   when they are changed). Every other color of the look is worked out from them, so the page always hangs together. A dark page (data-custom-scheme="dark") also gets the dark meaning colors. */
-html[data-theme="custom"] {
-    --bg: var(--c-bg, #f4f6fb);
-    --surface: var(--c-surface, #ffffff);
-    --text: var(--c-text, #1b2433);
-    --brand: var(--c-brand, #2563eb);
-    --surface-2: color-mix(in srgb, var(--surface) 90%, var(--text));
-    --border: color-mix(in srgb, var(--surface) 78%, var(--text));
-    --field-border: color-mix(in srgb, var(--surface) 42%, var(--text));
-    --text-muted: color-mix(in srgb, var(--text) 68%, var(--surface));
-    --brand-strong: color-mix(in srgb, var(--brand) 75%, black);
-    --brand-soft: color-mix(in srgb, var(--brand) 14%, var(--surface));
-    --brand-ring: color-mix(in srgb, var(--brand) 32%, transparent);
-    --brand-gradient: linear-gradient(135deg, var(--brand), var(--brand-strong));
-    --btn-bg: var(--brand);
-    --btn-bg-hover: var(--brand-strong);
-    --info: var(--brand);
-    --info-soft: var(--brand-soft);
-    --blue: var(--brand);
-    --blue-soft: var(--brand-soft);
-    color-scheme: var(--c-scheme, light);
-}
-
-html[data-theme="custom"][data-custom-scheme="dark"] {
-    --brand-strong: color-mix(in srgb, var(--brand) 70%, white);
-    --success: #86efac;
-    --success-soft: rgba(34, 197, 94, 0.16);
-    --warning: #fcd34d;
-    --warning-soft: rgba(245, 158, 11, 0.16);
-    --danger: #fca5a5;
-    --danger-soft: rgba(239, 68, 68, 0.18);
-    --danger-solid: #c62828;
-    --danger-solid-hover: #b71c1c;
-    --green: #86efac;
-    --green-soft: rgba(34, 197, 94, 0.16);
-    --amber: #fcd34d;
-    --amber-soft: rgba(245, 158, 11, 0.16);
-    --violet: #c4b5fd;
-    --violet-soft: rgba(139, 92, 246, 0.2);
-    --rose: #fda4af;
-    --rose-soft: rgba(244, 63, 94, 0.16);
-    --teal: #2dd4bf;
-    --teal-soft: rgba(45, 212, 191, 0.16);
-    --slate: #cbd5e1;
-    --slate-soft: rgba(148, 163, 184, 0.16);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+/* Round 47: the Default look, the colors of SEAITT (a deep blue and a yellow), made to look professional for everybody. Like Midnight it changes everything: the page, the cards, the top bar and
+   the menu (a deep blue with the yellow mark of the page you are on), the buttons and the links. The meaning colors (success, warning, danger) stay, so a badge says the same thing in every look. */
+html[data-theme="default"] {
+    --bg: #e8eef9;
+    --surface: #ffffff;
+    --surface-2: #e1eaf7;
+    --border: #aebfdb;
+    --field-border: #5f7aa5;
+    --text: #0d1b38;
+    --text-muted: #435880;
+    --brand: #0b4aa2;
+    --brand-strong: #07336f;
+    --brand-soft: #d9e6fa;
+    --brand-ring: rgba(11, 74, 162, 0.32);
+    --brand-gradient: linear-gradient(135deg, #0a3f8f, #1769d1);
+    --btn-bg: #0b4aa2;
+    --btn-bg-hover: #07336f;
+    --info: #0b4aa2;
+    --info-soft: #d9e6fa;
+    --blue: #0b4aa2;
+    --blue-soft: #d9e6fa;
+    --shadow: 0 1px 2px rgba(10, 33, 77, 0.1), 0 2px 6px rgba(10, 33, 77, 0.1);
+    --shadow-lg: 0 14px 34px rgba(10, 33, 77, 0.18);
+    --chrome-header-bg: linear-gradient(90deg, #07265a, #0b3d86);
+    --chrome-side-bg: linear-gradient(180deg, #0a2b61, #07214b);
+    --chrome-text: #f3f7ff;
+    --chrome-muted: #b9c9e8;
+    --chrome-border: #1b4283;
+    --chrome-hover: rgba(255, 255, 255, 0.1);
+    --chrome-card-bg: rgba(255, 255, 255, 0.08);
+    --chrome-active-bg: rgba(246, 184, 0, 0.18);
+    --chrome-active-text: #ffd24a;
+    --chrome-accent: #ffd24a;
+    color-scheme: light;
 }
 
 html[data-theme="midnight"] {
@@ -970,3 +903,11 @@ html ::deep .ghost.date {
 html ::deep select.ghost {
     cursor: pointer;
 }
+
+/* The hint "Click here to turn on the notification sound" (made by wwwroot/app.js) is never printed: it would sit on the printed enrollment form. */
+@media print {
+    html ::deep #sound-hint {
+        display: none !important;
+    }
+}
+
