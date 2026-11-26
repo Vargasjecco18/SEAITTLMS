@@ -259,6 +259,8 @@
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 0.5rem;
+    /* round 46: with five buttons the row can wrap under the course select: it stays at the right */
+    margin-left: auto;
 }
 
 .cell-box {

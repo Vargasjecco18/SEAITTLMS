@@ -369,19 +369,19 @@ else
         }
     </Card>;
 
-    /// <summary>The students who have an attendance concern and the students who have a violation concern now, each with what was found.</summary>
+    /// <summary>The students who have a concern now (absenteeism, violation, non-compliance or behavioral), each with what was found.</summary>
     private RenderFragment ConcernStudentsCard(AnalyticsReport r) => @<Card Title="Students with a concern" IconName="heart-handshake">
         @{
             var list = r.ConcernStudents ?? [];
         }
         @if (list.Count == 0)
         {
-            <p class="muted">No student has an attendance or a violation concern now.</p>
+            <p class="muted">No student has a concern now (absenteeism, violation, non-compliance or behavioral).</p>
         }
         else
         {
             <div class="concern-groups">
-                @foreach (var reason in new[] { ReferralReasons.LowAttendance, ReferralReasons.Violation })
+                @foreach (var reason in ReferralReasons.All)
                 {
                     var of = list.Where(c => c.Reason == reason).ToList();
                     <section class="concern-group" aria-label="@ReferralReasons.Display(reason)">
