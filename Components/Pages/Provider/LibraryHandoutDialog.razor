@@ -3,7 +3,7 @@
 
 @* A syllabus or a handout of the library in one box (it opens when a row of the course library is pressed): at the left the other handouts of the course (press one to see it), in the center
    the preview of the files of the one that is open, and at the right the form to upload its files (Upload saves and the center shows the file). *@
-<Modal Open="Open && current is not null" Title="@(current is null ? "Handout" : current.IsSyllabus ? $"Syllabus · {Course.Name}" : $"Handout · {Course.Name}")" OnClose="CloseAsync" Full="true">
+<Modal Open="Open && current is not null" Title="@(current is null ? "Handout" : current.IsSyllabus ? $"Syllabus · {Course.Name}" : $"Handout · {Course.Name}")" OnClose="CloseAsync" Cover="true">
     @if (Open && current is { } module)
     {
         <div class="handout-box" data-handout="@module.Id">

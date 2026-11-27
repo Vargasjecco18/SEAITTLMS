@@ -3,7 +3,7 @@
 
 @* Round 47: the documents of a student, one line for each kind (nothing to choose from a list): the kind at the left, at the center what the school has of it (no document, the paper in hand
    with its date, or a document: a photo counts as a document) and at the right the buttons: View document (a box that shows the photo or the PDF, nothing is downloaded first), and, for the
-   Admission staff, Add photo and Edit. The registrar sees the same lines to read. *@
+   Admission staff, Add document and Edit. Round 48: five fixed kinds, then the other documents the Admission staff add by typing a name (button Add other document). The registrar sees the same lines to read. *@
 <div class="docs" id="admission-docs" data-record="@RecordId">
     @if (slots is null)
     {
@@ -24,8 +24,8 @@
         @foreach (var slot in slots)
         {
             var s = slot;
-            <div class="doc-row @(s.HasFile ? "has-file" : s.InHand ? "in-hand" : "none")" data-kind="@s.Kind">
-                <span class="doc-kind">@s.Kind</span>
+            <div class="doc-row @(s.HasFile ? "has-file" : s.InHand ? "in-hand" : "none") @(s.IsOther ? "other" : "")" data-kind="@s.Kind" data-other="@(s.IsOther ? "1" : null)">
+                <span class="doc-kind">@s.Kind@if (s.IsOther) { <small class="other-tag">other</small> }</span>
                 <span class="doc-state">
                     @if (s.HasFile)
                     {
@@ -50,14 +50,22 @@
                     {
                         @if (!s.HasFile)
                         {
-                            <label class="act file-act" title="@($"Add a photo of the {s.Kind}")"><Icon Name="camera" Size="14" /> Add photo
-                                <InputFile class="file-hidden" accept="image/*,application/pdf" aria-label="@($"Add a photo of {s.Kind}")" OnChange="e => PhotoChosenAsync(s.Kind, e)" />
+                            <label class="act file-act" title="@($"Add the document: {s.Kind}")"><Icon Name="file-plus" Size="14" /> Add document
+                                <InputFile class="file-hidden" accept="image/*,application/pdf" aria-label="@($"Add the document: {s.Kind}")" OnChange="e => PhotoChosenAsync(s.Kind, e)" />
                             </label>
                         }
 
                         <button type="button" class="act" data-edit="@s.Kind" title="@($"Edit the {s.Kind}")" @onclick="() => OpenEdit(s)"><Icon Name="pencil" Size="14" /> Edit</button>
                     }
                 </span>
+            </div>
+        }
+
+        @if (CanEdit)
+        {
+            <div class="doc-add-other">
+                <button type="button" class="act" id="doc-add-other" @onclick="OpenOther"><Icon Name="plus" Size="14" /> Add other document</button>
+                <span class="muted">A document that is not in the list: type its name.</span>
             </div>
         }
     }
@@ -90,7 +98,7 @@
         @if (editing is { } e2)
         {
             <label class="check-line" for="doc-inhand"><input id="doc-inhand" type="checkbox" @bind="editInHand" /> <span>The paper is in hand@(e2.ReceivedAtUtc is { } at ? $" (since {PhilippineTime.FormatDate(at)})" : "")</span></label>
-            <Field For="doc-file" Label="Photo or scan" Hint="@(e2.HasFile ? "A photo is kept. Choose a file to change it." : "A picture or a PDF, up to 10 MB. A photo counts as a document.")">
+            <Field For="doc-file" Label="Document (picture or PDF)" Hint="@(e2.HasFile ? "A document is kept. Choose a file to change it." : "A picture or a PDF, up to 10 MB. It counts as a document.")">
                 <InputFile id="doc-file" accept="image/*,application/pdf" OnChange="FileForEditAsync" />
             </Field>
             @if (editFileName is not null)
@@ -100,7 +108,7 @@
 
             @if (e2.HasFile)
             {
-                <label class="check-line" for="doc-removefile"><input id="doc-removefile" type="checkbox" @bind="editRemoveFile" /> <span>Take the photo away</span></label>
+                <label class="check-line" for="doc-removefile"><input id="doc-removefile" type="checkbox" @bind="editRemoveFile" /> <span>Take the document away</span></label>
             }
 
             <div class="viewer-actions">
@@ -111,11 +119,41 @@
     </Modal>
 }
 
+@if (CanEdit)
+{
+    <Modal Open="otherOpen" Title="Add other document" Centered="true" Top="true" OnClose="() => otherOpen = false">
+        @if (otherOpen)
+        {
+            @if (!string.IsNullOrEmpty(otherProblem))
+            {
+                <p class="warn" role="alert" id="other-problem">@otherProblem</p>
+            }
+
+            <Field For="other-name" Label="Name of the document" Required="true" Hint="For example Medical certificate or Baptismal certificate.">
+                <input id="other-name" type="text" maxlength="@AdmissionDocumentKinds.MaxNameLength" autocomplete="off" @bind="otherName" @bind:event="oninput" />
+            </Field>
+            <Field For="other-file" Label="Document (picture or PDF)" Hint="Optional, up to 10 MB. It counts as a document.">
+                <InputFile id="other-file" accept="image/*,application/pdf" OnChange="FileForOtherAsync" />
+            </Field>
+            @if (otherFileName is not null)
+            {
+                <p class="chosen">@otherFileName</p>
+            }
+
+            <label class="check-line" for="other-inhand"><input id="other-inhand" type="checkbox" @bind="otherInHand" /> <span>The paper is in hand</span></label>
+            <div class="viewer-actions">
+                <Button Variant="ButtonVariant.Ghost" OnClick="() => otherOpen = false">Cancel</Button>
+                <Button IconName="circle-check" Disabled="busy" OnClick="SaveOtherAsync">@(busy ? "Saving…" : "Add")</Button>
+            </div>
+        }
+    </Modal>
+}
+
 @code {
     /// <summary>The record of the student (the line of admission_records).</summary>
     [Parameter, EditorRequired] public int RecordId { get; set; }
 
-    /// <summary>True for the Admission staff (they add photos and edit); false for the registrar (the lines are only read).</summary>
+    /// <summary>True for the Admission staff (they add documents and edit); false for the registrar (the lines are only read).</summary>
     [Parameter] public bool CanEdit { get; set; }
 
     /// <summary>Called after a change, so the page that has the list can show the new count.</summary>
@@ -131,6 +169,13 @@
     private string? editContentType;
     private bool busy;
     private string? problem;
+    private bool otherOpen;
+    private string otherName = "";
+    private bool otherInHand = true;
+    private string? otherFileName;
+    private byte[]? otherData;
+    private string? otherContentType;
+    private string? otherProblem;
     private int loadedFor = -1;
 
     protected override async Task OnParametersSetAsync()
@@ -161,7 +206,7 @@
         return (memory.ToArray(), file.ContentType, null);
     }
 
-    /// <summary>The "Add photo" button of a line: the photo is kept at once (and the paper is in hand too).</summary>
+    /// <summary>The "Add document" button of a line: the file is kept at once (and the paper is in hand too).</summary>
     private async Task PhotoChosenAsync(string kind, InputFileChangeEventArgs e)
     {
         problem = null;
@@ -224,6 +269,63 @@
             if (result.Succeeded)
             {
                 editing = null;
+            }
+        }
+        finally
+        {
+            busy = false;
+        }
+
+        await LoadAsync();
+        await OnChanged.InvokeAsync();
+    }
+
+    private void OpenOther()
+    {
+        problem = null;
+        otherProblem = null;
+        otherName = "";
+        otherInHand = true;
+        otherFileName = null;
+        otherData = null;
+        otherContentType = null;
+        otherOpen = true;
+    }
+
+    private async Task FileForOtherAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var (data, type, error) = await ReadAsync(e.File);
+            if (error is not null) { otherProblem = error; return; }
+            otherData = data;
+            otherContentType = type;
+            otherFileName = e.File.Name;
+            otherProblem = null;
+        }
+        catch (IOException)
+        {
+            otherProblem = "The file could not be read.";
+        }
+    }
+
+    private async Task SaveOtherAsync()
+    {
+        if (busy) { return; }
+        busy = true;
+        try
+        {
+            var me = await Me.GetAsync();
+            if (me is null) { return; }
+            var result = await Admission.AddOtherDocumentAsync(me.UserId, RecordId, otherName, otherInHand, otherFileName, otherContentType, otherData);
+            if (result.Succeeded)
+            {
+                otherOpen = false;
+                otherProblem = null;
+            }
+            else
+            {
+                otherProblem = string.Join(" ", result.Errors);
             }
         }
         finally

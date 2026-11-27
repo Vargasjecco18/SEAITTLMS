@@ -17,6 +17,14 @@
     font-weight: 700;
 }
 
+.days-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--warning, var(--text));
+    font-weight: 650;
+}
+
 .dot {
     color: var(--text-muted);
 }

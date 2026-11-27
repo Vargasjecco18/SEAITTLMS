@@ -46,6 +46,12 @@ public class User : AuditableEntity
     /// </summary>
     public string? NotificationSoundChoice { get; set; }
 
+    /// <summary>
+    /// Round 48: the look (appearance) the person chose last: "default", "light", "dark", "midnight", "paper" or "auto". Empty: the person never chose one, so the Default look is used. It is the
+    /// look the account opens with every time the same person signs in (the browser cookie is set from it at sign-in, and cleared at sign-out).
+    /// </summary>
+    public string? Look { get; set; }
+
     public int FailedLoginCount { get; set; }
     public DateTime? LockoutEndUtc { get; set; }
     public DateTime? LastLoginAtUtc { get; set; }

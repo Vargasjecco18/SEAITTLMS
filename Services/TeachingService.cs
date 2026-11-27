@@ -76,9 +76,10 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
             .ToListAsync(ct);
 
         var result = new List<AssignmentRow>();
+        var rosterCounts = await Roster.CountsAsync(db, rows.Select(r => (r.SectionId, r.SubjectId)), ct);
         foreach (var r in rows)
         {
-            var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
+            var students = rosterCounts[(r.SectionId, r.SubjectId)];
             result.Add(new AssignmentRow(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Modules));
         }
 
@@ -235,9 +236,10 @@ public sealed class TeachingService(IDbContextFactory<AppDbContext> dbFactory, T
         }
 
         var cards = new List<TeacherSubjectCard>();
+        var rosterCounts = await Roster.CountsAsync(db, rows.Select(r => (r.SectionId, r.SubjectId)), ct);
         foreach (var r in rows)
         {
-            var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
+            var students = rosterCounts[(r.SectionId, r.SubjectId)];
             cards.Add(new TeacherSubjectCard(r.Id, r.SubjectId, r.SubjectName, r.SectionId, SectionLabel(r.GradeLevel, r.StrandCode, r.SectionName), students, r.Posted, r.Total, r.ToGrade,
                 KindCount(r.Id, ItemKinds.Activity) + KindCount(r.Id, ItemKinds.Seatwork) + KindCount(r.Id, ItemKinds.Recitation) + KindCount(r.Id, ItemKinds.Other), KindCount(r.Id, ItemKinds.Quiz), KindCount(r.Id, ItemKinds.TaskPerformance), r.StrandCode, r.StrandName,
                 Completed(r.StrandId, r.GradeLevel, r.SubjectId, r.SchoolYearId, r.YearEnd)));
@@ -378,4 +380,37 @@ internal static class Roster
 
     public static IQueryable<int> StudentIds(AppDbContext db, int sectionId, int subjectId) =>
         Enrollments(db, sectionId, subjectId).Select(e => e.StudentId).Distinct();
+
+    /// <summary>
+    /// Round 48: the students of many (section, subject) pairs counted with one query, where a loop of
+    /// <see cref="StudentIds"/> counts would send one query for each pair (the dashboards, the course lists and the
+    /// evaluation lists did that for every course they showed). A pair nobody takes is 0.
+    /// </summary>
+    public static async Task<Dictionary<(int SectionId, int SubjectId), int>> CountsAsync(
+        AppDbContext db, IEnumerable<(int SectionId, int SubjectId)> pairs, CancellationToken ct)
+    {
+        var wanted = pairs.Distinct().ToList();
+        var counts = wanted.ToDictionary(p => p, _ => 0);
+        if (wanted.Count == 0)
+        {
+            return counts;
+        }
+
+        var sectionIds = wanted.Select(p => p.SectionId).Distinct().ToList();
+        var subjectIds = wanted.Select(p => p.SubjectId).Distinct().ToList();
+        var found = await db.EnrollmentSubjects.AsNoTracking()
+            .Where(x => x.Enrollment.Status == EnrollmentStatus.Enrolled && sectionIds.Contains(x.Enrollment.SectionId) && subjectIds.Contains(x.SubjectId))
+            .GroupBy(x => new { x.Enrollment.SectionId, x.SubjectId })
+            .Select(g => new { g.Key.SectionId, g.Key.SubjectId, Students = g.Select(x => x.Enrollment.StudentId).Distinct().Count() })
+            .ToListAsync(ct);
+        foreach (var f in found)
+        {
+            if (counts.ContainsKey((f.SectionId, f.SubjectId)))
+            {
+                counts[(f.SectionId, f.SubjectId)] = f.Students;
+            }
+        }
+
+        return counts;
+    }
 }

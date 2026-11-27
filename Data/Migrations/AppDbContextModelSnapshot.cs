@@ -3881,6 +3881,11 @@ namespace SEAITT_LMS.Data.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("lockout_end_utc");
 
+                    b.Property<string>("Look")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("look");
+
                     b.Property<string>("NotificationSoundChoice")
                         .HasMaxLength(16)
                         .HasColumnType("varchar(16)")

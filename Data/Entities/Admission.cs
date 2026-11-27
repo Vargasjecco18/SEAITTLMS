@@ -73,8 +73,15 @@ public static class AdmissionDocumentKinds
     public const string Form137 = "Form 137";
     public const string CertificateOfCompletion = "Certificate of completion (Grade 10)";
     public const string GoodMoral = "Good moral certificate";
-    public const string Photo = "2x2 photo";
-    public const string Other = "Other document";
 
-    public static readonly IReadOnlyList<string> All = [BirthCertificate, ReportCard, Form137, CertificateOfCompletion, GoodMoral, Photo, Other];
+    /// <summary>
+    /// Round 48: the five kinds every student has a line for. There is no "2x2 photo" and no "Other document" any more: the Admission staff add any other document by typing its name
+    /// (a document of a name that is not one of these five is an "other" document; its name is the kind).
+    /// </summary>
+    public static readonly IReadOnlyList<string> All = [BirthCertificate, ReportCard, Form137, CertificateOfCompletion, GoodMoral];
+
+    /// <summary>The longest name of an other document (the column <c>admission_documents.kind</c> has 60 characters).</summary>
+    public const int MaxNameLength = 60;
+
+    public static bool IsFixed(string? kind) => kind is not null && All.Contains(kind);
 }

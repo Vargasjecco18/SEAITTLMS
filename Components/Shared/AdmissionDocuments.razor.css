@@ -42,6 +42,27 @@
     justify-content: center;
 }
 
+/* Round 48: an other document (its name was typed by the Admission staff) says so, small, after its name. */
+.other-tag {
+    margin-left: 0.45rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.doc-add-other {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.25rem;
+}
+
 .doc-actions {
     display: flex;
     flex-wrap: wrap;

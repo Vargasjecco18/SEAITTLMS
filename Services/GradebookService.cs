@@ -30,10 +30,10 @@ public sealed record GradebookCell(int ItemId, string Status, decimal? Score, bo
 
 /// <param name="Percent">The grade as it stands now (the weighted average of the parts that have graded work), or nothing when no work is graded yet.</param>
 /// <param name="FinalGrade">The final grade that was sent to the registrar, when there is one.</param>
-/// <param name="Grade">The grade worked out by the grading system: the percent of each part and the final grade (0 until every score is in).</param>
+/// <param name="Grade">The grade worked out by the grading system: the percent of each part and the final grade (empty until every score is in).</param>
 public sealed record GradebookRow(int StudentId, string Name, string? Lrn, IReadOnlyList<GradebookCell> Cells, decimal? Percent, int ToCheck, decimal? FinalGrade = null, Sex? Sex = null, GradeResult? Grade = null)
 {
-    /// <summary>The final grade the gradebook shows: 0 until every activity, quiz and exam has a score.</summary>
+    /// <summary>The final grade the gradebook shows (round 48): empty until every activity, quiz and exam has a score.</summary>
     public int? Final => Grade?.Final;
 }
 
@@ -47,7 +47,7 @@ public sealed record StudentBook(int AssignmentId, IReadOnlyList<GradebookColumn
 public sealed record SubjectGradebook(
     int AssignmentId, string SubjectName, string SectionLabel, IReadOnlyList<GradebookColumn> Columns, IReadOnlyList<GradebookRow> Rows, decimal? ClassAverage, int Failing, bool GradesHidden = false)
 {
-    /// <summary>Students whose gradebook is not complete yet (a score is missing), so their final grade is 0.</summary>
+    /// <summary>Students whose gradebook is not complete yet (a score is missing), so they have no final grade yet.</summary>
     public int Incomplete => Rows.Count(r => r.Grade is { Complete: false, Total: > 0 });
 
     /// <summary>The two summary tables of the class (descriptors, passed/failed) with male, female and total, for the final grades of all the students.</summary>
@@ -92,7 +92,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
             rows.Add(new GradebookRow(st.StudentId, $"{st.LastName}, {st.FirstName}", st.Lrn, cells, grade.Running, toCheck, finals.TryGetValue(st.StudentId, out var final) ? final : null, st.Sex, grade));
         }
 
-        // The tiles count the students whose gradebook is complete: a student with a score missing has the final grade 0 (it is not a result yet).
+        // The tiles count the students whose gradebook is complete: a student with a score missing has no final grade yet (it is not a result yet).
         var finished = rows.Where(r => r.Grade is { Complete: true }).ToList();
         return new SubjectGradebook(a.Id, a.Subject, TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section), columns, rows,
             finished.Count == 0 ? null : Math.Round(finished.Average(r => (decimal)r.Final!.Value), 1), finished.Count(r => r.Final < GradeRules.PassingPercent), a.GradesHidden);
@@ -274,7 +274,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
 
     /// <summary>
     /// Round 46: the button Send final grades. The final grades are the ones the gradebook worked out (the Final grade column): they are not typed. They go to the registrar (and are kept for the students):
-    /// a student whose gradebook is not complete has the final grade 0, as in the gradebook.
+    /// a student whose gradebook is not complete has no final grade (round 48), so nothing is sent for that student.
     /// </summary>
     public async Task<ServiceResult> SendFinalGradesAsync(int teacherId, int assignmentId, CancellationToken ct = default)
     {
@@ -287,7 +287,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         var grades = book.Rows.Where(r => r.Final is not null).ToDictionary(r => r.StudentId, r => (decimal?)r.Final!.Value);
         if (grades.Count == 0)
         {
-            return ServiceResult.Fail("There is no final grade to send yet: the gradebook has no work.");
+            return ServiceResult.Fail("There is no final grade to send yet: a student has a final grade when every activity, quiz and exam has a score.");
         }
 
         var sent = await SetFinalGradesAsync(teacherId, assignmentId, grades, ct);
@@ -297,7 +297,7 @@ public sealed class GradebookService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         var incomplete = book.Rows.Count(r => r.Grade is { Complete: false, Total: > 0 });
-        var tail = incomplete == 0 ? "" : $" {incomplete} student{(incomplete == 1 ? " has" : "s have")} a score missing, so the final grade sent is 0.";
+        var tail = incomplete == 0 ? "" : $" {incomplete} student{(incomplete == 1 ? " has" : "s have")} a score missing, so no final grade was sent for {(incomplete == 1 ? "that student" : "them")}.";
         return ServiceResult.Ok(sent.Message + tail);
     }
 

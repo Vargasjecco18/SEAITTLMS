@@ -9,27 +9,39 @@
     <span class="term-badge" id="current-term" title="The school year and the term that is going on now">
         <Icon Name="calendar-days" Size="16" />
         <span class="term-badge-text"><strong>@schoolYear</strong> <span class="dot" aria-hidden="true">·</span> @term</span>
+        @if (daysLeft is { } left)
+        {
+            <span class="days-left" id="term-days-left"><span class="dot" aria-hidden="true">·</span> @left @(left == 1 ? "day" : "days") left</span>
+        }
     </span>
 }
 
 @code {
+    /// <summary>Round 48: from this many days before the term ends the badge also says how many days are left (15, 14 ... 0 on the last day).</summary>
+    public const int ShowDaysLeftFrom = 15;
+
     private string? text;
     private string schoolYear = "";
     private string term = "";
+    private int? daysLeft;
 
     protected override async Task OnInitializedAsync()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
         var today = PhilippineTime.Today(Clock);
         var current = await db.Terms.AsNoTracking().Where(t => t.IsCurrent)
-            .Select(t => new { t.Name, SchoolYear = t.SchoolYear.Name }).FirstOrDefaultAsync()
+            .Select(t => new { t.Name, SchoolYear = t.SchoolYear.Name, t.StartDate, t.EndDate }).FirstOrDefaultAsync()
             ?? await db.Terms.AsNoTracking().Where(t => t.StartDate <= today && t.EndDate >= today)
-                .Select(t => new { t.Name, SchoolYear = t.SchoolYear.Name }).FirstOrDefaultAsync();
-        if (current is not null)
+                .Select(t => new { t.Name, SchoolYear = t.SchoolYear.Name, t.StartDate, t.EndDate }).FirstOrDefaultAsync();
+
+        // Round 48: the badge is only there while the term is going on: when it ends (the day after its last day) it is gone.
+        if (current is not null && current.StartDate <= today && current.EndDate >= today)
         {
             schoolYear = "SY " + current.SchoolYear;
             term = current.Name;
             text = schoolYear + " " + term;
+            var left = current.EndDate.DayNumber - today.DayNumber;
+            daysLeft = left <= ShowDaysLeftFrom ? left : null;
         }
     }
 }

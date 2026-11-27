@@ -51,18 +51,8 @@
                     </span>
                 </dd>
             </div>
-        </dl>
-
-        @* Round 46: the parents and the guardian come from the record of the Admission staff, so nobody writes them again. *@
-        <h3 class="part">Parents and guardian</h3>
-        <dl class="details" id="print-parents">
-            <div class="d"><dt>Father</dt><dd>@Or(admission?.FatherName)</dd></div>
-            <div class="d"><dt>Father's phone</dt><dd>@Or(Phone(admission?.FatherPhone))</dd></div>
-            <div class="d"><dt>Mother</dt><dd>@Or(admission?.MotherName)</dd></div>
-            <div class="d"><dt>Mother's phone</dt><dd>@Or(Phone(admission?.MotherPhone))</dd></div>
-            <div class="d"><dt>Guardian@(string.IsNullOrWhiteSpace(admission?.GuardianRelationship) ? "" : $" ({admission!.GuardianRelationship})")</dt><dd>@Or(admission?.GuardianName)</dd></div>
-            <div class="d"><dt>Guardian's phone</dt><dd>@Or(Phone(admission?.GuardianPhone))</dd></div>
-            <div class="d full"><dt>Address</dt><dd>@Or(admission?.GuardianAddress ?? admission?.Address)</dd></div>
+            @* Round 48: the parents' and the guardian's names and phone numbers are not on the form; the name of the one who signs is under the signature line on the back. *@
+            <div class="d full" id="print-address"><dt>Address</dt><dd>@Or(admission?.Address ?? admission?.GuardianAddress)</dd></div>
         </dl>
 
         <h3 class="part">Enrollment details</h3>
@@ -235,7 +225,7 @@
                 <span class="date-line"><span class="date-label">Date</span></span>
             </div>
             <div class="sign">
-                <span class="signed-name">&nbsp;</span>
+                <span class="signed-name" id="print-signer">@(SignerName ?? "\u00A0")</span>
                 <span class="line"></span>
                 <span class="caption">Parent's or guardian's signature over printed name</span>
                 <span class="date-line"><span class="date-label">Date</span></span>
@@ -274,7 +264,15 @@
 
     private static string Or(string? text) => string.IsNullOrWhiteSpace(text) ? "________________" : text;
 
-    private static string? Phone(string? stored) => string.IsNullOrWhiteSpace(stored) ? null : SEAITT_LMS.Auth.PhoneNumbers.ToLocal(stored);
+    /// <summary>The printed name under the signature of the parent or the guardian: the guardian when one is recorded, otherwise the father, otherwise the mother (the record of the Admission staff).</summary>
+    private string? SignerName
+    {
+        get
+        {
+            var name = new[] { admission?.GuardianName, admission?.FatherName, admission?.MotherName }.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+            return name is null ? null : NameCase.Title(name.Trim()).ToUpperInvariant();
+        }
+    }
 
     private string UnitsOf(int n) => Receipt.SubjectUnits is { } units && n < units.Count ? FormatUnits(units[n]) : "—";
 

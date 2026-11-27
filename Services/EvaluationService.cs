@@ -224,9 +224,10 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .ToListAsync(ct);
 
         var result = new List<EvaluationChoice>();
+        var rosterCounts = await Roster.CountsAsync(db, rows.Select(r => (r.SectionId, r.SubjectId)), ct);
         foreach (var r in rows)
         {
-            var students = await Roster.StudentIds(db, r.SectionId, r.SubjectId).CountAsync(ct);
+            var students = rosterCounts[(r.SectionId, r.SubjectId)];
             if (students > 0)
             {
                 result.Add(new EvaluationChoice(
@@ -1141,13 +1142,8 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
     {
         var targets = await db.EvaluationTargets.AsNoTracking().Where(t => t.EvaluationId == evaluationId)
             .Select(t => new { t.Assignment.SectionId, t.Assignment.SubjectId }).ToListAsync(ct);
-        var total = 0;
-        foreach (var t in targets)
-        {
-            total += await Roster.StudentIds(db, t.SectionId, t.SubjectId).CountAsync(ct);
-        }
-
-        return total;
+        var counts = await Roster.CountsAsync(db, targets.Select(t => (t.SectionId, t.SubjectId)), ct);
+        return targets.Sum(t => counts[(t.SectionId, t.SubjectId)]);
     }
 
     private static async Task<decimal?> AverageAsync(IQueryable<EvaluationAnswer> answers, CancellationToken ct)
@@ -1186,9 +1182,10 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
         }
 
         var rows = new List<EvaluationCourseRow>();
+        var rosterCounts = await Roster.CountsAsync(db, targets.Select(t => (t.SectionId, t.SubjectId)), ct);
         foreach (var t in targets)
         {
-            var expected = await Roster.StudentIds(db, t.SectionId, t.SubjectId).CountAsync(ct);
+            var expected = rosterCounts[(t.SectionId, t.SubjectId)];
             var given = responses.FirstOrDefault(r => r.AssignmentId == t.AssignmentId)?.Count ?? 0;
             ratingsByAssignment.TryGetValue(t.AssignmentId, out var list);
             rows.Add(new EvaluationCourseRow(

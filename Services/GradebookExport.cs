@@ -6,7 +6,7 @@ namespace SEAITT_LMS.Services;
 /// The Excel file of a gradebook, worked out with the grading system of SEAITT (Round 46): Written/Oral Works (activities and quizzes) 20%, Performance Task 50%, Summative Test 15%, Term Examination 15% (Round 47).
 /// The sheet "Grades" has a column for every activity, quiz, task performance and exam, then the percent of each of the four parts, the final grade, its descriptor and its remarks, all as live
 /// formulas (change a score and the numbers change). The sheet "Summary" has the two tables of the class: the descriptors (Advancing ... Emerging) and Passed/Failed, with male, female and total.
-/// The sheet "How it is worked out" says the rule in words. A student whose gradebook is not complete (a score is missing) has the final grade 0, as in the gradebook.
+/// The sheet "How it is worked out" says the rule in words. A student whose gradebook is not complete (a score is missing) has no final grade, as in the gradebook (round 48: the grade is 0 based).
 /// The same file can be filled in and imported back (Import class grades): the first columns are Student and LRN and then the code of each column.
 /// </summary>
 public static class GradebookExport
@@ -68,7 +68,7 @@ public static class GradebookExport
         var weights = GradingSystem.Weights;
 
         grades.Set(1, 1, $"Gradebook · {book.SubjectName} · {book.SectionLabel}", XlsxStyle.Title);
-        grades.Set(2, 1, $"Grading system: {GradingSystem.Describe()}. Each part is points earned ÷ points possible of its work; the final grade is the weighted average scaled to 100% and is 0 until every score is in. The formulas are alive.", XlsxStyle.Note);
+        grades.Set(2, 1, $"Grading system: {GradingSystem.Describe()}. Each part is points earned ÷ points possible of its work; the grade is 0 based (a part with no scores counts 0, nothing is scaled up) and the final grade is empty until every score is in. The formulas are alive.", XlsxStyle.Note);
 
         // The titles of the columns: the code, the part, the name of the work and its highest score.
         grades.Row(4, ["Student", "LRN"], XlsxStyle.Header);
@@ -130,13 +130,13 @@ public static class GradebookExport
                 grades.Formula(row, partColumn[part], $"IF({possible}=0,\"\",ROUND({earned}/{possible}*100,2))", XlsxStyle.Decimal, cached is { } p ? (double)p : null);
             }
 
-            // the final grade: 0 until every column has a score, then the weighted average scaled to 100% (only the parts that have scored work count), rounded to a whole number
+            // the final grade (round 48, 0 based): empty until every column has a score, then each part counts out of its full weight (a part with no scored work counts 0) and the total is rounded to a whole number
             var cellOf = GradingSystem.Parts.ToDictionary(part => part, part => XlsxSheet.Ref(row, partColumn[part]));
             var weightOf = GradingSystem.Parts.ToDictionary(part => part, part => $"{XlsxSheet.ColumnName(partColumn[part])}${MaxRowOfHeader}");
             var top = string.Join("+", GradingSystem.Parts.Select(part => $"IF({cellOf[part]}=\"\",0,{cellOf[part]}*{weightOf[part]})"));
-            var bottom = string.Join("+", GradingSystem.Parts.Select(part => $"IF({cellOf[part]}=\"\",0,{weightOf[part]})"));
+            var bottom = string.Join("+", GradingSystem.Parts.Select(part => weightOf[part]));
             var finalCell = XlsxSheet.Ref(row, finalColumn);
-            var finalFormula = n == 0 ? "\"\"" : $"IF(COUNT({scores})<{n},0,IF(({bottom})=0,0,ROUND(({top})/({bottom}),0)))";
+            var finalFormula = n == 0 ? "\"\"" : $"IF(COUNT({scores})<{n},\"\",IF(({bottom})=0,0,ROUND(({top})/({bottom}),0)))";
             grades.Formula(row, finalColumn, finalFormula, XlsxStyle.BoldDecimal, student.Final is { } f ? (double)f : null);
             grades.Formula(row, descriptorColumn, $"IF({finalCell}=\"\",\"\",IF({finalCell}>=90,\"Advancing\",IF({finalCell}>=80,\"Benchmarking\",IF({finalCell}>=75,\"Connecting\",IF({finalCell}>=65,\"Developing\",\"Emerging\")))))", XlsxStyle.Normal);
             grades.Formula(row, remarksColumn, $"IF({finalCell}=\"\",\"\",IF({finalCell}>=75,\"PASSED\",\"FAILED\"))", XlsxStyle.Normal);
@@ -154,7 +154,7 @@ public static class GradebookExport
         var (descriptorLines, remarkLines, male, female, total) = book.Summary;
 
         summary.Set(1, 1, $"Summary of the final grades · {book.SubjectName} · {book.SectionLabel}", XlsxStyle.Title);
-        summary.Set(2, 1, "Worked out with formulas from the sheet Grades. A student whose gradebook is not complete has the final grade 0.", XlsxStyle.Note);
+        summary.Set(2, 1, "Worked out with formulas from the sheet Grades. A student whose gradebook is not complete has no final grade yet, so he or she is not in these tables.", XlsxStyle.Note);
 
         var r1 = 4;
         summary.Row(r1, ["DESCRIPTOR", "MALE", "FEMALE", "TOTAL", "% MALE", "% FEMALE", "% TOTAL"], XlsxStyle.Header);
@@ -212,8 +212,8 @@ public static class GradebookExport
         {
             $"1. A grade has four parts: Written/Oral Works (the activities and the quizzes) {w.WrittenOral:0.##}%, Performance Task {w.Performance:0.##}%, Summative Test (the summative exam) {w.Summative:0.##}% and Term Examination (TE) {w.TermExam:0.##}%.",
             "2. The percent of a part = the points earned ÷ the points possible of the work of that part that has a score, × 100.",
-            "3. The final grade = the weighted average of the percent of the parts, scaled to 100% (each weight ÷ the total of the weights), rounded to a whole number. A part with no work in the gradebook is left out.",
-            "4. The final grade is 0 until every activity, quiz and exam of the gradebook has a score for the student. It is worked out only when all of them are in.",
+            "3. The grade is 0 based: the final grade = the percent of each part × its weight, added up (the four weights make 100) and rounded to a whole number. A part with no scores counts 0; nothing is scaled up.",
+            "4. The final grade is empty until every activity, quiz and exam of the gradebook has a score for the student. It is worked out only when all of them are in, and then the grade is 0 based: each part counts out of its full weight, and a part with no scores counts 0 (nothing is scaled up).",
             "5. A quiz or an exam with questions is checked by the system; only an essay is scored by the teacher.",
             "6. Descriptors: 90-100 Advancing, 80-89 Benchmarking, 75-79 Connecting, 65-74 Developing, 0-64 Emerging. Remarks: 75-100 PASSED, 0-74 FAILED.",
             "7. The sheet Summary counts the students of each descriptor and of Passed/Failed, male, female and in all, with their percents.",

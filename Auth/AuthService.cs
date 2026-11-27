@@ -411,6 +411,11 @@ public sealed class AuthService(
             claims.Add(new Claim(AppClaimTypes.SessionId, sessionId));
         }
 
+        if (!string.IsNullOrEmpty(user.Look))
+        {
+            claims.Add(new Claim(AppClaimTypes.Look, user.Look));
+        }
+
         if (user.CustomRole is { } custom)
         {
             claims.Add(new Claim(AppClaimTypes.RoleTitle, custom.Name));

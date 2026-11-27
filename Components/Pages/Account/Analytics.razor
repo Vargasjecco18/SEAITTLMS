@@ -358,6 +358,10 @@ else
                                     <li>
                                         <a href="@($"guidance/referrals?q={Uri.EscapeDataString(a.Lrn)}")"><strong>@a.Name</strong></a>
                                         <span class="sub">@string.Join(", ", a.Courses)</span>
+                                        @if (a.CourseDetails is { Count: > 0 } details)
+                                        {
+                                            <span class="course-details" title="Course by course, in the last 30 days">@string.Join(" · ", details)</span>
+                                        }
                                     </li>
                                 }
                             </ul>

@@ -2828,5 +2828,10 @@ UPDATE referrals SET intervention = 'Talk with the teacher' WHERE intervention =
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261126054005_ReferralHelpWords', '9.0.20');
 
+ALTER TABLE `users` ADD `look` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261127004645_UserLook', '9.0.20');
+
 COMMIT;
 

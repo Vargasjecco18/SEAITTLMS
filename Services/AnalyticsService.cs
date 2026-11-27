@@ -87,7 +87,8 @@ public sealed record LmsActivity(int Active, int Inactive, int NeverLoggedIn, IR
 public sealed record GradeActivity(string Label, int Active, int Inactive, int NeverLoggedIn);
 
 /// <summary>A student who was absent on a day, with the courses they were absent in (for the guidance counselor's history of absences).</summary>
-public sealed record AbsentStudent(int StudentId, string Name, string Lrn, IReadOnlyList<string> Courses);
+/// <param name="CourseDetails">Round 48: course by course, what the attendance of the student is ("GENERAL SCIENCE: absent 3 times, attendance 75% (9 of 12 days)"), only for the courses where it is low or there were several absences.</param>
+public sealed record AbsentStudent(int StudentId, string Name, string Lrn, IReadOnlyList<string> Courses, IReadOnlyList<string>? CourseDetails = null);
 
 /// <summary>A school day and the students who were marked absent in at least one course that day.</summary>
 public sealed record AbsentDay(DateOnly Day, IReadOnlyList<AbsentStudent> Students);
@@ -502,10 +503,22 @@ public sealed class AnalyticsService(IDbContextFactory<AppDbContext> dbFactory, 
             .Where(a => a.Status == AttendanceStatus.Absent && a.AttendedOn >= from && a.AttendedOn <= today && a.Student.Status == StudentStatus.Active)
             .Select(a => new { a.AttendedOn, a.StudentId, a.Student.FirstName, a.Student.LastName, a.Student.Lrn, Subject = a.Assignment.Subject.Name })
             .ToListAsync(ct);
+
+        // Round 48: course by course, how each of these students attends in the same days (it is what a referral no longer says: "Absent in many courses").
+        var studentIds = rows.Select(r => r.StudentId).Distinct().ToList();
+        var counts = studentIds.Count == 0 ? [] : await db.AttendanceRecords.AsNoTracking()
+            .Where(a => studentIds.Contains(a.StudentId) && a.AttendedOn >= from && a.AttendedOn <= today)
+            .GroupBy(a => new { a.StudentId, a.AssignmentId, Subject = a.Assignment.Subject.Name })
+            .Select(g => new { g.Key.StudentId, g.Key.Subject, Present = g.Count(x => x.Status == AttendanceStatus.Present), Late = g.Count(x => x.Status == AttendanceStatus.Late), Absent = g.Count(x => x.Status == AttendanceStatus.Absent) })
+            .ToListAsync(ct);
+        var detailsOf = counts.GroupBy(c => c.StudentId).ToDictionary(g => g.Key, g => (IReadOnlyList<string>)[.. g
+            .Select(c => ReferralService.AttendanceDetailOf(c.Subject, c.Absent, c.Present, c.Late, c.Present + c.Late + c.Absent, AttendanceService.Rate(c.Present, c.Late, c.Absent)))
+            .Where(text => text is not null).Select(text => text!).OrderBy(text => text)]);
+
         return [.. rows.GroupBy(r => r.AttendedOn).OrderByDescending(g => g.Key)
             .Select(g => new AbsentDay(g.Key,
                 [.. g.GroupBy(r => r.StudentId)
-                    .Select(x => new AbsentStudent(x.Key, $"{x.First().LastName}, {x.First().FirstName}", x.First().Lrn, [.. x.Select(r => r.Subject).Distinct().OrderBy(n => n)]))
+                    .Select(x => new AbsentStudent(x.Key, $"{x.First().LastName}, {x.First().FirstName}", x.First().Lrn, [.. x.Select(r => r.Subject).Distinct().OrderBy(n => n)], detailsOf.GetValueOrDefault(x.Key)))
                     .OrderBy(x => x.Name)]))];
     }
 }

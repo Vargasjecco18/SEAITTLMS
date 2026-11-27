@@ -38,10 +38,11 @@ public sealed record GradingWeights(decimal WrittenOral, decimal Performance, de
 public sealed record GradeWork(string Kind, bool Summative, decimal Max, decimal? Score);
 
 /// <param name="Parts">The percent of each part that has work (points earned ÷ points possible of the graded work); a part with no work is not in the list.</param>
-/// <param name="Running">The weighted average, scaled to 100%, of the parts that have graded work: the grade as it stands now (empty when nothing is graded yet).</param>
-/// <param name="Final">The final grade, a whole number: 0 until every score of the gradebook is in, then the weighted average rounded. Empty when the gradebook has no work yet.</param>
+/// <param name="Running">The average, scaled to 100%, of the parts that have graded work: how the student is doing so far (empty when nothing is graded yet). The analytics and the warnings use it; it is not the grade.</param>
+/// <param name="Final">Round 48, the final grade, a whole number: the 0 based total (see <paramref name="Weighted"/>) rounded, once every score of the gradebook is in. Empty before that, and when the gradebook has no work yet.</param>
 /// <param name="Missing">How many columns still have no score.</param>
-public sealed record GradeResult(IReadOnlyDictionary<GradePart, decimal> Parts, decimal? Running, int? Final, int Missing, int Total)
+/// <param name="Weighted">Round 48, the 0 based grade: every part counts out of its full weight and a part with no scores counts 0 (nothing is scaled up). Empty when nothing is graded yet.</param>
+public sealed record GradeResult(IReadOnlyDictionary<GradePart, decimal> Parts, decimal? Running, int? Final, int Missing, int Total, decimal? Weighted = null)
 {
     /// <summary>True when the gradebook has work and every column has a score for this student.</summary>
     public bool Complete => Total > 0 && Missing == 0;
@@ -50,9 +51,9 @@ public sealed record GradeResult(IReadOnlyDictionary<GradePart, decimal> Parts, 
 }
 
 /// <summary>
-/// The grading system of SEAITT (Round 46): Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 15% (Round 47: it was 30%). The grade of a student in a course is the weighted average of the
-/// percent of the four parts, scaled to 100% (each weight ÷ the total of the weights). A part that has no work yet is left out and the others are scaled to 100%.
-/// The final grade of the gradebook is 0 until every activity, quiz and exam has a score; only then is it worked out.
+/// The grading system of SEAITT (Round 46): Written/Oral Works 20%, Performance Task 50%, Summative Test 15%, Term Examination 15% (Round 47: it was 30%). Round 48: it is 0 based. The grade of a student in a course
+/// is the percent of each of the four parts times its weight, added up: a part with no scores yet counts 0 and nothing is scaled up to 100%.
+/// The final grade of the gradebook only exists when every activity, quiz and exam has a score; before that there is no final grade (so no descriptor, no Passed and no Failed).
 /// </summary>
 public static class GradingSystem
 {
@@ -110,9 +111,14 @@ public static class GradingSystem
 
         var weightSum = parts.Keys.Sum(p => w.Of(p));
         decimal? running = parts.Count == 0 || weightSum <= 0 ? null : Math.Round(parts.Sum(kv => kv.Value * w.Of(kv.Key)) / weightSum, 2);
+
+        // Round 48: the grade is 0 based: every part counts out of its full weight (20 / 50 / 15 / 15) and a part with no scores yet counts 0. Nothing is scaled up. The final grade is that total,
+        // rounded, and it only exists when every score of the gradebook is in (before that there is no final grade, so no descriptor and no Passed or Failed).
+        var weightAll = Parts.Sum(p => w.Of(p));
+        decimal? weighted = parts.Count == 0 || weightAll <= 0 ? null : Math.Round(parts.Sum(kv => kv.Value * w.Of(kv.Key)) / weightAll, 2);
         var missing = all.Count(x => x.Score is null);
-        int? final = all.Count == 0 ? null : missing > 0 ? 0 : running is { } r ? (int)Math.Round(r, MidpointRounding.AwayFromZero) : 0;
-        return new GradeResult(parts, running, final, missing, all.Count);
+        int? final = all.Count == 0 || missing > 0 ? null : weighted is { } t ? (int)Math.Round(t, MidpointRounding.AwayFromZero) : 0;
+        return new GradeResult(parts, running, final, missing, all.Count, weighted);
     }
 
     // ---------------------------------------------------------------- the two tables of the summary

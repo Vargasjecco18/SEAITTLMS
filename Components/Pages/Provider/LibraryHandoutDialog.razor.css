@@ -111,3 +111,15 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Round 48: the preview in this box is a little lower than usual, so the whole box fits the screen and the only scroll bar left is the one of the file itself. */
+.center ::deep .viewer .pdf-view,
+.center ::deep .viewer iframe {
+    height: min(66vh, 46rem);
+    min-height: 18rem;
+}
+
+.center ::deep .viewer img,
+.center ::deep .viewer video {
+    max-height: 66vh;
+}

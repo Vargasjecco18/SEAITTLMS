@@ -491,6 +491,15 @@
                 }
             </div>
 
+            @if (IsAdmissionPick)
+            {
+                <fieldset class="grade-pick" aria-label="Grade level of the Admission staff">
+                    <legend>Which grade level does this Admission staff record?</legend>
+                    <label class="radio-pill @(admissionGrade == 11 ? "on" : "")"><input type="radio" name="a-admission-grade" value="11" checked="@(admissionGrade == 11)" @onchange="() => AdmissionGradePicked(11)" /> Grade 11</label>
+                    <label class="radio-pill @(admissionGrade == 12 ? "on" : "")"><input type="radio" name="a-admission-grade" value="12" checked="@(admissionGrade == 12)" @onchange="() => AdmissionGradePicked(12)" /> Grade 12</label>
+                </fieldset>
+            }
+
             @if (RoleIsNew)
             {
                 <fieldset class="page-picks" aria-label="The pages of the new role">
@@ -865,7 +874,16 @@
     private readonly HashSet<string> newRolePages = ["calendar", "users", "groups"];
 
     /// <summary>The names the list of the role box offers: the usual roles of the staff, and the roles made before.</summary>
-    private IEnumerable<string> RoleNames => AvailableStaffRoles.Select(AppRoles.DisplayName).Concat(customRoles.Select(c => c.Name));
+    private IEnumerable<string> RoleNames => AvailableStaffRoles.Select(AppRoles.DisplayName).Append(AdmissionRoleName)
+        .Concat(customRoles.Select(c => c.Name).Where(n => !HiddenRoleNames.Contains(n, StringComparer.OrdinalIgnoreCase)));
+
+    // Round 48: the sample roles Learning Resource Specialist, Records Assistant, Admission Grade 11 and Admission Grade 12 are not offered in Add staff. Admission is one choice: the grade level
+    // (11 or 12) is chosen under it, and the account gets the role of that grade (the people of those roles are still listed in Users).
+    private static readonly string[] HiddenRoleNames = ["Learning Resource Specialist", "Records Assistant", "Admission Grade 11", "Admission Grade 12"];
+    private const string AdmissionRoleName = "Admission";
+    private int admissionGrade = 11;
+    private bool IsAdmissionPick => string.Equals(roleText.Trim(), AdmissionRoleName, StringComparison.OrdinalIgnoreCase);
+    private CustomRole? AdmissionRole => customRoles.FirstOrDefault(c => string.Equals(c.Name, $"{AdmissionRoleName} Grade {admissionGrade}", StringComparison.OrdinalIgnoreCase));
 
     private static string? BuiltInOf(string text) => UserManagementService.NonTeachingRoles.FirstOrDefault(r =>
         string.Equals(AppRoles.DisplayName(r), text.Trim(), StringComparison.OrdinalIgnoreCase) || string.Equals(r, text.Replace(" ", "").Trim(), StringComparison.OrdinalIgnoreCase));
@@ -873,10 +891,11 @@
     private CustomRole? CustomOf(string text) => customRoles.FirstOrDefault(c => string.Equals(c.Name, text.Trim(), StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The name typed is not a role that is there: it makes a new one, and its pages are ticked.</summary>
-    private bool RoleIsNew => roleText.Trim().Length > 0 && BuiltInOf(roleText) is null && CustomOf(roleText) is null;
+    private bool RoleIsNew => roleText.Trim().Length > 0 && !IsAdmissionPick && BuiltInOf(roleText) is null && CustomOf(roleText) is null;
 
     /// <summary>What the Sign-in details say the person is: the role that was typed, or Teacher.</summary>
     private string SignInRoleName => tab.Role == AppRoles.Teacher ? "Teacher"
+        : IsAdmissionPick ? $"{AdmissionRoleName} Grade {admissionGrade}"
         : BuiltInOf(roleText) is { } built ? AppRoles.DisplayName(built) : roleText.Trim().Length > 0 ? roleText.Trim() : "Staff";
 
     private string RoleText
@@ -913,6 +932,12 @@
         RoleText = picked;
     }
 
+    private void AdmissionGradePicked(int grade)
+    {
+        admissionGrade = grade;
+        ApplyRole();
+    }
+
     private void BackToRoleList()
     {
         roleTyping = false;
@@ -927,7 +952,12 @@
             return;
         }
 
-        if (BuiltInOf(roleText) is { } built)
+        if (IsAdmissionPick && AdmissionRole is { } admissionRole)
+        {
+            add.Role = admissionRole.BaseRole;
+            add.CustomRoleId = admissionRole.Id;
+        }
+        else if (BuiltInOf(roleText) is { } built)
         {
             add.Role = built;
             add.CustomRoleId = null;

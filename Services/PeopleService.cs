@@ -130,13 +130,18 @@ public sealed class PeopleService(IDbContextFactory<AppDbContext> dbFactory)
             .Select(a => new { a.SectionId, a.SubjectId, Subject = a.Subject.Name, Grade = a.Section.GradeLevel, Strand = a.Section.Strand.Code, Section = a.Section.Name })
             .ToListAsync(ct);
 
+        // Round 48: the students of all the courses with one query (it was one query for each course).
+        var rosterRows = await db.EnrollmentSubjects.AsNoTracking()
+            .Where(x => x.Enrollment.Status == EnrollmentStatus.Enrolled && x.Enrollment.Student.User.IsActive
+                        && db.TeachingAssignments.Any(a => a.TeacherId == teacherId && a.SectionId == x.Enrollment.SectionId && a.SubjectId == x.SubjectId))
+            .Select(x => new { x.Enrollment.SectionId, x.SubjectId, x.Enrollment.Student.UserId, x.Enrollment.Student.FirstName, x.Enrollment.Student.MiddleName, x.Enrollment.Student.LastName, x.Enrollment.Student.NameExtension })
+            .ToListAsync(ct);
+        var rosterOf = rosterRows.ToLookup(r => (r.SectionId, r.SubjectId));
+
         var people = new Dictionary<int, (string Name, List<string> Courses)>();
         foreach (var course in courses)
         {
-            var students = await Roster.Enrollments(db, course.SectionId, course.SubjectId).AsNoTracking()
-                .Where(e => e.Student.User.IsActive)
-                .Select(e => new { e.Student.UserId, e.Student.FirstName, e.Student.MiddleName, e.Student.LastName, e.Student.NameExtension })
-                .ToListAsync(ct);
+            var students = rosterOf[(course.SectionId, course.SubjectId)].DistinctBy(r => r.UserId);
             foreach (var s in students)
             {
                 if (!people.TryGetValue(s.UserId, out var entry))

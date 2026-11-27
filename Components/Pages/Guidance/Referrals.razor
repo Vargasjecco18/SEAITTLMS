@@ -108,7 +108,7 @@
                                 else if (open.Count > 0)
                                 {
                                     @* Round 47: it shows what the counselor chose (or the words typed under Others), also for absenteeism, not the name of the concern. *@
-                                    <span class="detail"><Icon Name="@(picked == ReferralReasons.LowAttendance ? "user-x" : "info")" Size="15" /><span>@string.Join(" · ", open.Select(o => o.Detail).Distinct())</span></span>
+                                    <span class="detail"><Icon Name="@(picked == ReferralReasons.LowAttendance ? "user-x" : "info")" Size="15" /><span>@(picked == ReferralReasons.LowAttendance && open.Count > 1 ? ReferralService.AbsentInManyCourses : string.Join(" · ", open.Select(o => o.Detail).Distinct()))</span></span>
                                 }
                                 else
                                 {

@@ -81,7 +81,8 @@
 .dialog.cover {
     display: flex;
     flex-direction: column;
-    width: calc(100vw - 2rem);
+    /* Round 48: 100% (not 100vw): the width of the screen counts the scrollbar of the page behind, and the box was a little wider than the backdrop, so a second horizontal and vertical scrollbar appeared. */
+    width: 100%;
     max-width: none;
     min-height: calc(100vh - 2rem);
 }
@@ -95,7 +96,7 @@
 .dialog.full {
     display: flex;
     flex-direction: column;
-    width: 100vw;
+    width: 100%;
     max-width: none;
     height: 100vh;
     border: 0;

@@ -40,7 +40,7 @@ The diagrams below show how the data moves in the system: **level 0** (the whole
 
 ![Level 0](dfd/dfd-level-0.svg)
 
-One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it. The administrator is the only role that gets a login code (sent to the phone by UniSMS).
+One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it. Every role can get a login code (round 48: sent to the phone by UniSMS when the account has a number).
 
 ## Level 1: the main processes
 
@@ -48,7 +48,7 @@ One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it
 
 | Process | What it does | Who is in it |
 |---|---|---|
-| **1.0 Manage accounts and access** | Checks the email and the password (the lock, the deactivated account and the maintenance switch), asks the administrator for the login code that UniSMS sends, starts and ends the session, lets the administrator manage accounts, roles and pages, and lets every person keep their own password, phone number and picture. | Any user, Administrator, UniSMS |
+| **1.0 Manage accounts and access** | Checks the email and the password (the lock, the deactivated account and the maintenance switch), asks the user for the login code that UniSMS sends, starts and ends the session, lets the administrator manage accounts, roles and pages, and lets every person keep their own password, phone number and picture. | Any user, Administrator, UniSMS |
 | **2.0 Set up the school and enroll students** | The coordinator keeps the school years, terms, tracks, strands, courses (the curriculum) and sections; the registrar enrolls students, changes an enrollment or drops a student out; the administrator assigns teachers to courses and archives or restores students (a dropped-out student goes to Archive Accounts). | Academic Coordinator, Registrar, Administrator |
 | **3.0 Manage the course library** | The academic provider prepares the syllabus, the handouts and the summative exams of each course, sends them to the teachers as drafts, posts the exams to the students and tracks what was sent and posted. | Academic Provider, Teacher, Student, Academic Coordinator |
 | **4.0 Conduct classes and grading** | The teacher posts handouts, gives activities and quizzes, records attendance, grades the answers and keeps the gradebook and final grades; the student opens handouts, hands in answers and quizzes and sees the grades; reading progress and achievements are kept. | Teacher, Student |
@@ -66,7 +66,7 @@ One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it
 | Step | Process | Notes |
 |---|---|---|
 | 1.1 | Check the login | Email and password; the lock, the deactivated account and the maintenance switch are checked first. |
-| 1.2 | Send and check the login code | Only for an administrator, when the switch is on: the code goes to the phone through UniSMS and is checked (only a hash is kept). |
+| 1.2 | Send and check the login code | For every account that has a phone number (round 48), when the switch is on: the code goes to the phone through UniSMS and is checked (only a hash is kept). |
 | 1.3 | Start and end the session | One sign-in at a time for an account; closing the page or the browser ends it about 3 seconds later. |
 | 1.4 | Manage accounts and roles | Add, edit, deactivate or delete an account; roles and the pages of a made-up role. |
 | 1.5 | Keep the own settings | Password, phone number (everybody but the administrator), picture, look and sound. |

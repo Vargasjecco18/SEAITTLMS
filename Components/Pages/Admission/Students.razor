@@ -28,7 +28,7 @@ else
         <div class="tile"><span class="tile-icon"><Icon Name="users" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Count</span><span class="tile-label">students recorded</span></span></div>
         <div class="tile"><span class="tile-icon ok"><Icon Name="circle-check" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Count(r => r.Enrolled)</span><span class="tile-label">enrolled by the registrar</span></span></div>
         <div class="tile"><span class="tile-icon wait"><Icon Name="clock" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Count(r => !r.Enrolled)</span><span class="tile-label">waiting to be enrolled</span></span></div>
-        <div class="tile"><span class="tile-icon doc"><Icon Name="folder-open" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Sum(r => r.DocumentsReceived)</span><span class="tile-label">documents kept</span></span></div>
+        <div class="tile"><span class="tile-icon doc"><Icon Name="folder-open" Size="20" /></span><span class="tile-text"><span class="tile-value">@all.Sum(r => r.DocumentsReceived + r.OtherDocuments)</span><span class="tile-label">documents kept</span></span></div>
     </div>
 
     <Card>
@@ -70,7 +70,7 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var row in rows)
+                        @foreach (var row in PageRows)
                         {
                             var r = row;
                             <tr data-lrn="@r.Lrn">
@@ -84,7 +84,7 @@ else
                                 <td data-col="documents">
                                     <span class="doc-meter" title="@($"{r.DocumentsReceived} of {AdmissionDocumentKinds.All.Count} kinds of documents")">
                                         <span class="bar"><i style="width: @(r.DocumentsReceived * 100 / AdmissionDocumentKinds.All.Count)%"></i></span>
-                                        <span class="meter-text">@r.DocumentsReceived / @AdmissionDocumentKinds.All.Count</span>
+                                        <span class="meter-text">@r.DocumentsReceived / @AdmissionDocumentKinds.All.Count@(r.OtherDocuments > 0 ? $" +{r.OtherDocuments}" : "")</span>
                                     </span>
                                 </td>
                                 <td><Badge Tone="@(r.Enrolled ? Tone.Success : Tone.Info)">@(r.Enrolled ? "Enrolled" : "Recorded")</Badge></td>
@@ -100,6 +100,10 @@ else
                     </tbody>
                 </table>
             </div>
+            @if (rows.Count > PageSize)
+            {
+                <Pager Page="pageNo" Total="rows.Count" PageSize="PageSize" Unit="students" OnPrevious="PreviousPage" OnNext="NextPage" />
+            }
         }
     </Card>
 }
@@ -217,7 +221,7 @@ else
 <Modal Open="docsOf is not null" Title="@($"Documents · {docsOf?.FullName}")" Large="true" OnClose="CloseDocuments">
     @if (docsOf is not null)
     {
-        <p class="dialog-text">Each kind of document has its line. <strong>Add photo</strong> keeps a picture or a PDF of it (a photo counts as a document), and <strong>Edit</strong> says that the paper is in hand, changes the photo or takes it away. <strong>View document</strong> shows the photo in a box.</p>
+        <p class="dialog-text">Each kind of document has its line. <strong>Add document</strong> keeps a picture or a PDF of it (a picture or a PDF counts as a document), and <strong>Edit</strong> says that the paper is in hand, changes the photo or takes it away. <strong>View document</strong> shows the photo in a box.</p>
         <AdmissionDocuments RecordId="docsOf.Id" CanEdit="true" OnChanged="RefreshAsync" />
         <div class="modal-actions"><Button OnClick="CloseDocuments">Close</Button></div>
     }
@@ -230,6 +234,9 @@ else
     private bool allowed;
     private IReadOnlyList<AdmissionRow> all = [];
     private IReadOnlyList<AdmissionRow> rows = [];
+    private int pageNo = 1;
+    /// <summary>Round 48: a grade level has hundreds of students; the table draws 25 lines at a time (the page was slow with all of them).</summary>
+    private const int PageSize = 25;
     private IReadOnlyList<AdmissionStrand> strands = [];
     private string searchText = "";
     private string stateFilter = "";
@@ -267,17 +274,31 @@ else
     private async Task ReloadAsync()
     {
         all = await Admission.ListAsync(userId, (byte)Grade, null);
-        await SearchAsync();
+        Filter();
+        pageNo = Math.Min(pageNo, Math.Max(1, (int)Math.Ceiling(rows.Count / (double)PageSize)));
     }
 
+    private IEnumerable<AdmissionRow> PageRows => rows.Skip((pageNo - 1) * PageSize).Take(PageSize);
+
+    private void PreviousPage() => pageNo = Math.Max(1, pageNo - 1);
+
+    private void NextPage() => pageNo = Math.Min(Math.Max(1, (int)Math.Ceiling(rows.Count / (double)PageSize)), pageNo + 1);
+
+    /// <summary>A new search or filter starts at the first page; saving or closing a box keeps the page.</summary>
     private Task SearchAsync()
+    {
+        pageNo = 1;
+        Filter();
+        return Task.CompletedTask;
+    }
+
+    private void Filter()
     {
         var words = (searchText ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         rows = [.. all.Where(r =>
             words.All(w => r.FullName.Contains(w, StringComparison.OrdinalIgnoreCase) || r.Lrn.Contains(w))
             && (stateFilter == "" || (stateFilter == "enrolled") == r.Enrolled)
             && (strandFilter == "" || r.Strand == strandFilter))];
-        return Task.CompletedTask;
     }
 
     private async Task ApplyFilter() => await SearchAsync();

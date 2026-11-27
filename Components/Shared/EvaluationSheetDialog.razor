@@ -1,11 +1,30 @@
 @* The sheet for writing the questions of a teacher evaluation inside the system, like the sheet of the quiz: a row for each question with the Question, its Type (a list of the seven types), the Area
-   and the options of a ranking or select-all question, and the step by step at the right. A box is read when it is left (not at every key). The questions of the evaluation are the rows of the
+   and the options of a ranking or select-all question, and the step by step at the top (a toggle). A box is read when it is left (not at every key). The questions of the evaluation are the rows of the
    sheet: Save gives the page the whole list. There is no Excel to download, fill in and import. *@
 <Modal Open="Open" Title="@Heading" Wider="true" Top="true" OnClose="CloseAsync">
     @if (Open)
     {
         <div class="sheet-layout">
             <div class="sheet-main">
+                @* Round 48: the step by step is at the top, and it can be hidden or shown with its toggle (it starts open). *@
+                <details class="sheet-steps" id="sheet-steps" open>
+                    <summary><Icon Name="list-checks" Size="16" /> Step by step <small class="steps-hint">(press to hide or show)</small></summary>
+                    <ol>
+                        <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
+                        <li><strong>Choose the type</strong> from the list. This is how the students answer.</li>
+                        <li><strong>Write the area</strong> it is about (Teaching, Support…). The results are grouped by area.</li>
+                        <li>For a <em>Ranking Scale</em> and a <em>Select-All-That-Apply</em>, <strong>write the options</strong> (at least two). Press <em>Option column</em> for more boxes.</li>
+                        <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
+                        <li><strong>Press Save.</strong> @SaveStep</li>
+                    </ol>
+                    <h3><Icon Name="clipboard-list" Size="18" /> The types</h3>
+                    <ul class="sheet-types">
+                        @foreach (var k in EvaluationQuestionKinds.All)
+                        {
+                            <li><strong>@EvaluationQuestionKinds.Display(k)</strong><span>@EvaluationQuestionKinds.Describe(k)</span></li>
+                        }
+                    </ul>
+                </details>
                 @if (HeaderContent is not null)
                 {
                     @* Fields above the questions (the title and the instructions of a new evaluation). *@
@@ -134,25 +153,6 @@
                     <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
                 </div>
             </div>
-
-            <aside class="sheet-steps" aria-label="Step by step">
-                <h3><Icon Name="list-checks" Size="18" /> Step by step</h3>
-                <ol>
-                    <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
-                    <li><strong>Choose the type</strong> from the list. This is how the students answer.</li>
-                    <li><strong>Write the area</strong> it is about (Teaching, Support…). The results are grouped by area.</li>
-                    <li>For a <em>Ranking Scale</em> and a <em>Select-All-That-Apply</em>, <strong>write the options</strong> (at least two). Press <em>Option column</em> for more boxes.</li>
-                    <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
-                    <li><strong>Press Save.</strong> @SaveStep</li>
-                </ol>
-                <h3><Icon Name="clipboard-list" Size="18" /> The types</h3>
-                <ul class="sheet-types">
-                    @foreach (var k in EvaluationQuestionKinds.All)
-                    {
-                        <li><strong>@EvaluationQuestionKinds.Display(k)</strong><span>@EvaluationQuestionKinds.Describe(k)</span></li>
-                    }
-                </ul>
-            </aside>
         </div>
     }
 </Modal>

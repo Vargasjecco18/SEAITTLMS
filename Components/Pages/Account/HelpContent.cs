@@ -80,7 +80,7 @@ public static class HelpContent
         [
             "Press the gear at the top right (Settings).",
             "Under Profile picture, press “Upload a picture” and choose a photo. It is made small for you. “Remove” brings back your initials.",
-            "Under Appearance choose Default (the blue and the yellow of SEAITT: it changes the page, the cards, the top bar and the menu), Light, Dark, Midnight, Paper or Auto (Auto follows your computer). When you sign out the look goes back to Auto, so choose it again after you sign in. You can also switch the animations off.",
+            "Under Appearance choose Default (the blue and the yellow of SEAITT: it changes the page, the cards, the top bar and the menu), Light, Dark, Midnight, Paper or Auto (Auto follows your computer). The look stays while you use the system. The login page is always the Default look: when you sign out the page goes back to the Default, and when you sign in again with the same account the last look you chose comes back (an account that never chose one opens with the Default). You can also switch the animations off.",
         ]),
         new("How do I change my phone number?",
         [
@@ -144,7 +144,7 @@ public static class HelpContent
         new("Where are my grades?",
         [
             "Open Grades. Every course is a card with your progress at the top (the bar has the passing mark drawn on it) and, under it, the gradebook of the course with your own row. The columns are grouped like the grading system of the school: Written/Oral Works (assignments, seatwork, recitation, other work and quizzes) are 20%, Performance Task 50%, Summative Test 15% and Term Examination (TE) 15%. Your Final grade is the weighted average of the four parts, as a whole number, with its descriptor: Advancing (90 to 100), Benchmarking (80 to 89), Connecting (75 to 79), Developing (65 to 74) or Emerging (0 to 64). It is only to read.",
-            "The Final grade is 0 until every score of the course is in (a score that is still missing counts as 0). The quizzes, the Summative Test and the Term Examination are checked by the system; the other work is scored by your teacher. 75 and above is Passed; below 75 is Failed.",
+            "The Final grade only shows when every score of the course is in; until then there is no final grade, no descriptor, no Passed and no Failed (the score that is still missing counts as 0 in the total, nothing is scaled up). The quizzes, the Summative Test and the Term Examination are checked by the system; the other work is scored by your teacher. 75 and above is Passed; below 75 is Failed.",
             "The dashboard shows your recent grades and your average.",
             "If your teacher hides the grades of a course, the card says “Hidden by your teacher” and shows no scores until your teacher shows them again.",
         ], "student/grades", "Open Grades"),
@@ -212,7 +212,7 @@ public static class HelpContent
         [
             "Yes. Press “Add activities” (or “Many in a sheet” in an Add menu): a sheet opens in the middle of the screen. The step by step is a toggle at the top of the sheet (“How to fill this sheet”): open it when you need it. Each row is one seatwork, assignment or task performance (a quiz is added with “Add quiz”). Choose its handout and its type from the lists, type the title, the instructions and the points, choose the due date and add the files if there are any.",
             "To add more rows choose the type (Seatwork, Assignment or Task performance) and the number at the bottom, then press Add (“Add [type] [number] rows”), like the questions of a summative exam. The Ready column says what is missing in a row. A row with nothing in it is ignored, and a row with a problem is left out. Press Save: every row becomes an activity of its handout.",
-            "The questions of a quiz are written in a sheet like the one of a summative exam, in a wide box with tall rows: “Add quiz” opens it for a new quiz, and “Questions” on a quiz that is there opens it again. Write a row for each question, and use “Add [type] [number] rows” to add many rows of one type.",
+            "The questions of a quiz are written in a sheet like the one of a summative exam, in a wide box with tall rows: “Add quiz” opens it for a new quiz, and “Questions” on a quiz that is there opens it again. The sheet opens with ten rows; write a row for each question, and use “Add [type] [number] rows” to add many rows of one type.",
         ]),
         new("A student handed in after the due date. What do I do?",
         [
@@ -246,14 +246,14 @@ public static class HelpContent
         new("Where is the gradebook?",
         [
             "Open Gradebook and choose the course in the list at the top left of the card. Every student has a row and every piece of work a column, grouped by the grading system of SEAITT: Written/Oral Works 20% (assignments, seatwork, recitation, others and the quizzes), Performance Task 50%, Summative Test 15% (the summative exam of the academic provider) and Term Examination (TE) 15%. The last column is the Final grade, with its descriptor.",
-            "Scores are saved by themselves when you leave a box, and a small message appears at the top right of the screen (it is not a box in the middle of the page). The quizzes, the Summative Test and the Term Examination are checked by the system: their cells are not editable, except an essay, which you score. Everything is worked out by the system: you do not calculate anything. If any score is missing the Final grade is 0 until it is in.",
+            "Scores are saved by themselves when you leave a box, and a small message appears at the top right of the screen (it is not a box in the middle of the page). The quizzes, the Summative Test and the Term Examination are checked by the system: their cells are not editable, except an essay, which you score. Everything is worked out by the system: you do not calculate anything. If any score is missing there is no Final grade (and no descriptor, Passed or Failed) until it is in. A low score is not drawn in red.",
             "At the top right: “Add section” adds a recitation, other work, a performance task or the Term Examination (TE) column, “Import class grades” reads an Excel file with the scores of the class (the box has “Download the Excel of this course” to start from), “Hide from students” (it becomes “Show to students”) hides the grades of the course from the students, and “Send final grades” sends the Final grade column to the students. The two arrows under the name of a column move it to the left or to the right (the file follows the same order).",
             "Under the table are two summary tables: the descriptors (Advancing 90 to 100, Benchmarking 80 to 89, Connecting 75 to 79, Developing 65 to 74, Emerging 0 to 64) and Passed (75 to 100) / Failed (0 to 74), each with MALE, FEMALE, TOTAL and the percent. They have no numerical-grade column and no blank column: the name of the line, then MALE, FEMALE, TOTAL and the percents. Scores are whole numbers (no decimals): the points of an activity, of a quiz question and of an exam, and the score you type.",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How is the final grade worked out?",
         [
-            "Each part is the points earned divided by the points possible of its work, as a percent. The four parts are weighted 20, 50, 15 and 15, which add up to 100, so the grade is the weighted average (if the administrator changes the weights so they do not add up to 100, the grade is scaled to 100%: each weight divided by the total of the weights). A part that has no work yet is left out and the others are scaled to 100% (so the grade as it stands is shown while the course goes on).",
-            "The Final grade is strict: it is 0 until every column has a score for the student, and then it is a whole number (the average rounded). The administrator can change the weights in System Settings, under Grading system.",
+            "Each part is the points earned divided by the points possible of its work, as a percent. The four parts are weighted 20, 50, 15 and 15, which add up to 100, so the grade is the weighted total. The grade is 0 based: every part counts out of its full weight (Written/Oral Works 20, Performance Task 50, Summative Test 15, Term Examination 15) and a part that has no scores yet counts 0; nothing is scaled up to 100%. If the administrator changes the weights so they do not add up to 100, each weight is divided by the total of the weights.",
+            "The Final grade is strict: there is none until every column has a score for the student, and then it is a whole number (the 0 based total rounded). Before that the Final grade, the descriptor, Passed and Failed are not shown. The administrator can change the weights in System Settings, under Grading system.",
             "Example: Written/Oral 90%, Performance Task 80%, Summative Test 70% and Term Examination 60% make (90×20 + 80×50 + 70×15 + 60×15) ÷ 100 = 77.5, so the Final grade is 78 (Connecting, Passed).",
         ], "teacher/gradebook", "Open Gradebook"),
         new("How do I refer a student to the guidance counselor?",
@@ -295,7 +295,7 @@ public static class HelpContent
         ], "admin/users", "Open Users Management"),
         new("How do I add a staff member, or make a new staff role like Librarian?",
         [
-            "Open Users Management, the Staff tab, and press Add staff. In “Name of the new role” type the role (the usual ones are in the list: Registrar, Guidance counselor, Academic coordinator, Academic provider, the two Admission roles, Admission Grade 11 and Admission Grade 12, and the roles you made before). A person of an Admission role records the students of that grade level and is listed with the staff (the Staff / Non-teaching list of the Users page shows the role, for example Admission Grade 11).",
+            "Open Users Management, the Staff tab, and press Add staff. In “Name of the new role” type the role (the usual ones are in the list: Registrar, Guidance counselor, Academic coordinator, Academic provider, Admission, and the roles you made before; Learning Resource Specialist and Records Assistant are not offered). When you choose Admission the box asks the grade level, Grade 11 or Grade 12: that person records the students of that grade level and is listed with the staff (the Staff / Non-teaching list of the Users page shows the role, for example Admission Grade 11).",
             "A name that is new makes a new role: the pages the people of the role can open appear as checkboxes, one by one, in groups: the pages every account has (Calendar, Users, Groups), the different analytics (school, guidance, library, evaluation) and the pages of the registrar (Enrollment, Student's Accounts), the guidance counselor (Referrals), the academic coordinator (Academic setup, Class sections, Teacher evaluation, Announcements) and the academic provider (Course library, Tracking), each with its dashboard. The pages of the administrator can't be ticked. Tick the ones the role needs. The people of the role get their own dashboard with those pages and nothing else, and what they do in a ticked page is saved as the registrar, the guidance counselor and so on would.",
             "Many people can have a role you made: choose it in the list the next time.",
             "Only the shared pages can be ticked (the pages of the registrar, the coordinator and the others work with their own data, so they stay with the real roles).",
@@ -322,7 +322,7 @@ public static class HelpContent
         ], "admin/archive", "Open Archive Accounts"),
         new("How do I change the grading system?",
         [
-            "Open System Settings and look for the card “Grading system”: the four weights (Written/Oral Works 20, Performance Task 50, Summative Test 15, Term Examination 15, which add up to 100). Change a weight and press Save settings: the gradebook, the grades of the students, the analytics and the exported files use the new weights at once (scaled to 100% when they do not add up to 100). The descriptors (Advancing 90 to 100 and the rest) and the passing grade (75) are the rule of the school and do not change here.",
+            "Open System Settings and look for the card “Grading system”: the four weights (Written/Oral Works 20, Performance Task 50, Summative Test 15, Term Examination 15, which add up to 100). Change a weight and press Save settings: the gradebook, the grades of the students, the analytics and the exported files use the new weights at once (each weight is divided by the total of the weights when they do not add up to 100). The descriptors (Advancing 90 to 100 and the rest) and the passing grade (75) are the rule of the school and do not change here.",
             "The number of students in a class section is 40 (the maximum) and is not a setting any more.",
         ], "admin/settings", "Open System Settings"),
         new("How do I read the security log?",
@@ -344,11 +344,11 @@ public static class HelpContent
         ], "admin/settings", "Open System Settings"),
         new("How do I turn on the login code (OTP)?",
         [
-            "With the login code on, an administrator who types the right email and password also types a code of 6 digits that UniSMS sends to the phone number of the account (from the sender Unisoft). For now only administrators are asked; teachers, students and the staff sign in as before.",
+            "With the login code on, every user (the administrator, the staff, the teachers and the students) who types the right email and password also types a code of 6 digits that UniSMS sends to the phone number of the account (from the sender Unisoft). An account that has no phone number signs in with the password only until a number is saved for it (the people change their number in Settings, the gear at the top right).",
             "First put the phone number of your account in System Settings, the card “Login code (OTP)”, the box “Phone number of your account” (like 09171234567), and press “Save my number”. The API key of UniSMS is never typed in the system: whoever runs the system puts it in the user secrets or in appsettings.Local.json (the README says how) and starts the system again.",
-            "The card says whether UniSMS is set up and whether your account has a number. Press “Send a test message to my phone” to see that the message arrives, tick “Ask administrators for a code when they log in” and press Save settings. The switch can't be turned on until UniSMS is set up and your account has a number.",
-            "At the login the page asks for the code. It lives 5 minutes, takes 5 wrong tries, and “Send a new code” asks for another one after 1 minute (4 codes in all for one sign-in). “Use another account” goes back to the password. If the message can't be sent (no credit, no internet) the administrator can't sign in: untick the switch in the database, see the README (One-time code).",
-            "The security log has Code sent, Wrong or expired code and Code accepted (never the code itself). If the switch is on but UniSMS or the number is missing, the administrator signs in with the password only and the log says Signed in without a code.",
+            "The card says whether UniSMS is set up and whether your account has a number. Press “Send a test message to my phone” to see that the message arrives, tick “Ask every user for a code when they log in” and press Save settings. The card also says how many accounts have no phone number yet. The switch can't be turned on until UniSMS is set up and your account has a number.",
+            "At the login the page asks for the code. It lives 5 minutes, takes 5 wrong tries, and “Send a new code” asks for another one after 1 minute (4 codes in all for one sign-in). “Use another account” goes back to the password. If the message can't be sent (no credit, no internet) nobody can sign in with a number: untick the switch in the database, see the README (One-time code).",
+            "The security log has Code sent, Wrong or expired code and Code accepted (never the code itself). If the switch is on but UniSMS or the number of an account is missing, that account signs in with the password only and the log says Signed in without a code.",
         ], "admin/settings", "Open System Settings"),
     ]);
 
@@ -356,10 +356,10 @@ public static class HelpContent
     [
         new("How do I enroll a student?",
         [
-            "The Admission staff of Grade 11 and Grade 12 record the information and the documents of each student first, so the LRN is not typed. Open Enrollment and, in the Student list, choose the student that was recorded: the LRN (shown, not typed), the names, the phone number and the parents or guardian are filled in. If the student already has an account, the stored data is shown.",
+            "The Admission staff of Grade 11 and Grade 12 record the information and the documents of each student first, so the LRN is not typed. Open Enrollment and, in the Student list, choose the student that was recorded: the LRN (shown, not typed), the names, the phone number and the address are filled in. If the student already has an account, the stored data is shown.",
             "If the student has no account yet it is made when you enroll, with a sign-in you can copy and give to them. The phone number can be changed in the box and is saved with the student.",
             "The students are enrolled one at a time: the Admission staff record each one first (the information and the documents), and you choose the student from the list. There is no Excel import.",
-            "Choose the grade level, the track and strand and the section. A section holds 40 students and Section A has to be full before Section B opens (the later sections are greyed out with “fill A first”); the sections cannot be edited. The courses of the strand show under it. The sign-in details are under the student card, at the left. Press “Print Enrollment” to print the form: it has the student, the courses and the Parents and guardian block, already filled in.",
+            "Choose the grade level, the track and strand and the section. A section holds 40 students and Section A has to be full before Section B opens (the later sections are greyed out with “fill A first”); the sections cannot be edited. The courses of the strand show under it. The sign-in details are under the student card, at the left. Press “Print Enrollment” to print the form: it has the student and the courses, already filled in. It has no block of parents and guardian and no phone number of theirs: the name of the guardian (or the father, or the mother) is written over the line of “Parent's or guardian's signature over printed name”.",
             "If something is missing when you press “Enroll student”, each box with a problem turns red with a message under it, a red alert at the top lists them, and the cursor goes to the first one. Fix the box and its message goes away.",
         ], "registrar/enrollments", "Open Enrollment"),
         new("Where do I see the enrolled students?",
@@ -475,7 +475,7 @@ public static class HelpContent
         new("What do I do here?",
         [
             "You record the information and the documents of the new students for the registrar. There is no application form on the home page: the students do not apply online, the school records them here. Your menu has the Dashboard, the page of your students (Grade 11 Students or Grade 12 Students), Calendar and Users.",
-            "The Dashboard shows the students of your grade level (Admission Grade 11 sees Grade 11, Admission Grade 12 sees Grade 12), with their strand, section, phone number and state. At the top of every page the school year and the term that is going on are written, at the right of the greeting.",
+            "The Dashboard shows the students of your grade level (Admission Grade 11 sees Grade 11, Admission Grade 12 sees Grade 12), with their strand, section, phone number and state. At the top of every page the school year and the term that is going on are written, at the right of the greeting; in the last 15 days of the term it also says how many days are left (15 days left, 14 days left ... 0 days left on the last day) and when the term ends it goes away.",
         ], "staff", "Open the dashboard"),
         new("How do I record a student?",
         [
@@ -485,12 +485,12 @@ public static class HelpContent
         ]),
         new("How do I keep the documents?",
         [
-            "Press “Documents” on the row of the student. Every kind of document has its own line and there is nothing to choose from a list: PSA birth certificate, Form 138 (report card), Form 137, Certificate of completion (Grade 10), Good moral certificate, 2x2 photo and Other document.",
-            "At the left of a line is the kind, at the center what the school has: No document, Paper in hand (with the date) or Document (a photo counts as a document), and at the right the buttons: “Add photo” (a picture or a PDF), “Edit” (the paper is in hand, change the photo or take it away) and “View document”, which shows the photo in a box without downloading it first.",
+            "Press “Documents” on the row of the student. Every kind of document has its own line and there is nothing to choose from a list: PSA birth certificate, Form 138 (report card), Form 137, Certificate of completion (Grade 10) and Good moral certificate. For any other paper press “Add other document”, type its name (a medical certificate, a baptismal certificate...), say if the paper is in hand and/or add the picture or the PDF: it gets a line of its own, marked “other”, after the five kinds.",
+            "At the left of a line is the kind, at the center what the school has: No document, Paper in hand (with the date) or Document (a photo counts as a document), and at the right the buttons: “Add document” (a picture or a PDF), “Edit” (the paper is in hand, change the photo or take it away) and “View document”, which shows the photo in a box without downloading it first.",
         ]),
         new("What happens next?",
         [
-            "The registrar chooses the student in Enrollment (the LRN is shown, not typed, and the parents fill the printable form). When the student is enrolled the row shows Enrolled and the section. In Student's Accounts the registrar opens the same information and the documents (to read) in one box, with the information at the left and the documents at the right. You do not enroll students and you do not see grades.",
+            "The registrar chooses the student in Enrollment (the LRN is shown, not typed, and the name of the parent or guardian is written over the signature line of the printable form). When the student is enrolled the row shows Enrolled and the section. In Student's Accounts the registrar opens the same information and the documents (to read) in one box, with the information at the left and the documents at the right. You do not enroll students and you do not see grades.",
         ]),
     ]);
 
@@ -503,7 +503,7 @@ public static class HelpContent
         ], "guidance/referrals", "Open Referrals"),
         new("Where do the attendance concerns come from?",
         [
-            "Absenteeism is not made by the system any more: it depends on the teachers. A teacher refers a student from the students of the course, or from View attendance (Refer, for absenteeism only). You get a notification, and the student shows Absenteeism in the Concern list. The attendance of each course is marked by the teacher; the Analytics card “Absent by day” lists who was absent.",
+            "Absenteeism is not made by the system any more: it depends on the teachers. A teacher refers a student from the students of the course, or from View attendance (Refer, for absenteeism only). You get a notification, and the student shows Absenteeism in the Concern list. When the student is absent in more than one course the referral says “Absent in many courses”; the course by course words (absent 4 times, attendance 50% (4 of 8 days)) are in the Analytics card “Absent by day”. The attendance of each course is marked by the teacher; that card lists who was absent.",
             "To see only the students who have a concern, choose “Only students with a concern” in Show, or use “With concerns” or “Absenteeism” under Referrals in the menu.",
         ], "guidance/referrals?show=concerns", "Open the students with a concern"),
         new("How do I record a violation or follow up a concern?",
@@ -527,7 +527,7 @@ public static class HelpContent
         new("Which students go to the referrals by themselves?",
         [
             "No student goes to the referrals by itself any more, not even for absences: a teacher refers the student (absenteeism, non-compliance, behavioral or violation), or you record the concern. Only the notes you write make the box appear for the student (a case that is closed or a schedule shows in the bell, without a box).",
-            "In Analytics, the card “Absent by day” lists each day of the last 30 days with the students who were marked absent and their courses (weekdays only, because classes are Monday to Friday).",
+            "In Analytics, the card “Absent by day” lists each day of the last 30 days with the students who were marked absent and their courses (weekdays only, because classes are Monday to Friday). Under each student it writes the courses one by one, like “GENERAL SCIENCE: absent 3 times, attendance 75% (9 of 12 days)”.",
         ]),
         new("How do I find people and make a group?",
         [

@@ -1,3 +1,4 @@
+@using SEAITT_LMS.Auth
 <!DOCTYPE html>
 <html lang="en" data-theme="@Theme" data-theme-pref="@(Theme ?? "auto")" data-motion="@Motion" data-sound="@Sound">
 
@@ -7,34 +8,27 @@
     <meta name="color-scheme" content="light dark" />
     <base href="/" />
     <link rel="icon" type="image/png" href="@Assets["favicon.png"]" />
-    @* The look the person chose in the settings menu (light, dark or automatic) is kept in a cookie by wwwroot/app.js, and
-       the server writes it onto <html> above. It has to come from the server: when a link is followed, Blazor swaps the page
-       for the one the server sends, attributes of <html> included, so a look that only the browser knew would be lost.
-       The script below is for a person who chose before the cookie existed (the choice was only in the browser then) and
-       draws the right look before the page is shown, so it does not flash white first. *@
+    @* The look the person chose in the settings menu is kept in a cookie by wwwroot/app.js (and on the account, /account/look), and the server writes it onto <html> above. It has to come
+       from the server: when a link is followed, Blazor swaps the page for the one the server sends, attributes of <html> included, so a look that only the browser knew would be lost.
+       The script below only treats the login page (always Default) and the old memory of the browser. *@
     <script>
         (function () {
             try {
                 var root = document.documentElement;
-                var theme = localStorage.getItem('seaitt-theme');
-                var looks = ['default', 'light', 'dark', 'midnight', 'paper'];
-                // Round 47: the look is not kept after signing out: the login page (and a person who is not signed in) always starts with Auto.
+                // Round 48: the server draws the look (App.razor below reads the cookie: Default when there is none, the last look of the account after signing in). The login page is always
+                // Default, and it clears what the browser kept of the person who was signed in before.
                 if (/^\/login(\/|$)/i.test(location.pathname)) {
-                    localStorage.removeItem('seaitt-theme');
-                    localStorage.removeItem('seaitt-custom');
                     document.cookie = 'seaitt-theme=; path=/; max-age=0; samesite=lax';
                     document.cookie = 'seaitt-custom=; path=/; max-age=0; samesite=lax';
-                    root.removeAttribute('data-theme');
-                    theme = null;
+                    root.setAttribute('data-theme', 'default');
+                    root.setAttribute('data-theme-pref', 'default');
                 }
-                var known = looks.indexOf(theme) >= 0;
-                if (known) { root.setAttribute('data-theme', theme); } else if (root.getAttribute('data-theme')) { root.removeAttribute('data-theme'); }
+                localStorage.removeItem('seaitt-theme');
+                localStorage.removeItem('seaitt-custom');
                 root.removeAttribute('data-custom-scheme');
                 root.removeAttribute('style');
-                root.setAttribute('data-theme-pref', known ? theme : 'auto');
                 if (localStorage.getItem('seaitt-motion') === 'off') { root.setAttribute('data-motion', 'off'); }
                 if (localStorage.getItem('seaitt-sound') === 'off') { root.setAttribute('data-sound', 'off'); }
-                if (theme && document.cookie.indexOf('seaitt-theme=') < 0) { document.cookie = 'seaitt-theme=' + theme + '; path=/; max-age=31536000; samesite=lax'; }
                 if (localStorage.getItem('seaitt-motion') === 'off' && document.cookie.indexOf('seaitt-motion=') < 0) { document.cookie = 'seaitt-motion=off; path=/; max-age=31536000; samesite=lax'; }
             } catch (e) { }
         })();
@@ -55,18 +49,17 @@
 @code {
     [CascadingParameter] private HttpContext? HttpContext { get; set; }
 
-    /// <summary>The look the person chose (default, light, dark, midnight or paper), otherwise null (automatic: follow the computer). The login page is always automatic (round 47).</summary>
+    /// <summary>The look the person chose (default, light, dark, midnight or paper), null for Auto (follow the computer). Round 48: Default when there is no cookie, and the login page is always Default.</summary>
     private string? Theme
     {
         get
         {
             if (HttpContext?.Request.Path.StartsWithSegments("/login") == true)
             {
-                return null;
+                return Looks.Default;
             }
 
-            var choice = HttpContext?.Request.Cookies["seaitt-theme"];
-            return choice is "default" or "light" or "dark" or "midnight" or "paper" ? choice : null;
+            return Looks.ThemeOf(HttpContext?.Request.Cookies[Looks.CookieName]);
         }
     }
 

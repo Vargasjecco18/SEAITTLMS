@@ -42,7 +42,7 @@ public sealed record SystemSettingsValues
     public int SectionCapacity { get; init; } = 40;
 
     // ---- the grading system (Round 46): how much the four parts of a grade are worth. The school's: Written/Oral Works 20, Performance Task 50, Summative Test 15, Term Examination 15 (round 47).
-    // The grade is the weighted average scaled to 100% (each weight divided by the total of the four).
+    // Round 48: the grade is 0 based (each part counts out of its weight, a part with no scores counts 0). If the four do not add up to 100, each weight is divided by the total of the four.
     public decimal WeightWrittenOral { get; init; } = 20;
     public decimal WeightPerformance { get; init; } = 50;
     public decimal WeightSummative { get; init; } = 15;

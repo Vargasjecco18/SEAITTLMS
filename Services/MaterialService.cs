@@ -332,9 +332,10 @@ public sealed class MaterialService(IDbContextFactory<AppDbContext> dbFactory, N
             .ToListAsync(ct);
 
         var teachers = new List<MaterialTeacherRow>();
+        var rosterCounts = await Roster.CountsAsync(db, assignments.Select(a => (a.SectionId, subjectId)), ct);
         foreach (var a in assignments)
         {
-            var students = await Roster.StudentIds(db, a.SectionId, subjectId).CountAsync(ct);
+            var students = rosterCounts[(a.SectionId, subjectId)];
             teachers.Add(new MaterialTeacherRow(
                 a.Id, a.TeacherUserId, UserDirectory.FullName(a.FirstName, a.MiddleName, a.LastName, a.NameExtension),
                 TeachingService.SectionLabel(a.GradeLevel, a.StrandCode, a.SectionName), students,

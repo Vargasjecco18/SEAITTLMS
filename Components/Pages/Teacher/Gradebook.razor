@@ -36,7 +36,7 @@ else
             <div class="tile"><span class="tile-value">@book.Rows.Count</span><span class="tile-label">students</span></div>
             <div class="tile"><span class="tile-value">@(book.ClassAverage is { } avg ? avg.ToString("0.#") : "—")</span><span class="tile-label">class final grade (complete gradebooks)</span></div>
             <div class="tile @(book.Failing > 0 ? "alert" : "")"><span class="tile-value">@book.Failing</span><span class="tile-label">below @GradeRules.PassingPercent.ToString("0")</span></div>
-            <div class="tile @(book.Incomplete > 0 ? "warn" : "")" id="tile-incomplete"><span class="tile-value">@book.Incomplete</span><span class="tile-label">with a score missing (grade 0)</span></div>
+            <div class="tile @(book.Incomplete > 0 ? "warn" : "")" id="tile-incomplete"><span class="tile-value">@book.Incomplete</span><span class="tile-label">with a score missing (no final grade yet)</span></div>
             <div class="tile"><span class="tile-value">@book.Rows.Sum(r => r.ToCheck)</span><span class="tile-label">to check</span></div>
         </div>
 
@@ -173,14 +173,15 @@ else
                                         </td>
                                     }
                                     <td class="final" data-final>
-                                        @* The final grade is worked out by the gradebook (nobody types it): 0 until every activity, quiz and exam has a score. *@
+                                        @* The final grade is worked out by the gradebook (nobody types it). Round 48: it is 0 based (a part with no score counts 0, nothing is scaled up) and it only shows when every
+                                           activity, quiz and exam has a score; until then there is no final grade, no descriptor and no Passed or Failed. *@
                                         @if (row.Final is { } finalGrade)
                                         {
-                                            <span class="final-grade @(row.Grade is { Complete: false } ? "incomplete" : "")" title="@FinalTitle(row)"><Badge Tone="@(row.Grade is { Complete: false } ? Tone.Neutral : GradeRules.ToneOf(finalGrade))">@finalGrade</Badge></span>
+                                            <span class="final-grade" title="@FinalTitle(row)"><Badge Tone="@GradeRules.ToneOf(finalGrade)">@finalGrade</Badge></span>
                                         }
                                         else
                                         {
-                                            <span class="dash">—</span>
+                                            <span class="dash" title="@FinalTitle(row)">—</span>
                                         }
                                     </td>
                                     <td class="descriptor" data-descriptor>
@@ -303,8 +304,8 @@ else
 
     private static string FinalTitle(GradebookRow row) =>
         row.Grade is { Complete: false, Missing: > 0 } g
-            ? $"{g.Missing} score{(g.Missing == 1 ? " is" : "s are")} missing, so the final grade is 0 until every activity, quiz and exam has a score."
-            : $"Final grade {row.Final} · {GradingSystem.Descriptor(row.Final ?? 0)} · {GradingSystem.Remark(row.Final ?? 0)}";
+            ? $"{g.Missing} score{(g.Missing == 1 ? " is" : "s are")} missing, so there is no final grade yet."
+            : row.Final is { } final ? $"Final grade {final} · {GradingSystem.Descriptor(final)} · {GradingSystem.Remark(final)}" : "No final grade yet.";
 
     /// <summary>A note at the top right of the screen (a new one every time, even with the same words).</summary>
     private void Say(string? text, bool isError = false)
@@ -342,8 +343,8 @@ else
     }
 
     /// <summary>The look of a score: red under the passing mark, a color for work waiting to be checked.</summary>
-    private static string CellClass(GradebookCell cell, GradebookColumn column) =>
-        cell.Status == SubmissionStatus.Graded && cell.Score is { } s && column.Max > 0 && s / column.Max * 100 < GradeRules.PassingPercent ? "failing" : "";
+    /// <summary>Round 48: no class for a low score (it was red before).</summary>
+    private static string CellClass(GradebookCell cell, GradebookColumn column) => "";
 
     /// <summary>Send final grades: the final grades the gradebook worked out go to the registrar.</summary>
     private async Task SaveFinalGradesAsync()

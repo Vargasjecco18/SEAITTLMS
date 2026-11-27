@@ -94,13 +94,11 @@ public sealed class DashboardService(IDbContextFactory<AppDbContext> dbFactory, 
             .ToListAsync(ct);
         string Label(int assignmentId) { var a = assignments.First(x => x.Id == assignmentId); return TeachingService.SectionLabel(a.GradeLevel, a.Strand, a.Section); }
 
-        var rosters = new Dictionary<int, List<int>>();
-        foreach (var a in assignments)
-        {
-            rosters[a.Id] = await Roster.StudentIds(db, a.SectionId, a.SubjectId).ToListAsync(ct);
-        }
-
-        var studentCount = rosters.Values.SelectMany(x => x).Distinct().Count();
+        // Round 48: the different students of all the courses, with one query (it was one query for each course).
+        var studentCount = await db.EnrollmentSubjects
+            .Where(x => x.Enrollment.Status == EnrollmentStatus.Enrolled
+                        && db.TeachingAssignments.Any(a => a.TeacherId == teacherId && a.SectionId == x.Enrollment.SectionId && a.SubjectId == x.SubjectId))
+            .Select(x => x.Enrollment.StudentId).Distinct().CountAsync(ct);
 
         // Work waiting for a score.
         var waiting = await db.Submissions.AsNoTracking()

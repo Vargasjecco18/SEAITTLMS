@@ -43,18 +43,18 @@ public sealed record OtpResult(bool Succeeded, OtpFailure Failure = OtpFailure.N
 /// <summary>Is a code asked for this person when they sign in?</summary>
 public enum OtpNeed
 {
-    /// <summary>No: the setting is off, or the account is not an administrator's.</summary>
+    /// <summary>No: the setting is off.</summary>
     No,
 
     /// <summary>Yes: send the code to <c>Phone</c>.</summary>
     Yes,
 
-    /// <summary>The setting is on but the key or the number of the administrator is missing: the person signs in with the password only and the security log says so (a missing setting can't lock the only administrator out).</summary>
+    /// <summary>The setting is on but the key of UniSMS or the phone number of the account is missing: the person signs in with the password only and the security log says so (a missing setting can't lock anybody out, the only administrator included).</summary>
     SkippedNotSetUp,
 }
 
 /// <summary>
-/// The one-time code of the login (round 42). It is asked from an administrator who typed the right password, when OTP is on in System Settings: a code of a few digits goes to the phone number of
+/// The one-time code of the login (round 42; round 48: for every user, not only the administrator). It is asked from a person who typed the right password, when OTP is on in System Settings: a code of a few digits goes to the phone number of
 /// the account through UniSMS, and the sign-in is finished when the code is typed. A code lives <see cref="OtpOptions.ExpiryMinutes"/> minutes, takes <see cref="OtpOptions.MaxAttempts"/> wrong tries
 /// and can be sent again after <see cref="OtpOptions.ResendSeconds"/> seconds (<see cref="OtpOptions.MaxSends"/> codes for one sign-in at most). The code is made here and never kept: only a hash is.
 /// </summary>
@@ -71,10 +71,10 @@ public sealed class OtpService(
 
     public bool IsSetUp => sms.IsConfigured;
 
-    /// <summary>Does this account need a code now? Only an administrator, only when OTP is on, and only when UniSMS and the number of the account are set up.</summary>
+    /// <summary>Does this account need a code now? Round 48: every account (the administrator, the staff, the teachers and the students), when OTP is on and when UniSMS and the number of the account are set up.</summary>
     public (OtpNeed Need, string? Phone) Decide(User user)
     {
-        if (user.RoleId != AppRoles.AdminId || !systemSettings.Current.OtpEnabled)
+        if (!systemSettings.Current.OtpEnabled)
         {
             return (OtpNeed.No, null);
         }
@@ -324,6 +324,14 @@ public sealed class OtpService(
         }
 
         return missing;
+    }
+
+    /// <summary>Round 48: how many active accounts have no phone number (they sign in with the password only while OTP is on, until a number is saved for them).</summary>
+    public async Task<int> CountWithoutPhoneAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var numbers = await db.Users.AsNoTracking().Where(u => u.IsActive).Select(u => u.PhoneNumber).ToListAsync(ct);
+        return numbers.Count(n => PhoneNumbers.Normalize(n) is null);
     }
 
     /// <summary>The message: short, with the school, the code, how long it lives and a warning.</summary>

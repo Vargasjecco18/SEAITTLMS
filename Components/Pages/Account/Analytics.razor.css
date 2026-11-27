@@ -689,6 +689,15 @@ h2 {
     font-size: 0.82rem;
 }
 
+/* Round 48: course by course, how the student attends (the words a referral does not say any more). */
+.absent-people .course-details {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--text);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
 
 /* A second line under a name (the LRN and the section) in the lists of the cards. */
 .table .sub {

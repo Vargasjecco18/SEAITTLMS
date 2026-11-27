@@ -12,4 +12,7 @@ public static class AppClaimTypes
 
     /// <summary>The pages ticked for the role the administrator made up (the keys of <c>StaffPages</c> separated by commas). Only on the accounts that have such a role.</summary>
     public const string Pages = "seaitt:pages";
+
+    /// <summary>Round 48: the look the person chose last (see <see cref="Data.Entities.User.Look"/>), read at sign-in to set the look cookie. Only on the accounts that chose one.</summary>
+    public const string Look = "seaitt:look";
 }

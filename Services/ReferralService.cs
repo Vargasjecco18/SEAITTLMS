@@ -103,6 +103,35 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
 
     internal sealed record Finding(int StudentId, int AssignmentId, string SubjectName, string Reason, decimal? Metric, string Detail);
 
+    /// <summary>
+    /// What is found about the attendance of one student in one course, in words ("GENERAL SCIENCE: absent 3 times, attendance 75% (9 of 12 days)"), or nothing when the attendance is fine (fewer than
+    /// <see cref="AbsencesForReferral"/> absences and a rate that is not low). Round 48: this text is for the Analytics (Absent by day); a referral says <see cref="AbsentInManyCourses"/>.
+    /// </summary>
+    internal static string? AttendanceDetailOf(string subjectName, int absent, int present, int late, int days, decimal? rate)
+    {
+        var lowRate = days >= MinAttendanceDays && rate is { } r && r < AttendanceService.LowAttendancePercent;
+        if (!lowRate && absent < AbsencesForReferral)
+        {
+            return null;
+        }
+
+        var parts = new List<string>();
+        if (absent >= AbsencesForReferral)
+        {
+            parts.Add($"absent {absent} times");
+        }
+
+        if (lowRate)
+        {
+            parts.Add($"attendance {rate:0.#}% ({present + late} of {days} days)");
+        }
+
+        return $"{subjectName}: {string.Join(", ", parts)}";
+    }
+
+    /// <summary>Round 48: what a referral of absenteeism says when the student is absent in more than one course (the course by course words are in the Analytics, Absent by day).</summary>
+    public const string AbsentInManyCourses = "Absent in many courses";
+
     internal static List<Finding> FindingsOf(IEnumerable<PairMetric> metrics)
     {
         var list = new List<Finding>();
@@ -128,22 +157,9 @@ public sealed class ReferralService(IDbContextFactory<AppDbContext> dbFactory, N
                 list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.AtRisk, m.Percent, $"{m.SubjectName}: {string.Join(", ", parts)}"));
             }
 
-            var lowRate = m.Days >= MinAttendanceDays && m.AttendanceRate is { } rate && rate < AttendanceService.LowAttendancePercent;
-            if (lowRate || m.Absent >= AbsencesForReferral)
+            if (AttendanceDetailOf(m.SubjectName, m.Absent, m.Present, m.Late, m.Days, m.AttendanceRate) is { } attendanceDetail)
             {
-                // One attendance concern for the course: it says the absences and, when the rate is low, the rate.
-                var parts = new List<string>();
-                if (m.Absent >= AbsencesForReferral)
-                {
-                    parts.Add($"absent {m.Absent} times");
-                }
-
-                if (lowRate)
-                {
-                    parts.Add($"attendance {m.AttendanceRate:0.#}% ({m.Present + m.Late} of {m.Days} days)");
-                }
-
-                list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.LowAttendance, m.AttendanceRate, $"{m.SubjectName}: {string.Join(", ", parts)}"));
+                list.Add(new Finding(m.StudentId, m.AssignmentId, m.SubjectName, ReferralReasons.LowAttendance, m.AttendanceRate, attendanceDetail));
             }
         }
 

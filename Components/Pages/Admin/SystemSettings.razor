@@ -47,7 +47,7 @@
         </Card>
 
         <Card Title="Login code (OTP)" IconName="smartphone" Class="setting">
-            <p class="note">When it is on, an administrator who types the right password also types a code that UniSMS sends to the phone number of the account. For now it is asked from administrators only.</p>
+            <p class="note">When it is on, <strong>every user</strong> (the administrator, the staff, the teachers and the students) who types the right password also types a code that UniSMS sends to the phone number of the account. A person whose account has no phone number signs in with the password only until a number is saved (Users Management or Settings).</p>
             <ul class="otp-checks" aria-label="What OTP needs">
                 <li class="@(Otp.IsSetUp ? "ok" : "no")" id="s-otp-key">
                     <Icon Name="@(Otp.IsSetUp ? "circle-check" : "circle-alert")" Size="16" />
@@ -56,6 +56,10 @@
                 <li class="@(otpMissing.Any(m => m.Contains("phone number")) ? "no" : "ok")" id="s-otp-phone">
                     <Icon Name="@(otpMissing.Any(m => m.Contains("phone number")) ? "circle-alert" : "circle-check")" Size="16" />
                     <span>@(otpMissing.Any(m => m.Contains("phone number")) ? "Your account has no phone number: type it below" : "Your account has a phone number")</span>
+                </li>
+                <li class="@(accountsWithoutPhone > 0 ? "no" : "ok")" id="s-otp-accounts">
+                    <Icon Name="@(accountsWithoutPhone > 0 ? "circle-alert" : "circle-check")" Size="16" />
+                    <span>@(accountsWithoutPhone > 0 ? $"{accountsWithoutPhone} account{(accountsWithoutPhone == 1 ? " has" : "s have")} no phone number (no code is asked from {(accountsWithoutPhone == 1 ? "it" : "them")})" : "Every account has a phone number")</span>
                 </li>
             </ul>
             <div class="otp-phone">
@@ -67,7 +71,7 @@
             <label class="check toggle">
                 <input id="s-otp" type="checkbox" role="switch" @bind="form.OtpEnabled" />
                 <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="check-text"><strong>Ask administrators for a code when they log in</strong><small>It can be turned on only when UniSMS is set up and your account has a phone number. Send the test message first.</small></span>
+                <span class="check-text"><strong>Ask every user for a code when they log in</strong><small>It can be turned on only when UniSMS is set up and your account has a phone number. Send the test message first.</small></span>
             </label>
             <div class="sound-row">
                 <button type="button" class="link-button" id="s-otp-test" disabled="@otpBusy" @onclick="SendTestAsync">@(otpBusy ? "Sending…" : "Send a test message to my phone")</button>
@@ -79,7 +83,7 @@
         </Card>
 
         <Card Title="Grading system" IconName="award" Class="setting">
-            <p class="note">How much each part of a grade is worth. A grade is the weighted average of the four parts (scaled to 100% when the four do not add up to 100). The school's own are 20 · 50 · 15 · 15, which add up to 100.</p>
+            <p class="note">How much each part of a grade is worth. A grade is 0 based: every part counts out of its weight and a part with no scores counts 0 (nothing is scaled up). The school's own are 20 · 50 · 15 · 15, which add up to 100.</p>
             <div class="two">
                 <Field For="s-w-ww" Label="Written/Oral Works (activities and quizzes)" Hint="From 0 to 100.">
                     <input id="s-w-ww" type="number" class="input" min="0" max="100" step="any" @bind="form.WeightWrittenOral" />
@@ -99,23 +103,29 @@
             <p class="note" id="s-w-total">Total of the four: <strong>@((form.WeightWrittenOral + form.WeightPerformance + form.WeightSummative + form.WeightTermExam).ToString("0.##"))</strong>. A final grade is 75 or more to pass: Advancing 90-100, Benchmarking 80-89, Connecting 75-79, Developing 65-74, Emerging 0-64.</p>
         </Card>
 
-        <Card Title="Files and lockers" IconName="folder-open" Class="setting">
-            <p class="note">What people can upload: a file in a locker, an attachment of a handout or a file sent in a message.</p>
+        <Card Title="Backups and the log" IconName="database-backup" Class="setting">
+            <p class="note">The backups themselves are made on the <a href="admin/backups">Database Backup</a> page.</p>
+            <label class="check toggle">
+                <input id="s-auto" type="checkbox" role="switch" @bind="form.AutoBackupOn" />
+                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+                <span class="check-text"><strong>Make a backup by itself every day</strong><small>The system must be running at that time.</small></span>
+            </label>
             <div class="two">
-                <Field For="s-max-file" Label="Biggest file (MB)" Hint="From 1 to 1000. Each file can be this big.">
-                    <input id="s-max-file" type="number" class="input" min="1" max="1000" @bind="form.MaxFileMegabytes" />
+                <Field For="s-auto-hour" Label="From this hour (Philippine time)">
+                    <select id="s-auto-hour" class="input" disabled="@(!form.AutoBackupOn)" @bind="form.AutoBackupHour">
+                        @foreach (var hour in Hours)
+                        {
+                            <option value="@hour">@PhilippineTime.HourText(hour)</option>
+                        }
+                    </select>
                 </Field>
-                <Field For="s-locker" Label="Locker of each person (MB)" Hint="From 10 to 50000. All the files of a person together.">
-                    <input id="s-locker" type="number" class="input" min="10" max="50000" @bind="form.LockerMegabytes" />
+                <Field For="s-keep" Label="Automatic backups to keep" Hint="The older ones are deleted. From 1 to 60.">
+                    <input id="s-keep" type="number" class="input" min="1" max="60" disabled="@(!form.AutoBackupOn)" @bind="form.BackupsToKeep" />
                 </Field>
             </div>
-            @if (packetMegabytes > 0 && packetMegabytes < form.MaxFileMegabytes + 1)
-            {
-                <p class="warn" id="s-packet-warning">
-                    The database accepts files up to <strong>@packetMegabytes MB</strong> only, so a bigger file can't be saved. To allow @form.MaxFileMegabytes MB, put <code>max_allowed_packet=1G</code> under
-                    <code>[mysqld]</code> in the my.ini of MySQL and restart MySQL (the app asks MySQL for it by itself when its user is allowed to).
-                </p>
-            }
+            <Field For="s-log" Label="Days the security log is kept" Hint="Older lines are deleted once a day. From 30 to 3650.">
+                <input id="s-log" type="number" class="input" min="30" max="3650" @bind="form.LogKeepDays" />
+            </Field>
         </Card>
 
         <Card Title="Notification sound of the school" IconName="bell" Class="setting">
@@ -146,29 +156,23 @@
             }
         </Card>
 
-        <Card Title="Backups and the log" IconName="database-backup" Class="setting">
-            <p class="note">The backups themselves are made on the <a href="admin/backups">Database Backup</a> page.</p>
-            <label class="check toggle">
-                <input id="s-auto" type="checkbox" role="switch" @bind="form.AutoBackupOn" />
-                <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-                <span class="check-text"><strong>Make a backup by itself every day</strong><small>The system must be running at that time.</small></span>
-            </label>
+        <Card Title="Files and lockers" IconName="folder-open" Class="setting">
+            <p class="note">What people can upload: a file in a locker, an attachment of a handout or a file sent in a message.</p>
             <div class="two">
-                <Field For="s-auto-hour" Label="From this hour (Philippine time)">
-                    <select id="s-auto-hour" class="input" disabled="@(!form.AutoBackupOn)" @bind="form.AutoBackupHour">
-                        @foreach (var hour in Hours)
-                        {
-                            <option value="@hour">@PhilippineTime.HourText(hour)</option>
-                        }
-                    </select>
+                <Field For="s-max-file" Label="Biggest file (MB)" Hint="From 1 to 1000. Each file can be this big.">
+                    <input id="s-max-file" type="number" class="input" min="1" max="1000" @bind="form.MaxFileMegabytes" />
                 </Field>
-                <Field For="s-keep" Label="Automatic backups to keep" Hint="The older ones are deleted. From 1 to 60.">
-                    <input id="s-keep" type="number" class="input" min="1" max="60" disabled="@(!form.AutoBackupOn)" @bind="form.BackupsToKeep" />
+                <Field For="s-locker" Label="Locker of each person (MB)" Hint="From 10 to 50000. All the files of a person together.">
+                    <input id="s-locker" type="number" class="input" min="10" max="50000" @bind="form.LockerMegabytes" />
                 </Field>
             </div>
-            <Field For="s-log" Label="Days the security log is kept" Hint="Older lines are deleted once a day. From 30 to 3650.">
-                <input id="s-log" type="number" class="input" min="30" max="3650" @bind="form.LogKeepDays" />
-            </Field>
+            @if (packetMegabytes > 0 && packetMegabytes < form.MaxFileMegabytes + 1)
+            {
+                <p class="warn" id="s-packet-warning">
+                    The database accepts files up to <strong>@packetMegabytes MB</strong> only, so a bigger file can't be saved. To allow @form.MaxFileMegabytes MB, put <code>max_allowed_packet=1G</code> under
+                    <code>[mysqld]</code> in the my.ini of MySQL and restart MySQL (the app asks MySQL for it by itself when its user is allowed to).
+                </p>
+            }
         </Card>
 
         <div class="save-bar">
@@ -194,6 +198,7 @@
     private bool messageIsError;
     private bool busy;
     private IReadOnlyList<string> otpMissing = [];
+    private int accountsWithoutPhone;
     private bool otpBusy;
     private bool otpFailed;
     private string? otpMessage;
@@ -205,6 +210,7 @@
         packetMegabytes = await Settings.GetDatabasePacketBytesAsync() / (1024 * 1024);
         await LoadSchoolSoundAsync();
         otpMissing = await Otp.MissingForOtpAsync(userId);
+        accountsWithoutPhone = await Otp.CountWithoutPhoneAsync();
         otpPhone = await Otp.GetPhoneForBoxAsync(userId);
         Reload();
     }
@@ -223,6 +229,7 @@
             otpFailed = !result.Succeeded;
             otpMessage = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
             otpMissing = await Otp.MissingForOtpAsync(userId);
+        accountsWithoutPhone = await Otp.CountWithoutPhoneAsync();
             otpPhone = await Otp.GetPhoneForBoxAsync(userId);
         }
         finally
@@ -246,6 +253,7 @@
             otpFailed = !result.Succeeded;
             otpMessage = result.Succeeded ? "The test message was sent. Look at your phone." : "The test message was not sent. " + result.Error;
             otpMissing = await Otp.MissingForOtpAsync(userId);
+        accountsWithoutPhone = await Otp.CountWithoutPhoneAsync();
         }
         finally
         {

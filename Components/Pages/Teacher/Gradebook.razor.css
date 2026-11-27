@@ -186,9 +186,7 @@
     font-variant-numeric: tabular-nums;
 }
 
-.cell.failing .score {
-    color: var(--danger);
-}
+/* Round 48: a low score has no red font any more (every score looks the same). */
 
 .dash {
     color: var(--text-muted);

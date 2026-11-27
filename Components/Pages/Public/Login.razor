@@ -52,7 +52,7 @@
 
         @if (otpChallenge is not null)
         {
-            @* Round 42: an administrator who typed the right password now types the code that was sent to the phone (OTP, UniSMS). *@
+            @* Round 42 (round 48: every user): a person who typed the right password now types the code that was sent to the phone (OTP, UniSMS). *@
             <div class="otp" id="otp-step">
                 <p class="otp-lead"><Icon Name="smartphone" Size="20" /> <span>We sent a code to <strong>@otpChallenge.SentTo</strong>. Type it here to finish. It expires in @Math.Max(1, (int)Math.Ceiling((otpChallenge.ExpiresAtUtc - Clock.GetUtcNow().UtcDateTime).TotalMinutes)) minutes.</span></p>
 
@@ -300,7 +300,7 @@
 
         var result = await Auth.LoginAsync(Input.Email, Input.Password, ClientInfo.From(HttpContext), HttpContext.RequestAborted);
 
-        // An administrator with OTP on: the code was sent, the page asks for it.
+        // A person with OTP on (every user, round 48): the code was sent, the page asks for it.
         if (result.Failure == LoginFailure.OtpRequired && result.Otp is { } sent)
         {
             RememberAccount(Input.Email);
@@ -449,6 +449,10 @@
         var properties = new AuthenticationProperties { IsPersistent = false };
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.Principal!, properties);
+
+        // Round 48: the account opens with the look it chose last (Default when it never chose one); the look of the person who was signed in before is not kept.
+        HttpContext.Response.Cookies.Append(Looks.CookieName, Looks.Normalize(result.Principal!.FindFirstValue(AppClaimTypes.Look)) ?? Looks.Default,
+            new CookieOptions { Path = "/", SameSite = SameSiteMode.Lax, Secure = HttpContext.Request.IsHttps, MaxAge = TimeSpan.FromDays(365) });
 
         // A page the browser was asking for when the last sign-in ended (?returnUrl=/teacher/subjects/5) belongs to the person who was signed in then. Somebody else who signs in on the same
         // browser would land on a page that is not theirs ("Course not found"), so it is only used when it is the same person (the browser remembers who signed in last) and a page of their role.

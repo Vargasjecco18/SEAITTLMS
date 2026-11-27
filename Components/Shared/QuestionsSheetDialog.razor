@@ -272,6 +272,9 @@
 
     [Parameter] public EventCallback OnClose { get; set; }
 
+    /// <summary>How many empty rows a sheet without questions opens with.</summary>
+    public const int DefaultRows = 10;
+
     private bool wasOpen;
 
     protected override void OnParametersSet()
@@ -283,14 +286,14 @@
         }
         else if (!wasOpen)
         {
-            // It opens with the questions the exam has, and a few empty rows after them.
+            // It opens with the questions the exam has, and empty rows after them: round 48, a sheet with no question yet opens with ten rows.
             rows.Clear();
             foreach (var q in Existing)
             {
                 rows.Add(QuestionSheetRow.From(q, ++nextId));
             }
 
-            AddRows(rows.Count == 0 ? 3 : 1, QuestionKinds.MultipleChoice);
+            AddRows(rows.Count == 0 ? DefaultRows : 1, QuestionKinds.MultipleChoice);
         }
 
         wasOpen = Open;

@@ -32,7 +32,7 @@ public sealed class AdmissionInput
 
 /// <summary>A line of the list of the Admission staff and of the list the registrar chooses from.</summary>
 public sealed record AdmissionRow(int Id, byte GradeLevel, string Lrn, string FullName, string? ParentsText, int DocumentsReceived, bool Enrolled, DateTime CreatedAtUtc,
-    string? Strand = null, string? Section = null, string? Phone = null, int? StrandId = null);
+    string? Strand = null, string? Section = null, string? Phone = null, int? StrandId = null, int OtherDocuments = 0);
 
 /// <summary>A strand to choose when a student is recorded.</summary>
 public sealed record AdmissionStrand(int Id, string Code, string Name, string TrackCode);
@@ -43,7 +43,7 @@ public sealed record AdmissionDocumentRow(int Id, string Kind, string? FileName,
 /// Round 47: one line of the documents of a student: the kind (always there, nothing to choose), and what the school has of it: nothing, the paper in hand (the date), or a document (a photo or a scan,
 /// which can be seen in a box).
 /// </summary>
-public sealed record AdmissionDocumentSlot(string Kind, int? DocumentId, bool InHand, bool HasFile, string? FileName, string? ContentType, DateTime? ReceivedAtUtc)
+public sealed record AdmissionDocumentSlot(string Kind, int? DocumentId, bool InHand, bool HasFile, string? FileName, string? ContentType, DateTime? ReceivedAtUtc, bool IsOther = false)
 {
     public bool IsImage => ContentType is { } type && type.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
 
@@ -119,8 +119,8 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
             .Select(s => new { s.Lrn, StrandCode = db.Strands.Where(x => x.Id == s.StrandId).Select(x => x.Code).FirstOrDefault(), SectionName = db.Sections.Where(x => x.Id == s.SectionId).Select(x => x.Name).FirstOrDefault() })
             .ToListAsync(ct);
         var byLrn = placed.ToDictionary(p => p.Lrn);
-        return [.. rows.Select(r => new AdmissionRow(r.Id, r.GradeLevel, r.Lrn, FullName(r), Parents(r), r.Documents.Select(d => d.Kind).Distinct().Count(), r.EnrolledAtUtc is not null, r.CreatedAtUtc,
-            byLrn.TryGetValue(r.Lrn, out var p) ? p.StrandCode : r.Strand?.Code, byLrn.TryGetValue(r.Lrn, out var q) ? q.SectionName : null, PhoneNumbers.ToLocal(r.PhoneNumber), r.StrandId))];
+        return [.. rows.Select(r => new AdmissionRow(r.Id, r.GradeLevel, r.Lrn, FullName(r), Parents(r), r.Documents.Select(d => d.Kind).Where(AdmissionDocumentKinds.IsFixed).Distinct().Count(), r.EnrolledAtUtc is not null, r.CreatedAtUtc,
+            byLrn.TryGetValue(r.Lrn, out var p) ? p.StrandCode : r.Strand?.Code, byLrn.TryGetValue(r.Lrn, out var q) ? q.SectionName : null, PhoneNumbers.ToLocal(r.PhoneNumber), r.StrandId, r.Documents.Select(d => d.Kind).Where(k => !AdmissionDocumentKinds.IsFixed(k)).Distinct().Count()))];
     }
 
     /// <summary>The strands the Admission staff choose from (the active ones, with their track).</summary>
@@ -270,13 +270,85 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
 
         var docs = await db.AdmissionDocuments.AsNoTracking().Where(d => d.RecordId == recordId)
             .Select(d => new { d.Id, d.Kind, d.FileName, d.ContentType, HasFile = d.Data != null, d.ReceivedAtUtc }).ToListAsync(ct);
-        return [.. AdmissionDocumentKinds.All.Select(kind =>
+        AdmissionDocumentSlot Slot(string kind, bool other)
         {
             var mine = docs.Where(d => d.Kind == kind).OrderByDescending(d => d.HasFile).ThenByDescending(d => d.Id).FirstOrDefault();
             return mine is null
-                ? new AdmissionDocumentSlot(kind, null, false, false, null, null, null)
-                : new AdmissionDocumentSlot(kind, mine.Id, true, mine.HasFile, mine.FileName, mine.ContentType, mine.ReceivedAtUtc);
-        })];
+                ? new AdmissionDocumentSlot(kind, null, false, false, null, null, null, other)
+                : new AdmissionDocumentSlot(kind, mine.Id, true, mine.HasFile, mine.FileName, mine.ContentType, mine.ReceivedAtUtc, other);
+        }
+
+        // Round 48: the five kinds, then the other documents the Admission staff added by typing a name (in the order they were added).
+        var others = docs.Where(d => !AdmissionDocumentKinds.IsFixed(d.Kind)).GroupBy(d => d.Kind).OrderBy(g => g.Min(d => d.Id)).Select(g => g.Key);
+        return [.. AdmissionDocumentKinds.All.Select(kind => Slot(kind, false)), .. others.Select(kind => Slot(kind, true))];
+    }
+
+    /// <summary>The name of an other document written in the usual way: trimmed, one space between the words, the first letter in capitals; empty when it is not a name.</summary>
+    public static string? CleanOtherName(string? name)
+    {
+        var words = (name ?? "").Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var text = string.Join(' ', words);
+        if (text.Length < 2 || text.Length > AdmissionDocumentKinds.MaxNameLength || text.Any(char.IsControl))
+        {
+            return null;
+        }
+
+        return char.ToUpperInvariant(text[0]) + text[1..];
+    }
+
+    /// <summary>
+    /// Round 48: the Admission staff add another document by typing its name (a medical certificate, a baptismal certificate ...). The line is made with the paper in hand and/or a photo or scan.
+    /// The name can't be one of the five kinds or one the student already has.
+    /// </summary>
+    public async Task<ServiceResult> AddOtherDocumentAsync(int userId, int recordId, string? name, bool inHand, string? fileName, string? contentType, byte[]? data, CancellationToken ct = default)
+    {
+        var clean = CleanOtherName(name);
+        if (clean is null)
+        {
+            return ServiceResult.Fail($"Type the name of the document (2 to {AdmissionDocumentKinds.MaxNameLength} letters).");
+        }
+
+        if (!inHand && data is null)
+        {
+            return ServiceResult.Fail("Say that the paper is in hand or add the document.");
+        }
+
+        if (data is not null && data.LongLength > MaxDocumentBytes)
+        {
+            return ServiceResult.Fail($"The file is bigger than {MaxDocumentBytes / (1024 * 1024)} MB.");
+        }
+
+        if (data is not null && (contentType is null || !(contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || contentType == "application/pdf")))
+        {
+            return ServiceResult.Fail("Add a picture or a PDF.");
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var grade = await db.AdmissionRecords.AsNoTracking().Where(r => r.Id == recordId).Select(r => (byte?)r.GradeLevel).FirstOrDefaultAsync(ct);
+        if (grade is null || !(await AccessAsync(db, userId, grade.Value, ct)).Write)
+        {
+            return ServiceResult.Fail("This record was not found.");
+        }
+
+        var existing = await db.AdmissionDocuments.AsNoTracking().Where(d => d.RecordId == recordId).Select(d => d.Kind).Distinct().ToListAsync(ct);
+        if (AdmissionDocumentKinds.All.Any(k => string.Equals(k, clean, StringComparison.OrdinalIgnoreCase)) || existing.Any(k => string.Equals(k, clean, StringComparison.OrdinalIgnoreCase)))
+        {
+            return ServiceResult.Fail("This student already has a line with this name.");
+        }
+
+        db.AdmissionDocuments.Add(new AdmissionDocument
+        {
+            RecordId = recordId,
+            Kind = clean,
+            ReceivedAtUtc = clock.GetUtcNow().UtcDateTime,
+            ReceivedByUserId = userId,
+            Data = data,
+            FileName = data is not null && fileName is { Length: > 0 } ? Path.GetFileName(fileName) : null,
+            ContentType = data is not null ? contentType : null,
+            SizeBytes = data?.LongLength ?? 0,
+        });
+        await db.SaveChangesAsync(ct);
+        return ServiceResult.Ok($"{clean} was added.");
     }
 
     /// <summary>
@@ -285,7 +357,7 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
     /// </summary>
     public async Task<ServiceResult> SetDocumentAsync(int userId, int recordId, string kind, bool inHand, string? fileName, string? contentType, byte[]? data, bool removeFile = false, CancellationToken ct = default)
     {
-        if (!AdmissionDocumentKinds.All.Contains(kind))
+        if (string.IsNullOrWhiteSpace(kind) || kind.Length > AdmissionDocumentKinds.MaxNameLength)
         {
             return ServiceResult.Fail("This kind of document does not exist.");
         }
@@ -297,7 +369,7 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
 
         if (data is not null && (contentType is null || !(contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || contentType == "application/pdf")))
         {
-            return ServiceResult.Fail("Add a photo (a picture) or a PDF.");
+            return ServiceResult.Fail("Add a picture or a PDF.");
         }
 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
@@ -308,6 +380,11 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         }
 
         var rows = await db.AdmissionDocuments.Where(d => d.RecordId == recordId && d.Kind == kind).OrderByDescending(d => d.Id).ToListAsync(ct);
+        if (!AdmissionDocumentKinds.IsFixed(kind) && rows.Count == 0)
+        {
+            return ServiceResult.Fail("This kind of document does not exist (add another document with its name).");   // a new name is added with AddOtherDocumentAsync
+        }
+
         var doc = rows.FirstOrDefault();
         foreach (var extra in rows.Skip(1))
         {

@@ -197,10 +197,9 @@
     };
 })();
 
-// The settings menu: the look (Default, Light, Dark, Midnight, Paper or Auto), and animations on or off. The choice is kept in this browser (localStorage)
-// and in a cookie. The cookie is what lets the server draw the right look on every page, also the ones Blazor swaps in
-// when a link is followed (App.razor reads it).
-// Round 47: Ocean, Forest, Sunset and Customize are gone (a person who had chosen one of them gets Auto), and the look is not kept after signing out: the login page puts it back to Auto.
+// The settings menu: the look (Default, Light, Dark, Midnight, Paper or Auto), and animations on or off. The choice is kept in a cookie, which is what lets the server draw the right look on
+// every page, also the ones Blazor swaps in when a link is followed (App.razor reads it), and it is sent to the server (/account/look) so the account keeps it: the same person gets the last
+// look again when signing in the next time. Round 48: with no choice the look is Default (the cookie says "auto" when Auto was chosen), and the login page is always Default.
 (function () {
     var root = document.documentElement;
     var LOOKS = ['default', 'light', 'dark', 'midnight', 'paper'];
@@ -215,22 +214,31 @@
         } catch (error) { }
     }
 
-    function setTheme(choice) {
-        if (LOOKS.indexOf(choice) >= 0) {
-            root.setAttribute('data-theme', choice);
-            root.setAttribute('data-theme-pref', choice);
-            save('seaitt-theme', choice);
-        } else {
-            root.removeAttribute('data-theme');
-            root.setAttribute('data-theme-pref', 'auto');
-            save('seaitt-theme', null);
-        }
+    function show(look) {
+        if (look === 'auto') { root.removeAttribute('data-theme'); } else { root.setAttribute('data-theme', look); }
+        root.setAttribute('data-theme-pref', look);
     }
 
-    // Signing out puts the look back to Auto (the login page, App.razor, calls this too, so it also holds when the sign-in ended by itself).
+    function tellServer(look) {
+        try {
+            fetch('/account/look', { method: 'POST', body: look, credentials: 'same-origin', headers: { 'Content-Type': 'text/plain' }, keepalive: true }).catch(function () { });
+        } catch (error) { }
+    }
+
+    function setTheme(choice) {
+        var look = LOOKS.indexOf(choice) >= 0 ? choice : 'auto';
+        show(look);
+        try { document.cookie = 'seaitt-theme=' + look + '; path=/; samesite=lax; max-age=31536000'; } catch (error) { }
+        tellServer(look);
+    }
+
+    // Signing out: the look of the page goes back to Default and the cookie is deleted (nothing is sent: the account keeps the look it chose, for its next sign-in). The login page, App.razor,
+    // calls this too, so it also holds when the sign-in ended by itself.
     window.seaitt = window.seaitt || {};
     window.seaitt.resetLook = function () {
-        setTheme('auto');
+        show('default');
+        try { document.cookie = 'seaitt-theme=; path=/; samesite=lax; max-age=0'; } catch (error) { }
+        try { localStorage.removeItem('seaitt-theme'); } catch (error) { }
         save('seaitt-custom', null);
     };
 

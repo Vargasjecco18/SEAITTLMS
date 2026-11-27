@@ -280,8 +280,8 @@ app.MapPost("/account/logout", async (HttpContext http, IAntiforgery antiforgery
 
     await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-    // Round 47: the look (appearance) is not kept after signing out: the next person starts with Auto.
-    http.Response.Cookies.Delete("seaitt-theme");
+    // Round 48: the look cookie is not kept after signing out (the login page is Default); the account's own last look is in the database and comes back at the next sign-in.
+    http.Response.Cookies.Delete(Looks.CookieName);
     http.Response.Cookies.Delete("seaitt-custom");
 
     return Results.LocalRedirect("/login");
@@ -301,6 +301,28 @@ app.MapPost("/account/leaving", async (HttpContext http, SessionWatcher watcher)
 
     return Results.NoContent();
 }).AllowAnonymous().DisableAntiforgery();
+
+// Round 48: the person chose a look in Settings (wwwroot/app.js sends the name as plain text): it is kept on the account, so the same person has it again at the next sign-in.
+app.MapPost("/account/look", async (HttpContext http, IDbContextFactory<AppDbContext> dbFactory) =>
+{
+    if (http.User.Identity?.IsAuthenticated != true || !int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
+    {
+        return Results.Unauthorized();
+    }
+
+    using var reader = new StreamReader(http.Request.Body);
+    var buffer = new char[16];
+    var read = await reader.ReadAsync(buffer, 0, buffer.Length);
+    var look = Looks.Normalize(new string(buffer, 0, read));
+    if (look is null)
+    {
+        return Results.BadRequest();
+    }
+
+    await using var db = await dbFactory.CreateDbContextAsync(http.RequestAborted);
+    await db.Users.Where(u => u.Id == id).ExecuteUpdateAsync(s => s.SetProperty(u => u.Look, look), http.RequestAborted);
+    return Results.NoContent();
+}).DisableAntiforgery();
 
 app.MapPost("/account/arrived", async (HttpContext http, SessionWatcher watcher) =>
 {

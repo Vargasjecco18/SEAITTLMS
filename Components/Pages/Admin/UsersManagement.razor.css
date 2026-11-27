@@ -681,3 +681,38 @@
     color: var(--text-muted);
     font-size: 0.85rem;
 }
+
+/* Round 48: Admission in Add staff asks for the grade level (Grade 11 or Grade 12). */
+.grade-pick {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin: 0.5rem 0 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.grade-pick legend {
+    padding: 0 0.3rem;
+    font-weight: 700;
+}
+
+.radio-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--field-border, var(--border));
+    border-radius: 999px;
+    background: var(--surface);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.radio-pill.on {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
