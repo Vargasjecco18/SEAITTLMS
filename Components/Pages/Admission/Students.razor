@@ -335,9 +335,13 @@ else
         {
             var result = await Admission.SaveAsync(userId, (byte)Grade, form);
             if (!result.Succeeded) { errors = [.. result.Errors]; return; }
+            var savedLrn = form.Lrn?.Trim();
             form = null;
             Say(result.Message);
             await ReloadAsync();
+            // the list is in pages of 25: show the page where the student that was just saved is
+            var at = savedLrn is null ? -1 : rows.ToList().FindIndex(r => r.Lrn == savedLrn);
+            if (at >= 0) { pageNo = at / PageSize + 1; }
         }
         finally { busy = false; }
     }
