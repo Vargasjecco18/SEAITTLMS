@@ -942,7 +942,7 @@ DELETE FROM admission_documents WHERE id > 0 AND kind IN ('2x2 photo', 'Other do
 
 **Database.** (1) Four tables: **`schedules`** (AM, MID, PM, filled by the migration), **`rooms`**, **`course_schedules`** (migration `20261128052550_ClassScheduleAndRooms`) and **`admission_options`** (migration `20261128054826_AdmissionRecordFields`, with the schools and the places of Albay): 69 tables in all (counting `__EFMigrationsHistory`, like before). (2) `admission_records` has `email`, `address_street/city/province/postal_code`, `father_occupation/email`, `mother_occupation/email`, `parents_address/street/city/province/postal_code`, `guardian_occupation/email/street/city/province/postal_code` and `track_id` (foreign key to `tracks`); `sex` of `students` and `admission_records` is `varchar(20)`. (3) `database/seaittlms_reset_and_rebuild.sql` and `database/seaittlms_sample_data.sql` are made again (rooms, class times, the new fields of the records). For a database that already has the earlier rounds the app applies both migrations when it starts.
 
-**Tests.** `b49tests` (72 checks of the services: rooms, class times, the lists of Albay, the record in more parts, the options box, the chime, the term on the calendar, the Admission groups) and `t_b49.js` (58 browser checks).
+**Tests.** `b49tests` (72 checks of the services: rooms, class times, the lists of Albay, the record in more parts, the options box, the chime, the term on the calendar, the Admission groups) and `t_b49.js` (64 browser checks).
 
 ## One-time code (OTP) with UniSMS
 
