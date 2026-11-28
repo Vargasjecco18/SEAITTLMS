@@ -22,6 +22,9 @@ public static class CalendarKinds
     /// <summary>A holiday of the Philippines (<see cref="PhilippineHolidays"/>): on the calendar of every role.</summary>
     public const string Holiday = "Holiday";
 
+    /// <summary>Round 49: the first day and the last day of a term of the academic setup ("1st Term starts", "1st Term ends"): on the calendar of every role.</summary>
+    public const string Term = "Term";
+
     /// <summary>The day and hour the guidance counselor will see a student (the schedule of a referral): on the calendar of the counselor and of the student.</summary>
     public const string Counseling = "Counseling";
 
@@ -38,6 +41,7 @@ public static class CalendarKinds
         Summative => "Summative exam",
         Announcement => "Announcement",
         Holiday => "Holiday",
+        Term => "Term",
         Counseling => "Counseling",
         ItemKinds.Activity => "Assignment",
         Module => "Handout",
@@ -52,6 +56,7 @@ public static class CalendarKinds
         Summative => "clipboard-list",
         Announcement => "megaphone",
         Holiday => "flag",
+        Term => "calendar-range",
         Counseling => "heart-handshake",
         _ => SubjectStyle.KindIcon(kind),
     };
@@ -190,6 +195,23 @@ public sealed class CalendarService(IDbContextFactory<AppDbContext> dbFactory, T
         // The holidays of the Philippines are on everybody's calendar (except the ones the academic coordinator deleted).
         events.AddRange((await HolidaysAsync(db, from, to, ct)).Select((h, n) => new CalendarEvent($"holiday-{h.Day:yyyyMMdd}-{n}", h.Day, null, h.Name,
             h.Kind + (h.Estimated ? " · the day can change" : ""), CalendarKinds.Holiday, null, false, false)));
+
+        // Round 49: the first and the last day of each term (what the academic coordinator set in the school years) are on everybody's calendar.
+        var termRows = await db.Terms.AsNoTracking()
+            .Where(t => (t.StartDate >= from && t.StartDate <= to) || (t.EndDate >= from && t.EndDate <= to))
+            .Select(t => new { t.Id, t.Name, t.StartDate, t.EndDate, Year = t.SchoolYear.Name }).ToListAsync(ct);
+        foreach (var t in termRows)
+        {
+            if (t.StartDate >= from && t.StartDate <= to)
+            {
+                events.Add(new CalendarEvent($"term-start-{t.Id}", t.StartDate, null, $"{t.Name} starts", $"School year {t.Year} · first day of the term", CalendarKinds.Term, null, false, false));
+            }
+
+            if (t.EndDate >= from && t.EndDate <= to)
+            {
+                events.Add(new CalendarEvent($"term-end-{t.Id}", t.EndDate, null, $"{t.Name} ends", $"School year {t.Year} · last day of the term", CalendarKinds.Term, null, false, false));
+            }
+        }
 
         // The events the person wrote on their own calendar.
         var entries = await db.CalendarEntries.AsNoTracking().Where(e => e.UserId == user.UserId && e.Day >= from && e.Day <= to).ToListAsync(ct);

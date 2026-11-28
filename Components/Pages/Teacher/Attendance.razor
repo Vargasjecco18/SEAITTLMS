@@ -101,7 +101,7 @@ else
     </Card>
 
     @* The attendance of the whole class: what each student came to, from every day that was saved. *@
-    <Modal Open="viewing" Title="@ViewTitle" OnClose="CloseView" Large="true">
+    <Modal Open="viewing" Title="@ViewTitle" OnClose="CloseView" Wide="true">
         @if (viewing)
         {
             @if (summary is null || summary.Rows.Count == 0)
@@ -114,33 +114,42 @@ else
             }
             else
             {
-                <div class="table-wrap">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Student</th>
-                                <th scope="col" class="num">Present</th>
-                                <th scope="col" class="num">Late</th>
-                                <th scope="col" class="num">Absent</th>
-                                <th scope="col" class="num">Attendance</th>
-                                <th scope="col"><span class="sr-only">Refer</span></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var r in summary.Rows)
-                            {
-                                <tr>
-                                    <td>@r.Name</td>
-                                    <td class="num">@r.Present</td>
-                                    <td class="num">@r.Late</td>
-                                    <td class="num">@r.Absent</td>
-                                    <td class="num">@if (r.Percent is { } p) { <Badge Tone="@(p < AttendanceService.LowAttendancePercent ? Tone.Danger : p < 90 ? Tone.Warning : Tone.Success)">@p.ToString("0.#")%</Badge> } else { <span class="muted">—</span> }</td>
-                                    @* Round 47: the teacher refers the student to the guidance counselor from here; it is for absenteeism only. *@
-                                    <td class="col-refer"><button type="button" class="refer-btn" id="refer-@r.StudentId" title="@($"Refer {r.Name} to the guidance counselor for absenteeism")" @onclick="() => OpenRefer(r)"><Icon Name="flag" Size="14" /> Refer</button></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                @* Round 49: the class is shown in two columns, the first 20 students at the left and the next 20 at the right (one column on a phone). *@
+                <div class="att-cols" id="attendance-cols">
+                    @foreach (var part in new[] { summary.Rows.Take(ColumnSize).ToList(), summary.Rows.Skip(ColumnSize).ToList() })
+                    {
+                        @if (part.Count > 0)
+                        {
+                            <div class="table-wrap">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Student</th>
+                                            <th scope="col" class="num">Present</th>
+                                            <th scope="col" class="num">Late</th>
+                                            <th scope="col" class="num">Absent</th>
+                                            <th scope="col" class="num">Attendance</th>
+                                            <th scope="col"><span class="sr-only">Refer</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var r in part)
+                                        {
+                                            <tr>
+                                                <td>@r.Name</td>
+                                                <td class="num">@r.Present</td>
+                                                <td class="num">@r.Late</td>
+                                                <td class="num">@r.Absent</td>
+                                                <td class="num">@if (r.Percent is { } p) { <Badge Tone="@(p < AttendanceService.LowAttendancePercent ? Tone.Danger : p < 90 ? Tone.Warning : Tone.Success)">@p.ToString("0.#")%</Badge> } else { <span class="muted">—</span> }</td>
+                                                @* Round 47: the teacher refers the student to the guidance counselor from here; it is for absenteeism only. *@
+                                                <td class="col-refer"><button type="button" class="refer-btn" id="refer-@r.StudentId" title="@($"Refer {r.Name} to the guidance counselor for absenteeism")" @onclick="() => OpenRefer(r)"><Icon Name="flag" Size="14" /> Refer</button></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    }
                 </div>
                 <p class="note">Attendance is the days present or late divided by the days marked. Below @AttendanceService.LowAttendancePercent.ToString("0")% is shown in red.</p>
             }
@@ -239,6 +248,7 @@ else
     private bool busy;
     private List<string> formErrors = [];
     private bool viewing;
+    private const int ColumnSize = 20;
 
     private string ViewTitle => $"Attendance · {subjects.FirstOrDefault(s => s.AssignmentId == subjectId)?.SubjectName} {subjects.FirstOrDefault(s => s.AssignmentId == subjectId)?.SectionLabel}".Trim();
 

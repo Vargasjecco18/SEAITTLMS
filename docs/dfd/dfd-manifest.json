@@ -120,9 +120,13 @@
     {
      "id": "2.8",
      "name": "List and print enrollments"
+    },
+    {
+     "id": "2.9",
+     "name": "Set the class schedule and rooms"
     }
    ],
-   "flows": 26
+   "flows": 30
   },
   {
    "key": "level-2-3",
@@ -316,7 +320,7 @@
  "stores": {
   "D0": [
    "Whole database",
-   "all 63 tables (for the backup)"
+   "all 69 tables (for the backup)"
   ],
   "D1": [
    "Accounts and profiles",
@@ -332,7 +336,7 @@
   ],
   "D4": [
    "School structure",
-   "school_years, terms, tracks, strands, courses, strand_courses, sections"
+   "school_years, terms, tracks, strands, courses, strand_courses, sections, schedules, rooms, course_schedules"
   ],
   "D5": [
    "Enrollments and assignments",

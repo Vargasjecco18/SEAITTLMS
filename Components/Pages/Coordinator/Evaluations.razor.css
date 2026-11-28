@@ -93,3 +93,11 @@
     flex-wrap: wrap;
     gap: 0.4rem;
 }
+
+.modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}

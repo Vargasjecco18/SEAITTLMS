@@ -3,6 +3,30 @@
     gap: 0.5rem;
 }
 
+.doc-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem 0.75rem;
+    margin: 0 0 0.25rem;
+}
+
+.doc-tools {
+    display: inline-flex;
+    gap: 0.4rem;
+}
+
+.act.off {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.act.off:hover {
+    background: var(--surface);
+    border-color: var(--field-border);
+}
+
 .doc-count {
     margin: 0 0 0.25rem;
     color: var(--text-muted);

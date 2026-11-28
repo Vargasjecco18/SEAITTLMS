@@ -92,7 +92,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         b.Property(s => s.Lrn).HasMaxLength(12).IsFixedLength().IsRequired();
         b.HasIndex(s => s.Lrn).IsUnique();
 
-        b.Property(s => s.Sex).HasConversion<string>().HasMaxLength(10);
+        b.Property(s => s.Sex).HasConversion<string>().HasMaxLength(20);
 
         b.Property(s => s.Status).HasMaxLength(10).HasDefaultValue(StudentStatus.Active).IsRequired();
         b.Property(s => s.StatusNote).HasMaxLength(300);

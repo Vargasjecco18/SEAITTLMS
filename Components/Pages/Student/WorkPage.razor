@@ -33,33 +33,44 @@ else
     var closedQuiz = item.IsQuiz && !fileQuiz && overdue && item.Status == "NotStarted";
 
     <PageHeader Title="@item.Title" IconName="@SubjectStyle.KindIcon(item.Kind)">
-        @* In this order: Details, Feedback, Back to the handout. Details and Feedback open a box that slides in from the right (round 41). *@
-        <Button Variant="ButtonVariant.Secondary" IconName="info" Title="The status, the due date and the score" OnClick="@(() => sideBox = "details")">Details</Button>
-        <Button Variant="ButtonVariant.Secondary" IconName="message-square" Title="What your teacher wrote about your work" OnClick="@(() => sideBox = "feedback")"><span>Feedback</span>@if (!string.IsNullOrWhiteSpace(item.Feedback)) { <i class="feedback-dot" aria-label="New feedback"></i> }</Button>
+        @* In this order: Details, Feedback, Back to the handout. Round 49: Details and Feedback are dropdowns that open under their own buttons (no box that slides in from the right). *@
+        <span class="dd">
+            <Button Variant="ButtonVariant.Secondary" IconName="info" Title="The status, the due date and the score" aria-haspopup="true" aria-expanded="@(sideBox == "details" ? "true" : "false")" OnClick="@(() => Toggle("details"))">Details<Icon Name="@(sideBox == "details" ? "chevron-up" : "chevron-down")" Size="14" /></Button>
+            @if (sideBox == "details")
+            {
+                <div class="dd-scrim" @onclick="CloseSideBox"></div>
+                <div class="dd-pop" id="dd-details" role="region" aria-label="Details">
+                    <dl class="facts">
+                        <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@if (item.IsQuiz && item.Status is SubmissionStatus.Graded or SubmissionStatus.Submitted) { <span class="taken-flag" title="Taken: you already took this quiz"><Icon Name="flag" Size="12" /></span> }@StatusText</Badge></dd></div>
+                        <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
+                        <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
+                        @if (item.ScoreVisible && item.Score is { } s)
+                        {
+                            <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
+                        }
+                    </dl>
+                </div>
+            }
+        </span>
+        <span class="dd">
+            <Button Variant="ButtonVariant.Secondary" IconName="message-square" Title="What your teacher wrote about your work" aria-haspopup="true" aria-expanded="@(sideBox == "feedback" ? "true" : "false")" OnClick="@(() => Toggle("feedback"))"><span>Feedback</span>@if (!string.IsNullOrWhiteSpace(item.Feedback)) { <i class="feedback-dot" aria-label="New feedback"></i> }<Icon Name="@(sideBox == "feedback" ? "chevron-up" : "chevron-down")" Size="14" /></Button>
+            @if (sideBox == "feedback")
+            {
+                <div class="dd-scrim" @onclick="CloseSideBox"></div>
+                <div class="dd-pop" id="dd-feedback" role="region" aria-label="Feedback">
+                    @if (string.IsNullOrWhiteSpace(item.Feedback))
+                    {
+                        <p class="muted no-feedback">Your teacher has not written feedback yet.</p>
+                    }
+                    else
+                    {
+                        <div class="text">@item.Feedback</div>
+                    }
+                </div>
+            }
+        </span>
         <ButtonLink Href="@($"student/modules/{item.ModuleId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the handout</ButtonLink>
     </PageHeader>
-
-    <Modal Open="@(sideBox == "details")" Title="Details" Side="true" OnClose="CloseSideBox">
-        <dl class="facts">
-            <div><dt>Status</dt><dd><Badge Tone="@StatusTone">@if (item.IsQuiz && item.Status is SubmissionStatus.Graded or SubmissionStatus.Submitted) { <span class="taken-flag" title="Taken: you already took this quiz"><Icon Name="flag" Size="12" /></span> }@StatusText</Badge></dd></div>
-            <div><dt>Due</dt><dd>@(item.DueAtUtc is { } d ? $"{PhilippineTime.FormatDateTime(d)} ({PhilippineTime.DueText(d, now)})" : "No due date")</dd></div>
-            <div><dt>Highest score</dt><dd>@item.MaxScore.ToString("0.##") points</dd></div>
-            @if (item.ScoreVisible && item.Score is { } s)
-            {
-                <div><dt>Your score</dt><dd><strong>@s.ToString("0.##") / @item.MaxScore.ToString("0.##")</strong> (@SubjectStyle.Percent(s, item.MaxScore))</dd></div>
-            }
-        </dl>
-    </Modal>
-    <Modal Open="@(sideBox == "feedback")" Title="Feedback" Side="true" OnClose="CloseSideBox">
-        @if (string.IsNullOrWhiteSpace(item.Feedback))
-        {
-            <p class="muted no-feedback">Your teacher has not written feedback yet.</p>
-        }
-        else
-        {
-            <div class="text">@item.Feedback</div>
-        }
-    </Modal>
 
     <Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
@@ -261,10 +272,13 @@ else
     private int pickerKey;
     private string? message;
 
-    /// <summary>The box that slides in from the right: "details", "feedback" or none.</summary>
+    /// <summary>The dropdown that is open: "details", "feedback" or none.</summary>
     private string? sideBox;
 
     private void CloseSideBox() => sideBox = null;
+
+    /// <summary>Opens the dropdown of a button, or closes it when it is the one that is open.</summary>
+    private void Toggle(string box) => sideBox = sideBox == box ? null : box;
     private bool messageIsError;
     private bool busy;
     private bool confirmStart;

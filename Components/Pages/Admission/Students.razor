@@ -123,7 +123,9 @@ else
                 </div>
                 <div class="pair">
                     <Field For="a-last" Label="Last name" Required="true"><input id="a-last" type="text" maxlength="100" data-letters class="cap" autocomplete="off" @bind="form.LastName" /></Field>
-                    <Field For="a-ext" Label="Name extension"><input id="a-ext" type="text" maxlength="10" data-letters autocomplete="off" placeholder="Jr." @bind="form.NameExtension" /></Field>
+                    <Field For="a-ext" Label="Name extension">
+                        <SelectOther Id="a-ext" AriaLabel="Name extension" Choices="PhilippineAddresses.SuffixChoices()" Placeholder="None" OtherPlaceholder="Type it" MaxLength="10" Letters="false" @bind-Value="ExtText" />
+                    </Field>
                 </div>
                 <div class="pair">
                     <Field For="a-sex" Label="Sex">
@@ -131,12 +133,25 @@ else
                             <option value="">—</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
+                            <option value="PreferNotToSay">Prefer not to say</option>
                         </select>
                     </Field>
-                    <Field For="a-strand" Label="Strand" Hint="The strand the student wants.">
+                    <Field For="a-phone" Label="Phone number" Hint="Optional. Digits only."><input id="a-phone" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" @bind="form.PhoneNumber" /></Field>
+                </div>
+                <div class="pair">
+                    <Field For="a-track" Label="Track" Hint="The track the student wants.">
+                        <select id="a-track" value="@(form.TrackId?.ToString() ?? "")" @onchange="TrackChosen">
+                            <option value="">Not chosen yet</option>
+                            @foreach (var t in tracks)
+                            {
+                                <option value="@t.Id" selected="@(form.TrackId == t.Id)">@t.Code</option>
+                            }
+                        </select>
+                    </Field>
+                    <Field For="a-strand" Label="Strand" Hint="The strands of the track.">
                         <select id="a-strand" @bind="strandText">
                             <option value="">Not chosen yet</option>
-                            @foreach (var group in strands.GroupBy(s => s.TrackCode))
+                            @foreach (var group in StrandChoices.GroupBy(s => s.TrackCode))
                             {
                                 <optgroup label="@group.Key">
                                     @foreach (var s in group)
@@ -148,9 +163,11 @@ else
                         </select>
                     </Field>
                 </div>
-                <Field For="a-phone" Label="Phone number" Hint="Optional. Digits only."><input id="a-phone" type="tel" inputmode="numeric" data-digits maxlength="12" autocomplete="off" @bind="form.PhoneNumber" /></Field>
-                <Field For="a-school" Label="Previous school"><input id="a-school" type="text" maxlength="200" autocomplete="off" @bind="form.PreviousSchool" /></Field>
-                <Field For="a-address" Label="Address"><input id="a-address" type="text" maxlength="300" autocomplete="off" @bind="form.Address" /></Field>
+                <Field For="a-email" Label="Email address" Hint="Optional."><input id="a-email" type="email" maxlength="150" autocomplete="off" @bind="form.Email" /></Field>
+                <Field For="a-school" Label="Previous school" Hint="Schools of Albay. Not in the list? Choose Add school.">
+                    <AddableSelect Id="a-school" AriaLabel="Previous school" Choices="schools" Placeholder="Choose the school" AddLabel="Add school" AddPlaceholder="Name of the school" @bind-Value="SchoolText" Add="AddSchoolAsync" />
+                </Field>
+                <AddressFields IdPrefix="a-addr" Label="Address" Parts="form.Address" Cities="cities" AddCity="AddCityAsync" />
             </section>
 
             <section class="col" aria-label="Parents and guardian">
@@ -160,15 +177,30 @@ else
                     <Field For="a-father-phone" Label="Father's phone"><input id="a-father-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.FatherPhone" /></Field>
                 </div>
                 <div class="pair">
+                    <Field For="a-father-job" Label="Father's occupation"><input id="a-father-job" type="text" maxlength="100" autocomplete="off" @bind="form.FatherOccupation" /></Field>
+                    <Field For="a-father-email" Label="Father's email"><input id="a-father-email" type="email" maxlength="150" autocomplete="off" @bind="form.FatherEmail" /></Field>
+                </div>
+                <div class="pair">
                     <Field For="a-mother" Label="Mother's name"><input id="a-mother" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.MotherName" /></Field>
                     <Field For="a-mother-phone" Label="Mother's phone"><input id="a-mother-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.MotherPhone" /></Field>
                 </div>
                 <div class="pair">
-                    <Field For="a-guardian" Label="Guardian's name"><input id="a-guardian" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.GuardianName" /></Field>
-                    <Field For="a-relationship" Label="Relationship"><input id="a-relationship" type="text" maxlength="50" autocomplete="off" placeholder="Aunt, grandmother ..." @bind="form.GuardianRelationship" /></Field>
+                    <Field For="a-mother-job" Label="Mother's occupation"><input id="a-mother-job" type="text" maxlength="100" autocomplete="off" @bind="form.MotherOccupation" /></Field>
+                    <Field For="a-mother-email" Label="Mother's email"><input id="a-mother-email" type="email" maxlength="150" autocomplete="off" @bind="form.MotherEmail" /></Field>
                 </div>
-                <Field For="a-guardian-phone" Label="Guardian's phone"><input id="a-guardian-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.GuardianPhone" /></Field>
-                <Field For="a-guardian-address" Label="Guardian's address"><input id="a-guardian-address" type="text" maxlength="300" autocomplete="off" @bind="form.GuardianAddress" /></Field>
+                <AddressFields IdPrefix="a-parents" Label="Parents' address" Parts="form.ParentsAddress" Cities="cities" AddCity="AddCityAsync" />
+                <div class="pair">
+                    <Field For="a-guardian" Label="Guardian's name"><input id="a-guardian" type="text" maxlength="150" data-letters class="cap" autocomplete="off" @bind="form.GuardianName" /></Field>
+                    <Field For="a-relationship" Label="Relationship">
+                        <SelectOther Id="a-relationship" AriaLabel="Relationship" Choices="AdmissionService.Relationships" Placeholder="Choose" OtherPlaceholder="Type the relationship" MaxLength="50" @bind-Value="RelationshipText" />
+                    </Field>
+                </div>
+                <div class="pair">
+                    <Field For="a-guardian-phone" Label="Guardian's phone"><input id="a-guardian-phone" type="tel" data-digits maxlength="12" autocomplete="off" @bind="form.GuardianPhone" /></Field>
+                    <Field For="a-guardian-job" Label="Guardian's occupation"><input id="a-guardian-job" type="text" maxlength="100" autocomplete="off" @bind="form.GuardianOccupation" /></Field>
+                </div>
+                <Field For="a-guardian-email" Label="Guardian's email"><input id="a-guardian-email" type="email" maxlength="150" autocomplete="off" @bind="form.GuardianEmail" /></Field>
+                <AddressFields IdPrefix="a-guardian-addr" Label="Guardian's address" Parts="form.GuardianAddress" Cities="cities" AddCity="AddCityAsync" />
             </section>
         </div>
         <div class="modal-actions">
@@ -188,12 +220,14 @@ else
                 <dl class="info">
                     <div><dt>LRN</dt><dd class="mono">@viewing.Lrn</dd></div>
                     <div><dt>Name</dt><dd>@viewingRow.FullName</dd></div>
-                    <div><dt>Sex</dt><dd>@(viewing.Sex?.ToString() ?? "—")</dd></div>
+                    <div><dt>Sex</dt><dd>@viewing.Sex.Display()</dd></div>
+                    <div><dt>Track</dt><dd>@(TrackCodeOf(viewing.TrackId))</dd></div>
                     <div><dt>Strand</dt><dd>@(viewingRow.Strand ?? "—")</dd></div>
                     <div><dt>Section</dt><dd>@(viewingRow.Section ?? "—")</dd></div>
                     <div><dt>Phone number</dt><dd class="mono">@Or(viewing.PhoneNumber)</dd></div>
+                    <div><dt>Email address</dt><dd>@Or(viewing.Email)</dd></div>
                     <div><dt>Previous school</dt><dd>@Or(viewing.PreviousSchool)</dd></div>
-                    <div><dt>Address</dt><dd>@Or(viewing.Address)</dd></div>
+                    <div><dt>Address</dt><dd>@Or(viewing.Address.Line())</dd></div>
                     <div><dt>State</dt><dd>@(viewingRow.Enrolled ? "Enrolled by the registrar" : "Recorded, waiting to be enrolled")</dd></div>
                 </dl>
             </section>
@@ -202,11 +236,18 @@ else
                 <dl class="info">
                     <div><dt>Father</dt><dd>@Or(viewing.FatherName)</dd></div>
                     <div><dt>Father's phone</dt><dd class="mono">@Or(viewing.FatherPhone)</dd></div>
+                    <div><dt>Father's occupation</dt><dd>@Or(viewing.FatherOccupation)</dd></div>
+                    <div><dt>Father's email</dt><dd>@Or(viewing.FatherEmail)</dd></div>
                     <div><dt>Mother</dt><dd>@Or(viewing.MotherName)</dd></div>
                     <div><dt>Mother's phone</dt><dd class="mono">@Or(viewing.MotherPhone)</dd></div>
+                    <div><dt>Mother's occupation</dt><dd>@Or(viewing.MotherOccupation)</dd></div>
+                    <div><dt>Mother's email</dt><dd>@Or(viewing.MotherEmail)</dd></div>
+                    <div><dt>Parents' address</dt><dd>@Or(viewing.ParentsAddress.Line())</dd></div>
                     <div><dt>Guardian</dt><dd>@Or(viewing.GuardianName)@(string.IsNullOrWhiteSpace(viewing.GuardianRelationship) ? "" : $" ({viewing.GuardianRelationship})")</dd></div>
                     <div><dt>Guardian's phone</dt><dd class="mono">@Or(viewing.GuardianPhone)</dd></div>
-                    <div><dt>Guardian's address</dt><dd>@Or(viewing.GuardianAddress)</dd></div>
+                    <div><dt>Guardian's occupation</dt><dd>@Or(viewing.GuardianOccupation)</dd></div>
+                    <div><dt>Guardian's email</dt><dd>@Or(viewing.GuardianEmail)</dd></div>
+                    <div><dt>Guardian's address</dt><dd>@Or(viewing.GuardianAddress.Line())</dd></div>
                 </dl>
             </section>
         </div>
@@ -238,6 +279,9 @@ else
     /// <summary>Round 48: a grade level has hundreds of students; the table draws 25 lines at a time (the page was slow with all of them).</summary>
     private const int PageSize = 25;
     private IReadOnlyList<AdmissionStrand> strands = [];
+    private IReadOnlyList<AdmissionTrack> tracks = [];
+    private IReadOnlyList<string> schools = [];
+    private IReadOnlyList<string> cities = [];
     private string searchText = "";
     private string stateFilter = "";
     private string strandFilter = "";
@@ -245,7 +289,7 @@ else
     private AdmissionInput? viewing;
     private AdmissionRow? viewingRow;
     private string sexText { get => form?.Sex?.ToString() ?? ""; set { if (form is not null) { form.Sex = Enum.TryParse<Sex>(value, out var s) ? s : null; } } }
-    private string strandText { get => form?.StrandId?.ToString() ?? ""; set { if (form is not null) { form.StrandId = int.TryParse(value, out var s) ? s : null; } } }
+    private string strandText { get => form?.StrandId?.ToString() ?? ""; set { if (form is not null) { form.StrandId = int.TryParse(value, out var s) ? s : null; if (form.StrandId is { } id && strands.FirstOrDefault(x => x.Id == id) is { } picked) { form.TrackId = picked.TrackId; } } } }
     private List<string> errors = [];
     private string? message;
     private bool messageIsError;
@@ -260,8 +304,46 @@ else
         if (allowed)
         {
             strands = await Admission.ListStrandsAsync();
+            tracks = await Admission.ListTracksAsync();
+            schools = await Admission.GetOptionsAsync(AdmissionOptionKinds.School);
+            cities = await Admission.GetOptionsAsync(AdmissionOptionKinds.City);
             await ReloadAsync();
         }
+    }
+
+    /// <summary>The strands of the track that was chosen (all of them while no track is chosen).</summary>
+    private IEnumerable<AdmissionStrand> StrandChoices => form?.TrackId is { } trackId ? strands.Where(s => s.TrackId == trackId) : strands;
+
+    private string ExtText { get => form?.NameExtension ?? ""; set { if (form is not null) { form.NameExtension = string.IsNullOrWhiteSpace(value) ? null : value; } } }
+
+    private string SchoolText { get => form?.PreviousSchool ?? ""; set { if (form is not null) { form.PreviousSchool = string.IsNullOrWhiteSpace(value) ? null : value; } } }
+
+    private string RelationshipText { get => form?.GuardianRelationship ?? ""; set { if (form is not null) { form.GuardianRelationship = string.IsNullOrWhiteSpace(value) ? null : value; } } }
+
+    private string TrackCodeOf(int? trackId) => tracks.FirstOrDefault(t => t.Id == trackId)?.Code ?? "—";
+
+    /// <summary>A track was chosen: the strand goes away when it is not one of the track.</summary>
+    private void TrackChosen(ChangeEventArgs e)
+    {
+        if (form is null) { return; }
+        form.TrackId = int.TryParse(e.Value?.ToString(), out var id) ? id : null;
+        if (form.TrackId is { } trackId && form.StrandId is { } strandId && strands.FirstOrDefault(s => s.Id == strandId)?.TrackId != trackId) { form.StrandId = null; }
+    }
+
+    private async Task<(bool Ok, string Text)> AddSchoolAsync(string name)
+    {
+        var result = await Admission.AddOptionAsync(userId, AdmissionOptionKinds.School, name);
+        if (!result.Succeeded) { return (false, string.Join(" ", result.Errors)); }
+        schools = await Admission.GetOptionsAsync(AdmissionOptionKinds.School);
+        return (true, schools.FirstOrDefault(x => string.Equals(x, NameCase.Title(name.Trim()), StringComparison.OrdinalIgnoreCase)) ?? name.Trim());
+    }
+
+    private async Task<(bool Ok, string Text)> AddCityAsync(string name)
+    {
+        var result = await Admission.AddOptionAsync(userId, AdmissionOptionKinds.City, name);
+        if (!result.Succeeded) { return (false, string.Join(" ", result.Errors)); }
+        cities = await Admission.GetOptionsAsync(AdmissionOptionKinds.City);
+        return (true, cities.FirstOrDefault(x => string.Equals(x, NameCase.Title(name.Trim()), StringComparison.OrdinalIgnoreCase)) ?? name.Trim());
     }
 
     private IEnumerable<string> StrandCodes => all.Select(r => r.Strand).Where(c => !string.IsNullOrEmpty(c)).Select(c => c!).Distinct().Order();

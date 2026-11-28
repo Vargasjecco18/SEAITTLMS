@@ -94,6 +94,7 @@
 .dot.summative, .kind-dot.summative { background: var(--teal); }
 .dot.announcement, .kind-dot.announcement { background: var(--slate); }
 .dot.holiday, .kind-dot.holiday { background: var(--rose); }
+.dot.term, .kind-dot.term { background: var(--brand); }
 .dot.module, .kind-dot.module { background: var(--green); }
 .dot.late { background: var(--danger-solid); }
 

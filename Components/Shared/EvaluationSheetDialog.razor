@@ -13,7 +13,7 @@
                         <li><strong>Write the question</strong> in a row. Press Tab to go to the next box.</li>
                         <li><strong>Choose the type</strong> from the list. This is how the students answer.</li>
                         <li><strong>Write the area</strong> it is about (Teaching, Support…). The results are grouped by area.</li>
-                        <li>For a <em>Ranking Scale</em> and a <em>Select-All-That-Apply</em>, <strong>write the options</strong> (at least two). Press <em>Option column</em> for more boxes.</li>
+                        <li>For a <em>Ranking Scale</em> and a <em>Select-All-That-Apply</em>, <strong>write the options</strong> in the Options box, with a semicolon between them (at least two).</li>
                         <li><strong>Look at the Ready column.</strong> A row with a problem tells you what is missing. A row with nothing in it is ignored.</li>
                         <li><strong>Press Save.</strong> @SaveStep</li>
                     </ol>
@@ -59,10 +59,7 @@
                                 <th scope="col" class="c-q">Question</th>
                                 <th scope="col" class="c-type">Type</th>
                                 <th scope="col" class="c-area">Area</th>
-                                @for (var c = 0; c < columns; c++)
-                                {
-                                    <th scope="col" class="c-choice">Option @QuestionSheetRow.Letter(c)</th>
-                                }
+                                <th scope="col" class="c-options">Options</th>
                                 <th scope="col" class="c-state">Ready</th>
                                 <th scope="col" class="c-x"><span class="sr-only">Remove the row</span></th>
                             </tr>
@@ -92,15 +89,11 @@
                                         <input class="cell" type="text" list="eval-areas" maxlength="60" autocomplete="off" aria-label="@($"Area of question {n}")" placeholder="Area" value="@row.Category" @key="@($"a-{row.Id}")"
                                                @onchange="e => row.Category = e.Value?.ToString() ?? string.Empty" />
                                     </td>
-                                    @for (var c = 0; c < columns; c++)
-                                    {
-                                        var at = c;
-                                        <td class="c-choice">
-                                            <input class="cell" type="text" maxlength="120" autocomplete="off" aria-label="@($"Option {QuestionSheetRow.Letter(at)} of question {n}")" disabled="@(!hasOptions)"
-                                                   placeholder="@(hasOptions ? "" : "—")" value="@(hasOptions && at < row.Options.Count ? row.Options[at] : "")" @key="@($"o{at}-{row.Id}-{kind}")"
-                                                   @onchange="e => SetOption(row, at, e.Value?.ToString())" />
-                                        </td>
-                                    }
+                                    <td class="c-options">
+                                        <input class="cell" type="text" maxlength="900" autocomplete="off" aria-label="@($"Options of question {n}")" disabled="@(!hasOptions)"
+                                               placeholder="@(hasOptions ? "Option; option; option" : "—")" value="@(hasOptions ? row.OptionsText : "")" @key="@($"o-{row.Id}-{kind}")"
+                                               @onchange="e => row.OptionsText = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
                                     <td class="c-state">
                                         @if (!filled)
                                         {
@@ -130,27 +123,28 @@
                     </datalist>
                 </div>
 
-                <div class="sheet-tools">
-                    @* Add [type] [number] row: the type of the new rows is chosen from a list and how many from a number box. *@
-                    <span class="add-rows" role="group" aria-label="Add rows">
-                        <span>Add</span>
-                        <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
-                            @foreach (var k in EvaluationQuestionKinds.All)
-                            {
-                                <option value="@k">@EvaluationQuestionKinds.Display(k)</option>
-                            }
-                        </select>
-                        <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
-                        <span>@(addCount == 1 ? "row" : "rows")</span>
-                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
-                    </span>
-                    <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(columns >= EvaluationQuestionKinds.MaxOptions)" OnClick="AddColumn">Option column</Button>
-                    <span class="muted">@rows.Count of @MaxRows rows</span>
-                </div>
+                <div class="sheet-foot">
+                  <div class="sheet-tools">
+                      @* Add [type] [number] row: the type of the new rows is chosen from a list and how many from a number box. *@
+                      <span class="add-rows" role="group" aria-label="Add rows">
+                          <span>Add</span>
+                          <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
+                              @foreach (var k in EvaluationQuestionKinds.All)
+                              {
+                                  <option value="@k">@EvaluationQuestionKinds.Display(k)</option>
+                              }
+                          </select>
+                          <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                          <span>@(addCount == 1 ? "row" : "rows")</span>
+                          <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
+                      </span>
+                      <span class="muted">@rows.Count of @MaxRows rows</span>
+                  </div>
 
-                <div class="sheet-actions">
-                    <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
-                    <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
+                  <div class="sheet-actions">
+                      <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                      <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
+                  </div>
                 </div>
             </div>
         </div>
@@ -162,7 +156,6 @@
 
     private readonly List<EvaluationSheetRow> rows = [];
     private int nextId;
-    private int columns = 4;
 
     // The type and the number of the rows that "Add [type] [number] rows" puts at the end.
     private string addKind = EvaluationQuestionKinds.Likert;
@@ -213,9 +206,7 @@
                 rows.Add(EvaluationSheetRow.From(q, ++nextId));
             }
 
-            columns = Math.Clamp(Math.Max(4, rows.Count == 0 ? 4 : rows.Max(r => r.Options.Count)), 4, EvaluationQuestionKinds.MaxOptions);
             AddRows(rows.Count == 0 ? 3 : 1, EvaluationQuestionKinds.Likert);
-            FitRows();
         }
 
         wasOpen = Open;
@@ -225,34 +216,15 @@
 
     private Task CloseAsync() => OnClose.InvokeAsync();
 
-    private void FitRows()
-    {
-        foreach (var row in rows)
-        {
-            row.Fit(columns);
-        }
-    }
-
     private void AddRows(int count, string kind)
     {
         for (var n = 0; n < count && rows.Count < MaxRows; n++)
         {
-            var row = new EvaluationSheetRow { Id = ++nextId, Kind = kind };
-            row.Fit(columns);
-            rows.Add(row);
+            rows.Add(new EvaluationSheetRow { Id = ++nextId, Kind = kind });
         }
     }
 
     private void AddChosenRows() => AddRows(Math.Clamp(addCount, 1, 50), addKind);
-
-    private void AddColumn()
-    {
-        if (columns < EvaluationQuestionKinds.MaxOptions)
-        {
-            columns++;
-            FitRows();
-        }
-    }
 
     private void RemoveRow(EvaluationSheetRow row)
     {
@@ -268,12 +240,6 @@
         {
             row.ChangeKind(kind);
         }
-    }
-
-    private static void SetOption(EvaluationSheetRow row, int place, string? value)
-    {
-        row.Fit(place + 1);
-        row.Options[place] = value ?? string.Empty;
     }
 
     private IReadOnlyList<EvaluationSheetRow> Filled => [.. rows.Where(r => r.IsFilled)];

@@ -34,7 +34,7 @@
                     <h3 class="docs-title"><Icon Name="info" Size="16" /> Information</h3>
                     <dl class="account" id="enrollment-info">
                         <div><dt>LRN</dt><dd class="mono">@info.Lrn</dd></div>
-                        <div><dt>Sex</dt><dd>@(infoRecord?.Sex?.ToString() ?? "—")</dd></div>
+                        <div><dt>Sex</dt><dd>@(infoRecord?.Sex.Display() ?? "—")</dd></div>
                         <div><dt>Phone</dt><dd>@(string.IsNullOrWhiteSpace(info.PhoneNumber) ? "—" : SEAITT_LMS.Auth.PhoneNumbers.ToLocal(info.PhoneNumber))</dd></div>
                         <div><dt>School year · term</dt><dd>@info.SchoolYear · @info.Term</dd></div>
                         <div><dt>Grade · strand · section</dt><dd>Grade @info.GradeLevel · @info.Strand · @info.Section</dd></div>
@@ -44,7 +44,7 @@
                         <div><dt>Father</dt><dd>@(infoRecord?.FatherName ?? "—")</dd></div>
                         <div><dt>Mother</dt><dd>@(infoRecord?.MotherName ?? "—")</dd></div>
                         <div><dt>Guardian</dt><dd>@(infoRecord?.GuardianName is { } g ? g + (string.IsNullOrWhiteSpace(infoRecord.GuardianRelationship) ? "" : $" ({infoRecord.GuardianRelationship})") : "—")</dd></div>
-                        <div><dt>Address</dt><dd>@(infoRecord?.GuardianAddress ?? infoRecord?.Address ?? "—")</dd></div>
+                        <div><dt>Address</dt><dd>@(infoRecord?.Address ?? infoRecord?.ParentsAddress ?? infoRecord?.GuardianAddress ?? "—")</dd></div>
                     </dl>
                 </section>
                 <section class="docs-col" aria-label="Documents">
@@ -55,7 +55,7 @@
                     }
                     else
                     {
-                        <AdmissionDocuments RecordId="infoRecord.Id" CanEdit="false" />
+                        <AdmissionDocuments RecordId="infoRecord.Id" CanEdit="false" ShowTools="true" />
                     }
                 </section>
             </div>

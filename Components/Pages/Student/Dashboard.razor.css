@@ -92,8 +92,7 @@ ul {
 }
 
 .work-sub,
-.module-sub,
-.grade-sub {
+.module-sub {
     color: var(--text-muted);
     font-size: 0.84rem;
 }
@@ -105,8 +104,7 @@ ul {
     gap: 0.3rem;
 }
 
-.modules li,
-.grades li {
+.modules li {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -116,13 +114,11 @@ ul {
     border-bottom: 1px solid var(--border);
 }
 
-.modules li:last-child,
-.grades li:last-child {
+.modules li:last-child {
     border-bottom: 0;
 }
 
-.modules a,
-.grades a {
+.modules a {
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -130,14 +126,12 @@ ul {
     text-decoration: none;
 }
 
-.modules a:hover .module-title,
-.grades a:hover .grade-title {
+.modules a:hover .module-title {
     color: var(--brand-strong);
     text-decoration: underline;
 }
 
-.module-title,
-.grade-title {
+.module-title {
     font-weight: 650;
     overflow-wrap: anywhere;
 }
@@ -160,45 +154,4 @@ ul {
     margin: 0 0 0.75rem;
     color: var(--text-muted);
     font-size: 0.9rem;
-}
-
-/* The progress card: one line for each course, with its bar. */
-.course-progress {
-    display: grid;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.course-progress a {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.55rem 0.5rem;
-    border-radius: var(--radius-sm);
-    color: inherit;
-    text-decoration: none;
-}
-
-.course-progress a:hover {
-    background: var(--surface-2);
-}
-
-.progress-name {
-    font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-.progress-none {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
-
-@media (max-width: 600px) {
-    .course-progress a {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0.25rem;
-    }
 }

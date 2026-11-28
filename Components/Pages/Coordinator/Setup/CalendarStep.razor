@@ -41,9 +41,9 @@
                         </div>
                         @* The first day and the last day of the school year, in the middle of its bar. *@
                         <div class="year-days">
-                            <label>First day <input type="date" class="ghost date" aria-label="@($"First day of {year.Name}")" value="@Box(year.StartDate)" @key="@($"ys-{year.Id}-{stamp}")"
+                            <label>First day <input type="date" class="ghost date" min="@TodayBox" aria-label="@($"First day of {year.Name}")" value="@Box(year.StartDate)" @key="@($"ys-{year.Id}-{stamp}")"
                                                     @onchange="e => SaveYearAsync(year, start: e.Value?.ToString())" /></label>
-                            <label>Last day <input type="date" class="ghost date" aria-label="@($"Last day of {year.Name}")" value="@Box(year.EndDate)" @key="@($"ye-{year.Id}-{stamp}")"
+                            <label>Last day <input type="date" class="ghost date" min="@TodayBox" aria-label="@($"Last day of {year.Name}")" value="@Box(year.EndDate)" @key="@($"ye-{year.Id}-{stamp}")"
                                                    @onchange="e => SaveYearAsync(year, end: e.Value?.ToString())" /></label>
                         </div>
                         <span class="year-count">@year.Sections @(year.Sections == 1 ? "section" : "sections")</span>
@@ -78,9 +78,9 @@
                                     </button>
                                 </div>
                                 <div class="term-days">
-                                    <label>From <input type="date" class="ghost date" aria-label="@($"First day of {term.Name} of {year.Name}")" value="@Box(term.StartDate)" @key="@($"ts-{term.Id}-{stamp}")"
+                                    <label>From <input type="date" class="ghost date" min="@TodayBox" aria-label="@($"First day of {term.Name} of {year.Name}")" value="@Box(term.StartDate)" @key="@($"ts-{term.Id}-{stamp}")"
                                                        @onchange="e => SaveTermAsync(term, start: e.Value?.ToString())" /></label>
-                                    <label>To <input type="date" class="ghost date" aria-label="@($"Last day of {term.Name} of {year.Name}")" value="@Box(term.EndDate)" @key="@($"te-{term.Id}-{stamp}")"
+                                    <label>To <input type="date" class="ghost date" min="@TodayBox" aria-label="@($"Last day of {term.Name} of {year.Name}")" value="@Box(term.EndDate)" @key="@($"te-{term.Id}-{stamp}")"
                                                      @onchange="e => SaveTermAsync(term, end: e.Value?.ToString())" /></label>
                                 </div>
                                 <span class="term-count">@term.Enrollments @(term.Enrollments == 1 ? "student" : "students") enrolled</span>
@@ -151,6 +151,9 @@
         : Active.Where(y => y.Name.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase) || TermsOf(y.Id).Any(t => t.Name.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase))).ToList();
 
     private IReadOnlyList<TermRow> TermsOf(int yearId) => terms.Where(t => t.SchoolYearId == yearId).OrderBy(t => t.TermNumber).ToList();
+
+    /// <summary>Round 49: the first and last days can't be picked in the past (the box starts at today, and the service refuses a day that has passed).</summary>
+    private string TodayBox => Box(PhilippineTime.Today(Clock));
 
     private static string Box(DateOnly date) => date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 

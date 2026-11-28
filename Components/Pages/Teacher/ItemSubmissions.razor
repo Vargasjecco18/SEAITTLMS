@@ -33,13 +33,10 @@ else
     <div class="title-dbl" @ondblclick="OpenGiven" title="@($"Double-click to view the {(data.Kind == ItemKinds.Quiz ? "quiz" : "activity")}")">
     <PageHeader Title="@data.Title" IconName="@SubjectStyle.KindIcon(data.Kind)">
         @* Round 45: the Activity button, at the left of Back to the course, opens the box with what the teacher gave: the instructions and the file (a PDF is shown in the box). *@
-        <Button Variant="ButtonVariant.Secondary" IconName="file-text" OnClick="OpenGiven" id="open-activity"
-                Title="@($"See the {(data.Kind == ItemKinds.Quiz ? "quiz" : "activity")} you gave, with its file")">@(data.Kind == ItemKinds.Quiz ? "Quiz" : "Activity")</Button>
+        @* Round 49: for a quiz with questions, Quiz and Questions are one button: it opens a box with the quiz at the left and the questions (with their right answers) at the right. Back to the course is after it. *@
+        <Button Variant="ButtonVariant.Secondary" IconName="@(data.Kind == ItemKinds.Quiz && !isFileQuiz ? "list-checks" : "file-text")" OnClick="OpenGiven" id="open-activity"
+                Title="@(data.Kind == ItemKinds.Quiz && !isFileQuiz ? "See the quiz at the left and its questions at the right" : $"See the {(data.Kind == ItemKinds.Quiz ? "quiz" : "activity")} you gave, with its file")">@(data.Kind == ItemKinds.Quiz ? (isFileQuiz ? "Quiz" : "Quiz and questions") : "Activity")</Button>
         <ButtonLink Href="@($"teacher/subjects/{data.AssignmentId}")" Variant="ButtonVariant.Ghost" IconName="chevron-left">Back to the course</ButtonLink>
-        @if (data.Kind == ItemKinds.Quiz && !isFileQuiz)
-        {
-            <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">Questions</ButtonLink>
-        }
     </PageHeader>
     </div>
 
@@ -154,9 +151,11 @@ else
 }
 
 @* ===== What the teacher gave: the instructions and the files, in the middle of the screen ===== *@
-<Modal Open="givenOpen && data is not null" Title="@(data is null ? "" : data.Title)" OnClose="CloseGiven" Large="true">
+<Modal Open="givenOpen && data is not null" Title="@(data is null ? "" : data.Title)" OnClose="CloseGiven" Large="true" Wide="@(data is { Kind: ItemKinds.Quiz } && !isFileQuiz)">
     @if (data is not null)
     {
+        <div class="@(data.Kind == ItemKinds.Quiz && !isFileQuiz ? "given-cols" : "")" id="given-box">
+        <section class="given-col" aria-label="@(data.Kind == ItemKinds.Quiz ? "The quiz" : "What you gave")">
         <p class="given-kind"><Icon Name="@SubjectStyle.KindIcon(data.Kind)" Size="16" /> @(data.Kind == ItemKinds.Quiz ? "The quiz" : "What you gave")</p>
         @if (string.IsNullOrWhiteSpace(data.Instructions) && itemFiles.Count == 0)
         {
@@ -173,8 +172,38 @@ else
             <h3 class="files-title"><Icon Name="paperclip" Size="16" /> Files</h3>
             <FilePreviewPane Items="itemFiles" Label="@($"Files of {data.Title}")" />
         }
+        </section>
+
+        @if (data.Kind == ItemKinds.Quiz && !isFileQuiz)
+        {
+            var questionList = quizQuestions ?? [];
+            <section class="given-col" id="given-questions" aria-label="The questions">
+                <p class="given-kind"><Icon Name="list-checks" Size="16" /> The questions <span class="muted">· @questionList.Count @(questionList.Count == 1 ? "question" : "questions") · @questionList.Sum(q => q.Points).ToString("0.##") points</span></p>
+                @if (questionList.Count == 0)
+                {
+                    <p class="muted">No question was written yet.</p>
+                }
+                else
+                {
+                    <ol class="q-list">
+                        @foreach (var q in questionList)
+                        {
+                            <li class="q-item">
+                                <span class="q-text">@q.Text</span>
+                                <span class="q-answer"><small>Right answer</small> @q.CorrectAnswer</span>
+                            </li>
+                        }
+                    </ol>
+                }
+            </section>
+        }
+        </div>
 
         <div class="modal-actions">
+            @if (data.Kind == ItemKinds.Quiz && !isFileQuiz)
+            {
+                <ButtonLink Href="@($"teacher/items/{data.ItemId}/questions")" Variant="ButtonVariant.Secondary" IconName="list-checks">@(quizLocked ? "Read the questions" : "Edit the questions")</ButtonLink>
+            }
             <Button Variant="ButtonVariant.Secondary" OnClick="CloseGiven">Close</Button>
         </div>
     }
@@ -422,8 +451,15 @@ else
             : await Files.ListForAsync(AttachmentOwnerKind.Submission, data.Rows.Where(r => r.SubmissionId != null).Select(r => r.SubmissionId!.Value).ToList());
         itemFiles = data is null ? [] : await Files.ListAsync(new AttachmentOwner(AttachmentOwnerKind.Item, ItemId));
         isFileQuiz = data is { Kind: ItemKinds.Quiz, Questions: 0 } && itemFiles.Count > 0;
+
+        // Round 49: the questions of a quiz are in the same box as the quiz (the right answer next to each one).
+        quizQuestions = data is { Kind: ItemKinds.Quiz } && !isFileQuiz ? (await Modules.GetQuestionsAsync(teacherId, ItemId)) is { } saved ? [.. saved] : null : null;
+        quizLocked = data is { Kind: ItemKinds.Quiz } && data.Rows.Any(r => r.Status != "NotStarted");
         course = data is null ? null : await Modules.GetTeacherSubjectAsync(teacherId, data.AssignmentId);
     }
+
+    private List<QuestionInput>? quizQuestions;
+    private bool quizLocked;
 
     private void ClearMessage() => message = null;
 

@@ -73,6 +73,11 @@
     color: var(--slate);
 }
 
+.line.term .line-icon {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+}
+
 .line.holiday .line-icon {
     background: var(--rose-soft);
     color: var(--rose);

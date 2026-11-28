@@ -28,11 +28,11 @@ ENT = {
 
 # ----------------------------------------------------------------------------------------------------- the data stores (the tables of the database)
 STORES = {
-    "D0": ("Whole database", "all 63 tables (for the backup)"),
+    "D0": ("Whole database", "all 69 tables (for the backup)"),
     "D1": ("Accounts and profiles", "users, roles, custom_roles, administrators, registrars, guidance_counselors, academic_coordinators, academic_providers, teachers, students, profile_photos"),
     "D2": ("Security records", "security_logs, login_otps"),
     "D3": ("System settings", "system_settings"),
-    "D4": ("School structure", "school_years, terms, tracks, strands, courses, strand_courses, sections"),
+    "D4": ("School structure", "school_years, terms, tracks, strands, courses, strand_courses, sections, schedules, rooms, course_schedules"),
     "D5": ("Enrollments and assignments", "enrollments, enrollment_courses, teaching_assignments"),
     "D6": ("Course library", "material_handouts, material_items, material_questions, material_question_images, material_deliveries"),
     "D7": ("Class work", "handouts, handout_items, quiz_questions, quiz_question_images, submissions, handout_reads, handout_views, item_views"),
@@ -150,7 +150,7 @@ diagram("level-2-1", "Level 2: 1.0 Manage accounts and access", "Sign in, the lo
 diagram("level-2-2", "Level 2: 2.0 Set up the school and enroll students", "School years, curriculum, sections, enrollment, drop-out, archive and the teachers' courses.",
     {"1": ("2.1", "Maintain school\nyears and terms", ""), "2": ("2.2", "Maintain tracks,\nstrands, courses\nand curriculum", ""), "3": ("2.3", "Manage class\nsections", ""),
      "4": ("2.4", "Enroll a student", ""), "5": ("2.5", "Change an\nenrollment or\ndrop out", ""), "6": ("2.6", "Assign teachers\nto courses", ""),
-     "7": ("2.7", "Archive and\nrestore students", ""), "8": ("2.8", "List and print\nenrollments", "")},
+     "7": ("2.7", "Archive and\nrestore students", ""), "8": ("2.8", "List and print\nenrollments", ""), "9": ("2.9", "Set the class\nschedule and\nrooms", "")},
     [
         ("AC", "1", "School years and terms"), ("1", "D4", "School years, terms", "both"),
         ("AC", "2", "Tracks, strands, courses, units, Excel sheet"), ("2", "D4", "Tracks, strands, courses, curriculum", "both"),
@@ -160,6 +160,7 @@ diagram("level-2-2", "Level 2: 2.0 Set up the school and enroll students", "Scho
         ("ADM", "6", "Teacher, section and courses"), ("D4", "6", "Sections and courses"), ("6", "D5", "Teaching assignments", "both"),
         ("ADM", "7", "Archive or restore request"), ("7", "D1", "Student status and account", "both"), ("D8", "7", "Grades for the export"), ("7", "ADM", "Archived list, grades in Excel"),
         ("D5", "8", "Enrollments"), ("D1", "8", "Student accounts"), ("8", "REG", "Lists, enrollment form, Excel"),
+        ("AC", "9", "Rooms, parts of the day, days, times and rooms of the classes"), ("9", "D4", "Rooms, class times", "both"), ("D4", "9", "Sections and courses"), ("9", "AC", "Class schedule of each section"),
     ])
 
 diagram("level-2-3", "Level 2: 3.0 Manage the course library", "The library of the academic provider and how it reaches the teachers and the students.",

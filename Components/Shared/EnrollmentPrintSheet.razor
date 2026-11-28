@@ -52,7 +52,7 @@
                 </dd>
             </div>
             @* Round 48: the parents' and the guardian's names and phone numbers are not on the form; the name of the one who signs is under the signature line on the back. *@
-            <div class="d full" id="print-address"><dt>Address</dt><dd>@Or(admission?.Address ?? admission?.GuardianAddress)</dd></div>
+            <div class="d full" id="print-address"><dt>Address</dt><dd>@Or(admission?.Address ?? admission?.ParentsAddress ?? admission?.GuardianAddress)</dd></div>
         </dl>
 
         <h3 class="part">Enrollment details</h3>

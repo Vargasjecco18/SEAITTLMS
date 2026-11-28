@@ -4,7 +4,6 @@
 @inject DashboardService Dashboards
 @inject AchievementService Achievements
 @inject EvaluationService EvaluationTasks
-@inject TeachingService Teaching
 @inject TimeProvider Clock
 
 <PageTitle>Dashboard · SEAITT Legazpi LMS</PageTitle>
@@ -93,59 +92,7 @@ else
                 <AsideWidgets Show="activities" ActivitiesTitle="Due dates" />
             </div>
 
-            <Card Title="Recent grades" IconName="award">
-                @if (data.Recent.Count == 0)
-                {
-                    <EmptyState IconName="award" Title="No grades yet">
-                        <p>Scores your teachers give appear here.</p>
-                    </EmptyState>
-                }
-                else
-                {
-                    <ul class="grades">
-                        @foreach (var g in data.Recent)
-                        {
-                            var percent = g.Max <= 0 ? 0 : g.Score / g.Max * 100;
-                            <li>
-                                <a href="student/items/@g.ItemId"><span class="grade-title">@g.Title</span><span class="grade-sub">@g.SubjectName</span></a>
-                                <Badge Tone="@GradeRules.ToneOf(percent)">@g.Score.ToString("0.##") / @g.Max.ToString("0.##")</Badge>
-                            </li>
-                        }
-                    </ul>
-                }
-
-                <p class="more"><a href="student/grades">Open Grades and progress <Icon Name="arrow-right" Size="14" /></a></p>
-            </Card>
-
-            <Card Title="Progress" IconName="gauge">
-                @if (courses.Count == 0)
-                {
-                    <EmptyState IconName="book-open" Title="No courses yet">
-                        <p>Your progress in each course appears here.</p>
-                    </EmptyState>
-                }
-                else
-                {
-                    <ul class="course-progress">
-                        @foreach (var c in courses)
-                        {
-                            <li>
-                                <a href="@(c.AssignmentId is { } aid ? $"student/subjects/{aid}" : "student/subjects")">
-                                    <span class="progress-name">@c.SubjectName</span>
-                                    @if (c.ProgressPercent is { } pct)
-                                    {
-                                        <ProgressBar Percent="pct" Title="@c.ProgressText" />
-                                    }
-                                    else
-                                    {
-                                        <span class="progress-none">Nothing posted yet</span>
-                                    }
-                                </a>
-                            </li>
-                        }
-                    </ul>
-                }
-            </Card>
+            @* Round 49: "Recent grades" and "Progress" are not on the dashboard any more (the grades and the progress are in Grades and in each course). *@
 
             <div class="wide">
                 <AchievementsWidget Items="achievements" />
@@ -161,7 +108,6 @@ else
     private StudentDashboard? data;
     private IReadOnlyList<Achievement> achievements = [];
     private IReadOnlyList<StudentEvaluationTask> pendingEvaluations = [];
-    private IReadOnlyList<StudentSubjectCard> courses = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -170,7 +116,6 @@ else
         if (studentId is { } sid)
         {
             achievements = await Achievements.GetAsync(sid);
-            courses = (await Teaching.GetStudentCardsAsync(sid)).Where(c => !c.IsCompleted).ToList();
             pendingEvaluations = (await EvaluationTasks.GetStudentTasksAsync(sid)).Where(e => !e.Answered && !e.Closed).ToList();
         }
     }

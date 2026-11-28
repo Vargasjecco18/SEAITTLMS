@@ -125,28 +125,30 @@
                         </table>
                     </div>
 
-                    <div class="sheet-tools">
-                        @* Add [type] [number] rows: the type of the new rows is chosen from a list and how many from a number box (like the questions of a summative exam). *@
-                        <span class="add-rows" role="group" aria-label="Add rows">
-                            <span>Add</span>
-                            <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
-                                @foreach (var kind in Kinds)
-                                {
-                                    <option value="@kind">@ItemKinds.Display(kind)</option>
-                                }
-                            </select>
-                            <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="@MaxRows" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
-                            <span>@(addCount == 1 ? "row" : "rows")</span>
-                            <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
-                        </span>
-                        <span class="muted">@rows.Count of @MaxRows rows</span>
-                    </div>
-
                     <FormErrors Errors="@(error is null ? Array.Empty<string>() : new[] { error })" />
 
-                    <div class="sheet-actions">
-                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
-                        <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 activity" : $"Save {ReadyCount} activities")</Button>
+                    <div class="sheet-foot">
+                      <div class="sheet-tools">
+                          @* Add [type] [number] rows: the type of the new rows is chosen from a list and how many from a number box (like the questions of a summative exam). *@
+                          <span class="add-rows" role="group" aria-label="Add rows">
+                              <span>Add</span>
+                              <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
+                                  @foreach (var kind in Kinds)
+                                  {
+                                      <option value="@kind">@ItemKinds.Display(kind)</option>
+                                  }
+                              </select>
+                              <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="@MaxRows" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                              <span>@(addCount == 1 ? "row" : "rows")</span>
+                              <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= MaxRows)" OnClick="AddChosenRows">Add</Button>
+                          </span>
+                          <span class="muted">@rows.Count of @MaxRows rows</span>
+                      </div>
+
+                      <div class="sheet-actions">
+                          <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                          <Button IconName="circle-check" Disabled="@(saving || ReadyCount == 0)" OnClick="SaveAsync">@(saving ? $"Saving… {savedSoFar} of {ReadyCount}" : ReadyCount == 1 ? "Save 1 activity" : $"Save {ReadyCount} activities")</Button>
+                      </div>
                     </div>
                 </div>
             </div>

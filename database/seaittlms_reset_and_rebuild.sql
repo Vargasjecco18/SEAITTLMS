@@ -2833,5 +2833,132 @@ ALTER TABLE `users` ADD `look` varchar(10) CHARACTER SET utf8mb4 NULL;
 INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
 VALUES ('20261127004645_UserLook', '9.0.20');
 
+CREATE TABLE `rooms` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_rooms` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE TABLE `schedules` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `code` varchar(10) CHARACTER SET utf8mb4 NOT NULL,
+    `name` varchar(50) CHARACTER SET utf8mb4 NOT NULL,
+    `start_time` time(6) NOT NULL,
+    `end_time` time(6) NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_schedules` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_schedules_hours` CHECK (end_time > start_time)
+) CHARACTER SET=utf8mb4;
+
+INSERT INTO `schedules` (`code`, `name`, `start_time`, `end_time`, `created_at_utc`, `updated_at_utc`) VALUES ('AM', 'Morning', '07:00:00', '12:00:00', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('MID', 'Midday', '10:00:00', '15:00:00', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('PM', 'Afternoon', '13:00:00', '18:00:00', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6));
+
+CREATE TABLE `course_schedules` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `section_id` int NOT NULL,
+    `course_id` int NOT NULL,
+    `schedule_id` int NOT NULL,
+    `days` varchar(6) CHARACTER SET utf8mb4 NOT NULL,
+    `start_time` time(6) NOT NULL,
+    `end_time` time(6) NOT NULL,
+    `room_id` int NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_course_schedules` PRIMARY KEY (`id`),
+    CONSTRAINT `ck_course_schedules_days` CHECK (days REGEXP '^M?T?W?(TH)?F?$' AND days <> ''),
+    CONSTRAINT `ck_course_schedules_hours` CHECK (end_time > start_time),
+    CONSTRAINT `fk_course_schedules_rooms_room_id` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_course_schedules_schedules_schedule_id` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_course_schedules_sections_section_id` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_course_schedules_courses_course_id` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE RESTRICT
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_course_schedules_room_id` ON `course_schedules` (`room_id`);
+
+CREATE INDEX `ix_course_schedules_schedule_id` ON `course_schedules` (`schedule_id`);
+
+CREATE UNIQUE INDEX `ix_course_schedules_section_id_course_id_days` ON `course_schedules` (`section_id`, `course_id`, `days`);
+
+CREATE INDEX `ix_course_schedules_course_id` ON `course_schedules` (`course_id`);
+
+CREATE UNIQUE INDEX `ix_rooms_name` ON `rooms` (`name`);
+
+CREATE UNIQUE INDEX `ix_schedules_code` ON `schedules` (`code`);
+
+CREATE UNIQUE INDEX `ix_schedules_name` ON `schedules` (`name`);
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261128052550_ClassScheduleAndRooms', '9.0.20');
+
+ALTER TABLE `students` MODIFY COLUMN `sex` varchar(20) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` MODIFY COLUMN `sex` varchar(20) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `address_city` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `address_postal_code` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `address_province` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `address_street` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `email` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `father_email` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `father_occupation` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `guardian_city` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `guardian_email` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `guardian_occupation` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `guardian_postal_code` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `guardian_province` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `guardian_street` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `mother_email` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `mother_occupation` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `parents_address` varchar(300) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `parents_city` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `parents_postal_code` varchar(10) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `parents_province` varchar(100) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `parents_street` varchar(150) CHARACTER SET utf8mb4 NULL;
+
+ALTER TABLE `admission_records` ADD `track_id` int NULL;
+
+CREATE TABLE `admission_options` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `kind` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
+    `name` varchar(120) CHARACTER SET utf8mb4 NOT NULL,
+    `created_at_utc` datetime(6) NOT NULL,
+    `updated_at_utc` datetime(6) NOT NULL,
+    CONSTRAINT `pk_admission_options` PRIMARY KEY (`id`)
+) CHARACTER SET=utf8mb4;
+
+CREATE INDEX `ix_admission_records_track_id` ON `admission_records` (`track_id`);
+
+CREATE UNIQUE INDEX `ix_admission_options_kind_name` ON `admission_options` (`kind`, `name`);
+
+ALTER TABLE `admission_records` ADD CONSTRAINT `fk_admission_records_tracks_track_id` FOREIGN KEY (`track_id`) REFERENCES `tracks` (`id`) ON DELETE SET NULL;
+
+INSERT IGNORE INTO `admission_options` (`kind`, `name`, `created_at_utc`, `updated_at_utc`) VALUES ('School', 'Albay National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Legazpi City National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Daraga National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Ligao National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Tabaco National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Camalig National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Guinobatan National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Polangui National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Oas National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Libon National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Pio Duran National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Santo Domingo National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Malinao National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Manito National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Tiwi National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Bacacay National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Jovellar National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Rapu-Rapu National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Malilipot National High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('School', 'Bicol University Laboratory High School', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6));
+
+INSERT IGNORE INTO `admission_options` (`kind`, `name`, `created_at_utc`, `updated_at_utc`) VALUES ('City', 'Legazpi City', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Ligao City', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Tabaco City', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Bacacay', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Camalig', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Daraga', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Guinobatan', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Jovellar', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Libon', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Malilipot', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Malinao', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Manito', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Oas', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Pio Duran', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Polangui', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Rapu-Rapu', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Santo Domingo', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)), ('City', 'Tiwi', UTC_TIMESTAMP(6), UTC_TIMESTAMP(6));
+
+INSERT INTO `__EFMigrationsHistory` (`migration_id`, `product_version`)
+VALUES ('20261128054826_AdmissionRecordFields', '9.0.20');
+
 COMMIT;
 

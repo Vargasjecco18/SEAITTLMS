@@ -260,7 +260,14 @@ public sealed class UserManagementService(
         await using var db = await dbFactory.CreateDbContextAsync(ct);
 
         // Round 47: Admission is a staff role of its own: Admission Grade 11 and Admission Grade 12 are always in the list of Add staff (they are made the first time the list is read).
-        var wanted = new[] { ("Admission Grade 11", "calendar,users,admission-grade11"), ("Admission Grade 12", "calendar,users,admission-grade12") };
+        // Round 49: and the Groups page too (the pages the roles had before are brought up to date once: only the roles that still have the old pages are changed).
+        var wanted = new[] { ("Admission Grade 11", "calendar,users,groups,admission-grade11"), ("Admission Grade 12", "calendar,users,groups,admission-grade12") };
+        foreach (var (name, pages) in wanted)
+        {
+            var old = pages.Replace("groups,", "");
+            await db.CustomRoles.Where(r => r.Name == name && r.Pages == old).ExecuteUpdateAsync(set => set.SetProperty(r => r.Pages, pages), ct);
+        }
+
         var names = await db.CustomRoles.Select(r => r.Name).ToListAsync(ct);
         var missing = wanted.Where(w => !names.Contains(w.Item1)).ToList();
         if (missing.Count > 0)

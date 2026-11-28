@@ -117,7 +117,7 @@ public static class GradebookExport
                 }
             }
 
-            grades.Set(row, sexColumn, student.Sex?.ToString() ?? "");
+            grades.Set(row, sexColumn, student.Sex.ForFile());
             var scores = $"{itemFirst}{row}:{itemLast}{row}";
 
             // the percent of each part: points earned ÷ points possible of the work of that part that has a score (blank when the part has no scored work)

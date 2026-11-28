@@ -5,6 +5,7 @@
 @using SEAITT_LMS.Components.Pages.Coordinator.Setup
 @using SEAITT_LMS.Services
 @inject SchoolSetupService Setup
+@inject CourseScheduleService Times
 @inject SetupWorkbookService Workbook
 @inject CurrentUser Me
 @inject FileDownloads Downloads
@@ -109,6 +110,21 @@
                 }
             </ul>
         }
+        @* Round 49: the rooms are back (the class schedule has its own page in the menu). *@
+        <a class="tab @(tab == "rooms" ? "on" : "")" title="Rooms" href="coordinator/academic-setup/rooms" aria-current="@(tab == "rooms" ? "page" : null)">
+            <span class="tab-icon"><Icon Name="door-open" Size="18" /></span>
+            <span class="tab-text"><strong>Rooms</strong><small>@CountOf("rooms")</small></span>
+            <span class="tab-chevron" aria-hidden="true"><Icon Name="@(tab == "rooms" ? "chevron-down" : "chevron-right")" Size="16" /></span>
+        </a>
+        @if (tab == "rooms" && rooms.Count > 0)
+        {
+            <ul class="tab-sub" aria-label="Rooms">
+                @foreach (var room in rooms)
+                {
+                    <li><a href="@($"coordinator/academic-setup/rooms#room-{room.Id}")">@room.Name</a></li>
+                }
+            </ul>
+        }
     </nav>
 
     <div class="setup-main">
@@ -131,6 +147,9 @@
                     break;
                 case "sections":
                     <SectionsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" InitialGrade="GradeQuery" OpenSection="@openSection" OpenStamp="openStamp" />
+                    break;
+                case "rooms":
+                    <RoomsStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
                     break;
                 default:
                     <CalendarStep Search="@search" OnChanged="ReloadCountsAsync" Version="changes" />
@@ -158,6 +177,8 @@
     [SupplyParameterFromQuery(Name = "grade")] private int? GradeQuery { get; set; }
 
     private SetupLookups? lookups;
+    private IReadOnlyList<RoomRow> rooms = [];
+    private int roomCount;
     private IReadOnlyList<SectionRow> sectionRows = [];
 
     /// <summary>The sections a strand has at a grade level in the school years that are not over (A, B, C ...), for the list under the Class sections tab.</summary>
@@ -187,12 +208,15 @@
     {
         counts ??= await Setup.GetCountsAsync();
         lookups ??= await Setup.GetLookupsAsync();
+        rooms = await Times.ListRoomsAsync();
+        roomCount = rooms.Count;
 
         // An address like academic-setup/curriculum goes to that part (the old names of the parts still work; the sections have a page of their own now).
         var wanted = (TabKey ?? "").ToLowerInvariant() switch
         {
             "school-years" or "terms" or "calendar" or "" => "school-years",
             "tracks" or "strands" or "subjects" or "curriculum" => "curriculum",
+            "rooms" => "rooms",
             "sections" => "sections",
             _ => "school-years",
         };
@@ -210,6 +234,7 @@
     private string SearchHint => tab switch
     {
         "curriculum" => "Search a track, a strand or a course",
+        "rooms" => "Search a room",
         "sections" => "Search a strand, a section or an adviser",
         _ => "Search a school year or a term",
     };
@@ -218,6 +243,7 @@
     {
         "curriculum" => "",
         "sections" => "Each class has its strands, and each strand its sections. Press a card for the adviser and the students.",
+        "rooms" => "The rooms for the class schedule.",
         _ => "The school year now and the next two, with three terms each.",
     };
 
@@ -228,6 +254,8 @@
     {
         counts = await Setup.GetCountsAsync();
         lookups = await Setup.GetLookupsAsync();
+        rooms = await Times.ListRoomsAsync();
+        roomCount = rooms.Count;
         changes++;
     }
 
@@ -281,6 +309,7 @@
     {
         "school-years" => $"{counts.SchoolYears} {(counts.SchoolYears == 1 ? "school year" : "school years")} · {counts.Terms} {(counts.Terms == 1 ? "term" : "terms")}",
         "curriculum" => $"{counts.Tracks} {(counts.Tracks == 1 ? "track" : "tracks")} · {counts.Strands} {(counts.Strands == 1 ? "strand" : "strands")} · {counts.Subjects} {(counts.Subjects == 1 ? "course" : "courses")}",
+        "rooms" => $"{roomCount} {(roomCount == 1 ? "room" : "rooms")}",
         "sections" => $"{counts.Sections} {(counts.Sections == 1 ? "section" : "sections")}",
         _ => "",
     };

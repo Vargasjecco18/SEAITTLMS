@@ -131,8 +131,11 @@
                                 }
                                 else
                                 {
-                                    var noted = student.OpenReferrals.Any(r => !string.IsNullOrWhiteSpace(r.Notes));
-                                    <button type="button" class="notes-button @(noted ? "is-noted" : "")" title="@(noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)"><Icon Name="@(noted ? "notebook-pen" : "pencil")" Size="14" /> @(noted ? "Noted" : "None")</button>
+                                    var written = student.OpenReferrals.Any(r => !string.IsNullOrWhiteSpace(r.Notes));
+                                    @* Round 49: when the student answered Not going, a note that was written turns into "Note again" (the counselor writes a new one). *@
+                                    var again = written && student.Response == ReferralResponses.NotGoing;
+                                    var noted = written && !again;
+                                    <button type="button" class="notes-button @(noted ? "is-noted" : "") @(again ? "is-again" : "")" data-notes="@(again ? "again" : noted ? "noted" : "none")" title="@(again ? "The student is not going: write the notes again" : noted ? "Read or change the notes" : "Write notes")" @onclick="() => OpenNotesFor(student)"><Icon Name="@(noted ? "notebook-pen" : again ? "rotate-ccw" : "pencil")" Size="14" /> @(again ? "Note again" : noted ? "Noted" : "None")</button>
                                 }
                             </td>
                             <td class="col-status">
@@ -162,18 +165,19 @@
                                 }
                                 else if (student.ScheduledAtUtc is { } scheduled)
                                 {
-                                    @if (student.Response is { } answered)
-                                    {
-                                        <span class="answer @(answered == ReferralResponses.Going ? "going" : "not-going")" data-answer="@answered">@ReferralResponses.Display(answered)</span>
-                                    }
+                                    @* Round 49: the answer (Going / Not going) is inside the schedule, and all of it is on one line. *@
                                     <button type="button" class="schedule-button is-set" title="Move the schedule" data-schedule="set" @onclick="() => OpenSchedule(student)">
+                                        @if (student.Response is { } answered)
+                                        {
+                                            <span class="answer @(answered == ReferralResponses.Going ? "going" : "not-going")" data-answer="@answered">@ReferralResponses.Display(answered)</span>
+                                        }
                                         <Icon Name="calendar-clock" Size="14" />
-                                        <span class="when">@PhilippineTime.ToLocal(scheduled).ToString("ddd, MMM d")<small>@PhilippineTime.FormatTime(scheduled)</small></span>
+                                        <span class="when">@PhilippineTime.ToLocal(scheduled).ToString("ddd, MMM d") · @PhilippineTime.FormatTime(scheduled)</span>
                                     </button>
                                 }
                                 else if (student.Response == ReferralResponses.NotGoing)
                                 {
-                                    <span class="answer not-going" data-answer="@ReferralResponses.NotGoing" title="The student answered Not going, so there is no schedule">@ReferralResponses.Display(ReferralResponses.NotGoing)</span>
+                                    <span class="schedule-button is-static" data-schedule="none-notgoing" title="The student answered Not going, so there is no schedule"><span class="answer not-going" data-answer="@ReferralResponses.NotGoing">@ReferralResponses.Display(ReferralResponses.NotGoing)</span><span class="when">No schedule</span></span>
                                 }
                                 else if (student.Response is null)
                                 {
@@ -181,8 +185,7 @@
                                 }
                                 else
                                 {
-                                    <span class="answer going" data-answer="@ReferralResponses.Going">@ReferralResponses.Display(ReferralResponses.Going)</span>
-                                    <button type="button" class="schedule-button" title="Choose the day and the time to see the student" data-schedule="none" @onclick="() => OpenSchedule(student)"><Icon Name="calendar-plus" Size="14" /> Set schedule</button>
+                                    <button type="button" class="schedule-button" title="Choose the day and the time to see the student" data-schedule="none" @onclick="() => OpenSchedule(student)"><span class="answer going" data-answer="@ReferralResponses.Going">@ReferralResponses.Display(ReferralResponses.Going)</span><Icon Name="calendar-plus" Size="14" /> <span class="when">Set schedule</span></button>
                                 }
                             </td>
                             <td class="col-actions">

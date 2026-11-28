@@ -150,7 +150,7 @@ public static class HelpContent
         ], "student/grades", "Open Grades"),
         new("Where are the details and the feedback of an activity?",
         [
-            "Open an assignment, a quiz or a task. In the header, before “Back to the handout”, there are two buttons: Details (the status, the due date, the highest score and your score) and Feedback (what your teacher wrote about your work; a red dot means there is feedback). Each one opens a box that slides in from the right side of the screen (close it with the X or Escape).",
+            "Open an assignment, a quiz or a task. In the header, before “Back to the handout”, there are two buttons: Details (the status, the due date, the highest score and your score) and Feedback (what your teacher wrote about your work; a red dot means there is feedback). Each one opens a small dropdown under its own button (press the button again, or anywhere else on the page, to close it; only one is open at a time).",
         ]),
         new("How do I see my deadlines?",
         [
@@ -226,7 +226,7 @@ public static class HelpContent
         ]),
         new("How do I make a quiz?",
         [
-            "Press “Add activities”, then “Add quiz”: choose the handout, write the title and the questions. Open a quiz that is there and press Questions to change them. Add questions of eight kinds (multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select and essay) with their points: double click a question (or press the box button at the end of its row) to open it in a box where you can add a picture to the question and to each choice, write more choices, the blanks, and the two columns of a matching type. An essay is scored by you: the quiz waits for your score. A quiz that has a file has no questions: the students answer with a file and you give the score.",
+            "Press “Add activities”, then “Add quiz”: choose the handout, write the title and the questions. Open a quiz that is there and press “Quiz and questions”: the box shows the quiz at the left and its questions at the right. Add questions of eight kinds (multiple choice, true or false, short answer, identification, fill in the blank, matching type, multiple select and essay) with their points: double click a question (or press the box button at the end of its row) to open it in a box where you can add a picture to the question and to each choice, write more choices, the blanks, and the two columns of a matching type. An essay is scored by you: the quiz waits for your score. A quiz that has a file has no questions: the students answer with a file and you give the score.",
             "The right answer is chosen, not typed: each choice has a circle (one answer) or a box (several answers) in front of it, and true or false has two circles. Choose “How many choices” from the list (2 to 8) and the rows appear. A question with no right answer chosen is shown in the Ready column as a problem.",
             "In the quiz settings choose the time limit, whether the questions are shuffled, and the anti-cheat rules: how many times a student may leave the page, copy, print or take a screenshot, plus three switches: “Full screen only” (the quiz starts in full screen; leaving it is a warning), “One question at a time” (Previous and Next) and “No going back” (a question that was left can't be opened again; it needs one question at a time). A photo taken with another device can't be detected, but the student's name is shown faintly over the quiz. The same settings are in the summative exam of the academic provider.",
             "The answers of the students are saved by themselves while they work, so a closed page does not lose them. The quiz is checked by the system as soon as it is sent (an essay waits for your score), and it goes straight to the gradebook: you do not type its score.",
@@ -241,7 +241,7 @@ public static class HelpContent
         new("How do I take attendance?",
         [
             "Open Attendance, choose the course and the day, and mark each student Present, Late or Absent. Press Save. Classes are held from Monday to Friday: Saturday and Sunday can't be marked (if you pick one, the Friday before is shown).",
-            "Press “View attendance” to see each student's attendance. Students who miss a lot are sent to the guidance counselor by the system.",
+            "Press “View attendance” to see each student's attendance. The students are in two columns (the first 20 at the left and the next 20 at the right); each has a Refer button for the guidance counselor (absenteeism only).",
         ], "teacher/attendance", "Open Attendance"),
         new("Where is the gradebook?",
         [
@@ -385,7 +385,7 @@ public static class HelpContent
         new("How do I set up the school years, terms, tracks, strands and courses?",
         [
             "Open Academic setup. The parts are the tabs at the left: School years, Tracks, strands and courses and Class sections; a tab opens a dropdown with what is inside (the school years, the tracks and strands, the grade levels) to go straight to one. The menu of the school folds by itself on this page, and the button above the tabs (Hide tabs) hides only the tabs. The search box at the top searches the tab that is open.",
-            "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button. The bin of a term deletes it, after asking (not a term that has students enrolled); a school year with fewer than three terms has an “Add a term” button.",
+            "School years keep themselves: the school year that is running and the next two are always there, each with three terms. When a school year is over it goes away by itself (its students, grades and attendance stay). Every box is ready to type in: change a name or a day and leave the box, and it is saved. There is no Edit button. A first or a last day cannot be a day that has passed (the boxes start at today); the first and the last day of the term you write here are on the badge at the top of every dashboard (Nov 2, 2026 to Jan 29, 2027) and on the calendar of everybody. The bin of a term deletes it, after asking (not a term that has students enrolled); a school year with fewer than three terms has an “Add a term” button.",
             "Tracks, strands and courses are three cards side by side, each with its columns (tracks: Code, Name, Strands, Offered, Delete; strands: Code, Name, Courses, Offered, Delete): press a track to see its strands, press a strand to see its courses. Change a name, the code or the unit in place, or use the row at the bottom of a card to add one. A course has the columns Code, Course, Unit, Offered and Delete: uncheck Offered and the registrar can't enroll students in it; Delete takes it out of the strand, after asking. Each card has its own search box. The button above the tabs hides them, so the cards have more room.",
             "To fill many rows at once press the Excel button at the top and choose “Template and import (Excel)”: the workbook has a sheet for each step. “Export to Excel” gives the whole setup in the same workbook: change it and import it again. A row that already exists is changed, nothing is deleted.",
         ], "coordinator/academic-setup", "Open Academic setup"),
@@ -394,6 +394,11 @@ public static class HelpContent
             "Class sections is a tab of the Academic setup. The tab opens a list of the levels: Grade level (11 and 12), inside it the Strands and inside each strand the Sections A, B and C; press a grade level to see all its strands and sections. In the page there is a tab for each class too, and inside each strand the sections are cards. Press a card, or a letter A, B or C under a strand in the tab, to choose its adviser (only a teacher of that strand) and to see the students in it.",
             "A card that says “Add section” makes the section that is missing (A, B and C). The bin on a card deletes the section, after asking.",
         ], "coordinator/academic-setup/sections", "Open Class sections"),
+        new("Where are the rooms and the class schedule?",
+        [
+            "The rooms are the Rooms tab of the Academic setup: type the name of a room (Room 101, Computer laboratory) in the row at the top and press Enter; rename a room in place; the bin takes an empty room out.",
+            "The class schedule is the page Class schedule in the menu. Choose a section and give each of its courses the part of the day (AM, MID or PM follow the time you choose), the days (MWF or TTH; after that each day can be moved by itself), the time (from 30 minutes to 4 hours, inside the part of the day) and a room. A room cannot have two classes at the same time and a teacher cannot be in two classes at once: the page says which one is in the way.",
+        ], "coordinator/class-schedule", "Open Class schedule"),
                 new("Who sends the syllabus, handouts and assignments to the teachers?",
         [
             "The academic provider of the central team. They prepare the course library and send it to the teachers; you do not send course materials.",
@@ -404,7 +409,7 @@ public static class HelpContent
             "Open Teacher evaluation and make a questionnaire (you can start from the default questions). Add a question by choosing how the students answer: a 5-point Likert scale, a 5-point performance scale, a frequency scale, a binary (Yes/No) scale, a ranking, select-all-that-apply, or a comment. Choose who it is about. The Details of the evaluation have the Start date (the day and time it is posted; empty means when you send it) and the End date (the last moment the students can answer). When you send it, the same two dates are asked once more (“Post on” and “Close on”). An evaluation with a later start shows as Scheduled and the students see it only from its start. The questions are written in cards: a title-like line for the question, a round list for how the students answer, and the options in a soft box.",
             "Students answer once for each of their teachers; answers are anonymous. In an evaluation the Questions are first and the Details after them; “Answers by course” shows how many answered and who has not. “Message” writes to the students who have not answered in one course, and “Message all not answered” (at the right of the header of the card) writes once to every student who has not answered in any course.",
             "Close it early, or let it close on its close date and time.",
-            "New evaluation opens a sheet like the one of a quiz: write the title and the instructions, then a row for each question. Choose its type from the list (5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment), write its area and, for a ranking or a select-all, the options.",
+            "New evaluation opens a sheet like the one of a quiz: write the title and the instructions, then a row for each question. Choose its type from the list (5-Point Likert Scale, 5-Point Performance Scale, Frequency Scale, Binary Scale, Ranking Scale, Select-All-That-Apply or Comment), write its area and, for a ranking or a select-all, the options: they are in one box, separated by semicolons (Explains clearly; Is patient; Is fair). In the list, each evaluation has Close (while the students can still answer) and Delete (it asks first).",
         ], "coordinator/evaluations", "Open Teacher evaluation"),
         new("Where are the results of the evaluation?",
         [
@@ -479,13 +484,13 @@ public static class HelpContent
         ], "staff", "Open the dashboard"),
         new("How do I record a student?",
         [
-            "Open Grade 11 Students (or Grade 12 Students) and press “Record a student”. The box has two columns: the student at the left (LRN of 12 digits, names, sex, the strand the student wants, phone number, previous school, address) and the parents and the guardian at the right (at least one of the father, the mother or a guardian, with their phones and the address).",
+            "Open Grade 11 Students (or Grade 12 Students) and press “Record a student”. The box has two columns: the student at the left (LRN of 12 digits, names with the name extension chosen from a list, sex (it can be “Prefer not to say”), the track and the strand the student wants, phone number, email, the previous school and the address) and the parents and the guardian at the right (at least one of the father, the mother or a guardian, with their phones, occupations and emails, the address of the parents, and the relationship of the guardian chosen from a list). The previous school is a list of the schools of Albay: if yours is not there, choose “+ Add school…”, type the name and press Add school. The address has four parts: the street address, the city or municipality (a list of Albay, with “+ Add address…” at its end), the state or province (Albay) and the postal / zip code.",
             "Press Save. The student is in the table with the strand, the section (it shows once the registrar enrolls the student), the phone number, the documents kept, and the state: Recorded, then Enrolled. Use the search box and the lists of state and strand to find a student.",
             "“View student info” opens the same two columns to read only (it has an Edit button), and “Edit” changes the record.",
         ]),
         new("How do I keep the documents?",
         [
-            "Press “Documents” on the row of the student. Every kind of document has its own line and there is nothing to choose from a list: PSA birth certificate, Form 138 (report card), Form 137, Certificate of completion (Grade 10) and Good moral certificate. For any other paper press “Add other document”, type its name (a medical certificate, a baptismal certificate...), say if the paper is in hand and/or add the picture or the PDF: it gets a line of its own, marked “other”, after the five kinds.",
+            "Press “Documents” on the row of the student. Every kind of document has its own line and there is nothing to choose from a list: PSA birth certificate, Form 138 (report card), Form 137, Certificate of completion (Grade 10) and Good moral certificate. For any other paper press “Add other document”, type its name (a medical certificate, a baptismal certificate...), say if the paper is in hand and/or add the picture or the PDF: it gets a line of its own, marked “other”, after the five kinds. In the Documents box of a student (Student's Accounts), at the right of the word Documents, “Print” opens a page with every picture and PDF of the documents to print, and “Download” saves all of them in one zip file; both are off while no document has a picture or a PDF.",
             "At the left of a line is the kind, at the center what the school has: No document, Paper in hand (with the date) or Document (a photo counts as a document), and at the right the buttons: “Add document” (a picture or a PDF), “Edit” (the paper is in hand, change the photo or take it away) and “View document”, which shows the photo in a box without downloading it first.",
         ]),
         new("What happens next?",
@@ -514,7 +519,7 @@ public static class HelpContent
         ]),
         new("How do I write the notes and the help I gave?",
         [
-            "Press the Notes button of the line. It says “Noted” when there are notes and “None” when there are not.",
+            "Press the Notes button of the line. It says “Noted” when there are notes and “None” when there are not; when the student answered “Not going” a noted line says “Note again” (it opens the same notes, to write them again).",
             "In the box, choose the help you gave from the list “What help did you give?”: Talk with the student, Call the parents/guardian, Talk with the teacher, or Others. Others opens a box where you can type the help in your own words. Then write your notes. Only you can read the notes.",
             "When you save, the student is told. Nothing pops up for you: the line just changes. When the case is over, press Solved.",
         ]),
@@ -522,7 +527,7 @@ public static class HelpContent
         [
             "The Status column (at the right of Notes) says “Not seen yet” until the student presses OK on your message. Then it says “Seen”. If the student closes the box with the X (or Escape) without answering, it says “Ignored”.",
             "A student who ignored your message can open it again: it stays in the bell at the top, and pressing it shows your message again, with the buttons Going and Not going while the student has not answered. When you save your notes again, the student gets the message again and the status starts over.",
-            "The Schedule column (at the right of Status) shows the answer of the student: “Going” or “Not going”. When the student is going, press “Set schedule”, choose the day and the time, and save. The student is told, and the day goes to the calendar of both of you (in Calendar, as Counseling). Press the day again to move it (the student is told that it has moved) or to take it away.",
+            "The Schedule column (at the right of Status) shows the answer of the student, “Going” or “Not going”, inside its button, on one line with the day and the time. When the student is going, press “Set schedule”, choose the day and the time, and save. The student is told, and the day goes to the calendar of both of you (in Calendar, as Counseling). Press the day again to move it (the student is told that it has moved) or to take it away.",
         ]),
         new("Which students go to the referrals by themselves?",
         [

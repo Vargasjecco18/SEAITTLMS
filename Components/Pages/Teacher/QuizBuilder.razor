@@ -113,43 +113,50 @@ else
                     }
                 </header>
 
-                <Field For="@($"q{index}-text")" Label="Question">
-                    <InputTextArea id="@($"q{index}-text")" @bind-Value="q.Text" rows="2" disabled="@locked" />
-                </Field>
-
-                @if (q.Kind == QuestionKinds.MultipleChoice)
-                {
-                    <div class="two">
-                        <Field For="@($"q{index}-options")" Label="Choices" Hint="One choice per line, at least two.">
-                            @* A plain box (not InputTextArea) so the "Right choice" list follows the typing letter by letter. *@
-                            <textarea id="@($"q{index}-options")" @bind="q.OptionsText" @bind:event="oninput" rows="4" disabled="@locked"></textarea>
+                @* Round 49: the question at the left (with the choices of a multiple choice question) and the right answer at the right. *@
+                <div class="qa">
+                    <div class="qa-left">
+                        <Field For="@($"q{index}-text")" Label="Question">
+                            <InputTextArea id="@($"q{index}-text")" @bind-Value="q.Text" rows="@(q.Kind == QuestionKinds.MultipleChoice ? 2 : 4)" disabled="@locked" />
                         </Field>
-                        <Field For="@($"q{index}-correct")" Label="Right choice">
-                            <InputSelect id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" disabled="@locked">
-                                <option value="">Pick the right choice</option>
-                                @foreach (var option in options)
-                                {
-                                    <option value="@option">@option</option>
-                                }
-                            </InputSelect>
-                        </Field>
+                        @if (q.Kind == QuestionKinds.MultipleChoice)
+                        {
+                            <Field For="@($"q{index}-options")" Label="Choices" Hint="One choice per line, at least two.">
+                                @* A plain box (not InputTextArea) so the "Right choice" list follows the typing letter by letter. *@
+                                <textarea id="@($"q{index}-options")" @bind="q.OptionsText" @bind:event="oninput" rows="4" disabled="@locked"></textarea>
+                            </Field>
+                        }
                     </div>
-                }
-                else if (q.Kind == QuestionKinds.TrueFalse)
-                {
-                    <Field For="@($"q{index}-correct")" Label="The statement is">
-                        <InputSelect id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" disabled="@locked">
-                            <option value="True">True</option>
-                            <option value="False">False</option>
-                        </InputSelect>
-                    </Field>
-                }
-                else
-                {
-                    <Field For="@($"q{index}-correct")" Label="Right answer" Hint="Capital letters and extra spaces don't matter. Separate other accepted answers with |, like: equity | owner's equity">
-                        <InputText id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" maxlength="500" autocomplete="off" disabled="@locked" />
-                    </Field>
-                }
+                    <div class="qa-right">
+                        @if (q.Kind == QuestionKinds.MultipleChoice)
+                        {
+                            <Field For="@($"q{index}-correct")" Label="Right answer: the right choice">
+                                <InputSelect id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" disabled="@locked">
+                                    <option value="">Pick the right choice</option>
+                                    @foreach (var option in options)
+                                    {
+                                        <option value="@option">@option</option>
+                                    }
+                                </InputSelect>
+                            </Field>
+                        }
+                        else if (q.Kind == QuestionKinds.TrueFalse)
+                        {
+                            <Field For="@($"q{index}-correct")" Label="Right answer: the statement is">
+                                <InputSelect id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" disabled="@locked">
+                                    <option value="True">True</option>
+                                    <option value="False">False</option>
+                                </InputSelect>
+                            </Field>
+                        }
+                        else
+                        {
+                            <Field For="@($"q{index}-correct")" Label="Right answer" Hint="Capital letters and extra spaces don't matter. Separate other accepted answers with |, like: equity | owner's equity">
+                                <InputText id="@($"q{index}-correct")" @bind-Value="q.CorrectAnswer" maxlength="500" autocomplete="off" disabled="@locked" />
+                            </Field>
+                        }
+                    </div>
+                </div>
             </li>
         }
     </ol>

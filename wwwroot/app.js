@@ -1295,7 +1295,7 @@ document.addEventListener('toggle', function (event) {
 
 // The sound of a new message or notification (HeaderTools calls seaitt.playNotificationSound(choice, url, force)). The person chooses it in Settings: one of the sounds the browser makes
 // by itself (two tones, chime, bell, pop, knock), the sound of the school or a file they added (the page gives its address in url). With no choice it is the file
-// wwwroot/sounds/notification.mp3 when there is one, otherwise the two tones. A browser keeps sound off until the person has clicked or typed on the page once: when a sound can't
+// wwwroot/sounds/notification.mp3 when there is one, otherwise the chime (Round 49: the chime is the usual sound). A browser keeps sound off until the person has clicked or typed on the page once: when a sound can't
 // play for that reason a small button says so, and one click turns the sound on. Settings has a switch (data-sound-toggle) and a button that plays the sound (data-sound-test).
 (function () {
     var root = document.documentElement;
@@ -1332,7 +1332,7 @@ document.addEventListener('toggle', function (event) {
         hint.type = 'button';
         hint.textContent = 'Click here to turn on the notification sound';
         hint.setAttribute('style', 'position:fixed;right:1rem;bottom:max(1rem,env(safe-area-inset-bottom));z-index:300;max-width:calc(100vw - 2rem);padding:.5rem .9rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg);font:inherit;font-size:.88rem;font-weight:600;line-height:1.3;cursor:pointer');
-        hint.addEventListener('click', function () { unlock(); playBuiltIn('tones', true); hint.remove(); });
+        hint.addEventListener('click', function () { unlock(); playBuiltIn('chime', true); hint.remove(); });
         document.body.appendChild(hint);
         // It stays until the person clicks (any click on the page also does it): the sound can't play before that, and a button that goes away by itself is easy to miss.
     }
@@ -1387,7 +1387,7 @@ document.addEventListener('toggle', function (event) {
     };
 
     function playBuiltIn(name, quiet) {
-        var make = builtIn[name] || builtIn.tones;
+        var make = builtIn[name] || builtIn.chime;
         withSound(function (made) { make(made, made.currentTime); }, quiet);
     }
 
@@ -1398,10 +1398,10 @@ document.addEventListener('toggle', function (event) {
             var started = player.play();
             if (started && started.catch) {
                 started.catch(function (error) {
-                    if (error && error.name === 'NotAllowedError') { if (!quiet) { showHint(); } } else { playBuiltIn('tones', quiet); }
+                    if (error && error.name === 'NotAllowedError') { if (!quiet) { showHint(); } } else { playBuiltIn('chime', quiet); }
                 });
             }
-        } catch (error) { playBuiltIn('tones', quiet); }
+        } catch (error) { playBuiltIn('chime', quiet); }
     }
 
     // The file of the school put in wwwroot/sounds (notification.mp3, .ogg, .wav or .m4a): the first time it is needed the page asks which of them exists and keeps the answer.
@@ -1430,7 +1430,7 @@ document.addEventListener('toggle', function (event) {
         if ((kind === 'custom' || kind === 'school') && url) { playFile(new URL(url, document.baseURI).href, false); return; }
         if (builtIn[kind]) { playBuiltIn(kind, false); return; }
         findSoundFile().then(function (address) {
-            if (address) { playFile(address, false); } else { playBuiltIn('tones', false); }
+            if (address) { playFile(address, false); } else { playBuiltIn('chime', false); }
         });
     }
 

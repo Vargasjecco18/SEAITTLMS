@@ -19,11 +19,11 @@ The diagrams below show how the data moves in the system: **level 0** (the whole
 
 | Id | Data store | Tables |
 |---|---|---|
-| D0 | Whole database | all 65 tables (for the backup) |
+| D0 | Whole database | all 69 tables (for the backup) |
 | D1 | Accounts and profiles | users, roles, custom_roles, administrators, registrars, guidance_counselors, academic_coordinators, academic_providers, teachers, students, profile_photos |
 | D2 | Security records | security_logs, login_otps |
 | D3 | System settings | system_settings |
-| D4 | School structure | school_years, terms, tracks, strands, courses, strand_courses, sections |
+| D4 | School structure | school_years, terms, tracks, strands, courses, strand_courses, sections, schedules, rooms, course_schedules (round 49: the class schedule and the rooms are back) |
 | D5 | Enrollments and assignments | enrollments, enrollment_courses, teaching_assignments |
 | D6 | Course library | material_handouts, material_items, material_questions, material_question_images, material_deliveries |
 | D7 | Class work | handouts, handout_items, quiz_questions, quiz_question_images, submissions, handout_reads, handout_views, item_views |
@@ -33,7 +33,7 @@ The diagrams below show how the data moves in the system: **level 0** (the whole
 | D11 | Groups and files | study_groups, study_group_members, group_posts, stored_files, stored_file_contents, shared_files, attachments, attachment_contents |
 | D12 | Calendar and announcements | announcements, calendar_entries, calendar_entry_invites, holiday_exclusions |
 | D13 | Evaluations | teacher_evaluations, evaluation_questions, evaluation_targets, evaluation_responses, evaluation_answers |
-| D15 | Admission records (round 46) | admission_records, admission_documents |
+| D15 | Admission records (round 46) | admission_records, admission_documents, admission_options (round 49: the schools and the places of Albay) |
 | D14 | Backup files | SQL files kept in the backup folder (not a table) |
 
 ## Level 0: context diagram
@@ -86,6 +86,7 @@ One process, **0 SEAITT Legazpi LMS**, with the seven roles and UniSMS around it
 | 2.6 | Assign teachers to courses | Teaching assignments (one teacher for a course of a section). |
 | 2.7 | Archive and restore students | Graduating students and dropped-out students; the grades are exported; an archived account is deleted 30 days later. |
 | 2.8 | List and print enrollments | Student's accounts, the printable enrollment form and the Excel export. |
+| 2.9 | Set the class schedule and rooms | Round 49: the part of the day, the days (MWF or TTH), the time and the room of each course of a section; no room or teacher is in two classes at once. |
 
 ### 3.0 Manage the course library
 

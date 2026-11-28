@@ -180,10 +180,17 @@ public sealed class EvaluationService(IDbContextFactory<AppDbContext> dbFactory,
             .Select(e => new { e.Id, e.Title, e.SentAtUtc, e.DueAtUtc, Questions = e.Questions.Count, Courses = e.Targets.Count, Responses = e.Responses.Count })
             .ToListAsync(ct);
 
+        // Round 49: the answers each evaluation expects, for all the evaluations with two queries (it was a query for each evaluation and one more for each of its courses).
+        var sentIds = rows.Where(r => r.SentAtUtc is not null).Select(r => r.Id).ToList();
+        var targets = sentIds.Count == 0 ? [] : await db.EvaluationTargets.AsNoTracking().Where(t => sentIds.Contains(t.EvaluationId))
+            .Select(t => new { t.EvaluationId, t.Assignment.SectionId, t.Assignment.SubjectId }).ToListAsync(ct);
+        var rosterCounts = await Roster.CountsAsync(db, targets.Select(t => (t.SectionId, t.SubjectId)), ct);
+        var expectedOf = targets.GroupBy(t => t.EvaluationId).ToDictionary(g => g.Key, g => g.Sum(t => rosterCounts[(t.SectionId, t.SubjectId)]));
+
         var result = new List<EvaluationRow>();
         foreach (var r in rows)
         {
-            var expected = r.SentAtUtc is null ? 0 : await ExpectedAsync(db, r.Id, ct);
+            var expected = r.SentAtUtc is null ? 0 : expectedOf.GetValueOrDefault(r.Id);
             result.Add(new EvaluationRow(r.Id, r.Title, StateOf(r.SentAtUtc, r.DueAtUtc, now), r.SentAtUtc, r.DueAtUtc, r.Questions, r.Courses, expected, r.Responses));
         }
 

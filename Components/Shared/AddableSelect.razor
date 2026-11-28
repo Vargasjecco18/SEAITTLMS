@@ -1,0 +1,107 @@
+@* Round 49: a list to choose from whose last choice adds a name to the list ("Add school", "Add address"): the choice opens a box under the list, the name is typed there, and the Add button keeps it
+   (the page does that, in <see cref="Add"/>) and chooses it. A value that is not in the list (an old record) is shown as it is. *@
+<select id="@Id" class="pick" aria-label="@(AriaLabel ?? Id)" disabled="@Disabled" @onchange="Picked">
+    <option value="" selected="@(string.IsNullOrEmpty(Value) && !adding)">@Placeholder</option>
+    @foreach (var choice in Choices)
+    {
+        <option value="@choice" selected="@(!adding && Value == choice)">@choice</option>
+    }
+    @if (!string.IsNullOrEmpty(Value) && !Choices.Contains(Value))
+    {
+        <option value="@Value" selected="@(!adding)">@Value</option>
+    }
+    <option value="@AddChoice" selected="@adding">+ @AddLabel…</option>
+</select>
+@if (adding)
+{
+    <div class="adding" id="@(Id)-adding">
+        <input id="@(Id)-new" type="text" maxlength="@MaxLength" autocomplete="off" placeholder="@AddPlaceholder" aria-label="@AddLabel" value="@newName"
+               @oninput="e => { newName = e.Value?.ToString() ?? string.Empty; problem = null; }" @onkeydown="OnKey" />
+        <button type="button" class="add" id="@(Id)-add" disabled="@busy" @onclick="AddAsync">@AddLabel</button>
+        <button type="button" class="cancel" @onclick="CancelAdd">Cancel</button>
+    </div>
+    @if (problem is not null)
+    {
+        <p class="problem" role="alert" id="@(Id)-problem">@problem</p>
+    }
+}
+
+@code {
+    private const string AddChoice = "\u0001add";
+
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public IReadOnlyList<string> Choices { get; set; } = [];
+    [Parameter] public string Placeholder { get; set; } = "Choose";
+    [Parameter] public string AddLabel { get; set; } = "Add";
+    [Parameter] public string AddPlaceholder { get; set; } = "Type the name";
+    [Parameter] public int MaxLength { get; set; } = 120;
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Keeps a new name (true and the name written the usual way, or false and what is wrong). The page makes the list longer.</summary>
+    [Parameter, EditorRequired] public Func<string, Task<(bool Ok, string Text)>> Add { get; set; } = _ => Task.FromResult((false, ""));
+
+    private bool adding;
+    private bool busy;
+    private string newName = "";
+    private string? problem;
+
+    private async Task Picked(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        if (value == AddChoice)
+        {
+            adding = true;
+            newName = "";
+            problem = null;
+            return;
+        }
+
+        adding = false;
+        problem = null;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+    private async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await AddAsync();
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var (ok, text) = await Add(newName);
+            if (!ok)
+            {
+                problem = text;
+                return;
+            }
+
+            adding = false;
+            problem = null;
+            await ValueChanged.InvokeAsync(text);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void CancelAdd()
+    {
+        adding = false;
+        problem = null;
+    }
+}

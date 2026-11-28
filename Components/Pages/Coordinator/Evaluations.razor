@@ -15,7 +15,7 @@
     <Button IconName="plus" Disabled="busy" OnClick="OpenSheetAsync">New evaluation</Button>
 </PageHeader>
 
-<Notice Message="@message" IsError="true" OnDismiss="ClearMessage" />
+<Notice Message="@message" IsError="@messageIsError" OnDismiss="ClearMessage" />
 
 <Card>
     @if (rows is null)
@@ -78,6 +78,12 @@
                                 <div class="row-actions">
                                     <ButtonLink Href="@($"coordinator/evaluations/{row.Id}")" IconName="arrow-right" IconAfter="true" Small="true">Open</ButtonLink>
                                     <Button Small="true" Variant="ButtonVariant.Secondary" IconName="copy" Disabled="busy" Title="@($"Make a copy of {row.Title}")" OnClick="() => CopyAsync(row.Id)">Copy</Button>
+                                    @* Round 49: Close and Delete are in the row (Close only while the students can still answer). *@
+                                    @if (row.State == EvaluationStates.Open)
+                                    {
+                                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="lock-keyhole" Disabled="busy" Title="@($"Close {row.Title}: the students can't answer any more")" OnClick="() => CloseRowAsync(row.Id)">Close</Button>
+                                    }
+                                    <Button Small="true" Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" Title="@($"Delete {row.Title}")" OnClick="() => deleting = row">Delete</Button>
                                 </div>
                             </td>
                         </tr>
@@ -101,7 +107,67 @@
     </HeaderContent>
 </EvaluationSheetDialog>
 
+<Modal Open="deleting is not null" Title="Delete this evaluation?" OnClose="CancelDelete">
+    @if (deleting is not null)
+    {
+        <p>@deleting.Title will be deleted with its questions and the answers of the students. This can't be undone.</p>
+        <div class="modal-actions">
+            <Button Variant="ButtonVariant.Ghost" OnClick="CancelDelete">Cancel</Button>
+            <Button Variant="ButtonVariant.Danger" IconName="trash-2" Disabled="busy" OnClick="DeleteRowAsync">Delete</Button>
+        </div>
+    }
+</Modal>
+
 @code {
+    private EvaluationRow? deleting;
+
+    private void CancelDelete() => deleting = null;
+
+    private async Task CloseRowAsync(int id)
+    {
+        if (busy)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var me = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Service.CloseNowAsync(me.UserId, id);
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            messageIsError = !result.Succeeded;
+            rows = await Service.ListAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private async Task DeleteRowAsync()
+    {
+        if (busy || deleting is null)
+        {
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            var me = await Me.GetInAreaAsync(AppRoles.AcademicCoordinator);
+            var result = me is null ? ServiceResult.Fail("Please sign in again.") : await Service.DeleteAsync(me.UserId, deleting.Id);
+            message = result.Succeeded ? result.Message : string.Join(" ", result.Errors);
+            messageIsError = !result.Succeeded;
+            deleting = null;
+            rows = await Service.ListAsync();
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
     private static IReadOnlyList<EvaluationQuestionInput> DefaultQuestions => EvaluationService.DefaultQuestions;
 
     private bool sheetOpen;
@@ -152,6 +218,7 @@
 
     private IReadOnlyList<EvaluationRow>? rows;
     private string? message;
+    private bool messageIsError = true;
     private bool busy;
 
     protected override async Task OnInitializedAsync() => rows = await Service.ListAsync();
@@ -180,6 +247,7 @@
             if (!result.Succeeded || result.Id is not { } copyId)
             {
                 message = string.Join(" ", result.Errors);
+                messageIsError = true;
                 return;
             }
 

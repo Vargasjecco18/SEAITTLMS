@@ -129,18 +129,18 @@
         </Card>
 
         <Card Title="Notification sound of the school" IconName="bell" Class="setting">
-            <p class="note">The sound people hear when a new message or notification arrives, unless they chose another one in their Settings. Without a file, the browser plays two short tones.</p>
+            <p class="note">The sound people hear when a new message or notification arrives, unless they chose another one in their Settings. Without a file, the browser plays the chime.</p>
             @if (schoolSound is { } current)
             {
                 <p class="sound-now" id="s-sound-name"><Icon Name="music" Size="16" /> <strong>@current.SchoolName</strong></p>
             }
             else
             {
-                <p class="sound-now" id="s-sound-name"><Icon Name="music" Size="16" /> No file. The two short tones are used.</p>
+                <p class="sound-now" id="s-sound-name"><Icon Name="music" Size="16" /> No file. The chime is used.</p>
             }
 
             <div class="sound-row">
-                <button type="button" class="link-button" data-sound-test data-sound-choice="@(schoolSound is null ? "tones" : "school")" data-sound-url="@(schoolSound is null ? "" : $"account/school-sound?v={schoolSound.SchoolVersion}")">Play it</button>
+                <button type="button" class="link-button" data-sound-test data-sound-choice="@(schoolSound is null ? "chime" : "school")" data-sound-url="@(schoolSound is null ? "" : $"account/school-sound?v={schoolSound.SchoolVersion}")">Play it</button>
                 @if (schoolSound is not null)
                 {
                     <button type="button" class="link-button" disabled="@soundBusy" @onclick="RemoveSchoolSoundAsync">Remove it</button>

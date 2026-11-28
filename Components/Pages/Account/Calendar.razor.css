@@ -66,6 +66,7 @@
 .swatch.announcement { background: var(--slate); }
 .swatch.counseling { background: var(--teal, #0d9488); }
 .swatch.holiday { background: transparent; border: 2px dashed var(--rose); }
+.swatch.term { background: var(--brand); }
 .swatch.module { background: var(--green); }
 .swatch.personal { background: #7c3aed; }
 .swatch.late { background: var(--danger-solid); }
@@ -177,6 +178,7 @@ a.chip:hover {
 .chip.announcement { background: var(--slate-soft); color: var(--slate); }
 .chip.counseling { background: var(--success-soft); color: var(--success); }
 .chip.holiday { background: transparent; color: var(--rose); box-shadow: inset 0 0 0 1px var(--rose); }
+.chip.term { background: var(--brand-soft); color: var(--brand-strong); }
 .chip.module { background: var(--green-soft); color: var(--green); }
 .chip.personal { background: #ede9fe; color: #6d28d9; }
 .chip.late { background: var(--danger-soft); color: var(--danger); }
@@ -300,6 +302,7 @@ a.chip:hover {
 .sum.announcement { background: var(--slate-soft); color: var(--slate); }
 .sum.counseling { background: var(--success-soft); color: var(--success); }
 .sum.holiday { background: transparent; color: var(--rose); box-shadow: inset 0 0 0 1px var(--rose); }
+.sum.term { background: var(--brand-soft); color: var(--brand-strong); }
 .sum.module { background: var(--green-soft); color: var(--green); }
 .sum.personal { background: #ede9fe; color: #6d28d9; }
 .sum.late { background: var(--danger-soft); color: var(--danger); }

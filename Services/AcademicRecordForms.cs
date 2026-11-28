@@ -25,7 +25,7 @@ public static class AcademicRecordForms
         row++;
         sheet.Set(row, 1, "LRN", XlsxStyle.Bold).Set(row, 2, student.Lrn, XlsxStyle.Text);
         row++;
-        sheet.Set(row, 1, "Sex", XlsxStyle.Bold).Set(row, 2, student.Sex?.ToString() ?? "");
+        sheet.Set(row, 1, "Sex", XlsxStyle.Bold).Set(row, 2, student.Sex.ForFile());
         row++;
         sheet.Set(row, 1, "Record status", XlsxStyle.Bold).Set(row, 2, StudentStatus.Display(student.Status) + (student.ChangedAtUtc is { } at ? " on " + PhilippineTime.FormatDate(at) : ""));
         row += 2;

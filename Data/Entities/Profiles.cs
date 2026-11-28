@@ -4,6 +4,23 @@ public enum Sex
 {
     Male,
     Female,
+
+    /// <summary>Round 49: "Prefer not to say" (the Admission staff can choose it when they record a student).</summary>
+    PreferNotToSay,
+}
+
+public static class SexExtensions
+{
+    /// <summary>The words for a person: "Male", "Female", "Prefer not to say"; "—" when nothing was chosen.</summary>
+    public static string Display(this Sex? sex) => sex switch
+    {
+        Sex.PreferNotToSay => "Prefer not to say",
+        { } value => value.ToString(),
+        null => "—",
+    };
+
+    /// <summary>The same for the files (an empty cell when nothing was chosen).</summary>
+    public static string ForFile(this Sex? sex) => sex is null ? "" : sex.Display();
 }
 
 /// <summary>Whether a staff member is currently working at the school.</summary>

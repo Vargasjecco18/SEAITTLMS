@@ -9,6 +9,8 @@
     <span class="term-badge" id="current-term" title="The school year and the term that is going on now">
         <Icon Name="calendar-days" Size="16" />
         <span class="term-badge-text"><strong>@schoolYear</strong> <span class="dot" aria-hidden="true">·</span> @term</span>
+        @* Round 49: the first and the last day of the term (they are the ones of the academic setup). *@
+        <span class="term-dates" id="term-dates"><span class="dot" aria-hidden="true">·</span> @dates</span>
         @if (daysLeft is { } left)
         {
             <span class="days-left" id="term-days-left"><span class="dot" aria-hidden="true">·</span> @left @(left == 1 ? "day" : "days") left</span>
@@ -24,6 +26,7 @@
     private string schoolYear = "";
     private string term = "";
     private int? daysLeft;
+    private string dates = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -40,6 +43,7 @@
             schoolYear = "SY " + current.SchoolYear;
             term = current.Name;
             text = schoolYear + " " + term;
+            dates = $"{PhilippineTime.FormatDate(current.StartDate)} to {PhilippineTime.FormatDate(current.EndDate)}";
             var left = current.EndDate.DayNumber - today.DayNumber;
             daysLeft = left <= ShowDaysLeftFrom ? left : null;
         }

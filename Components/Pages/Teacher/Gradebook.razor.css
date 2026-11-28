@@ -382,16 +382,6 @@
     cursor: default;
 }
 
-.part-col {
-    min-width: 4.2rem;
-    background: var(--surface-2);
-}
-
-.grid tbody td.part-col {
-    background: transparent;
-    color: var(--text-muted);
-}
-
 .final-grade.incomplete {
     opacity: 0.8;
 }

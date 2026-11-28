@@ -91,6 +91,20 @@
     gap: 0 1rem;
 }
 
+/* Round 49: the question at the left and its right answer at the right. */
+.qa {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.25rem;
+    align-items: start;
+}
+
+@media (max-width: 760px) {
+    .qa {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 @media (max-width: 640px) {
     .two {
         grid-template-columns: minmax(0, 1fr);

@@ -247,16 +247,33 @@ th.col-level {
 /* The columns have their own widths, so choosing a concern or what happened never makes the row wider or narrower: a long choice is cut with "…" in its box,
    a long sentence wraps inside its column. A phone scrolls the table sideways. */
 .referral-table {
-    min-width: 56rem;
+    min-width: 62rem;
     table-layout: fixed;
 }
 
+/* Round 49: less room between Student and Section and between the other columns, and a little room at the right of the last one. */
+.referral-table th,
+.referral-table td {
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+}
+
+.referral-table th:first-child,
+.referral-table td:first-child {
+    padding-left: 1.25rem;
+}
+
+.referral-table th:last-child,
+.referral-table td:last-child {
+    padding-right: 1.6rem;
+}
+
 .referral-table .col-student {
-    width: 20%;
+    width: 17%;
 }
 
 .referral-table .col-section {
-    width: 11%;
+    width: 9%;
 }
 
 .referral-table .col-concern {
@@ -264,19 +281,19 @@ th.col-level {
 }
 
 .referral-table .col-happened {
-    width: 22%;
+    width: 19%;
 }
 
 .referral-table th.col-notes {
-    width: 7rem;
+    width: 6.75rem;
 }
 
 .referral-table th.col-status {
-    width: 8.5rem;
+    width: 7.75rem;
 }
 
 .referral-table th.col-schedule {
-    width: 9.5rem;
+    width: 14.5rem;
 }
 
 .referral-table th.col-actions {
@@ -551,6 +568,26 @@ td:nth-child(4) .pick {
     color: var(--success);
 }
 
+/* Round 49: the student answered Not going, so the notes are written again. */
+.notes-button.is-again {
+    border-style: solid;
+    border-color: var(--warning, #9a6700);
+    background: var(--warning-soft, #fdf0d5);
+    color: var(--warning, #9a6700);
+}
+
+/* Notes, Status, Schedule and Solved sit on one line, with the same height. */
+.notes-button,
+.schedule-button,
+.referral-table .seen {
+    min-height: 2rem;
+    white-space: nowrap;
+}
+
+.referral-table .seen {
+    padding: 0 0.7rem;
+}
+
 
 /* What the student did with the counselor's message: Status (Not seen yet, Seen, Ignored) at the right of Notes, and the answer Going / Not going in the Schedule column (round 41). */
 .col-status {
@@ -584,10 +621,9 @@ td:nth-child(4) .pick {
     color: var(--danger);
 }
 
+/* The answer is a small chip inside the schedule pill: Going / Not going, the calendar and the day, all on one line. */
 .col-schedule .answer {
-    display: flex;
-    width: max-content;
-    margin: 0 auto 0.3rem;
+    flex: none;
 }
 
 .answer.going {
@@ -641,12 +677,21 @@ td:nth-child(4) .pick {
     text-align: left;
 }
 
-.schedule-button .when {
-    white-space: nowrap;
+/* Not going: the same pill, nothing to press (there is no schedule). */
+.schedule-button.is-static {
+    border-style: solid;
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: default;
 }
 
-.schedule-button small {
-    display: block;
-    font-weight: 500;
-    opacity: 0.85;
+.schedule-button.is-static:hover {
+    border-color: var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.schedule-button .when {
+    white-space: nowrap;
 }

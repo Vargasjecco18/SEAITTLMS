@@ -49,8 +49,9 @@
                     <AttachmentPicker @ref="filesPicker" @key="@($"files-{module.Id}-{pickerKey}")" NoSizeLimit="true" Title="@(module.IsSyllabus ? "Files of the syllabus" : "Files of the handout")"
                                       Existing="@files.Where(f => !f.IsSlides).ToList()" />
                     <div class="modal-actions">
-                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Close</Button>
+                        @* Round 49: Upload first and Close after it (they were the other way round). *@
                         <Button Type="submit" IconName="upload" Disabled="busy">@(busy ? "Uploading…" : "Upload")</Button>
+                        <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Close</Button>
                     </div>
                 </EditForm>
             </section>

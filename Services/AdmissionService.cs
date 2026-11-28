@@ -15,27 +15,75 @@ public sealed class AdmissionInput
     public string? NameExtension { get; set; }
     public Sex? Sex { get; set; }
     public string? PhoneNumber { get; set; }
-    public string? Address { get; set; }
     public string? PreviousSchool { get; set; }
+
+    /// <summary>Round 49: the email address of the student.</summary>
+    public string? Email { get; set; }
+
+    /// <summary>Round 49: the address of the student, in four parts (the whole line is made from them when the record is saved).</summary>
+    public AddressParts Address { get; set; } = new();
+
     public string? FatherName { get; set; }
     public string? FatherPhone { get; set; }
+    public string? FatherOccupation { get; set; }
+    public string? FatherEmail { get; set; }
     public string? MotherName { get; set; }
     public string? MotherPhone { get; set; }
+    public string? MotherOccupation { get; set; }
+    public string? MotherEmail { get; set; }
+
+    /// <summary>Round 49: where the parents live (one address for the father and the mother).</summary>
+    public AddressParts ParentsAddress { get; set; } = new();
+
     public string? GuardianName { get; set; }
     public string? GuardianRelationship { get; set; }
     public string? GuardianPhone { get; set; }
-    public string? GuardianAddress { get; set; }
+    public string? GuardianOccupation { get; set; }
+    public string? GuardianEmail { get; set; }
+    public AddressParts GuardianAddress { get; set; } = new();
 
     /// <summary>Round 47: the strand the student wants.</summary>
     public int? StrandId { get; set; }
+
+    /// <summary>Round 49: the track the student wants (the strands to choose from are the ones of the track).</summary>
+    public int? TrackId { get; set; }
+}
+
+/// <summary>Round 49: an address in the four parts of the form: the street address, the city or municipality, the state or province and the postal / zip code.</summary>
+public sealed class AddressParts
+{
+    public string? Street { get; set; }
+    public string? City { get; set; }
+    public string? Province { get; set; } = AdmissionService.DefaultProvince;
+    public string? PostalCode { get; set; }
+
+    public bool IsEmpty => string.IsNullOrWhiteSpace(Street) && string.IsNullOrWhiteSpace(City) && string.IsNullOrWhiteSpace(PostalCode);
+
+    /// <summary>The whole line: "Purok 3, Rawis, Legazpi City, Albay 4500".</summary>
+    public string? Line()
+    {
+        if (IsEmpty)
+        {
+            return null;
+        }
+
+        var place = string.Join(", ", new[] { Street, City, Province }.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
+        return string.IsNullOrWhiteSpace(PostalCode) ? place : $"{place} {PostalCode.Trim()}";
+    }
 }
 
 /// <summary>A line of the list of the Admission staff and of the list the registrar chooses from.</summary>
 public sealed record AdmissionRow(int Id, byte GradeLevel, string Lrn, string FullName, string? ParentsText, int DocumentsReceived, bool Enrolled, DateTime CreatedAtUtc,
     string? Strand = null, string? Section = null, string? Phone = null, int? StrandId = null, int OtherDocuments = 0);
 
-/// <summary>A strand to choose when a student is recorded.</summary>
-public sealed record AdmissionStrand(int Id, string Code, string Name, string TrackCode);
+/// <summary>Round 49: a document that has its file, for the Print and Download buttons.</summary>
+public sealed record AdmissionDocumentFile(int Id, string Kind, string FileName, string ContentType, byte[] Data);
+
+/// <summary>A strand to choose when a student is recorded (Round 49: with the id of its track, for the list of tracks).</summary>
+public sealed record AdmissionStrand(int Id, string Code, string Name, string TrackCode, int TrackId = 0);
+
+/// <summary>Round 49: a track to choose when a student is recorded.</summary>
+public sealed record AdmissionTrack(int Id, string Code, string Name);
 
 public sealed record AdmissionDocumentRow(int Id, string Kind, string? FileName, long SizeBytes, DateTime ReceivedAtUtc);
 
@@ -54,7 +102,7 @@ public sealed record AdmissionDocumentSlot(string Kind, int? DocumentId, bool In
 /// <summary>What the registrar needs of a recorded student: the names, the phone, the parents and the guardian (the printable form fills them in by itself).</summary>
 public sealed record AdmissionDetails(
     int Id, byte GradeLevel, string Lrn, string FirstName, string? MiddleName, string LastName, string? NameExtension, Sex? Sex, string? PhoneNumber, string? Address, string? PreviousSchool,
-    string? FatherName, string? FatherPhone, string? MotherName, string? MotherPhone, string? GuardianName, string? GuardianRelationship, string? GuardianPhone, string? GuardianAddress, bool Enrolled)
+    string? FatherName, string? FatherPhone, string? MotherName, string? MotherPhone, string? GuardianName, string? GuardianRelationship, string? GuardianPhone, string? GuardianAddress, bool Enrolled, string? ParentsAddress = null, string? Email = null)
 {
     public string FullName => NameCase.Title(string.Join(' ', new[] { FirstName, MiddleName, LastName, NameExtension }.Where(x => !string.IsNullOrWhiteSpace(x))));
 }
@@ -128,7 +176,73 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
     {
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.Strands.AsNoTracking().Where(s => s.IsActive).OrderBy(s => s.Track.Code).ThenBy(s => s.Code)
-            .Select(s => new AdmissionStrand(s.Id, s.Code, s.Name, s.Track.Code)).ToListAsync(ct);
+            .Select(s => new AdmissionStrand(s.Id, s.Code, s.Name, s.Track.Code, s.TrackId)).ToListAsync(ct);
+    }
+
+    /// <summary>Round 49: the tracks (ACAD, TECH-PRO) that have a strand, to choose before the strand.</summary>
+    public async Task<IReadOnlyList<AdmissionTrack>> ListTracksAsync(CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var rows = await db.Strands.AsNoTracking().Where(s => s.IsActive).Select(s => new { s.TrackId, s.Track.Code, s.Track.Name }).Distinct().ToListAsync(ct);
+        return [.. rows.OrderBy(r => r.Code).Select(r => new AdmissionTrack(r.TrackId, r.Code, r.Name))];
+    }
+
+    /// <summary>The province a new address starts with (the school is in Albay).</summary>
+    public const string DefaultProvince = "Albay";
+
+    /// <summary>The ways a guardian can be related to the student (a list to choose from, then Others to type it).</summary>
+    public static readonly IReadOnlyList<string> Relationships =
+        ["Mother", "Father", "Grandmother", "Grandfather", "Aunt", "Uncle", "Sister", "Brother", "Cousin", "Godparent", PhilippineAddresses.Others];
+
+    /// <summary>
+    /// Round 49: the schools of Albay (<see cref="AdmissionOptionKinds.School"/>) or the cities and municipalities of Albay (<see cref="AdmissionOptionKinds.City"/>) to choose from, with the ones the
+    /// Admission staff added. The first ones are put there by the migration <c>AdmissionRecordFields</c>.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> GetOptionsAsync(string kind, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        return await db.AdmissionOptions.AsNoTracking().Where(o => o.Kind == kind).OrderBy(o => o.Name).Select(o => o.Name).ToListAsync(ct);
+    }
+
+    /// <summary>The Add school and Add address buttons: a new name goes to the list (the name is written in capitals like a name, and a name that is there already is the same name).</summary>
+    public async Task<ServiceResult> AddOptionAsync(int userId, string kind, string? name, CancellationToken ct = default)
+    {
+        if (kind is not (AdmissionOptionKinds.School or AdmissionOptionKinds.City))
+        {
+            return ServiceResult.Fail("This list does not take new names.");
+        }
+
+        if ((await GradesOfAsync(userId, ct)).Count == 0)
+        {
+            return ServiceResult.Fail("Only the Admission staff add to these lists.");
+        }
+
+        var clean = Blank(name);
+        var what = kind == AdmissionOptionKinds.School ? "school" : "city or municipality";
+        if (clean is null || clean.Length < 3 || clean.Length > AdmissionOptionKinds.MaxNameLength || clean.Any(char.IsControl))
+        {
+            return ServiceResult.Fail($"Type the name of the {what} (3 to {AdmissionOptionKinds.MaxNameLength} letters).");
+        }
+
+        clean = NameCase.Title(clean);
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var there = await db.AdmissionOptions.AsNoTracking().Where(o => o.Kind == kind && o.Name == clean).Select(o => o.Name).FirstOrDefaultAsync(ct);
+        if (there is not null)
+        {
+            return ServiceResult.Ok($"{there} is in the list already.");
+        }
+
+        db.AdmissionOptions.Add(new AdmissionOption { Kind = kind, Name = clean });
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // somebody added the same name at the same moment: it is there
+        }
+
+        return ServiceResult.Ok(clean);
     }
 
     public async Task<AdmissionInput?> GetForEditAsync(int userId, int id, CancellationToken ct = default)
@@ -143,9 +257,66 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         return new AdmissionInput
         {
             Id = r.Id, Lrn = r.Lrn, FirstName = r.FirstName, MiddleName = r.MiddleName, LastName = r.LastName, NameExtension = r.NameExtension, Sex = r.Sex, PhoneNumber = PhoneNumbers.ToLocal(r.PhoneNumber),
-            Address = r.Address, PreviousSchool = r.PreviousSchool, FatherName = r.FatherName, FatherPhone = PhoneNumbers.ToLocal(r.FatherPhone), MotherName = r.MotherName, MotherPhone = PhoneNumbers.ToLocal(r.MotherPhone),
-            GuardianName = r.GuardianName, GuardianRelationship = r.GuardianRelationship, GuardianPhone = PhoneNumbers.ToLocal(r.GuardianPhone), GuardianAddress = r.GuardianAddress, StrandId = r.StrandId,
+            Email = r.Email, PreviousSchool = r.PreviousSchool,
+            Address = PartsOf(r.AddressStreet, r.AddressCity, r.AddressProvince, r.AddressPostalCode, r.Address),
+            FatherName = r.FatherName, FatherPhone = PhoneNumbers.ToLocal(r.FatherPhone), FatherOccupation = r.FatherOccupation, FatherEmail = r.FatherEmail,
+            MotherName = r.MotherName, MotherPhone = PhoneNumbers.ToLocal(r.MotherPhone), MotherOccupation = r.MotherOccupation, MotherEmail = r.MotherEmail,
+            ParentsAddress = PartsOf(r.ParentsStreet, r.ParentsCity, r.ParentsProvince, r.ParentsPostalCode, r.ParentsAddress),
+            GuardianName = r.GuardianName, GuardianRelationship = r.GuardianRelationship, GuardianPhone = PhoneNumbers.ToLocal(r.GuardianPhone), GuardianOccupation = r.GuardianOccupation, GuardianEmail = r.GuardianEmail,
+            GuardianAddress = PartsOf(r.GuardianStreet, r.GuardianCity, r.GuardianProvince, r.GuardianPostalCode, r.GuardianAddress),
+            StrandId = r.StrandId, TrackId = r.TrackId ?? r.Strand?.TrackId,
         };
+    }
+
+    /// <summary>The parts of an address; a record from before the four parts has only the line, which is put in the street address.</summary>
+    private static AddressParts PartsOf(string? street, string? city, string? province, string? postal, string? line) =>
+        street is null && city is null && province is null && postal is null && !string.IsNullOrWhiteSpace(line)
+            ? new AddressParts { Street = line, Province = null }
+            : new AddressParts { Street = street, City = city, Province = province, PostalCode = postal };
+
+    private static string? Email(string? typed, string label, List<string> errors)
+    {
+        var text = Blank(typed);
+        if (text is null)
+        {
+            return null;
+        }
+
+        var at = text.IndexOf('@');
+        if (text.Length > 150 || at < 1 || at != text.LastIndexOf('@') || text.Contains(' ') || !text[(at + 1)..].Contains('.') || text.EndsWith('.') || text[(at + 1)..].StartsWith('.'))
+        {
+            errors.Add($"{label}: write a real email address, like name@example.com.");
+            return null;
+        }
+
+        return text.ToLowerInvariant();
+    }
+
+    /// <summary>The four parts of an address cleaned (the postal code takes digits only, 3 to 10 of them); the whole line is made from them.</summary>
+    private static (string? Street, string? City, string? Province, string? Postal, string? Line) Address(AddressParts? parts, string label, List<string> errors)
+    {
+        if (parts is null)
+        {
+            return (null, null, null, null, null);
+        }
+
+        var street = Blank(parts.Street);
+        var city = Blank(parts.City);
+        var province = Blank(parts.Province);
+        var postal = Blank(parts.PostalCode)?.Replace(" ", "");
+        if (postal is not null && (!postal.All(char.IsAsciiDigit) || postal.Length is < 3 or > 10))
+        {
+            errors.Add($"{label}: the postal / zip code is 3 to 10 digits.");
+            postal = null;
+        }
+
+        if (street is null && city is null && postal is null)
+        {
+            return (null, null, null, null, null);
+        }
+
+        var clean = new AddressParts { Street = street, City = city, Province = province, PostalCode = postal };
+        return (street, city, province, postal, clean.Line());
     }
 
     private static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : string.Join(' ', text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
@@ -190,6 +361,13 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         var fatherPhone = Phone(input.FatherPhone, "Father's phone", errors);
         var motherPhone = Phone(input.MotherPhone, "Mother's phone", errors);
         var guardianPhone = Phone(input.GuardianPhone, "Guardian's phone", errors);
+        var email = Email(input.Email, "The student's email", errors);
+        var fatherEmail = Email(input.FatherEmail, "Father's email", errors);
+        var motherEmail = Email(input.MotherEmail, "Mother's email", errors);
+        var guardianEmail = Email(input.GuardianEmail, "Guardian's email", errors);
+        var address = Address(input.Address, "Address", errors);
+        var parentsAddress = Address(input.ParentsAddress, "Parents' address", errors);
+        var guardianAddress = Address(input.GuardianAddress, "Guardian's address", errors);
         if (Blank(input.FatherName) is null && Blank(input.MotherName) is null && Blank(input.GuardianName) is null)
         {
             errors.Add("Write the father, the mother or the guardian (at least one).");
@@ -229,17 +407,33 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         record.NameExtension = Blank(input.NameExtension);
         record.Sex = input.Sex;
         record.PhoneNumber = phone;
-        record.Address = Blank(input.Address);
+        record.Address = address.Line;
+        (record.AddressStreet, record.AddressCity, record.AddressProvince, record.AddressPostalCode) = (address.Street, address.City, address.Province, address.Postal);
+        record.Email = email;
         record.PreviousSchool = Blank(input.PreviousSchool);
         record.FatherName = Blank(input.FatherName) is { } f ? NameCase.Title(f) : null;
         record.FatherPhone = fatherPhone;
+        record.FatherOccupation = Blank(input.FatherOccupation);
+        record.FatherEmail = fatherEmail;
         record.MotherName = Blank(input.MotherName) is { } mo ? NameCase.Title(mo) : null;
         record.MotherPhone = motherPhone;
+        record.MotherOccupation = Blank(input.MotherOccupation);
+        record.MotherEmail = motherEmail;
+        record.ParentsAddress = parentsAddress.Line;
+        (record.ParentsStreet, record.ParentsCity, record.ParentsProvince, record.ParentsPostalCode) = (parentsAddress.Street, parentsAddress.City, parentsAddress.Province, parentsAddress.Postal);
         record.GuardianName = Blank(input.GuardianName) is { } g ? NameCase.Title(g) : null;
         record.GuardianRelationship = Blank(input.GuardianRelationship);
         record.GuardianPhone = guardianPhone;
-        record.GuardianAddress = Blank(input.GuardianAddress);
-        record.StrandId = input.StrandId is { } strandId && await db.Strands.AnyAsync(s => s.Id == strandId && s.IsActive, ct) ? input.StrandId : null;
+        record.GuardianOccupation = Blank(input.GuardianOccupation);
+        record.GuardianEmail = guardianEmail;
+        record.GuardianAddress = guardianAddress.Line;
+        (record.GuardianStreet, record.GuardianCity, record.GuardianProvince, record.GuardianPostalCode) = (guardianAddress.Street, guardianAddress.City, guardianAddress.Province, guardianAddress.Postal);
+        var strand = input.StrandId is { } strandId ? await db.Strands.AsNoTracking().Where(x => x.Id == strandId && x.IsActive).Select(x => new { x.Id, x.TrackId }).FirstOrDefaultAsync(ct) : null;
+        record.StrandId = strand?.Id;
+
+        // The track is the one of the strand; a track alone (no strand chosen yet) is kept too.
+        var trackId = strand?.TrackId ?? (input.TrackId is { } wanted && await db.Tracks.AnyAsync(t => t.Id == wanted, ct) ? input.TrackId : null);
+        record.TrackId = trackId;
         await db.SaveChangesAsync(ct);
         return ServiceResult.Ok(input.Id is null ? "The student was recorded." : "The record was saved.", record.Id);
     }
@@ -441,6 +635,26 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         return (doc.FileName ?? doc.Kind, doc.ContentType ?? "application/octet-stream", doc.Data!);
     }
 
+    /// <summary>
+    /// Round 49: the files of the documents of a student (the ones that have a picture or a PDF), with the name and the LRN, for the Print and Download buttons of the registrar. Nothing when the person
+    /// can't read the documents of the record.
+    /// </summary>
+    public async Task<(string Name, string Lrn, IReadOnlyList<AdmissionDocumentFile> Files)?> OpenAllDocumentsAsync(int userId, int recordId, CancellationToken ct = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(ct);
+        var record = await db.AdmissionRecords.AsNoTracking().Where(r => r.Id == recordId)
+            .Select(r => new { r.GradeLevel, r.Lrn, r.FirstName, r.MiddleName, r.LastName, r.NameExtension }).FirstOrDefaultAsync(ct);
+        if (record is null || !(await AccessAsync(db, userId, record.GradeLevel, ct)).Read)
+        {
+            return null;
+        }
+
+        var files = await db.AdmissionDocuments.AsNoTracking().Where(d => d.RecordId == recordId && d.Data != null).OrderBy(d => d.Id)
+            .Select(d => new { d.Id, d.Kind, d.FileName, d.ContentType, d.Data }).ToListAsync(ct);
+        var name = NameCase.Title(string.Join(' ', new[] { record.FirstName, record.MiddleName, record.LastName, record.NameExtension }.Where(x => !string.IsNullOrWhiteSpace(x))));
+        return (name, record.Lrn, [.. files.Select(f => new AdmissionDocumentFile(f.Id, f.Kind, f.FileName ?? f.Kind, f.ContentType ?? "application/octet-stream", f.Data!))]);
+    }
+
     // ---------------------------------------------------------------- the registrar
 
     /// <summary>The recorded students that are not enrolled yet (the list the registrar chooses from; the LRN is shown, not typed).</summary>
@@ -469,7 +683,7 @@ public sealed class AdmissionService(IDbContextFactory<AppDbContext> dbFactory, 
         await using var db = await dbFactory.CreateDbContextAsync(ct);
         return await db.AdmissionRecords.AsNoTracking().Where(r => r.Lrn == lrn).Select(r => new AdmissionDetails(
             r.Id, r.GradeLevel, r.Lrn, r.FirstName, r.MiddleName, r.LastName, r.NameExtension, r.Sex, r.PhoneNumber, r.Address, r.PreviousSchool, r.FatherName, r.FatherPhone, r.MotherName, r.MotherPhone,
-            r.GuardianName, r.GuardianRelationship, r.GuardianPhone, r.GuardianAddress, r.EnrolledAtUtc != null)).FirstOrDefaultAsync(ct);
+            r.GuardianName, r.GuardianRelationship, r.GuardianPhone, r.GuardianAddress, r.EnrolledAtUtc != null, r.ParentsAddress, r.Email)).FirstOrDefaultAsync(ct);
     }
 
     /// <summary>The student was enrolled from the record: it leaves the list the registrar chooses from. (Called by the enrollment.)</summary>

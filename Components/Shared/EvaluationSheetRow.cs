@@ -17,6 +17,16 @@ public sealed class EvaluationSheetRow
     /// <summary>The options of a ranking or select-all question (the sheet shows as many boxes as the columns it has).</summary>
     public List<string> Options { get; set; } = [];
 
+    /// <summary>
+    /// Round 49: the options are one box, written with semicolons between them ("Explains clearly; Is patient; Is fair"), instead of a column for each option.
+    /// Only a ranking or a select-all question has them.
+    /// </summary>
+    public string OptionsText
+    {
+        get => string.Join("; ", Options.Where(o => o.Trim().Length > 0));
+        set => Options = [.. (value ?? "").Split([';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
+    }
+
     /// <summary>A row with nothing in it is ignored when the sheet is saved.</summary>
     public bool IsFilled => Text.Trim().Length > 0 || Options.Any(o => o.Trim().Length > 0);
 

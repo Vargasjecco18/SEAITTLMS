@@ -125,6 +125,30 @@
     overflow-x: auto;
 }
 
+/* Round 49: View attendance in two columns (20 and 20); one column on a phone. */
+.att-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.5rem;
+    align-items: start;
+}
+
+.att-cols .table th,
+.att-cols .table td {
+    padding: 0.45rem 0.5rem;
+}
+
+.att-cols .table td:first-child {
+    white-space: nowrap;
+}
+
+/* Two tables side by side need a wide box; on a smaller screen the 40 students are one column. */
+@media (max-width: 1240px) {
+    .att-cols {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;

@@ -198,26 +198,28 @@
                     </table>
                 </div>
 
-                <div class="sheet-tools">
-                    @* Add [type] [number] row: the type of the new rows is chosen from a list and how many from a number box. *@
-                    <span class="add-rows" role="group" aria-label="Add rows">
-                        <span>Add</span>
-                        <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
-                            @foreach (var k in QuestionKinds.All)
-                            {
-                                <option value="@k">@QuestionKinds.Display(k)</option>
-                            }
-                        </select>
-                        <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
-                        <span>@(addCount == 1 ? "row" : "rows")</span>
-                        <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= ItemSheets.MaxQuestions)" OnClick="AddChosenRows">Add</Button>
-                    </span>
-                    <span class="muted">@rows.Count of @ItemSheets.MaxQuestions rows</span>
-                </div>
+                <div class="sheet-foot">
+                  <div class="sheet-tools">
+                      @* Add [type] [number] row: the type of the new rows is chosen from a list and how many from a number box. *@
+                      <span class="add-rows" role="group" aria-label="Add rows">
+                          <span>Add</span>
+                          <select id="add-kind" class="cell pick add-kind" aria-label="Type of the rows to add" @bind="addKind">
+                              @foreach (var k in QuestionKinds.All)
+                              {
+                                  <option value="@k">@QuestionKinds.Display(k)</option>
+                              }
+                          </select>
+                          <input id="add-count" class="cell cell-num add-count" type="number" min="1" max="50" inputmode="numeric" aria-label="How many rows to add" @bind="addCount" @bind:event="oninput" />
+                          <span>@(addCount == 1 ? "row" : "rows")</span>
+                          <Button Small="true" Variant="ButtonVariant.Secondary" IconName="plus" Disabled="@(rows.Count >= ItemSheets.MaxQuestions)" OnClick="AddChosenRows">Add</Button>
+                      </span>
+                      <span class="muted">@rows.Count of @ItemSheets.MaxQuestions rows</span>
+                  </div>
 
-                <div class="sheet-actions">
-                    <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
-                    <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
+                  <div class="sheet-actions">
+                      <Button Variant="ButtonVariant.Ghost" OnClick="CloseAsync">Cancel</Button>
+                      <Button IconName="circle-check" Disabled="@(Busy || SaveBlocked || Filled.Count == 0 || Filled.Count > ReadyCount)" OnClick="SaveAsync">@(Busy ? "Saving…" : Filled.Count == 1 ? "Save 1 question" : $"Save {Filled.Count} questions")</Button>
+                  </div>
                 </div>
             </div>
         </div>

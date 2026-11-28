@@ -85,6 +85,7 @@ builder.Services.AddScoped<MaterialService>();
 builder.Services.AddScoped<ProviderService>();
 builder.Services.AddScoped<EvaluationService>();
 builder.Services.AddScoped<SchoolSetupService>();
+builder.Services.AddScoped<CourseScheduleService>();
 builder.Services.AddScoped<SetupWorkbookService>();
 builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddScoped<GradebookService>();
@@ -546,6 +547,82 @@ app.MapGet("/files/admission/{id:int}", async (int id, HttpContext http, Admissi
     }
 
     return Results.File(doc.Value.Data, doc.Value.ContentType, doc.Value.Name);
+}).RequireAuthorization();
+
+// Round 49: the documents of a recorded student together, for the Print and Download buttons of the Documents box of the registrar: all the files in one zip, or one page with all of them to print.
+app.MapGet("/files/admission-record/{recordId:int}/zip", async (int recordId, HttpContext http, AdmissionService admission) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var all = await admission.OpenAllDocumentsAsync(userId, recordId, http.RequestAborted);
+    if (all is null || all.Value.Files.Count == 0)
+    {
+        return Results.NotFound();
+    }
+
+    using var stream = new MemoryStream();
+    using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, true))
+    {
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in all.Value.Files)
+        {
+            var extension = Path.GetExtension(file.FileName);
+            var entryName = $"{file.Kind}{extension}";
+            for (var n = 2; !used.Add(entryName); n++)
+            {
+                entryName = $"{file.Kind} ({n}){extension}";
+            }
+
+            var entry = zip.CreateEntry(string.Concat(entryName.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c)), System.IO.Compression.CompressionLevel.Fastest);
+            await using var entryStream = entry.Open();
+            await entryStream.WriteAsync(file.Data, http.RequestAborted);
+        }
+    }
+
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers.CacheControl = "private, no-store";
+    return Results.File(stream.ToArray(), "application/zip", FileDownloads.CleanName($"Documents - {all.Value.Name} ({all.Value.Lrn}).zip"));
+}).RequireAuthorization();
+
+app.MapGet("/files/admission-record/{recordId:int}/print", async (int recordId, HttpContext http, AdmissionService admission) =>
+{
+    var userId = int.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : 0;
+    var all = await admission.OpenAllDocumentsAsync(userId, recordId, http.RequestAborted);
+    if (all is null)
+    {
+        return Results.NotFound();
+    }
+
+    var html = new System.Text.StringBuilder();
+    html.Append("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Documents - ").Append(System.Net.WebUtility.HtmlEncode(all.Value.Name)).Append("</title>")
+        .Append("<style>body{font-family:Segoe UI,Arial,sans-serif;margin:0;padding:1rem;color:#111}h1{font-size:1.1rem;margin:0 0 .15rem}p.sub{margin:0 0 1rem;color:#555;font-size:.9rem}")
+        .Append("section{page-break-inside:avoid;margin:0 0 1.2rem}section h2{font-size:.95rem;margin:.2rem 0 .4rem}img{max-width:100%;max-height:25cm;display:block;border:1px solid #ccc}")
+        .Append("embed{width:100%;height:24cm;border:1px solid #ccc}.none{color:#555}@media print{section{page-break-after:always}section:last-child{page-break-after:auto}}</style></head><body>")
+        .Append("<h1>Documents of ").Append(System.Net.WebUtility.HtmlEncode(all.Value.Name)).Append("</h1><p class=\"sub\">LRN ").Append(System.Net.WebUtility.HtmlEncode(all.Value.Lrn)).Append("</p>");
+    if (all.Value.Files.Count == 0)
+    {
+        html.Append("<p class=\"none\">No document has a picture or a PDF yet.</p>");
+    }
+
+    foreach (var file in all.Value.Files)
+    {
+        var src = $"/files/admission/{file.Id}?inline=1";
+        html.Append("<section><h2>").Append(System.Net.WebUtility.HtmlEncode(file.Kind)).Append("</h2>");
+        if (file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            html.Append("<img src=\"").Append(src).Append("\" alt=\"").Append(System.Net.WebUtility.HtmlEncode(file.Kind)).Append("\">");
+        }
+        else
+        {
+            html.Append("<embed src=\"").Append(src).Append("\" type=\"application/pdf\">");
+        }
+
+        html.Append("</section>");
+    }
+
+    html.Append("<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 600); });</script></body></html>");
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers.CacheControl = "private, no-store";
+    return Results.Content(html.ToString(), "text/html; charset=utf-8");
 }).RequireAuthorization();
 
 // A picture of a question of a quiz or of a summative exam: the teacher of the course and the students who have it (once it is posted) open it.

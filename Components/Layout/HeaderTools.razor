@@ -229,7 +229,7 @@
                     <p class="hint">The sound you hear when a new message or a notification arrives. Choose one (it plays so you can hear it), or add your own file, then press <strong>Save</strong>. The switch <strong>Sound</strong> above turns it on and off.</p>
                     <Field For="set-sound" Label="Sound">
                         <select id="set-sound" value="@pendingSound" @onchange="ChooseSoundAsync">
-                            @foreach (var choice in new[] { "tones", "chime", "bell", "pop", "knock" })
+                            @foreach (var choice in new[] { "chime", "tones", "bell", "pop", "knock" })
                             {
                                 <option value="@choice">@NotificationSoundService.DisplayChoice(choice)</option>
                             }
@@ -309,7 +309,7 @@
     private string? soundMessage;
 
     private bool settingsOpen;
-    private string pendingSound = "tones";
+    private string pendingSound = "chime";
     private bool saveBusy;
     private bool saveFailed;
     private string? saveMessage;
@@ -721,13 +721,13 @@
         settingsOpen = true;
     }
 
-    /// <summary>What the browser plays: the choice ("" is the sound of the school when there is one, else two tones) and the address of the file when there is one.</summary>
+    /// <summary>What the browser plays: the choice ("" is the sound of the school when there is one, else the chime) and the address of the file when there is one.</summary>
     private string SoundChoiceForPlay => sound.Choice != "" ? sound.Choice : sound.HasSchool ? "school" : "";
 
     private string SoundUrl => UrlOfSound(SoundChoiceForPlay);
 
-    /// <summary>The choice the person has now, as the box of the settings shows it: the saved one, else the sound of the school when there is one, else the two tones.</summary>
-    private string EffectiveSoundChoice => sound.Choice != "" ? sound.Choice : sound.HasSchool ? "school" : "tones";
+    /// <summary>The choice the person has now, as the box of the settings shows it: the saved one, else the sound of the school when there is one, else the chime.</summary>
+    private string EffectiveSoundChoice => sound.Choice != "" ? sound.Choice : sound.HasSchool ? "school" : "chime";
 
     /// <summary>The address of the file for a choice (the school's or the person's own), or empty for a sound the browser makes by itself.</summary>
     private string UrlOfSound(string choice) => choice switch

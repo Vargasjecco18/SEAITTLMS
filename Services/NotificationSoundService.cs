@@ -38,13 +38,14 @@ public sealed class NotificationSoundService(IDbContextFactory<AppDbContext> dbF
 
     public static string DisplayChoice(string choice) => choice switch
     {
-        "chime" => "Chime",
+        "chime" => "Chime (the usual sound)",
         "bell" => "Bell",
         "pop" => "Pop",
         "knock" => "Double knock",
         "school" => "The sound of the school",
         "custom" => "My own file",
-        _ => "Two short tones",
+        "tones" => "Two short tones",
+        _ => "Chime (the usual sound)",
     };
 
     /// <summary>The audio type of a file name, or null when it is not a sound the browsers play.</summary>
@@ -57,7 +58,7 @@ public sealed class NotificationSoundService(IDbContextFactory<AppDbContext> dbF
         var own = await db.NotificationSounds.AsNoTracking().Where(n => n.UserId == userId).Select(n => new { n.Name, n.UpdatedAtUtc }).FirstOrDefaultAsync(ct);
         var school = await db.NotificationSounds.AsNoTracking().Where(n => n.UserId == null).Select(n => new { n.Name, n.UpdatedAtUtc }).FirstOrDefaultAsync(ct);
 
-        // A choice that needs a file that is not there any more falls back to the sound of the school, or the two tones.
+        // A choice that needs a file that is not there any more falls back to the sound of the school, or the chime (Round 49: the chime is the usual sound).
         var resolved = string.IsNullOrEmpty(choice) ? "" : choice;
         if (resolved == "custom" && own is null || resolved == "school" && school is null)
         {

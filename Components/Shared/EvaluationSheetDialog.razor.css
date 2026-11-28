@@ -79,9 +79,9 @@
     min-width: 10.5rem;
 }
 
-.c-choice {
-    width: 4.8rem;
-    min-width: 4.4rem;
+.c-options {
+    width: 17rem;
+    min-width: 12rem;
 }
 
 .c-right {
@@ -352,9 +352,9 @@ tr.bad .c-state {
     min-width: 7.5rem;
 }
 
-.c-choice {
-    width: 6.2rem;
-    min-width: 5.6rem;
+.c-options {
+    width: 17rem;
+    min-width: 12rem;
 }
 
 .sheet-types {
@@ -373,4 +373,28 @@ tr.bad .c-state {
 
 .sheet-types span {
     color: var(--text-muted);
+}
+
+/* Round 49: Add [type] [number] rows at the left and Cancel / Save at the right, on one line, balanced (on a narrow screen they go one under the other). */
+.sheet-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin-top: 0.85rem;
+}
+
+.sheet-foot .sheet-tools,
+.sheet-foot .sheet-actions {
+    margin-top: 0;
+}
+
+.sheet-foot .sheet-tools {
+    flex: 1 1 22rem;
+}
+
+.sheet-foot .sheet-actions {
+    flex: 0 0 auto;
+    justify-content: flex-end;
 }

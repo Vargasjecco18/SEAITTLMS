@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<AdmissionRecord> AdmissionRecords => Set<AdmissionRecord>();
     public DbSet<AdmissionDocument> AdmissionDocuments => Set<AdmissionDocument>();
+    public DbSet<AdmissionOption> AdmissionOptions => Set<AdmissionOption>();
     public DbSet<Registrar> Registrars => Set<Registrar>();
     public DbSet<GuidanceCounselor> GuidanceCounselors => Set<GuidanceCounselor>();
     public DbSet<Administrator> Administrators => Set<Administrator>();
@@ -33,6 +34,9 @@ public class AppDbContext : DbContext
     public DbSet<Track> Tracks => Set<Track>();
     public DbSet<Strand> Strands => Set<Strand>();
     public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Schedule> Schedules => Set<Schedule>();
+    public DbSet<CourseSchedule> CourseSchedules => Set<CourseSchedule>();
+    public DbSet<Room> Rooms => Set<Room>();
     public DbSet<StrandSubject> StrandSubjects => Set<StrandSubject>();
     public DbSet<Section> Sections => Set<Section>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();

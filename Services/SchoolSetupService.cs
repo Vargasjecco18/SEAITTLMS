@@ -196,6 +196,20 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             .ToListAsync(ct);
     }
 
+    /// <summary>
+    /// Round 49: a first or last day that is picked now can't be a day that has passed. A date that is already saved (the term that began in June) stays, but it is not changed to another day in the past.
+    /// </summary>
+    private string? PastDate(string what, DateOnly? picked, DateOnly? saved)
+    {
+        if (picked is null || picked == saved)
+        {
+            return null;
+        }
+
+        var today = PhilippineTime.Today(clock ?? TimeProvider.System);
+        return picked < today ? $"{what} can't be a day that has passed (today is {PhilippineTime.FormatDate(today)}). Pick today or a later day." : null;
+    }
+
     public async Task<ServiceResult> SaveSchoolYearAsync(SchoolYearInput input, int actingUserId, CancellationToken ct = default)
     {
         var errors = new List<string>();
@@ -240,6 +254,11 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
             }
 
             year = found;
+            var past = PastDate("The first day", input.StartDate, found.StartDate) ?? PastDate("The last day", input.EndDate, found.EndDate);
+            if (past is not null)
+            {
+                return ServiceResult.Fail(past);
+            }
 
             // The terms of the year have to stay inside it.
             var outside = await db.Terms.AnyAsync(t => t.SchoolYearId == id && (t.StartDate < input.StartDate!.Value || t.EndDate > input.EndDate!.Value), ct);
@@ -250,6 +269,12 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
         else
         {
+            var past = PastDate("The first day", input.StartDate, null) ?? PastDate("The last day", input.EndDate, null);
+            if (past is not null)
+            {
+                return ServiceResult.Fail(past);
+            }
+
             year = new SchoolYear();
             db.SchoolYears.Add(year);
         }
@@ -361,6 +386,12 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
                 return ServiceResult.Fail("This term no longer exists.");
             }
 
+            var past = PastDate("The first day", input.StartDate, found.StartDate) ?? PastDate("The last day", input.EndDate, found.EndDate);
+            if (past is not null)
+            {
+                return ServiceResult.Fail(past);
+            }
+
             // Enrollments are tied to the school year and the number of the term (the subjects came from it).
             if ((found.SchoolYearId != year.Id || found.TermNumber != input.TermNumber) && await db.Enrollments.AnyAsync(e => e.TermId == id, ct))
             {
@@ -385,6 +416,12 @@ public sealed partial class SchoolSetupService(IDbContextFactory<AppDbContext> d
         }
         else
         {
+            var past = PastDate("The first day", input.StartDate, null) ?? PastDate("The last day", input.EndDate, null);
+            if (past is not null)
+            {
+                return ServiceResult.Fail(past);
+            }
+
             var term = new Term
             {
                 SchoolYearId = year.Id, TermNumber = (byte)input.TermNumber, Name = name, StartDate = input.StartDate!.Value, EndDate = input.EndDate!.Value, IsCurrent = input.IsCurrent,

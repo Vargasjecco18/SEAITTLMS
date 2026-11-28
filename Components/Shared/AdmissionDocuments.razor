@@ -15,7 +15,25 @@
     }
     else
     {
-        <p class="doc-count" id="doc-count"><strong>@slots.Count(s => s.HasFile)</strong> of @slots.Count with a document · <strong>@slots.Count(s => s.InHand && !s.HasFile)</strong> paper in hand</p>
+        <div class="doc-head">
+            <p class="doc-count" id="doc-count"><strong>@slots.Count(s => s.HasFile)</strong> of @slots.Count with a document · <strong>@slots.Count(s => s.InHand && !s.HasFile)</strong> paper in hand</p>
+            @if (ShowTools)
+            {
+                @* Round 49: Print (one page with all the pictures and PDFs, opened in a new tab) and Download (all of them in one zip), at the right of the documents. *@
+                <span class="doc-tools" id="doc-tools">
+                    @if (slots.Any(s => s.HasFile))
+                    {
+                        <a class="act" id="doc-print" href="@($"files/admission-record/{RecordId}/print")" target="_blank" rel="noopener" title="Print the documents"><Icon Name="printer" Size="14" /> Print</a>
+                        <a class="act" id="doc-download" href="@($"files/admission-record/{RecordId}/zip")" download title="Download all the documents in one file"><Icon Name="download" Size="14" /> Download</a>
+                    }
+                    else
+                    {
+                        <span class="act off" id="doc-print" aria-disabled="true" title="No document has a picture or a PDF yet"><Icon Name="printer" Size="14" /> Print</span>
+                        <span class="act off" id="doc-download" aria-disabled="true" title="No document has a picture or a PDF yet"><Icon Name="download" Size="14" /> Download</span>
+                    }
+                </span>
+            }
+        </div>
         @if (!string.IsNullOrEmpty(problem))
         {
             <p class="warn" role="alert" id="doc-problem">@problem</p>
@@ -155,6 +173,9 @@
 
     /// <summary>True for the Admission staff (they add documents and edit); false for the registrar (the lines are only read).</summary>
     [Parameter] public bool CanEdit { get; set; }
+
+    /// <summary>Round 49: the Print and Download buttons (the registrar).</summary>
+    [Parameter] public bool ShowTools { get; set; }
 
     /// <summary>Called after a change, so the page that has the list can show the new count.</summary>
     [Parameter] public EventCallback OnChanged { get; set; }

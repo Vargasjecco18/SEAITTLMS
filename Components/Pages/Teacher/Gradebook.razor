@@ -107,10 +107,7 @@ else
                                         </span>
                                     </th>
                                 }
-                                @foreach (var part in GradingSystem.Parts)
-                                {
-                                    <th scope="col" class="part-col part-col-@GradingSystem.Short(part).ToLowerInvariant()" data-part="@GradingSystem.Short(part)" title="@GradingSystem.Name(part)">@GradingSystem.Short(part)<span class="max">@GradingSystem.Weights.Of(part).ToString("0.##")%</span></th>
-                                }
+                                @* Round 49: the four parts (WW, PT, ST, TE with their weights) are not columns of the gradebook; they are in the Excel and in the grading system line above the card. *@
                                 <th scope="col" class="final" data-final-head>Final grade</th>
                                 <th scope="col" class="descriptor">Descriptor</th>
                             </tr>
@@ -156,19 +153,6 @@ else
                                                         <a class="check small" href="teacher/items/@column.ItemId" title="@(column.HasEssay ? "Handed in: score the essay" : "Handed in, waiting for a score")">To check</a>
                                                     }
                                                 </div>
-                                            }
-                                        </td>
-                                    }
-                                    @foreach (var part in GradingSystem.Parts)
-                                    {
-                                        <td class="part-col" data-part="@GradingSystem.Short(part)">
-                                            @if (row.Grade?.PartPercent(part) is { } partPercent)
-                                            {
-                                                <span class="score">@partPercent.ToString("0.#")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="dash">—</span>
                                             }
                                         </td>
                                     }

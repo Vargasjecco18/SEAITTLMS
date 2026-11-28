@@ -23,6 +23,8 @@
         border: 1px solid var(--border);
         border-radius: var(--radius);
         background: var(--surface);
+        /* Round 49: the box has its own background, so its text must not take the white of the menu (the Default and Midnight looks): the title was white on white. */
+        color: var(--text);
         box-shadow: var(--shadow-lg);
         visibility: hidden;
         opacity: 0;
@@ -89,6 +91,7 @@
 }
 
 .fly-title {
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 0.45rem;

@@ -1,0 +1,36 @@
+@using SEAITT_LMS.Services
+@* Round 49: an address in four parts: the street address, the city or municipality (a list of Albay with its own "Add address"), the state or province and the postal / zip code. It is used for the
+   address of the student, of the parents and of the guardian (<see cref="IdPrefix"/> keeps their ids apart). *@
+<div class="address" id="@(IdPrefix)-address" role="group" aria-label="@Label">
+    <Field For="@($"{IdPrefix}-street")" Label="@($"{Label}: street address")">
+        <input id="@($"{IdPrefix}-street")" type="text" maxlength="150" autocomplete="off" placeholder="House number, street, purok or barangay" @bind="Parts.Street" />
+    </Field>
+    <div class="pair">
+        <Field For="@($"{IdPrefix}-city")" Label="City / municipality">
+            <AddableSelect Id="@($"{IdPrefix}-city")" AriaLabel="@($"{Label}: city or municipality")" Choices="Cities" Placeholder="Choose" @bind-Value="CityValue"
+                           AddLabel="Add address" AddPlaceholder="Name of the city or municipality" Add="AddCity" />
+        </Field>
+        <Field For="@($"{IdPrefix}-province")" Label="State / province">
+            <input id="@($"{IdPrefix}-province")" type="text" maxlength="100" data-letters autocomplete="off" @bind="Parts.Province" />
+        </Field>
+    </div>
+    <Field For="@($"{IdPrefix}-postal")" Label="Postal / zip code">
+        <input id="@($"{IdPrefix}-postal")" type="text" inputmode="numeric" data-digits maxlength="10" autocomplete="off" @bind="Parts.PostalCode" />
+    </Field>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AddressParts Parts { get; set; } = new();
+    [Parameter, EditorRequired] public string IdPrefix { get; set; } = "";
+    [Parameter] public string Label { get; set; } = "Address";
+    [Parameter] public IReadOnlyList<string> Cities { get; set; } = [];
+
+    /// <summary>Keeps a new city or municipality (the page does it and makes the list longer).</summary>
+    [Parameter, EditorRequired] public Func<string, Task<(bool Ok, string Text)>> AddCity { get; set; } = _ => Task.FromResult((false, ""));
+
+    private string CityValue
+    {
+        get => Parts.City ?? "";
+        set => Parts.City = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+}
