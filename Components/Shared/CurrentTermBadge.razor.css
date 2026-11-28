@@ -35,3 +35,20 @@
         padding: 0.35rem 0.7rem;
     }
 }
+
+/* Round 49: with the dates of the term the badge is longer than a phone is wide: it goes to a second line (the dates, then the days left) instead of making the page wider. */
+@media (max-width: 560px) {
+    .term-badge {
+        flex-wrap: wrap;
+        max-width: 100%;
+        white-space: normal;
+        border-radius: 1rem;
+        row-gap: 0.15rem;
+    }
+
+    .term-badge-text,
+    .term-dates,
+    .days-left {
+        min-width: 0;
+    }
+}
